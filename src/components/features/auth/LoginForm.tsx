@@ -6,7 +6,7 @@
 // import { useState } from "react";
 
 // export default function LoginCard() {
-//    const [showPassword, setShowPassword] = useState(false);
+//     const [showPassword, setShowPassword] = useState(false);
 //     const [email, setEmail] = useState("");
 //     const [password, setPassword] = useState("");
 //     const [loading, setLoading] = useState(false);
@@ -14,7 +14,7 @@
 
 //     const router = useRouter();
 
-//      const handleLogin = async () => {
+//     const handleLogin = async () => {
 //         if (!email || !password) {
 //             setError("Please enter email & password");
 //             return;
@@ -27,17 +27,17 @@
 //             const res = await axios.post(
 //                 "/api/auth/login",
 //                 { email, password },
-//                 { withCredentials: true } // 🔥 important for cookies
+//                 { withCredentials: true }
 //             );
 
 //             if (res.data.success) {
-//                 // ✅ redirect
-//                 router.push("/app/MainModules/HomePage");
+//                 router.push("/MainModules/HomePage");
 //             }
-
 //         } catch (err: unknown) {
-//             if(err instanceof Error) {
+//             if (err instanceof Error) {
 //                 setError(err.message);
+//             } else if (axios.isAxiosError(err)) {
+//                 setError(err.response?.data?.error || "Login failed");
 //             } else {
 //                 setError("Login failed");
 //             }
@@ -53,25 +53,28 @@
 //         >
 //             {/* Glow */}
 //             <div className="absolute inset-0 bg-gradient-to-br from-red-900/30 via-transparent to-orange-600/20 pointer-events-none" />
-//             {/* Logo + Title BELOW */}
+            
+//             {/* Logo + Title */}
 //             <div className="flex flex-col items-center z-10">
 //                 <img src="/images/Logo.png" alt="logo" className="lg:w-[56px] lg:h-[66.66px] mb-2" />
-
 //                 <h1 className="text-white text-2xl font-semibold text-center">
 //                     Welcome back!
 //                 </h1>
 //             </div>
 
 //             {/* Card */}
-//             <div className="relative z-10 w-full max-w-sm px-5 py-8 rounded-3xl
+//             <div className="relative z-10 w-[300px] md:w-full max-w-sm px-5 py-8 rounded-3xl
 //         bg-[#222222] backdrop-blur-md shadow-[0_20px_60px_rgba(0,0,0,0.8)]">
 
 //                 {/* Inputs */}
 //                 <div className="rounded-2xl p-3 space-y-3 mb-6">
 //                     <input
-//                         type="text"
-//                         placeholder="Phone Number / Email"
+//                         type="email"
+//                         placeholder="Email Address"
 //                         className="w-full bg-black/40 text-white px-4 py-3 rounded-xl text-sm outline-none placeholder:text-gray-500"
+//                         value={email}
+//                         onChange={(e) => setEmail(e.target.value)}
+//                         onKeyDown={(e) => e.key === "Enter" && handleLogin()}
 //                     />
 
 //                     <div className="relative">
@@ -79,9 +82,12 @@
 //                             type={showPassword ? "text" : "password"}
 //                             placeholder="Password"
 //                             className="w-full bg-black/40 text-white px-4 py-3 rounded-xl text-sm outline-none placeholder:text-gray-500 pr-10"
+//                             value={password}
+//                             onChange={(e) => setPassword(e.target.value)}
+//                             onKeyDown={(e) => e.key === "Enter" && handleLogin()}
 //                         />
-
 //                         <button
+//                             type="button"
 //                             onClick={() => setShowPassword(!showPassword)}
 //                             className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
 //                         >
@@ -90,17 +96,18 @@
 //                     </div>
 //                 </div>
 
-//                 {/* Continue */}
-//                 {/* <button className="w-full bg-gray-300 text-black py-3 rounded-full font-medium mb-6 hover:bg-white transition">
-//                     Continue
-//                 </button> */}
-//                     <button
+//                 {/* Error Message */}
+//                 {error && (
+//                     <p className="text-red-400 text-sm text-center mb-4">{error}</p>
+//                 )}
+
+//                 {/* Continue Button */}
+//                 <button
 //                     onClick={handleLogin}
-                   
-//                     className="w-full bg-gray-300 text-black py-3 rounded-full font-medium mb-6 hover:bg-white transition"
+//                     disabled={loading}
+//                     className="w-full bg-gray-300 text-black py-3 rounded-full font-medium mb-6 hover:bg-white transition disabled:opacity-50 disabled:cursor-not-allowed"
 //                 >
-//                    continue
-//                     {/* {loading ? "Logging in..." : "Continue"} */}
+//                     {loading ? "Logging in..." : "Continue"}
 //                 </button>
 
 //                 {/* OR */}
@@ -126,17 +133,9 @@
 //                     </Link>
 //                 </p>
 //             </div>
-
-
 //         </div>
 //     );
 // }
-
-
-
-
-
-
 
 
 
@@ -177,12 +176,33 @@ export default function LoginCard() {
                 router.push("/MainModules/HomePage");
             }
         } catch (err: unknown) {
-            if (err instanceof Error) {
-                setError(err.message);
-            } else if (axios.isAxiosError(err)) {
-                setError(err.response?.data?.error || "Login failed");
+            if (axios.isAxiosError(err)) {
+                const status = err.response?.status;
+                const errorMessage = err.response?.data?.error;
+
+                // User-friendly messages based on status codes
+                if (status === 401) {
+                    setError("Invalid email or password. Please try again.");
+                } else if (status === 403) {
+                    setError("Please verify your OTP first. Check your email for verification code.");
+                } else if (status === 404) {
+                    setError("No account found with this email. Please sign up first.");
+                } else if (status === 400) {
+                    setError("Please fill in all required fields.");
+                } else if (status === 429) {
+                    setError("Too many login attempts. Please wait a moment before trying again.");
+                } else if (status === 500) {
+                    setError("Server error. Please try again later.");
+                } else if (errorMessage) {
+                    // If there's a custom error message from API, use it
+                    setError(errorMessage);
+                } else {
+                    setError("Login failed. Please check your connection and try again.");
+                }
+            } else if (err instanceof Error) {
+                setError("Unable to connect to the server. Please check your internet connection.");
             } else {
-                setError("Login failed");
+                setError("Login failed. Please try again.");
             }
         } finally {
             setLoading(false);

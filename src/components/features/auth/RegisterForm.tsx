@@ -551,7 +551,7 @@ export default function RegisterPage() {
 
       {/* ── STEP: REGISTER ── */}
       {step === "register" && (
-        <div className="relative z-10 w-[300px] md:full max-w-sm px-5 py-4 rounded-3xl bg-[#222222] shadow-[0_20px_60px_rgba(0,0,0,0.8)]">
+        <div className="relative z-10 w-[300px] md:w-full max-w-sm px-5 py-4 rounded-3xl bg-[#222222] shadow-[0_20px_60px_rgba(0,0,0,0.8)]">
           <div className="rounded-2xl p-1 space-y-3 mb-6">
             <input
               type="text" placeholder="First Name*"
@@ -640,7 +640,7 @@ export default function RegisterPage() {
                 />
               ))}
             </div> */}
-            <div className="flex gap-2 mb-6 justify-between">
+            <div className="flex gap-2 md:gap-2 mb-6 justify-between">
               {otpDigits.map((d, i) => (
                 <input
                   key={i}
@@ -651,7 +651,7 @@ export default function RegisterPage() {
                   value={d}
                   onChange={e => handleOtpChange(e.target.value, i)}
                   onKeyDown={e => handleOtpKeyDown(e, i)}
-                  className="w-10 h-10 sm:w-8 sm:h-12 -ml-2 md:-ml-0 text-center text-white text-lg sm:text-xl font-semibold bg-black/50 border border-gray-600 rounded-xl outline-none focus:border-gray-300 transition"
+                  className="w-10 h-10 sm:w-8 sm:h-12 md:w-12 md:h-12 -ml-2 md:-ml-2 text-center text-white text-lg sm:text-xl font-semibold bg-black/50 border border-gray-600 rounded-xl outline-none focus:border-gray-300 transition"
                 />
               ))}
             </div>

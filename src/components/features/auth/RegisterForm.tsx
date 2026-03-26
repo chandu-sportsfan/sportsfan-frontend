@@ -354,6 +354,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import axios from "axios";
+import { useRouter } from "next/navigation";
 
 type Step = "register" | "otp" | "password";
 
@@ -372,6 +373,7 @@ export default function RegisterPage() {
   const [error, setError] = useState("");
   const [resendMsg, setResendMsg] = useState("");
   const [redirecting, setRedirecting] = useState(false);
+   const router = useRouter();
 
   // ── Password validation ───────────────────────
   const has8 = password.length >= 8;
@@ -440,7 +442,7 @@ export default function RegisterPage() {
           setRedirecting(true);
           setError("This email is already registered. Redirecting to login page...");
           setTimeout(() => {
-            window.location.href = "/auth/login";
+           router.push("/auth/login");
           }, 3000);
         } else if (err.response?.status === 400) {
           setError("Please fill in all required fields.");
@@ -512,7 +514,7 @@ export default function RegisterPage() {
     setLoading(true); setError("");
     try {
       await axios.post('/api/auth/set-password', { email, password });
-      window.location.href = "/auth/login";
+     router.push("/auth/login");
     } catch (err: unknown) {
       if (axios.isAxiosError(err)) {
         if (err.response?.status === 400) {

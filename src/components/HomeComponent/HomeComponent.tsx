@@ -36,26 +36,7 @@ export default function SportsFanUI() {
                 </div>
             </div>
 
-            {/* Categories */}
-            {/* <div className="px-4 py-3 flex gap-3 overflow-x-auto">
-                {[
-                    "All",
-                    "Cricket",
-                    "Athletics",
-                    "Football",
-                ].map((item, i) => (
-                    <button
-                        key={i}
-                        className={`px-4 py-2 rounded-full text-sm whitespace-nowrap ${i === 0
-                                ? "bg-gradient-to-r from-pink-500 to-orange-400"
-                                : "bg-[#1c2330]"
-                            }`}
-                    >
-                        {item}
-                    </button>
-                ))}
-            </div> */}
-
+         
             {/* Main Card */}
             <div className="px-4">
                 <div className="rounded-2xl overflow-hidden relative">

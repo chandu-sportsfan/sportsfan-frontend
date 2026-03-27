@@ -5,19 +5,19 @@ const banners = [
     id: 1,
     title: "TATA IPL T20 2026",
     subtitle: "Experience cricket's biggest league",
-    image: "https://images.unsplash.com/photo-1505842465776-3a8c9c90b0f1",
+    image: "/images/bannerone.png",
   },
   {
     id: 2,
     title: "Watch Along",
     subtitle: "With Ravi Chandra Ashwin",
-    image: "https://images.unsplash.com/photo-1521412644187-c49fa049e84d",
+    image: "/images/bannertwo.jpg",
   },
   {
     id: 3,
     title: "Dream Panel",
     subtitle: "Special Interview Virat Kohli",
-    image: "https://images.unsplash.com/photo-1546519638-68e109498ffc",
+    image: "/images/bannerthree.png",
   },
 ];
 

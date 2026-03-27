@@ -4,7 +4,7 @@ import { Bell, MessageCircle, Menu, Search, Home } from "lucide-react";
 
 export default function Header() {
   return (
-    <div className="p-4 border-b border-pink-500/30">
+    <div className="p-4 border-pink-500/30">
       
       {/* Top Row */}
       <div className="flex items-center justify-between">

@@ -5,7 +5,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { MoreHorizontal } from "lucide-react";
+import { MoreHorizontal, Search } from "lucide-react";
 
 
 interface catFields {
@@ -14,7 +14,7 @@ interface catFields {
 }
 interface Post {
     id: number;
-    teamName: string;
+    playerName: string;
     timeAgo: string;
     title: string;
     category: string[];
@@ -31,7 +31,7 @@ interface Post {
 const mockPosts: Post[] = [
     {
         id: 1,
-        teamName: "Virat Kholi",
+        playerName: "Virat Kholi",
         timeAgo: "12m ago",
         title: "Let's go!!!",
         category: ["Cricket", "Celebration"],
@@ -40,12 +40,12 @@ const mockPosts: Post[] = [
         live: 100,
         shares: 108,
         catlogo: [{ label: "20", logo: "/images/profile.png" }, { label: "45", logo: "/images/like.png" }, { label: "150", logo: "/images/live.png" },],
-        logo : "/images/team360rcblogo.png",
+        logo: "/images/playerrcb.jpg",
         image: "/images/playerrcb.jpg",
     },
     {
         id: 2,
-        teamName: "Rohit Sharma",
+        playerName: "Rohit Sharma",
         timeAgo: "4h ago",
         title: "Champions mindset",
         category: ["Cricket", "MI Family"],
@@ -53,13 +53,13 @@ const mockPosts: Post[] = [
         comments: 0,
         live: 50,
         shares: 142,
-         catlogo: [{ label: "66", logo: "/images/profile.png" }, { label: "23", logo: "/images/like.png" }, { label: "250", logo: "/images/live.png" },],
-        logo : "/images/team360milogo.png",
+        catlogo: [{ label: "66", logo: "/images/profile.png" }, { label: "23", logo: "/images/like.png" }, { label: "250", logo: "/images/live.png" },],
+        logo: "/images/player360rohitlogo.png",
         image: "/images/playermi.png",
     },
     {
         id: 3,
-        teamName: "Mahendra Singh Dhoni",
+        playerName: "Mahendra Singh Dhoni",
         timeAgo: "6h ago",
         title: "Whistle Podu!",
         category: ["Cricket", "Yellow Army"],
@@ -67,14 +67,15 @@ const mockPosts: Post[] = [
         live: 200,
         comments: 0,
         shares: 165,
-         catlogo: [{ label: "40", logo: "/images/profile.png" }, { label: "35", logo: "/images/like.png" }, { label: "80", logo: "/images/live.png" },],
-        logo : "/images/team360csklogo.png",
+        catlogo: [{ label: "40", logo: "/images/profile.png" }, { label: "35", logo: "/images/like.png" }, { label: "80", logo: "/images/live.png" },],
+        logo: "/images/player360dhonilogo.png",
         image: "/images/playercsk.jpg",
     },
 ];
 
 export default function Player360CardsSection() {
     const [likedPosts, setLikedPosts] = useState<number[]>([]);
+    const [query, setQuery] = useState("");
 
     const handleLike = (postId: number) => {
         setLikedPosts((prev) =>
@@ -85,6 +86,29 @@ export default function Player360CardsSection() {
     };
     return (
         <div className="w-full py-4 px-3 sm:px-4">
+            <div className="flex items-center justify-between gap-3 mb-4">
+
+                {/* Title */}
+                <h1 className="text-[18px] sm:text-[20px] font-semibold text-white whitespace-nowrap">
+                    Players 360 World
+                </h1>
+
+                {/* Search Bar */}
+                <div className="flex items-center bg-[#1a1a1a] border border-white/10 rounded-full px-3 py-1.5 w-[160px] sm:w-[200px] md:w-[240px] focus-within:border-pink-500 transition">
+
+                    <Search className="text-gray-400 shrink-0" size={16} />
+
+                    <input
+                        type="text"
+                        placeholder="Search..."
+                        value={query}
+                        onChange={(e) => setQuery(e.target.value)}
+                        className="bg-transparent outline-none text-xs sm:text-sm text-white placeholder:text-gray-500 w-full ml-2"
+                    />
+                </div>
+
+            </div>
+
             {/* Horizontal Scroll Container */}
             <div className="flex gap-4 overflow-x-auto no-scrollbar snap-x snap-mandatory">
 
@@ -97,11 +121,11 @@ export default function Player360CardsSection() {
                         <div className="p-3 flex items-center justify-between">
                             <div className="flex items-center gap-2">
                                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-red-500 to-yellow-500 flex items-center justify-center text-white font-bold text-sm">
-                                    <img src={post.logo} alt={`${post.teamName} Logo`} className="w-full h-full object-cover" />
+                                    <img src={post.logo} alt={`${post.playerName} Logo`} className="w-full h-full object-cover rounded-full" />
                                 </div>
                                 <div>
                                     <h3 className="font-semibold text-white text-sm leading-tight">
-                                        {post.teamName}
+                                        {post.playerName}
                                     </h3>
                                     <p className="text-[10px] text-gray-400">
                                         {post.timeAgo}
@@ -117,7 +141,7 @@ export default function Player360CardsSection() {
                                 src={post.image}
                                 alt={post.title}
                                 fill
-                                className="object-fit"
+                                className="object-fit w-[296px] h-[180px]"
                             />
                         </div>
 
@@ -143,31 +167,34 @@ export default function Player360CardsSection() {
                         <div className="p-3">
                             <div className="flex items-center justify-between mb-2">
                                 {post.catlogo.length > 0 && (
-                                    <div className="flex items-center gap-4">
+                                    <div className="flex items-center gap-2">
                                         {post.catlogo.map((item, i) => (
                                             <div key={i} className="flex flex-row gap-2 rounded-2xl px-2 py-1 bg-gray-950 items-center">
-                                                <img src={item.logo} alt={item.label} className="w-6 h-6 object-cover" />
-                                                <span className="text-xs text-gray-400 mt-1">{item.label}</span>
+                                                <img src={item.logo} alt={item.label} className="w-[20px] h-[20px] object-cover" />
+                                                <span className="text-sm md:text-md text-gray-400 mt-1">{item.label}</span>
                                             </div>
                                         ))}
-                                          <span className="rounded-2xl px-2 py-1 bg-gray-950">
-                                                    <img src='/images/share.png' alt="share" className="w-6 h-6 object-cover" />
-                                                </span>
+                                        <span className="rounded-2xl px-2 py-1 bg-gray-950">
+                                            <img src='/images/share.png' alt="share" className="w-6 h-6 object-cover" />
+                                        </span>
                                     </div>
                                 )}
                             </div>
 
                             {/* Buttons */}
-                            <button className="text-xs bg-[#A00E4D] w-full py-2 rounded-xl text-white mb-2">
+                            <button className="text-xs bg-[#A00E4D] font:bold  w-full py-2 rounded-xl text-white mb-2"
+                                style={{ "fontWeight": 700, }}>
                                 View Full Playlist
                             </button>
 
                             <div className="flex gap-2">
-                                <button className="text-xs bg-[#CD620E] w-full rounded-xl py-2 text-white">
-                                    Stats
+                                <button className="text-xs bg-[#CD620E] font:bold w-full rounded-xl py-2 text-white"
+                                    style={{ "fontWeight": 700, }}>
+                                    Player Stats
                                 </button>
-                                <button className="text-xs bg-black w-full rounded-xl py-2 border border-[#CD620E] text-white">
-                                    Table
+                                <button className="text-xs bg-black w-full font:bold rounded-xl py-2 border border-[#CD620E] text-white"
+                                    style={{ "fontWeight": 700, }}>
+                                    Highlight
                                 </button>
                             </div>
                         </div>

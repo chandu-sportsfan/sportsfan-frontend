@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { getToken } from "next-auth/jwt";
 
-// Public routes that don't require authentication
 const publicRoutes = [
     '/',
     '/auth/login',
@@ -13,41 +13,35 @@ const publicRoutes = [
     '/api/auth/verify-otp',
 ];
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl;
 
-    // Check if the route is public
     const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route));
 
-    // Get token from cookies
-    const token = request.cookies.get('token')?.value;
+    // Single unified auth check
+    const manualToken = request.cookies.get("token")?.value;
+    const googleToken = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
+    const isLoggedIn = !!manualToken || !!googleToken;
 
-    // If trying to access protected route without token
-    if (!isPublicRoute && !token) {
-        // Redirect to login page
+    // Not logged in + protected route → send to login
+    if (!isLoggedIn && !isPublicRoute) {
         const loginUrl = new URL('/auth/login', request.url);
-        // Add the original URL as a redirect parameter
         loginUrl.searchParams.set('redirect', pathname);
         return NextResponse.redirect(loginUrl);
     }
 
-    // If logged in and trying to access login page, redirect to dashboard
-    // if (token && pathname === '/auth/login') {
-    //     return NextResponse.redirect(new URL('/dashboard', request.url));
-    // }
+    // Logged in + trying to access login/register → send to app
+    // IMPORTANT: only redirect on specific auth pages, not ALL public routes
+    const authPages = ['/auth/login', '/auth/register'];
+    if (isLoggedIn && authPages.some(p => pathname.startsWith(p))) {
+        return NextResponse.redirect(new URL('/MainModules/HomePage', request.url));
+    }
 
     return NextResponse.next();
 }
 
 export const config = {
     matcher: [
-        /*
-         * Match all request paths except:
-         * - _next/static (static files)
-         * - _next/image (image optimization files)
-         * - favicon.ico (favicon file)
-         * - public folder
-         */
         '/((?!_next/static|_next/image|favicon.ico|public).*)',
     ],
 };

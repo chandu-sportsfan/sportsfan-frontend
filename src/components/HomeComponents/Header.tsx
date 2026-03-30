@@ -1,6 +1,7 @@
 "use client";
 
 import { Bell, MessageCircle, Menu, Search, Home } from "lucide-react";
+import LogoutButton from "./LogoutButton";
 
 export default function Header() {
   return (
@@ -18,10 +19,12 @@ export default function Header() {
           <div className="p-2 rounded-full border border-pink-500">
             <MessageCircle size={16} />
           </div>
-
+         
           <div className="p-2 rounded-full border border-pink-500">
             <Menu size={16} />
           </div>
+           <LogoutButton />
+
         </div>
       </div>
 

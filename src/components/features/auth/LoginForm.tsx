@@ -3,7 +3,7 @@
 import axios from "axios";
 import { signIn } from "next-auth/react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 
 export default function LoginCard() {
@@ -14,6 +14,18 @@ export default function LoginCard() {
     const [error, setError] = useState("");
 
     const router = useRouter();
+
+    const searchParams = useSearchParams();
+    const authError = searchParams.get("error");
+
+    // Add this mapping:
+    const getAuthError = (error: string | null) => {
+        if (error === "AccessDenied") return "Your account has been disabled. Please contact support.";
+        if (error === "OAuthSignin") return "Failed to sign in with Google. Please try again.";
+        if (error === "OAuthCallback") return "Google sign in was cancelled or failed.";
+        if (error === "OAuthAccountNotLinked") return "This email is already registered. Please login with email & password.";
+        return null;
+    };
 
     const handleLogin = async () => {
         if (!email || !password) {
@@ -127,6 +139,13 @@ export default function LoginCard() {
                 </div>
 
                 {/* Error Message */}
+
+                {getAuthError(authError) && (
+                    <p className="text-red-400 text-sm text-center mb-4">
+                        {getAuthError(authError)}
+                    </p>
+                )}
+
                 {error && (
                     <p className="text-red-400 text-sm text-center mb-4">{error}</p>
                 )}

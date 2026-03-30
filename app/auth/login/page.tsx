@@ -1,10 +1,13 @@
+
+
+
+import { Suspense } from "react";
 import LoginScreen from "@/src/components/features/auth/LoginForm";
 
-export default function login (){
-
+export default function LoginPage() {
     return (
-        <>
-        <LoginScreen />
-        </>
-    )
+        <Suspense fallback={null}>
+            <LoginScreen />
+        </Suspense>
+    );
 }

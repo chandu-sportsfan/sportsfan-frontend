@@ -1,93 +1,328 @@
 
 
 
+// "use client";
+
+// import { useState } from "react";
+// import Image from "next/image";
+// import { MoreHorizontal, Search } from "lucide-react";
+
+
+// interface catFields {
+//     label: string;
+//     logo: string;
+// }
+// interface Post {
+//     id: number;
+//     playerName: string;
+//     timeAgo: string;
+//     title: string;
+//     category: string[];
+//     likes: number;
+//     comments: number;
+//     live: number,
+//     shares: number;
+//     image: string;
+//     logo: string;
+//     catlogo: catFields[];
+//     hasVideo?: boolean;
+// }
+
+// const mockPosts: Post[] = [
+//     {
+//         id: 1,
+//         playerName: "Virat Kholi",
+//         timeAgo: "12m ago",
+//         title: "Let's go!!!",
+//         category: ["Cricket", "Celebration"],
+//         likes: 108,
+//         comments: 0,
+//         live: 100,
+//         shares: 108,
+//         catlogo: [{ label: "20", logo: "/images/profile.png" }, { label: "45", logo: "/images/like.png" }, { label: "150", logo: "/images/live.png" },],
+//         logo: "/images/playerrcb.jpg",
+//         image: "/images/playerrcb.jpg",
+//     },
+//     {
+//         id: 2,
+//         playerName: "Rohit Sharma",
+//         timeAgo: "4h ago",
+//         title: "Champions mindset",
+//         category: ["Cricket", "MI Family"],
+//         likes: 256,
+//         comments: 0,
+//         live: 50,
+//         shares: 142,
+//         catlogo: [{ label: "66", logo: "/images/profile.png" }, { label: "23", logo: "/images/like.png" }, { label: "250", logo: "/images/live.png" },],
+//         logo: "/images/player360rohitlogo.png",
+//         image: "/images/playermi.png",
+//     },
+//     {
+//         id: 3,
+//         playerName: "Mahendra Singh Dhoni",
+//         timeAgo: "6h ago",
+//         title: "Whistle Podu!",
+//         category: ["Cricket", "Yellow Army"],
+//         likes: 320,
+//         live: 200,
+//         comments: 0,
+//         shares: 165,
+//         catlogo: [{ label: "40", logo: "/images/profile.png" }, { label: "35", logo: "/images/like.png" }, { label: "80", logo: "/images/live.png" },],
+//         logo: "/images/player360dhonilogo.png",
+//         image: "/images/playercsk.jpg",
+//     },
+// ];
+
+// export default function Player360CardsSection() {
+//     const [likedPosts, setLikedPosts] = useState<number[]>([]);
+//     const [query, setQuery] = useState("");
+
+//     const handleLike = (postId: number) => {
+//         setLikedPosts((prev) =>
+//             prev.includes(postId)
+//                 ? prev.filter((id) => id !== postId)
+//                 : [...prev, postId]
+//         );
+//     };
+//     return (
+//         <div className="w-full py-4 px-3 sm:px-4">
+//             <div className="flex items-center justify-between gap-3 mb-4">
+
+//                 {/* Title */}
+//                 <h1 className="text-[18px] sm:text-[20px] font-semibold text-white whitespace-nowrap">
+//                     Players 360 World
+//                 </h1>
+
+//                 {/* Search Bar */}
+//                 <div className="flex items-center bg-[#1a1a1a] border border-white/10 rounded-full px-3 py-1.5 w-[160px] sm:w-[200px] md:w-[240px] focus-within:border-pink-500 transition">
+
+//                     <Search className="text-gray-400 shrink-0" size={16} />
+
+//                     <input
+//                         type="text"
+//                         placeholder="Search..."
+//                         value={query}
+//                         onChange={(e) => setQuery(e.target.value)}
+//                         className="bg-transparent outline-none text-xs sm:text-sm text-white placeholder:text-gray-500 w-full ml-2"
+//                     />
+//                 </div>
+
+//             </div>
+
+//             {/* Horizontal Scroll Container */}
+//             <div className="flex gap-4 overflow-x-auto no-scrollbar snap-x snap-mandatory">
+
+//                 {mockPosts.map((post) => (
+//                     <div
+//                         key={post.id}
+//                         className="min-w-[280px] sm:min-w-[320px] max-w-[320px] bg-black rounded-xl shadow-sm border border-gray-800 overflow-hidden snap-start"
+//                     >
+//                         {/* Header */}
+//                         <div className="p-3 flex items-center justify-between">
+//                             <div className="flex items-center gap-2">
+//                                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-red-500 to-yellow-500 flex items-center justify-center text-white font-bold text-sm">
+//                                     <img src={post.logo} alt={`${post.playerName} Logo`} className="w-full h-full object-cover rounded-full" />
+//                                 </div>
+//                                 <div>
+//                                     <h3 className="font-semibold text-white text-sm leading-tight">
+//                                         {post.playerName}
+//                                     </h3>
+//                                     <p className="text-[10px] text-gray-400">
+//                                         {post.timeAgo}
+//                                     </p>
+//                                 </div>
+//                             </div>
+//                             <MoreHorizontal size={18} className="text-gray-400" />
+//                         </div>
+
+//                         {/* Image */}
+//                         <div className="relative aspect-video bg-gray-100">
+//                             <Image
+//                                 src={post.image}
+//                                 alt={post.title}
+//                                 fill
+//                                 className="object-fit w-[296px] h-[180px]"
+//                             />
+//                         </div>
+
+
+
+//                         {/* Content */}
+//                         <div className="mb-2 mt-2 ml-2">
+//                             <h4 className="font-semibold text-white text-sm">
+//                                 {post.title}
+//                             </h4>
+//                             {post.category.length > 0 && (
+//                                 <div className="flex items-center gap-2 mt-1">
+//                                     {post.category.map((cat, i) => (
+//                                         <span key={i} className="border border-gray-200 text-gray-400 text-xs px-2 py-1 rounded-xl">
+//                                             {cat}
+//                                         </span>
+//                                     ))}
+//                                 </div>
+//                             )}
+//                         </div>
+
+//                         {/* Actions */}
+//                         <div className="p-3">
+//                             <div className="flex items-center justify-between mb-2">
+//                                 {post.catlogo.length > 0 && (
+//                                     <div className="flex items-center gap-2">
+//                                         {post.catlogo.map((item, i) => (
+//                                             <div key={i} className="flex flex-row gap-2 rounded-2xl px-2 py-1 bg-gray-950 items-center">
+//                                                 <img src={item.logo} alt={item.label} className="w-[20px] h-[20px] object-cover" />
+//                                                 <span className="text-sm md:text-md text-gray-400 mt-1">{item.label}</span>
+//                                             </div>
+//                                         ))}
+//                                         <span className="rounded-2xl px-2 py-1 bg-gray-950">
+//                                             <img src='/images/share.png' alt="share" className="w-6 h-6 object-cover" />
+//                                         </span>
+//                                     </div>
+//                                 )}
+//                             </div>
+
+//                             {/* Buttons */}
+//                             <button className="text-xs bg-[#A00E4D] font:bold  w-full py-2 rounded-xl text-white mb-2"
+//                                 style={{ "fontWeight": 700, }}>
+//                                 View Full Playlist
+//                             </button>
+
+//                             <div className="flex gap-2">
+//                                 <button className="text-xs bg-[#CD620E] font:bold w-full rounded-xl py-2 text-white"
+//                                     style={{ "fontWeight": 700, }}>
+//                                     Player Stats
+//                                 </button>
+//                                 <button className="text-xs bg-black w-full font:bold rounded-xl py-2 border border-[#CD620E] text-white"
+//                                     style={{ "fontWeight": 700, }}>
+//                                     Highlight
+//                                 </button>
+//                             </div>
+//                         </div>
+//                     </div>
+//                 ))}
+
+//             </div>
+//         </div>
+//     );
+// }
+
+
+
+
+
+
+
+
+
+
+
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import { MoreHorizontal, Search } from "lucide-react";
+import axios from "axios";
 
-
-interface catFields {
+interface CatField {
     label: string;
     logo: string;
 }
-interface Post {
-    id: number;
-    playerName: string;
-    timeAgo: string;
+
+interface CategoryField {
     title: string;
-    category: string[];
+    image: string;
+}
+
+interface Post {
+    id: string;
+    playerName: string;
+    title: string;
+    category: CategoryField[];
     likes: number;
     comments: number;
-    live: number,
+    live: number;
     shares: number;
     image: string;
     logo: string;
-    catlogo: catFields[];
+    catlogo: CatField[];
     hasVideo?: boolean;
+    createdAt: number;
+    updatedAt?: number;
 }
 
-const mockPosts: Post[] = [
-    {
-        id: 1,
-        playerName: "Virat Kholi",
-        timeAgo: "12m ago",
-        title: "Let's go!!!",
-        category: ["Cricket", "Celebration"],
-        likes: 108,
-        comments: 0,
-        live: 100,
-        shares: 108,
-        catlogo: [{ label: "20", logo: "/images/profile.png" }, { label: "45", logo: "/images/like.png" }, { label: "150", logo: "/images/live.png" },],
-        logo: "/images/playerrcb.jpg",
-        image: "/images/playerrcb.jpg",
-    },
-    {
-        id: 2,
-        playerName: "Rohit Sharma",
-        timeAgo: "4h ago",
-        title: "Champions mindset",
-        category: ["Cricket", "MI Family"],
-        likes: 256,
-        comments: 0,
-        live: 50,
-        shares: 142,
-        catlogo: [{ label: "66", logo: "/images/profile.png" }, { label: "23", logo: "/images/like.png" }, { label: "250", logo: "/images/live.png" },],
-        logo: "/images/player360rohitlogo.png",
-        image: "/images/playermi.png",
-    },
-    {
-        id: 3,
-        playerName: "Mahendra Singh Dhoni",
-        timeAgo: "6h ago",
-        title: "Whistle Podu!",
-        category: ["Cricket", "Yellow Army"],
-        likes: 320,
-        live: 200,
-        comments: 0,
-        shares: 165,
-        catlogo: [{ label: "40", logo: "/images/profile.png" }, { label: "35", logo: "/images/like.png" }, { label: "80", logo: "/images/live.png" },],
-        logo: "/images/player360dhonilogo.png",
-        image: "/images/playercsk.jpg",
-    },
-];
-
 export default function Player360CardsSection() {
-    const [likedPosts, setLikedPosts] = useState<number[]>([]);
+    const [posts, setPosts] = useState<Post[]>([]);
+    const [loading, setLoading] = useState(true);
     const [query, setQuery] = useState("");
+    const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
 
-    const handleLike = (postId: number) => {
-        setLikedPosts((prev) =>
-            prev.includes(postId)
-                ? prev.filter((id) => id !== postId)
-                : [...prev, postId]
-        );
+    useEffect(() => {
+        const fetchPosts = async () => {
+            try {
+                const res = await axios.get("/api/players360");
+                console.log("Fetched players posts:", res.data); // Debug
+                setPosts(res.data.posts || []);
+            } catch (error) {
+                console.error("Failed to fetch players360 posts", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchPosts();
+    }, []);
+
+    const getISTTimeAgo = (timestamp: number) => {
+        const now = Date.now();
+        const diff = now - timestamp;
+
+        const minutes = Math.floor(diff / (1000 * 60));
+        const hours = Math.floor(diff / (1000 * 60 * 60));
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+
+        if (minutes < 60) return `${minutes}m ago`;
+        if (hours < 24) return `${hours}h ago`;
+        return `${days}d ago`;
     };
+
+    const handleImageError = (id: string, type: string) => {
+        setImageErrors(prev => ({
+            ...prev,
+            [`${id}-${type}`]: true
+        }));
+    };
+
+    // Filter posts based on search query
+    const filteredPosts = posts.filter(post =>
+        post.playerName?.toLowerCase().includes(query.toLowerCase()) ||
+        post.title?.toLowerCase().includes(query.toLowerCase())
+    );
+
+    if (loading) {
+        return (
+            <div className="w-full py-4 px-3 sm:px-4">
+                <div className="flex items-center justify-between gap-3 mb-4">
+                    <h1 className="text-[18px] sm:text-[20px] font-semibold text-white whitespace-nowrap">
+                        Players 360 World
+                    </h1>
+                    <div className="flex items-center bg-[#1a1a1a] border border-white/10 rounded-full px-3 py-1.5 w-[160px] sm:w-[200px] md:w-[240px]">
+                        <Search className="text-gray-400 shrink-0" size={16} />
+                        <input
+                            type="text"
+                            placeholder="Search..."
+                            className="bg-transparent outline-none text-xs sm:text-sm text-white placeholder:text-gray-500 w-full ml-2"
+                            disabled
+                        />
+                    </div>
+                </div>
+                <p className="text-white p-4">Loading...</p>
+            </div>
+        );
+    }
+
     return (
         <div className="w-full py-4 px-3 sm:px-4">
             <div className="flex items-center justify-between gap-3 mb-4">
-
                 {/* Title */}
                 <h1 className="text-[18px] sm:text-[20px] font-semibold text-white whitespace-nowrap">
                     Players 360 World
@@ -95,112 +330,155 @@ export default function Player360CardsSection() {
 
                 {/* Search Bar */}
                 <div className="flex items-center bg-[#1a1a1a] border border-white/10 rounded-full px-3 py-1.5 w-[160px] sm:w-[200px] md:w-[240px] focus-within:border-pink-500 transition">
-
                     <Search className="text-gray-400 shrink-0" size={16} />
-
                     <input
                         type="text"
-                        placeholder="Search..."
+                        placeholder="Search players..."
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}
                         className="bg-transparent outline-none text-xs sm:text-sm text-white placeholder:text-gray-500 w-full ml-2"
                     />
                 </div>
-
             </div>
 
             {/* Horizontal Scroll Container */}
             <div className="flex gap-4 overflow-x-auto no-scrollbar snap-x snap-mandatory">
-
-                {mockPosts.map((post) => (
-                    <div
-                        key={post.id}
-                        className="min-w-[280px] sm:min-w-[320px] max-w-[320px] bg-black rounded-xl shadow-sm border border-gray-800 overflow-hidden snap-start"
-                    >
-                        {/* Header */}
-                        <div className="p-3 flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-red-500 to-yellow-500 flex items-center justify-center text-white font-bold text-sm">
-                                    <img src={post.logo} alt={`${post.playerName} Logo`} className="w-full h-full object-cover rounded-full" />
-                                </div>
-                                <div>
-                                    <h3 className="font-semibold text-white text-sm leading-tight">
-                                        {post.playerName}
-                                    </h3>
-                                    <p className="text-[10px] text-gray-400">
-                                        {post.timeAgo}
-                                    </p>
-                                </div>
-                            </div>
-                            <MoreHorizontal size={18} className="text-gray-400" />
-                        </div>
-
-                        {/* Image */}
-                        <div className="relative aspect-video bg-gray-100">
-                            <Image
-                                src={post.image}
-                                alt={post.title}
-                                fill
-                                className="object-fit w-[296px] h-[180px]"
-                            />
-                        </div>
-
-
-
-                        {/* Content */}
-                        <div className="mb-2 mt-2 ml-2">
-                            <h4 className="font-semibold text-white text-sm">
-                                {post.title}
-                            </h4>
-                            {post.category.length > 0 && (
-                                <div className="flex items-center gap-2 mt-1">
-                                    {post.category.map((cat, i) => (
-                                        <span key={i} className="border border-gray-200 text-gray-400 text-xs px-2 py-1 rounded-xl">
-                                            {cat}
-                                        </span>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Actions */}
-                        <div className="p-3">
-                            <div className="flex items-center justify-between mb-2">
-                                {post.catlogo.length > 0 && (
-                                    <div className="flex items-center gap-2">
-                                        {post.catlogo.map((item, i) => (
-                                            <div key={i} className="flex flex-row gap-2 rounded-2xl px-2 py-1 bg-gray-950 items-center">
-                                                <img src={item.logo} alt={item.label} className="w-[20px] h-[20px] object-cover" />
-                                                <span className="text-sm md:text-md text-gray-400 mt-1">{item.label}</span>
+                {filteredPosts.length > 0 ? (
+                    filteredPosts.map((post) => (
+                        <div
+                            key={post.id}
+                            className="min-w-[280px] sm:min-w-[320px] max-w-[320px] bg-black rounded-xl shadow-sm border border-gray-800 overflow-hidden snap-start"
+                        >
+                            {/* Header */}
+                            <div className="p-3 flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-800 flex items-center justify-center">
+                                        {!imageErrors[`${post.id}-logo`] ? (
+                                            <img
+                                                src={post.logo}
+                                                alt={post.playerName}
+                                                className="w-full h-full object-cover rounded-full"
+                                                onError={() => handleImageError(post.id, 'logo')}
+                                            />
+                                        ) : (
+                                            <div className="w-full h-full bg-gradient-to-br from-red-500 to-yellow-500 flex items-center justify-center text-white text-xs font-bold">
+                                                {post.playerName?.charAt(0) || 'P'}
                                             </div>
-                                        ))}
-                                        <span className="rounded-2xl px-2 py-1 bg-gray-950">
-                                            <img src='/images/share.png' alt="share" className="w-6 h-6 object-cover" />
-                                        </span>
+                                        )}
+                                    </div>
+                                    <div>
+                                        <h3 className="font-semibold text-white text-sm leading-tight">
+                                            {post.playerName}
+                                        </h3>
+                                        <p className="text-[10px] text-gray-400">
+                                            {getISTTimeAgo(post.createdAt)}
+                                        </p>
+                                    </div>
+                                </div>
+                                <MoreHorizontal size={18} className="text-gray-400" />
+                            </div>
+
+                            {/* Image */}
+                            <div className="relative aspect-video bg-gray-800">
+                                {!imageErrors[`${post.id}-main`] ? (
+                                    <Image
+                                        src={post.image}
+                                        alt={post.title}
+                                        fill
+                                        className="object-fit w-[296px] h-[180px]"
+                                        onError={() => handleImageError(post.id, 'main')}
+                                    />
+                                ) : (
+                                    <div className="w-full h-full flex items-center justify-center text-gray-400">
+                                        Image not available
                                     </div>
                                 )}
                             </div>
 
-                            {/* Buttons */}
-                            <button className="text-xs bg-[#A00E4D] font:bold  w-full py-2 rounded-xl text-white mb-2"
-                                style={{ "fontWeight": 700, }}>
-                                View Full Playlist
-                            </button>
+                            {/* Content */}
+                            <div className="mb-2 mt-2 ml-2">
+                                <h4 className="font-semibold text-white text-sm">
+                                    {post.title}
+                                </h4>
+                                {post.category && post.category.length > 0 && (
+                                    <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                        {post.category.map((cat, i) => (
+                                            <span
+                                                key={i}
+                                                className="border border-gray-200 text-gray-400 text-xs px-2 py-1 rounded-xl"
+                                            >
+                                                {cat.title}
+                                            </span>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
 
-                            <div className="flex gap-2">
-                                <button className="text-xs bg-[#CD620E] font:bold w-full rounded-xl py-2 text-white"
-                                    style={{ "fontWeight": 700, }}>
-                                    Player Stats
+                            {/* Stats Section */}
+                            <div className="p-3">
+                                <div className="flex items-center gap-2 flex-wrap mb-3">
+                                    {post.catlogo && post.catlogo.map((item, i) => (
+                                        <div
+                                            key={i}
+                                            className="flex flex-row gap-2 rounded-2xl px-2 py-1 bg-gray-950 items-center"
+                                        >
+                                            {!imageErrors[`${post.id}-catlogo-${i}`] ? (
+                                                <img
+                                                    src={item.logo}
+                                                    alt={item.label}
+                                                    className="w-[20px] h-[20px] object-cover"
+                                                    onError={() => handleImageError(post.id, `catlogo-${i}`)}
+                                                />
+                                            ) : (
+                                                <div className="w-[20px] h-[20px] bg-gray-700 rounded-full" />
+                                            )}
+                                            <span className="text-sm text-gray-400">
+                                                {item.label}
+                                            </span>
+                                        </div>
+                                    ))}
+                                    <span className="rounded-2xl px-2 py-1 bg-gray-950">
+                                        <img
+                                            src='/images/share.png'
+                                            alt="share"
+                                            className="w-6 h-6 object-cover"
+                                            onError={(e) => {
+                                                e.currentTarget.src = '/fallback-share.png';
+                                            }}
+                                        />
+                                    </span>
+                                </div>
+
+                                {/* Buttons */}
+                                <button
+                                    className="text-xs bg-[#A00E4D] w-full py-2 rounded-xl text-white mb-2"
+                                    style={{ fontWeight: 700 }}
+                                >
+                                    View Full Playlist
                                 </button>
-                                <button className="text-xs bg-black w-full font:bold rounded-xl py-2 border border-[#CD620E] text-white"
-                                    style={{ "fontWeight": 700, }}>
-                                    Highlight
-                                </button>
+
+                                <div className="flex gap-2">
+                                    <button
+                                        className="text-xs bg-[#CD620E] w-full rounded-xl py-2 text-white"
+                                        style={{ fontWeight: 700 }}
+                                    >
+                                        Player Stats
+                                    </button>
+                                    <button
+                                        className="text-xs bg-black w-full rounded-xl py-2 border border-[#CD620E] text-white"
+                                        style={{ fontWeight: 700 }}
+                                    >
+                                        Highlight
+                                    </button>
+                                </div>
                             </div>
                         </div>
+                    ))
+                ) : (
+                    <div className="w-full text-center py-10">
+                        <p className="text-gray-400">No players found matching.</p>
                     </div>
-                ))}
-
+                )}
             </div>
         </div>
     );

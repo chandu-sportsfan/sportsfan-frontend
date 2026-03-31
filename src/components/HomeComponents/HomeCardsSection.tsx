@@ -185,7 +185,7 @@ export default function HomeCardsSection() {
 
             {/* Button */}
             <button className="mt-2 w-full bg-gradient-to-r from-pink-500 to-orange-500 py-1 rounded-full font-semibold text-[14px] flex items-center justify-center gap-2">
-              {card.buttonIcon === "play" ? "▶" : "📈"}{" "}
+              {card.buttonIcon === "play" ? <img src="/images/explore.png" alt="Play" /> : <img src="/images/discover.png" alt="Chart" />}{" "}
               {card.buttonText}
             </button>
           </div>

@@ -166,13 +166,12 @@ export default function LoginCard() {
                     <div className="flex-1 h-[1px] bg-gray-700" />
                 </div>
 
-                {/* Google */}
-                {/* <button className="w-full bg-white text-black py-3 rounded-full font-medium flex items-center justify-center gap-2 mb-6">
-                    <span className="text-lg">G</span>
-                    Continue with Google
-                </button> */}
+               
                 <button
-                    onClick={() => signIn("google", { callbackUrl: "/MainModules/HomePage" })}
+                    // onClick={() => signIn("google", { callbackUrl: "/MainModules/HomePage" })}
+                    onClick={() => signIn("google", {
+                        callbackUrl: process.env.NEXT_PUBLIC_APP_URL + "/MainModules/HomePage"
+                    })}
                     className="w-full bg-white text-black py-3 rounded-full font-medium flex items-center justify-center gap-2 mb-6 hover:bg-gray-100 transition"
                 >
                     {/* Google SVG icon */}

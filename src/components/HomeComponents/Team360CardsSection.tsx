@@ -187,19 +187,13 @@
 
 
 
-
-
-
-
-
-
-
 // "use client";
 
-// import { useEffect, useMemo, useState } from "react";
+// import { useEffect, useState } from "react";
 // import Image from "next/image";
 // import { MoreHorizontal } from "lucide-react";
 // import axios from "axios";
+// import Link from "next/link";
 
 // interface CatField {
 //     label: string;
@@ -230,13 +224,13 @@
 // export default function Team360CardsSection() {
 //     const [posts, setPosts] = useState<Post[]>([]);
 //     const [loading, setLoading] = useState(true);
+//     const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
 
 //     useEffect(() => {
 //         const fetchPosts = async () => {
 //             try {
-//                 const res = await axios.get(
-//                     "/api/team360"
-//                 );
+//                 const res = await axios.get("/api/team360");
+//                 console.log("Fetched posts:", res.data); // Debug: Check what URLs are coming
 //                 setPosts(res.data.posts || []);
 //             } catch (error) {
 //                 console.error("Failed to fetch team360 posts", error);
@@ -261,6 +255,13 @@
 //         return `${days}d ago`;
 //     };
 
+//     const handleImageError = (id: string, type: string) => {
+//         setImageErrors(prev => ({
+//             ...prev,
+//             [`${id}-${type}`]: true
+//         }));
+//     };
+
 //     if (loading) {
 //         return <p className="text-white p-4">Loading...</p>;
 //     }
@@ -283,12 +284,19 @@
 //                         {/* Header */}
 //                         <div className="p-3 flex items-center justify-between">
 //                             <div className="flex items-center gap-2">
-//                                 <div className="w-8 h-8 rounded-full overflow-hidden">
-//                                     <img
-//                                         src={post.logo}
-//                                         alt={post.teamName}
-//                                         className="w-full h-full object-cover"
-//                                     />
+//                                 <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-800 flex items-center justify-center">
+//                                     {!imageErrors[`${post.id}-logo`] ? (
+//                                         <img
+//                                             src={post.logo}
+//                                             alt={post.teamName}
+//                                             className="w-full h-full object-cover"
+//                                             onError={() => handleImageError(post.id, 'logo')}
+//                                         />
+//                                     ) : (
+//                                         <div className="w-full h-full bg-gradient-to-br from-red-500 to-yellow-500 flex items-center justify-center text-white text-xs">
+//                                             {post.teamName.charAt(0)}
+//                                         </div>
+//                                     )}
 //                                 </div>
 
 //                                 <div>
@@ -308,13 +316,19 @@
 //                         </div>
 
 //                         {/* Main Image */}
-//                         <div className="relative aspect-video bg-gray-100">
-//                             <Image
-//                                 src={post.image}
-//                                 alt={post.title}
-//                                 fill
-//                                 className="object-cover"
-//                             />
+//                         <div className="relative aspect-video bg-gray-800">
+//                             {!imageErrors[`${post.id}-main`] ? (
+//                                 <img
+//                                     src={post.image}
+//                                     alt={post.title}
+//                                     className="w-[296px] h-[180px] md:w-full md:h-full object-cover"
+//                                     onError={() => handleImageError(post.id, 'main')}
+//                                 />
+//                             ) : (
+//                                 <div className="w-full h-full flex items-center justify-center text-gray-400">
+//                                     Image not available
+//                                 </div>
+//                             )}
 //                         </div>
 
 //                         {/* Content */}
@@ -345,11 +359,16 @@
 //                                         key={i}
 //                                         className="flex flex-row gap-2 rounded-2xl px-2 py-1 bg-gray-950 items-center"
 //                                     >
-//                                         <img
-//                                             src={item.logo}
-//                                             alt={item.label}
-//                                             className="w-[20px] h-[20px] object-cover"
-//                                         />
+//                                         {!imageErrors[`${post.id}-catlogo-${i}`] ? (
+//                                             <img
+//                                                 src={item.logo}
+//                                                 alt={item.label}
+//                                                 className="w-[20px] h-[20px] object-cover"
+//                                                 onError={() => handleImageError(post.id, `catlogo-${i}`)}
+//                                             />
+//                                         ) : (
+//                                             <div className="w-[20px] h-[20px] bg-gray-700 rounded-full" />
+//                                         )}
 //                                         <span className="text-sm text-gray-400">
 //                                             {item.label}
 //                                         </span>
@@ -358,12 +377,14 @@
 //                             </div>
 
 //                             {/* Buttons */}
-//                             <button
-//                                 className="text-xs bg-[#A00E4D] w-full py-2 rounded-xl text-white mb-2"
-//                                 style={{ fontWeight: 700 }}
-//                             >
-//                                 View Full Playlist
-//                             </button>
+//                             <Link href={`/MainModules/DropScreen`} >
+//                                 <button
+//                                     className="text-xs bg-[#A00E4D] w-full py-2 rounded-xl text-white mb-2"
+//                                     style={{ fontWeight: 700 }}
+//                                 >
+//                                     View Full Playlist
+//                                 </button>
+//                             </Link>
 
 //                             <div className="flex gap-2">
 //                                 <button
@@ -393,18 +414,12 @@
 
 
 
-
-
-
-
-
-
 "use client";
 
 import { useEffect, useState } from "react";
-import Image from "next/image";
 import { MoreHorizontal } from "lucide-react";
 import axios from "axios";
+import Link from "next/link";
 
 interface CatField {
     label: string;
@@ -437,12 +452,50 @@ export default function Team360CardsSection() {
     const [loading, setLoading] = useState(true);
     const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
 
+    // Add admin base URL
+    const ADMIN_BASE_URL = 'https://sportsfan360.vercel.app';
+
+    // Function to get full image URL
+    // const getFullImageUrl = (path: string) => {
+    //     if (!path) return '';
+    //     if (path.startsWith('http://') || path.startsWith('https://')) {
+    //         return path;
+    //     }
+    //     const cleanPath = path.startsWith('/') ? path : `/${path}`;
+    //     const fullUrl = `${ADMIN_BASE_URL}${cleanPath}`;
+    //     console.log('Generated URL:', fullUrl); // Debug log
+    //     return fullUrl;
+    // };
+    const getFullImageUrl = (path: string) => {
+    if (!path) return "";
+
+    return path.startsWith("http")
+        ? path
+        : `https://sportsfan360.vercel.app${path}`;
+};
+
     useEffect(() => {
         const fetchPosts = async () => {
             try {
                 const res = await axios.get("/api/team360");
-                console.log("Fetched posts:", res.data); // Debug: Check what URLs are coming
-                setPosts(res.data.posts || []);
+                console.log("Fetched posts:", res.data);
+                
+                // Transform posts to add full URLs for debugging
+                const transformedPosts = res.data.posts?.map((post: Post) => ({
+                    ...post,
+                    logoFullUrl: getFullImageUrl(post.logo),
+                    imageFullUrl: getFullImageUrl(post.image),
+                    catlogo: post.catlogo?.map(logo => ({
+                        ...logo,
+                        fullUrl: getFullImageUrl(logo.logo)
+                    })),
+                    category: post.category?.map(cat => ({
+                        ...cat,
+                        fullUrl: getFullImageUrl(cat.image)
+                    }))
+                })) || [];
+                
+                setPosts(transformedPosts);
             } catch (error) {
                 console.error("Failed to fetch team360 posts", error);
             } finally {
@@ -466,7 +519,8 @@ export default function Team360CardsSection() {
         return `${days}d ago`;
     };
 
-    const handleImageError = (id: string, type: string) => {
+    const handleImageError = (id: string, type: string, url: string) => {
+        console.error(`Image failed to load: ${type} - URL: ${url}`);
         setImageErrors(prev => ({
             ...prev,
             [`${id}-${type}`]: true
@@ -479,10 +533,7 @@ export default function Team360CardsSection() {
 
     return (
         <div className="w-full py-4 px-3 sm:px-4">
-            <h1
-                className="text-[20px]"
-                style={{ fontWeight: 700 }}
-            >
+            <h1 className="text-[20px] text-white" style={{ fontWeight: 700 }}>
                 Teams 360 World
             </h1>
 
@@ -498,10 +549,13 @@ export default function Team360CardsSection() {
                                 <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-800 flex items-center justify-center">
                                     {!imageErrors[`${post.id}-logo`] ? (
                                         <img
-                                            src={post.logo}
+                                            src={getFullImageUrl(post.logo)}
                                             alt={post.teamName}
                                             className="w-full h-full object-cover"
-                                            onError={() => handleImageError(post.id, 'logo')}
+                                            onError={(e) => {
+                                                console.log(`Logo error for ${post.teamName}:`, e.currentTarget.src);
+                                                handleImageError(post.id, 'logo', e.currentTarget.src);
+                                            }}
                                         />
                                     ) : (
                                         <div className="w-full h-full bg-gradient-to-br from-red-500 to-yellow-500 flex items-center justify-center text-white text-xs">
@@ -520,20 +574,20 @@ export default function Team360CardsSection() {
                                 </div>
                             </div>
 
-                            <MoreHorizontal
-                                size={18}
-                                className="text-gray-400"
-                            />
+                            <MoreHorizontal size={18} className="text-gray-400" />
                         </div>
 
                         {/* Main Image */}
                         <div className="relative aspect-video bg-gray-800">
                             {!imageErrors[`${post.id}-main`] ? (
                                 <img
-                                    src={post.image}
+                                    src={getFullImageUrl(post.image)}
                                     alt={post.title}
-                                    className="w-[296px] h-[180px] md:w-full md:h-full object-cover"
-                                    onError={() => handleImageError(post.id, 'main')}
+                                    className="w-full h-full object-cover"
+                                    onError={(e) => {
+                                        console.log(`Main image error for ${post.title}:`, e.currentTarget.src);
+                                        handleImageError(post.id, 'main', e.currentTarget.src);
+                                    }}
                                 />
                             ) : (
                                 <div className="w-full h-full flex items-center justify-center text-gray-400">
@@ -548,7 +602,7 @@ export default function Team360CardsSection() {
                                 {post.title}
                             </h4>
 
-                            {post.category.length > 0 && (
+                            {post.category && post.category.length > 0 && (
                                 <div className="flex items-center gap-2 mt-1 flex-wrap">
                                     {post.category.map((cat, i) => (
                                         <span
@@ -565,17 +619,20 @@ export default function Team360CardsSection() {
                         {/* Stats */}
                         <div className="p-3">
                             <div className="flex items-center gap-2 flex-wrap mb-3">
-                                {post.catlogo.map((item, i) => (
+                                {post.catlogo && post.catlogo.map((item, i) => (
                                     <div
                                         key={i}
                                         className="flex flex-row gap-2 rounded-2xl px-2 py-1 bg-gray-950 items-center"
                                     >
                                         {!imageErrors[`${post.id}-catlogo-${i}`] ? (
                                             <img
-                                                src={item.logo}
+                                                src={getFullImageUrl(item.logo)}
                                                 alt={item.label}
                                                 className="w-[20px] h-[20px] object-cover"
-                                                onError={() => handleImageError(post.id, `catlogo-${i}`)}
+                                                onError={(e) => {
+                                                    console.log(`Catlogo error for ${item.label}:`, e.currentTarget.src);
+                                                    handleImageError(post.id, `catlogo-${i}`, e.currentTarget.src);
+                                                }}
                                             />
                                         ) : (
                                             <div className="w-[20px] h-[20px] bg-gray-700 rounded-full" />
@@ -588,12 +645,14 @@ export default function Team360CardsSection() {
                             </div>
 
                             {/* Buttons */}
-                            <button
-                                className="text-xs bg-[#A00E4D] w-full py-2 rounded-xl text-white mb-2"
-                                style={{ fontWeight: 700 }}
-                            >
-                                View Full Playlist
-                            </button>
+                            <Link href={`/MainModules/DropScreen`}>
+                                <button
+                                    className="text-xs bg-[#A00E4D] w-full py-2 rounded-xl text-white mb-2"
+                                    style={{ fontWeight: 700 }}
+                                >
+                                    View Full Playlist
+                                </button>
+                            </Link>
 
                             <div className="flex gap-2">
                                 <button

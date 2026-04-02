@@ -1,4 +1,4 @@
-
+/** @type {import('next').NextConfig} */
 const nextConfig = {
   async rewrites() {
     return [
@@ -13,6 +13,44 @@ const nextConfig = {
       },
     ];
   },
+  
+  async headers() {
+    return [
+      {
+        // Apply these headers to all routes
+        source: '/:path*',
+        headers: [
+          {
+            key: 'Cross-Origin-Resource-Policy',
+            value: 'cross-origin',
+          },
+          {
+            key: 'Cross-Origin-Embedder-Policy',
+            value: 'unsafe-none',
+          },
+        ],
+      },
+      {
+        // Specific headers for API routes
+        source: '/api/:path*',
+        headers: [
+          {
+            key: 'Access-Control-Allow-Origin',
+            value: '*',
+          },
+          {
+            key: 'Access-Control-Allow-Methods',
+            value: 'GET, POST, PUT, DELETE, OPTIONS',
+          },
+          {
+            key: 'Access-Control-Allow-Headers',
+            value: 'Content-Type, Authorization',
+          },
+        ],
+      },
+    ];
+  },
+  
   // Configure Next.js Image component for remote images
   images: {
     remotePatterns: [
@@ -21,6 +59,13 @@ const nextConfig = {
         hostname: 'sportsfan360.vercel.app',
         port: '',
         pathname: '/Content/**',
+      },
+      // Add Cloudinary for video thumbnails
+      {
+        protocol: 'https',
+        hostname: 'res.cloudinary.com',
+        port: '',
+        pathname: '/**',
       },
     ],
   },

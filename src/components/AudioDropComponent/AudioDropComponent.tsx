@@ -524,9 +524,9 @@ export default function AudioDropCard() {
           {/* Stats */}
           <div className="grid grid-cols-3 gap-2.5 mb-4">
             {[
-              { label: "Listens", value: audioDrop.listens.toLocaleString(), color: "#e0185a" },
-              { label: "Signals", value: audioDrop.signals.toLocaleString(), color: "#e0185a" },
-              { label: "Duration", value: audioDrop.duration, color: "#1a9e6a" },
+              { label: "Listens", value: audioDrop.listens.toLocaleString(), color: "#999999" },
+              { label: "Signals", value: audioDrop.signals.toLocaleString(), color: "#999999" },
+              { label: "Duration", value: audioDrop.duration, color: "#999999" },
             ].map(s => (
               <div key={s.label} className="bg-[#1a1a1e] rounded-xl p-2.5 flex flex-col gap-1.5">
                 <div className="flex items-center gap-1.5" style={{ color: s.color }}>

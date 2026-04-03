@@ -75,7 +75,7 @@ export default function ClubProfileActions({ club }: Props) {
                 {/* heading */}
                 <div className="flex items-center gap-3 mb-5">
                     <div className="w-1 h-10 bg-[#ff0080] rounded-full" />
-                    <h2 className="text-white text-[19px] md:text-[20px] font-bold">
+                    <h2 className="text-white text-[19px] md:text-lg font-bold">
                         Team Overview
                     </h2>
                 </div>

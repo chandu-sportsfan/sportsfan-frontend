@@ -282,6 +282,7 @@ const BADGE_COLORS: Record<BadgeType, string> = {
 export default function CricketArticles() {
     const [articles, setArticles] = useState<Article[]>([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
     const [showAll, setShowAll] = useState(false);
     const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
 
@@ -307,16 +308,34 @@ export default function CricketArticles() {
 
     const visible = showAll ? articles : articles.slice(0, 4);
 
+   
     if (loading) {
         return (
-            <div className="py-4 px-4 lg:px-6 w-full max-w-full overflow-x-hidden">
-                <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-[24px] font-bold text-white">Cricket Articles</h2>
+            <div className="flex justify-center items-center bg-[#0d0d10] min-h-screen">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500 mx-auto mb-4"></div>
+                    <p className="text-gray-400">Loading posts...</p>
                 </div>
-                <p className="text-gray-400">Loading articles...</p>
             </div>
         );
     }
+
+    if (error || !articles) {
+        return (
+            <div className="flex justify-center items-center bg-[#0d0d10] w-[30px] h-[30px] rounded-lg mx-auto mt-10">
+                <div className="text-center">
+                    <p className="text-red-400 mb-4">{error || "Articles not found"}</p>
+                    <button
+                        onClick={() => window.history.back()}
+                        className="bg-pink-500 px-4 py-2 rounded text-white hover:bg-pink-600"
+                    >
+                        Go Back
+                    </button>
+                </div>
+            </div>
+        );
+    }
+       
 
     return (
         <div className="py-4 px-4 lg:px-6 w-full max-w-full overflow-x-hidden">

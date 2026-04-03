@@ -222,6 +222,7 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import { MoreHorizontal, Search } from "lucide-react";
 import axios from "axios";
+import Link from "next/link";
 
 interface CatField {
     label: string;
@@ -254,6 +255,7 @@ export default function Player360CardsSection() {
     const [posts, setPosts] = useState<Post[]>([]);
     const [loading, setLoading] = useState(true);
     const [query, setQuery] = useState("");
+    const [error, setError] = useState<string | null>(null);
     const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
 
     useEffect(() => {
@@ -298,28 +300,54 @@ export default function Player360CardsSection() {
         post.title?.toLowerCase().includes(query.toLowerCase())
     );
 
+    // if (loading) {
+    //     return (
+    //         <div className="w-full py-4 px-3 sm:px-4">
+    //             <div className="flex items-center justify-between gap-3 mb-4">
+    //                 <h1 className="text-[18px] sm:text-[20px] font-semibold text-white whitespace-nowrap">
+    //                     Players 360 World
+    //                 </h1>
+    //                 <div className="flex items-center bg-[#1a1a1a] border border-white/10 rounded-full px-3 py-1.5 w-[160px] sm:w-[200px] md:w-[240px]">
+    //                     <Search className="text-gray-400 shrink-0" size={16} />
+    //                     <input
+    //                         type="text"
+    //                         placeholder="Search..."
+    //                         className="bg-transparent outline-none text-xs sm:text-sm text-white placeholder:text-gray-500 w-full ml-2"
+    //                         disabled
+    //                     />
+    //                 </div>
+    //             </div>
+    //             <p className="text-white p-4">Loading...</p>
+    //         </div>
+    //     );
+    // }
+
     if (loading) {
         return (
-            <div className="w-full py-4 px-3 sm:px-4">
-                <div className="flex items-center justify-between gap-3 mb-4">
-                    <h1 className="text-[18px] sm:text-[20px] font-semibold text-white whitespace-nowrap">
-                        Players 360 World
-                    </h1>
-                    <div className="flex items-center bg-[#1a1a1a] border border-white/10 rounded-full px-3 py-1.5 w-[160px] sm:w-[200px] md:w-[240px]">
-                        <Search className="text-gray-400 shrink-0" size={16} />
-                        <input
-                            type="text"
-                            placeholder="Search..."
-                            className="bg-transparent outline-none text-xs sm:text-sm text-white placeholder:text-gray-500 w-full ml-2"
-                            disabled
-                        />
-                    </div>
+            <div className="flex justify-center items-center bg-[#0d0d10] min-h-screen">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500 mx-auto mb-4"></div>
+                    <p className="text-gray-400">Loading posts...</p>
                 </div>
-                <p className="text-white p-4">Loading...</p>
             </div>
         );
     }
 
+    if (error || !posts) {
+        return (
+            <div className="flex justify-center items-center bg-[#0d0d10] min-h-screen">
+                <div className="text-center">
+                    <p className="text-red-400 mb-4">{error || "Video not found"}</p>
+                    <button
+                        onClick={() => window.history.back()}
+                        className="bg-pink-500 px-4 py-2 rounded text-white hover:bg-pink-600"
+                    >
+                        Go Back
+                    </button>
+                </div>
+            </div>
+        );
+    }
     return (
         <div className="w-full py-4 px-3 sm:px-4">
             <div className="flex items-center justify-between gap-3 mb-4">
@@ -450,12 +478,14 @@ export default function Player360CardsSection() {
                                 </div>
 
                                 {/* Buttons */}
-                                <button
-                                    className="text-xs bg-[#A00E4D] w-full py-2 rounded-xl text-white mb-2"
-                                    style={{ fontWeight: 700 }}
-                                >
-                                    View Full Playlist
-                                </button>
+                                <Link href="/MainModules/PlayersProfile">
+                                    <button
+                                        className="text-xs bg-[#A00E4D] w-full py-2 rounded-xl text-white mb-2"
+                                        style={{ fontWeight: 700 }}
+                                    >
+                                        View Full Playlist
+                                    </button>
+                                </Link>
 
                                 <div className="flex gap-2">
                                     <button

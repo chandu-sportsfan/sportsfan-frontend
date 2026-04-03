@@ -1,9 +1,7 @@
-
+// app/MainModules/HomePage/page.tsx
 "use client";
 
 import Header from "@/src/components/HomeComponents/Header";
-import Sidebar from "@/src/components/HomeComponents/Sidebar";
-import BottomNav from "@/src/components/HomeComponents/Bottomnav";
 import HomeBanners from "@/src/components/HomeComponents/HomeBanners";
 import HomeCards from "@/src/components/HomeComponents/HomeCard";
 import Team360CardsSection from "@/src/components/HomeComponents/Team360CardsSection";
@@ -13,47 +11,32 @@ import ContinueListening from "@/src/components/HomeComponents/ContinueListening
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-black text-white flex flex-col lg:flex-row overflow-x-hidden">
+    <>
+      <Header />
+
+      <div className="w-full overflow-x-hidden">
+        <HomeBanners />
+      </div>
       
-      {/* Sidebar (Desktop only) */}
-      <div className="hidden lg:block w-[240px] flex-shrink-0">
-        <Sidebar />
+      <div className="w-full overflow-x-hidden">
+        <ContinueListening />
       </div>
-
-      {/* Main Content */}
-      <div className="flex-1 w-full min-w-0 flex flex-col pb-20">
-        
-        <Header />
-
-        <div className="w-full overflow-x-hidden">
-          <HomeBanners />
-        </div>
-        
-         <div className="w-full overflow-x-hidden">
-          <ContinueListening />
-        </div>
-        
-        <div className="w-full overflow-x-hidden">
-          <HomeCards />
-        </div>
-        
-        <div className="w-full overflow-x-hidden">
-          <Team360CardsSection />
-        </div>
-        
-        <div className="w-full overflow-x-hidden">
-          <Player360CardsSection />
-        </div>
-        
-        <div className="w-full overflow-x-hidden">
-          <CricketArticles />
-        </div>
-
-        {/* Bottom Nav */}
-        <div className="lg:hidden">
-          <BottomNav />
-        </div>
+      
+      <div className="w-full overflow-x-hidden">
+        <HomeCards />
       </div>
-    </div>
+      
+      <div className="w-full overflow-x-hidden">
+        <Team360CardsSection />
+      </div>
+      
+      <div className="w-full overflow-x-hidden">
+        <Player360CardsSection />
+      </div>
+      
+      <div className="w-full overflow-x-hidden">
+        <CricketArticles />
+      </div>
+    </>
   );
 }

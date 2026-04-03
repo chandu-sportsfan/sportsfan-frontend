@@ -100,6 +100,8 @@
 
 "use client";
 
+import Link from "next/link";
+
 type Stat = {
   label: string;
   value: string;
@@ -113,6 +115,7 @@ type CardProps = {
   stats: Stat[];
   buttonText: string;
   buttonIcon?: "play" | "chart";
+  buttonUrl?: string;
 };
 
 /* ---------------- MOCK DATA ---------------- */
@@ -130,6 +133,7 @@ const homeCardsData: CardProps[] = [
     ],
     buttonText: "Discover More",
     buttonIcon: "chart",
+    buttonUrl: "/about"
   },
   {
     id: 2,
@@ -144,6 +148,7 @@ const homeCardsData: CardProps[] = [
     ],
     buttonText: "Explore 360World",
     buttonIcon: "play",
+    buttonUrl: "/MainModules/ClubsProfile"
   },
 ];
 
@@ -184,10 +189,12 @@ export default function HomeCardsSection() {
             </div>
 
             {/* Button */}
+            <Link href={card.buttonUrl || "#"} >
             <button className="mt-2 w-full bg-gradient-to-r from-pink-500 to-orange-500 py-1 rounded-full font-semibold text-[14px] flex items-center justify-center gap-2">
               {card.buttonIcon === "play" ? <img src="/images/explore.png" alt="Play" /> : <img src="/images/discover.png" alt="Chart" />}{" "}
               {card.buttonText}
             </button>
+            </Link>
           </div>
         ))}
       </div>

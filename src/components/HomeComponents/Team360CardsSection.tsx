@@ -450,36 +450,27 @@ interface Post {
 export default function Team360CardsSection() {
     const [posts, setPosts] = useState<Post[]>([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
     const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
 
     // Add admin base URL
     const ADMIN_BASE_URL = 'https://sportsfan360.vercel.app';
 
-    // Function to get full image URL
-    // const getFullImageUrl = (path: string) => {
-    //     if (!path) return '';
-    //     if (path.startsWith('http://') || path.startsWith('https://')) {
-    //         return path;
-    //     }
-    //     const cleanPath = path.startsWith('/') ? path : `/${path}`;
-    //     const fullUrl = `${ADMIN_BASE_URL}${cleanPath}`;
-    //     console.log('Generated URL:', fullUrl); // Debug log
-    //     return fullUrl;
-    // };
-    const getFullImageUrl = (path: string) => {
-    if (!path) return "";
 
-    return path.startsWith("http")
-        ? path
-        : `https://sportsfan360.vercel.app${path}`;
-};
+    const getFullImageUrl = (path: string) => {
+        if (!path) return "";
+
+        return path.startsWith("http")
+            ? path
+            : `https://sportsfan360.vercel.app${path}`;
+    };
 
     useEffect(() => {
         const fetchPosts = async () => {
             try {
                 const res = await axios.get("/api/team360");
                 console.log("Fetched posts:", res.data);
-                
+
                 // Transform posts to add full URLs for debugging
                 const transformedPosts = res.data.posts?.map((post: Post) => ({
                     ...post,
@@ -494,7 +485,7 @@ export default function Team360CardsSection() {
                         fullUrl: getFullImageUrl(cat.image)
                     }))
                 })) || [];
-                
+
                 setPosts(transformedPosts);
             } catch (error) {
                 console.error("Failed to fetch team360 posts", error);
@@ -528,9 +519,31 @@ export default function Team360CardsSection() {
     };
 
     if (loading) {
-        return <p className="text-white p-4">Loading...</p>;
+        return (
+            <div className="flex justify-center items-center bg-[#0d0d10] min-h-screen">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500 mx-auto mb-4"></div>
+                    <p className="text-gray-400">Loading posts...</p>
+                </div>
+            </div>
+        );
     }
 
+    if (error || !posts) {
+        return (
+            <div className="flex justify-center items-center bg-[#0d0d10] w-[30px] h-[30px] rounded-lg mx-auto mt-10">
+                <div className="text-center">
+                    <p className="text-red-400 mb-4">{error || "Posts not found"}</p>
+                    <button
+                        onClick={() => window.history.back()}
+                        className="bg-pink-500 px-4 py-2 rounded text-white hover:bg-pink-600"
+                    >
+                        Go Back
+                    </button>
+                </div>
+            </div>
+        );
+    }
     return (
         <div className="w-full py-4 px-3 sm:px-4">
             <h1 className="text-[20px] text-white" style={{ fontWeight: 700 }}>
@@ -607,8 +620,15 @@ export default function Team360CardsSection() {
                                     {post.category.map((cat, i) => (
                                         <span
                                             key={i}
-                                            className="border border-gray-200 text-gray-400 text-xs px-2 py-1 rounded-xl"
+                                            className="inline-flex items-center gap-1.5 border border-gray-200 text-gray-400 text-xs px-2 py-1 rounded-xl"
                                         >
+                                            {cat.image && (
+                                                <img
+                                                    src={getFullImageUrl(cat.image)}
+                                                    alt={cat.title}
+                                                    className="w-3.5 h-3.5 object-cover rounded-sm shrink-0"
+                                                />
+                                            )}
                                             {cat.title}
                                         </span>
                                     ))}
@@ -618,7 +638,7 @@ export default function Team360CardsSection() {
 
                         {/* Stats */}
                         <div className="p-3">
-                            <div className="flex items-center gap-2 flex-wrap mb-3">
+                            <div className="flex items-center gap-2 flex-row mb-3 whitespace-nowrap">
                                 {post.catlogo && post.catlogo.map((item, i) => (
                                     <div
                                         key={i}
@@ -641,13 +661,15 @@ export default function Team360CardsSection() {
                                             {item.label}
                                         </span>
                                     </div>
+
                                 ))}
+                                <img src="/images/share.png" alt="Category Share" />
                             </div>
 
                             {/* Buttons */}
-                            <Link href={`/MainModules/DropScreen`}>
+                            <Link href={`/MainModules/DropScreen?teamName=${encodeURIComponent(post.teamName)}&postId=${post.id}`} >
                                 <button
-                                    className="text-xs bg-[#A00E4D] w-full py-2 rounded-xl text-white mb-2"
+                                    className="text-xs bg-[#C9115F] w-full py-2 rounded-xl text-white mb-2 cursor-pointer"
                                     style={{ fontWeight: 700 }}
                                 >
                                     View Full Playlist

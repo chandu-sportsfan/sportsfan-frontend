@@ -1,7 +1,14 @@
 // jest.setup.js
 import '@testing-library/jest-dom';
 
-// Mock next/navigation
+// Mock next-auth
+jest.mock('next-auth/react', () => ({
+  useSession: jest.fn(() => ({ data: null, status: 'unauthenticated' })),
+  signIn: jest.fn(),
+  signOut: jest.fn(),
+}));
+
+// Mock next/navigation - FIX: Add useSearchParams
 jest.mock('next/navigation', () => ({
   useRouter: () => ({
     push: jest.fn(),
@@ -12,10 +19,10 @@ jest.mock('next/navigation', () => ({
     refresh: jest.fn(),
   }),
   usePathname: () => '',
-  useSearchParams: () => new URLSearchParams(),
+  useSearchParams: () => new URLSearchParams(), // ADD THIS LINE
 }));
 
-// Mock axios with proper error handling
+// Mock axios
 jest.mock('axios', () => ({
   post: jest.fn(),
   create: jest.fn(() => ({

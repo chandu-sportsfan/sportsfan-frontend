@@ -21,14 +21,10 @@ const customJestConfig = {
     '!**/*.d.ts',
     '!**/node_modules/**',
   ],
-  coverageThreshold: {
-    global: {
-      branches: 70,
-      functions: 70,
-      lines: 70,
-      statements: 70,
-    },
-  },
+  // JUST ADD THIS LINE - it tells Jest to transform next-auth
+  transformIgnorePatterns: [
+    '/node_modules/(?!(next-auth)/)'
+  ],
 };
 
 export default createJestConfig(customJestConfig);

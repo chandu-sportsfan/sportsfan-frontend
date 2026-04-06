@@ -1,24 +1,3 @@
-// export default function BottomNav() {
-//   return (
-//     <div className="fixed bottom-0 left-0 w-full bg-black border-t border-pink-500/30 py-3 flex justify-around z-50">
-//       {["Feed", "Live", "Fantasy", "Store", "Fan Zone"].map((item, i) => (
-//         <div key={i} className="flex flex-col items-center text-xs text-gray-400">
-//           <div className={`mb-1 ${i === 0 ? "text-pink-500" : ""}`}>
-//             ●
-//           </div>
-//           {item}
-//         </div>
-//       ))}
-//     </div>
-//   );
-// }
-
-
-
-
-
-
-
 "use client";
 
 import Image from "next/image";

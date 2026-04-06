@@ -56,7 +56,8 @@
 "use client";
 
 import { Bell, MessageCircle, Menu, Search, Home } from "lucide-react";
-import LogoutButton from "./LogoutButton";
+import LogoutButton from "../LogoutButton";
+
 
 export default function Header() {
   return (

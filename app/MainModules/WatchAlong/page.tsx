@@ -1,6 +1,6 @@
 
 import { Suspense } from 'react';
-import DropScreenComponent from "@/src/components/DropScreenComponent/DropScreenComponent";
+import WatchAlongLobby from '@/src/components/WatchLobby/WatchAlongLobby';
 
 const Loading = () => (
     <div className="container mx-auto px-4 py-8 text-center">
@@ -8,12 +8,12 @@ const Loading = () => (
     </div>
 );
 
-export default function DropScreenPage() {
+export default function WatchAlongPage() {
     return (
         <Suspense fallback={<Loading />}>
             <div className="min-h-screen bg-black text-white flex flex-col lg:flex-row overflow-x-hidden">
                 <div className="w-full overflow-x-hidden">
-                 <DropScreenComponent />
+                 {/* <WatchAlongLobby onEnterRoom={onEnterRoom}/> */}
 
                 </div>
 

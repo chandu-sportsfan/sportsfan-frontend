@@ -96,7 +96,7 @@ export default function PlayerProfilePage() {
                     </svg>
                 </button>
                 <span className="flex-1 text-center text-[17px] md:text-xl font-bold text-white tracking-tight">
-                    Player Profile
+                    Teams Profile
                 </span>
                 <div className="w-[22px]" />
             </div>

@@ -1,12 +1,12 @@
 "use client";
 
-import PlayerGamePlan from "@/src/components/PlayerProfile-Component/PlayerGamePlan";
-import PlayerProfileActions from "@/src/components/PlayerProfile-Component/PlayerProfileActions";
-import PlayerProfileHeader from "@/src/components/PlayerProfile-Component/PlayerProfileHeader";
-import PlayerSeasonStats from "@/src/components/PlayerProfile-Component/PlayerSeasonStats";
+import PlayerGamePlan from "@/src/components/PlayerProfile-Component/PlayerGamePlan/index";
+import PlayerProfileActions from "@/src/components/PlayerProfile-Component/PlayerProfileActions/index";
+import PlayerProfileHeader from "@/src/components/PlayerProfile-Component/PlayerProfileHeader/index";
+import PlayerSeasonStats from "@/src/components/PlayerProfile-Component/PlayerSeasonStats/index";
 import { Player } from "@/types/player";
 
-// ─── Mock Data ────────────────────────────────────────────────────────────────
+// ─── Mock Data 
 const mockPlayer: Player = {
   name: "Virat Kohli",
   team: "Royal Challengers Bengaluru",

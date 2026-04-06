@@ -2,13 +2,13 @@
 
 
 
-import ClubGamePlan from "@/src/components/ClubProfile-Component/ClubGamePlan";
-import ClubProfileActions from "@/src/components/ClubProfile-Component/ClubProfileActions";
-import ClubProfileHeader from "@/src/components/ClubProfile-Component/ClubProfileHeader";
-import ClubSeasonStats from "@/src/components/ClubProfile-Component/ClubSeasonStats";
+import ClubGamePlan from "@/src/components/ClubProfile-Component/ClubGamePlan/index";
+import ClubProfileActions from "@/src/components/ClubProfile-Component/ClubProfileActions/index";
+import ClubProfileHeader from "@/src/components/ClubProfile-Component/ClubProfileHeader/index";
+import ClubSeasonStats from "@/src/components/ClubProfile-Component/ClubSeasonStats/index";
 import { ClubProfile } from "@/types/ClubProfile";
 
-// ─── Mock Data ────────────────────────────────────────────────────────────────
+// ─── Mock Data 
 const mockPlayer: ClubProfile = {
     name: "Royal Challengers Bengaluru",
     team: "RCB",

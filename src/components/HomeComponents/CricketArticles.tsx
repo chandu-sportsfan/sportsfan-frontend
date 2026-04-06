@@ -338,7 +338,7 @@ export default function CricketArticles() {
        
 
     return (
-        <div className="py-4 px-4 lg:px-6 w-full max-w-full overflow-x-hidden">
+        <div className="py-4 px-4 mb-8 lg:px-6 w-full max-w-full overflow-x-hidden">
 
             {/* Header */}
             <div className="flex items-center justify-between mb-4">

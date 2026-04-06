@@ -23,9 +23,9 @@ const banners = [
 
 export default function HomeBanners() {
   return (
-    <div className="px-4 mt-4">
+    <div className="mt-4">
       {/* MOBILE → horizontal scroll */}
-      <div className="flex gap-4 overflow-x-auto no-scrollbar lg:hidden">
+      <div className="flex gap-4 overflow-x-auto  [scrollbar-width:none] lg:hidden">
         {banners.map((banner) => (
           <div
             key={banner.id}

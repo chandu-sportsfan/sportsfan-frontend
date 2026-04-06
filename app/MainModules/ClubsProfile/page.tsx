@@ -119,7 +119,7 @@ export default function PlayerProfilePage() {
                 <div className="hidden lg:flex lg:items-start lg:gap-6 xl:gap-8 px-8 xl:px-12 py-6">
 
                     {/* Left column — sticky sidebar */}
-                    <div className="sticky top-[65px] w-[360px] xl:w-[400px] shrink-0 flex flex-col overflow-y-auto max-h-[calc(100vh-65px)] [scrollbar-width:none]">
+                    <div className="sticky top-[65px] w-[360px] xl:w-[400px] shrink-0 flex flex-col overflow-y-auto max-h-[calc(150vh-65px)] [scrollbar-width:none]">
                         <ClubProfileHeader club={mockPlayer} />
                         <ClubProfileActions club={mockPlayer} />
                     </div>

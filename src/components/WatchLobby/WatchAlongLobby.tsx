@@ -66,7 +66,7 @@ export default function WatchAlongLobby({ onEnterRoom }: Props) {
   const [activeTab, setActiveTab] = useState(0);
 
   return (
-    <div className="min-h-screen bg-[#111] text-white font-sans">
+    <div className="min-h-screen bg-[#111] text-white font-sans mb-15">
       <div className="max-w-lg mx-auto px-4 py-6">
 
         {/* Header */}

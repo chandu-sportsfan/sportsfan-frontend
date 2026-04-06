@@ -47,7 +47,7 @@ export default function WatchRoom({ expert, onBack }: Props) {
   };
 
   return (
-    <div className="min-h-screen bg-[#111] text-white font-sans flex flex-col">
+    <div className="min-h-screen bg-[#111] text-white font-sans flex flex-col mb-20">
       <div className="max-w-lg mx-auto w-full flex flex-col flex-1">
 
         {/* Header */}

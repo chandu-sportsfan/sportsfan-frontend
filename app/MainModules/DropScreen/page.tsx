@@ -1,6 +1,6 @@
 
 import { Suspense } from 'react';
-import DropScreenComponent from "@/src/components/DropScreenComponent/DropScreenComponent";
+import DropScreenPageComponent from "@/src/components/DropScreenComponent/index";
 
 const Loading = () => (
     <div className="container mx-auto px-4 py-8 text-center">
@@ -13,7 +13,7 @@ export default function DropScreenPage() {
         <Suspense fallback={<Loading />}>
             <div className="min-h-screen bg-black text-white flex flex-col lg:flex-row overflow-x-hidden">
                 <div className="w-full overflow-x-hidden">
-                 <DropScreenComponent />
+                 <DropScreenPageComponent />
 
                 </div>
 

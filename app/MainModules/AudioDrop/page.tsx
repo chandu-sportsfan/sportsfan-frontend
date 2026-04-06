@@ -2,7 +2,7 @@
 
 
 import { Suspense } from 'react';
-import AudioDropComponent from "@/src/components/AudioDropComponent/AudioDropComponent";
+import AudioDropComponent from "@/src/components/AudioDropComponent/index";
 
 const Loading = () => (
     <div className="container mx-auto px-4 py-8 text-center">

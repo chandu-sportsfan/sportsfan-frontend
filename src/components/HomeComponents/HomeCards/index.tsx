@@ -33,7 +33,7 @@ const homeCardsData: CardProps[] = [
     ],
     buttonText: "Discover More",
     buttonIcon: "chart",
-    buttonUrl: "/about"
+    buttonUrl: "/MainModules/WatchAlong"
   },
   {
     id: 2,

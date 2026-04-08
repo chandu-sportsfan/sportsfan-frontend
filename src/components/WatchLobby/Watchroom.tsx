@@ -191,17 +191,17 @@ export default function WatchRoom({ room, onBack }: Props) {
                         {liveMatch && (
                             <div className="absolute right-4 top-1/2 -translate-y-1/2 z-20">
                                 <div className={`rounded-lg border-2 ${room.borderColor || "border-pink-500"} bg-[#111] px-2 py-1.5 flex items-center justify-center text-xs font-bold text-blue-400`}>
-                                    {liveMatch.team2?.name?.slice(0, 2) || "T2"}
+                                    {liveMatch.team2?.name?.slice(0, 3) || "T2"}
                                 </div>
                             </div>
                         )}
 
                         {/* Live prediction pill */}
-                        <div className="absolute bottom-2.5 left-3 bg-black/80 rounded-full px-3 py-1 text-[11px] flex items-center gap-1.5 z-20">
+                        {/* <div className="absolute bottom-2.5 left-3 bg-black/80 rounded-full px-3 py-1 text-[11px] flex items-center gap-1.5 z-20">
                             <span className="text-pink-500 text-[8px]">▲</span>
                             <span className="text-gray-300">Live Prediction •</span>
                             <span className="text-pink-500 font-bold">00:19</span>
-                        </div>
+                        </div> */}
 
                         {/* Expert avatar */}
                         <div className="absolute bottom-2.5 right-3 flex flex-col items-center gap-0.5 z-20">

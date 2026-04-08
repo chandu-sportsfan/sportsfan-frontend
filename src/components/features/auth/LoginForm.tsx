@@ -44,6 +44,11 @@ export default function LoginCard() {
             );
 
             if (res.data.success) {
+                // Save the user's name for LiveChat and other components.
+                // Fallback to the first part of their email if the API doesn't return a explicit name.
+                const nameToSave = res.data.user?.name || res.data.name || res.data.user?.firstName || email.split('@')[0];
+                localStorage.setItem("watchalong_user_name", nameToSave);
+                
                 router.push("/MainModules/HomePage");
             }
         } catch (err: unknown) {

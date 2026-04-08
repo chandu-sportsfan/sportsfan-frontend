@@ -584,7 +584,7 @@ export default function FlashQuiz({ matchId }: { matchId: string }) {
               {/* ── Time's up message ── */}
               {expiredQuestions.has(question.id) && !isAnswered && (
                 <div className="mt-1 px-1">
-                  <span className="text-[11px] font-semibold text-red-400">⏱ Time's up!</span>
+                  <span className="text-[11px] font-semibold text-red-400">⏱ Time&apos;s up!</span>
                 </div>
               )}
 

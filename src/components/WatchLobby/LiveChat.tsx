@@ -1,0 +1,179 @@
+// components/watch-along/LiveChat.tsx
+"use client";
+
+import { useState, useEffect, useRef } from "react";
+import { useWatchAlong } from "@/context/WatchAlongContext";
+
+interface LiveChatProps {
+  matchId: string;
+}
+
+export default function LiveChat({ matchId }: LiveChatProps) {
+  const [message, setMessage] = useState("");
+  const [sending, setSending] = useState(false);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [toastMessage, setToastMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
+  
+  const [userName] = useState(() => {
+    const stored = localStorage.getItem("watchalong_user_name");
+    if (stored) return stored;
+    const name = `Fan_${Math.floor(Math.random() * 1000)}`;
+    localStorage.setItem("watchalong_user_name", name);
+    return name;
+  });
+
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const {
+    chats,
+    fetchChats,
+    sendChatMessage,
+    loading
+  } = useWatchAlong();
+
+  // Fetch chats on mount only
+  useEffect(() => {
+    if (matchId) {
+      fetchChats(matchId, 100).finally(() => {
+        setIsInitialLoad(false);
+      });
+    }
+  }, [matchId, fetchChats]);
+
+  // Poll for new messages every 5 seconds (without showing loading state)
+  useEffect(() => {
+    if (!matchId) return;
+    
+    let isMounted = true;
+    const interval = setInterval(async () => {
+      if (isMounted && !isInitialLoad) {
+        await fetchChats(matchId, 100);
+      }
+    }, 5000);
+    
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, [matchId, fetchChats, isInitialLoad]);
+
+  // Scroll to bottom when new messages arrive
+  useEffect(() => {
+    if (chats.length > 0) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [chats]);
+
+  // Toast auto-dismiss
+  useEffect(() => {
+    if (toastMessage) {
+      const timer = setTimeout(() => setToastMessage(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [toastMessage]);
+
+  const handleSend = async () => {
+    if (!message.trim()) return;
+    if (sending) return;
+
+    setSending(true);
+    try {
+      const result = await sendChatMessage(matchId, userName, message, "text-pink-400");
+      if (result) {
+        setMessage("");
+        setToastMessage({ text: "Message sent!", type: "success" });
+        // Refresh chats immediately after sending
+        await fetchChats(matchId, 100);
+      }
+    } catch (error) {
+      console.error("Failed to send message:", error);
+      setToastMessage({ text: "Failed to send message", type: "error" });
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const formatTime = (timestamp: number) => {
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  };
+
+  // Show loading only on initial load
+  if (loading && isInitialLoad) {
+    return (
+      <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-3">
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pink-500"></div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      {/* Toast Message */}
+      {toastMessage && (
+        <div className={`fixed top-24 right-4 z-50 p-3 rounded-lg shadow-lg min-w-[250px] max-w-[350px] animate-slide-in ${
+          toastMessage.type === 'success' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'
+        }`}>
+          <p className="text-sm text-center">{toastMessage.text}</p>
+        </div>
+      )}
+
+      {/* Scrollable messages */}
+      <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-3">
+        <div className="flex items-center gap-2 mb-3">
+          <span className="text-sm font-bold">💬 Live Chat</span>
+          <span className="text-sm text-gray-500">{chats.length} messages</span>
+        </div>
+
+        <div className="flex flex-col gap-3">
+          {chats.length === 0 && !isInitialLoad ? (
+            <div className="text-center py-8 text-gray-500 text-sm">
+              No messages yet. Be the first to chat!
+            </div>
+          ) : (
+            chats.map((msg) => (
+              <div key={msg.id}>
+                <div className="flex items-baseline gap-1.5">
+                  <span className={`text-[13px] font-bold ${msg.color}`}>{msg.user}</span>
+                  <span className="text-[10px] text-gray-600">{formatTime(msg.createdAt)}</span>
+                </div>
+                <p className="text-[13px] text-gray-300 mt-0.5 break-words">{msg.text}</p>
+              </div>
+            ))
+          )}
+          <div ref={messagesEndRef} />
+        </div>
+      </div>
+
+      {/* Input */}
+      <div className="flex items-center gap-2.5 px-4 sm:px-6 py-3 border-t border-[#222]">
+        <input
+          type="text"
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && handleSend()}
+          placeholder="Type message..."
+          disabled={sending}
+          className="flex-1 bg-[#1a1a1a] border border-[#333] rounded-full px-4 py-2.5 text-sm text-white placeholder-gray-600 outline-none focus:border-pink-500 transition-colors disabled:opacity-50"
+        />
+        <button
+          onClick={handleSend}
+          disabled={sending || !message.trim()}
+          className="bg-pink-600 hover:bg-pink-700 active:scale-95 text-white font-semibold text-sm px-5 py-2.5 rounded-full transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {sending ? "Sending..." : "Send"}
+        </button>
+      </div>
+
+      <style jsx>{`
+        @keyframes slideIn {
+          from { transform: translateX(100%); opacity: 0; }
+          to { transform: translateX(0); opacity: 1; }
+        }
+        .animate-slide-in { animation: slideIn 0.3s ease-out; }
+      `}</style>
+    </>
+  );
+}

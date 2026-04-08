@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { ClubProfileProvider } from "@/context/ClubProfileContext";
+import { WatchAlongProvider } from "@/context/WatchAlongContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -27,7 +29,11 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
+        <ClubProfileProvider>
+          <WatchAlongProvider>
+            {children}
+          </WatchAlongProvider>
+        </ClubProfileProvider>
       </body>
     </html>
   );

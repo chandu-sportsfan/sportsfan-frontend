@@ -176,6 +176,7 @@ export default function Team360CardsSection() {
 
                         {/* Main Image */}
                         <div className="relative aspect-video bg-gray-800">
+                            <Link href={`/MainModules/ClubsProfile?teamProfile=${encodeURIComponent(post.teamName)}`} className="absolute inset-0">
                             {!imageErrors[`${post.id}-main`] ? (
                                 <img
                                     src={getFullImageUrl(post.image)}
@@ -191,6 +192,7 @@ export default function Team360CardsSection() {
                                     Image not available
                                 </div>
                             )}
+                            </Link>
                         </div>
 
                         {/* Content */}

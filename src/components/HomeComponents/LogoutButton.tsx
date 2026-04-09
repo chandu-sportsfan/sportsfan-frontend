@@ -34,7 +34,7 @@ export default function LogoutButton() {
   return (
     <button
       onClick={handleLogout}
-      className="text-sm text-red-400 hover:text-red-300"
+      className="text-sm text-red-400 hover:text-red-300 cursor-pointer transition"
     >
        <LogOut size={16} />
     </button>

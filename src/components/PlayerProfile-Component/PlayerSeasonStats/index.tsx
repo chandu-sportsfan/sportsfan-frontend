@@ -1,6 +1,7 @@
 "use client";
 
 import { Player } from "@/types/player";
+import { useState } from "react";
 
 interface Props {
   player: Player;
@@ -17,6 +18,9 @@ function SectionLabel({ text }: { text: string }) {
 
 export default function PlayerSeasonStats({ player }: Props) {
   const { season, insights } = player;
+  const [showMoreStats, setShowMoreStats] = useState(false);
+  const isBowler =
+    player.overview?.specialization?.toLowerCase().includes("bowler");
 
   return (
     <div className="flex flex-col gap-4 px-4 md:px-6 pb-4">
@@ -26,40 +30,216 @@ export default function PlayerSeasonStats({ player }: Props) {
         <SectionLabel text={`IPL ${season.year} Season`} />
 
         {/* Top 3 highlight boxes */}
+
         <div className="grid grid-cols-3 gap-2 md:gap-3 mt-3">
-          <div className="flex flex-col items-center justify-center py-3.5 md:py-5 rounded-xl bg-[#e91e8c]">
-            <span className="text-[20px] md:text-[26px] font-extrabold text-white leading-none">{season.runs}</span>
-            <span className="text-[11px] md:text-xs text-white/80 mt-1 font-medium">Runs</span>
-          </div>
-          <div className="flex flex-col items-center justify-center py-3.5 md:py-5 rounded-xl bg-[#e08c00]">
-            <span className="text-[20px] md:text-[26px] font-extrabold text-white leading-none">{season.strikeRate}</span>
-            <span className="text-[11px] md:text-xs text-white/80 mt-1 font-medium">Strike Rate</span>
-          </div>
-          <div className="flex flex-col items-center justify-center py-3.5 md:py-5 rounded-xl bg-[#242424]">
-            <span className="text-[20px] md:text-[26px] font-extrabold text-white leading-none">{season.average}</span>
-            <span className="text-[11px] md:text-xs text-[#777777] mt-1 font-medium">Average</span>
-          </div>
+          {isBowler ? (
+            <>
+              <div className="flex flex-col items-center justify-center py-3.5 md:py-5 rounded-xl bg-[#e91e8c]">
+                <span className="text-[20px] md:text-[26px] font-extrabold text-white leading-none">
+                  {season.wickets}
+                </span>
+                <span className="text-[11px] md:text-xs text-white/80 mt-1 font-medium">
+                  Wickets
+                </span>
+              </div>
+
+              <div className="flex flex-col items-center justify-center py-3.5 md:py-5 rounded-xl bg-[#e08c00]">
+                <span className="text-[20px] md:text-[26px] font-extrabold text-white leading-none">
+                  {season.bowlingAvg}
+                </span>
+                <span className="text-[11px] md:text-xs text-white/80 mt-1 font-medium">
+                  Bowling Avg
+                </span>
+              </div>
+
+              <div className="flex flex-col items-center justify-center py-3.5 md:py-5 rounded-xl bg-[#242424]">
+                <span className="text-[20px] md:text-[26px] font-extrabold text-white leading-none">
+                  {season.economy}
+                </span>
+                <span className="text-[11px] md:text-xs text-[#777777] mt-1 font-medium">
+                  Economy
+                </span>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="flex flex-col items-center justify-center py-3.5 md:py-5 rounded-xl bg-[#e91e8c]">
+                <span className="text-[20px] md:text-[26px] font-extrabold text-white leading-none">
+                  {season.runs}
+                </span>
+                <span className="text-[11px] md:text-xs text-white/80 mt-1 font-medium">
+                  Runs
+                </span>
+              </div>
+
+              <div className="flex flex-col items-center justify-center py-3.5 md:py-5 rounded-xl bg-[#e08c00]">
+                <span className="text-[20px] md:text-[26px] font-extrabold text-white leading-none">
+                  {season.strikeRate}
+                </span>
+                <span className="text-[11px] md:text-xs text-white/80 mt-1 font-medium">
+                  Strike Rate
+                </span>
+              </div>
+
+              <div className="flex flex-col items-center justify-center py-3.5 md:py-5 rounded-xl bg-[#242424]">
+                <span className="text-[20px] md:text-[26px] font-extrabold text-white leading-none">
+                  {season.average}
+                </span>
+                <span className="text-[11px] md:text-xs text-[#777777] mt-1 font-medium">
+                  Average
+                </span>
+              </div>
+            </>
+          )}
         </div>
+
+
 
         {/* Secondary 2×2 → 4-col on tablet+ */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3 mt-2.5">
-          <div className="flex flex-col justify-center p-3.5 md:p-4 rounded-xl bg-[#242424]">
-            <span className="text-[11px] md:text-xs text-[#777777] mb-1">50s / 100s</span>
-            <span className="text-[20px] md:text-[24px] font-extrabold text-white leading-none">{season.fifties} / {season.hundreds}</span>
-          </div>
-          <div className="flex flex-col justify-center p-3.5 md:p-4 rounded-xl bg-[#242424]">
-            <span className="text-[11px] md:text-xs text-[#777777] mb-1">Highest Score</span>
-            <span className="text-[20px] md:text-[24px] font-extrabold text-white leading-none">{season.highestScore}</span>
-          </div>
-          <div className="flex flex-col justify-center p-3.5 md:p-4 rounded-xl bg-[#242424]">
-            <span className="text-[11px] md:text-xs text-[#777777] mb-1">Fours</span>
-            <span className="text-[20px] md:text-[24px] font-extrabold text-white leading-none">{season.fours}</span>
-          </div>
-          <div className="flex flex-col justify-center p-3.5 md:p-4 rounded-xl bg-[#242424]">
-            <span className="text-[11px] md:text-xs text-[#777777] mb-1">Sixes</span>
-            <span className="text-[20px] md:text-[24px] font-extrabold text-white leading-none">{season.sixes}</span>
-          </div>
+          {isBowler ? (
+            <>
+              <div className="flex flex-col justify-center p-3.5 md:p-4 rounded-xl bg-[#242424]">
+                <span className="text-[11px] md:text-xs text-[#777777] mb-1">
+                  Bowling SR
+                </span>
+                <span className="text-[20px] md:text-[24px] font-extrabold text-white leading-none">
+                  {season.bowlingSR}
+                </span>
+              </div>
+
+              <div className="flex flex-col justify-center p-3.5 md:p-4 rounded-xl bg-[#242424]">
+                <span className="text-[11px] md:text-xs text-[#777777] mb-1">
+                  Economy
+                </span>
+                <span className="text-[20px] md:text-[24px] font-extrabold text-white leading-none">
+                  {season.economy}
+                </span>
+              </div>
+
+              <div className="flex flex-col justify-center p-3.5 md:p-4 rounded-xl bg-[#242424]">
+                <span className="text-[11px] md:text-xs text-[#777777] mb-1">
+                  Best Bowling
+                </span>
+                <span className="text-[20px] md:text-[24px] font-extrabold text-white leading-none">
+                  {season.bestBowling}
+                </span>
+              </div>
+
+              <div className="flex flex-col justify-center p-3.5 md:p-4 rounded-xl bg-[#242424]">
+                <span className="text-[11px] md:text-xs text-[#777777] mb-1">
+                  3W Hauls
+                </span>
+                <span className="text-[20px] md:text-[24px] font-extrabold text-white leading-none">
+                  {season.threeWicketHauls}
+                </span>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="flex flex-col justify-center p-3.5 md:p-4 rounded-xl bg-[#242424]">
+                <span className="text-[11px] md:text-xs text-[#777777] mb-1">
+                  50s / 100s
+                </span>
+                <span className="text-[20px] md:text-[24px] font-extrabold text-white leading-none">
+                  {season.fifties} / {season.hundreds}
+                </span>
+              </div>
+
+              <div className="flex flex-col justify-center p-3.5 md:p-4 rounded-xl bg-[#242424]">
+                <span className="text-[11px] md:text-xs text-[#777777] mb-1">
+                  Highest Score
+                </span>
+                <span className="text-[20px] md:text-[24px] font-extrabold text-white leading-none">
+                  {season.highestScore}
+                </span>
+              </div>
+
+              <div className="flex flex-col justify-center p-3.5 md:p-4 rounded-xl bg-[#242424]">
+                <span className="text-[11px] md:text-xs text-[#777777] mb-1">
+                  Fours
+                </span>
+                <span className="text-[20px] md:text-[24px] font-extrabold text-white leading-none">
+                  {season.fours}
+                </span>
+              </div>
+
+              <div className="flex flex-col justify-center p-3.5 md:p-4 rounded-xl bg-[#242424]">
+                <span className="text-[11px] md:text-xs text-[#777777] mb-1">
+                  Sixes
+                </span>
+                <span className="text-[20px] md:text-[24px] font-extrabold text-white leading-none">
+                  {season.sixes}
+                </span>
+              </div>
+            </>
+          )}
         </div>
+
+
+        {showMoreStats && (
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-3 mt-2.5">
+            {isBowler ? (
+              <>
+                <div className="flex flex-col justify-center p-3.5 md:p-4 rounded-xl bg-[#242424]">
+                  <span className="text-[11px] md:text-xs text-[#777777] mb-1">
+                    5W Hauls
+                  </span>
+                  <span className="text-[20px] md:text-[24px] font-extrabold text-white leading-none">
+                    {season.fiveWicketHauls}
+                  </span>
+                </div>
+
+                <div className="flex flex-col justify-center p-3.5 md:p-4 rounded-xl bg-[#242424]">
+                  <span className="text-[11px] md:text-xs text-[#777777] mb-1">
+                    Fours Conceded
+                  </span>
+                  <span className="text-[20px] md:text-[24px] font-extrabold text-white leading-none">
+                    {season.foursConceded}
+                  </span>
+                </div>
+
+                <div className="flex flex-col justify-center p-3.5 md:p-4 rounded-xl bg-[#242424]">
+                  <span className="text-[11px] md:text-xs text-[#777777] mb-1">
+                    Sixes Conceded
+                  </span>
+                  <span className="text-[20px] md:text-[24px] font-extrabold text-white leading-none">
+                    {season.sixesConceded}
+                  </span>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex flex-col justify-center p-3.5 md:p-4 rounded-xl bg-[#242424]">
+                  <span className="text-[11px] md:text-xs text-[#777777] mb-1">
+                    Not Outs
+                  </span>
+                  <span className="text-[20px] md:text-[24px] font-extrabold text-white leading-none">
+                    12
+                  </span>
+                </div>
+
+                <div className="flex flex-col justify-center p-3.5 md:p-4 rounded-xl bg-[#242424]">
+                  <span className="text-[11px] md:text-xs text-[#777777] mb-1">
+                    Ducks
+                  </span>
+                  <span className="text-[20px] md:text-[24px] font-extrabold text-white leading-none">
+                    2
+                  </span>
+                </div>
+
+                <div className="flex flex-col justify-center p-3.5 md:p-4 rounded-xl bg-[#242424]">
+                  <span className="text-[11px] md:text-xs text-[#777777] mb-1">
+                    Boundaries
+                  </span>
+                  <span className="text-[20px] md:text-[24px] font-extrabold text-white leading-none">
+                    {season.fours + season.sixes}
+                  </span>
+                </div>
+              </>
+            )}
+          </div>
+        )}
 
         {/* Orange Cap award badge */}
         <div className="flex items-center gap-3 mt-2.5 bg-[#e91e8c]/10 border border-[#e91e8c]/30 rounded-2xl px-3.5 py-3 md:px-4 md:py-3.5">
@@ -75,8 +255,11 @@ export default function PlayerSeasonStats({ player }: Props) {
           </div>
         </div>
 
-        <button className="w-full mt-3 h-11 md:h-12 rounded-full bg-[#242424] text-[#d0d0d0] text-[13px] md:text-sm font-semibold border-0 cursor-pointer hover:bg-[#2e2e2e] transition-colors">
-          View More Stats
+        <button
+          onClick={() => setShowMoreStats(!showMoreStats)}
+          className="w-full mt-3 h-11 md:h-12 rounded-full bg-[#242424] text-[#d0d0d0] text-[13px] md:text-sm font-semibold border-0 cursor-pointer hover:bg-[#2e2e2e] transition-colors"
+        >
+          {showMoreStats ? "View Less Stats" : "View More Stats"}
         </button>
       </div>
 

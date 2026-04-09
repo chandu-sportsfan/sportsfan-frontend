@@ -262,6 +262,7 @@
 
 import { useWatchAlong, Room, Match } from "@/context/WatchAlongContext";
 import { ArrowLeft } from "lucide-react";
+import Link from "next/link";
 import { useState, useEffect } from "react";
 
 const tabs = ["Match Predictions", "Goal Reactions", "Fan Leaderboard", "Highlights"];
@@ -326,12 +327,14 @@ export default function WatchAlongLobby({ onEnterRoom }: Props) {
 
                     {/* Back + Title */}
                     <div className="flex items-center gap-3 mb-5">
+                        <Link href="/MainModules/HomePage">
                         <button
                             className="text-white hover:text-pink-500 transition cursor-pointer"
-                            onClick={() => window.history.back()}
+                            // onClick={() => window.history.back()}
                         >
                             <ArrowLeft size={20} />
                         </button>
+                        </Link>
                         <h1 className="text-xl font-bold">Watch Along</h1>
                     </div>
 
@@ -510,7 +513,7 @@ function ExpertCard({
             {/* CTA */}
             <button
                 onClick={onEnter}
-                className="w-full py-3 rounded-full text-white text-sm font-bold transition-all active:scale-95 hover:opacity-90"
+                className="w-full py-3 rounded-full text-white text-sm font-bold transition-all cursor-pointer active:scale-95 hover:opacity-90"
                 style={{ background: "linear-gradient(90deg, #e91e63, #ff5722)" }}
             >
                 Enter Watch Room →

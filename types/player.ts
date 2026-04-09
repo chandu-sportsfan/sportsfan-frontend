@@ -23,6 +23,15 @@ export interface SeasonStats {
   sixes: number;
   award: string;
   awardSub: string;
+  wickets: number;
+  bowlingAvg: string;
+  economy: string;
+  bowlingSR: string;
+  bestBowling: string;
+  threeWicketHauls: string;
+  fiveWicketHauls: string;
+  foursConceded: string;
+  sixesConceded: string;
 }
 
 export interface CareerInsight {

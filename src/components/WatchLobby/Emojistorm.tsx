@@ -135,13 +135,13 @@ export default function EmojiStorm({ matchId }: EmojiStormProps) {
   return (
     <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-3 pb-25 relative">
       {/* Toast Message */}
-      {toastMessage && (
+      {/* {toastMessage && (
         <div className={`fixed top-24 right-4 z-50 p-3 rounded-lg shadow-lg min-w-[250px] max-w-[350px] animate-slide-in ${
           toastMessage.type === 'success' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'
         }`}>
           <p className="text-sm text-center">{toastMessage.text}</p>
         </div>
-      )}
+      )} */}
 
       {/* Header */}
       <div className="flex items-center gap-2 mb-4">

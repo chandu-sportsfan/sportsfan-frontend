@@ -14,7 +14,7 @@ export default function MainModulesLayout({
       <aside className="hidden lg:flex lg:flex-col w-[240px] shrink-0 border-r border-pink-500/20 self-stretch">
         <div className="sticky top-0 h-screen overflow-y-auto p-4">
           <h1 className="text-xl font-bold mb-6">SportsFan360</h1>
-          {["Feed", "Live", "Fantasy", "Store", "Fan Zone"].map((item) => (
+          {["Feed", "Watch Along", "Fan Battle", "Store", "Fan Zone"].map((item) => (
             <div
               key={item}
               className="mb-4 text-gray-400 hover:text-pink-500 cursor-pointer transition-colors"

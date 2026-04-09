@@ -9,6 +9,7 @@ import FlashQuiz from "@/src/components/WatchLobby/Flashquiz";
 import LiveChat from "@/src/components/WatchLobby/LiveChat";
 import EmojiStorm from "@/src/components/WatchLobby/Emojistorm";
 import VideoPlayer from "./VideoPlayer";
+import Link from "next/link";
 
 const actionTabs = ["Prediction", "Flash Quiz", "Live Chat", "Emoji Storm"];
 
@@ -27,7 +28,8 @@ function TabContent({
     // Don't render if matchId is not available
     if (!matchId) {
         return (
-            <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-3">
+            // <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-3">
+            <div className="w-full px-4 sm:px-6 py-3">
                 <div className="flex items-center justify-center py-12">
                     <p className="text-gray-500 text-sm">Waiting for match data...</p>
                 </div>
@@ -101,12 +103,14 @@ export default function WatchRoom({ room, onBack }: Props) {
 
             {/* ── Shared header ── */}
             <div className="flex items-center justify-between px-4 sm:px-6 lg:px-8 py-3 border-b border-[#222]">
-                <button
-                    className="text-white hover:text-pink-500 transition cursor-pointer"
-                    onClick={onBack}
-                >
-                    <ArrowLeft size={20} />
-                </button>
+                <Link href="/MainModules/WatchAlong">
+                    <button
+                        className="text-white hover:text-pink-500 transition cursor-pointer"
+                    // onClick={onBack}
+                    >
+                        <ArrowLeft size={20} />
+                    </button>
+                </Link>
                 <div className="flex items-center gap-2">
                     {room.isLive && (
                         <span className="bg-pink-600 text-white text-[11px] px-2.5 py-0.5 rounded-full font-bold flex items-center gap-1">
@@ -217,7 +221,7 @@ export default function WatchRoom({ room, onBack }: Props) {
                     </div>
 
                     {/* Action tabs */}
-                    <div className="flex gap-2 px-4 sm:px-6 py-3 overflow-x-auto scrollbar-hide border-b border-[#222]">
+                    {/* <div className="flex gap-2 px-4 sm:px-6 py-3 overflow-x-auto scrollbar-hide border-b border-[#222]">
                         {actionTabs.map((tab, i) => (
                             <button
                                 key={tab}
@@ -230,8 +234,21 @@ export default function WatchRoom({ room, onBack }: Props) {
                                 {tab}
                             </button>
                         ))}
+                    </div> */}
+                    <div className="relative z-20 flex gap-2 px-4 sm:px-6 py-3 overflow-x-auto scrollbar-hide border-b border-[#222]">
+                        {actionTabs.map((tab, i) => (
+                            <button
+                                key={tab}
+                                onClick={() => setActiveAction(i)}
+                                className={`flex-shrink-0 text-xs px-3.5 py-1.5 rounded-full font-semibold transition-all ${activeAction === i
+                                        ? "bg-pink-600 text-white"
+                                        : "bg-[#222] text-gray-400 hover:bg-[#2a2a2a]"
+                                    }`}
+                            >
+                                {tab}
+                            </button>
+                        ))}
                     </div>
-
                     {/* Mobile/tablet: tab content inline below tabs */}
                     <div className="flex flex-col flex-1 min-h-0 lg:hidden">
                         <TabContent activeIndex={activeAction} matchId={room.liveMatchId} />

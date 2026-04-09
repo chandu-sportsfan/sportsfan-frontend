@@ -4,6 +4,7 @@ import "./globals.css";
 import { ClubProfileProvider } from "@/context/ClubProfileContext";
 import { WatchAlongProvider } from "@/context/WatchAlongContext";
 import { SessionProvider } from "next-auth/react";
+import { PlayerProfile360Provider } from "@/context/PlayerProfile360Context";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -33,7 +34,9 @@ export default function RootLayout({
         <SessionProvider>
           <ClubProfileProvider>
             <WatchAlongProvider>
+              <PlayerProfile360Provider>
               {children}
+              </PlayerProfile360Provider>
             </WatchAlongProvider>
           </ClubProfileProvider>
         </SessionProvider>

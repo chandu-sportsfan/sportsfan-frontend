@@ -1,10 +1,94 @@
+// "use client";
+
+// import { useEffect, useState } from "react";
+// import Image from "next/image";
+// import { MoreHorizontal, Search } from "lucide-react";
+// import axios from "axios";
+// import Link from "next/link";
+
+// interface CatField {
+//     label: string;
+//     logo: string;
+// }
+
+// interface CategoryField {
+//     title: string;
+//     image: string;
+// }
+
+// interface Post {
+//     id: string;
+//     playerName: string;
+//     title: string;
+//     category: CategoryField[];
+//     likes: number;
+//     comments: number;
+//     live: number;
+//     shares: number;
+//     image: string;
+//     logo: string;
+//     catlogo: CatField[];
+//     hasVideo?: boolean;
+//     createdAt: number;
+//     updatedAt?: number;
+// }
+
+// export default function Player360CardsSection() {
+//     const [posts, setPosts] = useState<Post[]>([]);
+//     const [loading, setLoading] = useState(true);
+//     const [query, setQuery] = useState("");
+//     const [error, setError] = useState<string | null>(null);
+//     const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
+
+//     useEffect(() => {
+//         const fetchPosts = async () => {
+//             try {
+//                 const res = await axios.get("/api/players360");
+//                 console.log("Fetched players posts:", res.data); // Debug
+//                 setPosts(res.data.posts || []);
+//             } catch (error) {
+//                 console.error("Failed to fetch players360 posts", error);
+//             } finally {
+//                 setLoading(false);
+//             }
+//         };
+
+//         fetchPosts();
+//     }, []);
+
+//     const getISTTimeAgo = (timestamp: number) => {
+//         const now = Date.now();
+//         const diff = now - timestamp;
+
+//         const minutes = Math.floor(diff / (1000 * 60));
+//         const hours = Math.floor(diff / (1000 * 60 * 60));
+//         const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+
+//         if (minutes < 60) return `${minutes}m ago`;
+//         if (hours < 24) return `${hours}h ago`;
+//         return `${days}d ago`;
+//     };
+
+//     const handleImageError = (id: string, type: string) => {
+//         setImageErrors(prev => ({
+//             ...prev,
+//             [`${id}-${type}`]: true
+//         }));
+//     };
+
+//     // Filter posts based on search query
+//     const filteredPosts = posts.filter(post =>
+//         post.playerName?.toLowerCase().includes(query.toLowerCase()) ||
+//         post.title?.toLowerCase().includes(query.toLowerCase())
+//     );
+
 "use client";
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { MoreHorizontal, Search } from "lucide-react";
-import axios from "axios";
 import Link from "next/link";
+import { usePlayerProfile360 } from "@/context/PlayerProfile360Context";
 
 interface CatField {
     label: string;
@@ -34,27 +118,23 @@ interface Post {
 }
 
 export default function Player360CardsSection() {
+    const { data, loading, fetchPlayer360 } = usePlayerProfile360();
+
     const [posts, setPosts] = useState<Post[]>([]);
-    const [loading, setLoading] = useState(true);
     const [query, setQuery] = useState("");
     const [error, setError] = useState<string | null>(null);
     const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
 
     useEffect(() => {
-        const fetchPosts = async () => {
-            try {
-                const res = await axios.get("/api/players360");
-                console.log("Fetched players posts:", res.data); // Debug
-                setPosts(res.data.posts || []);
-            } catch (error) {
-                console.error("Failed to fetch players360 posts", error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchPosts();
+        const playerId = "CVqgH1ytPWGzPfPXINMP"; // replace with dynamic id later
+        fetchPlayer360(playerId);
     }, []);
+
+    useEffect(() => {
+        if (data?.home) {
+            setPosts([data.home]);
+        }
+    }, [data]);
 
     const getISTTimeAgo = (timestamp: number) => {
         const now = Date.now();
@@ -76,7 +156,6 @@ export default function Player360CardsSection() {
         }));
     };
 
-    // Filter posts based on search query
     const filteredPosts = posts.filter(post =>
         post.playerName?.toLowerCase().includes(query.toLowerCase()) ||
         post.title?.toLowerCase().includes(query.toLowerCase())

@@ -191,6 +191,8 @@ type HomeItem = {
 
 // === SEASON STATS TYPES ===
 type SeasonStats = {
+  fiftiesAndHundreds: string;
+  threeW_fiveW_Hauls: number;
   year: string;
   runs: string;
   strikeRate: string;
@@ -307,6 +309,7 @@ export function PlayerProfile360Provider({
         `/api/player-profile/search/${id}`
       );
 
+      console.log("player360 data:", res.data);
       if (res.data.success) {
         setData(res.data.data);
       }

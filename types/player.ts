@@ -16,8 +16,6 @@ export interface SeasonStats {
   runs: string;
   strikeRate: string;
   average: string;
-  fifties: number;
-  hundreds: number;
   highestScore: string;
   fours: number;
   sixes: number;
@@ -28,8 +26,8 @@ export interface SeasonStats {
   economy: string;
   bowlingSR: string;
   bestBowling: string;
-  threeWicketHauls: number;
-  fiveWicketHauls: number;
+  threeW_fiveW_Hauls: number;
+  fiftiesAndHundreds: string;
   foursConceded: number;
   sixesConceded: number;
 }

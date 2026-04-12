@@ -388,7 +388,7 @@ export default function Player360CardsSection() {
 
     if (loading && !posts.length) {
         return (
-            <div className="flex justify-center items-center bg-[#0d0d10] min-h-[200px] rounded-lg mx-auto mt-10">
+            <div className="flex justify-center items-center bg-[#0d0d10] w-[15px] h-[15px] rounded-lg mx-auto mt-10">
                 <div className="text-center">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500 mx-auto mb-4"></div>
                     <p className="text-gray-400">Loading posts...</p>
@@ -443,7 +443,7 @@ export default function Player360CardsSection() {
 
     return (
         <div className="w-full py-4">
-            <div className="flex items-center justify-between gap-3 mb-4">
+            <div className="flex items-center justify-between lg:justify-start lg:gap-4 gap-3 mb-4">
                 {/* Title */}
                 <h1 className="text-[18px] sm:text-[20px] font-semibold text-white whitespace-nowrap">
                     Players 360 World
@@ -510,8 +510,29 @@ export default function Player360CardsSection() {
                                         onError={() => handleImageError(post.id, 'main')}
                                     />
                                 ) : (
-                                    <div className="w-full h-full flex items-center justify-center text-gray-400">
-                                        Image not available
+                                    <div className="w-full h-full flex items-center justify-center bg-gray-800">
+                                        <svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            viewBox="0 0 100 100"
+                                            className="w-20 h-20 opacity-40"
+                                            fill="none"
+                                        >
+                                            {/* Body */}
+                                            <circle cx="50" cy="28" r="12" fill="#9ca3af" />
+                                            {/* Torso */}
+                                            <rect x="36" y="42" width="28" height="26" rx="4" fill="#9ca3af" />
+                                            {/* Legs */}
+                                            <rect x="36" y="66" width="11" height="18" rx="3" fill="#9ca3af" />
+                                            <rect x="53" y="66" width="11" height="18" rx="3" fill="#9ca3af" />
+                                            {/* Bat arm */}
+                                            <rect x="64" y="44" width="7" height="28" rx="3" fill="#9ca3af" transform="rotate(20 64 44)" />
+                                            {/* Bat blade */}
+                                            <rect x="70" y="56" width="6" height="18" rx="2" fill="#6b7280" transform="rotate(20 70 56)" />
+                                            {/* Ball */}
+                                            <circle cx="22" cy="62" r="6" fill="#6b7280" />
+                                            <path d="M19 59 Q22 62 19 65" stroke="#9ca3af" strokeWidth="1" />
+                                            <path d="M25 59 Q22 62 25 65" stroke="#9ca3af" strokeWidth="1" />
+                                        </svg>
                                     </div>
                                 )}
                             </div>
@@ -572,8 +593,8 @@ export default function Player360CardsSection() {
 
                                 {/* Buttons */}
                                 {/* Updated Link to include player ID */}
-                                 {/* <Link href={`/MainModules/PlayersProfile?${post.playerId || post.id}?tab=highlights`}> */}
-                                 <Link href={`/MainModules/PlayersProfile?id=${post.playerProfilesId || post.id}&tab=highlights`}>
+                                {/* <Link href={`/MainModules/PlayersProfile?${post.playerId || post.id}?tab=highlights`}> */}
+                                <Link href={`/MainModules/PlayersProfile?id=${post.playerProfilesId || post.id}&tab=highlights`}>
                                     <button
                                         className="text-xs bg-[#C9115F] w-full py-2 rounded-xl text-white mb-2"
                                         style={{ fontWeight: 700 }}
@@ -583,8 +604,8 @@ export default function Player360CardsSection() {
                                 </Link>
 
 
-                                 <div className="flex gap-2">
-                                     <button
+                                <div className="flex gap-2">
+                                    <button
                                         className="text-xs bg-[#CD620E] w-full rounded-xl py-2 text-white"
                                         style={{ fontWeight: 700 }}
                                     >
@@ -596,7 +617,7 @@ export default function Player360CardsSection() {
                                     >
                                         Highlight
                                     </button>
-                                 </div>
+                                </div>
                             </div>
                         </div>
                     ))

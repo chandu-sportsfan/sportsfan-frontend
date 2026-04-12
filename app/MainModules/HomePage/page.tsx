@@ -101,7 +101,7 @@ export default function HomePage() {
         <ContinueListening />
         <HomeCardsSection />
         <Team360CardsSection />
-        <Player360CardsSection />
+        <Player360CardsSection  />
         <CricketArticles />
       </div>
     </div>

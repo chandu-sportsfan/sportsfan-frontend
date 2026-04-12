@@ -28,10 +28,10 @@ export interface SeasonStats {
   economy: string;
   bowlingSR: string;
   bestBowling: string;
-  threeWicketHauls: string;
-  fiveWicketHauls: string;
-  foursConceded: string;
-  sixesConceded: string;
+  threeWicketHauls: number;
+  fiveWicketHauls: number;
+  foursConceded: number;
+  sixesConceded: number;
 }
 
 export interface CareerInsight {

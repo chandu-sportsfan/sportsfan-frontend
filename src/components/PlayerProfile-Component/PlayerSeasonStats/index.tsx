@@ -21,13 +21,14 @@ export default function PlayerSeasonStats({ player }: Props) {
   const [showMoreStats, setShowMoreStats] = useState(false);
   const isBowler =
     player.overview?.specialization?.toLowerCase().includes("bowler");
+    const currentYear = new Date().getFullYear();
 
   return (
     <div className="flex flex-col gap-4 px-4 md:px-6 pb-4">
 
       {/* ── IPL Season card ── */}
       <div className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-2xl p-4 md:p-5">
-        <SectionLabel text={`IPL ${season.year} Season`} />
+        <SectionLabel text={`IPL ${currentYear} Season`} />
 
         {/* Top 3 highlight boxes */}
 

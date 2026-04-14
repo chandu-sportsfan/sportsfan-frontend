@@ -15,7 +15,7 @@
 // }
 
 
-import LiveRoomsCard from "@/src/components/HostDashboardComponents/Live&UpcomingRoms";
+import LiveRoomsCard from "@/src/components/HostDashboardComponents/Live&UpcomingRooms";
 import PerformanceOverview from "@/src/components/HostDashboardComponents/PerformanceOverview";
 import RecentActivity from "@/src/components/HostDashboardComponents/Recentactivity";
 

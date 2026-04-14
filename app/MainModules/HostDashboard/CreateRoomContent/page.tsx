@@ -19,11 +19,12 @@
 
 "use client";
 
-import { useState } from "react";
 import CreateRoomStep1 from "@/src/components/HostDashboardComponents/CreateRoomStep1";
 import CreateRoomStep2 from "@/src/components/HostDashboardComponents/CreateRoomStep2";
 import CreateRoomStep3 from "@/src/components/HostDashboardComponents/CreateRoomStep3";
 import CreateRoomStep4 from "@/src/components/HostDashboardComponents/CreateRoomStep4";
+import { useState } from "react";
+
 
 const TOTAL_STEPS = 4;
 

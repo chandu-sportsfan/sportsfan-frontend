@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-// ─── Types ───────────────────────────────────────────────────────────────────
+// ─── Types 
 
 type RoomStatus = "LIVE" | "SCHEDULED";
 type RoomType = "Open Room" | "Inner Room";
@@ -33,7 +33,7 @@ interface ScheduledRoom {
 
 type Room = LiveRoom | ScheduledRoom;
 
-// ─── Mock Data ───────────────────────────────────────────────────────────────
+// ─── Mock Data 
 
 const rooms: Room[] = [
   {
@@ -60,13 +60,13 @@ const rooms: Room[] = [
   },
 ];
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+// ─── Helpers 
 
 function formatNumber(n: number): string {
   return n.toLocaleString("en-IN");
 }
 
-// ─── Sub-components ──────────────────────────────────────────────────────────
+// ─── Sub-components 
 
 function LiveBadge() {
   return (
@@ -232,7 +232,7 @@ function ScheduledRoomCard({ room }: { room: ScheduledRoom }) {
   );
 }
 
-// ─── Main Component ───────────────────────────────────────────────────────────
+// ─── Main Component 
 
 export default function LiveRoomsCard() {
   return (

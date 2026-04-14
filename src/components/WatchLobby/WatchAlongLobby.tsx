@@ -198,7 +198,8 @@
 "use client";
 
 import { useWatchAlong, Room, Match } from "@/context/WatchAlongContext";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Share2, X } from "lucide-react";
+import Image from "next/image";
 import { useState, useEffect } from "react";
 
 const tabs = ["Match Predictions", "Goal Reactions", "Fan Leaderboard", "Highlights"];
@@ -327,11 +328,119 @@ function ExpertCard({
     match?: Match; 
     onEnter: () => void;
 }) {
+    const [shareMenuOpen, setShareMenuOpen] = useState(false);
+    const [copied, setCopied] = useState(false);
+
     // Format numbers for display
     const formatNumber = (num: string) => {
         if (!num) return "0";
         return num;
     };
+
+    const roomSharePath = `/MainModules/WatchAlong/room/${room.id}`;
+    const roomShareUrl = typeof window !== "undefined"
+        ? `${window.location.origin}${roomSharePath}`
+        : roomSharePath;
+
+    const handleCopyLink = async () => {
+        try {
+            if (navigator?.clipboard?.writeText) {
+                await navigator.clipboard.writeText(roomShareUrl);
+            } else {
+                const textArea = document.createElement("textarea");
+                textArea.value = roomShareUrl;
+                textArea.style.position = "fixed";
+                textArea.style.opacity = "0";
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                document.execCommand("copy");
+                document.body.removeChild(textArea);
+            }
+
+            setCopied(true);
+            setShareMenuOpen(false);
+            setTimeout(() => setCopied(false), 1800);
+        } catch {
+            setCopied(false);
+        }
+    };
+
+    const shareText = encodeURIComponent(`Join ${room.name}'s watch along room: ${roomShareUrl}`);
+
+    const whatsappShareText = encodeURIComponent(
+        `${room.name} - ${room.role}\nJoin the live room: ${roomShareUrl}`
+    );
+
+    const openShareLink = (url: string) => {
+        if (typeof window !== "undefined") {
+            window.open(url, "_blank", "noopener,noreferrer");
+        }
+    };
+
+    const handleWhatsAppShare = async () => {
+        if (typeof window === "undefined") return;
+
+        // First try native share with an actual image file so receiver sees an image attachment.
+        if (navigator.share) {
+            try {
+                const imageUrl = new URL(
+                    room.displayPicture || "/images/profile.png",
+                    window.location.origin
+                ).toString();
+
+                const imageRes = await fetch(imageUrl);
+                if (imageRes.ok) {
+                    const blob = await imageRes.blob();
+                    const mimeType = blob.type || "image/png";
+                    const extension = mimeType.includes("jpeg") ? "jpg" : "png";
+                    const imageFile = new File([blob], `host-dp-${room.id}.${extension}`, {
+                        type: mimeType,
+                    });
+
+                    await navigator.share({
+                        title: `${room.name} Watch Along`,
+                        text: `${room.name} - ${room.role}\n${roomShareUrl}`,
+                        files: [imageFile],
+                    });
+                    setShareMenuOpen(false);
+                    return;
+                }
+            } catch {
+                // Fall back to WhatsApp deeplink.
+            }
+        }
+
+        const appUrl = `whatsapp://send?text=${whatsappShareText}`;
+
+        // Open WhatsApp app directly.
+        window.location.href = appUrl;
+        setShareMenuOpen(false);
+    };
+
+    const shareActions = [
+        {
+            key: "whatsapp",
+            label: "WhatsApp",
+            description: "Send via WhatsApp app (web fallback)",
+            icon: "/images/share_whatsapp.png",
+            onClick: handleWhatsAppShare,
+        },
+        {
+            key: "threads",
+            label: "Threads",
+            description: "Post the room link to your thread",
+            icon: "/images/share_thread.png",
+            onClick: () => openShareLink(`https://www.threads.net/intent/post?text=${shareText}`),
+        },
+        {
+            key: "instagram",
+            label: "Instagram",
+            description: "Open Instagram in a new tab",
+            icon: "/images/share_insta.png",
+            onClick: () => openShareLink("https://www.instagram.com/"),
+        },
+    ];
 
     // Check if room has live match content
     const hasLiveMatchContent = room.isLive && match;
@@ -340,22 +449,102 @@ function ExpertCard({
     return (
         // Removed h-full, let content determine height
         <div className="bg-[#1a1a1a] rounded-2xl p-4 sm:p-5 relative overflow-hidden flex flex-col">
-            {/* Badge */}
-            <span
-                className={`absolute top-3 right-3 ${room.badgeColor} text-white text-[11px] font-semibold px-3 py-1 rounded-full z-10`}
-            >
-                {room.badge}
-            </span>
+            {/* Share actions for each expert card */}
+            <div className="absolute top-3 right-3 z-20">
+                <button
+                    type="button"
+                    onClick={() => setShareMenuOpen((prev) => !prev)}
+                    aria-label={`Share ${room.name} room`}
+                    className="w-9 h-9 rounded-full border border-[#333] bg-[#121212] text-gray-300 hover:text-white hover:border-pink-500 transition flex items-center justify-center"
+                >
+                    <Share2 size={16} />
+                </button>
+            </div>
+
+            {shareMenuOpen && (
+                <div
+                    className="fixed inset-0 z-40 bg-black/70 flex items-end sm:items-center justify-center p-4"
+                    onClick={() => setShareMenuOpen(false)}
+                >
+                    <div
+                        className="w-full max-w-sm rounded-3xl border border-[#2f2f2f] bg-[#0e0f12] p-5"
+                        onClick={(event) => event.stopPropagation()}
+                    >
+                        <div className="flex items-start justify-between mb-3">
+                            <h3 className="text-2xl font-semibold text-white">Share Expert Room</h3>
+                            <button
+                                type="button"
+                                aria-label="Close share menu"
+                                onClick={() => setShareMenuOpen(false)}
+                                className="text-gray-300 hover:text-white"
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        <p className="text-2xl font-semibold text-white leading-tight">{room.name}</p>
+                        <p className="text-gray-400 text-lg leading-tight">{room.role}</p>
+                        <p className="text-xs text-gray-500 mt-2 mb-4">Share this room and invite friends to join the live conversation.</p>
+
+                        <div className="space-y-3">
+                            {shareActions.map((action) => (
+                                <button
+                                    key={action.key}
+                                    type="button"
+                                    onClick={action.onClick}
+                                    className="w-full rounded-2xl bg-[#202226] text-white px-4 py-4 text-left hover:bg-[#2a2d31] transition flex items-center gap-4"
+                                >
+                                    <div className="w-11 h-11 rounded-full overflow-hidden bg-[#111] shrink-0 relative p-1">
+                                        <Image
+                                            src={action.icon}
+                                            alt={`${action.label} icon`}
+                                            fill
+                                            sizes="44px"
+                                            className="object-contain p-1 scale-125"
+                                        />
+                                    </div>
+                                    <div className="min-w-0">
+                                        <p className="font-semibold text-white leading-tight">Share on {action.label}</p>
+                                        <p className="text-xs text-gray-400 leading-tight mt-1">{action.description}</p>
+                                    </div>
+                                </button>
+                            ))}
+
+                            <button
+                                type="button"
+                                onClick={handleCopyLink}
+                                className="w-full rounded-2xl bg-[#202226] text-white px-4 py-4 text-left hover:bg-[#2a2d31] transition flex items-center gap-4"
+                            >
+                                <div className="w-11 h-11 rounded-full bg-[#111] flex items-center justify-center shrink-0 overflow-hidden">
+                                    <Image
+                                        src={copied ? "/images/share_copy_link.png" : "/images/share_copy_link.png"}
+                                        alt="Copy link icon"
+                                        width={22}
+                                        height={22}
+                                        className="object-contain scale-[2.2]"
+                                    />
+                                </div>
+                                <div className="min-w-0">
+                                    <p className="font-semibold text-white leading-tight">{copied ? "Link Copied" : "Copy Link"}</p>
+                                    <p className="text-xs text-gray-400 leading-tight mt-1">Save the room URL and share it anywhere</p>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Expert info */}
-            <div className="flex items-center gap-3 mb-4">
+            <div className="flex items-center gap-3 mb-4 pr-12">
                 <div
                     className={`w-14 h-14 rounded-full border-2 ${room.borderColor} bg-[#2a2a2a] flex items-center justify-center text-sm font-bold flex-shrink-0 overflow-hidden`}
                 >
                     {room.displayPicture ? (
-                        <img 
-                            src={room.displayPicture} 
-                            alt={room.name} 
+                        <Image
+                            src={room.displayPicture}
+                            alt={room.name}
+                            width={56}
+                            height={56}
                             className="w-full h-full object-cover rounded-full"
                         />
                     ) : (
@@ -367,6 +556,11 @@ function ExpertCard({
                 <div>
                     <p className="text-base font-bold text-white">{room.name}</p>
                     <p className="text-xs text-gray-400">{room.role}</p>
+                    <span
+                        className={`inline-flex mt-1 ${room.badgeColor} text-white text-[10px] font-semibold px-2 py-0.5 rounded-full`}
+                    >
+                        {room.badge}
+                    </span>
                 </div>
             </div>
 

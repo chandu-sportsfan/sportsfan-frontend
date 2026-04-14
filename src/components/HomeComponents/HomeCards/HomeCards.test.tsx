@@ -22,7 +22,7 @@ const mockData = [
     ],
     buttonText: "Discover More",
     buttonIcon: "chart" as const,
-    buttonUrl: "/about"
+    buttonUrl: "/MainModules/WatchAlong"
   },
   {
     id: 2,

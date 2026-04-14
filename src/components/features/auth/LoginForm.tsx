@@ -28,57 +28,8 @@ export default function LoginCard() {
     };
 
     const handleLogin = async () => {
-        if (!email || !password) {
-            setError("Please enter email & password");
-            return;
-        }
-
-        try {
-            setLoading(true);
-            setError("");
-
-            const res = await axios.post(
-                "/api/auth/login",
-                { email, password },
-                { withCredentials: true }
-            );
-
-            if (res.data.success) {
-                router.push("/MainModules/HomePage");
-            }
-        } catch (err: unknown) {
-            if (axios.isAxiosError(err)) {
-                const status = err.response?.status;
-                const errorMessage = err.response?.data?.error;
-
-                // User-friendly messages based on status codes
-                if (status === 401) {
-                    setError("Invalid email or password. Please try again.");
-                } else if (status === 403) {
-                    // setError("Please verify your OTP first. Check your email for verification code.");
-                    setError(errorMessage ?? "Access denied.");
-                } else if (status === 404) {
-                    setError("No account found with this email. Please sign up first.");
-                } else if (status === 400) {
-                    setError("Please fill in all required fields.");
-                } else if (status === 429) {
-                    setError("Too many login attempts. Please wait a moment before trying again.");
-                } else if (status === 500) {
-                    setError("Server error. Please try again later.");
-                } else if (errorMessage) {
-                    // If there's a custom error message from API, use it
-                    setError(errorMessage);
-                } else {
-                    setError("Login failed. Please check your connection and try again.");
-                }
-            } else if (err instanceof Error) {
-                setError("Unable to connect to the server. Please check your internet connection.");
-            } else {
-                setError("Login failed. Please try again.");
-            }
-        } finally {
-            setLoading(false);
-        }
+        // Redirect to username entry page
+        router.push("/auth/username");
     };
 
     return (

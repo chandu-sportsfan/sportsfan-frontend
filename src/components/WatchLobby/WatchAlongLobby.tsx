@@ -448,6 +448,11 @@ function ExpertCard({
                 <div>
                     <p className="text-base font-bold text-white">{room.name}</p>
                     <p className="text-xs text-gray-400">{room.role}</p>
+                    <span
+                        className={`inline-flex mt-1 ${room.badgeColor} text-white text-[10px] font-semibold px-2 py-0.5 rounded-full`}
+                    >
+                        {room.badge}
+                    </span>
                 </div>
             </div>
 

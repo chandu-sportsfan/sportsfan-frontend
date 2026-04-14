@@ -317,15 +317,20 @@ type QuestionError = {
   type: "warning" | "error";
 };
 
+const QUESTION_TIMER_SECONDS = 15;
+
 export default function FlashQuiz({ matchId }: { matchId: string }) {
   const [selected, setSelected] = useState<Record<string, string>>({});
   const [revealed, setRevealed] = useState<Record<string, AnsweredDetails>>({});
   const [points, setPoints] = useState(0);
   const [submitting, setSubmitting] = useState<string | null>(null);
   const [answeredQuestions, setAnsweredQuestions] = useState<Set<string>>(new Set());
-  const [toastMessage, setToastMessage] = useState<{ text: string; type: "success" | "error" | "warning" } | null>(null);
-  // Inline per-question errors — replaces any global error propagation
+  // Inline per-question errors
   const [questionErrors, setQuestionErrors] = useState<Record<string, QuestionError>>({});
+  // Per-question countdown timers (seconds remaining)
+  const [timers, setTimers] = useState<Record<string, number>>({});
+  // Questions whose timer has fully expired
+  const [expiredQuestions, setExpiredQuestions] = useState<Set<string>>(new Set());
 
   const {
     quizQuestions,
@@ -333,14 +338,6 @@ export default function FlashQuiz({ matchId }: { matchId: string }) {
     submitQuizAnswer,
     loading,
   } = useWatchAlong();
-
-  // Toast auto-dismiss
-  useEffect(() => {
-    if (toastMessage) {
-      const timer = setTimeout(() => setToastMessage(null), 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [toastMessage]);
 
   const loadQuestions = useCallback(async () => {
     if (!matchId) return;
@@ -350,6 +347,39 @@ export default function FlashQuiz({ matchId }: { matchId: string }) {
   useEffect(() => {
     loadQuestions();
   }, [loadQuestions]);
+
+  // Start a 15s countdown for every new question that appears
+  useEffect(() => {
+    if (!quizQuestions.length) return;
+
+    const intervals: NodeJS.Timeout[] = [];
+
+    quizQuestions.forEach((q) => {
+      // Don't re-start for already tracked / answered / expired questions
+      setTimers((prev) => {
+        if (q.id in prev) return prev;
+        return { ...prev, [q.id]: QUESTION_TIMER_SECONDS };
+      });
+
+      const interval = setInterval(() => {
+        setTimers((prev) => {
+          const current = prev[q.id];
+          if (current === undefined || current <= 1) {
+            // Timer expired
+            setExpiredQuestions((e) => new Set([...e, q.id]));
+            clearInterval(interval);
+            return { ...prev, [q.id]: 0 };
+          }
+          return { ...prev, [q.id]: current - 1 };
+        });
+      }, 1000);
+
+      intervals.push(interval);
+    });
+
+    return () => intervals.forEach(clearInterval);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [quizQuestions.length]);
 
   const setQuestionError = (questionId: string, message: string, type: QuestionError["type"]) => {
     setQuestionErrors((prev) => ({ ...prev, [questionId]: { message, type } }));
@@ -364,10 +394,8 @@ export default function FlashQuiz({ matchId }: { matchId: string }) {
   };
 
   const handleSelect = async (questionId: string, option: string, question: QuizQuestion) => {
-    if (answeredQuestions.has(questionId)) {
-      setQuestionError(questionId, "You've already answered this question!", "warning");
-      return;
-    }
+    if (answeredQuestions.has(questionId)) return;
+    if (expiredQuestions.has(questionId)) return; // timer expired — block answer
 
     if (submitting === questionId) return;
 
@@ -402,9 +430,6 @@ export default function FlashQuiz({ matchId }: { matchId: string }) {
 
         if (result.isCorrect) {
           setPoints((p) => p + result.pointsEarned);
-          setToastMessage({ text: `✓ Correct! +${result.pointsEarned} points`, type: "success" });
-        } else {
-          setToastMessage({ text: `✗ Wrong! The correct answer was: ${result.correctAnswer}`, type: "error" });
         }
       }
     } catch (error: unknown) {
@@ -468,24 +493,10 @@ export default function FlashQuiz({ matchId }: { matchId: string }) {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-3">
-      {/* Toast Notification */}
-      {toastMessage && (
-        <div
-          className={`fixed top-24 right-4 z-50 p-3 rounded-lg shadow-lg min-w-[250px] max-w-[350px] animate-slide-in ${
-            toastMessage.type === "success"
-              ? "bg-green-600 text-white"
-              : toastMessage.type === "warning"
-              ? "bg-yellow-600 text-white"
-              : "bg-red-600 text-white"
-          }`}
-        >
-          <p className="text-sm text-center">{toastMessage.text}</p>
-        </div>
-      )}
+    <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-18">
 
       {/* Header */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-4 -mt-12 lg:-mt-14">
         <div className="flex items-center gap-2">
           <span className="text-yellow-400 text-sm">⚡</span>
           <span className="text-sm font-bold">Flash Quiz</span>
@@ -512,31 +523,52 @@ export default function FlashQuiz({ matchId }: { matchId: string }) {
                     {question.question}
                   </span>
                 </div>
-                {!isAnswered && (
-                  <span className="text-[10px] text-gray-500 flex items-center gap-1">
-                    <span>🎯</span>
-                    {question.points} pts
-                  </span>
-                )}
-                {isAnswered && answer?.isCorrect && (
-                  <span className="text-[10px] text-green-500">✓ +{answer.pointsEarned}</span>
-                )}
-                {isAnswered && answer && !answer.isCorrect && (
-                  <span className="text-[10px] text-red-500">✗ 0 pts</span>
-                )}
+                  {/* Right-side badge: timer / result */}
+                <div className="flex items-center gap-2 shrink-0">
+                  {/* Points badge — only while unanswered and not expired */}
+                  {!isAnswered && !expiredQuestions.has(question.id) && (
+                    <span className="text-[10px] text-gray-500 flex items-center gap-1">
+                      <span>🎯</span>
+                      {question.points} pts
+                    </span>
+                  )}
+
+                  {/* Countdown timer badge */}
+                  {!isAnswered && !expiredQuestions.has(question.id) && timers[question.id] !== undefined && (
+                    <span
+                      className={`text-[11px] font-bold tabular-nums px-2 py-0.5 rounded-full ${
+                        timers[question.id] <= 5
+                          ? "bg-red-500/20 text-red-400 animate-pulse"
+                          : "bg-yellow-400/10 text-yellow-400"
+                      }`}
+                    >
+                      {timers[question.id]}s
+                    </span>
+                  )}
+
+                  {/* Result badge after answering */}
+                  {isAnswered && answer?.isCorrect && (
+                    <span className="text-[10px] text-green-500">✓ +{answer.pointsEarned}</span>
+                  )}
+                  {isAnswered && answer && !answer.isCorrect && (
+                    <span className="text-[10px] text-red-500">✗ 0 pts</span>
+                  )}
+                </div>
               </div>
 
               {/* Options */}
               <div className="flex flex-col gap-1.5">
-                {question.options.map((option, idx) => (
+                {question.options.map((option, idx) => {
+                  const isExpired = expiredQuestions.has(question.id);
+                  return (
                   <button
                     key={idx}
                     onClick={() => handleSelect(question.id, option, question)}
-                    disabled={isAnswered || submitting === question.id}
+                    disabled={isAnswered || isExpired || submitting === question.id}
                     className={`w-full text-left px-4 py-2.5 rounded-lg text-[13px] font-medium transition-all border ${getOptionStyle(
                       question.id,
                       option
-                    )} ${submitting === question.id ? "opacity-50 cursor-wait" : ""}`}
+                    )} ${submitting === question.id ? "opacity-50 cursor-wait" : ""} ${isExpired && !isAnswered ? "opacity-40 cursor-not-allowed" : ""}`}
                   >
                     {String.fromCharCode(65 + idx)}. {option}
                     {submitting === question.id && selected[question.id] === option && (
@@ -545,21 +577,29 @@ export default function FlashQuiz({ matchId }: { matchId: string }) {
                       </span>
                     )}
                   </button>
-                ))}
+                  );
+                })}
               </div>
+
+              {/* ── Time's up message ── */}
+              {expiredQuestions.has(question.id) && !isAnswered && (
+                <div className="mt-1 px-1">
+                  <span className="text-[11px] font-semibold text-red-400">⏱ Time&apos;s up!</span>
+                </div>
+              )}
 
               {/* ── Inline result message (correct / wrong) ── */}
               {isAnswered && answer && (
-                <div
-                  className={`mt-1 p-2 rounded-lg text-center text-xs ${
-                    answer.isCorrect
-                      ? "bg-green-600/20 text-green-400"
-                      : "bg-red-600/20 text-red-400"
-                  }`}
-                >
-                  {answer.isCorrect
-                    ? `✓ Correct! +${answer.pointsEarned} points`
-                    : `✗ Wrong! The correct answer was: ${answer.correctAnswer}`}
+                <div className="flex items-center justify-between mt-1 px-1">
+                  {answer.isCorrect ? (
+                    <span className="text-[11px] font-semibold text-green-400">
+                      ✓ {answer.pointsEarned} points earned
+                    </span>
+                  ) : (
+                    <span className="text-[11px] font-semibold text-red-400">
+                      Better luck next time!
+                    </span>
+                  )}
                 </div>
               )}
 
@@ -584,20 +624,14 @@ export default function FlashQuiz({ matchId }: { matchId: string }) {
       {/* Completion Message */}
       {quizQuestions.length > 0 && answeredQuestions.size === quizQuestions.length && (
         <div className="mt-6 p-4 bg-green-600/20 border border-green-500 rounded-lg text-center">
-          <p className="text-green-400 font-semibold">🎉 Quiz Completed! 🎉</p>
+          <p className="text-green-400 font-semibold"> Quiz Completed!!</p>
           <p className="text-sm text-gray-300 mt-1">
             You scored {points} out of {quizQuestions.reduce((sum, q) => sum + q.points, 0)} points
           </p>
         </div>
       )}
 
-      <style jsx>{`
-        @keyframes slideIn {
-          from { transform: translateX(100%); opacity: 0; }
-          to   { transform: translateX(0);    opacity: 1; }
-        }
-        .animate-slide-in { animation: slideIn 0.3s ease-out; }
-      `}</style>
+
     </div>
   );
 }

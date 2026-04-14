@@ -26,6 +26,8 @@ export interface Match {
     team1: TeamScore;
     team2: TeamScore;
     isLive: boolean;
+     videoUrl?: string;      
+    videoType?: string;
     createdAt?: number;
     updatedAt?: number;
 }
@@ -54,7 +56,7 @@ export interface QuizQuestion {
     id: string;
     question: string;
     options: string[];
-    correctAnswer?: string; // Only returned after answering
+    correctAnswer?: string; 
     timerSeconds: number;
     points: number;
     isActive: boolean;

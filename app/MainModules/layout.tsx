@@ -1,11 +1,65 @@
+// "use client";
+
+// import BottomNav from "@/src/components/HomeComponents/Bottomnav";
+
+// export default function MainModulesLayout({
+//   children,
+// }: {
+//   children: React.ReactNode;
+// }) {
+//   return (
+//     <div className="min-h-screen bg-black text-white flex flex-col lg:flex-row items-start">
+
+//       {/* Sidebar */}
+//       <aside className="hidden lg:flex lg:flex-col w-[240px] shrink-0 border-r border-pink-500/20 self-stretch">
+//         <div className="sticky top-0 h-screen overflow-y-auto p-4">
+//           <h1 className="text-xl font-bold mb-6">SportsFan360</h1>
+//           {["Feed", "Watch Along", "Fan Battle", "Store", "Fan Zone", "Host Dashboard"].map((item) => (
+//             <div
+//               key={item}
+//               className="mb-4 text-gray-400 hover:text-pink-500 cursor-pointer transition-colors"
+//             >
+              
+//               {item}
+//             </div>
+//           ))}
+//         </div>
+//       </aside>
+
+//       {/* Main Content */}
+//       <main className="flex-1 min-w-0 w-full overflow-x-hidden">
+//         <div className="w-full max-w-[1600px] mx-auto">
+//           {children}
+//         </div>
+
+//         <div className="lg:hidden">
+//           <BottomNav />
+//         </div>
+//       </main>
+//     </div>
+//   );
+// }
+
+
 
 
 "use client";
 
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import BottomNav from "@/src/components/HomeComponents/Bottomnav";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+
+const navItems = [
+  { name: "Feed", path: "/MainModules/Feed" },
+  { name: "Watch Along", path: "/MainModules/WatchAlong" },
+  { name: "Fan Battle", path: "/MainModules/FanBattle" },
+  { name: "Store", path: "/MainModules/Store" },
+  { name: "Fan Zone", path: "/MainModules/FanZone" },
+  { name: "Host Dashboard", path: "/MainModules/HostDashboard" },
+];
 
 export default function MainModulesLayout({
   children,
@@ -14,6 +68,7 @@ export default function MainModulesLayout({
 }) {
   const pathname = usePathname();
 
+<<<<<<< HEAD
   const sidebarItems = [
     { name: "Feed", icon: "/images/feed.png", href: "/MainModules/HomePage" },
     { name: "Live", icon: "/images/live.png", href: "/MainModules/WatchAlong" },
@@ -22,10 +77,12 @@ export default function MainModulesLayout({
     { name: "Fan Zone", icon: "/images/profile.png", href: "/MainModules/PlayersProfile" },
   ];
 
+=======
+>>>>>>> 4fdd009f93b51e4a91928ba48e82a2bb8bace6a0
   return (
     <div className="min-h-screen bg-black text-white flex flex-col lg:flex-row items-start">
-
       {/* Sidebar */}
+<<<<<<< HEAD
       <aside className="group hidden lg:flex lg:flex-col w-[84px] hover:w-[248px] shrink-0 border-r border-pink-500/20 self-stretch transition-all duration-300 ease-out bg-gradient-to-b from-zinc-950 via-black to-zinc-950">
         <div className="sticky top-0 h-screen overflow-y-auto px-3 py-4">
           <div className="mb-8 h-10 flex items-center justify-center group-hover:justify-start transition-all duration-300">
@@ -65,6 +122,32 @@ export default function MainModulesLayout({
               );
             })}
           </nav>
+=======
+      <aside className="hidden lg:flex lg:flex-col w-[240px] shrink-0 border-r border-pink-500/20 self-stretch">
+        <div className="sticky top-0 h-screen overflow-y-auto p-4">
+          <Link href="/MainModules/HomePage">
+            <h1 className="text-xl font-bold mb-6 text-white hover:text-pink-500 transition-colors cursor-pointer">
+              SportsFan360
+            </h1>
+          </Link>
+
+          {navItems.map((item) => {
+            const isActive = pathname === item.path;
+            return (
+              <Link key={item.name} href={item.path}>
+                <div
+                  className={`mb-4 cursor-pointer transition-colors ${
+                    isActive
+                      ? "text-pink-500 font-semibold"
+                      : "text-gray-400 hover:text-pink-500"
+                  }`}
+                >
+                  {item.name}
+                </div>
+              </Link>
+            );
+          })}
+>>>>>>> 4fdd009f93b51e4a91928ba48e82a2bb8bace6a0
         </div>
       </aside>
 

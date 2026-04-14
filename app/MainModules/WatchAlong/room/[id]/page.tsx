@@ -49,21 +49,6 @@ export default function WatchRoomPage() {
     );
   }
 
-//   if (!currentRoom) {
-//     return (
-//       <div className="min-h-screen bg-[#111] flex items-center justify-center">
-//         <div className="text-center">
-//           <p className="text-gray-400">Room not found</p>
-//           <button 
-//             onClick={() => router.push("/MainModules/WatchAlong")}
-//             className="mt-4 text-pink-500 hover:text-pink-400"
-//           >
-//             Go Back 
-//           </button>
-//         </div>
-//       </div>
-//     );
-//   }
 if (error && !currentRoom) {
     return (
         <div className="min-h-screen bg-[#111] flex items-center justify-center">

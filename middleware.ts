@@ -11,12 +11,17 @@ const publicRoutes = [
     '/api/auth/register',
     '/api/auth/send-otp',
     '/api/auth/verify-otp',
+    '/MainModules/HomePage',
+    '/MainModules/HostDashboard',
 ];
 
 export async function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl;
 
-    const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route));
+    const isPublicRoute = publicRoutes.some(route => {
+        if (route === '/') return pathname === '/';
+        return pathname.startsWith(route);
+    });
 
     // Single unified auth check
     const manualToken = request.cookies.get("token")?.value;

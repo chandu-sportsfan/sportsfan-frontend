@@ -1,23 +1,27 @@
 "use client";
 
+import Link from "next/link";
 import Image from "next/image";
 
 type NavItem = {
   name: string;
   logo: string;
+  url?: string;
 };
 
 const bottomNavData: NavItem[] = [
   {
     name: "Feed",
     logo: "/images/feed.png",
+    url: "/MainModules/HomePage"
   },
   {
-    name: "Live",
+    name: "Watch Along",
     logo: "/images/watch.png",
+    url: "/MainModules/WatchAlong"
   },
   {
-    name: "Battle",
+    name: "Fan Battle",
     logo: "/images/battle.png",
   },
   {
@@ -34,16 +38,13 @@ export default function BottomNav() {
   return (
     <div className="fixed bottom-0 left-0 w-full bg-black border-t border-pink-500/30 py-2 flex justify-around z-50">
       {bottomNavData.map((item, i) => (
-        <div
+        <Link 
           key={i}
-          className="flex flex-col items-center text-[10px] sm:text-xs text-gray-400"
+          href={item.url || "#"} 
+          className="flex flex-col items-center text-[10px] sm:text-xs"
         >
           {/* Logo */}
-          <div
-            className={`mb-1 ${
-              i === 0 ? "opacity-100" : "opacity-60"
-            }`}
-          >
+          <div className={`mb-1 ${i === 0 ? "opacity-100" : "opacity-60"}`}>
             <Image
               src={item.logo}
               alt={item.name}
@@ -54,14 +55,10 @@ export default function BottomNav() {
           </div>
 
           {/* Name */}
-          <span
-            className={`${
-              i === 0 ? "text-pink-500" : "text-gray-400"
-            }`}
-          >
+          <span className={i === 0 ? "text-pink-500" : "text-gray-400"}>
             {item.name}
           </span>
-        </div>
+        </Link>
       ))}
     </div>
   );

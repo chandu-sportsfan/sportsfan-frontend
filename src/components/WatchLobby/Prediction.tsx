@@ -426,6 +426,7 @@
 
 
 
+
 // components/watch-along/Prediction.tsx
 "use client";
 
@@ -455,7 +456,6 @@ export default function Prediction({ matchId }: { matchId: string }) {
     const [selected, setSelected] = useState<Record<string, string>>({});
     const [votedPredictions, setVotedPredictions] = useState<Set<string>>(new Set());
     const [voting, setVoting] = useState<string | null>(null);
-    const [toastMessage, setToastMessage] = useState<{ text: string; type: 'success' | 'error' | 'warning' } | null>(null);
     const [userId] = useState(() => {
         const stored = localStorage.getItem("watchalong_user_id");
         if (stored) return stored;
@@ -487,13 +487,7 @@ export default function Prediction({ matchId }: { matchId: string }) {
         return () => clearInterval(interval);
     }, [matchId, fetchPredictions]);
 
-    // Toast auto-dismiss
-    useEffect(() => {
-        if (toastMessage) {
-            const timer = setTimeout(() => setToastMessage(null), 3000);
-            return () => clearTimeout(timer);
-        }
-    }, [toastMessage]);
+
     
     const handleSelect = async (predictionId: string, option: string) => {
         if (selected[predictionId]) return;
@@ -514,31 +508,12 @@ export default function Prediction({ matchId }: { matchId: string }) {
                     [predictionId]: option,
                 }));
                 setVotedPredictions((prev) => new Set([...prev, predictionId]));
-
-                setToastMessage({
-                    text: "✓ Vote submitted!",
-                    type: "success",
-                });
-
                 await fetchPredictions(matchId, true);
             } else if (result?.alreadyVoted) {
                 setVotedPredictions((prev) => new Set([...prev, predictionId]));
-                setToastMessage({
-                    text: "You've already voted on this prediction!",
-                    type: "warning",
-                });
-            } else {
-                setToastMessage({
-                    text: "Something went wrong",
-                    type: "error",
-                });
             }
         } catch (error) {
             console.error("Vote error:", error);
-            setToastMessage({
-                text: "Failed to submit vote",
-                type: "error",
-            });
         } finally {
             setVoting(null);
         }
@@ -589,7 +564,7 @@ export default function Prediction({ matchId }: { matchId: string }) {
     }
 
     return (
-        <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-3">
+        <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-18 md:py-18 lg:py-5 -mt-12 lg:-mt-2">
             {/* Header */}
             <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
@@ -602,15 +577,7 @@ export default function Prediction({ matchId }: { matchId: string }) {
                 </div>
             </div>
 
-            {/* Toast Message */}
-            {toastMessage && (
-                <div className={`fixed top-24 right-4 z-50 p-3 rounded-lg shadow-lg min-w-[250px] max-w-[350px] animate-slide-in ${
-                    toastMessage.type === 'success' ? 'bg-green-600 text-white' :
-                    toastMessage.type === 'warning' ? 'bg-yellow-600 text-white' : 'bg-red-600 text-white'
-                }`}>
-                    <p className="text-sm text-center">{toastMessage.text}</p>
-                </div>
-            )}
+
 
             {/* Questions */}
             {totalActivePredictions === 0 ? (
@@ -658,13 +625,24 @@ export default function Prediction({ matchId }: { matchId: string }) {
                                                         : "bg-[#1a1a1a] border border-[#2a2a2a] text-gray-300 hover:border-[#444] hover:bg-[#222] disabled:opacity-50 disabled:cursor-not-allowed"
                                                 }`}
                                             >
-                                                <span className="relative z-10">{option}</span>
-                                                {(hasVoted || isSelected) && (
-                                                    <div
-                                                        className="absolute inset-0 bg-pink-600/10 z-0 transition-all duration-300"
-                                                        style={{ width: `${percentage}%` }}
-                                                    />
-                                                )}
+                                                {/* Background percentage bar — always visible */}
+                                                <div
+                                                    className={`absolute inset-0 z-0 transition-all duration-500 ${
+                                                        isSelected ? "bg-pink-600/20" : "bg-white/5"
+                                                    }`}
+                                                    style={{ width: `${percentage}%` }}
+                                                />
+                                                {/* Option label + votes + percentage */}
+                                                <div className="relative z-10 flex items-center justify-between">
+                                                    <span>{option}</span>
+                                                    <div className={`flex items-center gap-1.5 text-[11px] font-semibold ${
+                                                        isSelected ? "text-pink-300" : "text-gray-400"
+                                                    }`}>
+                                                        <span>{formatPredictions(voteCount)} votes</span>
+                                                        <span className="opacity-40">·</span>
+                                                        <span className="text-[12px] font-bold">{Math.round(percentage)}%</span>
+                                                    </div>
+                                                </div>
                                             </button>
                                         );
                                     })}
@@ -704,13 +682,7 @@ export default function Prediction({ matchId }: { matchId: string }) {
                 ))}
             </div>
 
-            <style jsx>{`
-                @keyframes slideIn {
-                    from { transform: translateX(100%); opacity: 0; }
-                    to { transform: translateX(0); opacity: 1; }
-                }
-                .animate-slide-in { animation: slideIn 0.3s ease-out; }
-            `}</style>
+
         </div>
     );
 }

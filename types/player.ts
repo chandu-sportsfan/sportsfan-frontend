@@ -16,13 +16,20 @@ export interface SeasonStats {
   runs: string;
   strikeRate: string;
   average: string;
-  fifties: number;
-  hundreds: number;
   highestScore: string;
   fours: number;
   sixes: number;
   award: string;
   awardSub: string;
+  wickets: number;
+  bowlingAvg: string;
+  economy: string;
+  bowlingSR: string;
+  bestBowling: string;
+  threeW_fiveW_Hauls: number;
+  fiftiesAndHundreds: string;
+  foursConceded: number;
+  sixesConceded: number;
 }
 
 export interface CareerInsight {

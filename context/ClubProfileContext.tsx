@@ -350,7 +350,7 @@ const fetchFullProfile = useCallback(async (teamName: string): Promise<CompleteT
         setLoading(true);
         setError(null);
 
-        // ✅ USE RELATIVE URL - Don't use API_BASE_URL
+        // USE RELATIVE URL - Don't use API_BASE_URL
         const res = await axios.get(
             `/api/club-profile/search?teamName=${encodeURIComponent(teamName)}`
         );

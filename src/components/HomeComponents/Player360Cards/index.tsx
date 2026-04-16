@@ -456,9 +456,19 @@ export default function Player360CardsSection() {
     };
 
     // Loading state
-    if (loading && !posts.length) {
+    // if (loading && !posts.length) {
+    //     return (
+    //         <div className="flex justify-center items-center bg-[#0d0d10] min-h-[200px] rounded-lg mx-auto mt-10">
+    //             <div className="text-center">
+    //                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500 mx-auto mb-4"></div>
+    //                 <p className="text-gray-400">Loading posts...</p>
+    //             </div>
+    //         </div>
+    //     );
+    // }
+     if (loading) {
         return (
-            <div className="flex justify-center items-center bg-[#0d0d10] min-h-[200px] rounded-lg mx-auto mt-10">
+            <div className="flex justify-center items-center bg-[#0d0d10] min-h-screen">
                 <div className="text-center">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500 mx-auto mb-4"></div>
                     <p className="text-gray-400">Loading posts...</p>

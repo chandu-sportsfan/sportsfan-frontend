@@ -262,7 +262,7 @@ export default function Team360CardsSection() {
                                 </button>
                             </Link>
 
-                            <div className="flex gap-2">
+                            {/* <div className="flex gap-2">
                                 <button
                                     className="text-xs bg-[#CD620E] w-full rounded-xl py-2 text-white"
                                     style={{ fontWeight: 700 }}
@@ -276,7 +276,7 @@ export default function Team360CardsSection() {
                                 >
                                     Table
                                 </button>
-                            </div>
+                            </div> */}
                         </div>
                     </div>
                 ))}

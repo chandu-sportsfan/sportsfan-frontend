@@ -19,7 +19,7 @@
 //               key={item}
 //               className="mb-4 text-gray-400 hover:text-pink-500 cursor-pointer transition-colors"
 //             >
-              
+
 //               {item}
 //             </div>
 //           ))}
@@ -74,7 +74,6 @@ export default function MainModulesLayout({
     { name: "Store", icon: "/images/store.png", href: "#" },
     { name: "Fan Zone", icon: "/images/profile.png", href: "/MainModules/PlayersProfile" },
     { name: "Host Dashboard", icon: "/images/profile.png", href: "/MainModules/HostDashboard" },
-    
   ];
 
   return (
@@ -99,11 +98,10 @@ export default function MainModulesLayout({
                 <Link
                   key={item.name}
                   href={item.href}
-                  className={`mx-auto flex w-12 group-hover:w-full items-center justify-center group-hover:justify-start gap-0 group-hover:gap-3 rounded-xl px-0 group-hover:px-3 py-2.5 transition-all duration-300 ${
-                    isActive
+                  className={`mx-auto flex w-12 group-hover:w-full items-center justify-center group-hover:justify-start gap-0 group-hover:gap-3 rounded-xl px-0 group-hover:px-3 py-2.5 transition-all duration-300 ${isActive
                       ? "text-pink-300 bg-pink-500/15 ring-1 ring-pink-400/40"
                       : "text-gray-300 hover:text-pink-400 hover:bg-white/5"
-                  }`}
+                    }`}
                 >
                   <Image
                     src={item.icon}

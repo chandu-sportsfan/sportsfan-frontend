@@ -2,11 +2,11 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import axios from "axios";
 import RegisterPage from "./page";
 
-// ✅ Mock axios
+//  Mock axios
 jest.mock("axios");
 const mockedAxios = axios as jest.Mocked<typeof axios>;
 
-// ✅ Mock router
+//  Mock router
 const pushMock = jest.fn();
 
 jest.mock("next/navigation", () => ({

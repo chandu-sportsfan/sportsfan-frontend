@@ -11,8 +11,6 @@ const publicRoutes = [
     '/api/auth/register',
     '/api/auth/send-otp',
     '/api/auth/verify-otp',
-    '/MainModules/HomePage',
-    '/MainModules/HostDashboard',
 ];
 
 export async function middleware(request: NextRequest) {

@@ -61,7 +61,7 @@ import LogoutButton from "../LogoutButton";
 
 export default function Header() {
   return (
-    // ✅ Full-width header with border-b so it visually separates from content below
+    //  Full-width header with border-b so it visually separates from content below
     <div className="w-full px-4 lg:px-6 py-3 border-b border-pink-500/20 bg-black flex flex-col gap-3">
 
       {/* Top row: title (mobile only — hidden on desktop since sidebar has it) + icons */}

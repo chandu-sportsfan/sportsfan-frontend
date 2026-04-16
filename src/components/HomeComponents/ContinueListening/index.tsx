@@ -185,7 +185,7 @@
 //           <div
 //             key={item.id}
 //             className="min-w-[280px] sm:min-w-[320px] md:min-w-[340px] h-[80px] sm:h-[88px] md:h-[96px] bg-gradient-to-r from-[#1A2B3A] to-[#0f1a24] rounded-xl overflow-hidden flex-shrink-0 hover:brightness-110 transition-all"
-//             // ✅ NO style={{ transform: rotate() }} here
+//             //  NO style={{ transform: rotate() }} here
 //           >
 //             <div className="h-full flex items-center justify-between px-6">
 //               <div className="w-10 h-10 sm:w-12 sm:h-12 bg-pink-500 rounded-full flex items-center justify-center shadow-lg shrink-0">

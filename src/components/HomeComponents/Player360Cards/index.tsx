@@ -529,7 +529,7 @@ export default function Player360CardsSection() {
                                     <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-800 flex items-center justify-center">
                                         {!imageErrors[`${post.id}-logo`] ? (
                                             <img
-                                                src={post.logo}
+                                                src={post.image}
                                                 alt={post.playerName}
                                                 className="w-full h-full object-cover rounded-full"
                                                 onError={() => handleImageError(post.id, 'logo')}
@@ -553,13 +553,13 @@ export default function Player360CardsSection() {
                             </div>
 
                             {/* Image */}
-                            <div className="relative aspect-video bg-gray-800">
+                            <div className="relative aspect-video bg-orange-800">
                                 {!imageErrors[`${post.id}-main`] ? (
                                     <Image
-                                        src={post.image}
+                                        src={post.logo}
                                         alt={post.title}
                                         fill
-                                        className="object-cover"
+                                        className="object-contain"
                                         onError={() => handleImageError(post.id, 'main')}
                                     />
                                 ) : (
@@ -648,7 +648,7 @@ export default function Player360CardsSection() {
                                     </button>
                                 </Link>
 
-                                <div className="flex gap-2">
+                                {/* <div className="flex gap-2">
                                     <button
                                         className="text-xs bg-[#CD620E] w-full rounded-xl py-2 text-white"
                                         style={{ fontWeight: 700 }}
@@ -661,7 +661,7 @@ export default function Player360CardsSection() {
                                     >
                                         Highlight
                                     </button>
-                                </div>
+                                </div> */}
                             </div>
                         </div>
                     ))

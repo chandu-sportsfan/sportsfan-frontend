@@ -524,5 +524,4 @@ function ExpertCard({
                 Enter Watch Room →
             </button>
         </div>
-    );
-}
+    );}

@@ -73,6 +73,8 @@ export default function MainModulesLayout({
     { name: "Fantasy", icon: "/images/battle.png", href: "/MainModules/DropScreen" },
     { name: "Store", icon: "/images/store.png", href: "#" },
     { name: "Fan Zone", icon: "/images/profile.png", href: "/MainModules/PlayersProfile" },
+    { name: "Host Dashboard", icon: "/images/profile.png", href: "/MainModules/HostDashboard" },
+    
   ];
 
   return (

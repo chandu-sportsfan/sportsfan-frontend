@@ -1,6 +1,6 @@
 // "use client";
 
-// import { useEffect, useState, useRef } from "react";
+// import { useEffect, useState, useRef, useCallback } from "react";
 // import Image from "next/image";
 // import { MoreHorizontal, Search } from "lucide-react";
 // import Link from "next/link";
@@ -31,34 +31,63 @@
 //     hasVideo?: boolean;
 //     createdAt: number;
 //     updatedAt?: number;
-//     playerProfilesId?: string; // Add playerId field
+//     playerProfilesId?: string;
 // }
 
 // export default function Player360CardsSection() {
 //     const { homeData, loading, fetchPlayerHome } = usePlayerProfile360();
 
 //     const [posts, setPosts] = useState<Post[]>([]);
-//     const [query, setQuery] = useState("");
+//     const [searchTerm, setSearchTerm] = useState("");
 //     const [error, setError] = useState<string | null>(null);
 //     const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
+//     const [hasMore, setHasMore] = useState(true);
+//     const [isSearching, setIsSearching] = useState(false);
 //     const hasFetched = useRef(false);
+//     const searchTimeout = useRef<NodeJS.Timeout | null>(null);
 
+//     // Initial fetch
 //     useEffect(() => {
 //         if (!hasFetched.current) {
 //             hasFetched.current = true;
-//             fetchPlayerHome().catch(err => {
+//             fetchPlayerHome(undefined, true).catch(err => {
 //                 console.error("Failed to fetch:", err);
 //                 setError("Failed to load posts");
 //             });
 //         }
 //     }, [fetchPlayerHome]);
 
+//     // Update posts when homeData changes
 //     useEffect(() => {
 //         if (homeData?.home) {
-//             setPosts(homeData.home || []);
+//             setPosts(homeData.home);
+//             setHasMore(homeData.hasMore || false);
 //             setError(null);
 //         }
 //     }, [homeData]);
+
+//     // Debounced search
+//     const performSearch = useCallback((searchValue: string) => {
+//         if (searchTimeout.current) {
+//             clearTimeout(searchTimeout.current);
+//         }
+
+//         searchTimeout.current = setTimeout(() => {
+//             setIsSearching(true);
+//             fetchPlayerHome(searchValue, true).finally(() => {
+//                 setIsSearching(false);
+//             });
+//         }, 500);
+//     }, [fetchPlayerHome]);
+
+//     // Handle search input change
+//     const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+//         const value = e.target.value;
+//         setSearchTerm(value);
+//         performSearch(value);
+//     };
+
+  
 
 //     const getISTTimeAgo = (timestamp: number) => {
 //         const now = Date.now();
@@ -80,14 +109,20 @@
 //         }));
 //     };
 
-//     const filteredPosts = posts.filter(post =>
-//         post.playerName?.toLowerCase().includes(query.toLowerCase()) ||
-//         post.title?.toLowerCase().includes(query.toLowerCase())
-//     );
-
-//     if (loading && !posts.length) {
+//     // Loading state
+//     // if (loading && !posts.length) {
+//     //     return (
+//     //         <div className="flex justify-center items-center bg-[#0d0d10] min-h-[200px] rounded-lg mx-auto mt-10">
+//     //             <div className="text-center">
+//     //                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500 mx-auto mb-4"></div>
+//     //                 <p className="text-gray-400">Loading posts...</p>
+//     //             </div>
+//     //         </div>
+//     //     );
+//     // }
+//     if (loading) {
 //         return (
-//             <div className="flex justify-center items-center bg-[#0d0d10] w-[15px] h-[15px] rounded-lg mx-auto mt-10">
+//             <div className="flex justify-center items-center bg-[#0d0d10] min-h-screen">
 //                 <div className="text-center">
 //                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500 mx-auto mb-4"></div>
 //                     <p className="text-gray-400">Loading posts...</p>
@@ -96,6 +131,7 @@
 //         );
 //     }
 
+//     // Error state
 //     if (error) {
 //         return (
 //             <div className="flex justify-center items-center bg-[#0d0d10] min-h-[200px]">
@@ -105,7 +141,7 @@
 //                         onClick={() => {
 //                             setError(null);
 //                             hasFetched.current = false;
-//                             fetchPlayerHome();
+//                             fetchPlayerHome(undefined, true);
 //                         }}
 //                         className="bg-pink-500 px-4 py-2 rounded text-white hover:bg-pink-600"
 //                     >
@@ -116,55 +152,37 @@
 //         );
 //     }
 
-//     if (!posts || posts.length === 0) {
-//         return (
-//             <div className="w-full py-4">
-//                 <div className="flex items-center justify-between gap-3 mb-4">
-//                     <h1 className="text-[18px] sm:text-[20px] font-semibold text-white whitespace-nowrap">
-//                         Players 360 World
-//                     </h1>
-//                     <div className="flex items-center bg-[#1a1a1a] border border-white/10 rounded-full px-3 py-1.5 w-[160px] sm:w-[200px] md:w-[240px]">
-//                         <Search className="text-gray-400 shrink-0" size={16} />
-//                         <input
-//                             type="text"
-//                             placeholder="Search players..."
-//                             className="bg-transparent outline-none text-xs sm:text-sm text-white placeholder:text-gray-500 w-full ml-2"
-//                             disabled
-//                         />
-//                     </div>
-//                 </div>
-//                 <div className="w-full text-center py-10">
-//                     <p className="text-gray-400">No posts available.</p>
-//                 </div>
-//             </div>
-//         );
-//     }
-
 //     return (
 //         <div className="w-full py-4">
+//             {/* Header with Search */}
 //             <div className="flex items-center justify-between lg:justify-start lg:gap-4 gap-3 mb-4">
-//                 {/* Title */}
 //                 <h1 className="text-[18px] sm:text-[20px] font-semibold text-white whitespace-nowrap">
 //                     Players 360 World
 //                 </h1>
 
-//                 {/* Search Bar */}
 //                 <div className="flex items-center bg-[#1a1a1a] border border-white/10 rounded-full px-3 py-1.5 w-[160px] sm:w-[200px] md:w-[240px] focus-within:border-pink-500 transition">
 //                     <Search className="text-gray-400 shrink-0" size={16} />
 //                     <input
 //                         type="text"
 //                         placeholder="Search players..."
-//                         value={query}
-//                         onChange={(e) => setQuery(e.target.value)}
+//                         value={searchTerm}
+//                         onChange={handleSearchChange}
 //                         className="bg-transparent outline-none text-xs sm:text-sm text-white placeholder:text-gray-500 w-full ml-2"
 //                     />
 //                 </div>
 //             </div>
 
+//             {/* Search Loading Indicator */}
+//             {isSearching && (
+//                 <div className="flex justify-center py-4">
+//                     <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-pink-500"></div>
+//                 </div>
+//             )}
+
 //             {/* Horizontal Scroll Container */}
-//             <div className="flex gap-4 overflow-x-auto [scrollbar-width:none] snap-x snap-mandatory">
-//                 {filteredPosts.length > 0 ? (
-//                     filteredPosts.map((post) => (
+//             <div className="flex gap-4 overflow-x-auto [scrollbar-width:none] snap-x snap-mandatory pb-4">
+//                 {posts.length > 0 ? (
+//                     posts.map((post) => (
 //                         <div
 //                             key={post.id}
 //                             className="min-w-[280px] sm:min-w-[320px] max-w-[320px] bg-black rounded-xl shadow-sm border border-gray-800 overflow-hidden snap-start"
@@ -199,13 +217,13 @@
 //                             </div>
 
 //                             {/* Image */}
-//                             <div className="relative aspect-video bg-gray-800">
+//                             <div className="relative aspect-video bg-orange-800">
 //                                 {!imageErrors[`${post.id}-main`] ? (
 //                                     <Image
 //                                         src={post.image}
 //                                         alt={post.title}
 //                                         fill
-//                                         className="object-cover"
+//                                         className="object-contain"
 //                                         onError={() => handleImageError(post.id, 'main')}
 //                                     />
 //                                 ) : (
@@ -216,18 +234,12 @@
 //                                             className="w-20 h-20 opacity-40"
 //                                             fill="none"
 //                                         >
-//                                             {/* Body */}
 //                                             <circle cx="50" cy="28" r="12" fill="#9ca3af" />
-//                                             {/* Torso */}
 //                                             <rect x="36" y="42" width="28" height="26" rx="4" fill="#9ca3af" />
-//                                             {/* Legs */}
 //                                             <rect x="36" y="66" width="11" height="18" rx="3" fill="#9ca3af" />
 //                                             <rect x="53" y="66" width="11" height="18" rx="3" fill="#9ca3af" />
-//                                             {/* Bat arm */}
 //                                             <rect x="64" y="44" width="7" height="28" rx="3" fill="#9ca3af" transform="rotate(20 64 44)" />
-//                                             {/* Bat blade */}
 //                                             <rect x="70" y="56" width="6" height="18" rx="2" fill="#6b7280" transform="rotate(20 70 56)" />
-//                                             {/* Ball */}
 //                                             <circle cx="22" cy="62" r="6" fill="#6b7280" />
 //                                             <path d="M19 59 Q22 62 19 65" stroke="#9ca3af" strokeWidth="1" />
 //                                             <path d="M25 59 Q22 62 25 65" stroke="#9ca3af" strokeWidth="1" />
@@ -278,7 +290,35 @@
 //                                             </span>
 //                                         </div>
 //                                     ))}
-//                                     <span className="rounded-2xl px-2 py-1 bg-gray-950">
+//                                     {/* <span className="rounded-2xl px-2 py-1 flex flex-row gap-4 bg-gray-950">
+                                        
+//                                          <img
+//                                             src='/images/profile.png'
+//                                             alt="share"
+//                                             className="w-6 h-6 object-cover"
+//                                             onError={(e) => {
+//                                                 e.currentTarget.src = '/fallback-share.png';
+//                                             }}
+//                                         />
+//                                         <p>{post.comments}</p>
+//                                          <img
+//                                             src='/images/like.png'
+//                                             alt="share"
+//                                             className="w-6 h-6 object-cover"
+//                                             onError={(e) => {
+//                                                 e.currentTarget.src = '/fallback-share.png';
+//                                             }}
+//                                         />
+//                                          <p>{post.likes}</p>
+//                                          <img
+//                                             src='/images/live.png'
+//                                             alt="share"
+//                                             className="w-6 h-6 object-cover"
+//                                             onError={(e) => {
+//                                                 e.currentTarget.src = '/fallback-share.png';
+//                                             }}
+//                                         />
+//                                          <p>{post.live}</p>
 //                                         <img
 //                                             src='/images/share.png'
 //                                             alt="share"
@@ -287,12 +327,60 @@
 //                                                 e.currentTarget.src = '/fallback-share.png';
 //                                             }}
 //                                         />
+//                                     </span> */}
+//                                     <span className="rounded-2xl px-2 py-1 flex flex-row gap-2 bg-gray-950 items-center">
+//                                         <img
+//                                             src='/images/profile.png'
+//                                             alt="comments"
+//                                             className="w-5 h-5 object-cover"
+//                                             onError={(e) => {
+//                                                 e.currentTarget.src = '/fallback-share.png';
+//                                             }}
+//                                         />
+//                                         <span className="text-sm text-gray-400">{post.comments || 0}</span>
+//                                     </span>
+
+//                                     {/* Likes */}
+//                                     <span className="rounded-2xl px-2 py-1 flex flex-row gap-2 bg-gray-950 items-center">
+//                                         <img
+//                                             src='/images/like.png'
+//                                             alt="likes"
+//                                             className="w-5 h-5 object-cover"
+//                                             onError={(e) => {
+//                                                 e.currentTarget.src = '/fallback-share.png';
+//                                             }}
+//                                         />
+//                                         <span className="text-sm text-gray-400">{post.likes || 0}</span>
+//                                     </span>
+
+//                                     {/* Live */}
+//                                     <span className="rounded-2xl px-2 py-1 flex flex-row gap-2 bg-gray-950 items-center">
+//                                         <img
+//                                             src='/images/live.png'
+//                                             alt="live"
+//                                             className="w-5 h-5 object-cover"
+//                                             onError={(e) => {
+//                                                 e.currentTarget.src = '/fallback-share.png';
+//                                             }}
+//                                         />
+//                                         <span className="text-sm text-gray-400 font-medium">{post.live || 0}</span>
+//                                     </span>
+
+//                                     {/* Share */}
+//                                     <span className="rounded-2xl px-2 py-1 flex flex-row gap-2 bg-gray-950 items-center">
+//                                         <img
+//                                             src='/images/share.png'
+//                                             alt="share"
+//                                             className="w-5 h-5 object-cover"
+//                                             onError={(e) => {
+//                                                 e.currentTarget.src = '/fallback-share.png';
+//                                             }}
+//                                         />
+                                       
 //                                     </span>
 //                                 </div>
 
 //                                 {/* Buttons */}
-//                                 {/* Updated Link to include player ID */}
-//                                 {/* <Link href={`/MainModules/PlayersProfile?${post.playerId || post.id}?tab=highlights`}> */}
 //                                 <Link href={`/MainModules/PlayersProfile?id=${post.playerProfilesId || post.id}&tab=highlights`}>
 //                                     <button
 //                                         className="text-xs bg-[#C9115F] w-full py-2 rounded-xl text-white mb-2"
@@ -302,8 +390,7 @@
 //                                     </button>
 //                                 </Link>
 
-
-//                                 <div className="flex gap-2">
+//                                 {/* <div className="flex gap-2">
 //                                     <button
 //                                         className="text-xs bg-[#CD620E] w-full rounded-xl py-2 text-white"
 //                                         style={{ fontWeight: 700 }}
@@ -316,22 +403,34 @@
 //                                     >
 //                                         Highlight
 //                                     </button>
-//                                 </div>
+//                                 </div> */}
 //                             </div>
 //                         </div>
 //                     ))
 //                 ) : (
 //                     <div className="w-full text-center py-10">
-//                         <p className="text-gray-400">No players found matching &apos;{query}&apos;.</p>
+//                         <p className="text-gray-400">
+//                             {searchTerm ? `No players found matching '${searchTerm}'.` : 'No posts available.'}
+//                         </p>
 //                     </div>
 //                 )}
 //             </div>
+
+//             {/* Load More Button */}
+//             {/* {hasMore && !searchTerm && posts.length > 0 && (
+//                 <div className="flex justify-center mt-6">
+//                     <button
+//                         onClick={loadMore}
+//                         disabled={loading}
+//                         className="px-6 py-2 bg-[#1a1a1a] text-white rounded-lg hover:bg-[#2a2a2a] disabled:opacity-50"
+//                     >
+//                         {loading ? 'Loading...' : 'Load More'}
+//                     </button>
+//                 </div>
+//             )} */}
 //         </div>
 //     );
 // }
-
-
-
 
 
 
@@ -384,6 +483,7 @@ export default function Player360CardsSection() {
     const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
     const [hasMore, setHasMore] = useState(true);
     const [isSearching, setIsSearching] = useState(false);
+    const [isInitialLoading, setIsInitialLoading] = useState(true); // Separate state for initial load
     const hasFetched = useRef(false);
     const searchTimeout = useRef<NodeJS.Timeout | null>(null);
 
@@ -391,10 +491,15 @@ export default function Player360CardsSection() {
     useEffect(() => {
         if (!hasFetched.current) {
             hasFetched.current = true;
-            fetchPlayerHome(undefined, true).catch(err => {
-                console.error("Failed to fetch:", err);
-                setError("Failed to load posts");
-            });
+            setIsInitialLoading(true);
+            fetchPlayerHome(undefined, true)
+                .catch(err => {
+                    console.error("Failed to fetch:", err);
+                    setError("Failed to load posts");
+                })
+                .finally(() => {
+                    setIsInitialLoading(false);
+                });
         }
     }, [fetchPlayerHome]);
 
@@ -412,12 +517,13 @@ export default function Player360CardsSection() {
         if (searchTimeout.current) {
             clearTimeout(searchTimeout.current);
         }
-        
+
         searchTimeout.current = setTimeout(() => {
             setIsSearching(true);
-            fetchPlayerHome(searchValue, true).finally(() => {
-                setIsSearching(false);
-            });
+            fetchPlayerHome(searchValue || undefined, true)
+                .finally(() => {
+                    setIsSearching(false);
+                });
         }, 500);
     }, [fetchPlayerHome]);
 
@@ -426,13 +532,6 @@ export default function Player360CardsSection() {
         const value = e.target.value;
         setSearchTerm(value);
         performSearch(value);
-    };
-
-    // Load more posts
-    const loadMore = () => {
-        if (hasMore && !loading && !searchTerm) {
-            fetchPlayerHome(undefined, false);
-        }
     };
 
     const getISTTimeAgo = (timestamp: number) => {
@@ -455,18 +554,8 @@ export default function Player360CardsSection() {
         }));
     };
 
-    // Loading state
-    // if (loading && !posts.length) {
-    //     return (
-    //         <div className="flex justify-center items-center bg-[#0d0d10] min-h-[200px] rounded-lg mx-auto mt-10">
-    //             <div className="text-center">
-    //                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500 mx-auto mb-4"></div>
-    //                 <p className="text-gray-400">Loading posts...</p>
-    //             </div>
-    //         </div>
-    //     );
-    // }
-     if (loading) {
+    // Only show full page loader on initial load
+    if (isInitialLoading) {
         return (
             <div className="flex justify-center items-center bg-[#0d0d10] min-h-screen">
                 <div className="text-center">
@@ -487,7 +576,9 @@ export default function Player360CardsSection() {
                         onClick={() => {
                             setError(null);
                             hasFetched.current = false;
-                            fetchPlayerHome(undefined, true);
+                            setIsInitialLoading(true);
+                            fetchPlayerHome(undefined, true)
+                                .finally(() => setIsInitialLoading(false));
                         }}
                         className="bg-pink-500 px-4 py-2 rounded text-white hover:bg-pink-600"
                     >
@@ -500,7 +591,7 @@ export default function Player360CardsSection() {
 
     return (
         <div className="w-full py-4">
-            {/* Header with Search */}
+            {/* Header with Search - Always visible */}
             <div className="flex items-center justify-between lg:justify-start lg:gap-4 gap-3 mb-4">
                 <h1 className="text-[18px] sm:text-[20px] font-semibold text-white whitespace-nowrap">
                     Players 360 World
@@ -518,184 +609,203 @@ export default function Player360CardsSection() {
                 </div>
             </div>
 
-            {/* Search Loading Indicator */}
-            {isSearching && (
-                <div className="flex justify-center py-4">
-                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-pink-500"></div>
-                </div>
-            )}
-
-            {/* Horizontal Scroll Container */}
-            <div className="flex gap-4 overflow-x-auto [scrollbar-width:none] snap-x snap-mandatory pb-4">
-                {posts.length > 0 ? (
-                    posts.map((post) => (
-                        <div
-                            key={post.id}
-                            className="min-w-[280px] sm:min-w-[320px] max-w-[320px] bg-black rounded-xl shadow-sm border border-gray-800 overflow-hidden snap-start"
-                        >
-                            {/* Header */}
-                            <div className="p-3 flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                    <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-800 flex items-center justify-center">
-                                        {!imageErrors[`${post.id}-logo`] ? (
-                                            <img
-                                                src={post.image}
-                                                alt={post.playerName}
-                                                className="w-full h-full object-cover rounded-full"
-                                                onError={() => handleImageError(post.id, 'logo')}
-                                            />
-                                        ) : (
-                                            <div className="w-full h-full bg-gradient-to-br from-red-500 to-yellow-500 flex items-center justify-center text-white text-xs font-bold">
-                                                {post.playerName?.charAt(0) || 'P'}
-                                            </div>
-                                        )}
-                                    </div>
-                                    <div>
-                                        <h3 className="font-semibold text-white text-sm leading-tight">
-                                            {post.playerName}
-                                        </h3>
-                                        <p className="text-[10px] text-gray-400">
-                                            {getISTTimeAgo(post.createdAt)}
-                                        </p>
-                                    </div>
-                                </div>
-                                <MoreHorizontal size={18} className="text-gray-400" />
-                            </div>
-
-                            {/* Image */}
-                            <div className="relative aspect-video bg-orange-800">
-                                {!imageErrors[`${post.id}-main`] ? (
-                                    <Image
-                                        src={post.logo}
-                                        alt={post.title}
-                                        fill
-                                        className="object-contain"
-                                        onError={() => handleImageError(post.id, 'main')}
-                                    />
-                                ) : (
-                                    <div className="w-full h-full flex items-center justify-center bg-gray-800">
-                                        <svg
-                                            xmlns="http://www.w3.org/2000/svg"
-                                            viewBox="0 0 100 100"
-                                            className="w-20 h-20 opacity-40"
-                                            fill="none"
-                                        >
-                                            <circle cx="50" cy="28" r="12" fill="#9ca3af" />
-                                            <rect x="36" y="42" width="28" height="26" rx="4" fill="#9ca3af" />
-                                            <rect x="36" y="66" width="11" height="18" rx="3" fill="#9ca3af" />
-                                            <rect x="53" y="66" width="11" height="18" rx="3" fill="#9ca3af" />
-                                            <rect x="64" y="44" width="7" height="28" rx="3" fill="#9ca3af" transform="rotate(20 64 44)" />
-                                            <rect x="70" y="56" width="6" height="18" rx="2" fill="#6b7280" transform="rotate(20 70 56)" />
-                                            <circle cx="22" cy="62" r="6" fill="#6b7280" />
-                                            <path d="M19 59 Q22 62 19 65" stroke="#9ca3af" strokeWidth="1" />
-                                            <path d="M25 59 Q22 62 25 65" stroke="#9ca3af" strokeWidth="1" />
-                                        </svg>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Content */}
-                            <div className="mb-2 mt-2 ml-2">
-                                <h4 className="font-semibold text-white text-sm">
-                                    {post.title}
-                                </h4>
-                                {post.category && post.category.length > 0 && (
-                                    <div className="flex items-center gap-2 mt-1 flex-wrap">
-                                        {post.category.map((cat, i) => (
-                                            <span
-                                                key={i}
-                                                className="border border-gray-200 text-gray-400 text-xs px-2 py-1 rounded-xl"
-                                            >
-                                                {cat.title}
-                                            </span>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Stats Section */}
-                            <div className="p-3">
-                                <div className="flex items-center gap-2 flex-wrap mb-3">
-                                    {post.catlogo && post.catlogo.map((item, i) => (
-                                        <div
-                                            key={i}
-                                            className="flex flex-row gap-2 rounded-2xl px-2 py-1 bg-gray-950 items-center"
-                                        >
-                                            {!imageErrors[`${post.id}-catlogo-${i}`] ? (
-                                                <img
-                                                    src={item.logo}
-                                                    alt={item.label}
-                                                    className="w-[20px] h-[20px] object-cover"
-                                                    onError={() => handleImageError(post.id, `catlogo-${i}`)}
-                                                />
-                                            ) : (
-                                                <div className="w-[20px] h-[20px] bg-gray-700 rounded-full" />
-                                            )}
-                                            <span className="text-sm text-gray-400">
-                                                {item.label}
-                                            </span>
-                                        </div>
-                                    ))}
-                                    <span className="rounded-2xl px-2 py-1 bg-gray-950">
-                                        <img
-                                            src='/images/share.png'
-                                            alt="share"
-                                            className="w-6 h-6 object-cover"
-                                            onError={(e) => {
-                                                e.currentTarget.src = '/fallback-share.png';
-                                            }}
-                                        />
-                                    </span>
-                                </div>
-
-                                {/* Buttons */}
-                                <Link href={`/MainModules/PlayersProfile?id=${post.playerProfilesId || post.id}&tab=highlights`}>
-                                    <button
-                                        className="text-xs bg-[#C9115F] w-full py-2 rounded-xl text-white mb-2"
-                                        style={{ fontWeight: 700 }}
-                                    >
-                                        View Full Playlist
-                                    </button>
-                                </Link>
-
-                                {/* <div className="flex gap-2">
-                                    <button
-                                        className="text-xs bg-[#CD620E] w-full rounded-xl py-2 text-white"
-                                        style={{ fontWeight: 700 }}
-                                    >
-                                        Player Stats
-                                    </button>
-                                    <button
-                                        className="text-xs bg-black w-full rounded-xl py-2 border border-[#CD620E] text-white"
-                                        style={{ fontWeight: 700 }}
-                                    >
-                                        Highlight
-                                    </button>
-                                </div> */}
-                            </div>
+            {/* Cards Section - Shows loading indicator inside during search */}
+            <div className="relative">
+                {/* Search Loading Overlay inside cards section */}
+                {isSearching && (
+                    <div className="absolute inset-0 bg-black/50 z-10 flex items-center justify-center rounded-xl">
+                        <div className="px-6 py-4 flex items-center gap-3 shadow-xl">
+                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-pink-500"></div>
+                            <p className="text-white text-sm">Searching...</p>
                         </div>
-                    ))
-                ) : (
-                    <div className="w-full text-center py-10">
-                        <p className="text-gray-400">
-                            {searchTerm ? `No players found matching '${searchTerm}'.` : 'No posts available.'}
-                        </p>
                     </div>
                 )}
-            </div>
 
-            {/* Load More Button */}
-            {/* {hasMore && !searchTerm && posts.length > 0 && (
-                <div className="flex justify-center mt-6">
-                    <button
-                        onClick={loadMore}
-                        disabled={loading}
-                        className="px-6 py-2 bg-[#1a1a1a] text-white rounded-lg hover:bg-[#2a2a2a] disabled:opacity-50"
-                    >
-                        {loading ? 'Loading...' : 'Load More'}
-                    </button>
+                {/* Horizontal Scroll Container */}
+                <div className={`flex gap-4 overflow-x-auto [scrollbar-width:none] snap-x snap-mandatory pb-4 transition-opacity duration-200 ${isSearching ? 'opacity-50' : 'opacity-100'}`}>
+                    {posts.length > 0 ? (
+                        posts.map((post) => (
+                            <div
+                                key={post.id}
+                                className="min-w-[280px] sm:min-w-[320px] max-w-[320px] bg-black rounded-xl shadow-sm border border-gray-800 overflow-hidden snap-start"
+                            >
+                                {/* Header */}
+                                <div className="p-3 flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-800 flex items-center justify-center">
+                                            {!imageErrors[`${post.id}-logo`] ? (
+                                                <img
+                                                    src={post.logo}
+                                                    alt={post.playerName}
+                                                    className="w-full h-full object-cover rounded-full"
+                                                    onError={() => handleImageError(post.id, 'logo')}
+                                                />
+                                            ) : (
+                                                <div className="w-full h-full bg-gradient-to-br from-red-500 to-yellow-500 flex items-center justify-center text-white text-xs font-bold">
+                                                    {post.playerName?.charAt(0) || 'P'}
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div>
+                                            <h3 className="font-semibold text-white text-sm leading-tight">
+                                                {post.playerName}
+                                            </h3>
+                                            <p className="text-[10px] text-gray-400">
+                                                {getISTTimeAgo(post.createdAt)}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <MoreHorizontal size={18} className="text-gray-400" />
+                                </div>
+
+                                {/* Image */}
+                                <div className="relative aspect-video bg-orange-800">
+                                    {!imageErrors[`${post.id}-main`] ? (
+                                        <Image
+                                            src={post.image}
+                                            alt={post.title}
+                                            fill
+                                            className="object-contain"
+                                            onError={() => handleImageError(post.id, 'main')}
+                                        />
+                                    ) : (
+                                        <div className="w-full h-full flex items-center justify-center bg-gray-800">
+                                            <svg
+                                                xmlns="http://www.w3.org/2000/svg"
+                                                viewBox="0 0 100 100"
+                                                className="w-20 h-20 opacity-40"
+                                                fill="none"
+                                            >
+                                                <circle cx="50" cy="28" r="12" fill="#9ca3af" />
+                                                <rect x="36" y="42" width="28" height="26" rx="4" fill="#9ca3af" />
+                                                <rect x="36" y="66" width="11" height="18" rx="3" fill="#9ca3af" />
+                                                <rect x="53" y="66" width="11" height="18" rx="3" fill="#9ca3af" />
+                                                <rect x="64" y="44" width="7" height="28" rx="3" fill="#9ca3af" transform="rotate(20 64 44)" />
+                                                <rect x="70" y="56" width="6" height="18" rx="2" fill="#6b7280" transform="rotate(20 70 56)" />
+                                                <circle cx="22" cy="62" r="6" fill="#6b7280" />
+                                                <path d="M19 59 Q22 62 19 65" stroke="#9ca3af" strokeWidth="1" />
+                                                <path d="M25 59 Q22 62 25 65" stroke="#9ca3af" strokeWidth="1" />
+                                            </svg>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Content */}
+                                <div className="mb-2 mt-2 ml-2">
+                                    <h4 className="font-semibold text-white text-sm">
+                                        {post.title}
+                                    </h4>
+                                    {post.category && post.category.length > 0 && (
+                                        <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                            {post.category.map((cat, i) => (
+                                                <span
+                                                    key={i}
+                                                    className="border border-gray-200 text-gray-400 text-xs px-2 py-1 rounded-xl"
+                                                >
+                                                    {cat.title}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Stats Section */}
+                                <div className="p-3">
+                                    <div className="flex items-center gap-2 flex-nowrap mb-3">
+                                        {post.catlogo && post.catlogo.map((item, i) => (
+                                            <div
+                                                key={i}
+                                                className="flex flex-row gap-2 rounded-2xl px-2 py-1 bg-gray-950 items-center"
+                                            >
+                                                {!imageErrors[`${post.id}-catlogo-${i}`] ? (
+                                                    <img
+                                                        src={item.logo}
+                                                        alt={item.label}
+                                                        className="w-[20px] h-[20px] object-cover"
+                                                        onError={() => handleImageError(post.id, `catlogo-${i}`)}
+                                                    />
+                                                ) : (
+                                                    <div className="w-[20px] h-[20px] bg-gray-700 rounded-full" />
+                                                )}
+                                                <span className="text-sm text-gray-400">
+                                                    {item.label}
+                                                </span>
+                                            </div>
+                                        ))}
+                                        
+                                        {/* Comments */}
+                                        <span className="rounded-2xl px-2 py-1 flex flex-row gap-2 bg-gray-950 items-center">
+                                            <img
+                                                src='/images/profile.png'
+                                                alt="comments"
+                                                className="w-5 h-5 object-cover"
+                                                onError={(e) => {
+                                                    e.currentTarget.src = '/fallback-share.png';
+                                                }}
+                                            />
+                                            <span className="text-sm text-gray-400">{post.comments || 0}</span>
+                                        </span>
+
+                                        {/* Likes */}
+                                        <span className="rounded-2xl px-2 py-1 flex flex-row gap-2 bg-gray-950 items-center">
+                                            <img
+                                                src='/images/like.png'
+                                                alt="likes"
+                                                className="w-5 h-5 object-cover"
+                                                onError={(e) => {
+                                                    e.currentTarget.src = '/fallback-share.png';
+                                                }}
+                                            />
+                                            <span className="text-sm text-gray-400">{post.likes || 0}</span>
+                                        </span>
+
+                                        {/* Live */}
+                                        <span className="rounded-2xl px-2 py-1 flex flex-row gap-2 bg-gray-950 items-center">
+                                            <img
+                                                src='/images/live.png'
+                                                alt="live"
+                                                className="w-5 h-5 object-cover"
+                                                onError={(e) => {
+                                                    e.currentTarget.src = '/fallback-share.png';
+                                                }}
+                                            />
+                                            <span className="text-sm text-gray-400 font-medium">{post.live || 0}</span>
+                                        </span>
+
+                                        {/* Share */}
+                                        <span className="rounded-2xl px-2 py-1 flex flex-row gap-2 bg-gray-950 items-center">
+                                            <img
+                                                src='/images/share.png'
+                                                alt="share"
+                                                className="w-5 h-5 object-cover"
+                                                onError={(e) => {
+                                                    e.currentTarget.src = '/fallback-share.png';
+                                                }}
+                                            />
+                                        </span>
+                                    </div>
+
+                                    {/* Buttons */}
+                                    <Link href={`/MainModules/PlayersProfile?id=${post.playerProfilesId || post.id}&tab=highlights`}>
+                                        <button
+                                            className="text-xs bg-[#C9115F] w-full py-2 rounded-xl text-white mb-2"
+                                            style={{ fontWeight: 700 }}
+                                        >
+                                            View Full Playlist
+                                        </button>
+                                    </Link>
+                                </div>
+                            </div>
+                        ))
+                    ) : (
+                        <div className="w-full text-center py-10">
+                            <p className="text-gray-400">
+                                {searchTerm ? `No players found matching '${searchTerm}'.` : 'No posts available.'}
+                            </p>
+                        </div>
+                    )}
                 </div>
-            )} */}
+            </div>
         </div>
     );
 }

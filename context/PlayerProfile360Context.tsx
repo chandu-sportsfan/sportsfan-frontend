@@ -374,15 +374,7 @@ type HomeItem = {
   updatedAt: number;
 };
 
-// === PAGINATION TYPES ===
-type PaginationInfo = {
-  limit: number;
-  hasMore: boolean;
-  nextCursor: {
-    lastDocId: string;
-    lastDocCreatedAt: number;
-  } | null;
-};
+
 
 // === SEASON STATS TYPES ===
 type SeasonStats = {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import LogoutButton from "../../HomeComponents/LogoutButton";
 
 const trendUp = (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -109,6 +110,7 @@ export default function PerformanceOverview() {
           <button className="p-2 rounded-xl bg-[#1a1a1a] border border-white/5 text-[#aaa] hover:text-white hover:border-white/15 transition-colors">
             {searchIcon}
           </button>
+           <LogoutButton />
         </div>
       </header>
 

@@ -26,14 +26,26 @@ export default function HostDashboard() {
       <PerformanceOverview />
 
       {/* Side-by-side section */}
-      <div className="px-4 sm:px-6 lg:px-8 lg:-mt-10 pb-10 flex flex-col lg:flex-row gap-4 lg:gap-6 items-start">
-        {/* Live & Upcoming Rooms — takes more space */}
+      {/* <div className="px-4 sm:px-6 lg:px-8 lg:-mt-10 pb-1 flex flex-col lg:flex-row gap-4 lg:gap-6 items-start">
+        
         <div className="w-full lg:flex-[1.4]">
           <LiveRoomsCard />
         </div>
 
-        {/* Recent Activity — narrower */}
+       
         <div className="w-full lg:flex-1">
+          <RecentActivity />
+        </div>
+      </div> */}
+
+      <div className="px-4 sm:px-6 lg:px-8 pb-1 flex flex-col lg:flex-row gap-4 md:gap-5 lg:gap-6 items-start">
+        {/* Live & Upcoming Rooms — takes more space */}
+        <div className="w-full lg:flex-[1]">
+          <LiveRoomsCard />
+        </div>
+
+        {/* Recent Activity — narrower */}
+        <div className="w-full lg:flex-1 -mt-60 lg:-mt-0 lg:mt-30">
           <RecentActivity />
         </div>
       </div>

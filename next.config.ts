@@ -67,6 +67,13 @@ const nextConfig = {
         port: '',
         pathname: '/**',
       },
+      // Add IPL/T20 documents domain
+      {
+        protocol: 'https',
+        hostname: 'documents.iplt20.com',
+        port: '',
+        pathname: '/**',
+      },
     ],
   },
 };

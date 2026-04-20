@@ -409,7 +409,7 @@ export default function FullPlaylist() {
     };
 
     return (
-        <div className="min-h-screen bg-[#0d0d10] text-white">
+        <div className="min-h-screen bg-[#0d0d10] text-white pb-10">
             {/* Header */}
             <div className="flex items-center gap-3 px-4 py-4 border-b border-white/5 sticky top-0 bg-[#0d0d10] z-10">
                 <Link href="/MainModules/HomePage">

@@ -33,7 +33,7 @@ const homeCardsData: CardProps[] = [
     ],
     buttonText: "Discover More",
     buttonIcon: "chart",
-    buttonUrl: "/MainModules/WatchAlong"
+    buttonUrl: "/MainModules/MatchesDropContent"
   },
   {
     id: 2,
@@ -90,7 +90,7 @@ export default function HomeCardsSection() {
 
             {/* Button */}
             <Link href={card.buttonUrl || "#"} >
-            <button className="mt-2 w-full bg-gradient-to-r from-pink-500 to-orange-500 py-1 rounded-full font-semibold text-[14px] flex items-center justify-center gap-2">
+            <button className="mt-2 w-full bg-gradient-to-r from-pink-500 to-orange-500 py-1 rounded-full font-semibold text-[14px] flex items-center justify-center gap-2 cursor-pointer">
               {card.buttonIcon === "play" ? <img src="/images/explore.png" alt="Play" /> : <img src="/images/discover.png" alt="Chart" />}{" "}
               {card.buttonText}
             </button>

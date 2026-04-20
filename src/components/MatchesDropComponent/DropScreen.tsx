@@ -1,7 +1,218 @@
+// "use client";
+// import { useState } from "react";
+// import { ArrowLeft, Headphones, Play, Users } from "lucide-react";
+// import Link from "next/link";
+
+// interface Drop {
+//     id: string;
+//     title: string;
+//     duration: string;
+//     plays: string;
+//     author: string;
+//     badge: "Inner Room" | "Public";
+//     type: "audio" | "video";
+// }
+
+// interface DateGroup {
+//     label: string;
+//     audioDrops: Drop[];
+//     videoDrops: Drop[];
+// }
+
+// const mockData: DateGroup[] = [
+//     {
+//         label: "Today",
+//         audioDrops: [
+//             { id: "a1", title: "Pre-Match Strategy Discussion", duration: "02:12", plays: "12k", author: "Arjun Mehta", badge: "Inner Room", type: "audio" },
+//             { id: "a2", title: "Pre-Match Strategy Discussion", duration: "02:12", plays: "12k", author: "Arjun Mehta", badge: "Inner Room", type: "audio" },
+//             { id: "a3", title: "Pre-Match Strategy Discussion", duration: "02:12", plays: "12k", author: "Arjun Mehta", badge: "Inner Room", type: "audio" },
+//         ],
+//         videoDrops: [
+//             { id: "v1", title: "Pre-Match Strategy Discussion", duration: "02:12", plays: "12k", author: "Arjun Mehta", badge: "Inner Room", type: "video" },
+//             { id: "v2", title: "Pre-Match Strategy Discussion", duration: "02:12", plays: "12k", author: "Arjun Mehta", badge: "Inner Room", type: "video" },
+//             { id: "v3", title: "Pre-Match Strategy Discussion", duration: "02:12", plays: "12k", author: "Arjun Mehta", badge: "Inner Room", type: "video" },
+//         ],
+//     },
+//     {
+//         label: "19 Apr",
+//         audioDrops: [
+//             { id: "a4", title: "Pre-Match Strategy Discussion", duration: "02:12", plays: "12k", author: "Arjun Mehta", badge: "Inner Room", type: "audio" },
+//             { id: "a5", title: "Pre-Match Strategy Discussion", duration: "02:12", plays: "12k", author: "Arjun Mehta", badge: "Inner Room", type: "audio" },
+//         ],
+//         videoDrops: [
+//             { id: "v4", title: "Pre-Match Strategy Discussion", duration: "02:12", plays: "12k", author: "Arjun Mehta", badge: "Inner Room", type: "video" },
+//         ],
+//     },
+// ];
+
+// function DropRow({ drop }: { drop: Drop }) {
+//     return (
+//         <div className="flex items-center justify-between px-3 py-3 bg-[#141414] rounded-xl mb-2 gap-3">
+//             <div className="flex items-center gap-3 min-w-0">
+//                 {/* Icon */}
+//                 <div className="w-10 h-10 rounded-lg bg-[#1e1e1e] flex items-center justify-center flex-shrink-0 border border-white/5">
+//                     {drop.type === "audio" ? (
+//                         <Headphones size={16} className="text-[#C9115F]" />
+//                     ) : (
+//                         <Play size={16} className="text-[#C9115F]" fill="#C9115F" />
+//                     )}
+//                 </div>
+
+//                 {/* Info */}
+//                 <div className="min-w-0">
+//                     <p className="text-white text-sm font-medium truncate leading-tight">{drop.title}</p>
+//                     <div className="flex items-center gap-2 mt-0.5">
+//                         <span className="text-gray-500 text-xs">{drop.duration}</span>
+//                         <span className="text-gray-600 text-xs">•</span>
+//                         <span className="text-gray-500 text-xs">{drop.plays} plays</span>
+//                     </div>
+//                     <div className="flex items-center gap-1 mt-0.5">
+//                         <Users size={10} className="text-gray-600" />
+//                         <span className="text-gray-500 text-[11px]">by {drop.author}</span>
+//                     </div>
+//                 </div>
+//             </div>
+
+//             {/* Badge */}
+//             <span className="flex-shrink-0 text-[#C9115F] text-xs font-semibold whitespace-nowrap">
+//                 {drop.badge}
+//             </span>
+//         </div>
+//     );
+// }
+
+// function SectionLabel({ label }: { label: string }) {
+//     const isToday = label === "Today";
+//     return (
+//         <div className={`inline-block px-3 py-1 rounded-md mb-4 text-sm font-semibold ${isToday ? "bg-[#b8460a] text-white" : "bg-[#1e1e1e] text-gray-300 border border-white/10"}`}>
+//             {label}
+//         </div>
+//     );
+// }
+
+// export default function FullPlaylist() {
+//     const [requestText, setRequestText] = useState("");
+
+//     return (
+//         <div className="min-h-screen bg-[#0d0d10] text-white">
+//             {/* Header */}
+//             <div className="flex items-center gap-3 px-4 py-4 border-b border-white/5 sticky top-0 bg-[#0d0d10] z-10">
+//                 <Link href='/MainModules/HomePage'>
+//                     <button className="text-gray-400 hover:text-white transition-colors cursor-pointer">
+//                         <ArrowLeft size={20} />
+//                     </button>
+//                 </Link>
+//                 <div>
+//                     <h1 className="text-base font-bold text-white leading-tight">RCB vs MI</h1>
+//                     <p className="text-xs text-gray-500">Full Playlist</p>
+//                 </div>
+//             </div>
+
+//             {/* Body */}
+//             <div className="flex flex-col lg:flex-row gap-0 lg:gap-6 px-4 lg:px-8 py-6 max-w-6xl mx-auto">
+
+//                 {/* Left: Drops Feed */}
+//                 <div className="flex-1 min-w-0">
+//                     {mockData.map((group) => (
+//                         <div key={group.label} className="mb-8">
+//                             <SectionLabel label={group.label} />
+
+//                             {/* Audio Drops */}
+//                             {group.audioDrops.length > 0 && (
+//                                 <div className="mb-5">
+//                                     <p className="text-gray-400 text-sm font-medium mb-3">Audio Drops</p>
+//                                     {group.audioDrops.map((drop) => (
+//                                         <DropRow key={drop.id} drop={drop} />
+//                                     ))}
+//                                 </div>
+//                             )}
+
+//                             {/* Video Drops */}
+//                             {group.videoDrops.length > 0 && (
+//                                 <div>
+//                                     <p className="text-gray-400 text-sm font-medium mb-3">Video Drops</p>
+//                                     {group.videoDrops.map((drop) => (
+//                                         <DropRow key={drop.id} drop={drop} />
+//                                     ))}
+//                                 </div>
+//                             )}
+//                         </div>
+//                     ))}
+//                 </div>
+
+//                 {/* Right: Request a Drop Panel */}
+//                 <div className="w-full lg:w-[340px] flex-shrink-0">
+//                     <div className="bg-[#141414] rounded-2xl border border-white/5 p-5 lg:sticky lg:top-24">
+//                         {/* Panel Header */}
+//                         <div className="flex items-start gap-3 mb-4">
+//                             <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#C9115F] to-[#e85d04] flex items-center justify-center flex-shrink-0">
+//                                 <span className="text-white text-sm font-bold">e</span>
+//                             </div>
+//                             <div>
+//                                 <p className="text-white text-sm font-semibold leading-tight">Request a drop</p>
+//                                 <p className="text-gray-400 text-xs mt-0.5 leading-relaxed">
+//                                     Want to hear more from Royal Challengers Bengaluru? Request a specific topic or moment!
+//                                 </p>
+//                             </div>
+//                         </div>
+
+//                         {/* Textarea */}
+//                         <textarea
+//                             value={requestText}
+//                             onChange={(e) => setRequestText(e.target.value)}
+//                             placeholder="What would you like to hear about?"
+//                             rows={5}
+//                             className="w-full bg-[#0d0d10] text-white text-sm placeholder-gray-600 rounded-xl px-4 py-3 border border-white/5 focus:outline-none focus:border-[#C9115F]/50 resize-none transition-colors"
+//                         />
+
+//                         {/* Submit Button */}
+//                         <button className="w-full mt-4 py-3 rounded-xl text-white text-sm font-bold bg-gradient-to-r from-[#C9115F] to-[#e85d04] hover:opacity-90 transition-opacity active:scale-[0.98]">
+//                             Submit Request
+//                         </button>
+//                     </div>
+//                 </div>
+
+//             </div>
+//         </div>
+//     );
+// }
+
+
+
+
+
+
+
+
 "use client";
-import { useState } from "react";
-import { ArrowLeft, Headphones, Play, Users } from "lucide-react";
+import { useState, useEffect } from "react";
+import { ArrowLeft, Headphones, Play, Users, Loader2 } from "lucide-react";
 import Link from "next/link";
+import axios from "axios";
+
+interface MatchInfo {
+    team1?: string;
+    team2?: string;
+    type?: string;
+    speaker?: string;
+    date?: string;
+}
+
+interface AudioFile {
+    id: string;
+    title: string;
+    fileName: string;
+    url: string;
+    duration: string;
+    durationSeconds: number;
+    size: number;
+    sizeFormatted: string;
+    format: string;
+    createdAt: string;
+    createdAtFormatted: string;
+    folder: string;
+    matchInfo?: MatchInfo;
+}
 
 interface Drop {
     id: string;
@@ -11,6 +222,8 @@ interface Drop {
     author: string;
     badge: "Inner Room" | "Public";
     type: "audio" | "video";
+    url?: string;
+    createdAt?: string;
 }
 
 interface DateGroup {
@@ -19,44 +232,93 @@ interface DateGroup {
     videoDrops: Drop[];
 }
 
-const mockData: DateGroup[] = [
-    {
-        label: "Today",
-        audioDrops: [
-            { id: "a1", title: "Pre-Match Strategy Discussion", duration: "02:12", plays: "12k", author: "Arjun Mehta", badge: "Inner Room", type: "audio" },
-            { id: "a2", title: "Pre-Match Strategy Discussion", duration: "02:12", plays: "12k", author: "Arjun Mehta", badge: "Inner Room", type: "audio" },
-            { id: "a3", title: "Pre-Match Strategy Discussion", duration: "02:12", plays: "12k", author: "Arjun Mehta", badge: "Inner Room", type: "audio" },
-        ],
-        videoDrops: [
-            { id: "v1", title: "Pre-Match Strategy Discussion", duration: "02:12", plays: "12k", author: "Arjun Mehta", badge: "Inner Room", type: "video" },
-            { id: "v2", title: "Pre-Match Strategy Discussion", duration: "02:12", plays: "12k", author: "Arjun Mehta", badge: "Inner Room", type: "video" },
-            { id: "v3", title: "Pre-Match Strategy Discussion", duration: "02:12", plays: "12k", author: "Arjun Mehta", badge: "Inner Room", type: "video" },
-        ],
-    },
-    {
-        label: "19 Apr",
-        audioDrops: [
-            { id: "a4", title: "Pre-Match Strategy Discussion", duration: "02:12", plays: "12k", author: "Arjun Mehta", badge: "Inner Room", type: "audio" },
-            { id: "a5", title: "Pre-Match Strategy Discussion", duration: "02:12", plays: "12k", author: "Arjun Mehta", badge: "Inner Room", type: "audio" },
-        ],
-        videoDrops: [
-            { id: "v4", title: "Pre-Match Strategy Discussion", duration: "02:12", plays: "12k", author: "Arjun Mehta", badge: "Inner Room", type: "video" },
-        ],
-    },
-];
+// Convert API audio file to Drop format
+function audioFileToDrop(audio: AudioFile): Drop {
+    return {
+        id: audio.id,
+        title: audio.title,
+        duration: audio.duration,
+        plays: "0",
+        author: audio.matchInfo?.speaker || "Unknown",
+        badge: "Inner Room",
+        type: "audio",
+        url: audio.url,
+        createdAt: audio.createdAt,
+    };
+}
+
+// Group drops by date label
+function groupByDate(drops: Drop[]): DateGroup[] {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    const groups = new Map<string, Drop[]>();
+
+    drops.forEach((drop) => {
+        let label = "Unknown";
+        if (drop.createdAt) {
+            const date = new Date(drop.createdAt);
+            date.setHours(0, 0, 0, 0);
+            if (date.getTime() === today.getTime()) {
+                label = "Today";
+            } else if (date.getTime() === yesterday.getTime()) {
+                label = "Yesterday";
+            } else {
+                label = date.toLocaleDateString("en-IN", { day: "2-digit", month: "short" });
+            }
+        }
+        if (!groups.has(label)) groups.set(label, []);
+        groups.get(label)!.push(drop);
+    });
+
+    return Array.from(groups.entries()).map(([label, audioDrops]) => ({
+        label,
+        audioDrops,
+        videoDrops: [],
+    }));
+}
 
 function DropRow({ drop }: { drop: Drop }) {
+    const [playing, setPlaying] = useState(false);
+    const [audio] = useState(() => (drop.url ? new Audio(drop.url) : null));
+
+    const togglePlay = () => {
+        if (!audio) return;
+        if (playing) {
+            audio.pause();
+            setPlaying(false);
+        } else {
+            audio.play();
+            setPlaying(true);
+            audio.onended = () => setPlaying(false);
+        }
+    };
+
     return (
         <div className="flex items-center justify-between px-3 py-3 bg-[#141414] rounded-xl mb-2 gap-3">
             <div className="flex items-center gap-3 min-w-0">
-                {/* Icon */}
-                <div className="w-10 h-10 rounded-lg bg-[#1e1e1e] flex items-center justify-center flex-shrink-0 border border-white/5">
+                {/* Play/Pause icon button */}
+                <button
+                    onClick={togglePlay}
+                    className="w-10 h-10 rounded-lg bg-[#1e1e1e] flex items-center justify-center flex-shrink-0 border border-white/5 hover:border-[#C9115F]/40 transition-colors"
+                >
                     {drop.type === "audio" ? (
-                        <Headphones size={16} className="text-[#C9115F]" />
+                        playing ? (
+                            <span className="w-3 h-3 flex gap-0.5 items-end">
+                                <span className="w-1 h-3 bg-[#C9115F] rounded-sm animate-pulse" />
+                                <span className="w-1 h-2 bg-[#C9115F] rounded-sm animate-pulse delay-75" />
+                                <span className="w-1 h-3 bg-[#C9115F] rounded-sm animate-pulse delay-150" />
+                            </span>
+                        ) : (
+                            <Headphones size={16} className="text-[#C9115F]" />
+                        )
                     ) : (
                         <Play size={16} className="text-[#C9115F]" fill="#C9115F" />
                     )}
-                </div>
+                </button>
 
                 {/* Info */}
                 <div className="min-w-0">
@@ -74,9 +336,11 @@ function DropRow({ drop }: { drop: Drop }) {
             </div>
 
             {/* Badge */}
-            <span className="flex-shrink-0 text-[#C9115F] text-xs font-semibold whitespace-nowrap">
-                {drop.badge}
-            </span>
+            <Link href="/MainModules/MatchesDropContent/AudioDropScreen">
+                <span className="flex-shrink-0 text-[#C9115F] text-xs font-semibold whitespace-nowrap">
+                    {drop.badge}
+                </span>
+            </Link>
         </div>
     );
 }
@@ -92,20 +356,90 @@ function SectionLabel({ label }: { label: string }) {
 
 export default function FullPlaylist() {
     const [requestText, setRequestText] = useState("");
+    const [dateGroups, setDateGroups] = useState<DateGroup[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [search, setSearch] = useState("");
+    const [submitting, setSubmitting] = useState(false);
+    const [submitted, setSubmitted] = useState(false);
+
+    useEffect(() => {
+        fetchAudio();
+    }, []);
+
+    const fetchAudio = async (searchTerm?: string) => {
+        setLoading(true);
+        setError(null);
+        try {
+            const params = new URLSearchParams({ limit: "50" });
+            if (searchTerm) params.append("search", searchTerm);
+
+            const response = await axios.get(`/api/cloudinary/audio?${params.toString()}`);
+
+            if (response.data.success) {
+                const drops: Drop[] = response.data.audioFiles.map(audioFileToDrop);
+                const groups = groupByDate(drops);
+                setDateGroups(groups);
+            } else {
+                setError("Failed to load audio files.");
+            }
+        } catch (err) {
+            console.error("Error fetching audio:", err);
+            setError("Something went wrong. Please try again.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const val = e.target.value;
+        setSearch(val);
+        fetchAudio(val || undefined);
+    };
+
+    const handleSubmitRequest = async () => {
+        if (!requestText.trim()) return;
+        setSubmitting(true);
+        // TODO: wire up your request submission API here
+        await new Promise((res) => setTimeout(res, 1000));
+        setSubmitting(false);
+        setSubmitted(true);
+        setRequestText("");
+        setTimeout(() => setSubmitted(false), 3000);
+    };
 
     return (
         <div className="min-h-screen bg-[#0d0d10] text-white">
             {/* Header */}
             <div className="flex items-center gap-3 px-4 py-4 border-b border-white/5 sticky top-0 bg-[#0d0d10] z-10">
-                <Link href='/MainModules/HomePage'>
+                <Link href="/MainModules/HomePage">
                     <button className="text-gray-400 hover:text-white transition-colors cursor-pointer">
                         <ArrowLeft size={20} />
                     </button>
                 </Link>
-                <div>
-                    <h1 className="text-base font-bold text-white leading-tight">RCB vs MI</h1>
-                    <p className="text-xs text-gray-500">Full Playlist</p>
+                <div className="flex-1 min-w-0">
+                    <h1 className="text-base font-bold text-white leading-tight">Full Playlist</h1>
+                    <p className="text-xs text-gray-500">Audio Drops</p>
                 </div>
+                {/* Search — desktop */}
+                <input
+                    type="text"
+                    value={search}
+                    onChange={handleSearch}
+                    placeholder="Search drops..."
+                    className="hidden sm:block bg-[#1a1a1a] border border-white/10 rounded-full px-3 py-1.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-[#C9115F]/50 w-40"
+                />
+            </div>
+
+            {/* Search — mobile */}
+            <div className="sm:hidden px-4 pt-3">
+                <input
+                    type="text"
+                    value={search}
+                    onChange={handleSearch}
+                    placeholder="Search drops..."
+                    className="w-full bg-[#1a1a1a] border border-white/10 rounded-full px-3 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-[#C9115F]/50"
+                />
             </div>
 
             {/* Body */}
@@ -113,31 +447,52 @@ export default function FullPlaylist() {
 
                 {/* Left: Drops Feed */}
                 <div className="flex-1 min-w-0">
-                    {mockData.map((group) => (
-                        <div key={group.label} className="mb-8">
-                            <SectionLabel label={group.label} />
-
-                            {/* Audio Drops */}
-                            {group.audioDrops.length > 0 && (
-                                <div className="mb-5">
-                                    <p className="text-gray-400 text-sm font-medium mb-3">Audio Drops</p>
-                                    {group.audioDrops.map((drop) => (
-                                        <DropRow key={drop.id} drop={drop} />
-                                    ))}
-                                </div>
-                            )}
-
-                            {/* Video Drops */}
-                            {group.videoDrops.length > 0 && (
-                                <div>
-                                    <p className="text-gray-400 text-sm font-medium mb-3">Video Drops</p>
-                                    {group.videoDrops.map((drop) => (
-                                        <DropRow key={drop.id} drop={drop} />
-                                    ))}
-                                </div>
-                            )}
+                    {loading ? (
+                        <div className="flex items-center justify-center py-20">
+                            <Loader2 size={28} className="animate-spin text-[#C9115F]" />
+                            <span className="ml-3 text-gray-400 text-sm">Loading drops...</span>
                         </div>
-                    ))}
+                    ) : error ? (
+                        <div className="flex flex-col items-center justify-center py-20 gap-3">
+                            <p className="text-red-400 text-sm">{error}</p>
+                            <button
+                                onClick={() => fetchAudio()}
+                                className="px-4 py-2 bg-[#C9115F] text-white text-xs rounded-lg hover:opacity-90"
+                            >
+                                Retry
+                            </button>
+                        </div>
+                    ) : dateGroups.length === 0 ? (
+                        <div className="flex items-center justify-center py-20">
+                            <p className="text-gray-500 text-sm">
+                                {search ? `No drops found for "${search}"` : "No audio drops available."}
+                            </p>
+                        </div>
+                    ) : (
+                        dateGroups.map((group) => (
+                            <div key={group.label} className="mb-8">
+                                <SectionLabel label={group.label} />
+
+                                {group.audioDrops.length > 0 && (
+                                    <div className="mb-5">
+                                        <p className="text-gray-400 text-sm font-medium mb-3">Audio Drops</p>
+                                        {group.audioDrops.map((drop) => (
+                                            <DropRow key={drop.id} drop={drop} />
+                                        ))}
+                                    </div>
+                                )}
+
+                                {group.videoDrops.length > 0 && (
+                                    <div>
+                                        <p className="text-gray-400 text-sm font-medium mb-3">Video Drops</p>
+                                        {group.videoDrops.map((drop) => (
+                                            <DropRow key={drop.id} drop={drop} />
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        ))
+                    )}
                 </div>
 
                 {/* Right: Request a Drop Panel */}
@@ -165,9 +520,21 @@ export default function FullPlaylist() {
                             className="w-full bg-[#0d0d10] text-white text-sm placeholder-gray-600 rounded-xl px-4 py-3 border border-white/5 focus:outline-none focus:border-[#C9115F]/50 resize-none transition-colors"
                         />
 
+                        {/* Success message */}
+                        {submitted && (
+                            <p className="text-green-400 text-xs mt-2 text-center">
+                                ✅ Request submitted successfully!
+                            </p>
+                        )}
+
                         {/* Submit Button */}
-                        <button className="w-full mt-4 py-3 rounded-xl text-white text-sm font-bold bg-gradient-to-r from-[#C9115F] to-[#e85d04] hover:opacity-90 transition-opacity active:scale-[0.98]">
-                            Submit Request
+                        <button
+                            onClick={handleSubmitRequest}
+                            disabled={submitting || !requestText.trim()}
+                            className="w-full mt-4 py-3 rounded-xl text-white text-sm font-bold bg-gradient-to-r from-[#C9115F] to-[#e85d04] hover:opacity-90 transition-opacity active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                        >
+                            {submitting && <Loader2 size={14} className="animate-spin" />}
+                            {submitting ? "Submitting..." : "Submit Request"}
                         </button>
                     </div>
                 </div>

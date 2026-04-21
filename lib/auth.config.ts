@@ -9,28 +9,16 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
 
-  // ↓ ADD THIS
-  logger: {
-    error(error) {
-      console.error("[NEXTAUTH ERROR]", error);
-    },
-    warn(code) {
-      console.warn("[NEXTAUTH WARN]", code);
-    },
-    debug(code, metadata) {
-      console.log("[NEXTAUTH DEBUG]", code, metadata);
-    },
-  },
-
-  // ↓ ADD THIS - helps diagnose config issues
-  debug: true,
-
   callbacks: {
     async signIn({ user }) {
-      console.log("[SIGNIN CALLBACK] user:", user); // ← add this
+      console.log("[SIGNIN CALLBACK] user:", user?.email);
+      
       try {
+        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
+        console.log("[SIGNIN CALLBACK] calling backend:", backendUrl);
+
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/auth/google-sync`,
+          `${backendUrl}/api/auth/google-sync`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -41,18 +29,30 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             }),
           }
         );
-        console.log("[SIGNIN CALLBACK] sync response status:", response.status);
-        if (response.status === 403) return false;
+
+        console.log("[SIGNIN CALLBACK] backend response status:", response.status);
+
+        // Only block login if explicitly 403
+        if (response.status === 403) {
+          console.log("[SIGNIN CALLBACK] blocked by backend 403");
+          return false;
+        }
+
+        // Allow login for any other status including errors
         return true;
+
       } catch (err) {
-        console.error("[SIGNIN CALLBACK] fetch error:", err); // ← and this
-        return false;
+        // ✅ Don't block login if backend is unreachable — allow it
+        console.error("[SIGNIN CALLBACK] backend sync failed, allowing login anyway:", err);
+        return true;
       }
     },
 
     async jwt({ token, account, user }) {
       if (account?.provider === "google" && user) {
         token.email = user.email;
+        token.name = user.name;
+        token.picture = user.image;
       }
       return token;
     },
@@ -68,4 +68,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   },
 
   session: { strategy: "jwt" },
+
+  debug: true,
 });

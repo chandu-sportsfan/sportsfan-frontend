@@ -761,8 +761,8 @@ export default function AudioDropCard() {
                             { label: "Listens", value: audioDrop.listens.toLocaleString() },
                             { label: "Signals", value: audioDrop.signals.toLocaleString() },
                             { label: "Duration", value: duration },  {/* ← separate duration state */}
-                        ].map((s) => (
-                            <div key={s.label} className="bg-[#1a1a1e] rounded-xl p-2.5 flex flex-col gap-1.5">
+                        ].map((s,index) => (
+                            <div key={index} className="bg-[#1a1a1e] rounded-xl p-2.5 flex flex-col gap-1.5">
                                 <div className="flex items-center gap-1.5 text-[#999]">
                                     <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
                                         <circle cx="6.5" cy="6.5" r="5" stroke="#999" strokeWidth="1.2" />

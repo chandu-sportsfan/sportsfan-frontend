@@ -148,41 +148,43 @@ function DropRow({ drop }: { drop: Drop }) {
 
     return (
         <div className="flex items-center justify-between px-3 py-3 bg-[#141414] rounded-xl mb-2 gap-3">
-            <div className="flex items-center gap-3 min-w-0">
-                <button
-                    onClick={togglePlay}
-                    className="w-10 h-10 rounded-lg bg-[#1e1e1e] flex items-center justify-center flex-shrink-0 border border-white/5 hover:border-[#C9115F]/40 transition-colors"
-                >
-                    {drop.type === "audio" ? (
-                        playing ? (
-                            <span className="w-3 h-3 flex gap-0.5 items-end">
-                                <span className="w-1 h-3 bg-[#C9115F] rounded-sm animate-pulse" />
-                                <span className="w-1 h-2 bg-[#C9115F] rounded-sm animate-pulse delay-75" />
-                                <span className="w-1 h-3 bg-[#C9115F] rounded-sm animate-pulse delay-150" />
-                            </span>
+            <Link href={`/MainModules/MatchesDropContent/AudioDropScreen?id=${encodeURIComponent(drop.id)}`}>
+                <div className="flex items-center gap-3 min-w-0">
+                    <button
+                        onClick={togglePlay}
+                        className="w-10 h-10 rounded-lg bg-[#1e1e1e] flex items-center justify-center flex-shrink-0 border border-white/5 hover:border-[#C9115F]/40 transition-colors"
+                    >
+                        {drop.type === "audio" ? (
+                            playing ? (
+                                <span className="w-3 h-3 flex gap-0.5 items-end">
+                                    <span className="w-1 h-3 bg-[#C9115F] rounded-sm animate-pulse" />
+                                    <span className="w-1 h-2 bg-[#C9115F] rounded-sm animate-pulse delay-75" />
+                                    <span className="w-1 h-3 bg-[#C9115F] rounded-sm animate-pulse delay-150" />
+                                </span>
+                            ) : (
+                                <Headphones size={16} className="text-[#C9115F]" />
+                            )
                         ) : (
-                            <Headphones size={16} className="text-[#C9115F]" />
-                        )
-                    ) : (
-                        <Play size={16} className="text-[#C9115F]" fill="#C9115F" />
-                    )}
-                </button>
+                            <Play size={16} className="text-[#C9115F]" fill="#C9115F" />
+                        )}
+                    </button>
 
-                <div className="min-w-0">
-                    <p className="text-white text-sm font-medium truncate leading-tight">{drop.title}</p>
-                    <div className="flex items-center gap-2 mt-0.5">
-                        <span className="text-gray-500 text-xs">{duration}</span>
-                        <span className="text-gray-600 text-xs">•</span>
-                        <span className="text-gray-500 text-xs">{plays} plays</span>
-                    </div>
-                    <div className="flex items-center gap-1 mt-0.5">
-                        <Users size={10} className="text-gray-600" />
-                        <span className="text-gray-500 text-[11px]">by {drop.author}</span>
+                    <div className="min-w-0">
+                        <p className="text-white text-sm font-medium truncate leading-tight">{drop.title}</p>
+                        <div className="flex items-center gap-2 mt-0.5">
+                            <span className="text-gray-500 text-xs">{duration}</span>
+                            <span className="text-gray-600 text-xs">•</span>
+                            <span className="text-gray-500 text-xs">{plays} plays</span>
+                        </div>
+                        <div className="flex items-center gap-1 mt-0.5">
+                            <Users size={10} className="text-gray-600" />
+                            <span className="text-gray-500 text-[11px]">by {drop.author}</span>
+                        </div>
                     </div>
                 </div>
-            </div>
+            </Link>
 
-            <Link href="/MainModules/MatchesDropContent/AudioDropScreen">
+            <Link href={`/MainModules/MatchesDropContent/AudioDropScreen?id=${encodeURIComponent(drop.id)}`}>
                 <span className="flex-shrink-0 text-[#C9115F] text-xs font-semibold whitespace-nowrap">
                     {drop.badge}
                 </span>
@@ -212,36 +214,36 @@ export default function FullPlaylist() {
     useEffect(() => {
         fetchAudio();
     }, []);
-const fetchAudio = async (searchTerm?: string) => {
-    setLoading(true);
-    setError(null);
-    try {
-        const params = new URLSearchParams({ limit: "50" });
-        if (searchTerm) params.append("search", searchTerm);
+    const fetchAudio = async (searchTerm?: string) => {
+        setLoading(true);
+        setError(null);
+        try {
+            const params = new URLSearchParams({ limit: "50" });
+            if (searchTerm) params.append("search", searchTerm);
 
-        const [audioRes, playsRes] = await Promise.all([
-            axios.get(`/api/cloudinary/audio?${params.toString()}`),
-            axios.get("/api/cloudinary/plays"),
-        ]);
+            const [audioRes, playsRes] = await Promise.all([
+                axios.get(`/api/cloudinary/audio?${params.toString()}`),
+                axios.get("/api/cloudinary/plays"),
+            ]);
 
-        if (audioRes.data.success) {
-            const playsMap: Record<string, number> = playsRes.data.plays || {};
-            const drops: Drop[] = audioRes.data.audioFiles.map((audio: AudioFile) => ({
-                ...audioFileToDrop(audio),
-                plays: String(playsMap[audio.id] || 0),
-            }));
-            const groups = groupByDate(drops);
-            setDateGroups(groups);
-        } else {
-            setError("Failed to load audio files.");
+            if (audioRes.data.success) {
+                const playsMap: Record<string, number> = playsRes.data.plays || {};
+                const drops: Drop[] = audioRes.data.audioFiles.map((audio: AudioFile) => ({
+                    ...audioFileToDrop(audio),
+                    plays: String(playsMap[audio.id] || 0),
+                }));
+                const groups = groupByDate(drops);
+                setDateGroups(groups);
+            } else {
+                setError("Failed to load audio files.");
+            }
+        } catch (err) {
+            console.error("Error fetching audio:", err);
+            setError("Something went wrong. Please try again.");
+        } finally {
+            setLoading(false);
         }
-    } catch (err) {
-        console.error("Error fetching audio:", err);
-        setError("Something went wrong. Please try again.");
-    } finally {
-        setLoading(false);
-    }
-};
+    };
 
     const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
         const val = e.target.value;

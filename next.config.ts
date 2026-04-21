@@ -84,9 +84,6 @@
 
 
 
-
-
-
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   async rewrites() {
@@ -101,23 +98,33 @@ const nextConfig = {
         { source: '/api/auth/host/:path*', destination: 'https://sportsfan360.vercel.app/api/auth/host/:path*' },
         { source: '/api/auth/forgot-password', destination: 'https://sportsfan360.vercel.app/api/auth/forgot-password' },
         { source: '/api/auth/google-sync', destination: 'https://sportsfan360.vercel.app/api/auth/google-sync' },
-
-        // NextAuth internal routes — keep local, never proxy these
-        { source: '/api/auth/session', destination: '/api/auth/session' },
-        { source: '/api/auth/csrf', destination: '/api/auth/csrf' },
-        { source: '/api/auth/providers', destination: '/api/auth/providers' },
-        { source: '/api/auth/signin', destination: '/api/auth/signin' },
-        { source: '/api/auth/signout', destination: '/api/auth/signout' },
-        { source: '/api/auth/callback/:provider*', destination: '/api/auth/callback/:provider*' },
-        { source: '/api/auth/_log', destination: '/api/auth/_log' },
       ],
 
       afterFiles: [
-        // Everything else under /api goes to backend
+        // ✅ Explicitly skip ALL /api/auth/* — let NextAuth handle them locally
+        // Only proxy non-auth API routes to backend
         {
-          source: '/api/:path*',
-          destination: 'https://sportsfan360.vercel.app/api/:path*',
+          source: '/api/team360/:path*',
+          destination: 'https://sportsfan360.vercel.app/api/team360/:path*',
         },
+        {
+          source: '/api/cricket-articles/:path*',
+          destination: 'https://sportsfan360.vercel.app/api/cricket-articles/:path*',
+        },
+        {
+          source: '/api/cricket-articles',
+          destination: 'https://sportsfan360.vercel.app/api/cricket-articles',
+        },
+        {
+          source: '/api/playerHome/:path*',
+          destination: 'https://sportsfan360.vercel.app/api/playerHome/:path*',
+        },
+        {
+          source: '/api/playerHome',
+          destination: 'https://sportsfan360.vercel.app/api/playerHome',
+        },
+        // Add any other specific backend API routes here
+        // ⚠️ Do NOT add a generic /api/:path* catch-all — it breaks NextAuth
         {
           source: '/Content/:path*',
           destination: 'https://sportsfan360.vercel.app/Content/:path*',

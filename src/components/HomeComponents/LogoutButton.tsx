@@ -33,31 +33,35 @@
 
 
 
+
 "use client";
-import { signOut } from "next-auth/react";
 import { LogOut } from "lucide-react";
-import { usePathname } from "next/navigation";
 
 export default function LogoutButton() {
-  const pathname = usePathname();
-
   const handleLogout = async () => {
-    // Clear manual token cookie
-    document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-    document.cookie = "token=; path=/; domain=localhost; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+    try {
+      // 1. Get CSRF token
+      const csrfRes = await fetch("/api/auth/csrf");
+      const { csrfToken } = await csrfRes.json();
+
+      // 2. NextAuth signout with CSRF
+      await fetch("/api/auth/signout", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({ csrfToken }),
+      });
+    } catch (e) {
+      console.warn("NextAuth signout failed", e);
+    }
+
+    // 3. Clear HttpOnly cookies via our local server route
+    await fetch("/api/logout", { method: "POST" }).catch(() => {});
+
+    // 4. Clear localStorage
     localStorage.removeItem("watchalong_user_name");
 
-    // Determine base URL
-    const isLocalhost = typeof window !== 'undefined' && window.location.hostname === 'localhost';
-    const baseUrl = isLocalhost 
-      ? 'http://localhost:3000'
-      : 'https://sportsfan-frontend.vercel.app';
-    
-    const callbackUrl = `${baseUrl}/auth/login`;
-    
-    console.log('Logging out, redirecting to:', callbackUrl);
-    
-    await signOut({ callbackUrl, redirect: true });
+    // 5. Hard redirect
+    window.location.replace("/auth/login");
   };
 
   return (

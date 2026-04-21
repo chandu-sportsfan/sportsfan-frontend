@@ -11,9 +11,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
   callbacks: {
     async signIn({ user }) {
-      // ✅ No backend call needed — admin panel handles
-      // user creation in its own NextAuth config
-      // Just allow all Google logins here
       console.log("[SIGNIN CALLBACK] allowing:", user?.email);
       return true;
     },

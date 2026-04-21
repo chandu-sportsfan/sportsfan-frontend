@@ -88,39 +88,33 @@
 
 
 
-
-
-
-
-
-
-
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   async rewrites() {
-    return [
-      // ✅ Auth routes handled LOCALLY by frontend's own NextAuth
-      // Do NOT proxy /api/auth/* to admin panel
+    return {
+      beforeFiles: [
+        { source: '/api/auth/login', destination: 'https://sportsfan360.vercel.app/api/auth/login' },
+        { source: '/api/auth/register', destination: 'https://sportsfan360.vercel.app/api/auth/register' },
+        { source: '/api/auth/send-otp', destination: 'https://sportsfan360.vercel.app/api/auth/send-otp' },
+        { source: '/api/auth/verify-otp', destination: 'https://sportsfan360.vercel.app/api/auth/verify-otp' },
+        { source: '/api/auth/set-password', destination: 'https://sportsfan360.vercel.app/api/auth/set-password' },
+        { source: '/api/auth/host/:path*', destination: 'https://sportsfan360.vercel.app/api/auth/host/:path*' },
+        { source: '/api/auth/forgot-password', destination: 'https://sportsfan360.vercel.app/api/auth/forgot-password' },
+        { source: '/api/auth/google-sync', destination: 'https://sportsfan360.vercel.app/api/auth/google-sync' },
+      ],
 
-      // ✅ Only proxy non-auth API calls to admin backend
-      {
-        source: '/api/admin/:path*',
-        destination: 'https://sportsfan360.vercel.app/api/:path*',
-      },
-
-      // ✅ Keep this — proxies backend login/signup/etc
-      // BUT exclude auth/* from the catch-all below
-      {
-        source: '/api/((?!auth).*)',   // matches /api/* EXCEPT /api/auth/*
-        destination: 'https://sportsfan360.vercel.app/api/$1',
-      },
-
-      // ✅ Content/images proxy — fine as-is
-      {
-        source: '/Content/:path*',
-        destination: 'https://sportsfan360.vercel.app/Content/:path*',
-      },
-    ];
+      afterFiles: [
+        // Catches everything else including /api/team360, /api/playerHome etc.
+        {
+          source: '/api/:path*',
+          destination: 'https://sportsfan360.vercel.app/api/:path*',
+        },
+        {
+          source: '/Content/:path*',
+          destination: 'https://sportsfan360.vercel.app/Content/:path*',
+        },
+      ],
+    };
   },
 
   async headers() {
@@ -145,24 +139,9 @@ const nextConfig = {
 
   images: {
     remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: 'sportsfan360.vercel.app',
-        port: '',
-        pathname: '/Content/**',
-      },
-      {
-        protocol: 'https',
-        hostname: 'res.cloudinary.com',
-        port: '',
-        pathname: '/**',
-      },
-      {
-        protocol: 'https',
-        hostname: 'documents.iplt20.com',
-        port: '',
-        pathname: '/**',
-      },
+      { protocol: 'https', hostname: 'sportsfan360.vercel.app', port: '', pathname: '/Content/**' },
+      { protocol: 'https', hostname: 'res.cloudinary.com', port: '', pathname: '/**' },
+      { protocol: 'https', hostname: 'documents.iplt20.com', port: '', pathname: '/**' },
     ],
   },
 };

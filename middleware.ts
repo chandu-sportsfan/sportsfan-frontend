@@ -6,11 +6,14 @@ const publicRoutes = [
     '/',
     '/auth/login',
     '/auth/register',
+     '/auth/error',          
+    '/api/auth', 
     '/api/auth/set-password',
     '/api/auth/login',
     '/api/auth/register',
     '/api/auth/send-otp',
     '/api/auth/verify-otp',
+    '/images', 
 ];
 
 export async function middleware(request: NextRequest) {

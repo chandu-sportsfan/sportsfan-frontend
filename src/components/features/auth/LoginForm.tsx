@@ -20,7 +20,7 @@ export default function LoginCard() {
     const [password, setPassword] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
-    
+
     const [showChangePassword, setShowChangePassword] = useState(false);
     const [newPassword, setNewPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
@@ -267,9 +267,13 @@ export default function LoginCard() {
                     <div className="flex-1 h-[1px] bg-gray-700" />
                 </div>
                 <button
-                    onClick={() => signIn("google", {
-                        callbackUrl: process.env.NEXT_PUBLIC_APP_URL + "/MainModules/HomePage"
-                    })}
+                    // onClick={() => signIn("google", {
+                    //     callbackUrl: process.env.NEXT_PUBLIC_APP_URL + "/MainModules/HomePage"
+                    // })}
+                    onClick={() => {
+                        const redirect = searchParams.get("redirect") || "/MainModules/HomePage";
+                        signIn("google", { callbackUrl: redirect });
+                    }}
                     className="w-full bg-white text-black py-3 rounded-full font-medium flex items-center justify-center gap-2 mb-6 hover:bg-gray-100 transition"
                 >
                     <svg width="18" height="18" viewBox="0 0 18 18">

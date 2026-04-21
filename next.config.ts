@@ -13,7 +13,7 @@
 //       },
 //     ];
 //   },
-  
+
 //   async headers() {
 //     return [
 //       {
@@ -50,7 +50,7 @@
 //       },
 //     ];
 //   },
-  
+
 //   // Configure Next.js Image component for remote images
 //   images: {
 //     remotePatterns: [
@@ -87,12 +87,12 @@
 
 
 
-
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   async rewrites() {
     return {
       beforeFiles: [
+        // Backend auth routes — proxy to admin panel
         { source: '/api/auth/login', destination: 'https://sportsfan360.vercel.app/api/auth/login' },
         { source: '/api/auth/register', destination: 'https://sportsfan360.vercel.app/api/auth/register' },
         { source: '/api/auth/send-otp', destination: 'https://sportsfan360.vercel.app/api/auth/send-otp' },
@@ -101,10 +101,19 @@ const nextConfig = {
         { source: '/api/auth/host/:path*', destination: 'https://sportsfan360.vercel.app/api/auth/host/:path*' },
         { source: '/api/auth/forgot-password', destination: 'https://sportsfan360.vercel.app/api/auth/forgot-password' },
         { source: '/api/auth/google-sync', destination: 'https://sportsfan360.vercel.app/api/auth/google-sync' },
+
+        // NextAuth internal routes — keep local, never proxy these
+        { source: '/api/auth/session', destination: '/api/auth/session' },
+        { source: '/api/auth/csrf', destination: '/api/auth/csrf' },
+        { source: '/api/auth/providers', destination: '/api/auth/providers' },
+        { source: '/api/auth/signin', destination: '/api/auth/signin' },
+        { source: '/api/auth/signout', destination: '/api/auth/signout' },
+        { source: '/api/auth/callback/:provider*', destination: '/api/auth/callback/:provider*' },
+        { source: '/api/auth/_log', destination: '/api/auth/_log' },
       ],
 
       afterFiles: [
-        // Catches everything else including /api/team360, /api/playerHome etc.
+        // Everything else under /api goes to backend
         {
           source: '/api/:path*',
           destination: 'https://sportsfan360.vercel.app/api/:path*',

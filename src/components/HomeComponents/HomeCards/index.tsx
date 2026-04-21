@@ -145,7 +145,7 @@ const homeCardsData: CardProps[] = [
     ],
     buttonText: "View Full Playlist",
     buttonIcon: "chart",
-    buttonUrl: "/MainModules/MatchesDropContent"
+    buttonUrl: "/MainModules/ClubsProfile"
   },
   {
     id: 2,
@@ -160,7 +160,7 @@ const homeCardsData: CardProps[] = [
     ],
     buttonText: "Explore 360World",
     buttonIcon: "play",
-    buttonUrl: "/MainModules/ClubsProfile"
+    buttonUrl: "/MainModules/MatchesDropContent"
   },
 ];
 

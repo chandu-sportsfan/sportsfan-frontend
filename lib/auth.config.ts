@@ -11,35 +11,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
   callbacks: {
     async signIn({ user }) {
-      try {
-        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
-
-        const response = await fetch(
-          `${backendUrl}/api/auth/google-sync`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              email: user.email,
-              name: user.name,
-              image: user.image,
-            }),
-          }
-        );
-
-        // ✅ Log the actual error message from backend
-        const responseBody = await response.text();
-        console.log("[SIGNIN CALLBACK] status:", response.status, "body:", responseBody);
-
-        if (response.status === 403) return false;
-
-        // ✅ Allow login regardless — don't block on 400
-        return true;
-
-      } catch (err) {
-        console.error("[SIGNIN CALLBACK] error:", err);
-        return true;
-      }
+      // ✅ No backend call needed — admin panel handles
+      // user creation in its own NextAuth config
+      // Just allow all Google logins here
+      console.log("[SIGNIN CALLBACK] allowing:", user?.email);
+      return true;
     },
 
     async jwt({ token, account, user }) {
@@ -62,8 +38,4 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   },
 
   session: { strategy: "jwt" },
-
-  debug: true,
 });
-
-

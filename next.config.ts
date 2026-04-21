@@ -96,7 +96,6 @@ const nextConfig = {
         { source: '/api/auth/set-password', destination: 'https://sportsfan360.vercel.app/api/auth/set-password' },
         { source: '/api/auth/host/:path*', destination: 'https://sportsfan360.vercel.app/api/auth/host/:path*' },
         { source: '/api/auth/forgot-password', destination: 'https://sportsfan360.vercel.app/api/auth/forgot-password' },
-        { source: '/api/auth/google-sync', destination: 'https://sportsfan360.vercel.app/api/auth/google-sync' },
         // All other /api/auth/* (session, callback, signin, signout) handled locally by NextAuth
       ],
 

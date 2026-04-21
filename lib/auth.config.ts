@@ -11,11 +11,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
   callbacks: {
     async signIn({ user }) {
-      console.log("[SIGNIN CALLBACK] user:", user?.email);
-      
       try {
         const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
-        console.log("[SIGNIN CALLBACK] calling backend:", backendUrl);
 
         const response = await fetch(
           `${backendUrl}/api/auth/google-sync`,
@@ -30,20 +27,17 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           }
         );
 
-        console.log("[SIGNIN CALLBACK] backend response status:", response.status);
+        // ✅ Log the actual error message from backend
+        const responseBody = await response.text();
+        console.log("[SIGNIN CALLBACK] status:", response.status, "body:", responseBody);
 
-        // Only block login if explicitly 403
-        if (response.status === 403) {
-          console.log("[SIGNIN CALLBACK] blocked by backend 403");
-          return false;
-        }
+        if (response.status === 403) return false;
 
-        // Allow login for any other status including errors
+        // ✅ Allow login regardless — don't block on 400
         return true;
 
       } catch (err) {
-        // ✅ Don't block login if backend is unreachable — allow it
-        console.error("[SIGNIN CALLBACK] backend sync failed, allowing login anyway:", err);
+        console.error("[SIGNIN CALLBACK] error:", err);
         return true;
       }
     },
@@ -71,3 +65,5 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
   debug: true,
 });
+
+

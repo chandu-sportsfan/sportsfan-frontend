@@ -83,70 +83,197 @@
 
 
 
+// /** @type {import('next').NextConfig} */
+// const nextConfig = {
+//   async rewrites() {
+//     return {
+//       beforeFiles: [
+//         // Backend auth routes — proxy to admin panel
+//         { source: '/api/auth/login', destination: 'https://sportsfan360.vercel.app/api/auth/login' },
+//         { source: '/api/auth/register', destination: 'https://sportsfan360.vercel.app/api/auth/register' },
+//         { source: '/api/auth/send-otp', destination: 'https://sportsfan360.vercel.app/api/auth/send-otp' },
+//         { source: '/api/auth/verify-otp', destination: 'https://sportsfan360.vercel.app/api/auth/verify-otp' },
+//         { source: '/api/auth/set-password', destination: 'https://sportsfan360.vercel.app/api/auth/set-password' },
+//         { source: '/api/auth/host/:path*', destination: 'https://sportsfan360.vercel.app/api/auth/host/:path*' },
+//         { source: '/api/auth/forgot-password', destination: 'https://sportsfan360.vercel.app/api/auth/forgot-password' },
+//         // All other /api/auth/* (session, callback, signin, signout) handled locally by NextAuth
+//       ],
+
+//       afterFiles: [
+//         // Team360
+//         { source: '/api/team360', destination: 'https://sportsfan360.vercel.app/api/team360' },
+//         { source: '/api/team360/:path*', destination: 'https://sportsfan360.vercel.app/api/team360/:path*' },
+//         { source: '/api/team360-playlist', destination: 'https://sportsfan360.vercel.app/api/team360-playlist' },
+//         { source: '/api/team360-playlist/:path*', destination: 'https://sportsfan360.vercel.app/api/team360-playlist/:path*' },
+
+//         // Cricket Articles
+//         { source: '/api/cricket-articles', destination: 'https://sportsfan360.vercel.app/api/cricket-articles' },
+//         { source: '/api/cricket-articles/:path*', destination: 'https://sportsfan360.vercel.app/api/cricket-articles/:path*' },
+
+//         // Player Profile
+//         { source: '/api/player-profile', destination: 'https://sportsfan360.vercel.app/api/player-profile' },
+//         { source: '/api/player-profile/:path*', destination: 'https://sportsfan360.vercel.app/api/player-profile/:path*' },
+//         { source: '/api/playersprofile-playlist', destination: 'https://sportsfan360.vercel.app/api/playersprofile-playlist' },
+//         { source: '/api/playersprofile-playlist/:path*', destination: 'https://sportsfan360.vercel.app/api/playersprofile-playlist/:path*' },
+
+//         // Club Profile
+//         { source: '/api/club-profile', destination: 'https://sportsfan360.vercel.app/api/club-profile' },
+//         { source: '/api/club-profile/:path*', destination: 'https://sportsfan360.vercel.app/api/club-profile/:path*' },
+
+//         // Watch Along
+//         { source: '/api/watch-along', destination: 'https://sportsfan360.vercel.app/api/watch-along' },
+//         { source: '/api/watch-along/:path*', destination: 'https://sportsfan360.vercel.app/api/watch-along/:path*' },
+
+//         // Events
+//         { source: '/api/events', destination: 'https://sportsfan360.vercel.app/api/events' },
+//         { source: '/api/events/:path*', destination: 'https://sportsfan360.vercel.app/api/events/:path*' },
+
+//         // Cloudinary
+//         { source: '/api/cloudinary/audio', destination: 'https://sportsfan360.vercel.app/api/cloudinary/audio' },
+//         { source: '/api/cloudinary/plays', destination: 'https://sportsfan360.vercel.app/api/cloudinary/plays' },
+//         { source: '/api/cloudinary/:path*', destination: 'https://sportsfan360.vercel.app/api/cloudinary/:path*' },
+
+//         // Plays
+//         { source: '/api/plays', destination: 'https://sportsfan360.vercel.app/api/plays' },
+//         { source: '/api/plays/:path*', destination: 'https://sportsfan360.vercel.app/api/plays/:path*' },
+
+//         // Global Search
+//         { source: '/api/global-search', destination: 'https://sportsfan360.vercel.app/api/global-search' },
+//         { source: '/api/global-search/:path*', destination: 'https://sportsfan360.vercel.app/api/global-search/:path*' },
+
+//         // Static content
+//         { source: '/Content/:path*', destination: 'https://sportsfan360.vercel.app/Content/:path*' },
+
+//         // Host Rooms
+//         { source: '/api/hostrooms', destination: 'https://sportsfan360.vercel.app/api/hostrooms' },
+//         { source: '/api/hostrooms/:path*', destination: 'https://sportsfan360.vercel.app/api/hostrooms/:path*' },
+//       ],
+//     };
+//   },
+
+//   async headers() {
+//     return [
+//       {
+//         source: '/:path*',
+//         headers: [
+//           { key: 'Cross-Origin-Resource-Policy', value: 'cross-origin' },
+//           { key: 'Cross-Origin-Embedder-Policy', value: 'unsafe-none' },
+//         ],
+//       },
+//       {
+//         source: '/api/:path*',
+//         headers: [
+//           { key: 'Access-Control-Allow-Origin', value: '*' },
+//           { key: 'Access-Control-Allow-Methods', value: 'GET, POST, PUT, DELETE, OPTIONS' },
+//           { key: 'Access-Control-Allow-Headers', value: 'Content-Type, Authorization' },
+//         ],
+//       },
+//     ];
+//   },
+
+//   images: {
+//     remotePatterns: [
+//       { protocol: 'https', hostname: 'sportsfan360.vercel.app', port: '', pathname: '/Content/**' },
+//       { protocol: 'https', hostname: 'res.cloudinary.com', port: '', pathname: '/**' },
+//       { protocol: 'https', hostname: 'documents.iplt20.com', port: '', pathname: '/**' },
+//     ],
+//   },
+// };
+
+// module.exports = nextConfig;
+
+
+
+
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   async rewrites() {
+    const apiTarget = process.env.NODE_ENV === 'development'
+      ? 'http://localhost:3001'
+      : 'https://sportsfan360.vercel.app';
+
     return {
       beforeFiles: [
-        // Backend auth routes — proxy to admin panel
-        { source: '/api/auth/login', destination: 'https://sportsfan360.vercel.app/api/auth/login' },
-        { source: '/api/auth/register', destination: 'https://sportsfan360.vercel.app/api/auth/register' },
-        { source: '/api/auth/send-otp', destination: 'https://sportsfan360.vercel.app/api/auth/send-otp' },
-        { source: '/api/auth/verify-otp', destination: 'https://sportsfan360.vercel.app/api/auth/verify-otp' },
-        { source: '/api/auth/set-password', destination: 'https://sportsfan360.vercel.app/api/auth/set-password' },
-        { source: '/api/auth/host/:path*', destination: 'https://sportsfan360.vercel.app/api/auth/host/:path*' },
-        { source: '/api/auth/forgot-password', destination: 'https://sportsfan360.vercel.app/api/auth/forgot-password' },
-        // All other /api/auth/* (session, callback, signin, signout) handled locally by NextAuth
+        // ── Auth routes → proxy to admin panel ──
+        { source: '/api/auth/login', destination: `${apiTarget}/api/auth/login` },
+        { source: '/api/auth/register', destination: `${apiTarget}/api/auth/register` },
+        { source: '/api/auth/send-otp', destination: `${apiTarget}/api/auth/send-otp` },
+        { source: '/api/auth/verify-otp', destination: `${apiTarget}/api/auth/verify-otp` },
+        { source: '/api/auth/set-password', destination: `${apiTarget}/api/auth/set-password` },
+        { source: '/api/auth/host/:path*', destination: `${apiTarget}/api/auth/host/:path*` },
+        { source: '/api/auth/forgot-password', destination: `${apiTarget}/api/auth/forgot-password` },
+
+        // ── FIX: Keep these watch-along nested routes LOCAL (Next.js handles them) ──
+        { source: '/api/watch-along/matches', destination: '/api/watch-along/matches' },
+        { source: '/api/watch-along/matches/:matchId', destination: '/api/watch-along/matches/:matchId' },
+        { source: '/api/watch-along/matches/:matchId/predictions', destination: '/api/watch-along/matches/:matchId/predictions' },
+        { source: '/api/watch-along/matches/:matchId/predictions/:path*', destination: '/api/watch-along/matches/:matchId/predictions/:path*' },
+        { source: '/api/watch-along/matches/:matchId/chats', destination: '/api/watch-along/matches/:matchId/chats' },
+        { source: '/api/watch-along/matches/:matchId/chats/:path*', destination: '/api/watch-along/matches/:matchId/chats/:path*' },
+        { source: '/api/watch-along/matches/:matchId/quiz', destination: '/api/watch-along/matches/:matchId/quiz' },
+        { source: '/api/watch-along/matches/:matchId/quiz/:path*', destination: '/api/watch-along/matches/:matchId/quiz/:path*' },
+        { source: '/api/watch-along/matches/:matchId/emoji-storm', destination: '/api/watch-along/matches/:matchId/emoji-storm' },
+        { source: '/api/watch-along/matches/:matchId/emoji-storm/:path*', destination: '/api/watch-along/matches/:matchId/emoji-storm/:path*' },
       ],
 
       afterFiles: [
         // Team360
-        { source: '/api/team360', destination: 'https://sportsfan360.vercel.app/api/team360' },
-        { source: '/api/team360/:path*', destination: 'https://sportsfan360.vercel.app/api/team360/:path*' },
-        { source: '/api/team360-playlist', destination: 'https://sportsfan360.vercel.app/api/team360-playlist' },
-        { source: '/api/team360-playlist/:path*', destination: 'https://sportsfan360.vercel.app/api/team360-playlist/:path*' },
+        { source: '/api/team360', destination: `${apiTarget}/api/team360` },
+        { source: '/api/team360/:path*', destination: `${apiTarget}/api/team360/:path*` },
+        { source: '/api/team360-playlist', destination: `${apiTarget}/api/team360-playlist` },
+        { source: '/api/team360-playlist/:path*', destination: `${apiTarget}/api/team360-playlist/:path*` },
 
         // Cricket Articles
-        { source: '/api/cricket-articles', destination: 'https://sportsfan360.vercel.app/api/cricket-articles' },
-        { source: '/api/cricket-articles/:path*', destination: 'https://sportsfan360.vercel.app/api/cricket-articles/:path*' },
+        { source: '/api/cricket-articles', destination: `${apiTarget}/api/cricket-articles` },
+        { source: '/api/cricket-articles/:path*', destination: `${apiTarget}/api/cricket-articles/:path*` },
 
         // Player Profile
-        { source: '/api/player-profile', destination: 'https://sportsfan360.vercel.app/api/player-profile' },
-        { source: '/api/player-profile/:path*', destination: 'https://sportsfan360.vercel.app/api/player-profile/:path*' },
-        { source: '/api/playersprofile-playlist', destination: 'https://sportsfan360.vercel.app/api/playersprofile-playlist' },
-        { source: '/api/playersprofile-playlist/:path*', destination: 'https://sportsfan360.vercel.app/api/playersprofile-playlist/:path*' },
+        { source: '/api/player-profile', destination: `${apiTarget}/api/player-profile` },
+        { source: '/api/player-profile/:path*', destination: `${apiTarget}/api/player-profile/:path*` },
+        { source: '/api/playersprofile-playlist', destination: `${apiTarget}/api/playersprofile-playlist` },
+        { source: '/api/playersprofile-playlist/:path*', destination: `${apiTarget}/api/playersprofile-playlist/:path*` },
 
         // Club Profile
-        { source: '/api/club-profile', destination: 'https://sportsfan360.vercel.app/api/club-profile' },
-        { source: '/api/club-profile/:path*', destination: 'https://sportsfan360.vercel.app/api/club-profile/:path*' },
+        { source: '/api/club-profile', destination: `${apiTarget}/api/club-profile` },
+        { source: '/api/club-profile/:path*', destination: `${apiTarget}/api/club-profile/:path*` },
 
-        // Watch Along
-        { source: '/api/watch-along', destination: 'https://sportsfan360.vercel.app/api/watch-along' },
-        { source: '/api/watch-along/:path*', destination: 'https://sportsfan360.vercel.app/api/watch-along/:path*' },
+        // Watch Along — only room-level routes go to admin panel
+        // (match/predictions/quiz/chats are handled locally via beforeFiles above)
+        { source: '/api/watch-along', destination: `${apiTarget}/api/watch-along` },
+        { source: '/api/watch-along/:path*', destination: `${apiTarget}/api/watch-along/:path*` },
 
         // Events
-        { source: '/api/events', destination: 'https://sportsfan360.vercel.app/api/events' },
-        { source: '/api/events/:path*', destination: 'https://sportsfan360.vercel.app/api/events/:path*' },
+        { source: '/api/events', destination: `${apiTarget}/api/events` },
+        { source: '/api/events/:path*', destination: `${apiTarget}/api/events/:path*` },
 
         // Cloudinary
-        { source: '/api/cloudinary/audio', destination: 'https://sportsfan360.vercel.app/api/cloudinary/audio' },
-        { source: '/api/cloudinary/plays', destination: 'https://sportsfan360.vercel.app/api/cloudinary/plays' },
-        { source: '/api/cloudinary/:path*', destination: 'https://sportsfan360.vercel.app/api/cloudinary/:path*' },
+        { source: '/api/cloudinary/audio', destination: `${apiTarget}/api/cloudinary/audio` },
+        { source: '/api/cloudinary/plays', destination: `${apiTarget}/api/cloudinary/plays` },
+        { source: '/api/cloudinary/:path*', destination: `${apiTarget}/api/cloudinary/:path*` },
 
         // Plays
-        { source: '/api/plays', destination: 'https://sportsfan360.vercel.app/api/plays' },
-        { source: '/api/plays/:path*', destination: 'https://sportsfan360.vercel.app/api/plays/:path*' },
+        { source: '/api/plays', destination: `${apiTarget}/api/plays` },
+        { source: '/api/plays/:path*', destination: `${apiTarget}/api/plays/:path*` },
 
         // Global Search
-        { source: '/api/global-search', destination: 'https://sportsfan360.vercel.app/api/global-search' },
-        { source: '/api/global-search/:path*', destination: 'https://sportsfan360.vercel.app/api/global-search/:path*' },
+        { source: '/api/global-search', destination: `${apiTarget}/api/global-search` },
+        { source: '/api/global-search/:path*', destination: `${apiTarget}/api/global-search/:path*` },
 
         // Static content
-        { source: '/Content/:path*', destination: 'https://sportsfan360.vercel.app/Content/:path*' },
+        { source: '/Content/:path*', destination: `${apiTarget}/Content/:path*` },
 
         // Host Rooms
-        { source: '/api/hostrooms', destination: 'https://sportsfan360.vercel.app/api/hostrooms' },
-        { source: '/api/hostrooms/:path*', destination: 'https://sportsfan360.vercel.app/api/hostrooms/:path*' },
+        { source: '/api/hostrooms', destination: `${apiTarget}/api/hostrooms` },
+        { source: '/api/hostrooms/:path*', destination: `${apiTarget}/api/hostrooms/:path*` },
+
+        // Audio Signals
+        { source: '/api/audio-messages', destination: `${apiTarget}/api/audio-messages` },
+        { source: '/api/audio-messages/:path*', destination: `${apiTarget}/api/audio-messages/:path*` },
+
+        // Audio Drops
+        { source: '/api/request-drop', destination: `${apiTarget}/api/request-drop` },
+        { source: '/api/request-drop/:path*', destination: `${apiTarget}/api/request-drop/:path*` },
       ],
     };
   },

@@ -34,7 +34,7 @@
 
 //     return (
 //         <div className="py-4 px-4 lg:px-6 w-full max-w-full overflow-x-hidden">
-            
+
 //             {/* Header */}
 //             <div className="flex items-center justify-between mb-4">
 //                 <h2 className="text-[24px] font-bold text-white">Cricket Articles</h2>
@@ -174,7 +174,7 @@
 
 //     return (
 //         <div className="py-4 px-4 lg:px-6 w-full max-w-full overflow-x-hidden">
-            
+
 //             {/* Header */}
 //             <div className="flex items-center justify-between mb-4">
 //                 <h2 className="text-[24px] font-bold text-white">Cricket Articles</h2>
@@ -248,6 +248,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 type BadgeType = "FEATURE" | "ANALYSIS" | "OPINION" | "NEWS";
 
@@ -255,6 +256,8 @@ interface Article {
     id: string;
     badge: BadgeType;
     title: string;
+    author: string;
+    description: string[];
     readTime: string;
     views: string;
     image: string;
@@ -310,7 +313,7 @@ export default function CricketArticles() {
 
     const visible = showAll ? articles : articles.slice(0, 4);
 
-   
+
     if (loading) {
         return (
             <div className="flex justify-center items-center bg-[#0d0d10] min-h-screen">
@@ -337,7 +340,7 @@ export default function CricketArticles() {
             </div>
         );
     }
-       
+
 
     return (
         <div className="py-4 px-4 mb-8 lg:px-6 w-full max-w-full overflow-x-hidden">
@@ -357,11 +360,11 @@ export default function CricketArticles() {
 
             {/* Cards */}
             {articles.length > 0 ? (
-                <div className="grid grid-cols-1 gap-3 min-h-[150px] md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 lg:gap-4">
+                <div className="grid grid-cols-1 gap-3 min-h-[150px] md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 lg:gap-4">
                     {visible.map((article) => (
                         <div
                             key={article.id}
-            onClick={() => router.push(`/MainModules/CricketArticles/${article.id}`)}
+                            onClick={() => router.push(`/MainModules/CricketArticles/${article.id}`)}
                             className="flex flex-row bg-[#1a1a1a] rounded-md p-2 overflow-hidden border border-white/10 cursor-pointer hover:border-white/20 transition"
                         >
                             {/* Image */}
@@ -387,6 +390,18 @@ export default function CricketArticles() {
                                 </span>
                                 <p className="text-white font-bold text-[16px] leading-snug line-clamp-2">
                                     {article.title}
+                                </p>
+                                 <p className="text-gray-400 font-bold text-[12px] leading-snug line-clamp-2">
+                                    Author - {article.author}
+                                </p>
+                                <p className="text-gray-400 font-bold text-[16px] leading-snug line-clamp-2">
+                                    {article.description && article.description.length > 0
+                                        ? article.description[0]
+                                        : "No description available"}
+                                </p>
+                                <p
+                                    onClick={() => router.push(`/MainModules/CricketArticles/${article.id}`)} >
+                                    <span className="text-blue-400 text-[15px]">Read more ...</span>
                                 </p>
                                 <p className="text-gray-400 text-[12px] whitespace-nowrap">
                                     {article.readTime}

@@ -413,14 +413,6 @@
 
 
 
-
-
-
-
-
-
-
-// components/AudioDropCard.tsx
 "use client";
 import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
@@ -451,6 +443,7 @@ interface AudioFile {
 }
 
 interface AudioDrop {
+    id?: string;
     title: string;
     subtitle?: string;
     description: string;
@@ -467,6 +460,15 @@ interface AudioDrop {
     team2?: string;
 }
 
+interface SignalMessage {
+    id: string;
+    audioId: string;
+    userId: string;
+    userName: string;
+    message: string;
+    createdAt: number;
+}
+
 const parseDurationToSeconds = (duration: string): number => {
     const parts = duration.split(":");
     if (parts.length === 2) return parseInt(parts[0]) * 60 + parseInt(parts[1]);
@@ -476,6 +478,7 @@ const parseDurationToSeconds = (duration: string): number => {
 
 function audioFileToAudioDrop(audio: AudioFile): AudioDrop {
     return {
+        id: audio.id,
         title: audio.title,
         subtitle: audio.matchInfo?.type
             ? `${audio.matchInfo.type.replace(/_/g, " ")} — ${audio.matchInfo.team1 ?? ""} vs ${audio.matchInfo.team2 ?? ""}`
@@ -506,13 +509,40 @@ export default function AudioDropCard() {
 
     const [playing, setPlaying] = useState(false);
     const [elapsed, setElapsed] = useState(0);
-    const [duration, setDuration] = useState("0:00");      // ← separate from audioDrop
+    const [duration, setDuration] = useState("0:00");
     const [audioDrop, setAudioDrop] = useState<AudioDrop | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    
+    // Signal dialog states
+    const [showSignalDialog, setShowSignalDialog] = useState(false);
+    const [signalMessage, setSignalMessage] = useState("");
+    const [sendingSignal, setSendingSignal] = useState(false);
+    const [signalsCount, setSignalsCount] = useState(0);
+    const [recentSignals, setRecentSignals] = useState<SignalMessage[]>([]);
+    const [showSignalsList, setShowSignalsList] = useState(false);
 
-    const audioRef = useRef<HTMLAudioElement | null>(null); // ← ref not state
+    const audioRef = useRef<HTMLAudioElement | null>(null);
     const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+    // Get or create user ID
+    const getUserId = () => {
+        let userId = localStorage.getItem("audio_user_id");
+        if (!userId) {
+            userId = `user_${Math.random().toString(36).substr(2, 9)}`;
+            localStorage.setItem("audio_user_id", userId);
+        }
+        return userId;
+    };
+
+    const getUserName = () => {
+        let userName = localStorage.getItem("audio_user_name");
+        if (!userName) {
+            userName = `Fan_${Math.random().toString(36).substr(2, 5)}`;
+            localStorage.setItem("audio_user_name", userName);
+        }
+        return userName;
+    };
 
     useEffect(() => {
         fetchAudioData();
@@ -567,7 +597,11 @@ export default function AudioDropCard() {
             }
 
             if (target) {
-                setAudioDrop(audioFileToAudioDrop(target));
+                const drop = audioFileToAudioDrop(target);
+                setAudioDrop(drop);
+                // Fetch signals count for this audio
+                await fetchSignalsCount(drop.id!);
+                await fetchRecentSignals(drop.id!);
             } else {
                 setError("Audio drop not found.");
             }
@@ -579,12 +613,74 @@ export default function AudioDropCard() {
         }
     };
 
-    // Initialize audio ONCE when audioUrl changes — never re-runs due to duration updates
+    const fetchSignalsCount = async (audioId: string) => {
+        try {
+            const response = await axios.get(`/api/audio-messages?audioId=${audioId}&count=true`);
+            if (response.data.success) {
+                setSignalsCount(response.data.count);
+                if (audioDrop) {
+                    setAudioDrop({ ...audioDrop, signals: response.data.count });
+                }
+            }
+        } catch (error) {
+            console.error("Error fetching signals count:", error);
+        }
+    };
+
+    const fetchRecentSignals = async (audioId: string) => {
+        try {
+            const response = await axios.get(`/api/audio-messages?audioId=${audioId}&limit=5`);
+            if (response.data.success) {
+                setRecentSignals(response.data.signals);
+            }
+        } catch (error) {
+            console.error("Error fetching recent signals:", error);
+        }
+    };
+
+    const handleSendSignal = async () => {
+        if (!signalMessage.trim() || !audioDrop?.id) return;
+
+        setSendingSignal(true);
+        try {
+            const response = await axios.post("/api/audio-messages", {
+                audioId: audioDrop.id,
+                audioTitle: audioDrop.title,
+                userId: getUserId(),
+                userName: getUserName(),
+                message: signalMessage.trim(),
+            });
+
+            if (response.data.success) {
+                // Update signals count
+                setSignalsCount(prev => prev + 1);
+                if (audioDrop) {
+                    setAudioDrop({ ...audioDrop, signals: signalsCount + 1 });
+                }
+                
+                // Add to recent signals
+                setRecentSignals(prev => [response.data.signal, ...prev].slice(0, 5));
+                
+                // Close dialog and reset
+                setShowSignalDialog(false);
+                setSignalMessage("");
+                
+                // Show success feedback
+                alert("Signal sent successfully!");
+            }
+        } catch (error) {
+            console.error("Error sending signal:", error);
+            alert("Failed to send signal. Please try again.");
+        } finally {
+            setSendingSignal(false);
+        }
+    };
+
+    // Initialize audio ONCE when audioUrl changes
     useEffect(() => {
         const url = audioDrop?.audioUrl;
         if (!url) return;
 
-        // Cleanup previous audio
         if (audioRef.current) {
             audioRef.current.pause();
             audioRef.current.src = "";
@@ -607,15 +703,15 @@ export default function AudioDropCard() {
             setElapsed(0);
         });
 
-        audio.load(); // explicitly trigger metadata fetch
+        audio.load();
 
         return () => {
             audio.pause();
             audio.src = "";
         };
-    }, [audioDrop?.audioUrl]); // ← only re-runs when URL changes, NOT when duration updates
+    }, [audioDrop?.audioUrl]);
 
-    // Handle play/pause using ref — no audioElement state needed
+    // Handle play/pause
     useEffect(() => {
         const audio = audioRef.current;
         if (!audio) return;
@@ -692,15 +788,49 @@ export default function AudioDropCard() {
                             </p>
                         </div>
                     </div>
-                    <div className="w-8 h-8 rounded-full bg-[#1e1e22] flex items-center justify-center cursor-pointer">
+                    <button 
+                        onClick={() => setShowSignalsList(!showSignalsList)}
+                        className="relative w-8 h-8 rounded-full bg-[#1e1e22] flex items-center justify-center cursor-pointer hover:bg-[#2a2a2e] transition"
+                    >
                         <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                             <circle cx="12" cy="3" r="1.8" stroke="#aaa" strokeWidth="1.4" />
                             <circle cx="12" cy="13" r="1.8" stroke="#aaa" strokeWidth="1.4" />
                             <circle cx="4" cy="8" r="1.8" stroke="#aaa" strokeWidth="1.4" />
                             <path d="M10.3 3.9L5.7 7.1M10.3 12.1L5.7 8.9" stroke="#aaa" strokeWidth="1.4" strokeLinecap="round" />
                         </svg>
-                    </div>
+                        {recentSignals.length > 0 && (
+                            <span className="absolute -top-1 -right-1 w-4 h-4 bg-pink-500 rounded-full text-[10px] flex items-center justify-center text-white">
+                                {recentSignals.length}
+                            </span>
+                        )}
+                    </button>
                 </div>
+
+                {/* Recent Signals List */}
+                {showSignalsList && recentSignals.length > 0 && (
+                    <div className="mx-3.5 mb-3 bg-[#1a1a1e] rounded-xl p-3 max-h-60 overflow-y-auto">
+                        <div className="flex items-center justify-between mb-2">
+                            <p className="text-white text-xs font-semibold">Recent Signals</p>
+                            <button 
+                                onClick={() => setShowSignalsList(false)}
+                                className="text-gray-500 text-xs"
+                            >
+                                Close
+                            </button>
+                        </div>
+                        <div className="space-y-2">
+                            {recentSignals.map((signal) => (
+                                <div key={signal.id} className="border-b border-gray-800 pb-2 last:border-0">
+                                    <p className="text-[#C9115F] text-[11px] font-medium">{signal.userName}</p>
+                                    <p className="text-gray-400 text-[12px]">{signal.message}</p>
+                                    <p className="text-gray-600 text-[10px] mt-0.5">
+                                        {new Date(signal.createdAt).toLocaleString()}
+                                    </p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
 
                 {/* Player */}
                 <div className="bg-[#1a0a10] mx-3.5 rounded-2xl px-6 pt-7 pb-4 flex flex-col items-center gap-4">
@@ -738,7 +868,7 @@ export default function AudioDropCard() {
                         </div>
                         <div className="flex justify-between text-[11px] text-[#666] font-mono">
                             <span>{timeStr}</span>
-                            <span>{duration}</span>  {/* ← now uses separate duration state */}
+                            <span>{duration}</span>
                         </div>
                     </div>
                 </div>
@@ -759,9 +889,9 @@ export default function AudioDropCard() {
                     <div className="grid grid-cols-3 gap-2.5 mb-4">
                         {[
                             { label: "Listens", value: audioDrop.listens.toLocaleString() },
-                            { label: "Signals", value: audioDrop.signals.toLocaleString() },
-                            { label: "Duration", value: duration },  {/* ← separate duration state */}
-                        ].map((s,index) => (
+                            { label: "Signals", value: (audioDrop.signals || signalsCount).toLocaleString() },
+                            { label: "Duration", value: duration },
+                        ].map((s, index) => (
                             <div key={index} className="bg-[#1a1a1e] rounded-xl p-2.5 flex flex-col gap-1.5">
                                 <div className="flex items-center gap-1.5 text-[#999]">
                                     <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
@@ -820,7 +950,10 @@ export default function AudioDropCard() {
                     </div>
 
                     {/* Send Signal button */}
-                    <button className="w-full bg-[#1e0a12] border border-[#e0185a] rounded-[14px] py-4 flex items-center justify-center gap-2 text-[#e0185a] text-[15px] font-medium hover:bg-[#2a0f1c] transition">
+                    <button 
+                        onClick={() => setShowSignalDialog(true)}
+                        className="w-full bg-[#1e0a12] border border-[#e0185a] rounded-[14px] py-4 flex items-center justify-center gap-2 text-[#e0185a] text-[15px] font-medium hover:bg-[#2a0f1c] transition"
+                    >
                         <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
                             <path d="M9 2C5.7 2 3 4.5 3 7.5c0 1.5.7 2.9 1.9 3.9L4 15l3.5-1.2c.5.2 1 .2 1.5.2C12.3 14 15 11.5 15 8.5S12.3 2 9 2z" stroke="#e0185a" strokeWidth="1.4" strokeLinejoin="round" />
                             <path d="M6.5 8.5h5M9 6v5" stroke="#e0185a" strokeWidth="1.4" strokeLinecap="round" />
@@ -829,6 +962,66 @@ export default function AudioDropCard() {
                     </button>
                 </div>
             </div>
+
+            {/* Signal Dialog Modal */}
+            {showSignalDialog && (
+                <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => setShowSignalDialog(false)}>
+                    <div className="bg-[#1a1a1e] rounded-2xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-white text-lg font-semibold">Send a Signal</h3>
+                            <button 
+                                onClick={() => setShowSignalDialog(false)}
+                                className="text-gray-400 hover:text-white transition"
+                            >
+                                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                    <path d="M15 5L5 15M5 5L15 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                                </svg>
+                            </button>
+                        </div>
+                        
+                        <p className="text-gray-400 text-sm mb-4">
+                            Share your thoughts about &apos;{audioDrop.title}&apos;
+                        </p>
+                        
+                        <textarea
+                            value={signalMessage}
+                            onChange={(e) => setSignalMessage(e.target.value)}
+                            placeholder="Type your message here..."
+                            className="w-full bg-[#111114] text-white text-sm rounded-xl px-4 py-3 border border-[#2a2a2e] focus:outline-none focus:border-[#e0185a] resize-none"
+                            rows={4}
+                            maxLength={500}
+                            autoFocus
+                        />
+                        
+                        <div className="flex justify-end gap-3 mt-4">
+                            <button
+                                onClick={() => setShowSignalDialog(false)}
+                                className="px-4 py-2 rounded-lg bg-[#2a2a2e] text-gray-300 text-sm font-medium hover:bg-[#3a3a3e] transition"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleSendSignal}
+                                disabled={!signalMessage.trim() || sendingSignal}
+                                className="px-4 py-2 rounded-lg bg-[#e0185a] text-white text-sm font-medium hover:bg-[#f01e66] transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                            >
+                                {sendingSignal ? (
+                                    <>
+                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                        Sending...
+                                    </>
+                                ) : (
+                                    "Send Signal"
+                                )}
+                            </button>
+                        </div>
+                        
+                        <p className="text-gray-600 text-xs mt-3 text-center">
+                            {500 - signalMessage.length} characters remaining
+                        </p>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

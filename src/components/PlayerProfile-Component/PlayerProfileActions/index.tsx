@@ -70,7 +70,7 @@ export default function PlayerProfileActions({ player }: Props) {
 
       {/* ── Career Stats ── */}
       <div className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-2xl p-4 md:p-5">
-        <SectionLabel text="Career Stats" />
+        <SectionLabel text="Career Stats  (2021 - Present)" />
         <div className="grid grid-cols-3 gap-3 mt-3">
           {careerStatItems.map((s) => (
             <div key={s.label} className="flex flex-col items-center justify-center py-3.5 md:py-5 rounded-xl bg-[#242424]">

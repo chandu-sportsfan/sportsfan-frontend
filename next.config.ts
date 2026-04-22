@@ -143,6 +143,10 @@ const nextConfig = {
 
         // Static content
         { source: '/Content/:path*', destination: 'https://sportsfan360.vercel.app/Content/:path*' },
+
+        // Host Rooms
+        { source: '/api/hostrooms', destination: 'https://sportsfan360.vercel.app/api/hostrooms' },
+        { source: '/api/hostrooms/:path*', destination: 'https://sportsfan360.vercel.app/api/hostrooms/:path*' },
       ],
     };
   },

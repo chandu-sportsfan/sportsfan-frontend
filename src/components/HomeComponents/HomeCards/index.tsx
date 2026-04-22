@@ -48,7 +48,7 @@ const homeCardsData: CardProps[] = [
       { label: "Drops", value: "450+" },
       { label: "Fans", value: "2.3M" },
     ],
-    buttonText: "Explore 360World",
+    buttonText: "View Playlist",
     buttonIcon: "play",
     buttonUrl: "/MainModules/MatchesDropContent"
   },

@@ -71,22 +71,41 @@ function groupByDate(drops: Drop[]): DateGroup[] {
 
     const groups = new Map<string, Drop[]>();
 
+    // drops.forEach((drop) => {
+    //     let label = "Unknown";
+    //     if (drop.createdAt) {
+    //         const date = new Date(drop.createdAt);
+    //         date.setHours(0, 0, 0, 0);
+    //         if (date.getTime() === today.getTime()) {
+    //             label = "Today";
+    //         } else if (date.getTime() === yesterday.getTime()) {
+    //             label = "Yesterday";
+    //         } else {
+    //             label = date.toLocaleDateString("en-IN", { day: "2-digit", month: "short" });
+    //         }
+    //     }
+    //     if (!groups.has(label)) groups.set(label, []);
+    //     groups.get(label)!.push(drop);
+    // });
+
     drops.forEach((drop) => {
-        let label = "Unknown";
-        if (drop.createdAt) {
-            const date = new Date(drop.createdAt);
-            date.setHours(0, 0, 0, 0);
-            if (date.getTime() === today.getTime()) {
-                label = "Today";
-            } else if (date.getTime() === yesterday.getTime()) {
-                label = "Yesterday";
-            } else {
-                label = date.toLocaleDateString("en-IN", { day: "2-digit", month: "short" });
-            }
+    let label = "Unknown";
+    if (drop.createdAt) {
+        const date = new Date(drop.createdAt);
+        date.setHours(0, 0, 0, 0);
+        const dateString = date.toLocaleDateString("en-IN", { day: "2-digit", month: "short" });
+        
+        if (date.getTime() === today.getTime()) {
+            label = `Today (${dateString})`;
+        } else if (date.getTime() === yesterday.getTime()) {
+            label = `Yesterday (${dateString})`;
+        } else {
+            label = dateString;
         }
-        if (!groups.has(label)) groups.set(label, []);
-        groups.get(label)!.push(drop);
-    });
+    }
+    if (!groups.has(label)) groups.set(label, []);
+    groups.get(label)!.push(drop);
+});
 
     return Array.from(groups.entries()).map(([label, audioDrops]) => ({
         label,

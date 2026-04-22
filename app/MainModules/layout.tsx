@@ -140,7 +140,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// ─── Types 
 interface UserProfile {
   email: string;
   firstName: string;
@@ -149,7 +149,7 @@ interface UserProfile {
   status: string;
 }
 
-// ─── Host Sidebar (for Host users) ─────────────────────────────────────────────
+// ─── Host Sidebar (for Host users) 
 function HostSidebar({ user }: { user: UserProfile }) {
   const pathname = usePathname();
 
@@ -261,7 +261,7 @@ function UserSidebar() {
 
   const sidebarItems = [
     { name: "Feed", icon: "/images/feed.png", href: "/MainModules/HomePage" },
-    { name: "Live", icon: "/images/live.png", href: "/MainModules/WatchAlong" },
+    { name: "Watch Along", icon: "/images/live.png", href: "/MainModules/WatchAlong" },
     { name: "Fantasy", icon: "/images/battle.png", href: "/MainModules/DropScreen" },
     { name: "Store", icon: "/images/store.png", href: "#" },
     { name: "Fan Zone", icon: "/images/profile.png", href: "/MainModules/PlayersProfile" },

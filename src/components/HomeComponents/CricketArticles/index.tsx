@@ -247,6 +247,7 @@
 
 import { useEffect, useState } from "react";
 import axios from "axios";
+import { useRouter } from "next/navigation";
 
 type BadgeType = "FEATURE" | "ANALYSIS" | "OPINION" | "NEWS";
 
@@ -284,6 +285,7 @@ export default function CricketArticles() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [showAll, setShowAll] = useState(false);
+    const router = useRouter();
     const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
 
     useEffect(() => {
@@ -359,6 +361,7 @@ export default function CricketArticles() {
                     {visible.map((article) => (
                         <div
                             key={article.id}
+            onClick={() => router.push(`/MainModules/CricketArticles/${article.id}`)}
                             className="flex flex-row bg-[#1a1a1a] rounded-md p-2 overflow-hidden border border-white/10 cursor-pointer hover:border-white/20 transition"
                         >
                             {/* Image */}
@@ -378,7 +381,7 @@ export default function CricketArticles() {
                             </div>
 
                             {/* Body */}
-                            <div className="p-2 flex flex-col justify-center gap-1.5 flex-1 ml-6 min-w-0">
+                            <div className="p-2 flex flex-col justify-center gap-1.5 flex-1 ml-4 lg:ml-6 min-w-0">
                                 <span className={`text-[12px] font-bold px-2 py-0.5 rounded-md text-white w-fit tracking-wide ${BADGE_COLORS[article.badge] || "bg-gray-600"}`}>
                                     {article.badge}
                                 </span>

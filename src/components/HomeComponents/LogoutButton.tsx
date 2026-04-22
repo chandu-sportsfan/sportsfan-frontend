@@ -1,42 +1,76 @@
+
+
+// "use client";
+// import { signOut } from "next-auth/react";
+// import axios from "axios";
+// import { LogOut } from "lucide-react";
+
+// export default function LogoutButton() {
+//   const handleLogout = async () => {
+//     try {
+//       await axios.post("/api/auth/logout", {}, { withCredentials: true });
+//     } catch (e) {
+//       console.warn("Backend logout failed, continuing with client logout", e);
+//     }
+
+//     document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+//     localStorage.removeItem("watchalong_user_name");
+
+//     // Uses current domain automatically — works on both localhost and production
+//     await signOut({ callbackUrl: `${window.location.origin}/auth/login`, redirect: true });
+//   };
+
+//   return (
+//     <button
+//       onClick={handleLogout}
+//       className="text-sm text-red-400 hover:text-red-300 cursor-pointer transition"
+//     >
+//       <LogOut size={16} />
+//     </button>
+//   );
+// }
+
+
+
+
+
 "use client";
-import { signOut, useSession } from "next-auth/react";
-import axios from "axios";
 import { LogOut } from "lucide-react";
 
 export default function LogoutButton() {
-  const { data: session } = useSession();
-
   const handleLogout = async () => {
     try {
-      // 1. Clear manual JWT cookie on the backend
-      await axios.post("/api/auth/logout", {}, { withCredentials: true });
+      // 1. Get CSRF token
+      const csrfRes = await fetch("/api/auth/csrf");
+      const { csrfToken } = await csrfRes.json();
+
+      // 2. NextAuth signout with CSRF
+      await fetch("/api/auth/signout", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({ csrfToken }),
+      });
     } catch (e) {
-      console.warn("Backend logout failed, continuing with client logout", e);
+      console.warn("NextAuth signout failed", e);
     }
-    
-    // 2. Force remove local cookie just in case
-    document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+
+    // 3. Clear HttpOnly cookies via our local server route
+    await fetch("/api/logout", { method: "POST" }).catch(() => {});
+
+    // 4. Clear localStorage
     localStorage.removeItem("watchalong_user_name");
 
-    // 3. Clear Google OAuth session and redirect
-    try {
-      if (session) {
-        await signOut({ callbackUrl: "/auth/login" });
-      } else {
-        window.location.href = "/auth/login";
-      }
-    } catch (e) {
-      console.warn("NextAuth signOut failed, forcing redirect", e);
-      window.location.href = "/auth/login";
-    }
+    // 5. Hard redirect
+    window.location.replace("/auth/login");
   };
 
   return (
     <button
       onClick={handleLogout}
-      className="text-sm text-red-400 hover:text-red-300 cursor-pointer transition"
+      className="text-sm text-red-400 hover:text-red-300 cursor-pointer transition flex items-center gap-1"
     >
-       <LogOut size={16} />
+      <LogOut size={16} />
+      Logout
     </button>
   );
 }

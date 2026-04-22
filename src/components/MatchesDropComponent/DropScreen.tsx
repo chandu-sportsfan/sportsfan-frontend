@@ -658,7 +658,7 @@ export default function FullPlaylist() {
     const [search, setSearch] = useState("");
     const [submitting, setSubmitting] = useState(false);
     const [submitted, setSubmitted] = useState(false);
-    const [submitError, setSubmitError] = useState<string | null>(null); // ✅ Added missing state
+    const [submitError, setSubmitError] = useState<string | null>(null); //  Added missing state
     const [userName, setUserName] = useState("");
 
     // Get or create user ID
@@ -868,10 +868,10 @@ export default function FullPlaylist() {
                         </div>
 
                         {/* Show user info */}
-                        <div className="mb-3 p-2 bg-[#1a1a1a] rounded-lg border border-white/5">
+                        {/* <div className="mb-3 p-2 bg-[#1a1a1a] rounded-lg border border-white/5">
                             <p className="text-gray-500 text-xs">Requesting as:</p>
                             <p className="text-[#C9115F] text-sm font-medium">{getUserName()}</p>
-                        </div>
+                        </div> */}
 
                         {/* Textarea */}
                         <textarea

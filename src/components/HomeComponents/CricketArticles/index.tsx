@@ -427,7 +427,7 @@ export default function CricketArticles() {
                         //     className="flex flex-col sm:flex-row bg-[#1a1a1a] rounded-md overflow-hidden border border-white/10 cursor-pointer hover:border-white/20 transition"
                         //    >
                         //     {/* Image */}
-                           
+
                         //     {/* <div className="relative w-full sm:w-[150px] sm:min-w-[150px] flex-shrink-0"> */}
                         //      <div className="relative w-full sm:w-[250px] sm:min-w-[250px] lg:w-[300px] lg:min-w-[300px] flex-shrink-0">
                         //         {!imageErrors[article.id] ? (
@@ -474,53 +474,53 @@ export default function CricketArticles() {
 
 
                         <div
-    key={article.id}
-    onClick={() => router.push(`/MainModules/CricketArticles/${article.id}`)}
-    className="flex flex-col sm:flex-row bg-[#1a1a1a] rounded-md overflow-hidden border border-white/10 cursor-pointer hover:border-white/20 transition"
->
-    {/* Image - Remove any margins */}
-    <div className="relative w-full sm:w-[250px] sm:min-w-[250px] lg:w-[300px] lg:min-w-[300px] flex-shrink-0">
-        {!imageErrors[article.id] ? (
-            <img
-                src={article.image}
-                alt={article.title}
-                className="w-full h-[120px] sm:h-full object-cover"
-                onError={() => handleImageError(article.id)}
-            />
-        ) : (
-            <div className="w-full h-[180px] sm:h-full bg-gray-800 flex items-center justify-center text-gray-500 text-xs">
-                No image
-            </div>
-        )}
-        {/* Read time overlaid on image bottom */}
-        <p className="absolute bottom-2 left-2 text-white text-[11px] bg-black/60 px-2 py-0.5 rounded whitespace-nowrap">
-            {article.readTime}
-            <span className="mx-1">•</span>
-            {article.views}
-        </p>
-    </div>
+                            key={article.id}
+                            onClick={() => router.push(`/MainModules/CricketArticles/${article.id}`)}
+                            className="flex flex-col sm:flex-row bg-[#1a1a1a] rounded-md overflow-hidden border border-white/10 cursor-pointer hover:border-white/20 transition"
+                        >
+                            {/* Image - Remove any margins */}
+                            <div className="relative w-full sm:w-[250px] sm:min-w-[250px] lg:w-[300px] lg:min-w-[300px] flex-shrink-0">
+                                {!imageErrors[article.id] ? (
+                                    <img
+                                        src={article.image}
+                                        alt={article.title}
+                                        className="w-full h-[120px] sm:h-full object-fit"
+                                        onError={() => handleImageError(article.id)}
+                                    />
+                                ) : (
+                                    <div className="w-full h-[180px] sm:h-full bg-gray-800 flex items-center justify-center text-gray-500 text-xs">
+                                        No image
+                                    </div>
+                                )}
+                                {/* Read time overlaid on image bottom */}
+                                <p className="absolute bottom-2 left-2 text-white text-[11px] bg-black/60 px-2 py-0.5 rounded whitespace-nowrap">
+                                    {article.readTime}
+                                    <span className="mx-1">•</span>
+                                    {article.views}
+                                </p>
+                            </div>
 
-    {/* Body - Reduce padding and remove gaps */}
-    <div className="p-2 sm:p-2.5 flex flex-col justify-center gap-1 flex-1 min-w-0">
-        {/* Reduced padding from p-3 to p-2, gap from gap-1.5 to gap-1 */}
-        <span className={`text-[11px] font-bold px-2 py-0.5 rounded-md text-white w-fit tracking-wide ${BADGE_COLORS[article.badge] || "bg-gray-600"}`}>
-            {article.badge}
-        </span>
-        <p className="text-white font-bold text-[15px] leading-snug line-clamp-2">
-            {article.title}
-        </p>
-        <p className="text-gray-400 text-[11px] leading-snug">
-            Author - {article.author}
-        </p>
-        <p
-            className="text-gray-400 text-[12px] leading-snug line-clamp-2"
-            dangerouslySetInnerHTML={{
-                __html: article.description?.[0] ?? "No description available"
-            }}
-        />
-        <span className="text-blue-400 text-[13px]">Read more ...</span>
-    </div>
-</div>
+                            {/* Body - Reduce padding and remove gaps */}
+                            <div className="p-2 sm:p-2.5 flex flex-col justify-center gap-1 flex-1 min-w-0">
+                                {/* Reduced padding from p-3 to p-2, gap from gap-1.5 to gap-1 */}
+                                <span className={`text-[11px] font-bold px-2 py-0.5 rounded-md text-white w-fit tracking-wide ${BADGE_COLORS[article.badge] || "bg-gray-600"}`}>
+                                    {article.badge}
+                                </span>
+                                <p className="text-white font-bold text-[15px] leading-snug line-clamp-2">
+                                    {article.title}
+                                </p>
+                                <p className="text-gray-400 text-[11px] leading-snug">
+                                    Author - {article.author}
+                                </p>
+                                <p
+                                    className="text-gray-400 text-[12px] leading-snug line-clamp-2"
+                                    dangerouslySetInnerHTML={{
+                                        __html: article.description?.[0] ?? "No description available"
+                                    }}
+                                />
+                                <span className="text-blue-400 text-[13px]">Read more ...</span>
+                            </div>
+                        </div>
 
 
                     ))}

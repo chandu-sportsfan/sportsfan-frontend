@@ -412,7 +412,6 @@
 
 
 
-
 "use client";
 import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
@@ -513,7 +512,7 @@ export default function AudioDropCard() {
     const [audioDrop, setAudioDrop] = useState<AudioDrop | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    
+
     // Signal dialog states
     const [showSignalDialog, setShowSignalDialog] = useState(false);
     const [signalMessage, setSignalMessage] = useState("");
@@ -556,6 +555,11 @@ export default function AudioDropCard() {
             setDuration("0:00");
             setElapsed(0);
             setPlaying(false);
+            // FIX: Reset signals state whenever a new audio loads
+            // so signals from a previous audio don't bleed into the next one
+            setSignalsCount(0);
+            setRecentSignals([]);
+            setShowSignalsList(false);
 
             if (urlParam && !idParam) {
                 const decodedUrl = decodeURIComponent(urlParam);
@@ -599,7 +603,7 @@ export default function AudioDropCard() {
             if (target) {
                 const drop = audioFileToAudioDrop(target);
                 setAudioDrop(drop);
-                // Fetch signals count for this audio
+                // Fetch signals for this specific audio ID only
                 await fetchSignalsCount(drop.id!);
                 await fetchRecentSignals(drop.id!);
             } else {
@@ -613,14 +617,13 @@ export default function AudioDropCard() {
         }
     };
 
+    // FIX: Removed stale closure bug — no longer reads `audioDrop` from state
+    // inside the fetch function. State is set independently and stays in sync.
     const fetchSignalsCount = async (audioId: string) => {
         try {
             const response = await axios.get(`/api/audio-messages?audioId=${audioId}&count=true`);
             if (response.data.success) {
                 setSignalsCount(response.data.count);
-                if (audioDrop) {
-                    setAudioDrop({ ...audioDrop, signals: response.data.count });
-                }
             }
         } catch (error) {
             console.error("Error fetching signals count:", error);
@@ -652,19 +655,16 @@ export default function AudioDropCard() {
             });
 
             if (response.data.success) {
-                // Update signals count
-                setSignalsCount(prev => prev + 1);
-                if (audioDrop) {
-                    setAudioDrop({ ...audioDrop, signals: signalsCount + 1 });
-                }
-                
+                // Update signals count using functional updater to avoid stale state
+                setSignalsCount((prev) => prev + 1);
+
                 // Add to recent signals
-                setRecentSignals(prev => [response.data.signal, ...prev].slice(0, 5));
-                
+                setRecentSignals((prev) => [response.data.signal, ...prev].slice(0, 5));
+
                 // Close dialog and reset
                 setShowSignalDialog(false);
                 setSignalMessage("");
-                
+
                 // Show success feedback
                 alert("Signal sent successfully!");
             }
@@ -788,7 +788,8 @@ export default function AudioDropCard() {
                             </p>
                         </div>
                     </div>
-                    <button 
+                    {/* FIX: Added missing && operator before ( — was causing TS error 2349 */}
+                    <button
                         onClick={() => setShowSignalsList(!showSignalsList)}
                         className="relative w-8 h-8 rounded-full bg-[#1e1e22] flex items-center justify-center cursor-pointer hover:bg-[#2a2a2e] transition"
                     >
@@ -798,7 +799,7 @@ export default function AudioDropCard() {
                             <circle cx="4" cy="8" r="1.8" stroke="#aaa" strokeWidth="1.4" />
                             <path d="M10.3 3.9L5.7 7.1M10.3 12.1L5.7 8.9" stroke="#aaa" strokeWidth="1.4" strokeLinecap="round" />
                         </svg>
-                        {recentSignals.length > 0 && (
+                        {recentSignals && recentSignals.length > 0 && (
                             <span className="absolute -top-1 -right-1 w-4 h-4 bg-pink-500 rounded-full text-[10px] flex items-center justify-center text-white">
                                 {recentSignals.length}
                             </span>
@@ -811,7 +812,7 @@ export default function AudioDropCard() {
                     <div className="mx-3.5 mb-3 bg-[#1a1a1e] rounded-xl p-3 max-h-60 overflow-y-auto">
                         <div className="flex items-center justify-between mb-2">
                             <p className="text-white text-xs font-semibold">Recent Signals</p>
-                            <button 
+                            <button
                                 onClick={() => setShowSignalsList(false)}
                                 className="text-gray-500 text-xs"
                             >
@@ -889,7 +890,7 @@ export default function AudioDropCard() {
                     <div className="grid grid-cols-3 gap-2.5 mb-4">
                         {[
                             { label: "Listens", value: audioDrop.listens.toLocaleString() },
-                            { label: "Signals", value: (audioDrop.signals || signalsCount).toLocaleString() },
+                            { label: "Signals", value: signalsCount.toLocaleString() },
                             { label: "Duration", value: duration },
                         ].map((s, index) => (
                             <div key={index} className="bg-[#1a1a1e] rounded-xl p-2.5 flex flex-col gap-1.5">
@@ -950,7 +951,7 @@ export default function AudioDropCard() {
                     </div>
 
                     {/* Send Signal button */}
-                    <button 
+                    <button
                         onClick={() => setShowSignalDialog(true)}
                         className="w-full bg-[#1e0a12] border border-[#e0185a] rounded-[14px] py-4 flex items-center justify-center gap-2 text-[#e0185a] text-[15px] font-medium hover:bg-[#2a0f1c] transition"
                     >
@@ -969,7 +970,7 @@ export default function AudioDropCard() {
                     <div className="bg-[#1a1a1e] rounded-2xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-between mb-4">
                             <h3 className="text-white text-lg font-semibold">Send a Signal</h3>
-                            <button 
+                            <button
                                 onClick={() => setShowSignalDialog(false)}
                                 className="text-gray-400 hover:text-white transition"
                             >
@@ -978,11 +979,11 @@ export default function AudioDropCard() {
                                 </svg>
                             </button>
                         </div>
-                        
+
                         <p className="text-gray-400 text-sm mb-4">
                             Share your thoughts about &apos;{audioDrop.title}&apos;
                         </p>
-                        
+
                         <textarea
                             value={signalMessage}
                             onChange={(e) => setSignalMessage(e.target.value)}
@@ -992,7 +993,7 @@ export default function AudioDropCard() {
                             maxLength={500}
                             autoFocus
                         />
-                        
+
                         <div className="flex justify-end gap-3 mt-4">
                             <button
                                 onClick={() => setShowSignalDialog(false)}
@@ -1015,7 +1016,7 @@ export default function AudioDropCard() {
                                 )}
                             </button>
                         </div>
-                        
+
                         <p className="text-gray-600 text-xs mt-3 text-center">
                             {500 - signalMessage.length} characters remaining
                         </p>

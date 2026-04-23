@@ -167,10 +167,10 @@ export default async function AudioDropSharePage({ searchParams }: { searchParam
   }
 
   const audioDropUrl = params.id
-    ? `${APP_URL}/MainModules/AudioDrop?id=${encodeURIComponent(params.id)}`
+    ? `${APP_URL}/MainModules/MatchesDropContent/AudioDropScreen?id=${encodeURIComponent(params.id)}`
     : params.url
-      ? `${APP_URL}/MainModules/AudioDrop?url=${encodeURIComponent(params.url)}`
-      : `${APP_URL}/MainModules/AudioDrop`;
+      ? `${APP_URL}/MainModules/MatchesDropContent/AudioDropScreen?url=${encodeURIComponent(params.url)}`
+      : `${APP_URL}/MainModules/MatchesDropContent/AudioDropScreen`;
 
   return (
     <div className="min-h-screen bg-[#0d0d10] text-white flex items-center justify-center px-4 py-10">

@@ -892,14 +892,14 @@ function DropRow({ drop }: { drop: Drop }) {
                     </button>
 
                     <div className="min-w-0">
-                        <p className="text-white text-sm font-medium truncate leading-tight">{drop.title}</p>
+                        <p className="text-white text-sm font-medium truncate text-wrap">{drop.title}</p>
                         <div className="flex items-center gap-2 mt-0.5">
                             <span className="text-gray-500 text-xs">{duration}</span>
                             <span className="text-gray-600 text-xs">•</span>
                             <span className="text-gray-500 text-xs">{plays} plays</span>
                         </div>
-                        <div className="flex items-center gap-1 mt-0.5">
-                            <Users size={10} className="text-gray-600" />
+                        <div className="flex flex-row items-start gap-1 mt-0.5">
+                            <Users size={10} className="text-gray-600 mt-1" />
                             <span className="text-gray-500 text-[11px]">by {drop.author}</span>
                         </div>
                     </div>

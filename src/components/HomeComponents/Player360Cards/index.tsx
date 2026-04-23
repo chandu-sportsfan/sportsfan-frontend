@@ -431,33 +431,35 @@ export default function Player360CardsSection() {
                                     className="min-w-[280px] sm:min-w-[320px] max-w-[320px] bg-black rounded-xl shadow-sm border border-gray-800 overflow-hidden snap-start flex flex-col h-full"
                                 >
                                     {/* Header */}
-                                    <div className="p-3 flex items-center justify-between">
-                                        <div className="flex items-center gap-2">
-                                            <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-800 flex items-center justify-center">
-                                                {!imageErrors[`${post.id}-logo`] ? (
-                                                    <img
-                                                        src={post.logo}
-                                                        alt={post.playerName}
-                                                        className="w-full h-full object-cover rounded-full"
-                                                        onError={() => handleImageError(post.id, 'logo')}
-                                                    />
-                                                ) : (
-                                                    <div className="w-full h-full bg-gradient-to-br from-red-500 to-yellow-500 flex items-center justify-center text-white text-xs font-bold">
-                                                        {post.playerName?.charAt(0) || 'P'}
-                                                    </div>
-                                                )}
+                                    <Link href={`/MainModules/PlayersProfile?id=${post.playerProfilesId || post.id}&tab=highlights`}>
+                                        <div className="p-3 flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-800 flex items-center justify-center">
+                                                    {!imageErrors[`${post.id}-logo`] ? (
+                                                        <img
+                                                            src={post.logo}
+                                                            alt={post.playerName}
+                                                            className="w-full h-full object-cover rounded-full"
+                                                            onError={() => handleImageError(post.id, 'logo')}
+                                                        />
+                                                    ) : (
+                                                        <div className="w-full h-full bg-gradient-to-br from-red-500 to-yellow-500 flex items-center justify-center text-white text-xs font-bold">
+                                                            {post.playerName?.charAt(0) || 'P'}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <div>
+                                                    <h3 className="font-semibold text-white text-sm leading-tight">
+                                                        {post.playerName}
+                                                    </h3>
+                                                    <p className="text-[10px] text-gray-400">
+                                                        {getISTTimeAgo(post.createdAt)}
+                                                    </p>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <h3 className="font-semibold text-white text-sm leading-tight">
-                                                    {post.playerName}
-                                                </h3>
-                                                <p className="text-[10px] text-gray-400">
-                                                    {getISTTimeAgo(post.createdAt)}
-                                                </p>
-                                            </div>
+                                            <MoreHorizontal size={18} className="text-gray-400" />
                                         </div>
-                                        <MoreHorizontal size={18} className="text-gray-400" />
-                                    </div>
+                                    </Link>
 
                                     {/* Image */}
                                     <Link href={`/MainModules/PlayersProfile?id=${post.playerProfilesId || post.id}&tab=highlights`}>

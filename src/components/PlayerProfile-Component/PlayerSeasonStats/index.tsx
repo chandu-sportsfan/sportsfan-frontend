@@ -648,7 +648,7 @@ export default function PlayerSeasonStats({ player }: Props) {
         )}
 
         {/* Award badge — always shown */}
-        <div className="flex items-center gap-3 mt-2.5 bg-[#e91e8c]/10 border border-[#e91e8c]/30 rounded-2xl px-3.5 py-3 md:px-4 md:py-3.5">
+        {/* <div className="flex items-center gap-3 mt-2.5 bg-[#e91e8c]/10 border border-[#e91e8c]/30 rounded-2xl px-3.5 py-3 md:px-4 md:py-3.5">
           <div className="flex items-center justify-center w-10 h-10 md:w-12 md:h-12 rounded-full bg-[#e91e8c] shrink-0">
             <svg width="20" height="20" fill="none" stroke="#fff" strokeWidth="2" viewBox="0 0 24 24">
               <circle cx="12" cy="8" r="6" />
@@ -659,7 +659,7 @@ export default function PlayerSeasonStats({ player }: Props) {
             <p className="text-[13px] md:text-sm font-bold text-white">🧡 {season.award}</p>
             <p className="text-[12px] md:text-[13px] text-[#999999] mt-0.5">{season.awardSub}</p>
           </div>
-        </div>
+        </div> */}
 
         <button
           onClick={() => setShowMoreStats(!showMoreStats)}
@@ -690,9 +690,11 @@ export default function PlayerSeasonStats({ player }: Props) {
           ))}
         </div>
 
+      {insights.length > 1 && 
         <button className="w-full mt-3 h-11 md:h-12 rounded-full bg-[#242424] text-[#d0d0d0] text-[13px] md:text-sm font-semibold border-0 cursor-pointer hover:bg-[#2e2e2e] transition-colors">
           View More
         </button>
+        }
       </div>
     </div>
   );

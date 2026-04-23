@@ -1,5 +1,7 @@
 "use client";
 
+import { useRef, useState } from "react";
+
 const banners = [
   {
     id: 1,
@@ -22,14 +24,38 @@ const banners = [
 ];
 
 export default function HomeBanners() {
+  const mobileTrackRef = useRef<HTMLDivElement | null>(null);
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  const handleMobileScroll = () => {
+    const track = mobileTrackRef.current;
+    if (!track) return;
+
+    const firstCard = track.firstElementChild as HTMLElement | null;
+    if (!firstCard) return;
+
+    const styles = window.getComputedStyle(track);
+    const gap = parseFloat(styles.columnGap || styles.gap || "0") || 0;
+    const step = firstCard.offsetWidth + gap;
+    if (step <= 0) return;
+
+    const nextIndex = Math.round(track.scrollLeft / step);
+    const clampedIndex = Math.max(0, Math.min(banners.length - 1, nextIndex));
+    setActiveIndex(clampedIndex);
+  };
+
   return (
     <div className="mt-4">
       {/* MOBILE → horizontal scroll */}
-      <div className="flex gap-4 overflow-x-auto  [scrollbar-width:none] lg:hidden">
+      <div
+        ref={mobileTrackRef}
+        onScroll={handleMobileScroll}
+        className="flex gap-4 overflow-x-auto [scrollbar-width:none] snap-x snap-mandatory lg:hidden"
+      >
         {banners.map((banner) => (
           <div
             key={banner.id}
-            className="min-w-[280px] h-40 rounded-xl overflow-hidden relative flex-shrink-0"
+            className="min-w-[280px] h-40 rounded-xl overflow-hidden relative flex-shrink-0 snap-start"
           >
             <img
               src={banner.image}
@@ -40,6 +66,17 @@ export default function HomeBanners() {
               <p className="text-xs text-gray-300">{banner.subtitle}</p>
             </div>
           </div>
+        ))}
+      </div>
+
+      <div className="flex lg:hidden items-center justify-center gap-2 mt-3" aria-label="Banner pagination">
+        {banners.map((banner, index) => (
+          <span
+            key={banner.id}
+            className={`h-1.5 rounded-full transition-all duration-200 ${
+              index === activeIndex ? "w-5 bg-white" : "w-1.5 bg-white/40"
+            }`}
+          />
         ))}
       </div>
 

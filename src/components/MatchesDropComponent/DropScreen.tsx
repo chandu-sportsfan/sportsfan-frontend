@@ -919,9 +919,9 @@ export default function FullPlaylist() {
                         </button>
 
                         {/* Note about name storage */}
-                        <p className="text-gray-600 text-xs text-center mt-3">
+                        {/* <p className="text-gray-600 text-xs text-center mt-3">
                             Your name is saved locally for future requests
-                        </p>
+                        </p> */}
                     </div>
                 </div>
             </div>

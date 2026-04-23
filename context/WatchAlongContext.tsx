@@ -384,7 +384,8 @@ export const WatchAlongProvider = ({ children }: { children: ReactNode }) => {
         try {
             setLoading(true);
             setError(null);
-            const url = `/api/watch-along/matches/${matchId}/predictions${openOnly ? '?open=true' : ''}`;
+            // const url = `/api/watch-along/matches/${matchId}/predictions${openOnly ? '?open=true' : ''}`;
+               const url = `/api/watch-along/matches/${matchId}/predictions`
             const res = await axios.get(url);
             if (res.data.success) {
                 setPredictions(res.data.predictions);

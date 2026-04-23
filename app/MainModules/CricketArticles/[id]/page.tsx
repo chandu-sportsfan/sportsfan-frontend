@@ -115,16 +115,24 @@ export default function CricketArticleDetail() {
                     <h2 className="text-lg font-semibold text-white border-b border-white/10 pb-3">
                         Article
                     </h2>
-                    {topParas.map((para, index) => (
+                    {/* {topParas.map((para, index) => (
                         <p key={index} className="text-gray-300 leading-relaxed text-[15px]">
                             {para}
                         </p>
+                    ))} */}
+                    {topParas.map((para, index) => (
+                        <p
+                            key={index}
+                            className="text-gray-300 leading-relaxed text-[15px]"
+                            dangerouslySetInnerHTML={{ __html: para }}
+                        />
                     ))}
+
                 </div>
             </div>
 
             {/* Remaining paragraphs — full width below */}
-            {remainingParas.length > 0 && (
+            {/* {remainingParas.length > 0 && (
                 <div className="mt-8 flex flex-col gap-5 border-t border-white/10 pt-6 pb-12">
                     {remainingParas.map((para, index) => (
                         <p key={index} className="text-gray-300 leading-relaxed text-[15px]">
@@ -132,7 +140,14 @@ export default function CricketArticleDetail() {
                         </p>
                     ))}
                 </div>
-            )}
+            )} */}
+            {remainingParas.map((para, index) => (
+                <p
+                    key={index}
+                    className="text-gray-300 leading-relaxed text-[15px]"
+                    dangerouslySetInnerHTML={{ __html: para }}
+                />
+            ))}
         </div>
     );
 }

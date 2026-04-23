@@ -34,7 +34,7 @@
 
 //     return (
 //         <div className="py-4 px-4 lg:px-6 w-full max-w-full overflow-x-hidden">
-            
+
 //             {/* Header */}
 //             <div className="flex items-center justify-between mb-4">
 //                 <h2 className="text-[24px] font-bold text-white">Cricket Articles</h2>
@@ -174,7 +174,7 @@
 
 //     return (
 //         <div className="py-4 px-4 lg:px-6 w-full max-w-full overflow-x-hidden">
-            
+
 //             {/* Header */}
 //             <div className="flex items-center justify-between mb-4">
 //                 <h2 className="text-[24px] font-bold text-white">Cricket Articles</h2>
@@ -248,6 +248,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 type BadgeType = "FEATURE" | "ANALYSIS" | "OPINION" | "NEWS";
 
@@ -255,6 +256,8 @@ interface Article {
     id: string;
     badge: BadgeType;
     title: string;
+    author: string;
+    description: string[];
     readTime: string;
     views: string;
     image: string;
@@ -310,7 +313,7 @@ export default function CricketArticles() {
 
     const visible = showAll ? articles : articles.slice(0, 4);
 
-   
+
     if (loading) {
         return (
             <div className="flex justify-center items-center bg-[#0d0d10] min-h-screen">
@@ -337,10 +340,10 @@ export default function CricketArticles() {
             </div>
         );
     }
-       
+
 
     return (
-        <div className="py-4 px-4 mb-8 lg:px-6 w-full max-w-full overflow-x-hidden">
+        <div className="mb-8 lg:px-6 w-[100%] max-w-full overflow-x-hidden pb-10">
 
             {/* Header */}
             <div className="flex items-center justify-between mb-4">
@@ -357,44 +360,169 @@ export default function CricketArticles() {
 
             {/* Cards */}
             {articles.length > 0 ? (
-                <div className="grid grid-cols-1 gap-3 min-h-[150px] md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 lg:gap-4">
+                <div className="grid grid-cols-1 gap-3 min-h-[150px] md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 lg:gap-4">
                     {visible.map((article) => (
-                        <div
-                            key={article.id}
-            onClick={() => router.push(`/MainModules/CricketArticles/${article.id}`)}
-                            className="flex flex-row bg-[#1a1a1a] rounded-md p-2 overflow-hidden border border-white/10 cursor-pointer hover:border-white/20 transition"
-                        >
-                            {/* Image */}
-                            <div className="flex items-center justify-center w-[100px] min-w-[100px] flex-shrink-0">
-                                {!imageErrors[article.id] ? (
-                                    <img
-                                        src={article.image}
-                                        alt={article.title}
-                                        className="w-[100px] h-[100px] object-cover rounded-md"
-                                        onError={() => handleImageError(article.id)}
-                                    />
-                                ) : (
-                                    <div className="w-[100px] h-[100px] bg-gray-800 rounded-md flex items-center justify-center text-gray-500 text-xs">
-                                        No image
-                                    </div>
-                                )}
-                            </div>
+                        // <div
+                        //     key={article.id}
+                        //     onClick={() => router.push(`/MainModules/CricketArticles/${article.id}`)}
+                        //     className="flex flex-col sm:flex-row bg-[#1a1a1a] rounded-md p-2 overflow-hidden border border-white/10 cursor-pointer hover:border-white/20 transition"
+                        //  >
+                        //     {/* Image */}
+                        //     <div className="flex flex-col items-start justify-start w-full sm:w-[150px] sm:min-w-[150px] flex-shrink-0">
+                        //         {!imageErrors[article.id] ? (
+                        //             <img
+                        //                 src={article.image}
+                        //                 alt={article.title}
+                        //                 className="w-full h-[100px] sm:w-[150px] sm:h-[80px] object-cover rounded-md"
+                        //                 onError={() => handleImageError(article.id)}
+                        //             />
+                        //         ) : (
+                        //             <div className="w-[100px] h-[100px] bg-gray-800 rounded-md flex items-center justify-center text-gray-500 text-xs">
+                        //                 No image
+                        //             </div>
+                        //         )}
+                        //           <p className="text-gray-400 text-[12px] whitespace-nowrap -mt-0 lg:-mt-6">
+                        //             {article.readTime}
+                        //             <span className="mx-1">•</span>
+                        //             {article.views}
+                        //         </p>
+                        //     </div>
 
-                            {/* Body */}
-                            <div className="p-2 flex flex-col justify-center gap-1.5 flex-1 ml-4 lg:ml-6 min-w-0">
-                                <span className={`text-[12px] font-bold px-2 py-0.5 rounded-md text-white w-fit tracking-wide ${BADGE_COLORS[article.badge] || "bg-gray-600"}`}>
-                                    {article.badge}
-                                </span>
-                                <p className="text-white font-bold text-[16px] leading-snug line-clamp-2">
-                                    {article.title}
-                                </p>
-                                <p className="text-gray-400 text-[12px] whitespace-nowrap">
-                                    {article.readTime}
-                                    <span className="mx-1">•</span>
-                                    {article.views}
-                                </p>
-                            </div>
-                        </div>
+                        //     {/* Body */}
+                        //     <div className="p-2 flex flex-col justify-start items-start md:justify-center gap-1.5 flex-1 ml-4 lg:ml-6 min-w-0">
+                        //         <span className={`text-[12px] font-bold px-2 py-0.5 rounded-md text-white w-fit tracking-wide ${BADGE_COLORS[article.badge] || "bg-gray-600"}`}>
+                        //             {article.badge}
+                        //         </span>
+                        //         <p className="text-white font-bold text-[16px] leading-snug line-clamp-2">
+                        //             {article.title}
+                        //         </p>
+                        //         <p className="text-gray-400 font-bold text-[12px] leading-snug line-clamp-2">
+                        //             Author - {article.author}
+                        //         </p>
+                        //         {/* <p className="text-gray-400 font-bold text-[16px] leading-snug line-clamp-2">
+                        //             {article.description && article.description.length > 0
+                        //                 ? article.description[0]
+                        //                 : "No description available"}
+                        //         </p> */}
+                        //         <p
+                        //             className="text-gray-400 font-bold text-[16px] leading-snug line-clamp-2"
+                        //             dangerouslySetInnerHTML={{
+                        //                 __html: article.description?.[0] ?? "No description available"
+                        //             }}
+                        //         />
+                        //         <p
+                        //             onClick={() => router.push(`/MainModules/CricketArticles/${article.id}`)} >
+                        //             <span className="text-blue-400 text-[15px]">Read more ...</span>
+                        //         </p>
+
+                        //     </div>
+                        // </div>
+
+
+
+
+                        // <div
+                        //     key={article.id}
+                        //     onClick={() => router.push(`/MainModules/CricketArticles/${article.id}`)}
+                        //     className="flex flex-col sm:flex-row bg-[#1a1a1a] rounded-md overflow-hidden border border-white/10 cursor-pointer hover:border-white/20 transition"
+                        //    >
+                        //     {/* Image */}
+                           
+                        //     {/* <div className="relative w-full sm:w-[150px] sm:min-w-[150px] flex-shrink-0"> */}
+                        //      <div className="relative w-full sm:w-[250px] sm:min-w-[250px] lg:w-[300px] lg:min-w-[300px] flex-shrink-0">
+                        //         {!imageErrors[article.id] ? (
+                        //             <img
+                        //                 src={article.image}
+                        //                 alt={article.title}
+                        //                 className="w-full h-[120px] sm:w-[150px] sm:h-full  object-cover lg:object-fit"
+                        //                 onError={() => handleImageError(article.id)}
+                        //             />
+                        //         ) : (
+                        //             <div className="w-full h-[180px] sm:w-[150px] sm:h-full bg-gray-800 flex items-center justify-center text-gray-500 text-xs">
+                        //                 No image
+                        //             </div>
+                        //         )}
+                        //         {/* Read time overlaid on image bottom */}
+                        //         <p className="absolute bottom-2 left-2 text-white text-[11px] bg-black/60 px-2 py-0.5 rounded whitespace-nowrap">
+                        //             {article.readTime}
+                        //             <span className="mx-1">•</span>
+                        //             {article.views}
+                        //         </p>
+                        //     </div>
+
+                        //     {/* Body */}
+                        //     <div className="p-3 flex flex-col justify-start gap-1.5 flex-1 min-w-0">
+                        //         <span className={`text-[12px] font-bold px-2 py-0.5 rounded-md text-white w-fit tracking-wide ${BADGE_COLORS[article.badge] || "bg-gray-600"}`}>
+                        //             {article.badge}
+                        //         </span>
+                        //         <p className="text-white font-bold text-[16px] leading-snug line-clamp-2">
+                        //             {article.title}
+                        //         </p>
+                        //         <p className="text-gray-400 font-bold text-[12px] leading-snug">
+                        //             Author - {article.author}
+                        //         </p>
+                        //         <p
+                        //             className="text-gray-400 text-[13px] leading-snug line-clamp-2"
+                        //             dangerouslySetInnerHTML={{
+                        //                 __html: article.description?.[0] ?? "No description available"
+                        //             }}
+                        //         />
+                        //         <span className="text-blue-400 text-[14px]">Read more ...</span>
+                        //     </div>
+                        // </div>
+
+
+
+                        <div
+    key={article.id}
+    onClick={() => router.push(`/MainModules/CricketArticles/${article.id}`)}
+    className="flex flex-col sm:flex-row bg-[#1a1a1a] rounded-md overflow-hidden border border-white/10 cursor-pointer hover:border-white/20 transition"
+>
+    {/* Image - Remove any margins */}
+    <div className="relative w-full sm:w-[250px] sm:min-w-[250px] lg:w-[300px] lg:min-w-[300px] flex-shrink-0">
+        {!imageErrors[article.id] ? (
+            <img
+                src={article.image}
+                alt={article.title}
+                className="w-full h-[120px] sm:h-full object-cover"
+                onError={() => handleImageError(article.id)}
+            />
+        ) : (
+            <div className="w-full h-[180px] sm:h-full bg-gray-800 flex items-center justify-center text-gray-500 text-xs">
+                No image
+            </div>
+        )}
+        {/* Read time overlaid on image bottom */}
+        <p className="absolute bottom-2 left-2 text-white text-[11px] bg-black/60 px-2 py-0.5 rounded whitespace-nowrap">
+            {article.readTime}
+            <span className="mx-1">•</span>
+            {article.views}
+        </p>
+    </div>
+
+    {/* Body - Reduce padding and remove gaps */}
+    <div className="p-2 sm:p-2.5 flex flex-col justify-center gap-1 flex-1 min-w-0">
+        {/* Reduced padding from p-3 to p-2, gap from gap-1.5 to gap-1 */}
+        <span className={`text-[11px] font-bold px-2 py-0.5 rounded-md text-white w-fit tracking-wide ${BADGE_COLORS[article.badge] || "bg-gray-600"}`}>
+            {article.badge}
+        </span>
+        <p className="text-white font-bold text-[15px] leading-snug line-clamp-2">
+            {article.title}
+        </p>
+        <p className="text-gray-400 text-[11px] leading-snug">
+            Author - {article.author}
+        </p>
+        <p
+            className="text-gray-400 text-[12px] leading-snug line-clamp-2"
+            dangerouslySetInnerHTML={{
+                __html: article.description?.[0] ?? "No description available"
+            }}
+        />
+        <span className="text-blue-400 text-[13px]">Read more ...</span>
+    </div>
+</div>
+
+
                     ))}
                 </div>
             ) : (

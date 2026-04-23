@@ -635,6 +635,7 @@ export default function AudioDropCard() {
             const response = await axios.get(`/api/audio-messages?audioId=${audioId}&limit=5`);
             if (response.data.success) {
                 setRecentSignals(response.data.signals);
+                console.log("fetch signals :", response.data.signals)
             }
         } catch (error) {
             console.error("Error fetching recent signals:", error);

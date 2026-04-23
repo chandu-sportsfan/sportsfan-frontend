@@ -87,6 +87,52 @@ function audioFileToAudioDrop(audio: AudioFile): AudioDrop {
     };
 }
 
+const buildAudioDropShareUrl = (audioDrop: AudioDrop, urlParam: string | null) => {
+    if (typeof window === "undefined") return "";
+    const targetUrl = new URL(`${window.location.origin}/MainModules/AudioDrop/share`);
+    if (audioDrop.id) {
+        targetUrl.searchParams.set("id", audioDrop.id);
+        return targetUrl.toString();
+    }
+    if (urlParam) {
+        targetUrl.searchParams.set("url", urlParam);
+        return targetUrl.toString();
+    }
+    return targetUrl.toString();
+};
+
+const buildAudioDropShareText = (audioDrop: AudioDrop, urlParam: string | null) => {
+    const shareUrl = buildAudioDropShareUrl(audioDrop, urlParam);
+    return [
+        `Listen to ${audioDrop.title} on Sportsfan`,
+        audioDrop.subtitle || "Audio Drops",
+        audioDrop.description || "Latest audio drop from Sportsfan.",
+        `View and listen: ${shareUrl}`,
+    ].filter(Boolean).join("\n");
+};
+
+const copyToClipboard = async (text: string) => {
+    try {
+        await navigator.clipboard.writeText(text);
+        return true;
+    } catch {
+        try {
+            const input = document.createElement("textarea");
+            input.value = text;
+            input.style.position = "fixed";
+            input.style.opacity = "0";
+            document.body.appendChild(input);
+            input.focus();
+            input.select();
+            const ok = document.execCommand("copy");
+            document.body.removeChild(input);
+            return ok;
+        } catch {
+            return false;
+        }
+    }
+};
+
 export default function AudioDropCard() {
     const searchParams = useSearchParams();
     const idParam = searchParams.get("id");
@@ -105,7 +151,10 @@ export default function AudioDropCard() {
     const [sendingSignal, setSendingSignal] = useState(false);
     const [signalsCount, setSignalsCount] = useState(0);
     const [recentSignals, setRecentSignals] = useState<SignalMessage[]>([]);
-    const [showSignalsList, setShowSignalsList] = useState(false);
+
+    // Share dialog states
+    const [showShareDialog, setShowShareDialog] = useState(false);
+    const [copied, setCopied] = useState(false);
 
     const audioRef = useRef<HTMLAudioElement | null>(null);
     const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -145,7 +194,6 @@ export default function AudioDropCard() {
             // so signals from a previous audio don't bleed into the next one
             setSignalsCount(0);
             setRecentSignals([]);
-            setShowSignalsList(false);
 
             if (urlParam && !idParam) {
                 const decodedUrl = decodeURIComponent(urlParam);
@@ -263,6 +311,52 @@ export default function AudioDropCard() {
         }
     };
 
+    const openShareDialog = () => {
+        setShowShareDialog(true);
+        setCopied(false);
+    };
+
+    const closeShareDialog = () => {
+        setShowShareDialog(false);
+        setCopied(false);
+    };
+
+    const handleShareToWhatsApp = () => {
+        if (!audioDrop) return;
+        const shareText = buildAudioDropShareText(audioDrop, urlParam);
+        const whatsappAppUrl = `whatsapp://send?text=${encodeURIComponent(shareText)}`;
+        const whatsappWebFallbackUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
+        const opened = window.open(whatsappAppUrl, "_self");
+        if (!opened) {
+            window.location.href = whatsappWebFallbackUrl;
+        }
+    };
+
+    const handleShareToThreads = () => {
+        if (!audioDrop) return;
+        const shareText = buildAudioDropShareText(audioDrop, urlParam);
+        window.open(`https://www.threads.net/intent/post?text=${encodeURIComponent(shareText)}`, "_blank", "noopener,noreferrer");
+    };
+
+    const handleShareToInstagram = async () => {
+        if (!audioDrop) return;
+        const shareText = buildAudioDropShareText(audioDrop, urlParam);
+        const ok = await copyToClipboard(shareText);
+        if (ok) {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 1600);
+        }
+        window.open("https://www.instagram.com/", "_blank", "noopener,noreferrer");
+    };
+
+    const handleCopyLink = async () => {
+        if (!audioDrop) return;
+        const ok = await copyToClipboard(buildAudioDropShareText(audioDrop, urlParam));
+        if (!ok) return;
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1600);
+    };
+
     // Initialize audio ONCE when audioUrl changes
     useEffect(() => {
         const url = audioDrop?.audioUrl;
@@ -375,50 +469,21 @@ export default function AudioDropCard() {
                             </p>
                         </div>
                     </div>
-                    {/* FIX: Added missing && operator before ( — was causing TS error 2349 */}
-                    <button
-                        onClick={() => setShowSignalsList(!showSignalsList)}
-                        className="relative w-8 h-8 rounded-full bg-[#1e1e22] flex items-center justify-center cursor-pointer hover:bg-[#2a2a2e] transition"
-                    >
-                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                            <circle cx="12" cy="3" r="1.8" stroke="#aaa" strokeWidth="1.4" />
-                            <circle cx="12" cy="13" r="1.8" stroke="#aaa" strokeWidth="1.4" />
-                            <circle cx="4" cy="8" r="1.8" stroke="#aaa" strokeWidth="1.4" />
-                            <path d="M10.3 3.9L5.7 7.1M10.3 12.1L5.7 8.9" stroke="#aaa" strokeWidth="1.4" strokeLinecap="round" />
-                        </svg>
-                        {recentSignals && recentSignals.length > 0 && (
-                            <span className="absolute -top-1 -right-1 w-4 h-4 bg-pink-500 rounded-full text-[10px] flex items-center justify-center text-white">
-                                {recentSignals.length}
-                            </span>
-                        )}
-                    </button>
-                </div>
-
-                {/* Recent Signals List */}
-                {showSignalsList && recentSignals.length > 0 && (
-                    <div className="mx-3.5 mb-3 bg-[#1a1a1e] rounded-xl p-3 max-h-60 overflow-y-auto">
-                        <div className="flex items-center justify-between mb-2">
-                            <p className="text-white text-xs font-semibold">Recent Signals</p>
-                            <button
-                                onClick={() => setShowSignalsList(false)}
-                                className="text-gray-500 text-xs"
-                            >
-                                Close
-                            </button>
-                        </div>
-                        <div className="space-y-2">
-                            {recentSignals.map((signal) => (
-                                <div key={signal.id} className="border-b border-gray-800 pb-2 last:border-0">
-                                    <p className="text-[#C9115F] text-[11px] font-medium">{signal.userName}</p>
-                                    <p className="text-gray-400 text-[12px]">{signal.message}</p>
-                                    <p className="text-gray-600 text-[10px] mt-0.5">
-                                        {new Date(signal.createdAt).toLocaleString()}
-                                    </p>
-                                </div>
-                            ))}
-                        </div>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={openShareDialog}
+                            className="relative w-8 h-8 rounded-full bg-[#1e1e22] flex items-center justify-center cursor-pointer hover:bg-[#2a2a2e] transition"
+                            aria-label="Share audio drop"
+                        >
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                <circle cx="12" cy="3" r="1.8" stroke="#aaa" strokeWidth="1.4" />
+                                <circle cx="12" cy="13" r="1.8" stroke="#aaa" strokeWidth="1.4" />
+                                <circle cx="4" cy="8" r="1.8" stroke="#aaa" strokeWidth="1.4" />
+                                <path d="M10.3 3.9L5.7 7.1M10.3 12.1L5.7 8.9" stroke="#aaa" strokeWidth="1.4" strokeLinecap="round" />
+                            </svg>
+                        </button>
                     </div>
-                )}
+                </div>
 
                 {/* Player */}
                 <div className="bg-[#1a0a10] mx-3.5 rounded-2xl px-6 pt-7 pb-4 flex flex-col items-center gap-4">
@@ -550,6 +615,61 @@ export default function AudioDropCard() {
                     </button>
                 </div>
             </div>
+
+            {/* Share Dialog Modal */}
+            {showShareDialog && audioDrop && (
+                <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={closeShareDialog}>
+                    <div className="bg-[#1a1a1e] rounded-2xl max-w-md w-full overflow-hidden" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center justify-between px-5 py-4 border-b border-white/10">
+                            <div>
+                                <p className="text-white text-lg font-semibold">Share Audio Drop</p>
+                                <p className="text-white/50 text-xs mt-1">Send the preview link so the image card shows up</p>
+                            </div>
+                            <button onClick={closeShareDialog} className="text-gray-400 hover:text-white transition">
+                                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                    <path d="M15 5L5 15M5 5L15 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                                </svg>
+                            </button>
+                        </div>
+                        <div className="p-5">
+                            <div className="rounded-[24px] overflow-hidden border border-white/10 bg-[#111114] mb-5">
+                                <div className="relative h-48 bg-gradient-to-br from-pink-500/25 via-[#111114] to-orange-500/20">
+                                    <div className="absolute inset-0 bg-gradient-to-t from-[#111114] via-[#111114]/20 to-transparent" />
+                                    <div className="absolute bottom-4 left-4 right-4">
+                                        <span className="inline-flex items-center rounded-full bg-pink-600 px-3 py-1 text-xs font-semibold uppercase tracking-wide">Audio Drop</span>
+                                        <h3 className="mt-3 text-xl font-bold leading-tight">{audioDrop.title}</h3>
+                                        <p className="mt-2 text-white/80 text-sm">{audioDrop.subtitle || "Audio Drops"}</p>
+                                    </div>
+                                </div>
+                                <div className="p-4 text-sm text-white/70">
+                                    <p className="line-clamp-3">{audioDrop.description}</p>
+                                    <p className="mt-2 text-white/45 break-all">{buildAudioDropShareUrl(audioDrop, urlParam)}</p>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-3 mb-3">
+                                <button onClick={handleShareToWhatsApp} className="rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 px-4 py-3 text-left">
+                                    <img src="/images/share_whatsapp.png" alt="WhatsApp" className="w-9 h-9 mb-2" />
+                                    <p className="text-sm font-medium">WhatsApp</p>
+                                </button>
+                                <button onClick={handleShareToThreads} className="rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 px-4 py-3 text-left">
+                                    <img src="/images/share_thread.png" alt="Threads" className="w-9 h-9 mb-2" />
+                                    <p className="text-sm font-medium">Threads</p>
+                                </button>
+                                <button onClick={handleShareToInstagram} className="rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 px-4 py-3 text-left">
+                                    <img src="/images/share_insta.png" alt="Instagram" className="w-9 h-9 mb-2" />
+                                    <p className="text-sm font-medium">Instagram</p>
+                                </button>
+                                <button onClick={handleCopyLink} className="rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 px-4 py-3 text-left">
+                                    <img src="/images/share_copy_link.png" alt="Copy link" className="w-9 h-9 mb-2" />
+                                    <p className="text-sm font-medium">Copy link</p>
+                                </button>
+                            </div>
+                            {copied && <p className="text-sm text-emerald-400 mb-3">Copied to clipboard</p>}
+                            <button onClick={closeShareDialog} className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-medium text-white hover:bg-white/10 transition">Close</button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Signal Dialog Modal */}
             {showSignalDialog && (

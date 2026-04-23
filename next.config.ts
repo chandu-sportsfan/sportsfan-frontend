@@ -274,6 +274,9 @@ const nextConfig = {
         // Audio Drops
         { source: '/api/request-drop', destination: `${apiTarget}/api/request-drop` },
         { source: '/api/request-drop/:path*', destination: `${apiTarget}/api/request-drop/:path*` },
+
+        { source: '/api/sportsfan360card', destination: `${apiTarget}/api/sportsfan360card` },
+        // { source: '/api/sportsfan360card/:path*', destination: `${apiTarget}/api/sportsfan360card/:path*` },
       ],
     };
   },

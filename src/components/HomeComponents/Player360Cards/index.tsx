@@ -73,6 +73,8 @@ export default function Player360CardsSection() {
     const [isInitialLoading, setIsInitialLoading] = useState(true);
     const [playlistData, setPlaylistData] = useState<Record<string, PlaylistData>>({});
     const [loadingPlaylists, setLoadingPlaylists] = useState<Record<string, boolean>>({});
+    const [sharePost, setSharePost] = useState<Post | null>(null);
+    const [copied, setCopied] = useState(false);
     const hasFetched = useRef(false);
     const searchTimeout = useRef<NodeJS.Timeout | null>(null);
 
@@ -190,6 +192,96 @@ export default function Player360CardsSection() {
             ...prev,
             [`${id}-${type}`]: true
         }));
+    };
+
+    const resolveShareImageUrl = (post: Post) => {
+        if (!post.image) return "/images/share.png";
+        return post.image.startsWith("http") ? post.image : `https://sportsfan360.vercel.app${post.image}`;
+    };
+
+    const buildShareUrl = (post: Post) => {
+        if (typeof window === "undefined") return "";
+        return `${window.location.origin}/MainModules/PlayersProfile/share/${post.id}`;
+    };
+
+    const buildShareText = (post: Post) => {
+        const previewLink = buildShareUrl(post);
+
+        return [
+            `${post.playerName} | Player 360 World`,
+            post.title,
+            "Open the preview link below to see the photo and details:",
+            previewLink,
+        ].join("\n");
+    };
+
+    const copyToClipboard = async (text: string) => {
+        try {
+            await navigator.clipboard.writeText(text);
+            return true;
+        } catch {
+            try {
+                const input = document.createElement("textarea");
+                input.value = text;
+                input.style.position = "fixed";
+                input.style.opacity = "0";
+                document.body.appendChild(input);
+                input.focus();
+                input.select();
+                const ok = document.execCommand("copy");
+                document.body.removeChild(input);
+                return ok;
+            } catch {
+                return false;
+            }
+        }
+    };
+
+    const openShare = (post: Post) => {
+        setSharePost(post);
+        setCopied(false);
+    };
+
+    const closeShare = () => {
+        setSharePost(null);
+        setCopied(false);
+    };
+
+    const handleShareToWhatsApp = () => {
+        if (!sharePost) return;
+        const shareText = buildShareText(sharePost);
+        const whatsappAppUrl = `whatsapp://send?text=${encodeURIComponent(shareText)}`;
+        const whatsappWebFallbackUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
+
+        const opened = window.open(whatsappAppUrl, "_self");
+        if (!opened) {
+            window.location.href = whatsappWebFallbackUrl;
+        }
+    };
+
+    const handleShareToThreads = () => {
+        if (!sharePost) return;
+        const shareText = buildShareText(sharePost);
+        window.open(`https://www.threads.net/intent/post?text=${encodeURIComponent(shareText)}`, "_blank", "noopener,noreferrer");
+    };
+
+    const handleShareToInstagram = async () => {
+        if (!sharePost) return;
+        const shareText = buildShareText(sharePost);
+        const ok = await copyToClipboard(shareText);
+        if (ok) {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 1600);
+        }
+        window.open("https://www.instagram.com/", "_blank", "noopener,noreferrer");
+    };
+
+    const handleCopyLink = async () => {
+        if (!sharePost) return;
+        const ok = await copyToClipboard(buildShareText(sharePost));
+        if (!ok) return;
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1600);
     };
 
     // Render preview of drops (max 2 items)
@@ -489,7 +581,12 @@ export default function Player360CardsSection() {
                                             </span>
 
                                             {/* Share */}
-                                            <span className="rounded-2xl px-2 py-1 flex flex-row gap-2 bg-gray-950 items-center">
+                                            <button
+                                                type="button"
+                                                onClick={() => openShare(post)}
+                                                className="rounded-2xl px-2 py-1 flex flex-row gap-2 bg-gray-950 items-center hover:bg-gray-800 transition"
+                                                aria-label={`Share ${post.playerName}`}
+                                            >
                                                 <img
                                                     src='/images/share.png'
                                                     alt="share"
@@ -498,7 +595,7 @@ export default function Player360CardsSection() {
                                                         e.currentTarget.src = '/fallback-share.png';
                                                     }}
                                                 />
-                                            </span>
+                                            </button>
                                         </div>
 
                                         {/* Buttons */}
@@ -522,6 +619,81 @@ export default function Player360CardsSection() {
                         </div>
                     )}
                 </div>
+
+                {sharePost && (
+                    <div className="fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4" onClick={closeShare}>
+                        <div className="bg-[#1a1a1a] rounded-2xl max-w-md w-full overflow-hidden border border-white/10" onClick={(e) => e.stopPropagation()}>
+                            <div className="flex items-center justify-between px-5 py-4 border-b border-white/10">
+                                <div>
+                                    <p className="text-white text-lg font-semibold">Share Player 360</p>
+                                    <p className="text-white/50 text-xs mt-1">Use the preview link so the player image shows up</p>
+                                </div>
+                                <button onClick={closeShare} className="text-gray-400 hover:text-white transition" aria-label="Close share dialog">
+                                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                        <path d="M15 5L5 15M5 5L15 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                                    </svg>
+                                </button>
+                            </div>
+
+                            <div className="p-5">
+                                <div className="rounded-[24px] overflow-hidden border border-white/10 bg-[#111114] mb-5">
+                                    <div className="relative h-48 bg-gradient-to-br from-pink-600/25 via-[#111114] to-orange-500/20">
+                                        <img src={resolveShareImageUrl(sharePost)} alt={sharePost.playerName} className="absolute inset-0 w-full h-full object-cover opacity-85" />
+                                        <div className="absolute inset-0 bg-gradient-to-t from-[#111114] via-[#111114]/20 to-transparent" />
+                                        <div className="absolute bottom-4 left-4 right-4">
+                                            <span className="inline-flex items-center rounded-full bg-pink-600 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white">
+                                                Player 360 World
+                                            </span>
+                                            <h3 className="mt-3 text-xl font-bold leading-tight">{sharePost.playerName}</h3>
+                                            <p className="mt-2 text-white/80 text-sm">{sharePost.title}</p>
+                                        </div>
+                                    </div>
+                                    <div className="p-4 text-sm text-white/70">
+                                        <p className="line-clamp-3">
+                                            {sharePost.category?.map((cat) => cat.title).filter(Boolean).join(", ") || "Latest Player 360 post"}
+                                        </p>
+                                        <a
+                                            href={buildShareUrl(sharePost)}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="mt-2 inline-block text-pink-400 break-all underline underline-offset-4 hover:text-pink-300"
+                                        >
+                                            {buildShareUrl(sharePost)}
+                                        </a>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-3 mb-3">
+                                    <button onClick={handleShareToWhatsApp} className="rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 px-4 py-3 text-left">
+                                        <img src="/images/share_whatsapp.png" alt="WhatsApp" className="w-9 h-9 mb-2" />
+                                        <p className="text-sm font-medium">WhatsApp</p>
+                                    </button>
+                                    <button onClick={handleShareToThreads} className="rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 px-4 py-3 text-left">
+                                        <img src="/images/share_thread.png" alt="Threads" className="w-9 h-9 mb-2" />
+                                        <p className="text-sm font-medium">Threads</p>
+                                    </button>
+                                    <button onClick={handleShareToInstagram} className="rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 px-4 py-3 text-left">
+                                        <img src="/images/share_insta.png" alt="Instagram" className="w-9 h-9 mb-2" />
+                                        <p className="text-sm font-medium">Instagram</p>
+                                    </button>
+                                    <button onClick={handleCopyLink} className="rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 px-4 py-3 text-left">
+                                        <img src="/images/share_copy_link.png" alt="Copy link" className="w-9 h-9 mb-2" />
+                                        <p className="text-sm font-medium">Copy link</p>
+                                    </button>
+                                </div>
+
+                                {copied && <p className="text-sm text-emerald-400 mb-3">Copied to clipboard</p>}
+
+                                <button
+                                    onClick={closeShare}
+                                    className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-medium text-white hover:bg-white/10 transition"
+                                >
+                                    Close
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );

@@ -7,6 +7,7 @@ import { SessionProvider } from "next-auth/react";
 import { PlayerProfile360Provider } from "@/context/PlayerProfile360Context";
 import { GlobalSearchProvider } from "@/context/GlobalSearchContext";
 import { AudioProvider } from "@/context/AudioContext";
+import { AuthProvider } from "@/context/AuthContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -39,7 +40,9 @@ export default function RootLayout({
               <PlayerProfile360Provider>
                 <GlobalSearchProvider>
                   <AudioProvider>
-                    {children}
+                    <AuthProvider>
+                      {children}
+                    </AuthProvider>
                   </AudioProvider>
                 </GlobalSearchProvider>
               </PlayerProfile360Provider>

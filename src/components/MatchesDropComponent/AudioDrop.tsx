@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import axios from "axios";
+import { useAuth } from "@/context/AuthContext";
 
 interface MatchInfo {
     team1?: string;
@@ -134,6 +135,7 @@ const copyToClipboard = async (text: string) => {
 };
 
 export default function AudioDropCard() {
+    const { user, getUserName, getUserDisplayName, isAuthenticated } = useAuth();
     const searchParams = useSearchParams();
     const idParam = searchParams.get("id");
     const urlParam = searchParams.get("url");
@@ -160,7 +162,12 @@ export default function AudioDropCard() {
     const timerRef = useRef<NodeJS.Timeout | null>(null);
 
     // Get or create user ID
-    const getUserId = () => {
+const getUserId = () => {
+        // If authenticated, use the actual userId from the backend
+        if (user?.userId) {
+            return user.userId;
+        }
+        // Fallback for non-authenticated users
         let userId = localStorage.getItem("audio_user_id");
         if (!userId) {
             userId = `user_${Math.random().toString(36).substr(2, 9)}`;
@@ -169,13 +176,42 @@ export default function AudioDropCard() {
         return userId;
     };
 
-    const getUserName = () => {
-        let userName = localStorage.getItem("audio_user_name");
-        if (!userName) {
-            userName = `Fan_${Math.random().toString(36).substr(2, 5)}`;
-            localStorage.setItem("audio_user_name", userName);
+    const getUserNameForSignal = () => {
+        return getUserName();
+    };
+
+
+
+     const getUserDisplayNameForUI = () => {
+        return getUserDisplayName();
+    };
+
+       const handleSendSignal = async () => {
+        if (!signalMessage.trim() || !audioDrop?.id) return;
+
+        setSendingSignal(true);
+        try {
+            const response = await axios.post("/api/audio-messages", {
+                audioId: audioDrop.id,
+                audioTitle: audioDrop.title,
+                userId: getUserId(),
+                userName: getUserNameForSignal(), // Use actual user name
+                message: signalMessage.trim(),
+            });
+
+            if (response.data.success) {
+                setSignalsCount((prev) => prev + 1);
+                setRecentSignals((prev) => [response.data.signal, ...prev].slice(0, 5));
+                setShowSignalDialog(false);
+                setSignalMessage("");
+                alert("Signal sent successfully!");
+            }
+        } catch (error) {
+            console.error("Error sending signal:", error);
+            alert("Failed to send signal. Please try again.");
+        } finally {
+            setSendingSignal(false);
         }
-        return userName;
     };
 
     useEffect(() => {
@@ -276,40 +312,40 @@ export default function AudioDropCard() {
         }
     };
 
-    const handleSendSignal = async () => {
-        if (!signalMessage.trim() || !audioDrop?.id) return;
+    // const handleSendSignal = async () => {
+    //     if (!signalMessage.trim() || !audioDrop?.id) return;
 
-        setSendingSignal(true);
-        try {
-            const response = await axios.post("/api/audio-messages", {
-                audioId: audioDrop.id,
-                audioTitle: audioDrop.title,
-                userId: getUserId(),
-                userName: getUserName(),
-                message: signalMessage.trim(),
-            });
+    //     setSendingSignal(true);
+    //     try {
+    //         const response = await axios.post("/api/audio-messages", {
+    //             audioId: audioDrop.id,
+    //             audioTitle: audioDrop.title,
+    //             userId: getUserId(),
+    //             userName: getUserName(),
+    //             message: signalMessage.trim(),
+    //         });
 
-            if (response.data.success) {
-                // Update signals count using functional updater to avoid stale state
-                setSignalsCount((prev) => prev + 1);
+    //         if (response.data.success) {
+    //             // Update signals count using functional updater to avoid stale state
+    //             setSignalsCount((prev) => prev + 1);
 
-                // Add to recent signals
-                setRecentSignals((prev) => [response.data.signal, ...prev].slice(0, 5));
+    //             // Add to recent signals
+    //             setRecentSignals((prev) => [response.data.signal, ...prev].slice(0, 5));
 
-                // Close dialog and reset
-                setShowSignalDialog(false);
-                setSignalMessage("");
+    //             // Close dialog and reset
+    //             setShowSignalDialog(false);
+    //             setSignalMessage("");
 
-                // Show success feedback
-                alert("Signal sent successfully!");
-            }
-        } catch (error) {
-            console.error("Error sending signal:", error);
-            alert("Failed to send signal. Please try again.");
-        } finally {
-            setSendingSignal(false);
-        }
-    };
+    //             // Show success feedback
+    //             alert("Signal sent successfully!");
+    //         }
+    //     } catch (error) {
+    //         console.error("Error sending signal:", error);
+    //         alert("Failed to send signal. Please try again.");
+    //     } finally {
+    //         setSendingSignal(false);
+    //     }
+    // };
 
     const openShareDialog = () => {
         setShowShareDialog(true);

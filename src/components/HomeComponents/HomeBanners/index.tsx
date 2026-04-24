@@ -13,7 +13,7 @@ const banners = [
     id: 2,
     title: "Watch Along",
     subtitle: "With Ravi Chandra Ashwin",
-    image: "/images/Watchalong_comingSoon.png",
+    image: "/images/watchsoon.png",
   },
   {
     id: 3,

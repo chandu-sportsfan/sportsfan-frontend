@@ -241,13 +241,13 @@ export default function Header() {
                                                         {result.type === 'player' ? 'Player' : 'Team'}
                                                     </span>
                                                 </div>
-                                                {result.category && (
+                                                {/* {result.category && (
                                                     <p className="text-xs text-gray-400 truncate">
                                                         {Array.isArray(result.category) 
                                                             ? result.category.join(', ') 
                                                             : result.category}
                                                     </p>
-                                                )}
+                                                )} */}
                                             </div>
                                         </div>
                                     </Link>

@@ -997,7 +997,7 @@ export default function FullPlaylist() {
 
             {/* Search — mobile, hidden when team-filtered */}
             {!teamFilter && (
-                <div className="w-full lg:w-fit ml-0 lg:ml-38 px-4 pt-3">
+                <div className="w-full lg:w-[50%] ml-0 lg:ml-38 px-4 pt-3">
                     <input
                         type="text"
                         value={search}

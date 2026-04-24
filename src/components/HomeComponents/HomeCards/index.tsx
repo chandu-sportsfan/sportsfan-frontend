@@ -248,7 +248,7 @@ const homeCardsData: CardProps[] = [
     stats: [
       { label: "Teams", value: "10" },
       { label: "Drops", value: "0" },
-      { label: "Fans", value: "2.3M" },
+      // { label: "Fans", value: "2.3M" },
     ],
     buttonText: "View Playlist",
     buttonIcon: "play",

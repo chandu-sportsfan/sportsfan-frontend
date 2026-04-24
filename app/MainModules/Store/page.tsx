@@ -24,7 +24,7 @@ export default function StorePage() {
     <>
     
     <div className="flex items-center justify-center min-h-screen">
-      <img src="/images/storecomingSoon.png" alt="Watch Along"  className="w-[1000px] h-[600px]  object-fit"/>
+      <img src="/images/storesoon.png" alt="Watch Along"  className="w-[1000px] h-[600px]  object-fit"/>
     </div>
 
     </>

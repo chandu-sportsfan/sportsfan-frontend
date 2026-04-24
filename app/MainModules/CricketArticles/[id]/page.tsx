@@ -32,6 +32,102 @@ export default function CricketArticleDetail() {
     const [article, setArticle] = useState<ArticleDetail | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [copied, setCopied] = useState(false);
+    const [showShareDialog, setShowShareDialog] = useState(false);
+
+    const buildArticleUrl = (articleId: string) => {
+        if (typeof window === "undefined") return "";
+        return `${window.location.origin}/MainModules/CricketArticles/${articleId}`;
+    };
+
+    const buildArticleShareText = (target: ArticleDetail) => {
+        const shareUrl = buildArticleUrl(target.id);
+        return [
+            `Read ${target.title} on Sportsfan`,
+            `${target.readTime} • ${target.views}`,
+            `View article: ${shareUrl}`,
+        ].join("\n");
+    };
+
+    const copyToClipboard = async (text: string) => {
+        try {
+            await navigator.clipboard.writeText(text);
+            return true;
+        } catch {
+            try {
+                const input = document.createElement("textarea");
+                input.value = text;
+                input.style.position = "fixed";
+                input.style.opacity = "0";
+                document.body.appendChild(input);
+                input.focus();
+                input.select();
+                const ok = document.execCommand("copy");
+                document.body.removeChild(input);
+                return ok;
+            } catch {
+                return false;
+            }
+        }
+    };
+
+    const openShareDialog = () => {
+        setShowShareDialog(true);
+        setCopied(false);
+    };
+
+    const closeShareDialog = () => {
+        setShowShareDialog(false);
+        setCopied(false);
+    };
+
+    const handleShareToWhatsApp = () => {
+        if (!article) return;
+        const shareText = buildArticleShareText(article);
+        const whatsappAppUrl = `whatsapp://send?text=${encodeURIComponent(shareText)}`;
+        const whatsappWebFallbackUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
+        const opened = window.open(whatsappAppUrl, "_self");
+        if (!opened) {
+            window.location.href = whatsappWebFallbackUrl;
+        }
+    };
+
+    const handleShareToThreads = () => {
+        if (!article) return;
+        const shareText = buildArticleShareText(article);
+        window.open(`https://www.threads.net/intent/post?text=${encodeURIComponent(shareText)}`, "_blank", "noopener,noreferrer");
+    };
+
+    const handleShareToInstagram = async () => {
+        if (!article) return;
+        const shareText = buildArticleShareText(article);
+        const ok = await copyToClipboard(shareText);
+        if (ok) {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 1600);
+        }
+        window.open("https://www.instagram.com/", "_blank", "noopener,noreferrer");
+    };
+
+    const handleShareToLinkedIn = () => {
+        if (!article) return;
+        const shareUrl = buildArticleUrl(article.id);
+        window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`, "_blank", "noopener,noreferrer");
+    };
+
+    const handleShareToX = () => {
+        if (!article) return;
+        const shareText = buildArticleShareText(article);
+        window.open(`https://x.com/intent/tweet?text=${encodeURIComponent(shareText)}`, "_blank", "noopener,noreferrer");
+    };
+
+    const handleCopyLink = async () => {
+        if (!article) return;
+        const ok = await copyToClipboard(buildArticleShareText(article));
+        if (!ok) return;
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1600);
+    };
 
     useEffect(() => {
         if (!id) return;
@@ -103,11 +199,67 @@ export default function CricketArticleDetail() {
 
                     <h1 className="text-2xl font-bold leading-snug">{article.title}</h1>
 
-                    <p className="text-gray-400 text-sm">
-                        {article.readTime}
-                        <span className="mx-2">•</span>
-                        {article.views}
-                    </p>
+                    <div className="relative flex items-center gap-3">
+                        <p className="text-gray-400 text-sm">
+                            {article.readTime}
+                            <span className="mx-2">•</span>
+                            {article.views}
+                        </p>
+                        <button
+                            type="button"
+                            onClick={openShareDialog}
+                            className="w-8 h-8 rounded-full bg-[#1e1e22] flex items-center justify-center hover:bg-[#2a2a2e] transition"
+                            aria-label="Share article"
+                        >
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                <circle cx="12" cy="3" r="1.8" stroke="#aaa" strokeWidth="1.4" />
+                                <circle cx="12" cy="13" r="1.8" stroke="#aaa" strokeWidth="1.4" />
+                                <circle cx="4" cy="8" r="1.8" stroke="#aaa" strokeWidth="1.4" />
+                                <path d="M10.3 3.9L5.7 7.1M10.3 12.1L5.7 8.9" stroke="#aaa" strokeWidth="1.4" strokeLinecap="round" />
+                            </svg>
+                        </button>
+
+                        {showShareDialog && article && (
+                            <div className="hidden lg:block absolute left-[calc(100%+8px)] top-1/2 -translate-y-1/2 z-50 w-[260px] rounded-2xl border border-white/10 bg-[#1a1a1e] p-3 shadow-2xl">
+                                <div className="flex items-center justify-between mb-2">
+                                    <p className="text-white text-sm font-semibold">Share Article</p>
+                                    <button onClick={closeShareDialog} className="text-gray-400 hover:text-white transition" aria-label="Close share panel">
+                                        <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
+                                            <path d="M15 5L5 15M5 5L15 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                                        </svg>
+                                    </button>
+                                </div>
+
+                                <div className="rounded-xl border border-white/10 bg-[#111114] p-3 mb-2">
+                                    <p className="text-white text-sm font-semibold line-clamp-2">{article.title}</p>
+                                    <p className="text-white/65 text-xs mt-1 line-clamp-2">{article.badge}</p>
+                                    <p className="text-white/45 text-[11px] mt-2 line-clamp-2 break-all">{buildArticleUrl(article.id)}</p>
+                                </div>
+
+                                <div className="flex flex-row flex-nowrap items-center gap-1.5 mb-2 -ml-1">
+                                    <button onClick={handleShareToWhatsApp} className="w-9 h-9 shrink-0 rounded-full overflow-hidden bg-white/5 hover:bg-white/10 border border-white/10 p-0 flex items-center justify-center" aria-label="Share on WhatsApp">
+                                        <img src="/images/share_whatsapp.png" alt="WhatsApp" className="w-full h-full object-cover rounded-full" />
+                                    </button>
+                                    <button onClick={handleShareToThreads} className="w-9 h-9 shrink-0 rounded-full overflow-hidden bg-white/5 hover:bg-white/10 border border-white/10 p-0 flex items-center justify-center" aria-label="Share on Threads">
+                                        <img src="/images/share_thread.png" alt="Threads" className="w-full h-full object-cover rounded-full" />
+                                    </button>
+                                    <button onClick={handleShareToInstagram} className="w-9 h-9 shrink-0 rounded-full overflow-hidden bg-white/5 hover:bg-white/10 border border-white/10 p-0 flex items-center justify-center" aria-label="Share on Instagram">
+                                        <img src="/images/share_insta.png" alt="Instagram" className="w-full h-full object-cover rounded-full" />
+                                    </button>
+                                    <button onClick={handleShareToLinkedIn} className="w-9 h-9 shrink-0 rounded-full overflow-hidden bg-white/5 hover:bg-white/10 border border-white/10 p-0 flex items-center justify-center" aria-label="Share on LinkedIn">
+                                        <img src="/images/Share_linkedin.png" alt="LinkedIn" className="w-full h-full object-cover rounded-full" />
+                                    </button>
+                                    <button onClick={handleShareToX} className="w-9 h-9 shrink-0 rounded-full overflow-hidden bg-white/5 hover:bg-white/10 border border-white/10 p-0 flex items-center justify-center" aria-label="Share on X">
+                                        <img src="/images/Share_X.png" alt="X" className="w-full h-full object-cover rounded-full" />
+                                    </button>
+                                    <button onClick={handleCopyLink} className="w-9 h-9 shrink-0 rounded-full overflow-hidden bg-white/5 hover:bg-white/10 border border-white/10 p-0 flex items-center justify-center" aria-label="Copy share link">
+                                        <img src="/images/share_copy_link.png" alt="Copy link" className="w-full h-full object-cover rounded-full" />
+                                    </button>
+                                </div>
+                                {copied && <p className="text-xs text-emerald-400">Copied to clipboard</p>}
+                            </div>
+                        )}
+                    </div>
                 </div>
 
                 {/* RIGHT — First 2 paragraphs */}
@@ -148,6 +300,54 @@ export default function CricketArticleDetail() {
                     dangerouslySetInnerHTML={{ __html: para }}
                 />
             ))}
+
+            {showShareDialog && article && (
+                <>
+                    <button
+                        type="button"
+                        aria-label="Close share popup"
+                        className="fixed inset-0 z-40 bg-black/70 lg:hidden"
+                        onClick={closeShareDialog}
+                    />
+                    <div
+                        className="fixed bottom-16 inset-x-4 z-50 mx-auto w-full max-w-[260px] rounded-2xl border border-white/10 bg-[#1a1a1e] p-3 shadow-2xl lg:hidden"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex items-center justify-between mb-2">
+                            <p className="text-white text-sm font-semibold">Share</p>
+                            <button onClick={closeShareDialog} className="text-gray-400 hover:text-white transition" aria-label="Close share popup">
+                                <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
+                                    <path d="M15 5L5 15M5 5L15 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                                </svg>
+                            </button>
+                        </div>
+
+                        <div className="flex flex-row flex-nowrap items-center gap-1.5 mb-2 overflow-x-auto -ml-1">
+                            <button onClick={handleShareToWhatsApp} className="w-8 h-8 shrink-0 rounded-full overflow-hidden bg-white/5 hover:bg-white/10 border border-white/10 p-0 flex items-center justify-center" aria-label="Share on WhatsApp">
+                                <img src="/images/share_whatsapp.png" alt="WhatsApp" className="w-full h-full object-cover rounded-full" />
+                            </button>
+                            <button onClick={handleShareToThreads} className="w-8 h-8 shrink-0 rounded-full overflow-hidden bg-white/5 hover:bg-white/10 border border-white/10 p-0 flex items-center justify-center" aria-label="Share on Threads">
+                                <img src="/images/share_thread.png" alt="Threads" className="w-full h-full object-cover rounded-full" />
+                            </button>
+                            <button onClick={handleShareToInstagram} className="w-8 h-8 shrink-0 rounded-full overflow-hidden bg-white/5 hover:bg-white/10 border border-white/10 p-0 flex items-center justify-center" aria-label="Share on Instagram">
+                                <img src="/images/share_insta.png" alt="Instagram" className="w-full h-full object-cover rounded-full" />
+                            </button>
+                            <button onClick={handleShareToLinkedIn} className="w-8 h-8 shrink-0 rounded-full overflow-hidden bg-white/5 hover:bg-white/10 border border-white/10 p-0 flex items-center justify-center" aria-label="Share on LinkedIn">
+                                <img src="/images/Share_linkedin.png" alt="LinkedIn" className="w-full h-full object-cover rounded-full" />
+                            </button>
+                            <button onClick={handleShareToX} className="w-8 h-8 shrink-0 rounded-full overflow-hidden bg-white/5 hover:bg-white/10 border border-white/10 p-0 flex items-center justify-center" aria-label="Share on X">
+                                <img src="/images/Share_X.png" alt="X" className="w-full h-full object-cover rounded-full" />
+                            </button>
+                            <button onClick={handleCopyLink} className="w-8 h-8 shrink-0 rounded-full overflow-hidden bg-white/5 hover:bg-white/10 border border-white/10 p-0 flex items-center justify-center" aria-label="Copy share link">
+                                <img src="/images/share_copy_link.png" alt="Copy link" className="w-full h-full object-cover rounded-full" />
+                            </button>
+                        </div>
+
+                        {copied && <p className="text-xs text-emerald-400">Copied to clipboard</p>}
+                    </div>
+
+                </>
+            )}
         </div>
     );
 }

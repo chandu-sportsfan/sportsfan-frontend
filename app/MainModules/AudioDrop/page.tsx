@@ -13,7 +13,7 @@ const Loading = () => (
 export default function HomePage() {
     return (
         <Suspense fallback={<Loading />}>
-            <div className="min-h-screen bg-black text-white flex flex-col lg:flex-row overflow-x-hidden">
+            <div id="audio-drop-section" className="min-h-screen bg-black text-white flex flex-col lg:flex-row overflow-x-hidden">
                 <div className="w-full overflow-x-hidden">
                     <AudioDropComponent />
                 </div>

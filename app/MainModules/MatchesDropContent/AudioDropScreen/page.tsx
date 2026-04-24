@@ -11,7 +11,9 @@ export default function AudioDropScreen() {
                 </div>
             </div>
         }>
-            <AudioDropCard />
+            <section id="audio-drop-section">
+                <AudioDropCard />
+            </section>
         </Suspense>
     );
 }

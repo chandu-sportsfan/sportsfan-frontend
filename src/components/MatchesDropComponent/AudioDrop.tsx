@@ -1376,7 +1376,7 @@ export default function AudioDropCard() {
                     {/* Stats */}
                     <div className="grid grid-cols-3 gap-2.5 mb-4">
                         {[
-                            { label: "Listens", value: audioDrop.listens.toLocaleString() },
+                            // { label: "Listens", value: audioDrop.listens.toLocaleString() },
                             { label: "Signals", value: signalsCount.toLocaleString() },
                             { label: "Duration", value: duration },
                         ].map((s, index) => (

@@ -90,11 +90,17 @@ const nextConfig = {
         // Audio Drops
         { source: '/api/request-drop', destination: `${apiTarget}/api/request-drop` },
         { source: '/api/request-drop/:path*', destination: `${apiTarget}/api/request-drop/:path*` },
-       
+
         // Sportsfan360 Profile
         { source: '/api/sportsfan360card', destination: `${apiTarget}/api/sportsfan360card` },
 
-         { source: '/api/auth/host/me', destination: `${apiTarget}/api/auth/host/me` },
+        { source: '/api/auth/host/me', destination: `${apiTarget}/api/auth/host/me` },
+
+        // Feedback
+        { source: '/api/feedback/questions', destination: `${apiTarget}/api/feedback/questions` },
+        { source: '/api/feedback/questions/:path*', destination: `${apiTarget}/api/feedback/questions/:path*` },
+        { source: '/api/feedback/submissions', destination: `${apiTarget}/api/feedback/submissions` },
+        { source: '/api/feedback/submissions/:path*', destination: `${apiTarget}/api/feedback/submissions/:path*` },
 
       ],
     };

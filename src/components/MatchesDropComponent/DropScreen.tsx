@@ -788,8 +788,8 @@ function DropRow({ drop }: { drop: Drop }) {
                     <p className="text-white text-sm font-medium  leading-snug line-clamp-2">{drop.title}</p>
                     <div className="flex items-center gap-2 mt-0.5">
                         <span className="text-gray-500 text-xs">{duration}</span>
-                        <span className="text-gray-600 text-xs">•</span>
-                        <span className="text-gray-500 text-xs">{plays} plays</span>
+                        {/* <span className="text-gray-600 text-xs">•</span> */}
+                        {/* <span className="text-gray-500 text-xs">{plays} plays</span> */}
                     </div>
                     <div className="flex flex-row items-start gap-1 mt-0.5">
                         <Users size={10} className="text-gray-600 mt-1" />

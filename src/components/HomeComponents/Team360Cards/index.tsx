@@ -662,6 +662,55 @@ export default function Team360CardsSection() {
     catch { return false; }
   };
 
+  const openShareDialog = (post: Post) => {
+    setSharePost(post);
+    setCopied(false);
+  };
+
+  const closeShareDialog = () => {
+    setSharePost(null);
+    setCopied(false);
+  };
+
+  const handleShareToWhatsApp = () => {
+    if (!sharePost) return;
+    const shareText = buildShareText(sharePost);
+    const whatsappAppUrl = `whatsapp://send?text=${encodeURIComponent(shareText)}`;
+    const whatsappWebFallbackUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
+    const opened = window.open(whatsappAppUrl, "_self");
+    if (!opened) window.location.href = whatsappWebFallbackUrl;
+  };
+
+  const handleShareToThreads = () => {
+    if (!sharePost) return;
+    window.open(`https://www.threads.net/intent/post?text=${encodeURIComponent(buildShareText(sharePost))}`, "_blank", "noopener,noreferrer");
+  };
+
+  const handleShareToInstagram = async () => {
+    if (!sharePost) return;
+    const ok = await copyToClipboard(buildShareText(sharePost));
+    if (ok) { setCopied(true); setTimeout(() => setCopied(false), 1600); }
+    window.open("https://www.instagram.com/", "_blank", "noopener,noreferrer");
+  };
+
+  const handleShareToLinkedIn = () => {
+    if (!sharePost) return;
+    window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(buildShareUrl(sharePost))}`, "_blank", "noopener,noreferrer");
+  };
+
+  const handleShareToX = () => {
+    if (!sharePost) return;
+    window.open(`https://x.com/intent/tweet?text=${encodeURIComponent(buildShareText(sharePost))}`, "_blank", "noopener,noreferrer");
+  };
+
+  const handleCopyLink = async () => {
+    if (!sharePost) return;
+    const ok = await copyToClipboard(buildShareText(sharePost));
+    if (!ok) return;
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1600);
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center py-20">
@@ -681,7 +730,7 @@ export default function Team360CardsSection() {
           return (
             <div
               key={post.id}
-              className="min-w-[280px] sm:min-w-[320px] max-w-[320px] h-full bg-black rounded-xl shadow-sm border border-gray-800 overflow-hidden snap-start"
+              className="relative min-w-[280px] sm:min-w-[320px] max-w-[320px] h-full bg-black rounded-xl shadow-sm border border-gray-800 overflow-hidden snap-start"
             >
               {/* Header */}
               <div className="p-3 flex items-center justify-between">
@@ -781,13 +830,59 @@ export default function Team360CardsSection() {
                       <span className="text-sm text-gray-400">{item.label}</span>
                     </div>
                   ))}
-                  <button
-                    type="button"
-                    onClick={() => { setSharePost(post); setCopied(false); }}
-                    className="ml-auto w-7 h-7 rounded-full bg-[#1e1e22] flex items-center justify-center hover:bg-[#2a2a2e] transition"
-                  >
-                    <img src="/images/share.png" alt="Share" className="w-4 h-4 object-contain" />
-                  </button>
+                  <div className="relative ml-auto">
+                    <button
+                      type="button"
+                      onClick={() => openShareDialog(post)}
+                      className="w-7 h-7 rounded-full bg-[#1e1e22] flex items-center justify-center hover:bg-[#2a2a2e] transition"
+                    >
+                      <img src="/images/share.png" alt="Share" className="w-4 h-4 object-contain" />
+                    </button>
+
+                    {sharePost?.id === post.id && (
+                      <div
+                        className="absolute bottom-full right-0 z-50 mb-2 w-[260px] rounded-2xl border border-white/10 bg-[#1a1a1e] p-3 shadow-2xl"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <p className="text-white text-sm font-semibold">Share Team 360</p>
+                          <button onClick={closeShareDialog} className="text-gray-400 hover:text-white transition" aria-label="Close share popup">
+                            <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
+                              <path d="M15 5L5 15M5 5L15 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                            </svg>
+                          </button>
+                        </div>
+
+                        <div className="rounded-xl border border-white/10 bg-[#111114] p-3 mb-2">
+                          <p className="text-white text-sm font-semibold line-clamp-2">{sharePost.teamName}</p>
+                          <p className="text-white/65 text-xs mt-1 line-clamp-2">{sharePost.title}</p>
+                          <p className="text-white/45 text-[11px] mt-2 line-clamp-2 break-all">{buildShareUrl(sharePost)}</p>
+                        </div>
+
+                        <div className="flex flex-row flex-nowrap items-center justify-between gap-1 mb-2">
+                          <button onClick={handleShareToWhatsApp} className="w-8 h-8 shrink-0 rounded-full overflow-hidden bg-white/5 hover:bg-white/10 border border-white/10 p-0 flex items-center justify-center" aria-label="Share on WhatsApp">
+                            <img src="/images/share_whatsapp.png" alt="WhatsApp" className="w-full h-full object-cover rounded-full" />
+                          </button>
+                          <button onClick={handleShareToThreads} className="w-8 h-8 shrink-0 rounded-full overflow-hidden bg-white/5 hover:bg-white/10 border border-white/10 p-0 flex items-center justify-center" aria-label="Share on Threads">
+                            <img src="/images/share_thread.png" alt="Threads" className="w-full h-full object-cover rounded-full" />
+                          </button>
+                          <button onClick={handleShareToInstagram} className="w-8 h-8 shrink-0 rounded-full overflow-hidden bg-white/5 hover:bg-white/10 border border-white/10 p-0 flex items-center justify-center" aria-label="Share on Instagram">
+                            <img src="/images/share_insta.png" alt="Instagram" className="w-full h-full object-cover rounded-full" />
+                          </button>
+                          <button onClick={handleShareToLinkedIn} className="w-8 h-8 shrink-0 rounded-full overflow-hidden bg-white/5 hover:bg-white/10 border border-white/10 p-0 flex items-center justify-center" aria-label="Share on LinkedIn">
+                            <img src="/images/Share_linkedin.png" alt="LinkedIn" className="w-full h-full object-cover rounded-full" />
+                          </button>
+                          <button onClick={handleShareToX} className="w-8 h-8 shrink-0 rounded-full overflow-hidden bg-white/5 hover:bg-white/10 border border-white/10 p-0 flex items-center justify-center" aria-label="Share on X">
+                            <img src="/images/Share_X.png" alt="X" className="w-full h-full object-cover rounded-full" />
+                          </button>
+                          <button onClick={handleCopyLink} className="w-8 h-8 shrink-0 rounded-full overflow-hidden bg-white/5 hover:bg-white/10 border border-white/10 p-0 flex items-center justify-center" aria-label="Copy share link">
+                            <img src="/images/share_copy_link.png" alt="Copy link" className="w-full h-full object-cover rounded-full" />
+                          </button>
+                        </div>
+                        {copied && <p className="text-xs text-emerald-400">Copied to clipboard</p>}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* View Full Playlist button — only shown if team has drops */}
@@ -804,43 +899,6 @@ export default function Team360CardsSection() {
         })}
       </div>
 
-      {/* Share Modal */}
-      {sharePost && (
-        <div className="fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4" onClick={() => setSharePost(null)}>
-          <div className="bg-[#1a1a1a] rounded-2xl max-w-md w-full overflow-hidden border border-white/10" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between px-5 py-4 border-b border-white/10">
-              <div>
-                <p className="text-white text-lg font-semibold">Share Team 360</p>
-                <p className="text-white/50 text-xs mt-1">Use the preview link so the post image shows up</p>
-              </div>
-              <button onClick={() => setSharePost(null)} className="text-gray-400 hover:text-white transition">
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                  <path d="M15 5L5 15M5 5L15 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                </svg>
-              </button>
-            </div>
-            <div className="p-5">
-              <div className="grid grid-cols-2 gap-3 mb-3">
-                {[
-                  { label: "WhatsApp", img: "/images/share_whatsapp.png", action: () => window.open(`https://wa.me/?text=${encodeURIComponent(buildShareText(sharePost))}`, "_blank") },
-                  { label: "Threads", img: "/images/share_thread.png", action: () => window.open(`https://www.threads.net/intent/post?text=${encodeURIComponent(buildShareText(sharePost))}`, "_blank") },
-                  { label: "Instagram", img: "/images/share_insta.png", action: async () => { await copyToClipboard(buildShareText(sharePost)); setCopied(true); window.open("https://www.instagram.com/", "_blank"); } },
-                  { label: "Copy link", img: "/images/share_copy_link.png", action: async () => { await copyToClipboard(buildShareText(sharePost)); setCopied(true); setTimeout(() => setCopied(false), 1600); } },
-                ].map(({ label, img, action }) => (
-                  <button key={label} onClick={action} className="rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 px-4 py-3 text-left">
-                    <img src={img} alt={label} className="w-9 h-9 mb-2" />
-                    <p className="text-sm font-medium">{label}</p>
-                  </button>
-                ))}
-              </div>
-              {copied && <p className="text-sm text-emerald-400 mb-3">Copied to clipboard</p>}
-              <button onClick={() => setSharePost(null)} className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-medium text-white hover:bg-white/10 transition">
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

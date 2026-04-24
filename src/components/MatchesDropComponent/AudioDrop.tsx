@@ -1282,6 +1282,7 @@ export default function AudioDropCard() {
 
     return (
         <div className="flex justify-center items-start bg-[#0d0d10] min-h-screen p-4 sm:p-6 lg:p-10 pb-15 md:pb-20 lg:gap-4">
+            <div className="relative">
             <div className="relative w-full max-w-[360px] sm:max-w-[400px] bg-[#111114] rounded-[28px] overflow-hidden border border-[#2a2a2e]">
 
                 {/* Topbar */}
@@ -1460,7 +1461,7 @@ export default function AudioDropCard() {
                         onClick={closeShareDialog}
                     />
                     <div
-                        className="fixed top-20 inset-x-4 z-50 mx-auto w-full max-w-[260px] rounded-2xl border border-white/10 bg-[#1a1a1e] p-3 shadow-2xl lg:hidden"
+                        className="fixed bottom-16 inset-x-4 z-50 mx-auto w-full max-w-[260px] rounded-2xl border border-white/10 bg-[#1a1a1e] p-3 shadow-2xl lg:hidden"
                         onClick={(e) => e.stopPropagation()}
                     >
                         <div className="flex items-center justify-between mb-2">
@@ -1471,31 +1472,31 @@ export default function AudioDropCard() {
                                 </svg>
                             </button>
                         </div>
-                        <div className="flex flex-wrap items-center gap-2 mb-2">
-                            <button onClick={handleShareToWhatsApp} className="rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 p-2" aria-label="Share on WhatsApp">
-                                <img src="/images/share_whatsapp.png" alt="WhatsApp" className="w-8 h-8" />
+                        <div className="flex flex-row flex-nowrap items-center gap-1.5 mb-2 overflow-x-auto -ml-1">
+                            <button onClick={handleShareToWhatsApp} className="w-8 h-8 shrink-0 rounded-full overflow-hidden bg-white/5 hover:bg-white/10 border border-white/10 p-0 flex items-center justify-center" aria-label="Share on WhatsApp">
+                                <img src="/images/share_whatsapp.png" alt="WhatsApp" className="w-full h-full object-cover rounded-full" />
                             </button>
-                            <button onClick={handleShareToThreads} className="rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 p-2" aria-label="Share on Threads">
-                                <img src="/images/share_thread.png" alt="Threads" className="w-8 h-8" />
+                            <button onClick={handleShareToThreads} className="w-8 h-8 shrink-0 rounded-full overflow-hidden bg-white/5 hover:bg-white/10 border border-white/10 p-0 flex items-center justify-center" aria-label="Share on Threads">
+                                <img src="/images/share_thread.png" alt="Threads" className="w-full h-full object-cover rounded-full" />
                             </button>
-                            <button onClick={handleShareToInstagram} className="rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 p-2" aria-label="Share on Instagram">
-                                <img src="/images/share_insta.png" alt="Instagram" className="w-8 h-8" />
+                            <button onClick={handleShareToInstagram} className="w-8 h-8 shrink-0 rounded-full overflow-hidden bg-white/5 hover:bg-white/10 border border-white/10 p-0 flex items-center justify-center" aria-label="Share on Instagram">
+                                <img src="/images/share_insta.png" alt="Instagram" className="w-full h-full object-cover rounded-full" />
                             </button>
-                            <button onClick={handleShareToLinkedIn} className="rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 p-2" aria-label="Share on LinkedIn">
-                                <img src="/images/Share_linkedin.png" alt="LinkedIn" className="w-8 h-8" />
+                            <button onClick={handleShareToLinkedIn} className="w-8 h-8 shrink-0 rounded-full overflow-hidden bg-white/5 hover:bg-white/10 border border-white/10 p-0 flex items-center justify-center" aria-label="Share on LinkedIn">
+                                <img src="/images/Share_linkedin.png" alt="LinkedIn" className="w-full h-full object-cover rounded-full" />
                             </button>
-                            <button onClick={handleShareToX} className="rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 p-2" aria-label="Share on X">
-                                <img src="/images/Share_X.png" alt="X" className="w-8 h-8" />
+                            <button onClick={handleShareToX} className="w-8 h-8 shrink-0 rounded-full overflow-hidden bg-white/5 hover:bg-white/10 border border-white/10 p-0 flex items-center justify-center" aria-label="Share on X">
+                                <img src="/images/Share_X.png" alt="X" className="w-full h-full object-cover rounded-full" />
                             </button>
-                            <button onClick={handleCopyLink} className="rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 p-2" aria-label="Copy share link">
-                                <img src="/images/share_copy_link.png" alt="Copy link" className="w-8 h-8" />
+                            <button onClick={handleCopyLink} className="w-8 h-8 shrink-0 rounded-full overflow-hidden bg-white/5 hover:bg-white/10 border border-white/10 p-0 flex items-center justify-center" aria-label="Copy share link">
+                                <img src="/images/share_copy_link.png" alt="Copy link" className="w-full h-full object-cover rounded-full" />
                             </button>
                         </div>
                         {copied && <p className="text-xs text-emerald-400">Copied to clipboard</p>}
                     </div>
 
-                    <div className="hidden lg:block w-[280px] rounded-2xl border border-white/10 bg-[#1a1a1e] p-4 shadow-2xl">
-                        <div className="flex items-center justify-between mb-3">
+                    <div className="hidden lg:block absolute left-[calc(100%+8px)] top-2 z-50 w-[260px] rounded-2xl border border-white/10 bg-[#1a1a1e] p-3 shadow-2xl">
+                        <div className="flex items-center justify-between mb-2">
                             <p className="text-white text-sm font-semibold">Share Audio Drop</p>
                             <button onClick={closeShareDialog} className="text-gray-400 hover:text-white transition" aria-label="Close share panel">
                                 <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
@@ -1504,36 +1505,37 @@ export default function AudioDropCard() {
                             </button>
                         </div>
 
-                        <div className="rounded-xl border border-white/10 bg-[#111114] p-3 mb-3">
+                        <div className="rounded-xl border border-white/10 bg-[#111114] p-3 mb-2">
                             <p className="text-white text-sm font-semibold line-clamp-2">{audioDrop.title}</p>
                             <p className="text-white/65 text-xs mt-1 line-clamp-2">{audioDrop.subtitle || "Audio Drops"}</p>
-                            <p className="text-white/45 text-[11px] mt-2 break-all">{buildAudioDropShareUrl(audioDrop, urlParam)}</p>
+                            <p className="text-white/45 text-[11px] mt-2 line-clamp-2 break-all">{buildAudioDropShareUrl(audioDrop, urlParam)}</p>
                         </div>
 
-                        <div className="flex flex-wrap items-center gap-2 mb-2">
-                            <button onClick={handleShareToWhatsApp} className="rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 p-2" aria-label="Share on WhatsApp">
-                                <img src="/images/share_whatsapp.png" alt="WhatsApp" className="w-8 h-8" />
+                        <div className="flex flex-row flex-nowrap items-center gap-1.5 mb-2 -ml-1">
+                            <button onClick={handleShareToWhatsApp} className="w-9 h-9 shrink-0 rounded-full overflow-hidden bg-white/5 hover:bg-white/10 border border-white/10 p-0 flex items-center justify-center" aria-label="Share on WhatsApp">
+                                <img src="/images/share_whatsapp.png" alt="WhatsApp" className="w-full h-full object-cover rounded-full" />
                             </button>
-                            <button onClick={handleShareToThreads} className="rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 p-2" aria-label="Share on Threads">
-                                <img src="/images/share_thread.png" alt="Threads" className="w-8 h-8" />
+                            <button onClick={handleShareToThreads} className="w-9 h-9 shrink-0 rounded-full overflow-hidden bg-white/5 hover:bg-white/10 border border-white/10 p-0 flex items-center justify-center" aria-label="Share on Threads">
+                                <img src="/images/share_thread.png" alt="Threads" className="w-full h-full object-cover rounded-full" />
                             </button>
-                            <button onClick={handleShareToInstagram} className="rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 p-2" aria-label="Share on Instagram">
-                                <img src="/images/share_insta.png" alt="Instagram" className="w-8 h-8" />
+                            <button onClick={handleShareToInstagram} className="w-9 h-9 shrink-0 rounded-full overflow-hidden bg-white/5 hover:bg-white/10 border border-white/10 p-0 flex items-center justify-center" aria-label="Share on Instagram">
+                                <img src="/images/share_insta.png" alt="Instagram" className="w-full h-full object-cover rounded-full" />
                             </button>
-                            <button onClick={handleShareToLinkedIn} className="rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 p-2" aria-label="Share on LinkedIn">
-                                <img src="/images/Share_linkedin.png" alt="LinkedIn" className="w-8 h-8" />
+                            <button onClick={handleShareToLinkedIn} className="w-9 h-9 shrink-0 rounded-full overflow-hidden bg-white/5 hover:bg-white/10 border border-white/10 p-0 flex items-center justify-center" aria-label="Share on LinkedIn">
+                                <img src="/images/Share_linkedin.png" alt="LinkedIn" className="w-full h-full object-cover rounded-full" />
                             </button>
-                            <button onClick={handleShareToX} className="rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 p-2" aria-label="Share on X">
-                                <img src="/images/Share_X.png" alt="X" className="w-8 h-8" />
+                            <button onClick={handleShareToX} className="w-9 h-9 shrink-0 rounded-full overflow-hidden bg-white/5 hover:bg-white/10 border border-white/10 p-0 flex items-center justify-center" aria-label="Share on X">
+                                <img src="/images/Share_X.png" alt="X" className="w-full h-full object-cover rounded-full" />
                             </button>
-                            <button onClick={handleCopyLink} className="rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 p-2" aria-label="Copy share link">
-                                <img src="/images/share_copy_link.png" alt="Copy link" className="w-8 h-8" />
+                            <button onClick={handleCopyLink} className="w-9 h-9 shrink-0 rounded-full overflow-hidden bg-white/5 hover:bg-white/10 border border-white/10 p-0 flex items-center justify-center" aria-label="Copy share link">
+                                <img src="/images/share_copy_link.png" alt="Copy link" className="w-full h-full object-cover rounded-full" />
                             </button>
                         </div>
                         {copied && <p className="text-xs text-emerald-400">Copied to clipboard</p>}
                     </div>
                 </>
             )}
+            </div>
 
             {/* Signal Dialog */}
             {showSignalDialog && (

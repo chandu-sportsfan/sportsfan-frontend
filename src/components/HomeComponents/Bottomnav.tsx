@@ -27,10 +27,12 @@ const bottomNavData: NavItem[] = [
   {
     name: "Store",
     logo: "/images/store.png",
+     url: "/MainModules/Store"
   },
   {
     name: "Fan Zone",
     logo: "/images/profile.png",
+     url: "/MainModules/Fanszone"
   },
 ];
 

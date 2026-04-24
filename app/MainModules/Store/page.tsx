@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 import WatchAlongLobby from "@/src/components/WatchLobby/WatchAlongLobby";
 
 
-export default function WatchAlongPage() {
+export default function StorePage() {
   const router = useRouter();
 //   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
 
@@ -24,7 +24,7 @@ export default function WatchAlongPage() {
     <>
     
     <div className="flex items-center justify-center min-h-screen">
-      <img src="/images/Watchalong_comingSoon.png" alt="Watch Along"  className="w-[1000px] h-[600px]  object-fit"/>
+      <img src="/images/storecomingSoon.png" alt="Watch Along"  className="w-[1000px] h-[600px]  object-fit"/>
     </div>
 
     </>

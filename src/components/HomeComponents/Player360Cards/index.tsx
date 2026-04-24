@@ -315,11 +315,11 @@ export default function Player360CardsSection() {
         }
 
         return (
-            <div className="mt-3 mb-3 space-y-2">
-                <p className="text-xs text-gray-400 flex items-center gap-1 ml-2">
+            <div className="space-y-2">
+                {/* <p className="text-xs text-gray-400 flex items-center gap-1 ml-2">
                     <Headphones size={10} /> Latest Drops
-                </p>
-                <div className="space-y-1.5">
+                </p> */}
+                {/* <div className="space-y-1.5">
                     {previewDrops.map((drop, idx) => (
                         <div key={idx} className="bg-gray-900/50 rounded-lg p-2">
                             <div className="flex items-center justify-between">
@@ -340,7 +340,7 @@ export default function Player360CardsSection() {
                             </div>
                         </div>
                     ))}
-                </div>
+                </div> */}
                 {(data.audioDrops?.length + data.videoDrops?.length) > 2 && (
                     <p className="text-[10px] text-pink-500 text-center">
                         +{data.audioDrops.length + data.videoDrops.length - 2} more drops
@@ -518,7 +518,7 @@ export default function Player360CardsSection() {
                                     {hasDropContent && renderDropPreview(post.id)}
 
                                     {/* Stats Section */}
-                                    <div className="p-3 mt-auto">
+                                    {/* <div className="p-3 mt-auto">
                                         <div className="flex items-center gap-2 flex-nowrap mb-3">
                                             {post.catlogo && post.catlogo.map((item, i) => (
                                                 <div
@@ -541,7 +541,7 @@ export default function Player360CardsSection() {
                                                 </div>
                                             ))}
 
-                                            {/* Comments */}
+                                           
                                             <span className="rounded-2xl px-2 py-1 flex flex-row gap-2 bg-gray-950 items-center">
                                                 <img
                                                     src='/images/profile.png'
@@ -554,7 +554,7 @@ export default function Player360CardsSection() {
                                                 <span className="text-sm text-gray-400">{post.comments || 0}</span>
                                             </span>
 
-                                            {/* Likes */}
+                                         
                                             <span className="rounded-2xl px-2 py-1 flex flex-row gap-2 bg-gray-950 items-center">
                                                 <img
                                                     src='/images/like.png'
@@ -567,7 +567,7 @@ export default function Player360CardsSection() {
                                                 <span className="text-sm text-gray-400">{post.likes || 0}</span>
                                             </span>
 
-                                            {/* Live */}
+                                            
                                             <span className="rounded-2xl px-2 py-1 flex flex-row gap-2 bg-gray-950 items-center">
                                                 <img
                                                     src='/images/live.png'
@@ -580,7 +580,7 @@ export default function Player360CardsSection() {
                                                 <span className="text-sm text-gray-400 font-medium">{post.live || 0}</span>
                                             </span>
 
-                                            {/* Share */}
+                                           
                                             <button
                                                 type="button"
                                                 onClick={() => openShare(post)}
@@ -598,7 +598,7 @@ export default function Player360CardsSection() {
                                             </button>
                                         </div>
 
-                                        {/* Buttons */}
+
                                         <Link href={`/MainModules/PlayersProfileDrop/DropScreen?id=${post.playerProfilesId || post.id}&playerName=${encodeURIComponent(post.playerName)}`}>
                                             <button
                                                 className="text-xs bg-[#C9115F] w-full py-2 rounded-xl text-white mb-2"
@@ -607,7 +607,7 @@ export default function Player360CardsSection() {
                                                 View Full Playlist
                                             </button>
                                         </Link>
-                                    </div>
+                                    </div> */}
                                 </div>
                             );
                         })

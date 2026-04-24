@@ -24,7 +24,7 @@ export default function WatchAlongPage() {
     <>
     
     <div className="flex items-center justify-center min-h-screen">
-      <img src="/images/watchalong_comingSoon.png" alt="Watch Along"  className="w-[1000px] h-[600px]  object-fit"/>
+      <img src="/images/watchalong_comingsoon.png" alt="Watch Along"  className="w-[1000px] h-[600px]  object-fit"/>
     </div>
 
     </>

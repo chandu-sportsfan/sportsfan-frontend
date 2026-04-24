@@ -13,7 +13,7 @@ const banners = [
     id: 2,
     title: "Watch Along",
     subtitle: "With Ravi Chandra Ashwin",
-    image: "/images/bannertwo.jpg",
+    image: "/images/Watchalong_comingSoon.png",
   },
   {
     id: 3,
@@ -89,7 +89,7 @@ export default function HomeBanners() {
           >
             <img
               src={banner.image}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-fit"
             />
             <div className="absolute bottom-0 p-4 bg-gradient-to-t from-black/80 to-transparent w-full">
               <h2 className="font-semibold text-lg">{banner.title}</h2>

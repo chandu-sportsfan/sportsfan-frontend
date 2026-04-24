@@ -69,6 +69,9 @@ const nextConfig = {
         { source: '/api/plays', destination: `${apiTarget}/api/plays` },
         { source: '/api/plays/:path*', destination: `${apiTarget}/api/plays/:path*` },
 
+        { source: '/api/cloudinary/plays', destination: `${apiTarget}/api/cloudinary/plays` },
+        { source: '/api/cloudinary/plays/:path*', destination: `${apiTarget}/api/cloudinary/plays/:path*` },
+
         // Global Search
         { source: '/api/global-search', destination: `${apiTarget}/api/global-search` },
         { source: '/api/global-search/:path*', destination: `${apiTarget}/api/global-search/:path*` },

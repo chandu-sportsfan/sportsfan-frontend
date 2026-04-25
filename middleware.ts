@@ -35,7 +35,7 @@ export async function middleware(request: NextRequest) {
         return NextResponse.redirect(loginUrl);
     }
 
-    const authPages = ['/auth/login', '/auth/register', '/'];
+    const authPages = ['/auth/login', '/auth/register'];
     if (isLoggedIn && authPages.some(p => pathname.startsWith(p))) {
         return NextResponse.redirect(new URL('/MainModules/HomePage', request.url));
     }

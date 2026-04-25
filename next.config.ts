@@ -104,6 +104,10 @@ const nextConfig = {
 
         { source: '/api/auth/google-signup', destination: `${apiTarget}/api/auth/google-signup` },
 
+        { source: '/api/upload', destination: `${apiTarget}/api/upload` },
+        { source: '/api/upload/:path*', destination: `${apiTarget}/api/upload/:path*` },
+
+
       ],
     };
   },

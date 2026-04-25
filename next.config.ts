@@ -102,6 +102,8 @@ const nextConfig = {
         { source: '/api/feedback/submissions', destination: `${apiTarget}/api/feedback/submissions` },
         { source: '/api/feedback/submissions/:path*', destination: `${apiTarget}/api/feedback/submissions/:path*` },
 
+        { source: '/api/auth/google-signup', destination: `${apiTarget}/api/auth/google-signup` },
+
       ],
     };
   },

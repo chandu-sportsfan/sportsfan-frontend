@@ -7,7 +7,6 @@
 // import { useAuth } from "@/context/AuthContext";
 // import { useGlobalAudio } from "@/hooks/useGlobalAudio";
 
-// // ── Team filter map ──────────────────────────────────────────────────────────
 // const TEAM_ABBR_MAP: Record<string, string[]> = {
 //     "Mumbai Indians": ["MI", "Mumbai"],
 //     "Chennai Super Kings": ["CSK", "Chennai"],
@@ -27,7 +26,6 @@
 //     return abbrs.some((abbr) => title.includes(abbr.toUpperCase()));
 // }
 
-// // ── Interfaces ───────────────────────────────────────────────────────────────
 // interface MatchInfo {
 //     team1?: string;
 //     team2?: string;
@@ -70,7 +68,6 @@
 //     videoDrops: Drop[];
 // }
 
-// // ── Helpers ──────────────────────────────────────────────────────────────────
 // function audioFileToDrop(audio: AudioFile): Drop {
 //     return {
 //         id: audio.id,
@@ -116,22 +113,31 @@
 //     }));
 // }
 
+// function isRecentDrop(createdAt?: string, hoursThreshold = 24): boolean {
+//     if (!createdAt) return false;
+//     const now = Date.now();
+//     const created = new Date(createdAt).getTime();
+//     return now - created < hoursThreshold * 60 * 60 * 1000;
+// }
+
 // // ── DropRow ──────────────────────────────────────────────────────────────────
-// function DropRow({ drop, seenDropIds, onSeen, userId }: {
+// function DropRow({ drop, seenDropIds = [], onSeen = () => {}, userId }: {
 //     drop: Drop;
 //     seenDropIds: string[];
 //     onSeen: (id: string) => void;
 //     userId?: string;
 // }) {
 //     const isSeen = seenDropIds.includes(drop.id);
+//     const isNew = isRecentDrop(drop.createdAt);
 //     const [playing, setPlaying] = useState(false);
 //     const [duration, setDuration] = useState<string>(drop.duration || "0:00");
-//     const [plays, setPlays] = useState<number>(parseInt(drop.plays) || 0);
 //     const audioRef = useRef<HTMLAudioElement | null>(null);
 //     const hasCountedPlay = useRef(false);
 //     const { audioManager, currentAudio } = useGlobalAudio();
 
 //     const isCurrentlyPlaying = currentAudio === audioRef.current && playing;
+
+//     // console.log(`[DropRow] "${drop.title.slice(0, 30)}" | isNew=${isNew} | isSeen=${isSeen} | showDot=${isNew && !isSeen}`);
 
 //     useEffect(() => {
 //         if (drop.url) {
@@ -161,15 +167,32 @@
 //         if (hasCountedPlay.current) return;
 //         hasCountedPlay.current = true;
 //         try {
-//             const res = await axios.post("/api/plays", { id: drop.id });
-//             if (res.data.success) setPlays(res.data.plays);
+//             await axios.post("/api/plays", { id: drop.id });
 //         } catch { }
+//     };
+
+//     const handleClick = () => {
+//         console.log(`[handleClick] dropId=${drop.id} | isSeen=${isSeen} | userId=${userId}`);
+//         if (!isSeen && userId) {
+//             console.log(`[handleClick] Calling POST /api/cloudinary/drops/seen`);
+//             axios.post("/api/cloudinary/drops/seen", {
+//                 dropId: drop.id,
+//                 userId: userId,
+//             })
+//                 .then(res => console.log(`[handleClick] POST success:`, res.data))
+//                 .catch(err => console.error(`[handleClick] POST failed:`, err?.response?.data || err.message));
+
+//             onSeen(drop.id);
+//             console.log(`[handleClick] onSeen called for ${drop.id}`);
+//         } else {
+//             console.log(`[handleClick] Skipped — isSeen=${isSeen}, userId=${userId}`);
+//         }
 //     };
 
 //     const togglePlay = () => {
 //         const audio = audioRef.current;
 //         if (!audio) return;
-//          handleClick();
+//         handleClick();
 //         if (playing && currentAudio === audio) {
 //             audioManager.pause(audio, () => setPlaying(false));
 //         } else {
@@ -193,23 +216,6 @@
 //             }
 //         };
 //     }, []);
-
-//     function isRecentDrop(createdAt?: string, hoursThreshold = 24): boolean {
-//         if (!createdAt) return false;
-//         const now = Date.now();
-//         const created = new Date(createdAt).getTime();
-//         return now - created < hoursThreshold * 60 * 60 * 1000;
-//     }
-
-//     const handleClick = () => {
-//         if (!isSeen && userId) {
-//             axios.post("/api/cloudinary/drops/seen", {
-//                 dropId: drop.id,
-//                 userId: userId,
-//             });
-//             onSeen(drop.id);
-//         }
-//     };
 
 //     return (
 //         <div className="flex items-center justify-between px-3 py-3 bg-[#141414] rounded-xl mb-2 gap-3 relative">
@@ -237,11 +243,9 @@
 //                     )}
 //                 </button>
 //                 <div className="min-w-0">
-//                     <p className="text-white text-sm font-medium  leading-snug line-clamp-2">{drop.title}</p>
+//                     <p className="text-white text-sm font-medium leading-snug line-clamp-2">{drop.title}</p>
 //                     <div className="flex items-center gap-2 mt-0.5">
 //                         <span className="text-gray-500 text-xs">{duration}</span>
-//                         {/* <span className="text-gray-600 text-xs">•</span> */}
-//                         {/* <span className="text-gray-500 text-xs">{plays} plays</span> */}
 //                     </div>
 //                     <div className="flex flex-row items-start gap-1 mt-0.5">
 //                         <Users size={10} className="text-gray-600 mt-1" />
@@ -250,29 +254,18 @@
 //                 </div>
 //             </Link>
 
-//             {isRecentDrop(drop.createdAt) && !isSeen && (
-//                 <span className="absolute top-8 right-5 w-2 h-2 rounded-full bg-green-400" />
+//             {isNew && !isSeen && (
+//                 <span className="absolute top-8 right-5 w-2 h-2 rounded-full bg-green-400 shadow-[0_0_6px_2px_rgba(74,222,128,0.5)]" />
 //             )}
-
-//             {/* <Link href={`/MainModules/MatchesDropContent/AudioDropScreen?id=${encodeURIComponent(drop.id)}`}>
-//         <span className="flex-shrink-0 text-[#C9115F] text-xs font-semibold whitespace-nowrap">
-//           {drop.badge}
-//         </span>
-//       </Link> */}
 //         </div>
 //     );
 // }
 
-// // ── SectionLabel 
+// // ── SectionLabel ─────────────────────────────────────────────────────────────
 // function SectionLabel({ label }: { label: string }) {
 //     const isToday = label.startsWith("Today");
 //     return (
-//         <div
-//             className={`inline-block px-3 py-1 rounded-md mb-4 text-sm font-semibold ${isToday
-//                 ? "bg-[#b8460a] text-white"
-//                 : "bg-[#1e1e1e] text-gray-300 border border-white/10"
-//                 }`}
-//         >
+//         <div className={`inline-block px-3 py-1 rounded-md mb-4 text-sm font-semibold ${isToday ? "bg-[#b8460a] text-white" : "bg-[#1e1e1e] text-gray-300 border border-white/10"}`}>
 //             {label}
 //         </div>
 //     );
@@ -281,7 +274,7 @@
 // // ── Main Component ────────────────────────────────────────────────────────────
 // export default function FullPlaylist() {
 //     const searchParams = useSearchParams();
-//     const teamFilter = searchParams.get("team"); // e.g. "Mumbai Indians" or null
+//     const teamFilter = searchParams.get("team");
 
 //     const { user, getUserName, getUserDisplayName, isAuthenticated, loading: authLoading } = useAuth();
 //     const [requestText, setRequestText] = useState("");
@@ -293,9 +286,8 @@
 //     const [submitted, setSubmitted] = useState(false);
 //     const [submitError, setSubmitError] = useState<string | null>(null);
 //     const [displayName, setDisplayName] = useState("");
-//     const requestPanelRef = useRef<HTMLDivElement>(null);
 //     const [seenDropIds, setSeenDropIds] = useState<string[]>([]);
-
+//     const requestPanelRef = useRef<HTMLDivElement>(null);
 
 //     const getUserId = () => {
 //         if (user?.userId) return user.userId;
@@ -306,6 +298,12 @@
 //         }
 //         return userId;
 //     };
+
+//     const getStableUserId = (): string | null => {
+//     if (user?.userId) return user.userId;
+//     if (user?.email) return `email_${user.email.replace(/[^a-zA-Z0-9]/g, "_")}`;
+//     return null;
+// };
 
 //     useEffect(() => {
 //         if (!authLoading) {
@@ -324,14 +322,41 @@
 //         }
 //     }, [user, isAuthenticated, authLoading, getUserDisplayName]);
 
+//     // Fetch seen drops for authenticated user
+//     // useEffect(() => {
+//     //     console.log(`[FullPlaylist] useEffect seenDropIds | userId=${user?.userId}`);
+//     //     if (user?.userId) {
+//     //         console.log(`[FullPlaylist] Fetching seen drops for userId=${user.userId}`);
+//     //         axios.get(`/api/cloudinary/drops/seen?userId=${user.userId}`)
+//     //             .then(res => {
+//     //                 console.log(`[FullPlaylist] Seen drops API response:`, res.data);
+//     //                 if (res.data.success) {
+//     //                     setSeenDropIds(res.data.seenDropIds);
+//     //                     console.log(`[FullPlaylist] seenDropIds set to:`, res.data.seenDropIds);
+//     //                 }
+//     //             })
+//     //             .catch(err => {
+//     //                 console.error(`[FullPlaylist] Seen drops API error:`, err?.response?.data || err.message);
+//     //             });
+//     //     } else {
+//     //         console.log(`[FullPlaylist] No userId — skipping seen drops fetch`);
+//     //     }
+//     // }, [user?.userId]);
 //     useEffect(() => {
-//         if (user?.userId) {
-//             axios.get(`/api/cloudinary/drops/seen?userId=${user.userId}`)
-//                 .then(res => {
-//                     if (res.data.success) setSeenDropIds(res.data.seenDropIds);
-//                 });
-//         }
-//     }, [user?.userId]);
+//     const stableId = getStableUserId();
+//     console.log(`[FullPlaylist] seenDropIds fetch | stableId=${stableId} | authLoading=${authLoading}`);
+//     if (!authLoading && stableId) {
+//         axios.get(`/api/cloudinary/drops/seen?userId=${stableId}`)
+//             .then(res => {
+//                 console.log(`[FullPlaylist] Seen drops response:`, res.data);
+//                 if (res.data.success) {
+//                     setSeenDropIds(Array.isArray(res.data.seenDropIds) ? res.data.seenDropIds : []);
+//                 }
+//             })
+//             .catch(err => console.error(`[FullPlaylist] Seen drops error:`, err?.response?.data || err.message));
+//     }
+// // eslint-disable-next-line react-hooks/exhaustive-deps
+// }, [user?.userId, user?.email, authLoading]);
 
 //     const getUserNameForRequest = () => {
 //         if (isAuthenticated && user) return getUserName();
@@ -371,10 +396,8 @@
 //         }
 //     };
 
-//     // Re-fetch whenever team filter changes
-//     useEffect(() => {
-//         fetchAudio();
-//     }, [teamFilter]);
+//     // eslint-disable-next-line react-hooks/exhaustive-deps
+//     useEffect(() => { fetchAudio(); }, [teamFilter]);
 
 //     const fetchAudio = async (searchTerm?: string) => {
 //         setLoading(true);
@@ -395,7 +418,6 @@
 //                     plays: String(playsMap[audio.id] || 0),
 //                 }));
 
-//                 // Filter by team if ?team= param is present
 //                 if (teamFilter) {
 //                     drops = drops.filter((d) => audioMatchesTeam(d.title, teamFilter));
 //                 }
@@ -417,17 +439,24 @@
 //         fetchAudio(val || undefined);
 //     };
 
+//    const handleSeen = (id: string) => {
+//     console.log(`[FullPlaylist] handleSeen called for id=${id}`);
+//     setSeenDropIds(prev => {
+//         const safePrev = Array.isArray(prev) ? prev : [];
+//         const next = [...safePrev, id];
+//         console.log(`[FullPlaylist] seenDropIds updated:`, next);
+//         return next;
+//     });
+// };
+
 //     return (
 //         <div className="min-h-screen bg-[#0d0d10] text-white pb-10">
-
-//             {/* ── Header ── */}
 //             <div className="flex items-center gap-3 px-4 py-4 border-b border-white/5 sticky top-0 bg-[#0d0d10] z-10">
 //                 <Link href="/MainModules/HomePage">
 //                     <button className="text-gray-400 hover:text-white transition-colors cursor-pointer">
 //                         <ArrowLeft size={20} />
 //                     </button>
 //                 </Link>
-
 //                 <div className="flex-1 min-w-0">
 //                     <h1 className="text-base font-bold text-white leading-tight">
 //                         {teamFilter ? `${teamFilter}` : "Full Playlist"}
@@ -436,34 +465,18 @@
 //                         {teamFilter ? "Match Audio Drops" : "All Audio Drops"}
 //                     </p>
 //                 </div>
-
-//                 {/* Team badge + clear filter */}
 //                 {teamFilter && (
 //                     <div className="flex items-center gap-2 flex-shrink-0">
 //                         <span className="text-[10px] bg-[#C9115F]/20 text-[#C9115F] border border-[#C9115F]/30 px-2 py-1 rounded-full font-bold">
 //                             {teamFilter}
 //                         </span>
 //                         <Link href="/MainModules/MatchesDropContent">
-//                             <button className="text-gray-500 hover:text-white text-xs transition-colors">
-//                                 ✕
-//                             </button>
+//                             <button className="text-gray-500 hover:text-white text-xs transition-colors">✕</button>
 //                         </Link>
 //                     </div>
 //                 )}
-
-//                 {/* Search — desktop, hidden when team-filtered */}
-//                 {/* {!teamFilter && (
-//                     <input
-//                         type="text"
-//                         value={search}
-//                         onChange={handleSearch}
-//                         placeholder="Search drops..."
-//                         className="hidden sm:block bg-[#1a1a1a] border border-white/10 rounded-full px-3 py-1.5 mr-50 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-[#C9115F]/50 w-40"
-//                     />
-//                 )} */}
 //             </div>
 
-//             {/* Search — mobile, hidden when team-filtered */}
 //             {!teamFilter && (
 //                 <div className="w-full lg:w-[50%] ml-0 lg:ml-38 px-4 pt-3">
 //                     <input
@@ -476,17 +489,14 @@
 //                 </div>
 //             )}
 
-//             {/* <div className="lg:hidden block text-[12px] text-[#C9115F] bg-[#C9115F]/20 px-3 py-1 w-fit mt-6 rounded-full ml-4">Request Drop</div> */}
 //             <button
 //                 onClick={scrollToRequestPanel}
 //                 className="lg:hidden block text-[12px] text-white bg-[#C9115F] px-3 py-1 w-fit mt-6 rounded-full ml-4"
 //             >
 //                 Request Drop
 //             </button>
-//             {/* ── Body ── */}
-//             <div className="flex flex-col lg:flex-row gap-0 lg:gap-6 px-4 lg:px-8 py-6 max-w-6xl mx-auto">
 
-//                 {/* Left: Drops Feed */}
+//             <div className="flex flex-col lg:flex-row gap-0 lg:gap-6 px-4 lg:px-8 py-6 max-w-6xl mx-auto">
 //                 <div className="flex-1 min-w-0">
 //                     {loading ? (
 //                         <div className="flex items-center justify-center py-20">
@@ -496,21 +506,14 @@
 //                     ) : error ? (
 //                         <div className="flex flex-col items-center justify-center py-20 gap-3">
 //                             <p className="text-red-400 text-sm">{error}</p>
-//                             <button
-//                                 onClick={() => fetchAudio()}
-//                                 className="px-4 py-2 bg-[#C9115F] text-white text-xs rounded-lg hover:opacity-90"
-//                             >
+//                             <button onClick={() => fetchAudio()} className="px-4 py-2 bg-[#C9115F] text-white text-xs rounded-lg hover:opacity-90">
 //                                 Retry
 //                             </button>
 //                         </div>
 //                     ) : dateGroups.length === 0 ? (
 //                         <div className="flex flex-col items-center justify-center py-20 gap-4">
 //                             <p className="text-gray-500 text-sm text-center">
-//                                 {teamFilter
-//                                     ? `No audio drops found for ${teamFilter} yet.`
-//                                     : search
-//                                         ? `No drops found for "${search}"`
-//                                         : "No audio drops available."}
+//                                 {teamFilter ? `No audio drops found for ${teamFilter} yet.` : search ? `No drops found for "${search}"` : "No audio drops available."}
 //                             </p>
 //                             {teamFilter && (
 //                                 <Link href="/MainModules/MatchesDropContent">
@@ -528,13 +531,12 @@
 //                                     <div className="mb-5">
 //                                         <p className="text-gray-400 text-sm font-medium mb-3">Audio Drops</p>
 //                                         {group.audioDrops.map((drop) => (
-//                                             // <DropRow key={drop.id} drop={drop} />
 //                                             <DropRow
 //                                                 key={drop.id}
 //                                                 drop={drop}
 //                                                 seenDropIds={seenDropIds}
-//                                                 onSeen={(id) => setSeenDropIds(prev => [...prev, id])}
-//                                                 userId={user?.userId}
+//                                                 onSeen={handleSeen}
+//                                                 userId={getStableUserId() ?? undefined}
 //                                             />
 //                                         ))}
 //                                     </div>
@@ -546,9 +548,9 @@
 //                                             <DropRow
 //                                                 key={drop.id}
 //                                                 drop={drop}
-//                                                 seenDropIds={seenDropIds}          // ← add
-//                                                 onSeen={(id) => setSeenDropIds(prev => [...prev, id])}  // ← add
-//                                                 userId={user?.userId}              // ← add
+//                                                 seenDropIds={seenDropIds}
+//                                                 onSeen={handleSeen}
+//                                                 userId={getStableUserId() ?? undefined}
 //                                             />
 //                                         ))}
 //                                     </div>
@@ -558,7 +560,6 @@
 //                     )}
 //                 </div>
 
-//                 {/* Right: Request a Drop Panel */}
 //                 <div className="w-full lg:w-[340px] flex-shrink-0" ref={requestPanelRef}>
 //                     <div className="bg-[#141414] rounded-2xl border border-white/5 p-5 lg:sticky lg:top-24">
 //                         <div className="flex items-start gap-3 mb-4">
@@ -568,9 +569,7 @@
 //                             <div>
 //                                 <p className="text-white text-sm font-semibold leading-tight">Request a drop</p>
 //                                 <p className="text-gray-400 text-xs mt-0.5 leading-relaxed">
-//                                     {teamFilter
-//                                         ? `Want more ${teamFilter} content? Request a specific topic or moment!`
-//                                         : "Want to hear more from a specific team? Request a topic or moment!"}
+//                                     {teamFilter ? `Want more ${teamFilter} content? Request a specific topic or moment!` : "Want to hear more from a specific team? Request a topic or moment!"}
 //                                 </p>
 //                             </div>
 //                         </div>
@@ -579,20 +578,14 @@
 //                             <p className="text-gray-500 text-xs">Requesting as:</p>
 //                             <p className="text-[#C9115F] text-sm font-medium">
 //                                 {authLoading ? "Loading..." : displayName}
-//                                 {isAuthenticated && user && (
-//                                     <span className="ml-2 text-xs text-green-400">(Verified)</span>
-//                                 )}
+//                                 {isAuthenticated && user && <span className="ml-2 text-xs text-green-400">(Verified)</span>}
 //                             </p>
 //                         </div>
 
 //                         <textarea
 //                             value={requestText}
 //                             onChange={(e) => setRequestText(e.target.value)}
-//                             placeholder={
-//                                 teamFilter
-//                                     ? `Request a ${teamFilter} drop... (e.g., match analysis, player interview)`
-//                                     : "What would you like to hear about? (e.g., specific match analysis, player interview, etc.)"
-//                             }
+//                             placeholder={teamFilter ? `Request a ${teamFilter} drop... (e.g., match analysis, player interview)` : "What would you like to hear about? (e.g., specific match analysis, player interview, etc.)"}
 //                             rows={4}
 //                             className="w-full bg-[#0d0d10] text-white text-sm placeholder-gray-600 rounded-xl px-4 py-3 border border-white/5 focus:outline-none focus:border-[#C9115F]/50 resize-none transition-colors"
 //                         />
@@ -634,6 +627,10 @@
 //         </div>
 //     );
 // }
+
+
+
+
 
 
 
@@ -702,6 +699,28 @@ interface AudioFile {
     matchInfo?: MatchInfo;
 }
 
+interface VideoFile {
+    id: string;
+    title: string;
+    fileName: string;
+    url: string;
+    duration: string;
+    durationSeconds: number;
+    size: number;
+    sizeFormatted: string;
+    format: string;
+    width: number;
+    height: number;
+    createdAt: string;
+    createdAtFormatted: string;
+    folder: string;
+    playerInfo?: {
+        playerName?: string;
+        chapter?: string;
+        chapterNumber?: number;
+    };
+}
+
 interface Drop {
     id: string;
     title: string;
@@ -734,34 +753,58 @@ function audioFileToDrop(audio: AudioFile): Drop {
     };
 }
 
-function groupByDate(drops: Drop[]): DateGroup[] {
+function videoFileToDrop(video: VideoFile): Drop {
+    return {
+        id: video.id,
+        title: video.title,
+        duration: video.duration,
+        plays: "0",
+        author: video.playerInfo?.playerName || "Unknown",
+        badge: "Inner Room",
+        type: "video",
+        url: video.url,
+        createdAt: video.createdAt,
+    };
+}
+
+function groupByDate(audioDrops: Drop[], videoDrops: Drop[]): DateGroup[] {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
-    const groups = new Map<string, Drop[]>();
 
-    drops.forEach((drop) => {
-        let label = "Unknown";
-        if (drop.createdAt) {
-            const date = new Date(drop.createdAt);
-            date.setHours(0, 0, 0, 0);
-            const dateString = date.toLocaleDateString("en-IN", {
-                day: "2-digit",
-                month: "short",
-            });
-            if (date.getTime() === today.getTime()) label = `Today (${dateString})`;
-            else if (date.getTime() === yesterday.getTime()) label = `Yesterday (${dateString})`;
-            else label = dateString;
-        }
-        if (!groups.has(label)) groups.set(label, []);
-        groups.get(label)!.push(drop);
+    const groups = new Map<string, { audioDrops: Drop[]; videoDrops: Drop[] }>();
+
+    const getLabel = (createdAt?: string) => {
+        if (!createdAt) return "Unknown";
+        const date = new Date(createdAt);
+        date.setHours(0, 0, 0, 0);
+        const dateString = date.toLocaleDateString("en-IN", { day: "2-digit", month: "short" });
+        if (date.getTime() === today.getTime()) return `Today (${dateString})`;
+        if (date.getTime() === yesterday.getTime()) return `Yesterday (${dateString})`;
+        return dateString;
+    };
+
+    const ensureGroup = (label: string) => {
+        if (!groups.has(label)) groups.set(label, { audioDrops: [], videoDrops: [] });
+    };
+
+    audioDrops.forEach((drop) => {
+        const label = getLabel(drop.createdAt);
+        ensureGroup(label);
+        groups.get(label)!.audioDrops.push(drop);
     });
 
-    return Array.from(groups.entries()).map(([label, audioDrops]) => ({
+    videoDrops.forEach((drop) => {
+        const label = getLabel(drop.createdAt);
+        ensureGroup(label);
+        groups.get(label)!.videoDrops.push(drop);
+    });
+
+    return Array.from(groups.entries()).map(([label, { audioDrops, videoDrops }]) => ({
         label,
         audioDrops,
-        videoDrops: [],
+        videoDrops,
     }));
 }
 
@@ -789,10 +832,8 @@ function DropRow({ drop, seenDropIds = [], onSeen = () => {}, userId }: {
 
     const isCurrentlyPlaying = currentAudio === audioRef.current && playing;
 
-    // console.log(`[DropRow] "${drop.title.slice(0, 30)}" | isNew=${isNew} | isSeen=${isSeen} | showDot=${isNew && !isSeen}`);
-
     useEffect(() => {
-        if (drop.url) {
+        if (drop.type === "audio" && drop.url) {
             audioRef.current = new Audio(drop.url);
             const handleMetadata = () => {
                 const audio = audioRef.current;
@@ -813,7 +854,7 @@ function DropRow({ drop, seenDropIds = [], onSeen = () => {}, userId }: {
                 }
             };
         }
-    }, [drop.url]);
+    }, [drop.url, drop.type]);
 
     const incrementPlay = async () => {
         if (hasCountedPlay.current) return;
@@ -824,20 +865,10 @@ function DropRow({ drop, seenDropIds = [], onSeen = () => {}, userId }: {
     };
 
     const handleClick = () => {
-        console.log(`[handleClick] dropId=${drop.id} | isSeen=${isSeen} | userId=${userId}`);
         if (!isSeen && userId) {
-            console.log(`[handleClick] Calling POST /api/cloudinary/drops/seen`);
-            axios.post("/api/cloudinary/drops/seen", {
-                dropId: drop.id,
-                userId: userId,
-            })
-                .then(res => console.log(`[handleClick] POST success:`, res.data))
+            axios.post("/api/cloudinary/drops/seen", { dropId: drop.id, userId })
                 .catch(err => console.error(`[handleClick] POST failed:`, err?.response?.data || err.message));
-
             onSeen(drop.id);
-            console.log(`[handleClick] onSeen called for ${drop.id}`);
-        } else {
-            console.log(`[handleClick] Skipped — isSeen=${isSeen}, userId=${userId}`);
         }
     };
 
@@ -869,15 +900,22 @@ function DropRow({ drop, seenDropIds = [], onSeen = () => {}, userId }: {
         };
     }, []);
 
+    const dropHref = drop.type === "video"
+        ? `/MainModules/MatchesDropContent/VideoDropScreen?id=${encodeURIComponent(drop.id)}`
+        : `/MainModules/MatchesDropContent/AudioDropScreen?id=${encodeURIComponent(drop.id)}`;
+
     return (
         <div className="flex items-center justify-between px-3 py-3 bg-[#141414] rounded-xl mb-2 gap-3 relative">
             <Link
-                href={`/MainModules/MatchesDropContent/AudioDropScreen?id=${encodeURIComponent(drop.id)}`}
+                href={dropHref}
                 className="flex items-center gap-3 min-w-0 flex-1"
                 onClick={handleClick}
             >
                 <button
-                    onClick={(e) => { e.preventDefault(); togglePlay(); }}
+                    onClick={(e) => {
+                        e.preventDefault();
+                        if (drop.type === "audio") togglePlay();
+                    }}
                     className="w-10 h-10 rounded-lg bg-[#1e1e1e] flex items-center justify-center flex-shrink-0 border border-white/5 hover:border-[#C9115F]/40 transition-colors"
                 >
                     {drop.type === "audio" ? (
@@ -898,6 +936,9 @@ function DropRow({ drop, seenDropIds = [], onSeen = () => {}, userId }: {
                     <p className="text-white text-sm font-medium leading-snug line-clamp-2">{drop.title}</p>
                     <div className="flex items-center gap-2 mt-0.5">
                         <span className="text-gray-500 text-xs">{duration}</span>
+                        {drop.type === "video" && (
+                            <span className="text-xs text-[#C9115F] bg-[#C9115F]/10 px-1.5 py-0.5 rounded-full">Video</span>
+                        )}
                     </div>
                     <div className="flex flex-row items-start gap-1 mt-0.5">
                         <Users size={10} className="text-gray-600 mt-1" />
@@ -952,10 +993,10 @@ export default function FullPlaylist() {
     };
 
     const getStableUserId = (): string | null => {
-    if (user?.userId) return user.userId;
-    if (user?.email) return `email_${user.email.replace(/[^a-zA-Z0-9]/g, "_")}`;
-    return null;
-};
+        if (user?.userId) return user.userId;
+        if (user?.email) return `email_${user.email.replace(/[^a-zA-Z0-9]/g, "_")}`;
+        return null;
+    };
 
     useEffect(() => {
         if (!authLoading) {
@@ -974,41 +1015,19 @@ export default function FullPlaylist() {
         }
     }, [user, isAuthenticated, authLoading, getUserDisplayName]);
 
-    // Fetch seen drops for authenticated user
-    // useEffect(() => {
-    //     console.log(`[FullPlaylist] useEffect seenDropIds | userId=${user?.userId}`);
-    //     if (user?.userId) {
-    //         console.log(`[FullPlaylist] Fetching seen drops for userId=${user.userId}`);
-    //         axios.get(`/api/cloudinary/drops/seen?userId=${user.userId}`)
-    //             .then(res => {
-    //                 console.log(`[FullPlaylist] Seen drops API response:`, res.data);
-    //                 if (res.data.success) {
-    //                     setSeenDropIds(res.data.seenDropIds);
-    //                     console.log(`[FullPlaylist] seenDropIds set to:`, res.data.seenDropIds);
-    //                 }
-    //             })
-    //             .catch(err => {
-    //                 console.error(`[FullPlaylist] Seen drops API error:`, err?.response?.data || err.message);
-    //             });
-    //     } else {
-    //         console.log(`[FullPlaylist] No userId — skipping seen drops fetch`);
-    //     }
-    // }, [user?.userId]);
     useEffect(() => {
-    const stableId = getStableUserId();
-    console.log(`[FullPlaylist] seenDropIds fetch | stableId=${stableId} | authLoading=${authLoading}`);
-    if (!authLoading && stableId) {
-        axios.get(`/api/cloudinary/drops/seen?userId=${stableId}`)
-            .then(res => {
-                console.log(`[FullPlaylist] Seen drops response:`, res.data);
-                if (res.data.success) {
-                    setSeenDropIds(Array.isArray(res.data.seenDropIds) ? res.data.seenDropIds : []);
-                }
-            })
-            .catch(err => console.error(`[FullPlaylist] Seen drops error:`, err?.response?.data || err.message));
-    }
-// eslint-disable-next-line react-hooks/exhaustive-deps
-}, [user?.userId, user?.email, authLoading]);
+        const stableId = getStableUserId();
+        if (!authLoading && stableId) {
+            axios.get(`/api/cloudinary/drops/seen?userId=${stableId}`)
+                .then(res => {
+                    if (res.data.success) {
+                        setSeenDropIds(Array.isArray(res.data.seenDropIds) ? res.data.seenDropIds : []);
+                    }
+                })
+                .catch(err => console.error(`[FullPlaylist] Seen drops error:`, err?.response?.data || err.message));
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [user?.userId, user?.email, authLoading]);
 
     const getUserNameForRequest = () => {
         if (isAuthenticated && user) return getUserName();
@@ -1049,36 +1068,75 @@ export default function FullPlaylist() {
     };
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    useEffect(() => { fetchAudio(); }, [teamFilter]);
+    useEffect(() => { fetchAll(); }, [teamFilter]);
 
-    const fetchAudio = async (searchTerm?: string) => {
+    const fetchAll = async (searchTerm?: string) => {
         setLoading(true);
         setError(null);
+        console.log("[fetchAll] Starting fetch | teamFilter:", teamFilter, "| searchTerm:", searchTerm);
+
         try {
             const params = new URLSearchParams({ limit: "100" });
             if (searchTerm) params.append("search", searchTerm);
 
-            const [audioRes, playsRes] = await Promise.all([
+            const [audioRes, videoRes, playsRes] = await Promise.all([
                 axios.get(`/api/cloudinary/audio?${params.toString()}`),
+                axios.get(`/api/cloudinary/video?limit=50`),
                 axios.get("/api/cloudinary/plays"),
             ]);
 
+            // ── Video debug logs ──────────────────────────────────────────
+            console.log("[VIDEO] API status:", videoRes.status);
+            console.log("[VIDEO] API response:", videoRes.data);
+            console.log("[VIDEO] success flag:", videoRes.data.success);
+            console.log("[VIDEO] totalCount:", videoRes.data.totalCount);
+            console.log("[VIDEO] videoFiles:", videoRes.data.videoFiles);
+            // ─────────────────────────────────────────────────────────────
+
+            const playsMap: Record<string, number> = playsRes.data.plays || {};
+
+            // Audio drops
+            let audioDrops: Drop[] = [];
             if (audioRes.data.success) {
-                const playsMap: Record<string, number> = playsRes.data.plays || {};
-                let drops: Drop[] = audioRes.data.audioFiles.map((audio: AudioFile) => ({
+                audioDrops = audioRes.data.audioFiles.map((audio: AudioFile) => ({
                     ...audioFileToDrop(audio),
                     plays: String(playsMap[audio.id] || 0),
                 }));
-
                 if (teamFilter) {
-                    drops = drops.filter((d) => audioMatchesTeam(d.title, teamFilter));
+                    audioDrops = audioDrops.filter((d) => audioMatchesTeam(d.title, teamFilter));
                 }
-
-                setDateGroups(groupByDate(drops));
+                console.log("[AUDIO] drops count:", audioDrops.length);
             } else {
-                setError("Failed to load audio files.");
+                console.warn("[AUDIO] API returned success=false");
             }
-        } catch {
+
+            // Video drops
+            let videoDrops: Drop[] = [];
+            if (videoRes.data.success) {
+                videoDrops = videoRes.data.videoFiles.map((video: VideoFile) => {
+                    const drop = {
+                        ...videoFileToDrop(video),
+                        plays: String(playsMap[video.id] || 0),
+                    };
+                    console.log("[VIDEO] mapped drop:", drop);
+                    return drop;
+                });
+                console.log("[VIDEO] total drops mapped:", videoDrops.length);
+            } else {
+                console.warn("[VIDEO] API returned success=false:", videoRes.data);
+            }
+
+            // Date groups debug
+            const groups = groupByDate(audioDrops, videoDrops);
+            console.log("[groupByDate] groups count:", groups.length);
+            groups.forEach(g => {
+                console.log(`[groupByDate] "${g.label}" → audio: ${g.audioDrops.length}, video: ${g.videoDrops.length}`);
+            });
+
+            setDateGroups(groups);
+
+        } catch (err) {
+            console.error("[fetchAll] Error:", err);
             setError("Something went wrong. Please try again.");
         } finally {
             setLoading(false);
@@ -1088,18 +1146,15 @@ export default function FullPlaylist() {
     const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
         const val = e.target.value;
         setSearch(val);
-        fetchAudio(val || undefined);
+        fetchAll(val || undefined);
     };
 
-   const handleSeen = (id: string) => {
-    console.log(`[FullPlaylist] handleSeen called for id=${id}`);
-    setSeenDropIds(prev => {
-        const safePrev = Array.isArray(prev) ? prev : [];
-        const next = [...safePrev, id];
-        console.log(`[FullPlaylist] seenDropIds updated:`, next);
-        return next;
-    });
-};
+    const handleSeen = (id: string) => {
+        setSeenDropIds(prev => {
+            const safePrev = Array.isArray(prev) ? prev : [];
+            return [...safePrev, id];
+        });
+    };
 
     return (
         <div className="min-h-screen bg-[#0d0d10] text-white pb-10">
@@ -1114,7 +1169,7 @@ export default function FullPlaylist() {
                         {teamFilter ? `${teamFilter}` : "Full Playlist"}
                     </h1>
                     <p className="text-xs text-gray-500">
-                        {teamFilter ? "Match Audio Drops" : "All Audio Drops"}
+                        {teamFilter ? "Match Audio Drops" : "All Audio & Video Drops"}
                     </p>
                 </div>
                 {teamFilter && (
@@ -1158,14 +1213,14 @@ export default function FullPlaylist() {
                     ) : error ? (
                         <div className="flex flex-col items-center justify-center py-20 gap-3">
                             <p className="text-red-400 text-sm">{error}</p>
-                            <button onClick={() => fetchAudio()} className="px-4 py-2 bg-[#C9115F] text-white text-xs rounded-lg hover:opacity-90">
+                            <button onClick={() => fetchAll()} className="px-4 py-2 bg-[#C9115F] text-white text-xs rounded-lg hover:opacity-90">
                                 Retry
                             </button>
                         </div>
                     ) : dateGroups.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-20 gap-4">
                             <p className="text-gray-500 text-sm text-center">
-                                {teamFilter ? `No audio drops found for ${teamFilter} yet.` : search ? `No drops found for "${search}"` : "No audio drops available."}
+                                {teamFilter ? `No audio drops found for ${teamFilter} yet.` : search ? `No drops found for "${search}"` : "No drops available."}
                             </p>
                             {teamFilter && (
                                 <Link href="/MainModules/MatchesDropContent">
@@ -1237,7 +1292,7 @@ export default function FullPlaylist() {
                         <textarea
                             value={requestText}
                             onChange={(e) => setRequestText(e.target.value)}
-                            placeholder={teamFilter ? `Request a ${teamFilter} drop... (e.g., match analysis, player interview)` : "What would you like to hear about? (e.g., specific match analysis, player interview, etc.)"}
+                            placeholder={teamFilter ? `Request a ${teamFilter} drop...` : "What would you like to hear about?"}
                             rows={4}
                             className="w-full bg-[#0d0d10] text-white text-sm placeholder-gray-600 rounded-xl px-4 py-3 border border-white/5 focus:outline-none focus:border-[#C9115F]/50 resize-none transition-colors"
                         />

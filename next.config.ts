@@ -63,6 +63,7 @@ const nextConfig = {
         // Cloudinary
         { source: '/api/cloudinary/drops/seen', destination: `${apiTarget}/api/cloudinary/drops/seen` },
         { source: '/api/cloudinary/audio', destination: `${apiTarget}/api/cloudinary/audio` },
+        { source: '/api/cloudinary/video', destination: `${apiTarget}/api/cloudinary/video` },
         { source: '/api/cloudinary/plays', destination: `${apiTarget}/api/cloudinary/plays` },
         { source: '/api/cloudinary/:path*', destination: `${apiTarget}/api/cloudinary/:path*` },
 
@@ -88,6 +89,14 @@ const nextConfig = {
         // Audio Signals
         { source: '/api/audio-messages', destination: `${apiTarget}/api/audio-messages` },
         { source: '/api/audio-messages/:path*', destination: `${apiTarget}/api/audio-messages/:path*` },
+
+        //Video Signals
+        { source: '/api/video-messages', destination: `${apiTarget}/api/video-messages` },
+        { source: '/api/video-messages/:path*', destination: `${apiTarget}/api/video-messages/:path*` },
+
+        // Video Progress
+        { source: '/api/video-progress', destination: `${apiTarget}/api/video-progress` },
+        { source: '/api/video-progress/:path*', destination: `${apiTarget}/api/video-progress/:path*` },
 
         // Audio Drops
         { source: '/api/request-drop', destination: `${apiTarget}/api/request-drop` },

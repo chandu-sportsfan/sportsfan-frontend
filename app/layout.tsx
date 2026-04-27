@@ -71,6 +71,7 @@ import { PlayerProfile360Provider } from "@/context/PlayerProfile360Context";
 import { GlobalSearchProvider } from "@/context/GlobalSearchContext";
 import { AudioProvider } from "@/context/AudioContext";
 import { AuthProvider } from "@/context/AuthContext";
+import { VideoProvider } from "@/context/VideoContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -107,7 +108,9 @@ export default function RootLayout({
                 <GlobalSearchProvider>
                   <AudioProvider>
                     <AuthProvider>
+                      <VideoProvider>
                       {children}
+                      </VideoProvider>
                     </AuthProvider>
                   </AudioProvider>
                 </GlobalSearchProvider>

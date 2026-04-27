@@ -1520,7 +1520,7 @@ export default function AudioDropCard() {
                         </div>
 
                         {/* File size */}
-                        {audioDrop.sizeFormatted && (
+                        {/* {audioDrop.sizeFormatted && (
                             <div className="flex items-center gap-2 text-[12px] text-[#555] mb-3">
                                 <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
                                     <rect x="2" y="1.5" width="9" height="10" rx="1.5" stroke="#555" strokeWidth="1.2" />
@@ -1528,7 +1528,7 @@ export default function AudioDropCard() {
                                 </svg>
                                 File size: {audioDrop.sizeFormatted}
                             </div>
-                        )}
+                        )} */}
 
                         {/* Meta */}
                         <div className="flex items-center gap-4 text-[12px] text-[#666] mb-3.5">

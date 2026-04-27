@@ -3,9 +3,31 @@
 // import { ArrowLeft, Headphones, Play, Users, Loader2 } from "lucide-react";
 // import Link from "next/link";
 // import axios from "axios";
-// import { useAuth } from "@/context/AuthContext"; 
+// import { useSearchParams } from "next/navigation";
+// import { useAuth } from "@/context/AuthContext";
 // import { useGlobalAudio } from "@/hooks/useGlobalAudio";
 
+// // ── Team filter map ──────────────────────────────────────────────────────────
+// const TEAM_ABBR_MAP: Record<string, string[]> = {
+//     "Mumbai Indians": ["MI", "Mumbai"],
+//     "Chennai Super Kings": ["CSK", "Chennai"],
+//     "Royal Challengers Bengaluru": ["RCB", "Bengaluru", "Bangalore"],
+//     "Sunrisers Hyderabad": ["SRH", "Hyderabad"],
+//     "Kolkata Knight Riders": ["KKR", "Kolkata"],
+//     "Delhi Capitals": ["DC", "Delhi"],
+//     "Rajasthan Royals": ["RR", "Rajasthan"],
+//     "Punjab Kings": ["PBKS", "Punjab"],
+//     "Lucknow Super Giants": ["LSG", "Lucknow"],
+//     "Gujarat Titans": ["GT", "Gujarat"],
+// };
+
+// function audioMatchesTeam(audioTitle: string, teamName: string): boolean {
+//     const abbrs = TEAM_ABBR_MAP[teamName] || [teamName];
+//     const title = audioTitle.toUpperCase();
+//     return abbrs.some((abbr) => title.includes(abbr.toUpperCase()));
+// }
+
+// // ── Interfaces ───────────────────────────────────────────────────────────────
 // interface MatchInfo {
 //     team1?: string;
 //     team2?: string;
@@ -48,7 +70,7 @@
 //     videoDrops: Drop[];
 // }
 
-// // Convert API audio file to Drop format
+// // ── Helpers ──────────────────────────────────────────────────────────────────
 // function audioFileToDrop(audio: AudioFile): Drop {
 //     return {
 //         id: audio.id,
@@ -63,14 +85,11 @@
 //     };
 // }
 
-// // Group drops by date label
 // function groupByDate(drops: Drop[]): DateGroup[] {
 //     const today = new Date();
 //     today.setHours(0, 0, 0, 0);
-
 //     const yesterday = new Date(today);
 //     yesterday.setDate(yesterday.getDate() - 1);
-
 //     const groups = new Map<string, Drop[]>();
 
 //     drops.forEach((drop) => {
@@ -78,15 +97,13 @@
 //         if (drop.createdAt) {
 //             const date = new Date(drop.createdAt);
 //             date.setHours(0, 0, 0, 0);
-//             const dateString = date.toLocaleDateString("en-IN", { day: "2-digit", month: "short" });
-
-//             if (date.getTime() === today.getTime()) {
-//                 label = `Today (${dateString})`;
-//             } else if (date.getTime() === yesterday.getTime()) {
-//                 label = `Yesterday (${dateString})`;
-//             } else {
-//                 label = dateString;
-//             }
+//             const dateString = date.toLocaleDateString("en-IN", {
+//                 day: "2-digit",
+//                 month: "short",
+//             });
+//             if (date.getTime() === today.getTime()) label = `Today (${dateString})`;
+//             else if (date.getTime() === yesterday.getTime()) label = `Yesterday (${dateString})`;
+//             else label = dateString;
 //         }
 //         if (!groups.has(label)) groups.set(label, []);
 //         groups.get(label)!.push(drop);
@@ -99,9 +116,14 @@
 //     }));
 // }
 
-
-
-// function DropRow({ drop }: { drop: Drop }) {
+// // ── DropRow ──────────────────────────────────────────────────────────────────
+// function DropRow({ drop, seenDropIds, onSeen, userId }: {
+//     drop: Drop;
+//     seenDropIds: string[];
+//     onSeen: (id: string) => void;
+//     userId?: string;
+// }) {
+//     const isSeen = seenDropIds.includes(drop.id);
 //     const [playing, setPlaying] = useState(false);
 //     const [duration, setDuration] = useState<string>(drop.duration || "0:00");
 //     const [plays, setPlays] = useState<number>(parseInt(drop.plays) || 0);
@@ -109,14 +131,11 @@
 //     const hasCountedPlay = useRef(false);
 //     const { audioManager, currentAudio } = useGlobalAudio();
 
-//     // Check if this audio is currently playing globally
 //     const isCurrentlyPlaying = currentAudio === audioRef.current && playing;
 
-//     // Initialize audio element
 //     useEffect(() => {
 //         if (drop.url) {
 //             audioRef.current = new Audio(drop.url);
-
 //             const handleMetadata = () => {
 //                 const audio = audioRef.current;
 //                 if (audio && audio.duration && !isNaN(audio.duration) && isFinite(audio.duration)) {
@@ -125,10 +144,7 @@
 //                     setDuration(`${m}:${s.toString().padStart(2, "0")}`);
 //                 }
 //             };
-
 //             audioRef.current.addEventListener("loadedmetadata", handleMetadata);
-
-//             // Cleanup on unmount or when URL changes
 //             return () => {
 //                 if (audioRef.current) {
 //                     audioRef.current.pause();
@@ -147,43 +163,28 @@
 //         try {
 //             const res = await axios.post("/api/plays", { id: drop.id });
 //             if (res.data.success) setPlays(res.data.plays);
-//         } catch {
-//             // silently fail
-//         }
+//         } catch { }
 //     };
 
 //     const togglePlay = () => {
 //         const audio = audioRef.current;
 //         if (!audio) return;
-
+//          handleClick();
 //         if (playing && currentAudio === audio) {
-//             // Pause current audio
-//             audioManager.pause(audio, () => {
-//                 setPlaying(false);
-//             });
+//             audioManager.pause(audio, () => setPlaying(false));
 //         } else {
-//             // Play new audio (this will automatically stop any other playing audio)
 //             audioManager.play(
 //                 audio,
-//                 () => {
-//                     setPlaying(true);
-//                     incrementPlay();
-//                 },
-//                 () => {
-//                     setPlaying(false);
-//                 }
+//                 () => { setPlaying(true); incrementPlay(); },
+//                 () => setPlaying(false)
 //             );
 //         }
 //     };
 
-//     // Update playing state when global audio changes
 //     useEffect(() => {
-//         if (currentAudio !== audioRef.current && playing) {
-//             setPlaying(false);
-//         }
+//         if (currentAudio !== audioRef.current && playing) setPlaying(false);
 //     }, [currentAudio]);
 
-//     // Cleanup when component unmounts
 //     useEffect(() => {
 //         return () => {
 //             if (audioRef.current && currentAudio === audioRef.current) {
@@ -193,68 +194,95 @@
 //         };
 //     }, []);
 
-//     return (
-//         <div className="flex items-center justify-between px-3 py-3 bg-[#141414] rounded-xl mb-2 gap-3">
-//             <Link href={`/MainModules/MatchesDropContent/AudioDropScreen?id=${encodeURIComponent(drop.id)}`}>
-//                 <div className="flex items-center gap-3 min-w-0">
-//                     <button
-//                         onClick={(e) => {
-//                             e.preventDefault();
-//                             togglePlay();
-//                         }}
-//                         className="w-10 h-10 rounded-lg bg-[#1e1e1e] flex items-center justify-center flex-shrink-0 border border-white/5 hover:border-[#C9115F]/40 transition-colors"
-//                     >
-//                         {drop.type === "audio" ? (
-//                             isCurrentlyPlaying ? (
-//                                 <span className="w-3 h-3 flex gap-0.5 items-end">
-//                                     <span className="w-1 h-3 bg-[#C9115F] rounded-sm animate-pulse" />
-//                                     <span className="w-1 h-2 bg-[#C9115F] rounded-sm animate-pulse delay-75" />
-//                                     <span className="w-1 h-3 bg-[#C9115F] rounded-sm animate-pulse delay-150" />
-//                                 </span>
-//                             ) : (
-//                                 <Headphones size={16} className="text-[#C9115F]" />
-//                             )
-//                         ) : (
-//                             <Play size={16} className="text-[#C9115F]" fill="#C9115F" />
-//                         )}
-//                     </button>
+//     function isRecentDrop(createdAt?: string, hoursThreshold = 24): boolean {
+//         if (!createdAt) return false;
+//         const now = Date.now();
+//         const created = new Date(createdAt).getTime();
+//         return now - created < hoursThreshold * 60 * 60 * 1000;
+//     }
 
-//                     <div className="min-w-0">
-//                         <p className="text-white text-sm font-medium truncate text-wrap">{drop.title}</p>
-//                         <div className="flex items-center gap-2 mt-0.5">
-//                             <span className="text-gray-500 text-xs">{duration}</span>
-//                             <span className="text-gray-600 text-xs">•</span>
-//                             <span className="text-gray-500 text-xs">{plays} plays</span>
-//                         </div>
-//                         <div className="flex flex-row items-start gap-1 mt-0.5">
-//                             <Users size={10} className="text-gray-600 mt-1" />
-//                             <span className="text-gray-500 text-[11px]">by {drop.author}</span>
-//                         </div>
+//     const handleClick = () => {
+//         if (!isSeen && userId) {
+//             axios.post("/api/cloudinary/drops/seen", {
+//                 dropId: drop.id,
+//                 userId: userId,
+//             });
+//             onSeen(drop.id);
+//         }
+//     };
+
+//     return (
+//         <div className="flex items-center justify-between px-3 py-3 bg-[#141414] rounded-xl mb-2 gap-3 relative">
+//             <Link
+//                 href={`/MainModules/MatchesDropContent/AudioDropScreen?id=${encodeURIComponent(drop.id)}`}
+//                 className="flex items-center gap-3 min-w-0 flex-1"
+//                 onClick={handleClick}
+//             >
+//                 <button
+//                     onClick={(e) => { e.preventDefault(); togglePlay(); }}
+//                     className="w-10 h-10 rounded-lg bg-[#1e1e1e] flex items-center justify-center flex-shrink-0 border border-white/5 hover:border-[#C9115F]/40 transition-colors"
+//                 >
+//                     {drop.type === "audio" ? (
+//                         isCurrentlyPlaying ? (
+//                             <span className="w-3 h-3 flex gap-0.5 items-end">
+//                                 <span className="w-1 h-3 bg-[#C9115F] rounded-sm animate-pulse" />
+//                                 <span className="w-1 h-2 bg-[#C9115F] rounded-sm animate-pulse delay-75" />
+//                                 <span className="w-1 h-3 bg-[#C9115F] rounded-sm animate-pulse delay-150" />
+//                             </span>
+//                         ) : (
+//                             <Headphones size={16} className="text-[#C9115F]" />
+//                         )
+//                     ) : (
+//                         <Play size={16} className="text-[#C9115F]" fill="#C9115F" />
+//                     )}
+//                 </button>
+//                 <div className="min-w-0">
+//                     <p className="text-white text-sm font-medium  leading-snug line-clamp-2">{drop.title}</p>
+//                     <div className="flex items-center gap-2 mt-0.5">
+//                         <span className="text-gray-500 text-xs">{duration}</span>
+//                         {/* <span className="text-gray-600 text-xs">•</span> */}
+//                         {/* <span className="text-gray-500 text-xs">{plays} plays</span> */}
+//                     </div>
+//                     <div className="flex flex-row items-start gap-1 mt-0.5">
+//                         <Users size={10} className="text-gray-600 mt-1" />
+//                         <span className="text-gray-500 text-[11px]">by {drop.author}</span>
 //                     </div>
 //                 </div>
 //             </Link>
 
-//             <Link href={`/MainModules/MatchesDropContent/AudioDropScreen?id=${encodeURIComponent(drop.id)}`}>
-//                 <span className="flex-shrink-0 text-[#C9115F] text-xs font-semibold whitespace-nowrap">
-//                     {drop.badge}
-//                 </span>
-//             </Link>
+//             {isRecentDrop(drop.createdAt) && !isSeen && (
+//                 <span className="absolute top-8 right-5 w-2 h-2 rounded-full bg-green-400" />
+//             )}
+
+//             {/* <Link href={`/MainModules/MatchesDropContent/AudioDropScreen?id=${encodeURIComponent(drop.id)}`}>
+//         <span className="flex-shrink-0 text-[#C9115F] text-xs font-semibold whitespace-nowrap">
+//           {drop.badge}
+//         </span>
+//       </Link> */}
 //         </div>
 //     );
 // }
 
-
-
+// // ── SectionLabel 
 // function SectionLabel({ label }: { label: string }) {
-//     const isToday = label === "Today";
+//     const isToday = label.startsWith("Today");
 //     return (
-//         <div className={`inline-block px-3 py-1 rounded-md mb-4 text-sm font-semibold ${isToday ? "bg-[#b8460a] text-white" : "bg-[#1e1e1e] text-gray-300 border border-white/10"}`}>
+//         <div
+//             className={`inline-block px-3 py-1 rounded-md mb-4 text-sm font-semibold ${isToday
+//                 ? "bg-[#b8460a] text-white"
+//                 : "bg-[#1e1e1e] text-gray-300 border border-white/10"
+//                 }`}
+//         >
 //             {label}
 //         </div>
 //     );
 // }
 
+// // ── Main Component ────────────────────────────────────────────────────────────
 // export default function FullPlaylist() {
+//     const searchParams = useSearchParams();
+//     const teamFilter = searchParams.get("team"); // e.g. "Mumbai Indians" or null
+
 //     const { user, getUserName, getUserDisplayName, isAuthenticated, loading: authLoading } = useAuth();
 //     const [requestText, setRequestText] = useState("");
 //     const [dateGroups, setDateGroups] = useState<DateGroup[]>([]);
@@ -265,14 +293,12 @@
 //     const [submitted, setSubmitted] = useState(false);
 //     const [submitError, setSubmitError] = useState<string | null>(null);
 //     const [displayName, setDisplayName] = useState("");
+//     const requestPanelRef = useRef<HTMLDivElement>(null);
+//     const [seenDropIds, setSeenDropIds] = useState<string[]>([]);
 
-//     // Get or create user ID for drop requests
+
 //     const getUserId = () => {
-//         // If authenticated, use the actual user ID from backend
-//         if (user?.userId) {
-//             return user.userId;
-//         }
-//         // Fallback for non-authenticated users
+//         if (user?.userId) return user.userId;
 //         let userId = localStorage.getItem("drop_request_user_id");
 //         if (!userId) {
 //             userId = `user_${Math.random().toString(36).substr(2, 9)}`;
@@ -281,16 +307,13 @@
 //         return userId;
 //     };
 
-//     // Get user name for display from auth context
 //     useEffect(() => {
 //         if (!authLoading) {
 //             if (isAuthenticated && user) {
 //                 const name = getUserDisplayName();
 //                 setDisplayName(name);
-//                 // Store for consistency
 //                 localStorage.setItem("drop_request_user_name", name);
 //             } else {
-//                 // Fallback to stored or generate random
 //                 let storedName = localStorage.getItem("drop_request_user_name");
 //                 if (!storedName) {
 //                     storedName = `Fan_${Math.random().toString(36).substr(2, 5)}`;
@@ -301,24 +324,30 @@
 //         }
 //     }, [user, isAuthenticated, authLoading, getUserDisplayName]);
 
-//     // Get user name for API (formatted for backend)
-//     const getUserNameForRequest = () => {
-//         if (isAuthenticated && user) {
-//             // Convert to username format (no spaces, lowercase)
-//             return getUserName();
+//     useEffect(() => {
+//         if (user?.userId) {
+//             axios.get(`/api/cloudinary/drops/seen?userId=${user.userId}`)
+//                 .then(res => {
+//                     if (res.data.success) setSeenDropIds(res.data.seenDropIds);
+//                 });
 //         }
-//         // Fallback to stored
+//     }, [user?.userId]);
+
+//     const getUserNameForRequest = () => {
+//         if (isAuthenticated && user) return getUserName();
 //         const stored = localStorage.getItem("drop_request_user_name");
 //         if (stored) return stored.toLowerCase().replace(/\s/g, "_");
 //         return `fan_${Math.random().toString(36).substr(2, 5)}`;
 //     };
 
+//     const scrollToRequestPanel = () => {
+//         requestPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+//     };
+
 //     const handleSubmitRequest = async () => {
 //         if (!requestText.trim()) return;
-
 //         setSubmitting(true);
 //         setSubmitError(null);
-
 //         try {
 //             const response = await axios.post("/api/request-drop", {
 //                 userName: getUserNameForRequest(),
@@ -326,7 +355,6 @@
 //                 audioTitle: null,
 //                 userId: getUserId(),
 //             });
-
 //             if (response.data.success) {
 //                 setSubmitted(true);
 //                 setRequestText("");
@@ -335,8 +363,7 @@
 //                 setSubmitError(response.data.message || "Failed to submit request");
 //                 setTimeout(() => setSubmitError(null), 3000);
 //             }
-//         } catch (err) {
-//             console.error("Error submitting request:", err);
+//         } catch {
 //             setSubmitError("Something went wrong. Please try again.");
 //             setTimeout(() => setSubmitError(null), 3000);
 //         } finally {
@@ -344,15 +371,16 @@
 //         }
 //     };
 
+//     // Re-fetch whenever team filter changes
 //     useEffect(() => {
 //         fetchAudio();
-//     }, []);
+//     }, [teamFilter]);
 
 //     const fetchAudio = async (searchTerm?: string) => {
 //         setLoading(true);
 //         setError(null);
 //         try {
-//             const params = new URLSearchParams({ limit: "50" });
+//             const params = new URLSearchParams({ limit: "100" });
 //             if (searchTerm) params.append("search", searchTerm);
 
 //             const [audioRes, playsRes] = await Promise.all([
@@ -362,17 +390,21 @@
 
 //             if (audioRes.data.success) {
 //                 const playsMap: Record<string, number> = playsRes.data.plays || {};
-//                 const drops: Drop[] = audioRes.data.audioFiles.map((audio: AudioFile) => ({
+//                 let drops: Drop[] = audioRes.data.audioFiles.map((audio: AudioFile) => ({
 //                     ...audioFileToDrop(audio),
 //                     plays: String(playsMap[audio.id] || 0),
 //                 }));
-//                 const groups = groupByDate(drops);
-//                 setDateGroups(groups);
+
+//                 // Filter by team if ?team= param is present
+//                 if (teamFilter) {
+//                     drops = drops.filter((d) => audioMatchesTeam(d.title, teamFilter));
+//                 }
+
+//                 setDateGroups(groupByDate(drops));
 //             } else {
 //                 setError("Failed to load audio files.");
 //             }
-//         } catch (err) {
-//             console.error("Error fetching audio:", err);
+//         } catch {
 //             setError("Something went wrong. Please try again.");
 //         } finally {
 //             setLoading(false);
@@ -387,39 +419,71 @@
 
 //     return (
 //         <div className="min-h-screen bg-[#0d0d10] text-white pb-10">
-//             {/* Header */}
+
+//             {/* ── Header ── */}
 //             <div className="flex items-center gap-3 px-4 py-4 border-b border-white/5 sticky top-0 bg-[#0d0d10] z-10">
 //                 <Link href="/MainModules/HomePage">
 //                     <button className="text-gray-400 hover:text-white transition-colors cursor-pointer">
 //                         <ArrowLeft size={20} />
 //                     </button>
 //                 </Link>
+
 //                 <div className="flex-1 min-w-0">
-//                     <h1 className="text-base font-bold text-white leading-tight">Full Playlist</h1>
-//                     <p className="text-xs text-gray-500">Audio Drops</p>
+//                     <h1 className="text-base font-bold text-white leading-tight">
+//                         {teamFilter ? `${teamFilter}` : "Full Playlist"}
+//                     </h1>
+//                     <p className="text-xs text-gray-500">
+//                         {teamFilter ? "Match Audio Drops" : "All Audio Drops"}
+//                     </p>
 //                 </div>
-//                 {/* Search — desktop */}
-//                 <input
-//                     type="text"
-//                     value={search}
-//                     onChange={handleSearch}
-//                     placeholder="Search drops..."
-//                     className="hidden sm:block bg-[#1a1a1a] border border-white/10 rounded-full px-3 py-1.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-[#C9115F]/50 w-40"
-//                 />
+
+//                 {/* Team badge + clear filter */}
+//                 {teamFilter && (
+//                     <div className="flex items-center gap-2 flex-shrink-0">
+//                         <span className="text-[10px] bg-[#C9115F]/20 text-[#C9115F] border border-[#C9115F]/30 px-2 py-1 rounded-full font-bold">
+//                             {teamFilter}
+//                         </span>
+//                         <Link href="/MainModules/MatchesDropContent">
+//                             <button className="text-gray-500 hover:text-white text-xs transition-colors">
+//                                 ✕
+//                             </button>
+//                         </Link>
+//                     </div>
+//                 )}
+
+//                 {/* Search — desktop, hidden when team-filtered */}
+//                 {/* {!teamFilter && (
+//                     <input
+//                         type="text"
+//                         value={search}
+//                         onChange={handleSearch}
+//                         placeholder="Search drops..."
+//                         className="hidden sm:block bg-[#1a1a1a] border border-white/10 rounded-full px-3 py-1.5 mr-50 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-[#C9115F]/50 w-40"
+//                     />
+//                 )} */}
 //             </div>
 
-//             {/* Search — mobile */}
-//             <div className="sm:hidden px-4 pt-3">
-//                 <input
-//                     type="text"
-//                     value={search}
-//                     onChange={handleSearch}
-//                     placeholder="Search drops..."
-//                     className="w-full bg-[#1a1a1a] border border-white/10 rounded-full px-3 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-[#C9115F]/50"
-//                 />
-//             </div>
+//             {/* Search — mobile, hidden when team-filtered */}
+//             {!teamFilter && (
+//                 <div className="w-full lg:w-[50%] ml-0 lg:ml-38 px-4 pt-3">
+//                     <input
+//                         type="text"
+//                         value={search}
+//                         onChange={handleSearch}
+//                         placeholder="Search drops..."
+//                         className="w-full bg-[#1a1a1a] border border-white/10 rounded-full px-3 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-[#C9115F]/50"
+//                     />
+//                 </div>
+//             )}
 
-//             {/* Body */}
+//             {/* <div className="lg:hidden block text-[12px] text-[#C9115F] bg-[#C9115F]/20 px-3 py-1 w-fit mt-6 rounded-full ml-4">Request Drop</div> */}
+//             <button
+//                 onClick={scrollToRequestPanel}
+//                 className="lg:hidden block text-[12px] text-white bg-[#C9115F] px-3 py-1 w-fit mt-6 rounded-full ml-4"
+//             >
+//                 Request Drop
+//             </button>
+//             {/* ── Body ── */}
 //             <div className="flex flex-col lg:flex-row gap-0 lg:gap-6 px-4 lg:px-8 py-6 max-w-6xl mx-auto">
 
 //                 {/* Left: Drops Feed */}
@@ -440,30 +504,52 @@
 //                             </button>
 //                         </div>
 //                     ) : dateGroups.length === 0 ? (
-//                         <div className="flex items-center justify-center py-20">
-//                             <p className="text-gray-500 text-sm">
-//                                 {search ? `No drops found for "${search}"` : "No audio drops available."}
+//                         <div className="flex flex-col items-center justify-center py-20 gap-4">
+//                             <p className="text-gray-500 text-sm text-center">
+//                                 {teamFilter
+//                                     ? `No audio drops found for ${teamFilter} yet.`
+//                                     : search
+//                                         ? `No drops found for "${search}"`
+//                                         : "No audio drops available."}
 //                             </p>
+//                             {teamFilter && (
+//                                 <Link href="/MainModules/MatchesDropContent">
+//                                     <button className="px-4 py-2 bg-[#1e1e1e] text-gray-300 text-xs rounded-lg border border-white/10 hover:bg-[#2a2a2a] transition-colors">
+//                                         View All Drops
+//                                     </button>
+//                                 </Link>
+//                             )}
 //                         </div>
 //                     ) : (
 //                         dateGroups.map((group) => (
 //                             <div key={group.label} className="mb-8">
 //                                 <SectionLabel label={group.label} />
-
 //                                 {group.audioDrops.length > 0 && (
 //                                     <div className="mb-5">
 //                                         <p className="text-gray-400 text-sm font-medium mb-3">Audio Drops</p>
 //                                         {group.audioDrops.map((drop) => (
-//                                             <DropRow key={drop.id} drop={drop} />
+//                                             // <DropRow key={drop.id} drop={drop} />
+//                                             <DropRow
+//                                                 key={drop.id}
+//                                                 drop={drop}
+//                                                 seenDropIds={seenDropIds}
+//                                                 onSeen={(id) => setSeenDropIds(prev => [...prev, id])}
+//                                                 userId={user?.userId}
+//                                             />
 //                                         ))}
 //                                     </div>
 //                                 )}
-
 //                                 {group.videoDrops.length > 0 && (
 //                                     <div>
 //                                         <p className="text-gray-400 text-sm font-medium mb-3">Video Drops</p>
 //                                         {group.videoDrops.map((drop) => (
-//                                             <DropRow key={drop.id} drop={drop} />
+//                                             <DropRow
+//                                                 key={drop.id}
+//                                                 drop={drop}
+//                                                 seenDropIds={seenDropIds}          // ← add
+//                                                 onSeen={(id) => setSeenDropIds(prev => [...prev, id])}  // ← add
+//                                                 userId={user?.userId}              // ← add
+//                                             />
 //                                         ))}
 //                                     </div>
 //                                 )}
@@ -473,9 +559,8 @@
 //                 </div>
 
 //                 {/* Right: Request a Drop Panel */}
-//                 <div className="w-full lg:w-[340px] flex-shrink-0">
+//                 <div className="w-full lg:w-[340px] flex-shrink-0" ref={requestPanelRef}>
 //                     <div className="bg-[#141414] rounded-2xl border border-white/5 p-5 lg:sticky lg:top-24">
-//                         {/* Panel Header */}
 //                         <div className="flex items-start gap-3 mb-4">
 //                             <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#C9115F] to-[#e85d04] flex items-center justify-center flex-shrink-0">
 //                                 <span className="text-white text-sm font-bold">e</span>
@@ -483,12 +568,13 @@
 //                             <div>
 //                                 <p className="text-white text-sm font-semibold leading-tight">Request a drop</p>
 //                                 <p className="text-gray-400 text-xs mt-0.5 leading-relaxed">
-//                                     Want to hear more from specific team? Request a specific topic or moment!
+//                                     {teamFilter
+//                                         ? `Want more ${teamFilter} content? Request a specific topic or moment!`
+//                                         : "Want to hear more from a specific team? Request a topic or moment!"}
 //                                 </p>
 //                             </div>
 //                         </div>
 
-//                         {/* Show user info - Now using authenticated user name */}
 //                         <div className="mb-3 p-2 bg-[#1a1a1a] rounded-lg border border-white/5">
 //                             <p className="text-gray-500 text-xs">Requesting as:</p>
 //                             <p className="text-[#C9115F] text-sm font-medium">
@@ -499,42 +585,35 @@
 //                             </p>
 //                         </div>
 
-//                         {/* Textarea */}
 //                         <textarea
 //                             value={requestText}
 //                             onChange={(e) => setRequestText(e.target.value)}
-//                             placeholder="What would you like to hear about? (e.g., specific match analysis, player interview, etc.)"
+//                             placeholder={
+//                                 teamFilter
+//                                     ? `Request a ${teamFilter} drop... (e.g., match analysis, player interview)`
+//                                     : "What would you like to hear about? (e.g., specific match analysis, player interview, etc.)"
+//                             }
 //                             rows={4}
 //                             className="w-full bg-[#0d0d10] text-white text-sm placeholder-gray-600 rounded-xl px-4 py-3 border border-white/5 focus:outline-none focus:border-[#C9115F]/50 resize-none transition-colors"
 //                         />
 
-//                         {/* Character counter */}
 //                         <div className="flex justify-end mt-1">
 //                             <span className="text-gray-600 text-xs">{requestText.length}/500</span>
 //                         </div>
 
-//                         {/* Success message */}
 //                         {submitted && (
 //                             <div className="mt-3 p-2 bg-green-500/10 border border-green-500/20 rounded-lg">
-//                                 <p className="text-green-400 text-xs text-center">
-//                                     ✓ Request submitted successfully!
-//                                 </p>
-//                                 <p className="text-gray-500 text-xs text-center mt-1">
-//                                     We&apos;ll review your request shortly.
-//                                 </p>
+//                                 <p className="text-green-400 text-xs text-center">✓ Request submitted successfully!</p>
+//                                 <p className="text-gray-500 text-xs text-center mt-1">We&apos;ll review your request shortly.</p>
 //                             </div>
 //                         )}
 
-//                         {/* Error message */}
 //                         {submitError && (
 //                             <div className="mt-3 p-2 bg-red-500/10 border border-red-500/20 rounded-lg">
-//                                 <p className="text-red-400 text-xs text-center">
-//                                     {submitError}
-//                                 </p>
+//                                 <p className="text-red-400 text-xs text-center">{submitError}</p>
 //                             </div>
 //                         )}
 
-//                         {/* Submit Button */}
 //                         <button
 //                             onClick={handleSubmitRequest}
 //                             disabled={submitting || !requestText.trim()}
@@ -544,7 +623,6 @@
 //                             {submitting ? "Submitting..." : "Submit Request"}
 //                         </button>
 
-//                         {/* Note about authentication */}
 //                         {!isAuthenticated && !authLoading && (
 //                             <p className="text-gray-600 text-xs text-center mt-3">
 //                                 Not signed in? Your requests will appear as {displayName}
@@ -571,6 +649,7 @@
 
 
 
+
 "use client";
 import { useState, useEffect, useRef } from "react";
 import { ArrowLeft, Headphones, Play, Users, Loader2 } from "lucide-react";
@@ -580,7 +659,6 @@ import { useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useGlobalAudio } from "@/hooks/useGlobalAudio";
 
-// ── Team filter map ──────────────────────────────────────────────────────────
 const TEAM_ABBR_MAP: Record<string, string[]> = {
     "Mumbai Indians": ["MI", "Mumbai"],
     "Chennai Super Kings": ["CSK", "Chennai"],
@@ -600,7 +678,6 @@ function audioMatchesTeam(audioTitle: string, teamName: string): boolean {
     return abbrs.some((abbr) => title.includes(abbr.toUpperCase()));
 }
 
-// ── Interfaces ───────────────────────────────────────────────────────────────
 interface MatchInfo {
     team1?: string;
     team2?: string;
@@ -643,7 +720,6 @@ interface DateGroup {
     videoDrops: Drop[];
 }
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
 function audioFileToDrop(audio: AudioFile): Drop {
     return {
         id: audio.id,
@@ -689,16 +765,31 @@ function groupByDate(drops: Drop[]): DateGroup[] {
     }));
 }
 
+function isRecentDrop(createdAt?: string, hoursThreshold = 24): boolean {
+    if (!createdAt) return false;
+    const now = Date.now();
+    const created = new Date(createdAt).getTime();
+    return now - created < hoursThreshold * 60 * 60 * 1000;
+}
+
 // ── DropRow ──────────────────────────────────────────────────────────────────
-function DropRow({ drop }: { drop: Drop }) {
+function DropRow({ drop, seenDropIds = [], onSeen = () => {}, userId }: {
+    drop: Drop;
+    seenDropIds: string[];
+    onSeen: (id: string) => void;
+    userId?: string;
+}) {
+    const isSeen = seenDropIds.includes(drop.id);
+    const isNew = isRecentDrop(drop.createdAt);
     const [playing, setPlaying] = useState(false);
     const [duration, setDuration] = useState<string>(drop.duration || "0:00");
-    const [plays, setPlays] = useState<number>(parseInt(drop.plays) || 0);
     const audioRef = useRef<HTMLAudioElement | null>(null);
     const hasCountedPlay = useRef(false);
     const { audioManager, currentAudio } = useGlobalAudio();
 
     const isCurrentlyPlaying = currentAudio === audioRef.current && playing;
+
+    // console.log(`[DropRow] "${drop.title.slice(0, 30)}" | isNew=${isNew} | isSeen=${isSeen} | showDot=${isNew && !isSeen}`);
 
     useEffect(() => {
         if (drop.url) {
@@ -728,14 +819,32 @@ function DropRow({ drop }: { drop: Drop }) {
         if (hasCountedPlay.current) return;
         hasCountedPlay.current = true;
         try {
-            const res = await axios.post("/api/plays", { id: drop.id });
-            if (res.data.success) setPlays(res.data.plays);
+            await axios.post("/api/plays", { id: drop.id });
         } catch { }
+    };
+
+    const handleClick = () => {
+        console.log(`[handleClick] dropId=${drop.id} | isSeen=${isSeen} | userId=${userId}`);
+        if (!isSeen && userId) {
+            console.log(`[handleClick] Calling POST /api/cloudinary/drops/seen`);
+            axios.post("/api/cloudinary/drops/seen", {
+                dropId: drop.id,
+                userId: userId,
+            })
+                .then(res => console.log(`[handleClick] POST success:`, res.data))
+                .catch(err => console.error(`[handleClick] POST failed:`, err?.response?.data || err.message));
+
+            onSeen(drop.id);
+            console.log(`[handleClick] onSeen called for ${drop.id}`);
+        } else {
+            console.log(`[handleClick] Skipped — isSeen=${isSeen}, userId=${userId}`);
+        }
     };
 
     const togglePlay = () => {
         const audio = audioRef.current;
         if (!audio) return;
+        handleClick();
         if (playing && currentAudio === audio) {
             audioManager.pause(audio, () => setPlaying(false));
         } else {
@@ -761,10 +870,11 @@ function DropRow({ drop }: { drop: Drop }) {
     }, []);
 
     return (
-        <div className="flex items-center justify-between px-3 py-3 bg-[#141414] rounded-xl mb-2 gap-3">
+        <div className="flex items-center justify-between px-3 py-3 bg-[#141414] rounded-xl mb-2 gap-3 relative">
             <Link
                 href={`/MainModules/MatchesDropContent/AudioDropScreen?id=${encodeURIComponent(drop.id)}`}
                 className="flex items-center gap-3 min-w-0 flex-1"
+                onClick={handleClick}
             >
                 <button
                     onClick={(e) => { e.preventDefault(); togglePlay(); }}
@@ -785,11 +895,9 @@ function DropRow({ drop }: { drop: Drop }) {
                     )}
                 </button>
                 <div className="min-w-0">
-                    <p className="text-white text-sm font-medium  leading-snug line-clamp-2">{drop.title}</p>
+                    <p className="text-white text-sm font-medium leading-snug line-clamp-2">{drop.title}</p>
                     <div className="flex items-center gap-2 mt-0.5">
                         <span className="text-gray-500 text-xs">{duration}</span>
-                        {/* <span className="text-gray-600 text-xs">•</span> */}
-                        {/* <span className="text-gray-500 text-xs">{plays} plays</span> */}
                     </div>
                     <div className="flex flex-row items-start gap-1 mt-0.5">
                         <Users size={10} className="text-gray-600 mt-1" />
@@ -797,25 +905,19 @@ function DropRow({ drop }: { drop: Drop }) {
                     </div>
                 </div>
             </Link>
-            {/* <Link href={`/MainModules/MatchesDropContent/AudioDropScreen?id=${encodeURIComponent(drop.id)}`}>
-        <span className="flex-shrink-0 text-[#C9115F] text-xs font-semibold whitespace-nowrap">
-          {drop.badge}
-        </span>
-      </Link> */}
+
+            {isNew && !isSeen && (
+                <span className="absolute top-8 right-5 w-2 h-2 rounded-full bg-green-400 shadow-[0_0_6px_2px_rgba(74,222,128,0.5)]" />
+            )}
         </div>
     );
 }
 
-// ── SectionLabel 
+// ── SectionLabel ─────────────────────────────────────────────────────────────
 function SectionLabel({ label }: { label: string }) {
     const isToday = label.startsWith("Today");
     return (
-        <div
-            className={`inline-block px-3 py-1 rounded-md mb-4 text-sm font-semibold ${isToday
-                ? "bg-[#b8460a] text-white"
-                : "bg-[#1e1e1e] text-gray-300 border border-white/10"
-                }`}
-        >
+        <div className={`inline-block px-3 py-1 rounded-md mb-4 text-sm font-semibold ${isToday ? "bg-[#b8460a] text-white" : "bg-[#1e1e1e] text-gray-300 border border-white/10"}`}>
             {label}
         </div>
     );
@@ -824,7 +926,7 @@ function SectionLabel({ label }: { label: string }) {
 // ── Main Component ────────────────────────────────────────────────────────────
 export default function FullPlaylist() {
     const searchParams = useSearchParams();
-    const teamFilter = searchParams.get("team"); // e.g. "Mumbai Indians" or null
+    const teamFilter = searchParams.get("team");
 
     const { user, getUserName, getUserDisplayName, isAuthenticated, loading: authLoading } = useAuth();
     const [requestText, setRequestText] = useState("");
@@ -836,6 +938,7 @@ export default function FullPlaylist() {
     const [submitted, setSubmitted] = useState(false);
     const [submitError, setSubmitError] = useState<string | null>(null);
     const [displayName, setDisplayName] = useState("");
+    const [seenDropIds, setSeenDropIds] = useState<string[]>([]);
     const requestPanelRef = useRef<HTMLDivElement>(null);
 
     const getUserId = () => {
@@ -847,6 +950,12 @@ export default function FullPlaylist() {
         }
         return userId;
     };
+
+    const getStableUserId = (): string | null => {
+    if (user?.userId) return user.userId;
+    if (user?.email) return `email_${user.email.replace(/[^a-zA-Z0-9]/g, "_")}`;
+    return null;
+};
 
     useEffect(() => {
         if (!authLoading) {
@@ -864,6 +973,42 @@ export default function FullPlaylist() {
             }
         }
     }, [user, isAuthenticated, authLoading, getUserDisplayName]);
+
+    // Fetch seen drops for authenticated user
+    // useEffect(() => {
+    //     console.log(`[FullPlaylist] useEffect seenDropIds | userId=${user?.userId}`);
+    //     if (user?.userId) {
+    //         console.log(`[FullPlaylist] Fetching seen drops for userId=${user.userId}`);
+    //         axios.get(`/api/cloudinary/drops/seen?userId=${user.userId}`)
+    //             .then(res => {
+    //                 console.log(`[FullPlaylist] Seen drops API response:`, res.data);
+    //                 if (res.data.success) {
+    //                     setSeenDropIds(res.data.seenDropIds);
+    //                     console.log(`[FullPlaylist] seenDropIds set to:`, res.data.seenDropIds);
+    //                 }
+    //             })
+    //             .catch(err => {
+    //                 console.error(`[FullPlaylist] Seen drops API error:`, err?.response?.data || err.message);
+    //             });
+    //     } else {
+    //         console.log(`[FullPlaylist] No userId — skipping seen drops fetch`);
+    //     }
+    // }, [user?.userId]);
+    useEffect(() => {
+    const stableId = getStableUserId();
+    console.log(`[FullPlaylist] seenDropIds fetch | stableId=${stableId} | authLoading=${authLoading}`);
+    if (!authLoading && stableId) {
+        axios.get(`/api/cloudinary/drops/seen?userId=${stableId}`)
+            .then(res => {
+                console.log(`[FullPlaylist] Seen drops response:`, res.data);
+                if (res.data.success) {
+                    setSeenDropIds(Array.isArray(res.data.seenDropIds) ? res.data.seenDropIds : []);
+                }
+            })
+            .catch(err => console.error(`[FullPlaylist] Seen drops error:`, err?.response?.data || err.message));
+    }
+// eslint-disable-next-line react-hooks/exhaustive-deps
+}, [user?.userId, user?.email, authLoading]);
 
     const getUserNameForRequest = () => {
         if (isAuthenticated && user) return getUserName();
@@ -903,10 +1048,8 @@ export default function FullPlaylist() {
         }
     };
 
-    // Re-fetch whenever team filter changes
-    useEffect(() => {
-        fetchAudio();
-    }, [teamFilter]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    useEffect(() => { fetchAudio(); }, [teamFilter]);
 
     const fetchAudio = async (searchTerm?: string) => {
         setLoading(true);
@@ -927,7 +1070,6 @@ export default function FullPlaylist() {
                     plays: String(playsMap[audio.id] || 0),
                 }));
 
-                // Filter by team if ?team= param is present
                 if (teamFilter) {
                     drops = drops.filter((d) => audioMatchesTeam(d.title, teamFilter));
                 }
@@ -949,17 +1091,24 @@ export default function FullPlaylist() {
         fetchAudio(val || undefined);
     };
 
+   const handleSeen = (id: string) => {
+    console.log(`[FullPlaylist] handleSeen called for id=${id}`);
+    setSeenDropIds(prev => {
+        const safePrev = Array.isArray(prev) ? prev : [];
+        const next = [...safePrev, id];
+        console.log(`[FullPlaylist] seenDropIds updated:`, next);
+        return next;
+    });
+};
+
     return (
         <div className="min-h-screen bg-[#0d0d10] text-white pb-10">
-
-            {/* ── Header ── */}
             <div className="flex items-center gap-3 px-4 py-4 border-b border-white/5 sticky top-0 bg-[#0d0d10] z-10">
                 <Link href="/MainModules/HomePage">
                     <button className="text-gray-400 hover:text-white transition-colors cursor-pointer">
                         <ArrowLeft size={20} />
                     </button>
                 </Link>
-
                 <div className="flex-1 min-w-0">
                     <h1 className="text-base font-bold text-white leading-tight">
                         {teamFilter ? `${teamFilter}` : "Full Playlist"}
@@ -968,34 +1117,18 @@ export default function FullPlaylist() {
                         {teamFilter ? "Match Audio Drops" : "All Audio Drops"}
                     </p>
                 </div>
-
-                {/* Team badge + clear filter */}
                 {teamFilter && (
                     <div className="flex items-center gap-2 flex-shrink-0">
                         <span className="text-[10px] bg-[#C9115F]/20 text-[#C9115F] border border-[#C9115F]/30 px-2 py-1 rounded-full font-bold">
                             {teamFilter}
                         </span>
                         <Link href="/MainModules/MatchesDropContent">
-                            <button className="text-gray-500 hover:text-white text-xs transition-colors">
-                                ✕
-                            </button>
+                            <button className="text-gray-500 hover:text-white text-xs transition-colors">✕</button>
                         </Link>
                     </div>
                 )}
-
-                {/* Search — desktop, hidden when team-filtered */}
-                {/* {!teamFilter && (
-                    <input
-                        type="text"
-                        value={search}
-                        onChange={handleSearch}
-                        placeholder="Search drops..."
-                        className="hidden sm:block bg-[#1a1a1a] border border-white/10 rounded-full px-3 py-1.5 mr-50 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-[#C9115F]/50 w-40"
-                    />
-                )} */}
             </div>
 
-            {/* Search — mobile, hidden when team-filtered */}
             {!teamFilter && (
                 <div className="w-full lg:w-[50%] ml-0 lg:ml-38 px-4 pt-3">
                     <input
@@ -1008,17 +1141,14 @@ export default function FullPlaylist() {
                 </div>
             )}
 
-            {/* <div className="lg:hidden block text-[12px] text-[#C9115F] bg-[#C9115F]/20 px-3 py-1 w-fit mt-6 rounded-full ml-4">Request Drop</div> */}
             <button
                 onClick={scrollToRequestPanel}
                 className="lg:hidden block text-[12px] text-white bg-[#C9115F] px-3 py-1 w-fit mt-6 rounded-full ml-4"
             >
                 Request Drop
             </button>
-            {/* ── Body ── */}
-            <div className="flex flex-col lg:flex-row gap-0 lg:gap-6 px-4 lg:px-8 py-6 max-w-6xl mx-auto">
 
-                {/* Left: Drops Feed */}
+            <div className="flex flex-col lg:flex-row gap-0 lg:gap-6 px-4 lg:px-8 py-6 max-w-6xl mx-auto">
                 <div className="flex-1 min-w-0">
                     {loading ? (
                         <div className="flex items-center justify-center py-20">
@@ -1028,21 +1158,14 @@ export default function FullPlaylist() {
                     ) : error ? (
                         <div className="flex flex-col items-center justify-center py-20 gap-3">
                             <p className="text-red-400 text-sm">{error}</p>
-                            <button
-                                onClick={() => fetchAudio()}
-                                className="px-4 py-2 bg-[#C9115F] text-white text-xs rounded-lg hover:opacity-90"
-                            >
+                            <button onClick={() => fetchAudio()} className="px-4 py-2 bg-[#C9115F] text-white text-xs rounded-lg hover:opacity-90">
                                 Retry
                             </button>
                         </div>
                     ) : dateGroups.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-20 gap-4">
                             <p className="text-gray-500 text-sm text-center">
-                                {teamFilter
-                                    ? `No audio drops found for ${teamFilter} yet.`
-                                    : search
-                                        ? `No drops found for "${search}"`
-                                        : "No audio drops available."}
+                                {teamFilter ? `No audio drops found for ${teamFilter} yet.` : search ? `No drops found for "${search}"` : "No audio drops available."}
                             </p>
                             {teamFilter && (
                                 <Link href="/MainModules/MatchesDropContent">
@@ -1060,7 +1183,13 @@ export default function FullPlaylist() {
                                     <div className="mb-5">
                                         <p className="text-gray-400 text-sm font-medium mb-3">Audio Drops</p>
                                         {group.audioDrops.map((drop) => (
-                                            <DropRow key={drop.id} drop={drop} />
+                                            <DropRow
+                                                key={drop.id}
+                                                drop={drop}
+                                                seenDropIds={seenDropIds}
+                                                onSeen={handleSeen}
+                                                userId={getStableUserId() ?? undefined}
+                                            />
                                         ))}
                                     </div>
                                 )}
@@ -1068,7 +1197,13 @@ export default function FullPlaylist() {
                                     <div>
                                         <p className="text-gray-400 text-sm font-medium mb-3">Video Drops</p>
                                         {group.videoDrops.map((drop) => (
-                                            <DropRow key={drop.id} drop={drop} />
+                                            <DropRow
+                                                key={drop.id}
+                                                drop={drop}
+                                                seenDropIds={seenDropIds}
+                                                onSeen={handleSeen}
+                                                userId={getStableUserId() ?? undefined}
+                                            />
                                         ))}
                                     </div>
                                 )}
@@ -1077,7 +1212,6 @@ export default function FullPlaylist() {
                     )}
                 </div>
 
-                {/* Right: Request a Drop Panel */}
                 <div className="w-full lg:w-[340px] flex-shrink-0" ref={requestPanelRef}>
                     <div className="bg-[#141414] rounded-2xl border border-white/5 p-5 lg:sticky lg:top-24">
                         <div className="flex items-start gap-3 mb-4">
@@ -1087,9 +1221,7 @@ export default function FullPlaylist() {
                             <div>
                                 <p className="text-white text-sm font-semibold leading-tight">Request a drop</p>
                                 <p className="text-gray-400 text-xs mt-0.5 leading-relaxed">
-                                    {teamFilter
-                                        ? `Want more ${teamFilter} content? Request a specific topic or moment!`
-                                        : "Want to hear more from a specific team? Request a topic or moment!"}
+                                    {teamFilter ? `Want more ${teamFilter} content? Request a specific topic or moment!` : "Want to hear more from a specific team? Request a topic or moment!"}
                                 </p>
                             </div>
                         </div>
@@ -1098,20 +1230,14 @@ export default function FullPlaylist() {
                             <p className="text-gray-500 text-xs">Requesting as:</p>
                             <p className="text-[#C9115F] text-sm font-medium">
                                 {authLoading ? "Loading..." : displayName}
-                                {isAuthenticated && user && (
-                                    <span className="ml-2 text-xs text-green-400">(Verified)</span>
-                                )}
+                                {isAuthenticated && user && <span className="ml-2 text-xs text-green-400">(Verified)</span>}
                             </p>
                         </div>
 
                         <textarea
                             value={requestText}
                             onChange={(e) => setRequestText(e.target.value)}
-                            placeholder={
-                                teamFilter
-                                    ? `Request a ${teamFilter} drop... (e.g., match analysis, player interview)`
-                                    : "What would you like to hear about? (e.g., specific match analysis, player interview, etc.)"
-                            }
+                            placeholder={teamFilter ? `Request a ${teamFilter} drop... (e.g., match analysis, player interview)` : "What would you like to hear about? (e.g., specific match analysis, player interview, etc.)"}
                             rows={4}
                             className="w-full bg-[#0d0d10] text-white text-sm placeholder-gray-600 rounded-xl px-4 py-3 border border-white/5 focus:outline-none focus:border-[#C9115F]/50 resize-none transition-colors"
                         />

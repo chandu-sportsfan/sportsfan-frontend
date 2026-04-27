@@ -61,6 +61,7 @@ const nextConfig = {
         { source: '/api/events/:path*', destination: `${apiTarget}/api/events/:path*` },
 
         // Cloudinary
+        { source: '/api/cloudinary/drops/seen', destination: `${apiTarget}/api/cloudinary/drops/seen` },
         { source: '/api/cloudinary/audio', destination: `${apiTarget}/api/cloudinary/audio` },
         { source: '/api/cloudinary/plays', destination: `${apiTarget}/api/cloudinary/plays` },
         { source: '/api/cloudinary/:path*', destination: `${apiTarget}/api/cloudinary/:path*` },
@@ -71,6 +72,7 @@ const nextConfig = {
 
         { source: '/api/cloudinary/plays', destination: `${apiTarget}/api/cloudinary/plays` },
         { source: '/api/cloudinary/plays/:path*', destination: `${apiTarget}/api/cloudinary/plays/:path*` },
+
 
         // Global Search
         { source: '/api/global-search', destination: `${apiTarget}/api/global-search` },

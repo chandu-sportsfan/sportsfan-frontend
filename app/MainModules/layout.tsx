@@ -338,7 +338,10 @@ export default function MainModulesLayout({
           setUser(null);
         }
       } catch (error) {
-        console.error("Failed to fetch user:", error);
+         if (axios.isAxiosError(error) && error.response?.status === 401) {
+            return; // silently ignore, Google session handles auth
+        }
+        console.error("fetchCurrentUser error:", error);
         setUser(null);
       } finally {
         setLoading(false);

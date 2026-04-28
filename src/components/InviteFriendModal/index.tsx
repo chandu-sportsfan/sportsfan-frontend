@@ -107,13 +107,11 @@ export default function InviteFriendModal({
         window.open(`https://www.threads.net/intent/post?text=${encodeURIComponent(resolvedShareText)}`, "_blank", "noopener,noreferrer");
     };
 
-    const handleShareToInstagram = async () => {
-        if (!resolvedShareUrl) return;
-        const ok = await copyLink();
-        if (ok !== false) {
-            window.open("https://www.instagram.com/", "_blank", "noopener,noreferrer");
-        }
-    };
+   const handleShareToInstagram = async () => {
+    if (!resolvedShareUrl) return;
+    await copyLink();
+    window.open("https://www.instagram.com/", "_blank", "noopener,noreferrer");
+};
 
     const handleShareToLinkedIn = () => {
         if (!resolvedShareUrl) return;

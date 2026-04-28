@@ -928,6 +928,7 @@ import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import axios from "axios";
 import { useAuth } from "@/context/AuthContext";
+import CommentsSection from "@/src/components/CommentsSection";
 
 interface MatchInfo {
     team1?: string;
@@ -1785,6 +1786,8 @@ export default function AudioDropCard() {
                             </svg>
                             Send Signal
                         </button>
+
+                        <CommentsSection />
                     </div>
                 </div>
 

@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import axios from "axios";
 import { useAuth } from "@/context/AuthContext";
+import CommentsSection from "@/src/components/CommentsSection";
 
 interface VideoFile {
     id: string;
@@ -545,6 +546,8 @@ export default function VideoDropCard() {
                             </svg>
                             Send Signal
                         </button>
+
+                        <CommentsSection />
                     </div>
                 </div>
             </div>

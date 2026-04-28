@@ -206,6 +206,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import axios from "axios";
+import CommentsSection from "@/src/components/CommentsSection";
 
 type AudioDrop = {
   title: string;
@@ -587,6 +588,8 @@ export default function AudioDropCard() {
             </svg>
             Send Signal
           </button>
+
+          <CommentsSection />
         </div>
       </div>
     </div>

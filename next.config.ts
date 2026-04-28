@@ -109,6 +109,9 @@ const nextConfig = {
         // Sportsfan360 Profile
         { source: '/api/sportsfan360card', destination: `${apiTarget}/api/sportsfan360card` },
 
+        //Comments
+         { source: '/api/comments', destination: `${apiTarget}/api/comments` },
+
         { source: '/api/auth/host/me', destination: `${apiTarget}/api/auth/host/me` },
 
         // Feedback

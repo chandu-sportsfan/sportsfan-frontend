@@ -65,6 +65,7 @@ const nextConfig = {
         { source: '/api/cloudinary/audio', destination: `${apiTarget}/api/cloudinary/audio` },
         { source: '/api/cloudinary/video', destination: `${apiTarget}/api/cloudinary/video` },
         { source: '/api/cloudinary/plays', destination: `${apiTarget}/api/cloudinary/plays` },
+        { source: '/api/cloudinary/scripts', destination: `${apiTarget}/api/cloudinary/scripts` },
         { source: '/api/cloudinary/:path*', destination: `${apiTarget}/api/cloudinary/:path*` },
 
         // Plays
@@ -110,7 +111,7 @@ const nextConfig = {
         { source: '/api/sportsfan360card', destination: `${apiTarget}/api/sportsfan360card` },
 
         //Comments
-         { source: '/api/comments', destination: `${apiTarget}/api/comments` },
+        { source: '/api/comments', destination: `${apiTarget}/api/comments` },
 
         { source: '/api/auth/host/me', destination: `${apiTarget}/api/auth/host/me` },
 

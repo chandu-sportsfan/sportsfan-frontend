@@ -802,7 +802,7 @@ function videoFileToDrop(video: VideoFile): Drop {
         duration: video.duration,
         durationSeconds: video.durationSeconds || 0,
         plays: "0",
-        author: video.playerInfo?.playerName || "Unknown",
+        author: "Arjun Mehta",
         badge: "Inner Room",
         type: "video",
         url: video.url,

@@ -98,6 +98,10 @@ const nextConfig = {
         { source: '/api/video-progress', destination: `${apiTarget}/api/video-progress` },
         { source: '/api/video-progress/:path*', destination: `${apiTarget}/api/video-progress/:path*` },
 
+        // Audio Progress
+        { source: '/api/audio-progress', destination: `${apiTarget}/api/audio-progress` },
+        { source: '/api/audio-progress/:path*', destination: `${apiTarget}/api/audio-progress/:path*` },
+
         // Audio Drops
         { source: '/api/request-drop', destination: `${apiTarget}/api/request-drop` },
         { source: '/api/request-drop/:path*', destination: `${apiTarget}/api/request-drop/:path*` },

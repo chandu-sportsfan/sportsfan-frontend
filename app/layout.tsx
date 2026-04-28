@@ -72,6 +72,7 @@ import { GlobalSearchProvider } from "@/context/GlobalSearchContext";
 import { AudioProvider } from "@/context/AudioContext";
 import { AuthProvider } from "@/context/AuthContext";
 import { VideoProvider } from "@/context/VideoContext";
+import { PlaysProvider } from "@/context/PlaysContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -109,7 +110,9 @@ export default function RootLayout({
                   <AudioProvider>
                     <AuthProvider>
                       <VideoProvider>
-                      {children}
+                        <PlaysProvider>
+                          {children}
+                        </PlaysProvider>
                       </VideoProvider>
                     </AuthProvider>
                   </AudioProvider>

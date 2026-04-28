@@ -135,7 +135,7 @@
 // };
 
 // export default function AudioDropCard() {
-//     const { user, getUserName, getUserDisplayName, isAuthenticated } = useAuth();
+//     const { user, getUserName, isAuthenticated } = useAuth();
 //     const searchParams = useSearchParams();
 //     const idParam = searchParams.get("id");
 //     const urlParam = searchParams.get("url");
@@ -146,6 +146,10 @@
 //     const [audioDrop, setAudioDrop] = useState<AudioDrop | null>(null);
 //     const [loading, setLoading] = useState(true);
 //     const [error, setError] = useState<string | null>(null);
+
+//     // ── Audio list & navigation ──────────────────────────────────────────────
+//     const [allAudioFiles, setAllAudioFiles] = useState<AudioFile[]>([]);
+//     const [currentIndex, setCurrentIndex] = useState<number>(0);
 
 //     const [showSignalDialog, setShowSignalDialog] = useState(false);
 //     const [signalMessage, setSignalMessage] = useState("");
@@ -161,54 +165,67 @@
 
 //     // ── Listen tracking refs ─────────────────────────────────────────────────
 //     const hasCountedListen = useRef(false);
-//     const audioIdRef = useRef<string | null>(null);          // set synchronously, no effect delay
-//     const incrementListensRef = useRef<() => void>(() => {}); // always points to latest fn
+//     const audioIdRef = useRef<string | null>(null);
+//     const incrementListensRef = useRef<() => void>(() => {});
+//     const navigateToAudioRef = useRef<(index: number) => void>(() => {});
+//     const currentIndexRef = useRef<number>(0);
+//     const allAudioFilesRef = useRef<AudioFile[]>([]);
+
+//     // Keep refs in sync
+//     useEffect(() => {
+//         currentIndexRef.current = currentIndex;
+//     }, [currentIndex]);
+
+//     useEffect(() => {
+//         allAudioFilesRef.current = allAudioFiles;
+//     }, [allAudioFiles]);
 
 //     // ── incrementListens ─────────────────────────────────────────────────────
-//     // const incrementListens = async () => {
-//     //     const id = audioIdRef.current;
-//     //     console.log("[listens] ended fired — id:", id, "hasCounted:", hasCountedListen.current);
-//     //     if (hasCountedListen.current) return;
-//     //     if (!id) {
-//     //         console.warn("[listens] No audio ID — skipping");
-//     //         return;
-//     //     }
-//     //     hasCountedListen.current = true;
-//     //     try {
-//     //         const res = await axios.post("/api/cloudinary/plays", { id });
-//     //         console.log("[listens] API response:", res.data);
-//     //         if (res.data.success) {
-//     //             setAudioDrop((prev) =>
-//     //                 prev ? { ...prev, listens: res.data.plays } : prev
-//     //             );
-//     //         }
-//     //     } catch (err) {
-//     //         console.error("[listens] Failed to update listens:", err);
-//     //     }
-//     // };
-
 //     const incrementListens = async () => {
-//     const id = audioIdRef.current;
-//     if (hasCountedListen.current) return;
-//     if (!id) return;
-//     hasCountedListen.current = true;
-//     try {
-//         const res = await axios.post("/api/cloudinary/plays", { id });
-//         if (res.data.success) {
-//             setAudioDrop((prev) =>
-//                 prev ? { ...prev, listens: res.data.plays } : prev
-//             );
+//         const id = audioIdRef.current;
+//         if (hasCountedListen.current) return;
+//         if (!id) return;
+//         hasCountedListen.current = true;
+//         try {
+//             const res = await axios.post("/api/cloudinary/plays", { id });
+//             if (res.data.success) {
+//                 setAudioDrop((prev) =>
+//                     prev ? { ...prev, listens: res.data.plays } : prev
+//                 );
+//             }
+//         } catch (err) {
+//             if (err instanceof Error) console.error("[listens] error:", err.message);
 //         }
-//     } catch (err) {
-//     if (err instanceof Error) {
-//         console.error("[listens] error:", err.message);
-//     }
-// }
-// };
+//     };
 
-//     // Keep ref always pointing to latest version (no stale closure in event handler)
 //     useEffect(() => {
 //         incrementListensRef.current = incrementListens;
+//     });
+
+//     // ── Navigate to audio by index ───────────────────────────────────────────
+//     const navigateToAudio = (index: number) => {
+//         const files = allAudioFilesRef.current;
+//         if (index < 0 || index >= files.length) return;
+//         const target = files[index];
+//         setCurrentIndex(index);
+//         setPlaying(false);
+//         setElapsed(0);
+//         setDuration("0:00");
+//         hasCountedListen.current = false;
+//         audioIdRef.current = target.id;
+//         const drop = audioFileToAudioDrop(target);
+//         setAudioDrop(drop);
+//         fetchSignalsCount(target.id);
+//         fetchRecentSignals(target.id);
+//         // Update URL without page reload
+//         const url = new URL(window.location.href);
+//         url.searchParams.set("id", target.id);
+//         window.history.pushState({}, "", url.toString());
+//     };
+
+//     // Keep ref updated
+//     useEffect(() => {
+//         navigateToAudioRef.current = navigateToAudio;
 //     });
 
 //     // ── Auth helpers ─────────────────────────────────────────────────────────
@@ -269,7 +286,7 @@
 
 //             if (urlParam && !idParam) {
 //                 const decodedUrl = decodeURIComponent(urlParam);
-//                 audioIdRef.current = null; // no id for url-only drops
+//                 audioIdRef.current = null;
 //                 setAudioDrop({
 //                     title: "Audio Track",
 //                     subtitle: "Audio Drop",
@@ -296,21 +313,33 @@
 //             }
 
 //             const audioFiles = response.data.audioFiles;
+
+//             // Save full list
+//             setAllAudioFiles(audioFiles);
+//             allAudioFilesRef.current = audioFiles;
+
 //             let target: AudioFile | undefined;
+//             let targetIndex = 0;
 
 //             if (idParam) {
-//                 target = audioFiles.find((a) => a.id === idParam);
+//                 const found = audioFiles.findIndex((a) => a.id === idParam);
+//                 targetIndex = found >= 0 ? found : 0;
+//                 target = audioFiles[targetIndex];
 //             } else if (urlParam) {
 //                 const decodedUrl = decodeURIComponent(urlParam);
-//                 target = audioFiles.find((a) => a.url === decodedUrl);
+//                 const found = audioFiles.findIndex((a) => a.url === decodedUrl);
+//                 targetIndex = found >= 0 ? found : 0;
+//                 target = audioFiles[targetIndex];
 //             } else {
 //                 target = audioFiles[0];
+//                 targetIndex = 0;
 //             }
+
+//             setCurrentIndex(targetIndex);
+//             currentIndexRef.current = targetIndex;
 
 //             if (target) {
 //                 const drop = audioFileToAudioDrop(target);
-//                 // ← Set synchronously BEFORE setAudioDrop so the ref is ready
-//                 // when the audio element's ended event fires
 //                 audioIdRef.current = drop.id ?? null;
 //                 console.log("[listens] audioIdRef set to:", audioIdRef.current);
 //                 setAudioDrop(drop);
@@ -395,7 +424,6 @@
 //         const url = audioDrop?.audioUrl;
 //         if (!url) return;
 
-//         // Reset counter + sync id ref synchronously here too (covers audioUrl changes)
 //         hasCountedListen.current = false;
 //         audioIdRef.current = audioDrop?.id ?? null;
 //         console.log("[listens] audio setup — audioIdRef:", audioIdRef.current);
@@ -420,7 +448,14 @@
 //         audio.addEventListener("ended", () => {
 //             setPlaying(false);
 //             setElapsed(0);
-//             incrementListensRef.current(); // always latest fn, audioIdRef already set
+//             incrementListensRef.current();
+//             // Auto-advance to next
+//             setTimeout(() => {
+//                 const nextIndex = currentIndexRef.current + 1;
+//                 if (nextIndex < allAudioFilesRef.current.length) {
+//                     navigateToAudioRef.current(nextIndex);
+//                 }
+//             }, 1000);
 //         });
 
 //         audio.load();
@@ -482,262 +517,338 @@
 //     const timeStr = `${mins}:${secs.toString().padStart(2, "0")}`;
 //     const pct = totalSecs > 0 ? Math.round((elapsed / totalSecs) * 100) : 0;
 //     const engPct = playing ? pct : audioDrop.engagement;
+//     const prevAudio = allAudioFiles[currentIndex - 1];
+//     const nextAudio = allAudioFiles[currentIndex + 1];
 
 //     return (
 //         <div className="flex justify-center items-start bg-[#0d0d10] min-h-screen p-4 sm:p-6 lg:p-10 pb-15 md:pb-20 lg:gap-4">
 //             <div className="relative">
-//             <div className="relative w-full max-w-[360px] sm:max-w-[400px] bg-[#111114] rounded-[28px] overflow-hidden border border-[#2a2a2e]">
+//                 <div className="relative w-full max-w-[360px] sm:max-w-[400px] bg-[#111114] rounded-[28px] overflow-hidden border border-[#2a2a2e]">
 
-//                 {/* Topbar */}
-//                 <div className="flex items-center justify-between px-4 pt-5 pb-3 bg-[#111114]">
-//                     <div className="flex items-center gap-3">
-//                         <button onClick={() => window.history.back()}>
-//                             <div className="w-8 h-8 rounded-full bg-[#1e1e22] flex items-center justify-center cursor-pointer">
-//                                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-//                                     <path d="M9 2L4 7L9 12" stroke="#fff" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-//                                 </svg>
-//                             </div>
-//                         </button>
-//                         <div>
-//                             <p className="text-white text-[15px] font-medium leading-tight truncate max-w-[180px]">
-//                                 {audioDrop.title}
-//                             </p>
-//                             <p className="text-[#888] text-[12px] mt-0.5 truncate max-w-[180px]">
-//                                 {audioDrop.subtitle || "Audio Drop"}
-//                             </p>
-//                         </div>
-//                     </div>
-//                     <div className="flex items-center gap-2">
-//                         <button
-//                             onClick={openShareDialog}
-//                             className="relative w-8 h-8 rounded-full bg-[#1e1e22] flex items-center justify-center cursor-pointer hover:bg-[#2a2a2e] transition"
-//                             aria-label="Share audio drop"
-//                         >
-//                             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-//                                 <circle cx="12" cy="3" r="1.8" stroke="#aaa" strokeWidth="1.4" />
-//                                 <circle cx="12" cy="13" r="1.8" stroke="#aaa" strokeWidth="1.4" />
-//                                 <circle cx="4" cy="8" r="1.8" stroke="#aaa" strokeWidth="1.4" />
-//                                 <path d="M10.3 3.9L5.7 7.1M10.3 12.1L5.7 8.9" stroke="#aaa" strokeWidth="1.4" strokeLinecap="round" />
-//                             </svg>
-//                         </button>
-//                     </div>
-//                 </div>
-
-//                 {/* Player */}
-//                 <div className="bg-[#1a0a10] mx-3.5 rounded-2xl px-6 pt-7 pb-4 flex flex-col items-center gap-4">
-//                     <div className="w-[72px] h-[72px] rounded-full bg-[#c0204a] flex items-center justify-center">
-//                         <svg width="34" height="34" viewBox="0 0 34 34" fill="none">
-//                             <path d="M5 18v-1C5 10.373 10.373 5 17 5s12 5.373 12 12v1" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" />
-//                             <rect x="3" y="17" width="5" height="9" rx="2.5" fill="#fff" />
-//                             <rect x="26" y="17" width="5" height="9" rx="2.5" fill="#fff" />
-//                         </svg>
-//                     </div>
-
-//                     <button
-//                         onClick={() => setPlaying((v) => !v)}
-//                         className="w-[52px] h-[52px] rounded-full bg-[#e0185a] hover:bg-[#f01e66] flex items-center justify-center transition"
-//                     >
-//                         {playing ? (
-//                             <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-//                                 <rect x="5" y="4" width="3" height="12" rx="1" fill="#fff" />
-//                                 <rect x="12" y="4" width="3" height="12" rx="1" fill="#fff" />
-//                             </svg>
-//                         ) : (
-//                             <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-//                                 <path d="M7 4.5L16 10L7 15.5V4.5Z" fill="#fff" />
-//                             </svg>
-//                         )}
-//                     </button>
-
-//                     {/* Progress bar */}
-//                     <div className="w-full">
-//                         <div className="h-1 bg-[#2a2a2e] rounded-full overflow-hidden mb-1.5">
-//                             <div
-//                                 className="h-full bg-[#e0185a] rounded-full transition-all duration-300"
-//                                 style={{ width: `${pct}%` }}
-//                             />
-//                         </div>
-//                         <div className="flex justify-between text-[11px] text-[#666] font-mono">
-//                             <span>{timeStr}</span>
-//                             <span>{duration}</span>
-//                         </div>
-//                     </div>
-//                 </div>
-
-//                 {/* Body */}
-//                 <div className="px-4 pt-4 pb-5 bg-[#111114]">
-//                     <h1 className="text-white text-[19px] sm:text-[21px] font-medium leading-snug mb-1">
-//                         {audioDrop.title}
-//                     </h1>
-//                     {audioDrop.speaker && (
-//                         <p className="text-[#C9115F] text-[12px] mb-1">by {audioDrop.speaker}</p>
-//                     )}
-//                     <p className="text-[#888] text-[13px] leading-relaxed mb-4">
-//                         {audioDrop.description}
-//                     </p>
-
-//                     {/* Stats */}
-//                     <div className="grid grid-cols-3 gap-2.5 mb-4">
-//                         {[
-//                             // { label: "Listens", value: audioDrop.listens.toLocaleString() },
-//                             { label: "Signals", value: signalsCount.toLocaleString() },
-//                             { label: "Duration", value: duration },
-//                         ].map((s, index) => (
-//                             <div key={index} className="bg-[#1a1a1e] rounded-xl p-2.5 flex flex-col gap-1.5">
-//                                 <div className="flex items-center gap-1.5 text-[#999]">
-//                                     <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-//                                         <circle cx="6.5" cy="6.5" r="5" stroke="#999" strokeWidth="1.2" />
-//                                         {s.label === "Duration" ? (
-//                                             <path d="M6.5 4v2.5l1.5 1.5" stroke="#999" strokeWidth="1.2" strokeLinecap="round" />
-//                                         ) : (
-//                                             <path d="M4.5 6.5h4M6.5 4.5v4" stroke="#999" strokeWidth="1.2" strokeLinecap="round" />
-//                                         )}
+//                     {/* Topbar */}
+//                     <div className="flex items-center justify-between px-4 pt-5 pb-3 bg-[#111114]">
+//                         <div className="flex items-center gap-3">
+//                             <button onClick={() => window.history.back()}>
+//                                 <div className="w-8 h-8 rounded-full bg-[#1e1e22] flex items-center justify-center cursor-pointer">
+//                                     <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+//                                         <path d="M9 2L4 7L9 12" stroke="#fff" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
 //                                     </svg>
-//                                     <span className="text-[10px] uppercase tracking-wider text-[#999]">{s.label}</span>
 //                                 </div>
-//                                 <span className="text-[17px] sm:text-[19px] font-medium text-white">{s.value}</span>
+//                             </button>
+//                             <div>
+//                                 <p className="text-white text-[15px] font-medium leading-tight truncate max-w-[180px]">
+//                                     {audioDrop.title}
+//                                 </p>
+//                                 <p className="text-[#888] text-[12px] mt-0.5 truncate max-w-[180px]">
+//                                     {audioDrop.subtitle || "Audio Drop"}
+//                                 </p>
 //                             </div>
-//                         ))}
-//                     </div>
-
-//                     {/* File size */}
-//                     {audioDrop.sizeFormatted && (
-//                         <div className="flex items-center gap-2 text-[12px] text-[#555] mb-3">
-//                             <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-//                                 <rect x="2" y="1.5" width="9" height="10" rx="1.5" stroke="#555" strokeWidth="1.2" />
-//                                 <path d="M4.5 5h4M4.5 7.5h2.5" stroke="#555" strokeWidth="1.2" strokeLinecap="round" />
-//                             </svg>
-//                             File size: {audioDrop.sizeFormatted}
 //                         </div>
-//                     )}
-
-//                     {/* Meta */}
-//                     <div className="flex items-center gap-4 text-[12px] text-[#666] mb-3.5">
-//                         <div className="flex items-center gap-1.5">
-//                             <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-//                                 <rect x="1.5" y="2.5" width="10" height="9" rx="1.5" stroke="#666" strokeWidth="1.2" />
-//                                 <path d="M1.5 5.5h10M4.5 1v3M8.5 1v3" stroke="#666" strokeWidth="1.2" strokeLinecap="round" />
-//                             </svg>
-//                             {audioDrop.date || "Recent"}
-//                         </div>
-//                         <div className="flex items-center gap-1.5">
-//                             <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-//                                 <circle cx="6.5" cy="4.5" r="2.5" stroke="#666" strokeWidth="1.2" />
-//                                 <path d="M2 11c0-2 2-3 4.5-3s4.5 1 4.5 3" stroke="#666" strokeWidth="1.2" strokeLinecap="round" />
-//                             </svg>
-//                             {audioDrop.room || "Audio Room"}
+//                         <div className="flex items-center gap-2">
+//                             <button
+//                                 onClick={openShareDialog}
+//                                 className="relative w-8 h-8 rounded-full bg-[#1e1e22] flex items-center justify-center cursor-pointer hover:bg-[#2a2a2e] transition"
+//                                 aria-label="Share audio drop"
+//                             >
+//                                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+//                                     <circle cx="12" cy="3" r="1.8" stroke="#aaa" strokeWidth="1.4" />
+//                                     <circle cx="12" cy="13" r="1.8" stroke="#aaa" strokeWidth="1.4" />
+//                                     <circle cx="4" cy="8" r="1.8" stroke="#aaa" strokeWidth="1.4" />
+//                                     <path d="M10.3 3.9L5.7 7.1M10.3 12.1L5.7 8.9" stroke="#aaa" strokeWidth="1.4" strokeLinecap="round" />
+//                                 </svg>
+//                             </button>
 //                         </div>
 //                     </div>
 
-//                     {/* Engagement bar */}
-//                     <div className="mb-5">
-//                         <div className="h-1 bg-[#2a2a2e] rounded-full overflow-hidden mb-1.5">
+//                     {/* Player */}
+//                     <div className="bg-[#1a0a10] mx-3.5 rounded-2xl px-6 pt-7 pb-4 flex flex-col items-center gap-4">
+//                         <div className="w-[72px] h-[72px] rounded-full bg-[#c0204a] flex items-center justify-center">
+//                             <svg width="34" height="34" viewBox="0 0 34 34" fill="none">
+//                                 <path d="M5 18v-1C5 10.373 10.373 5 17 5s12 5.373 12 12v1" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" />
+//                                 <rect x="3" y="17" width="5" height="9" rx="2.5" fill="#fff" />
+//                                 <rect x="26" y="17" width="5" height="9" rx="2.5" fill="#fff" />
+//                             </svg>
+//                         </div>
+
+//                         <button
+//                             onClick={() => setPlaying((v) => !v)}
+//                             className="w-[52px] h-[52px] rounded-full bg-[#e0185a] hover:bg-[#f01e66] flex items-center justify-center transition"
+//                         >
+//                             {playing ? (
+//                                 <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+//                                     <rect x="5" y="4" width="3" height="12" rx="1" fill="#fff" />
+//                                     <rect x="12" y="4" width="3" height="12" rx="1" fill="#fff" />
+//                                 </svg>
+//                             ) : (
+//                                 <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+//                                     <path d="M7 4.5L16 10L7 15.5V4.5Z" fill="#fff" />
+//                                 </svg>
+//                             )}
+//                         </button>
+
+//                         {/* Progress bar */}
+//                         <div className="w-full">
+//                             <div className="h-1 bg-[#2a2a2e] rounded-full overflow-hidden mb-1.5">
+//                                 <div
+//                                     className="h-full bg-[#e0185a] rounded-full transition-all duration-300"
+//                                     style={{ width: `${pct}%` }}
+//                                 />
+//                             </div>
+//                             <div className="flex justify-between text-[11px] text-[#666] font-mono">
+//                                 <span>{timeStr}</span>
+//                                 <span>{duration}</span>
+//                             </div>
+//                         </div>
+
+//                         {/* Prev / Next Navigation */}
+//                         {allAudioFiles.length > 1 && (
+//                             <div className="flex items-center justify-between w-full">
+//                                 <button
+//                                     onClick={() => navigateToAudio(currentIndex - 1)}
+//                                     disabled={currentIndex === 0}
+//                                     className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#2a0f1c] border border-[#e0185a]/30 text-[#e0185a] text-[12px] font-medium disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#3a1525] transition"
+//                                 >
+//                                     <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+//                                         <path d="M9 2L4 7L9 12" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+//                                     </svg>
+//                                     Prev
+//                                 </button>
+
+//                                 <span className="text-[#666] text-[11px]">
+//                                     {currentIndex + 1} / {allAudioFiles.length}
+//                                 </span>
+
+//                                 <button
+//                                     onClick={() => navigateToAudio(currentIndex + 1)}
+//                                     disabled={currentIndex === allAudioFiles.length - 1}
+//                                     className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#2a0f1c] border border-[#e0185a]/30 text-[#e0185a] text-[12px] font-medium disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#3a1525] transition"
+//                                 >
+//                                     Next
+//                                     <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+//                                         <path d="M5 2L10 7L5 12" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+//                                     </svg>
+//                                 </button>
+//                             </div>
+//                         )}
+
+//                         {/* Up Next Preview */}
+//                         {nextAudio && (
 //                             <div
-//                                 className="h-full bg-[#e0185a] rounded-full transition-all duration-300"
-//                                 style={{ width: `${engPct}%` }}
-//                             />
-//                         </div>
-//                         <p className="text-right text-[11px] text-[#666]">{engPct}% engagement</p>
+//                                 onClick={() => navigateToAudio(currentIndex + 1)}
+//                                 className="w-full flex items-center gap-2 bg-[#2a0f1c]/60 border border-[#e0185a]/20 rounded-xl px-3 py-2 cursor-pointer hover:bg-[#2a0f1c] transition"
+//                             >
+//                                 <div className="w-7 h-7 rounded-full bg-[#e0185a]/20 flex items-center justify-center flex-shrink-0">
+//                                     <svg width="12" height="12" viewBox="0 0 20 20" fill="none">
+//                                         <path d="M7 4.5L16 10L7 15.5V4.5Z" fill="#e0185a" />
+//                                     </svg>
+//                                 </div>
+//                                 <div className="min-w-0 flex-1">
+//                                     <p className="text-[#888] text-[10px] uppercase tracking-wider">Up Next</p>
+//                                     <p className="text-white text-[12px] font-medium truncate">
+//                                         {audioFileToAudioDrop(nextAudio).title}
+//                                     </p>
+//                                     <p className="text-[#666] text-[10px] truncate">
+//                                         {nextAudio.matchInfo?.speaker?.replace(/^toss report\s*/i, "").replace(/^script\s*/i, "").replace(/^story\s*/i, "").trim() || "Audio Drop"}
+//                                     </p>
+//                                 </div>
+//                             </div>
+//                         )}
+
+//                         {/* Previous Audio Preview */}
+//                         {prevAudio && (
+//                             <div
+//                                 onClick={() => navigateToAudio(currentIndex - 1)}
+//                                 className="w-full flex items-center gap-2 bg-[#1a1a2e]/60 border border-white/10 rounded-xl px-3 py-2 cursor-pointer hover:bg-[#1a1a2e] transition"
+//                             >
+//                                 <div className="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center flex-shrink-0">
+//                                     <svg width="12" height="12" viewBox="0 0 20 20" fill="none">
+//                                         <path d="M13 4.5L4 10L13 15.5V4.5Z" fill="#aaa" />
+//                                     </svg>
+//                                 </div>
+//                                 <div className="min-w-0 flex-1">
+//                                     <p className="text-[#666] text-[10px] uppercase tracking-wider">Previous</p>
+//                                     <p className="text-[#aaa] text-[12px] font-medium truncate">
+//                                         {audioFileToAudioDrop(prevAudio).title}
+//                                     </p>
+//                                     <p className="text-[#555] text-[10px] truncate">
+//                                         {prevAudio.matchInfo?.speaker?.replace(/^toss report\s*/i, "").replace(/^script\s*/i, "").replace(/^story\s*/i, "").trim() || "Audio Drop"}
+//                                     </p>
+//                                 </div>
+//                             </div>
+//                         )}
 //                     </div>
 
-//                     {/* Send Signal button */}
-//                     <button
-//                         onClick={() => setShowSignalDialog(true)}
-//                         className="w-full bg-[#1e0a12] border border-[#e0185a] rounded-[14px] py-4 flex items-center justify-center gap-2 text-[#e0185a] text-[15px] font-medium hover:bg-[#2a0f1c] transition"
-//                     >
-//                         <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-//                             <path d="M9 2C5.7 2 3 4.5 3 7.5c0 1.5.7 2.9 1.9 3.9L4 15l3.5-1.2c.5.2 1 .2 1.5.2C12.3 14 15 11.5 15 8.5S12.3 2 9 2z" stroke="#e0185a" strokeWidth="1.4" strokeLinejoin="round" />
-//                             <path d="M6.5 8.5h5M9 6v5" stroke="#e0185a" strokeWidth="1.4" strokeLinecap="round" />
-//                         </svg>
-//                         Send Signal
-//                     </button>
+//                     {/* Body */}
+//                     <div className="px-4 pt-4 pb-5 bg-[#111114]">
+//                         <h1 className="text-white text-[19px] sm:text-[21px] font-medium leading-snug mb-1">
+//                             {audioDrop.title}
+//                         </h1>
+//                         {audioDrop.speaker && (
+//                             <p className="text-[#C9115F] text-[12px] mb-1">by {audioDrop.speaker}</p>
+//                         )}
+//                         <p className="text-[#888] text-[13px] leading-relaxed mb-4">
+//                             {audioDrop.description}
+//                         </p>
+
+//                         {/* Stats */}
+//                         <div className="grid grid-cols-3 gap-2.5 mb-4">
+//                             {[
+//                                 { label: "Signals", value: signalsCount.toLocaleString() },
+//                                 { label: "Duration", value: duration },
+//                             ].map((s, index) => (
+//                                 <div key={index} className="bg-[#1a1a1e] rounded-xl p-2.5 flex flex-col gap-1.5">
+//                                     <div className="flex items-center gap-1.5 text-[#999]">
+//                                         <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+//                                             <circle cx="6.5" cy="6.5" r="5" stroke="#999" strokeWidth="1.2" />
+//                                             {s.label === "Duration" ? (
+//                                                 <path d="M6.5 4v2.5l1.5 1.5" stroke="#999" strokeWidth="1.2" strokeLinecap="round" />
+//                                             ) : (
+//                                                 <path d="M4.5 6.5h4M6.5 4.5v4" stroke="#999" strokeWidth="1.2" strokeLinecap="round" />
+//                                             )}
+//                                         </svg>
+//                                         <span className="text-[10px] uppercase tracking-wider text-[#999]">{s.label}</span>
+//                                     </div>
+//                                     <span className="text-[17px] sm:text-[19px] font-medium text-white">{s.value}</span>
+//                                 </div>
+//                             ))}
+//                         </div>
+
+//                         {/* File size */}
+//                         {/* {audioDrop.sizeFormatted && (
+//                             <div className="flex items-center gap-2 text-[12px] text-[#555] mb-3">
+//                                 <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+//                                     <rect x="2" y="1.5" width="9" height="10" rx="1.5" stroke="#555" strokeWidth="1.2" />
+//                                     <path d="M4.5 5h4M4.5 7.5h2.5" stroke="#555" strokeWidth="1.2" strokeLinecap="round" />
+//                                 </svg>
+//                                 File size: {audioDrop.sizeFormatted}
+//                             </div>
+//                         )} */}
+
+//                         {/* Meta */}
+//                         <div className="flex items-center gap-4 text-[12px] text-[#666] mb-3.5">
+//                             <div className="flex items-center gap-1.5">
+//                                 <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+//                                     <rect x="1.5" y="2.5" width="10" height="9" rx="1.5" stroke="#666" strokeWidth="1.2" />
+//                                     <path d="M1.5 5.5h10M4.5 1v3M8.5 1v3" stroke="#666" strokeWidth="1.2" strokeLinecap="round" />
+//                                 </svg>
+//                                 {audioDrop.date || "Recent"}
+//                             </div>
+//                             <div className="flex items-center gap-1.5">
+//                                 <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+//                                     <circle cx="6.5" cy="4.5" r="2.5" stroke="#666" strokeWidth="1.2" />
+//                                     <path d="M2 11c0-2 2-3 4.5-3s4.5 1 4.5 3" stroke="#666" strokeWidth="1.2" strokeLinecap="round" />
+//                                 </svg>
+//                                 {audioDrop.room || "Audio Room"}
+//                             </div>
+//                         </div>
+
+//                         {/* Engagement bar */}
+//                         <div className="mb-5">
+//                             <div className="h-1 bg-[#2a2a2e] rounded-full overflow-hidden mb-1.5">
+//                                 <div
+//                                     className="h-full bg-[#e0185a] rounded-full transition-all duration-300"
+//                                     style={{ width: `${engPct}%` }}
+//                                 />
+//                             </div>
+//                             <p className="text-right text-[11px] text-[#666]">{engPct}% engagement</p>
+//                         </div>
+
+//                         {/* Send Signal button */}
+//                         <button
+//                             onClick={() => setShowSignalDialog(true)}
+//                             className="w-full bg-[#1e0a12] border border-[#e0185a] rounded-[14px] py-4 flex items-center justify-center gap-2 text-[#e0185a] text-[15px] font-medium hover:bg-[#2a0f1c] transition"
+//                         >
+//                             <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+//                                 <path d="M9 2C5.7 2 3 4.5 3 7.5c0 1.5.7 2.9 1.9 3.9L4 15l3.5-1.2c.5.2 1 .2 1.5.2C12.3 14 15 11.5 15 8.5S12.3 2 9 2z" stroke="#e0185a" strokeWidth="1.4" strokeLinejoin="round" />
+//                                 <path d="M6.5 8.5h5M9 6v5" stroke="#e0185a" strokeWidth="1.4" strokeLinecap="round" />
+//                             </svg>
+//                             Send Signal
+//                         </button>
+//                     </div>
 //                 </div>
-//             </div>
 
-//             {/* Share Dialog */}
-//             {showShareDialog && audioDrop && (
-//                 <>
-//                     <button
-//                         type="button"
-//                         aria-label="Close share popup"
-//                         className="fixed inset-0 z-40 bg-black/70 lg:hidden"
-//                         onClick={closeShareDialog}
-//                     />
-//                     <div
-//                         className="fixed bottom-16 inset-x-4 z-50 mx-auto w-full max-w-[260px] rounded-2xl border border-white/10 bg-[#1a1a1e] p-3 shadow-2xl lg:hidden"
-//                         onClick={(e) => e.stopPropagation()}
-//                     >
-//                         <div className="flex items-center justify-between mb-2">
-//                             <p className="text-white text-sm font-semibold">Share</p>
-//                             <button onClick={closeShareDialog} className="text-gray-400 hover:text-white transition" aria-label="Close share popup">
-//                                 <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
-//                                     <path d="M15 5L5 15M5 5L15 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-//                                 </svg>
-//                             </button>
-//                         </div>
-//                         <div className="flex flex-row flex-nowrap items-center gap-1.5 mb-2 overflow-x-auto -ml-1">
-//                             <button onClick={handleShareToWhatsApp} className="w-8 h-8 shrink-0 rounded-full overflow-hidden bg-white/5 hover:bg-white/10 border border-white/10 p-0 flex items-center justify-center" aria-label="Share on WhatsApp">
-//                                 <img src="/images/share_whatsapp.png" alt="WhatsApp" className="w-full h-full object-cover rounded-full" />
-//                             </button>
-//                             <button onClick={handleShareToThreads} className="w-8 h-8 shrink-0 rounded-full overflow-hidden bg-white/5 hover:bg-white/10 border border-white/10 p-0 flex items-center justify-center" aria-label="Share on Threads">
-//                                 <img src="/images/share_thread.png" alt="Threads" className="w-full h-full object-cover rounded-full" />
-//                             </button>
-//                             <button onClick={handleShareToInstagram} className="w-8 h-8 shrink-0 rounded-full overflow-hidden bg-white/5 hover:bg-white/10 border border-white/10 p-0 flex items-center justify-center" aria-label="Share on Instagram">
-//                                 <img src="/images/share_insta.png" alt="Instagram" className="w-full h-full object-cover rounded-full" />
-//                             </button>
-//                             <button onClick={handleShareToLinkedIn} className="w-8 h-8 shrink-0 rounded-full overflow-hidden bg-white/5 hover:bg-white/10 border border-white/10 p-0 flex items-center justify-center" aria-label="Share on LinkedIn">
-//                                 <img src="/images/Share_linkedin.png" alt="LinkedIn" className="w-full h-full object-cover rounded-full" />
-//                             </button>
-//                             <button onClick={handleShareToX} className="w-8 h-8 shrink-0 rounded-full overflow-hidden bg-white/5 hover:bg-white/10 border border-white/10 p-0 flex items-center justify-center" aria-label="Share on X">
-//                                 <img src="/images/Share_X.png" alt="X" className="w-full h-full object-cover rounded-full" />
-//                             </button>
-//                             <button onClick={handleCopyLink} className="w-8 h-8 shrink-0 rounded-full overflow-hidden bg-white/5 hover:bg-white/10 border border-white/10 p-0 flex items-center justify-center" aria-label="Copy share link">
-//                                 <img src="/images/share_copy_link.png" alt="Copy link" className="w-full h-full object-cover rounded-full" />
-//                             </button>
-//                         </div>
-//                         {copied && <p className="text-xs text-emerald-400">Copied to clipboard</p>}
-//                     </div>
-
-//                     <div className="hidden lg:block absolute left-[calc(100%+8px)] top-2 z-50 w-[260px] rounded-2xl border border-white/10 bg-[#1a1a1e] p-3 shadow-2xl">
-//                         <div className="flex items-center justify-between mb-2">
-//                             <p className="text-white text-sm font-semibold">Share Audio Drop</p>
-//                             <button onClick={closeShareDialog} className="text-gray-400 hover:text-white transition" aria-label="Close share panel">
-//                                 <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
-//                                     <path d="M15 5L5 15M5 5L15 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-//                                 </svg>
-//                             </button>
+//                 {/* Share Dialog */}
+//                 {showShareDialog && audioDrop && (
+//                     <>
+//                         <button
+//                             type="button"
+//                             aria-label="Close share popup"
+//                             className="fixed inset-0 z-40 bg-black/70 lg:hidden"
+//                             onClick={closeShareDialog}
+//                         />
+//                         <div
+//                             className="fixed bottom-16 inset-x-4 z-50 mx-auto w-full max-w-[260px] rounded-2xl border border-white/10 bg-[#1a1a1e] p-3 shadow-2xl lg:hidden"
+//                             onClick={(e) => e.stopPropagation()}
+//                         >
+//                             <div className="flex items-center justify-between mb-2">
+//                                 <p className="text-white text-sm font-semibold">Share</p>
+//                                 <button onClick={closeShareDialog} className="text-gray-400 hover:text-white transition" aria-label="Close share popup">
+//                                     <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
+//                                         <path d="M15 5L5 15M5 5L15 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+//                                     </svg>
+//                                 </button>
+//                             </div>
+//                             <div className="flex flex-row flex-nowrap items-center gap-1.5 mb-2 overflow-x-auto -ml-1">
+//                                 <button onClick={handleShareToWhatsApp} className="w-8 h-8 shrink-0 rounded-full overflow-hidden bg-white/5 hover:bg-white/10 border border-white/10 p-0 flex items-center justify-center" aria-label="Share on WhatsApp">
+//                                     <img src="/images/share_whatsapp.png" alt="WhatsApp" className="w-full h-full object-cover rounded-full" />
+//                                 </button>
+//                                 <button onClick={handleShareToThreads} className="w-8 h-8 shrink-0 rounded-full overflow-hidden bg-white/5 hover:bg-white/10 border border-white/10 p-0 flex items-center justify-center" aria-label="Share on Threads">
+//                                     <img src="/images/share_thread.png" alt="Threads" className="w-full h-full object-cover rounded-full" />
+//                                 </button>
+//                                 <button onClick={handleShareToInstagram} className="w-8 h-8 shrink-0 rounded-full overflow-hidden bg-white/5 hover:bg-white/10 border border-white/10 p-0 flex items-center justify-center" aria-label="Share on Instagram">
+//                                     <img src="/images/share_insta.png" alt="Instagram" className="w-full h-full object-cover rounded-full" />
+//                                 </button>
+//                                 <button onClick={handleShareToLinkedIn} className="w-8 h-8 shrink-0 rounded-full overflow-hidden bg-white/5 hover:bg-white/10 border border-white/10 p-0 flex items-center justify-center" aria-label="Share on LinkedIn">
+//                                     <img src="/images/Share_linkedin.png" alt="LinkedIn" className="w-full h-full object-cover rounded-full" />
+//                                 </button>
+//                                 <button onClick={handleShareToX} className="w-8 h-8 shrink-0 rounded-full overflow-hidden bg-white/5 hover:bg-white/10 border border-white/10 p-0 flex items-center justify-center" aria-label="Share on X">
+//                                     <img src="/images/Share_X.png" alt="X" className="w-full h-full object-cover rounded-full" />
+//                                 </button>
+//                                 <button onClick={handleCopyLink} className="w-8 h-8 shrink-0 rounded-full overflow-hidden bg-white/5 hover:bg-white/10 border border-white/10 p-0 flex items-center justify-center" aria-label="Copy share link">
+//                                     <img src="/images/share_copy_link.png" alt="Copy link" className="w-full h-full object-cover rounded-full" />
+//                                 </button>
+//                             </div>
+//                             {copied && <p className="text-xs text-emerald-400">Copied to clipboard</p>}
 //                         </div>
 
-//                         <div className="rounded-xl border border-white/10 bg-[#111114] p-3 mb-2">
-//                             <p className="text-white text-sm font-semibold line-clamp-2">{audioDrop.title}</p>
-//                             <p className="text-white/65 text-xs mt-1 line-clamp-2">{audioDrop.subtitle || "Audio Drops"}</p>
-//                             <p className="text-white/45 text-[11px] mt-2 line-clamp-2 break-all">{buildAudioDropShareUrl(audioDrop, urlParam)}</p>
+//                         <div className="hidden lg:block absolute left-[calc(100%+8px)] top-2 z-50 w-[260px] rounded-2xl border border-white/10 bg-[#1a1a1e] p-3 shadow-2xl">
+//                             <div className="flex items-center justify-between mb-2">
+//                                 <p className="text-white text-sm font-semibold">Share Audio Drop</p>
+//                                 <button onClick={closeShareDialog} className="text-gray-400 hover:text-white transition" aria-label="Close share panel">
+//                                     <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
+//                                         <path d="M15 5L5 15M5 5L15 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+//                                     </svg>
+//                                 </button>
+//                             </div>
+//                             <div className="rounded-xl border border-white/10 bg-[#111114] p-3 mb-2">
+//                                 <p className="text-white text-sm font-semibold line-clamp-2">{audioDrop.title}</p>
+//                                 <p className="text-white/65 text-xs mt-1 line-clamp-2">{audioDrop.subtitle || "Audio Drops"}</p>
+//                                 <p className="text-white/45 text-[11px] mt-2 line-clamp-2 break-all">{buildAudioDropShareUrl(audioDrop, urlParam)}</p>
+//                             </div>
+//                             <div className="flex flex-row flex-nowrap items-center gap-1.5 mb-2 -ml-1">
+//                                 <button onClick={handleShareToWhatsApp} className="w-9 h-9 shrink-0 rounded-full overflow-hidden bg-white/5 hover:bg-white/10 border border-white/10 p-0 flex items-center justify-center" aria-label="Share on WhatsApp">
+//                                     <img src="/images/share_whatsapp.png" alt="WhatsApp" className="w-full h-full object-cover rounded-full" />
+//                                 </button>
+//                                 <button onClick={handleShareToThreads} className="w-9 h-9 shrink-0 rounded-full overflow-hidden bg-white/5 hover:bg-white/10 border border-white/10 p-0 flex items-center justify-center" aria-label="Share on Threads">
+//                                     <img src="/images/share_thread.png" alt="Threads" className="w-full h-full object-cover rounded-full" />
+//                                 </button>
+//                                 <button onClick={handleShareToInstagram} className="w-9 h-9 shrink-0 rounded-full overflow-hidden bg-white/5 hover:bg-white/10 border border-white/10 p-0 flex items-center justify-center" aria-label="Share on Instagram">
+//                                     <img src="/images/share_insta.png" alt="Instagram" className="w-full h-full object-cover rounded-full" />
+//                                 </button>
+//                                 <button onClick={handleShareToLinkedIn} className="w-9 h-9 shrink-0 rounded-full overflow-hidden bg-white/5 hover:bg-white/10 border border-white/10 p-0 flex items-center justify-center" aria-label="Share on LinkedIn">
+//                                     <img src="/images/Share_linkedin.png" alt="LinkedIn" className="w-full h-full object-cover rounded-full" />
+//                                 </button>
+//                                 <button onClick={handleShareToX} className="w-9 h-9 shrink-0 rounded-full overflow-hidden bg-white/5 hover:bg-white/10 border border-white/10 p-0 flex items-center justify-center" aria-label="Share on X">
+//                                     <img src="/images/Share_X.png" alt="X" className="w-full h-full object-cover rounded-full" />
+//                                 </button>
+//                                 <button onClick={handleCopyLink} className="w-9 h-9 shrink-0 rounded-full overflow-hidden bg-white/5 hover:bg-white/10 border border-white/10 p-0 flex items-center justify-center" aria-label="Copy share link">
+//                                     <img src="/images/share_copy_link.png" alt="Copy link" className="w-full h-full object-cover rounded-full" />
+//                                 </button>
+//                             </div>
+//                             {copied && <p className="text-xs text-emerald-400">Copied to clipboard</p>}
 //                         </div>
-
-//                         <div className="flex flex-row flex-nowrap items-center gap-1.5 mb-2 -ml-1">
-//                             <button onClick={handleShareToWhatsApp} className="w-9 h-9 shrink-0 rounded-full overflow-hidden bg-white/5 hover:bg-white/10 border border-white/10 p-0 flex items-center justify-center" aria-label="Share on WhatsApp">
-//                                 <img src="/images/share_whatsapp.png" alt="WhatsApp" className="w-full h-full object-cover rounded-full" />
-//                             </button>
-//                             <button onClick={handleShareToThreads} className="w-9 h-9 shrink-0 rounded-full overflow-hidden bg-white/5 hover:bg-white/10 border border-white/10 p-0 flex items-center justify-center" aria-label="Share on Threads">
-//                                 <img src="/images/share_thread.png" alt="Threads" className="w-full h-full object-cover rounded-full" />
-//                             </button>
-//                             <button onClick={handleShareToInstagram} className="w-9 h-9 shrink-0 rounded-full overflow-hidden bg-white/5 hover:bg-white/10 border border-white/10 p-0 flex items-center justify-center" aria-label="Share on Instagram">
-//                                 <img src="/images/share_insta.png" alt="Instagram" className="w-full h-full object-cover rounded-full" />
-//                             </button>
-//                             <button onClick={handleShareToLinkedIn} className="w-9 h-9 shrink-0 rounded-full overflow-hidden bg-white/5 hover:bg-white/10 border border-white/10 p-0 flex items-center justify-center" aria-label="Share on LinkedIn">
-//                                 <img src="/images/Share_linkedin.png" alt="LinkedIn" className="w-full h-full object-cover rounded-full" />
-//                             </button>
-//                             <button onClick={handleShareToX} className="w-9 h-9 shrink-0 rounded-full overflow-hidden bg-white/5 hover:bg-white/10 border border-white/10 p-0 flex items-center justify-center" aria-label="Share on X">
-//                                 <img src="/images/Share_X.png" alt="X" className="w-full h-full object-cover rounded-full" />
-//                             </button>
-//                             <button onClick={handleCopyLink} className="w-9 h-9 shrink-0 rounded-full overflow-hidden bg-white/5 hover:bg-white/10 border border-white/10 p-0 flex items-center justify-center" aria-label="Copy share link">
-//                                 <img src="/images/share_copy_link.png" alt="Copy link" className="w-full h-full object-cover rounded-full" />
-//                             </button>
-//                         </div>
-//                         {copied && <p className="text-xs text-emerald-400">Copied to clipboard</p>}
-//                     </div>
-//                 </>
-//             )}
+//                     </>
+//                 )}
 //             </div>
 
 //             {/* Signal Dialog */}
@@ -804,6 +915,14 @@
 
 
 
+
+
+
+
+
+
+
+
 "use client";
 import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
@@ -850,6 +969,7 @@ interface AudioDrop {
     speaker?: string;
     team1?: string;
     team2?: string;
+    durationSeconds?: number; // ← added for progress saving
 }
 
 interface SignalMessage {
@@ -891,6 +1011,7 @@ function audioFileToAudioDrop(audio: AudioFile): AudioDrop {
         speaker: audio.matchInfo?.speaker,
         team1: audio.matchInfo?.team1,
         team2: audio.matchInfo?.team2,
+        durationSeconds: audio.durationSeconds, // ← pass through
     };
 }
 
@@ -945,6 +1066,7 @@ export default function AudioDropCard() {
     const searchParams = useSearchParams();
     const idParam = searchParams.get("id");
     const urlParam = searchParams.get("url");
+    const resumeAt = parseFloat(searchParams.get("resume") || "0"); // seconds to resume from
 
     const [playing, setPlaying] = useState(false);
     const [elapsed, setElapsed] = useState(0);
@@ -962,12 +1084,22 @@ export default function AudioDropCard() {
     const [sendingSignal, setSendingSignal] = useState(false);
     const [signalsCount, setSignalsCount] = useState(0);
     const [recentSignals, setRecentSignals] = useState<SignalMessage[]>([]);
+    const [playsCount, setPlaysCount] = useState(0);
 
     const [showShareDialog, setShowShareDialog] = useState(false);
     const [copied, setCopied] = useState(false);
 
     const audioRef = useRef<HTMLAudioElement | null>(null);
     const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+    // ── Progress saving refs ─────────────────────────────────────────────────
+    const progressSaveRef = useRef<NodeJS.Timeout | null>(null);
+    const elapsedRef = useRef(0);
+    const audioDropRef = useRef<AudioDrop | null>(null); // always-current drop for callbacks
+
+    // Keep refs in sync
+    useEffect(() => { elapsedRef.current = elapsed; }, [elapsed]);
+    useEffect(() => { audioDropRef.current = audioDrop; }, [audioDrop]);
 
     // ── Listen tracking refs ─────────────────────────────────────────────────
     const hasCountedListen = useRef(false);
@@ -978,13 +1110,52 @@ export default function AudioDropCard() {
     const allAudioFilesRef = useRef<AudioFile[]>([]);
 
     // Keep refs in sync
-    useEffect(() => {
-        currentIndexRef.current = currentIndex;
-    }, [currentIndex]);
+    useEffect(() => { currentIndexRef.current = currentIndex; }, [currentIndex]);
+    useEffect(() => { allAudioFilesRef.current = allAudioFiles; }, [allAudioFiles]);
 
-    useEffect(() => {
-        allAudioFilesRef.current = allAudioFiles;
-    }, [allAudioFiles]);
+    // ── Auth helper ──────────────────────────────────────────────────────────
+    const getUserId = () => user?.userId || null;
+
+    // ── Save progress to API ─────────────────────────────────────────────────
+    const saveProgressToApi = async (elapsedSecs: number, drop: AudioDrop) => {
+        const userId = getUserId();
+        if (!userId || !drop.id) return; // only save for logged-in users with a known id
+
+        const totalSecs = drop.durationSeconds || parseDurationToSeconds(duration);
+        const pct = totalSecs > 0 ? Math.round((elapsedSecs / totalSecs) * 100) : 0;
+
+        try {
+            await axios.post("/api/audio-progress", {
+                userId,
+                audioId: drop.id,
+                title: drop.title,
+                subtitle: drop.subtitle || "Audio Drop",
+                elapsed: elapsedSecs,
+                durationSeconds: totalSecs,
+                pct,
+                url: drop.audioUrl,
+            });
+        } catch (err) {
+            console.error("[audio-progress] save error:", err);
+        }
+    };
+
+    // ── Start/stop periodic progress saving ───────────────────────────────────
+    const startProgressSaving = (drop: AudioDrop) => {
+        if (progressSaveRef.current) clearInterval(progressSaveRef.current);
+        progressSaveRef.current = setInterval(() => {
+            saveProgressToApi(elapsedRef.current, drop);
+        }, 5000);
+    };
+
+    const stopProgressSaving = (drop: AudioDrop) => {
+        if (progressSaveRef.current) {
+            clearInterval(progressSaveRef.current);
+            progressSaveRef.current = null;
+        }
+        // Flush immediately on pause
+        saveProgressToApi(elapsedRef.current, drop);
+    };
 
     // ── incrementListens ─────────────────────────────────────────────────────
     const incrementListens = async () => {
@@ -995,6 +1166,7 @@ export default function AudioDropCard() {
         try {
             const res = await axios.post("/api/cloudinary/plays", { id });
             if (res.data.success) {
+                setPlaysCount(res.data.plays);
                 setAudioDrop((prev) =>
                     prev ? { ...prev, listens: res.data.plays } : prev
                 );
@@ -1004,18 +1176,23 @@ export default function AudioDropCard() {
         }
     };
 
-    useEffect(() => {
-        incrementListensRef.current = incrementListens;
-    });
+    useEffect(() => { incrementListensRef.current = incrementListens; });
 
     // ── Navigate to audio by index ───────────────────────────────────────────
     const navigateToAudio = (index: number) => {
         const files = allAudioFilesRef.current;
         if (index < 0 || index >= files.length) return;
+
+        // Stop progress saving for current track before switching
+        if (audioDropRef.current) {
+            stopProgressSaving(audioDropRef.current);
+        }
+
         const target = files[index];
         setCurrentIndex(index);
         setPlaying(false);
         setElapsed(0);
+        elapsedRef.current = 0;
         setDuration("0:00");
         hasCountedListen.current = false;
         audioIdRef.current = target.id;
@@ -1023,29 +1200,14 @@ export default function AudioDropCard() {
         setAudioDrop(drop);
         fetchSignalsCount(target.id);
         fetchRecentSignals(target.id);
-        // Update URL without page reload
+
         const url = new URL(window.location.href);
         url.searchParams.set("id", target.id);
+        url.searchParams.delete("resume"); // clear resume param on navigation
         window.history.pushState({}, "", url.toString());
     };
 
-    // Keep ref updated
-    useEffect(() => {
-        navigateToAudioRef.current = navigateToAudio;
-    });
-
-    // ── Auth helpers ─────────────────────────────────────────────────────────
-    const getUserId = () => {
-        if (user?.userId) return user.userId;
-        let userId = localStorage.getItem("audio_user_id");
-        if (!userId) {
-            userId = `user_${Math.random().toString(36).substr(2, 9)}`;
-            localStorage.setItem("audio_user_id", userId);
-        }
-        return userId;
-    };
-
-    const getUserNameForSignal = () => getUserName();
+    useEffect(() => { navigateToAudioRef.current = navigateToAudio; });
 
     // ── Signal handler ───────────────────────────────────────────────────────
     const handleSendSignal = async () => {
@@ -1055,8 +1217,8 @@ export default function AudioDropCard() {
             const response = await axios.post("/api/audio-messages", {
                 audioId: audioDrop.id,
                 audioTitle: audioDrop.title,
-                userId: getUserId(),
-                userName: getUserNameForSignal(),
+                userId: getUserId() || "anonymous",
+                userName: getUserName(),
                 message: signalMessage.trim(),
             });
             if (response.data.success) {
@@ -1077,6 +1239,11 @@ export default function AudioDropCard() {
     // ── Fetch audio data ─────────────────────────────────────────────────────
     useEffect(() => {
         fetchAudioData();
+        return () => {
+            // Cleanup on unmount
+            if (progressSaveRef.current) clearInterval(progressSaveRef.current);
+        };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [idParam, urlParam]);
 
     const fetchAudioData = async () => {
@@ -1085,6 +1252,7 @@ export default function AudioDropCard() {
             setError(null);
             setDuration("0:00");
             setElapsed(0);
+            elapsedRef.current = 0;
             setPlaying(false);
             setSignalsCount(0);
             setRecentSignals([]);
@@ -1119,8 +1287,6 @@ export default function AudioDropCard() {
             }
 
             const audioFiles = response.data.audioFiles;
-
-            // Save full list
             setAllAudioFiles(audioFiles);
             allAudioFilesRef.current = audioFiles;
 
@@ -1147,10 +1313,21 @@ export default function AudioDropCard() {
             if (target) {
                 const drop = audioFileToAudioDrop(target);
                 audioIdRef.current = drop.id ?? null;
-                console.log("[listens] audioIdRef set to:", audioIdRef.current);
                 setAudioDrop(drop);
-                await fetchSignalsCount(drop.id!);
-                await fetchRecentSignals(drop.id!);
+                // Fetch signals + plays count in parallel
+                const [, playsRes] = await Promise.all([
+                    Promise.all([fetchSignalsCount(drop.id!), fetchRecentSignals(drop.id!)]),
+                    axios.get("/api/cloudinary/plays"),
+                ]);
+                if (playsRes.data.plays) {
+                    setPlaysCount(playsRes.data.plays[drop.id!] ?? 0);
+                }
+
+                // Resume from URL param if provided
+                if (resumeAt > 0) {
+                    setElapsed(resumeAt);
+                    elapsedRef.current = resumeAt;
+                }
             } else {
                 setError("Audio drop not found.");
             }
@@ -1232,7 +1409,6 @@ export default function AudioDropCard() {
 
         hasCountedListen.current = false;
         audioIdRef.current = audioDrop?.id ?? null;
-        console.log("[listens] audio setup — audioIdRef:", audioIdRef.current);
 
         if (audioRef.current) {
             audioRef.current.pause();
@@ -1248,13 +1424,32 @@ export default function AudioDropCard() {
                 const m = Math.floor(secs / 60);
                 const s = Math.floor(secs % 60);
                 setDuration(`${m}:${s.toString().padStart(2, "0")}`);
+
+                // Seek to resume point after metadata loads
+                if (resumeAt > 0) {
+                    audio.currentTime = resumeAt;
+                    setElapsed(resumeAt);
+                    elapsedRef.current = resumeAt;
+                }
             }
         });
 
         audio.addEventListener("ended", () => {
             setPlaying(false);
             setElapsed(0);
+            elapsedRef.current = 0;
             incrementListensRef.current();
+
+            // Clear progress — audio finished
+            const userId = getUserId();
+            const drop = audioDropRef.current;
+            if (userId && drop?.id) {
+                axios
+                    .delete(`/api/audio-progress?userId=${userId}&audioId=${encodeURIComponent(drop.id)}`)
+                    .catch((err) => console.error("[audio-progress] clear error:", err));
+            }
+            if (progressSaveRef.current) clearInterval(progressSaveRef.current);
+
             // Auto-advance to next
             setTimeout(() => {
                 const nextIndex = currentIndexRef.current + 1;
@@ -1270,27 +1465,41 @@ export default function AudioDropCard() {
             audio.pause();
             audio.src = "";
         };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [audioDrop?.audioUrl]);
 
-    // ── Play / pause ─────────────────────────────────────────────────────────
+    // ── Play / pause (with progress saving) ─────────────────────────────────
     useEffect(() => {
         const audio = audioRef.current;
-        if (!audio) return;
+        if (!audio || !audioDrop) return;
 
         if (playing) {
             audio.play().catch(console.error);
             timerRef.current = setInterval(() => {
                 setElapsed(audio.currentTime);
             }, 1000);
+            startProgressSaving(audioDrop); // save every 5s while playing
         } else {
             audio.pause();
             if (timerRef.current) clearInterval(timerRef.current);
+            if (audioDropRef.current) {
+                stopProgressSaving(audioDropRef.current); // flush on pause
+            }
         }
 
         return () => {
             if (timerRef.current) clearInterval(timerRef.current);
         };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [playing]);
+
+    // ── Cleanup on unmount ───────────────────────────────────────────────────
+    useEffect(() => {
+        return () => {
+            if (timerRef.current) clearInterval(timerRef.current);
+            if (progressSaveRef.current) clearInterval(progressSaveRef.current);
+        };
+    }, []);
 
     // ── Loading / error states ───────────────────────────────────────────────
     if (loading) {
@@ -1365,6 +1574,18 @@ export default function AudioDropCard() {
                             </button>
                         </div>
                     </div>
+
+                    {/* Resume banner */}
+                    {resumeAt > 0 && (
+                        <div className="mx-3.5 mb-2 px-4 py-2 bg-[#C9115F]/10 border border-[#C9115F]/30 rounded-xl flex items-center gap-2">
+                            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                <path d="M5 3L11 7L5 11V3Z" fill="#C9115F" />
+                            </svg>
+                            <p className="text-[#C9115F] text-[12px]">
+                                Resuming from {Math.floor(resumeAt / 60)}:{String(Math.floor(resumeAt % 60)).padStart(2, "0")}
+                            </p>
+                        </div>
+                    )}
 
                     {/* Player */}
                     <div className="bg-[#1a0a10] mx-3.5 rounded-2xl px-6 pt-7 pb-4 flex flex-col items-center gap-4">
@@ -1499,17 +1720,22 @@ export default function AudioDropCard() {
                         {/* Stats */}
                         <div className="grid grid-cols-3 gap-2.5 mb-4">
                             {[
-                                { label: "Signals", value: signalsCount.toLocaleString() },
-                                { label: "Duration", value: duration },
-                            ].map((s, index) => (
-                                <div key={index} className="bg-[#1a1a1e] rounded-xl p-2.5 flex flex-col gap-1.5">
+                                { label: "Plays", value: playsCount.toLocaleString(), icon: "play" },
+                                { label: "Signals", value: signalsCount.toLocaleString(), icon: "plus" },
+                                { label: "Duration", value: duration, icon: "clock" },
+                            ].map((s) => (
+                                <div key={s.label} className="bg-[#1a1a1e] rounded-xl p-2.5 flex flex-col gap-1.5">
                                     <div className="flex items-center gap-1.5 text-[#999]">
                                         <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
                                             <circle cx="6.5" cy="6.5" r="5" stroke="#999" strokeWidth="1.2" />
-                                            {s.label === "Duration" ? (
+                                            {s.icon === "clock" && (
                                                 <path d="M6.5 4v2.5l1.5 1.5" stroke="#999" strokeWidth="1.2" strokeLinecap="round" />
-                                            ) : (
+                                            )}
+                                            {s.icon === "plus" && (
                                                 <path d="M4.5 6.5h4M6.5 4.5v4" stroke="#999" strokeWidth="1.2" strokeLinecap="round" />
+                                            )}
+                                            {s.icon === "play" && (
+                                                <path d="M5 4.5L9.5 6.5L5 8.5V4.5Z" fill="#999" />
                                             )}
                                         </svg>
                                         <span className="text-[10px] uppercase tracking-wider text-[#999]">{s.label}</span>
@@ -1518,17 +1744,6 @@ export default function AudioDropCard() {
                                 </div>
                             ))}
                         </div>
-
-                        {/* File size */}
-                        {/* {audioDrop.sizeFormatted && (
-                            <div className="flex items-center gap-2 text-[12px] text-[#555] mb-3">
-                                <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-                                    <rect x="2" y="1.5" width="9" height="10" rx="1.5" stroke="#555" strokeWidth="1.2" />
-                                    <path d="M4.5 5h4M4.5 7.5h2.5" stroke="#555" strokeWidth="1.2" strokeLinecap="round" />
-                                </svg>
-                                File size: {audioDrop.sizeFormatted}
-                            </div>
-                        )} */}
 
                         {/* Meta */}
                         <div className="flex items-center gap-4 text-[12px] text-[#666] mb-3.5">
@@ -1548,7 +1763,7 @@ export default function AudioDropCard() {
                             </div>
                         </div>
 
-                        {/* Engagement bar */}
+                        {/* Listened progress bar */}
                         <div className="mb-5">
                             <div className="h-1 bg-[#2a2a2e] rounded-full overflow-hidden mb-1.5">
                                 <div
@@ -1556,7 +1771,7 @@ export default function AudioDropCard() {
                                     style={{ width: `${engPct}%` }}
                                 />
                             </div>
-                            <p className="text-right text-[11px] text-[#666]">{engPct}% engagement</p>
+                            <p className="text-right text-[11px] text-[#666]">{pct}% listened</p>
                         </div>
 
                         {/* Send Signal button */}
@@ -1595,24 +1810,18 @@ export default function AudioDropCard() {
                                 </button>
                             </div>
                             <div className="flex flex-row flex-nowrap items-center gap-1.5 mb-2 overflow-x-auto -ml-1">
-                                <button onClick={handleShareToWhatsApp} className="w-8 h-8 shrink-0 rounded-full overflow-hidden bg-white/5 hover:bg-white/10 border border-white/10 p-0 flex items-center justify-center" aria-label="Share on WhatsApp">
-                                    <img src="/images/share_whatsapp.png" alt="WhatsApp" className="w-full h-full object-cover rounded-full" />
-                                </button>
-                                <button onClick={handleShareToThreads} className="w-8 h-8 shrink-0 rounded-full overflow-hidden bg-white/5 hover:bg-white/10 border border-white/10 p-0 flex items-center justify-center" aria-label="Share on Threads">
-                                    <img src="/images/share_thread.png" alt="Threads" className="w-full h-full object-cover rounded-full" />
-                                </button>
-                                <button onClick={handleShareToInstagram} className="w-8 h-8 shrink-0 rounded-full overflow-hidden bg-white/5 hover:bg-white/10 border border-white/10 p-0 flex items-center justify-center" aria-label="Share on Instagram">
-                                    <img src="/images/share_insta.png" alt="Instagram" className="w-full h-full object-cover rounded-full" />
-                                </button>
-                                <button onClick={handleShareToLinkedIn} className="w-8 h-8 shrink-0 rounded-full overflow-hidden bg-white/5 hover:bg-white/10 border border-white/10 p-0 flex items-center justify-center" aria-label="Share on LinkedIn">
-                                    <img src="/images/Share_linkedin.png" alt="LinkedIn" className="w-full h-full object-cover rounded-full" />
-                                </button>
-                                <button onClick={handleShareToX} className="w-8 h-8 shrink-0 rounded-full overflow-hidden bg-white/5 hover:bg-white/10 border border-white/10 p-0 flex items-center justify-center" aria-label="Share on X">
-                                    <img src="/images/Share_X.png" alt="X" className="w-full h-full object-cover rounded-full" />
-                                </button>
-                                <button onClick={handleCopyLink} className="w-8 h-8 shrink-0 rounded-full overflow-hidden bg-white/5 hover:bg-white/10 border border-white/10 p-0 flex items-center justify-center" aria-label="Copy share link">
-                                    <img src="/images/share_copy_link.png" alt="Copy link" className="w-full h-full object-cover rounded-full" />
-                                </button>
+                                {[
+                                    { handler: handleShareToWhatsApp, src: "/images/share_whatsapp.png", alt: "WhatsApp" },
+                                    { handler: handleShareToThreads, src: "/images/share_thread.png", alt: "Threads" },
+                                    { handler: handleShareToInstagram, src: "/images/share_insta.png", alt: "Instagram" },
+                                    { handler: handleShareToLinkedIn, src: "/images/Share_linkedin.png", alt: "LinkedIn" },
+                                    { handler: handleShareToX, src: "/images/Share_X.png", alt: "X" },
+                                    { handler: handleCopyLink, src: "/images/share_copy_link.png", alt: "Copy link" },
+                                ].map(({ handler, src, alt }) => (
+                                    <button key={alt} onClick={handler} className="w-8 h-8 shrink-0 rounded-full overflow-hidden bg-white/5 hover:bg-white/10 border border-white/10 p-0 flex items-center justify-center" aria-label={`Share on ${alt}`}>
+                                        <img src={src} alt={alt} className="w-full h-full object-cover rounded-full" />
+                                    </button>
+                                ))}
                             </div>
                             {copied && <p className="text-xs text-emerald-400">Copied to clipboard</p>}
                         </div>
@@ -1632,24 +1841,18 @@ export default function AudioDropCard() {
                                 <p className="text-white/45 text-[11px] mt-2 line-clamp-2 break-all">{buildAudioDropShareUrl(audioDrop, urlParam)}</p>
                             </div>
                             <div className="flex flex-row flex-nowrap items-center gap-1.5 mb-2 -ml-1">
-                                <button onClick={handleShareToWhatsApp} className="w-9 h-9 shrink-0 rounded-full overflow-hidden bg-white/5 hover:bg-white/10 border border-white/10 p-0 flex items-center justify-center" aria-label="Share on WhatsApp">
-                                    <img src="/images/share_whatsapp.png" alt="WhatsApp" className="w-full h-full object-cover rounded-full" />
-                                </button>
-                                <button onClick={handleShareToThreads} className="w-9 h-9 shrink-0 rounded-full overflow-hidden bg-white/5 hover:bg-white/10 border border-white/10 p-0 flex items-center justify-center" aria-label="Share on Threads">
-                                    <img src="/images/share_thread.png" alt="Threads" className="w-full h-full object-cover rounded-full" />
-                                </button>
-                                <button onClick={handleShareToInstagram} className="w-9 h-9 shrink-0 rounded-full overflow-hidden bg-white/5 hover:bg-white/10 border border-white/10 p-0 flex items-center justify-center" aria-label="Share on Instagram">
-                                    <img src="/images/share_insta.png" alt="Instagram" className="w-full h-full object-cover rounded-full" />
-                                </button>
-                                <button onClick={handleShareToLinkedIn} className="w-9 h-9 shrink-0 rounded-full overflow-hidden bg-white/5 hover:bg-white/10 border border-white/10 p-0 flex items-center justify-center" aria-label="Share on LinkedIn">
-                                    <img src="/images/Share_linkedin.png" alt="LinkedIn" className="w-full h-full object-cover rounded-full" />
-                                </button>
-                                <button onClick={handleShareToX} className="w-9 h-9 shrink-0 rounded-full overflow-hidden bg-white/5 hover:bg-white/10 border border-white/10 p-0 flex items-center justify-center" aria-label="Share on X">
-                                    <img src="/images/Share_X.png" alt="X" className="w-full h-full object-cover rounded-full" />
-                                </button>
-                                <button onClick={handleCopyLink} className="w-9 h-9 shrink-0 rounded-full overflow-hidden bg-white/5 hover:bg-white/10 border border-white/10 p-0 flex items-center justify-center" aria-label="Copy share link">
-                                    <img src="/images/share_copy_link.png" alt="Copy link" className="w-full h-full object-cover rounded-full" />
-                                </button>
+                                {[
+                                    { handler: handleShareToWhatsApp, src: "/images/share_whatsapp.png", alt: "WhatsApp" },
+                                    { handler: handleShareToThreads, src: "/images/share_thread.png", alt: "Threads" },
+                                    { handler: handleShareToInstagram, src: "/images/share_insta.png", alt: "Instagram" },
+                                    { handler: handleShareToLinkedIn, src: "/images/Share_linkedin.png", alt: "LinkedIn" },
+                                    { handler: handleShareToX, src: "/images/Share_X.png", alt: "X" },
+                                    { handler: handleCopyLink, src: "/images/share_copy_link.png", alt: "Copy link" },
+                                ].map(({ handler, src, alt }) => (
+                                    <button key={alt} onClick={handler} className="w-9 h-9 shrink-0 rounded-full overflow-hidden bg-white/5 hover:bg-white/10 border border-white/10 p-0 flex items-center justify-center" aria-label={`Share on ${alt}`}>
+                                        <img src={src} alt={alt} className="w-full h-full object-cover rounded-full" />
+                                    </button>
+                                ))}
                             </div>
                             {copied && <p className="text-xs text-emerald-400">Copied to clipboard</p>}
                         </div>
@@ -1704,6 +1907,17 @@ export default function AudioDropCard() {
                         <p className="text-gray-600 text-xs mt-3 text-center">
                             {500 - signalMessage.length} characters remaining
                         </p>
+                        {recentSignals.length > 0 && (
+                            <div className="mt-4 border-t border-[#2a2a2e] pt-4">
+                                <p className="text-gray-500 text-xs mb-2">Recent signals</p>
+                                {recentSignals.map((s) => (
+                                    <div key={s.id} className="mb-2 bg-[#111114] rounded-lg px-3 py-2">
+                                        <p className="text-[#C9115F] text-xs font-medium">{s.userName}</p>
+                                        <p className="text-gray-300 text-xs mt-0.5">{s.message}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 </div>
             )}

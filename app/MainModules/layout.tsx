@@ -134,7 +134,9 @@
 "use client";
 
 import BottomNav from "@/src/components/HomeComponents/Bottomnav";
+import InviteFriendModal from "@/src/components/InviteFriendModal";
 import axios from "axios";
+import { UserPlus } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -322,8 +324,10 @@ export default function MainModulesLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const pathname = usePathname();
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isInviteOpen, setIsInviteOpen] = useState(false);
 
   useEffect(() => {
     async function fetchCurrentUser() {
@@ -373,10 +377,30 @@ export default function MainModulesLayout({
       <main className="flex-1 min-w-0 w-full overflow-x-hidden">
         <div className="w-full max-w-[1600px] mx-auto">{children}</div>
 
+        <div className="fixed bottom-27 right-6 md:bottom-22 md:right-6 z-50">
+          <button
+            onClick={() => setIsInviteOpen(true)}
+            className="group relative flex items-center justify-center w-7 h-7 lg:w-14 lg:h-14 rounded-full bg-gradient-to-r from-[#C9115F] to-[#e85d04] shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110 active:scale-95"
+            aria-label="Invite a Friend"
+          >
+            <span className="absolute right-full mr-3 px-3 py-1.5 rounded-lg bg-gray-900 text-white text-xs font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+              Invite a Friend
+            </span>
+
+            <UserPlus className="text-white w-3 h-3 md:w-6 md:h-6" />
+          </button>
+        </div>
+
         <div className="lg:hidden">
           <BottomNav />
         </div>
       </main>
+
+      <InviteFriendModal
+        open={isInviteOpen}
+        onClose={() => setIsInviteOpen(false)}
+        shareUrl={pathname}
+      />
     </div>
   );
 }

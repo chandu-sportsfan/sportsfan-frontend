@@ -625,12 +625,12 @@ export default function CricketArticleDetail() {
 
                     {/* Desktop comments under meta/views */}
                     <div className="hidden lg:block mt-6">
-                       <CommentsSection
-                                                  contentId={article?.id || ""}
-                                                  contentType="video"
-                                                  contentTitle={article?.title}
-                                                  className="mt-5"
-                                              />
+                         <CommentsSection
+                                                    contentId={article.id || ""}
+                                                    contentType="article"
+                                                    contentTitle={article.title}
+                                                    className="mt-5"
+                                                />
                     </div>
                 </div>
 
@@ -676,11 +676,11 @@ export default function CricketArticleDetail() {
             {/* Comments section (mobile only) */}
             <div className="mt-8 lg:hidden">
                  <CommentsSection
-                                                  contentId={article?.id || ""}
-                                                  contentType="video"
-                                                  contentTitle={article?.title}
-                                                  className="mt-5"
-                                              />
+                                            contentId={article.id || ""}
+                                            contentType="article"
+                                            contentTitle={article.title}
+                                            className="mt-5"
+                                        />
             </div>
 
             {showShareDialog && article && (

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import axios from "axios";
 import { ArrowLeft } from "lucide-react";
+import CommentsSection from "@/src/components/CommentsSection";
 
 type BadgeType = "FEATURE" | "ANALYSIS" | "OPINION" | "NEWS";
 
@@ -260,6 +261,11 @@ export default function CricketArticleDetail() {
                             </div>
                         )}
                     </div>
+
+                    {/* Desktop comments under meta/views */}
+                    <div className="hidden lg:block mt-6">
+                        <CommentsSection />
+                    </div>
                 </div>
 
                 {/* RIGHT — First 2 paragraphs */}
@@ -300,6 +306,11 @@ export default function CricketArticleDetail() {
                     dangerouslySetInnerHTML={{ __html: para }}
                 />
             ))}
+
+            {/* Comments section (mobile only) */}
+            <div className="mt-8 lg:hidden">
+                <CommentsSection />
+            </div>
 
             {showShareDialog && article && (
                 <>

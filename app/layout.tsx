@@ -74,6 +74,7 @@ import { AuthProvider } from "@/context/AuthContext";
 import { VideoProvider } from "@/context/VideoContext";
 import { PlaysProvider } from "@/context/PlaysContext";
 import { ScriptsProvider } from "@/context/ScriptsContext";
+import GlobalActionBar from "@/src/components/GlobalActionBar";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -124,6 +125,7 @@ export default function RootLayout({
             </WatchAlongProvider>
           </ClubProfileProvider>
         </SessionProvider>
+        <GlobalActionBar />
       </body>
     </html>
   );

@@ -272,12 +272,12 @@ function UserSidebar() {
   return (
     <aside className="group hidden lg:flex lg:flex-col w-[84px] hover:w-[248px] shrink-0 border-r border-pink-500/20 self-stretch transition-all duration-300 ease-out bg-gradient-to-b from-zinc-950 via-black to-zinc-950">
       <div className="sticky top-0 h-screen overflow-y-auto px-3 py-4">
-        <div className="mb-8 h-10 flex items-center justify-center group-hover:justify-start transition-all duration-300">
+        <Link href="/MainModules/HomePage" className="mb-8 h-10 flex items-center justify-center group-hover:justify-start transition-all duration-300 rounded-xl hover:bg-white/5 px-0 group-hover:px-3">
           <Image src="/images/Logo.png" alt="SportsFan360 logo" width={34} height={40} className="shrink-0" />
           <span className="ml-3 text-lg font-bold whitespace-nowrap opacity-0 -translate-x-2 max-w-0 overflow-hidden group-hover:opacity-100 group-hover:translate-x-0 group-hover:max-w-[160px] transition-all duration-300">
             SportsFan360
           </span>
-        </div>
+        </Link>
 
         <nav className="space-y-2">
           {sidebarItems.map((item) => {

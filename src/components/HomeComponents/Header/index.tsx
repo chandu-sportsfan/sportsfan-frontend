@@ -75,7 +75,9 @@ export default function Header() {
         <div className="w-full px-4 lg:px-6 py-3 border-b border-pink-500/20 bg-black flex flex-col gap-3">
             {/* Top row */}
             <div className="flex items-center justify-between">
-                <h1 className="text-lg font-semibold lg:hidden">SportsFan360</h1>
+                <Link href="/MainModules/HomePage">
+                    <h1 className="text-lg font-semibold lg:hidden cursor-pointer hover:text-pink-500 transition">SportsFan360</h1>
+                </Link>
                 <div className="hidden lg:block" />
                 <div className="flex gap-2 items-center">
                     <LogoutButton />

@@ -4,6 +4,8 @@
 // import axios from "axios";
 // import { useAuth } from "@/context/AuthContext";
 // import CommentsSection from "@/src/components/CommentsSection";
+// import { ArrowLeft } from "lucide-react";
+// import Link from "next/link";
 
 // interface VideoFile {
 //     id: string;
@@ -78,7 +80,7 @@
 //     const { user, getUserName } = useAuth();
 //     const searchParams = useSearchParams();
 //     const idParam = searchParams.get("id");
-//     const resumeAt = parseFloat(searchParams.get("resume") || "0"); // seconds to resume from
+//     const resumeAt = parseFloat(searchParams.get("resume") || "0");
 
 //     const [playing, setPlaying] = useState(false);
 //     const [elapsed, setElapsed] = useState(0);
@@ -86,6 +88,9 @@
 //     const [loading, setLoading] = useState(true);
 //     const [error, setError] = useState<string | null>(null);
 //     const [videoError, setVideoError] = useState(false);
+
+//     const [allVideoFiles, setAllVideoFiles] = useState<VideoFile[]>([]);
+//     const [currentIndex, setCurrentIndex] = useState<number>(0);
 
 //     const [playsCount, setPlaysCount] = useState(0);
 //     const hasCountedPlay = useRef(false);
@@ -99,29 +104,29 @@
 
 //     const [showShareDialog, setShowShareDialog] = useState(false);
 //     const [copied, setCopied] = useState(false);
-//     const videoReadyToPlayRef = useRef(false);
 
 //     const videoRef = useRef<HTMLVideoElement>(null);
 //     const timerRef = useRef<NodeJS.Timeout | null>(null);
-//     const progressSaveRef = useRef<NodeJS.Timeout | null>(null); // saves progress every 5s
-//     const elapsedRef = useRef(0); // always up-to-date elapsed for save
+//     const progressSaveRef = useRef<NodeJS.Timeout | null>(null);
+//     const elapsedRef = useRef(0);
+//     const videoReadyToPlayRef = useRef(false);
+//     const allVideoFilesRef = useRef<VideoFile[]>([]);
+//     const currentIndexRef = useRef<number>(0);
 
-//     // Keep elapsedRef in sync
 //     useEffect(() => { elapsedRef.current = elapsed; }, [elapsed]);
+//     useEffect(() => { allVideoFilesRef.current = allVideoFiles; }, [allVideoFiles]);
+//     useEffect(() => { currentIndexRef.current = currentIndex; }, [currentIndex]);
 
 //     const getUserId = () => user?.userId || null;
 
-//     // ── Save progress to API ──────────────────────────────────────────────────
 //     const saveProgressToApi = async (elapsedSecs: number, vid: VideoFile) => {
 //         const userId = getUserId();
-//         if (!userId) return; // only save for logged-in users
-
+//         if (!userId) return;
 //         const totalSecs = vid.durationSeconds || 0;
 //         const pct = totalSecs > 0 ? Math.round((elapsedSecs / totalSecs) * 100) : 0;
 //         const subtitle = vid.playerInfo?.playerName
 //             ? `${vid.playerInfo.playerName} · Chapter ${vid.playerInfo.chapterNumber}`
 //             : "Video Drop";
-
 //         try {
 //             await axios.post("/api/video-progress", {
 //                 userId,
@@ -138,12 +143,11 @@
 //         }
 //     };
 
-//     // ── Start/stop periodic progress saving ───────────────────────────────────
 //     const startProgressSaving = (vid: VideoFile) => {
 //         if (progressSaveRef.current) clearInterval(progressSaveRef.current);
 //         progressSaveRef.current = setInterval(() => {
 //             saveProgressToApi(elapsedRef.current, vid);
-//         }, 5000); // save every 5 seconds
+//         }, 5000);
 //     };
 
 //     const stopProgressSaving = (vid: VideoFile) => {
@@ -151,30 +155,40 @@
 //             clearInterval(progressSaveRef.current);
 //             progressSaveRef.current = null;
 //         }
-//         // Save immediately on pause
 //         saveProgressToApi(elapsedRef.current, vid);
 //     };
 
-//     // ── Fetch video ───────────────────────────────────────────────────────────
 //     useEffect(() => {
 //         fetchVideoData();
 //         return () => {
 //             if (progressSaveRef.current) clearInterval(progressSaveRef.current);
 //         };
-//         // eslint-disable-next-line react-hooks/exhaustive-deps
 //     }, [idParam]);
 
 //     const fetchVideoData = async () => {
 //         if (!idParam) { setError("No video ID provided"); setLoading(false); return; }
 //         try {
 //             setLoading(true);
-//             videoReadyToPlayRef.current = false; 
+//             videoReadyToPlayRef.current = false;
 //             setError(null);
+//             setElapsed(0);
+//             elapsedRef.current = 0;
+//             setPlaying(false);
 //             hasCountedPlay.current = false;
 
 //             const res = await axios.get(`/api/cloudinary/video?limit=50`);
 //             if (res.data.success) {
-//                 const found: VideoFile = res.data.videoFiles.find((v: VideoFile) => v.id === idParam);
+//                 const allFiles: VideoFile[] = res.data.videoFiles;
+//                 setAllVideoFiles(allFiles);
+//                 allVideoFilesRef.current = allFiles;
+
+//                 const foundIndex = allFiles.findIndex((v: VideoFile) => v.id === idParam);
+//                 const targetIndex = foundIndex >= 0 ? foundIndex : 0;
+//                 const found = allFiles[targetIndex];
+
+//                 setCurrentIndex(targetIndex);
+//                 currentIndexRef.current = targetIndex;
+
 //                 if (found) {
 //                     setVideo(found);
 //                     videoIdRef.current = found.id;
@@ -182,15 +196,11 @@
 //                     await fetchSignalsCount(found.id);
 //                     await fetchRecentSignals(found.id);
 
-//                     // Resume from URL param if provided
 //                     if (resumeAt > 0) {
 //                         setElapsed(resumeAt);
 //                         elapsedRef.current = resumeAt;
-//                         // Seek video after it loads
 //                         setTimeout(() => {
-//                             if (videoRef.current) {
-//                                 videoRef.current.currentTime = resumeAt;
-//                             }
+//                             if (videoRef.current) videoRef.current.currentTime = resumeAt;
 //                         }, 500);
 //                     }
 //                 } else { setError("Video not found"); }
@@ -200,7 +210,30 @@
 //             setError("Failed to load video");
 //         } finally {
 //             videoReadyToPlayRef.current = true;
-//             setLoading(false); }
+//             setLoading(false);
+//         }
+//     };
+
+//     const navigateToVideo = (index: number) => {
+//         const files = allVideoFilesRef.current;
+//         if (index < 0 || index >= files.length) return;
+//         const target = files[index];
+//         setCurrentIndex(index);
+//         currentIndexRef.current = index;
+//         setPlaying(false);
+//         setElapsed(0);
+//         elapsedRef.current = 0;
+//         setVideoError(false);
+//         hasCountedPlay.current = false;
+//         videoIdRef.current = target.id;
+//         setVideo(target);
+//         fetchPlaysCount(target.id);
+//         fetchSignalsCount(target.id);
+//         fetchRecentSignals(target.id);
+//         const url = new URL(window.location.href);
+//         url.searchParams.set("id", target.id);
+//         url.searchParams.delete("resume");
+//         window.history.pushState({}, "", url.toString());
 //     };
 
 //     const fetchPlaysCount = async (videoId: string) => {
@@ -264,73 +297,47 @@
 //     const handleShareToX = () => { if (!video) return; window.open(`https://x.com/intent/tweet?text=${encodeURIComponent(buildVideoShareText(video))}`, "_blank"); };
 //     const handleCopyLink = async () => { if (!video) return; const ok = await copyToClipboard(buildVideoShareText(video)); if (ok) { setCopied(true); setTimeout(() => setCopied(false), 1600); } };
 
-//     // const handleLoadedMetadata = () => {
-//     //     if (videoRef.current) {
-//     //         const dur = videoRef.current.duration;
-//     //         if (!isNaN(dur) && dur > 0) {
-//     //             const m = Math.floor(dur / 60);
-//     //             const s = Math.floor(dur % 60);
-//     //             setVideo(prev => prev ? { ...prev, duration: `${m}:${s.toString().padStart(2, "0")}`, durationSeconds: dur } : null);
-//     //             // Seek to resume point after metadata loads
-//     //             if (resumeAt > 0 && videoRef.current) {
-//     //                 videoRef.current.currentTime = resumeAt;
-//     //                 setElapsed(resumeAt);
-//     //                 elapsedRef.current = resumeAt;
-//     //             }
-//     //         }
-//     //     }
-//     // };
-
 //     const handleLoadedMetadata = () => {
-//     if (videoRef.current) {
-//         const dur = videoRef.current.duration;
-//         if (!isNaN(dur) && dur > 0) {
-//             const m = Math.floor(dur / 60);
-//             const s = Math.floor(dur % 60);
-//             setVideo(prev => prev ? { ...prev, duration: `${m}:${s.toString().padStart(2, "0")}`, durationSeconds: dur } : null);
-//             if (resumeAt > 0 && videoRef.current) {
-//                 videoRef.current.currentTime = resumeAt;
-//                 setElapsed(resumeAt);
-//                 elapsedRef.current = resumeAt;
-//             }
+//         if (videoRef.current) {
+//             const dur = videoRef.current.duration;
+//             if (!isNaN(dur) && dur > 0) {
+//                 const m = Math.floor(dur / 60);
+//                 const s = Math.floor(dur % 60);
+//                 setVideo(prev => prev ? { ...prev, duration: `${m}:${s.toString().padStart(2, "0")}`, durationSeconds: dur } : null);
+//                 if (resumeAt > 0 && videoRef.current) {
+//                     videoRef.current.currentTime = resumeAt;
+//                     setElapsed(resumeAt);
+//                     elapsedRef.current = resumeAt;
+//                 }
 
-//             // ✅ Autoplay only after loading is fully done
-//             // const tryPlay = () => {
-//             //     if (!videoRef.current) return;
-//             //     videoRef.current.play()
-//             //         .then(() => setPlaying(true))
-//             //         .catch(console.error);
-//             // };
-//             const tryPlay = () => {
-//     if (!videoRef.current) return;
-//     videoRef.current.play()
-//         .then(() => {
-//             setPlaying(true);
-//             incrementPlays();
-//             if (videoRef.current) {
-//                 // video state may not be updated yet, use the ref approach
-//                 setVideo(prev => {
-//                     if (prev) startProgressSaving(prev);
-//                     return prev;
-//                 });
-//             }
-//         })
-//         .catch(console.error);
-// };
+//                 const tryPlay = () => {
+//                     if (!videoRef.current) return;
+//                     videoRef.current.play()
+//                         .then(() => {
+//                             setPlaying(true);
+//                             incrementPlays();
+//                             setVideo(prev => {
+//                                 if (prev) startProgressSaving(prev);
+//                                 return prev;
+//                             });
+//                         })
+//                         .catch(console.error);
+//                 };
 
-//             if (videoReadyToPlayRef.current) {
-//                 tryPlay();
-//             } else {
-//                 const poll = setInterval(() => {
-//                     if (videoReadyToPlayRef.current) {
-//                         clearInterval(poll);
-//                         tryPlay();
-//                     }
-//                 }, 100);
+//                 if (videoReadyToPlayRef.current) {
+//                     tryPlay();
+//                 } else {
+//                     const poll = setInterval(() => {
+//                         if (videoReadyToPlayRef.current) {
+//                             clearInterval(poll);
+//                             tryPlay();
+//                         }
+//                     }, 100);
+//                 }
 //             }
 //         }
-//     }
-// };
+//     };
+
 //     const handleVideoError = () => { setVideoError(true); setPlaying(false); };
 
 //     const handleTimeUpdate = () => {
@@ -342,12 +349,18 @@
 //         setElapsed(0);
 //         if (videoRef.current) videoRef.current.currentTime = 0;
 //         incrementPlays();
-//         // Clear progress — video finished
 //         if (video && getUserId()) {
 //             axios.delete(`/api/video-progress?userId=${getUserId()}&videoId=${encodeURIComponent(video.id)}`)
 //                 .catch(err => console.error("[progress] clear error:", err));
 //         }
 //         if (progressSaveRef.current) clearInterval(progressSaveRef.current);
+//         // Auto-advance to next video
+//         setTimeout(() => {
+//             const nextIndex = currentIndexRef.current + 1;
+//             if (nextIndex < allVideoFilesRef.current.length) {
+//                 navigateToVideo(nextIndex);
+//             }
+//         }, 1000);
 //     };
 
 //     const togglePlay = () => {
@@ -356,12 +369,12 @@
 //             videoRef.current.pause();
 //             setPlaying(false);
 //             if (timerRef.current) clearInterval(timerRef.current);
-//             stopProgressSaving(video); // save immediately on pause
+//             stopProgressSaving(video);
 //         } else {
 //             videoRef.current.play().catch(() => setVideoError(true));
 //             setPlaying(true);
 //             incrementPlays();
-//             startProgressSaving(video); // start saving every 5s
+//             startProgressSaving(video);
 //         }
 //     };
 
@@ -377,6 +390,8 @@
 //     const secs = Math.floor(elapsed % 60);
 //     const timeStr = `${mins}:${secs.toString().padStart(2, "0")}`;
 //     const pct = totalSecs > 0 ? Math.round((elapsed / totalSecs) * 100) : 0;
+//     const prevVideo = allVideoFiles[currentIndex - 1];
+//     const nextVideo = allVideoFiles[currentIndex + 1];
 
 //     if (loading) return (
 //         <div className="flex justify-center items-center bg-[#0d0d10] min-h-screen">
@@ -416,6 +431,13 @@
 //     return (
 //         <div className="min-h-screen bg-[#0d0d10]">
 //             <div className="max-w-6xl mx-auto p-4 sm:p-6 lg:p-10 pb-15">
+
+//                 <Link href="/MainModules/MatchesDropContent" className="inline-flex items-center gap-2 text-gray-400 hover:text-white mb-6 transition">
+//                     <button className="flex items-center gap-2 text-gray-400 hover:text-white mb-6 transition cursor-pointer">
+//                         <ArrowLeft size={18} />
+//                         <span className="text-sm">Back</span>
+//                     </button>
+//                 </Link>
 
 //                 {/* Header */}
 //                 <div className="flex items-center justify-between mb-4">
@@ -467,7 +489,6 @@
 //                         <div className="bg-[#111114] rounded-2xl overflow-hidden border border-[#2a2a2e]">
 //                             <div
 //                                 className="relative w-full bg-[#0e0e12] flex items-center justify-center cursor-pointer h-[350px] lg:h-[480px]"
-//                                 // style={{ height: "350px" }}
 //                                 onClick={togglePlay}
 //                             >
 //                                 <video
@@ -504,7 +525,7 @@
 //                             </div>
 
 //                             {/* Progress */}
-//                             <div className="px-3 pt-2 pb-3">
+//                             <div className="px-3 pt-2 pb-2">
 //                                 <div className="h-1 bg-[#2a2a2e] rounded-full overflow-hidden mb-1.5">
 //                                     <div className="h-full bg-[#e0185a] rounded-full transition-all duration-300" style={{ width: `${pct}%` }} />
 //                                 </div>
@@ -514,89 +535,74 @@
 //                                 </div>
 //                             </div>
 
-
-//                                {/* Prev / Next Navigation */}
-//                                 {allAudioFiles.length > 1 && (
-//                                     <div className="flex items-center justify-between w-full gap-2">
-//                                         <button
-//                                             onClick={() => navigateToAudio(currentIndex - 1)}
-//                                             disabled={currentIndex === 0}
-//                                             className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#2a0f1c] border border-[#e0185a]/30 text-[#e0185a] text-[12px] font-medium disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#3a1525] transition"
-//                                         >
-//                                             <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-//                                                 <path d="M9 2L4 7L9 12" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-//                                             </svg>
-//                                             Prev
-//                                         </button>
-
-//                                         <span className="text-[#666] text-[11px]">
-//                                             {currentIndex + 1} / {allAudioFiles.length}
-//                                         </span>
-
-//                                         <button
-//                                             onClick={() => navigateToAudio(currentIndex + 1)}
-//                                             disabled={currentIndex === allAudioFiles.length - 1}
-//                                             className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#2a0f1c] border border-[#e0185a]/30 text-[#e0185a] text-[12px] font-medium disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#3a1525] transition"
-//                                         >
-//                                             Next
-//                                             <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-//                                                 <path d="M5 2L10 7L5 12" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-//                                             </svg>
-//                                         </button>
-//                                     </div>
-
-
-//                                 )}
-
-
-//                                 {/* Up Next Preview */}
-//                                 {nextAudio && (
-//                                     <div
-//                                         onClick={() => navigateToAudio(currentIndex + 1)}
-//                                         className="w-full flex items-center gap-2 bg-[#2a0f1c]/60 border border-[#e0185a]/20 rounded-xl px-3 py-2 cursor-pointer hover:bg-[#2a0f1c] transition"
+//                             {/* Prev / Next Navigation */}
+//                             {allVideoFiles.length > 1 && (
+//                                 <div className="flex items-center justify-between gap-2 px-3 pb-3">
+//                                     <button
+//                                         onClick={() => navigateToVideo(currentIndex - 1)}
+//                                         disabled={currentIndex === 0}
+//                                         className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#2a0f1c] border border-[#e0185a]/30 text-[#e0185a] text-[12px] font-medium disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#3a1525] transition"
 //                                     >
-//                                         <div className="w-7 h-7 rounded-full bg-[#e0185a]/20 flex items-center justify-center flex-shrink-0">
-//                                             <svg width="12" height="12" viewBox="0 0 20 20" fill="none">
-//                                                 <path d="M7 4.5L16 10L7 15.5V4.5Z" fill="#e0185a" />
-//                                             </svg>
-//                                         </div>
-//                                         <div className="min-w-0 flex-1">
-//                                             <p className="text-[#888] text-[10px] uppercase tracking-wider">Up Next</p>
-//                                             <p className="text-white text-[12px] font-medium truncate">
-//                                                 {audioFileToAudioDrop(nextAudio).title}
-//                                             </p>
-//                                             <p className="text-[#666] text-[10px] truncate">
-//                                                 {nextAudio.matchInfo?.speaker?.replace(/^toss report\s*/i, "").replace(/^script\s*/i, "").replace(/^story\s*/i, "").trim() || "Audio Drop"}
-//                                             </p>
-//                                         </div>
-//                                     </div>
-//                                 )}
-
-//                                 {/* Previous Audio Preview */}
-//                                 {prevAudio && (
-//                                     <div
-//                                         onClick={() => navigateToAudio(currentIndex - 1)}
-//                                         className="w-full flex items-center gap-2 bg-[#1a1a2e]/60 border border-white/10 rounded-xl px-3 py-2 cursor-pointer hover:bg-[#1a1a2e] transition"
+//                                         <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+//                                             <path d="M9 2L4 7L9 12" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+//                                         </svg>
+//                                         Prev
+//                                     </button>
+//                                     <span className="text-[#666] text-[11px]">{currentIndex + 1} / {allVideoFiles.length}</span>
+//                                     <button
+//                                         onClick={() => navigateToVideo(currentIndex + 1)}
+//                                         disabled={currentIndex === allVideoFiles.length - 1}
+//                                         className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#2a0f1c] border border-[#e0185a]/30 text-[#e0185a] text-[12px] font-medium disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#3a1525] transition"
 //                                     >
-//                                         <div className="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center flex-shrink-0">
-//                                             <svg width="12" height="12" viewBox="0 0 20 20" fill="none">
-//                                                 <path d="M13 4.5L4 10L13 15.5V4.5Z" fill="#aaa" />
-//                                             </svg>
-//                                         </div>
-//                                         <div className="min-w-0 flex-1">
-//                                             <p className="text-[#666] text-[10px] uppercase tracking-wider">Previous</p>
-//                                             <p className="text-[#aaa] text-[12px] font-medium truncate">
-//                                                 {audioFileToAudioDrop(prevAudio).title}
-//                                             </p>
-//                                             <p className="text-[#555] text-[10px] truncate">
-//                                                 {prevAudio.matchInfo?.speaker?.replace(/^toss report\s*/i, "").replace(/^script\s*/i, "").replace(/^story\s*/i, "").trim() || "Audio Drop"}
-//                                             </p>
-//                                         </div>
+//                                         Next
+//                                         <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+//                                             <path d="M5 2L10 7L5 12" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+//                                         </svg>
+//                                     </button>
+//                                 </div>
+//                             )}
+
+//                             {/* Up Next Preview */}
+//                             {nextVideo && (
+//                                 <div
+//                                     onClick={() => navigateToVideo(currentIndex + 1)}
+//                                     className="mx-3 mb-3 flex items-center gap-2 bg-[#2a0f1c]/60 border border-[#e0185a]/20 rounded-xl px-3 py-2 cursor-pointer hover:bg-[#2a0f1c] transition"
+//                                 >
+//                                     <div className="w-7 h-7 rounded-full bg-[#e0185a]/20 flex items-center justify-center flex-shrink-0">
+//                                         <svg width="12" height="12" viewBox="0 0 20 20" fill="none">
+//                                             <path d="M7 4.5L16 10L7 15.5V4.5Z" fill="#e0185a" />
+//                                         </svg>
 //                                     </div>
+//                                     <div className="min-w-0 flex-1">
+//                                         <p className="text-[#888] text-[10px] uppercase tracking-wider">Up Next</p>
+//                                         <p className="text-white text-[12px] font-medium truncate">{nextVideo.title}</p>
+//                                         <p className="text-[#666] text-[10px] truncate">
+//                                             {nextVideo.playerInfo?.playerName || "Video Drop"}
+//                                         </p>
+//                                     </div>
+//                                 </div>
+//                             )}
 
-
-//                                 )}
-
+//                             {/* Previous Video Preview */}
+//                             {prevVideo && (
+//                                 <div
+//                                     onClick={() => navigateToVideo(currentIndex - 1)}
+//                                     className="mx-3 mb-3 flex items-center gap-2 bg-[#1a1a2e]/60 border border-white/10 rounded-xl px-3 py-2 cursor-pointer hover:bg-[#1a1a2e] transition"
+//                                 >
+//                                     <div className="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center flex-shrink-0">
+//                                         <svg width="12" height="12" viewBox="0 0 20 20" fill="none">
+//                                             <path d="M13 4.5L4 10L13 15.5V4.5Z" fill="#aaa" />
+//                                         </svg>
+//                                     </div>
+//                                     <div className="min-w-0 flex-1">
+//                                         <p className="text-[#666] text-[10px] uppercase tracking-wider">Previous</p>
+//                                         <p className="text-[#aaa] text-[12px] font-medium truncate">{prevVideo.title}</p>
+//                                         <p className="text-[#555] text-[10px] truncate">
+//                                             {prevVideo.playerInfo?.playerName || "Video Drop"}
+//                                         </p>
+//                                     </div>
+//                                 </div>
+//                             )}
 //                         </div>
 //                     </div>
 
@@ -605,10 +611,7 @@
 //                         <div>
 //                             <h1 className="text-white text-[20px] font-medium leading-snug mb-1">{video.title}</h1>
 //                             {video.playerInfo?.playerName && (
-//                                 <p className="text-[#C9115F] text-[12px] mb-1">
-//                                     {/* by {video.playerInfo.playerName.charAt(0).toUpperCase() + video.playerInfo.playerName.slice(1)} */}
-//                                     by Arjun Mehta
-//                                 </p>
+//                                 <p className="text-[#C9115F] text-[12px] mb-1">by Arjun Mehta</p>
 //                             )}
 //                             <p className="text-[#888] text-[13px] leading-relaxed">
 //                                 {video.playerInfo?.playerName
@@ -710,8 +713,6 @@
 //                         <div className="flex flex-row flex-nowrap items-center gap-1.5 mb-2 overflow-x-auto">{shareButtons("w-8 h-8")}</div>
 //                         {copied && <p className="text-xs text-emerald-400">Copied to clipboard</p>}
 //                     </div>
-
-//                     {/* Share Dialog — desktop */}
 //                     <div className="hidden lg:flex fixed inset-0 z-50 items-center justify-center bg-black/60" onClick={() => setShowShareDialog(false)}>
 //                         <div className="bg-[#1a1a1e] rounded-2xl border border-white/10 p-4 w-[300px] shadow-2xl" onClick={e => e.stopPropagation()}>
 //                             <div className="flex items-center justify-between mb-3">
@@ -791,12 +792,16 @@
 
 
 
+
 "use client";
 import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import axios from "axios";
 import { useAuth } from "@/context/AuthContext";
 import CommentsSection from "@/src/components/CommentsSection";
+import { ArrowLeft } from "lucide-react";
+import Link from "next/link";
+import PlaylistDialog from "../playlistdialog-component/playlistdialog";
 
 interface VideoFile {
     id: string;
@@ -896,6 +901,8 @@ export default function VideoDropCard() {
     const [showShareDialog, setShowShareDialog] = useState(false);
     const [copied, setCopied] = useState(false);
 
+    const [showPlaylistDialog, setShowPlaylistDialog] = useState(false);  // ← ADD 2: state
+
     const videoRef = useRef<HTMLVideoElement>(null);
     const timerRef = useRef<NodeJS.Timeout | null>(null);
     const progressSaveRef = useRef<NodeJS.Timeout | null>(null);
@@ -919,41 +926,23 @@ export default function VideoDropCard() {
             ? `${vid.playerInfo.playerName} · Chapter ${vid.playerInfo.chapterNumber}`
             : "Video Drop";
         try {
-            await axios.post("/api/video-progress", {
-                userId,
-                videoId: vid.id,
-                title: vid.title,
-                subtitle,
-                elapsed: elapsedSecs,
-                durationSeconds: totalSecs,
-                pct,
-                url: vid.url,
-            });
-        } catch (err) {
-            console.error("[progress] save error:", err);
-        }
+            await axios.post("/api/video-progress", { userId, videoId: vid.id, title: vid.title, subtitle, elapsed: elapsedSecs, durationSeconds: totalSecs, pct, url: vid.url });
+        } catch (err) { console.error("[progress] save error:", err); }
     };
 
     const startProgressSaving = (vid: VideoFile) => {
         if (progressSaveRef.current) clearInterval(progressSaveRef.current);
-        progressSaveRef.current = setInterval(() => {
-            saveProgressToApi(elapsedRef.current, vid);
-        }, 5000);
+        progressSaveRef.current = setInterval(() => { saveProgressToApi(elapsedRef.current, vid); }, 5000);
     };
 
     const stopProgressSaving = (vid: VideoFile) => {
-        if (progressSaveRef.current) {
-            clearInterval(progressSaveRef.current);
-            progressSaveRef.current = null;
-        }
+        if (progressSaveRef.current) { clearInterval(progressSaveRef.current); progressSaveRef.current = null; }
         saveProgressToApi(elapsedRef.current, vid);
     };
 
     useEffect(() => {
         fetchVideoData();
-        return () => {
-            if (progressSaveRef.current) clearInterval(progressSaveRef.current);
-        };
+        return () => { if (progressSaveRef.current) clearInterval(progressSaveRef.current); };
     }, [idParam]);
 
     const fetchVideoData = async () => {
@@ -986,13 +975,10 @@ export default function VideoDropCard() {
                     await fetchPlaysCount(found.id);
                     await fetchSignalsCount(found.id);
                     await fetchRecentSignals(found.id);
-
                     if (resumeAt > 0) {
                         setElapsed(resumeAt);
                         elapsedRef.current = resumeAt;
-                        setTimeout(() => {
-                            if (videoRef.current) videoRef.current.currentTime = resumeAt;
-                        }, 500);
+                        setTimeout(() => { if (videoRef.current) videoRef.current.currentTime = resumeAt; }, 500);
                     }
                 } else { setError("Video not found"); }
             } else { setError("Failed to fetch videos"); }
@@ -1062,12 +1048,7 @@ export default function VideoDropCard() {
         if (!signalMessage.trim() || !video?.id) return;
         setSendingSignal(true);
         try {
-            const response = await axios.post("/api/video-messages", {
-                videoId: video.id, videoTitle: video.title,
-                userId: getUserId() || "anonymous",
-                userName: getUserName(),
-                message: signalMessage.trim(),
-            });
+            const response = await axios.post("/api/video-messages", { videoId: video.id, videoTitle: video.title, userId: getUserId() || "anonymous", userName: getUserName(), message: signalMessage.trim() });
             if (response.data.success) {
                 setSignalsCount((prev) => prev + 1);
                 setRecentSignals((prev) => [response.data.signal, ...prev].slice(0, 5));
@@ -1100,29 +1081,20 @@ export default function VideoDropCard() {
                     setElapsed(resumeAt);
                     elapsedRef.current = resumeAt;
                 }
-
                 const tryPlay = () => {
                     if (!videoRef.current) return;
                     videoRef.current.play()
                         .then(() => {
                             setPlaying(true);
                             incrementPlays();
-                            setVideo(prev => {
-                                if (prev) startProgressSaving(prev);
-                                return prev;
-                            });
+                            setVideo(prev => { if (prev) startProgressSaving(prev); return prev; });
                         })
                         .catch(console.error);
                 };
-
-                if (videoReadyToPlayRef.current) {
-                    tryPlay();
-                } else {
+                if (videoReadyToPlayRef.current) { tryPlay(); }
+                else {
                     const poll = setInterval(() => {
-                        if (videoReadyToPlayRef.current) {
-                            clearInterval(poll);
-                            tryPlay();
-                        }
+                        if (videoReadyToPlayRef.current) { clearInterval(poll); tryPlay(); }
                     }, 100);
                 }
             }
@@ -1130,10 +1102,7 @@ export default function VideoDropCard() {
     };
 
     const handleVideoError = () => { setVideoError(true); setPlaying(false); };
-
-    const handleTimeUpdate = () => {
-        if (videoRef.current) setElapsed(videoRef.current.currentTime);
-    };
+    const handleTimeUpdate = () => { if (videoRef.current) setElapsed(videoRef.current.currentTime); };
 
     const handleVideoEnd = () => {
         setPlaying(false);
@@ -1145,12 +1114,9 @@ export default function VideoDropCard() {
                 .catch(err => console.error("[progress] clear error:", err));
         }
         if (progressSaveRef.current) clearInterval(progressSaveRef.current);
-        // Auto-advance to next video
         setTimeout(() => {
             const nextIndex = currentIndexRef.current + 1;
-            if (nextIndex < allVideoFilesRef.current.length) {
-                navigateToVideo(nextIndex);
-            }
+            if (nextIndex < allVideoFilesRef.current.length) navigateToVideo(nextIndex);
         }, 1000);
     };
 
@@ -1223,6 +1189,13 @@ export default function VideoDropCard() {
         <div className="min-h-screen bg-[#0d0d10]">
             <div className="max-w-6xl mx-auto p-4 sm:p-6 lg:p-10 pb-15">
 
+                <Link href="/MainModules/MatchesDropContent" className="inline-flex items-center gap-2 text-gray-400 hover:text-white mb-6 transition">
+                    <button className="flex items-center gap-2 text-gray-400 hover:text-white mb-6 transition cursor-pointer">
+                        <ArrowLeft size={18} />
+                        <span className="text-sm">Back</span>
+                    </button>
+                </Link>
+
                 {/* Header */}
                 <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
@@ -1240,17 +1213,35 @@ export default function VideoDropCard() {
                             </p>
                         </div>
                     </div>
-                    <button
-                        onClick={() => { setShowShareDialog(true); setCopied(false); }}
-                        className="w-8 h-8 rounded-full bg-[#1e1e22] flex items-center justify-center cursor-pointer hover:bg-[#2a2a2e] transition"
-                    >
-                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                            <circle cx="12" cy="3" r="1.8" stroke="#aaa" strokeWidth="1.4" />
-                            <circle cx="12" cy="13" r="1.8" stroke="#aaa" strokeWidth="1.4" />
-                            <circle cx="4" cy="8" r="1.8" stroke="#aaa" strokeWidth="1.4" />
-                            <path d="M10.3 3.9L5.7 7.1M10.3 12.1L5.7 8.9" stroke="#aaa" strokeWidth="1.4" strokeLinecap="round" />
-                        </svg>
-                    </button>
+
+                    {/* ← MODIFY: replace single share button with a flex row of two buttons */}
+                    <div className="flex items-center gap-2">
+                        {/* ADD 3: Playlist button */}
+                        <button
+                            onClick={() => setShowPlaylistDialog(true)}
+                            className="w-8 h-8 rounded-full bg-[#1e1e22] flex items-center justify-center cursor-pointer hover:bg-[#2a2a2e] transition"
+                            title="Add to Playlist"
+                        >
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                <path d="M2 4h9M2 8h7M2 12h5" stroke="#aaa" strokeWidth="1.4" strokeLinecap="round" />
+                                <circle cx="13" cy="11" r="2.5" stroke="#aaa" strokeWidth="1.3" />
+                                <path d="M13 9.5V7l2.5-.5" stroke="#aaa" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                        </button>
+
+                        {/* Existing share button — unchanged */}
+                        <button
+                            onClick={() => { setShowShareDialog(true); setCopied(false); }}
+                            className="w-8 h-8 rounded-full bg-[#1e1e22] flex items-center justify-center cursor-pointer hover:bg-[#2a2a2e] transition"
+                        >
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                <circle cx="12" cy="3" r="1.8" stroke="#aaa" strokeWidth="1.4" />
+                                <circle cx="12" cy="13" r="1.8" stroke="#aaa" strokeWidth="1.4" />
+                                <circle cx="4" cy="8" r="1.8" stroke="#aaa" strokeWidth="1.4" />
+                                <path d="M10.3 3.9L5.7 7.1M10.3 12.1L5.7 8.9" stroke="#aaa" strokeWidth="1.4" strokeLinecap="round" />
+                            </svg>
+                        </button>
+                    </div>
                 </div>
 
                 {/* Resume banner */}
@@ -1319,71 +1310,45 @@ export default function VideoDropCard() {
                                 </div>
                             </div>
 
-                            {/* Prev / Next Navigation */}
+                            {/* Prev / Next */}
                             {allVideoFiles.length > 1 && (
                                 <div className="flex items-center justify-between gap-2 px-3 pb-3">
-                                    <button
-                                        onClick={() => navigateToVideo(currentIndex - 1)}
-                                        disabled={currentIndex === 0}
-                                        className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#2a0f1c] border border-[#e0185a]/30 text-[#e0185a] text-[12px] font-medium disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#3a1525] transition"
-                                    >
-                                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                                            <path d="M9 2L4 7L9 12" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-                                        </svg>
+                                    <button onClick={() => navigateToVideo(currentIndex - 1)} disabled={currentIndex === 0} className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#2a0f1c] border border-[#e0185a]/30 text-[#e0185a] text-[12px] font-medium disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#3a1525] transition">
+                                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 2L4 7L9 12" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
                                         Prev
                                     </button>
                                     <span className="text-[#666] text-[11px]">{currentIndex + 1} / {allVideoFiles.length}</span>
-                                    <button
-                                        onClick={() => navigateToVideo(currentIndex + 1)}
-                                        disabled={currentIndex === allVideoFiles.length - 1}
-                                        className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#2a0f1c] border border-[#e0185a]/30 text-[#e0185a] text-[12px] font-medium disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#3a1525] transition"
-                                    >
+                                    <button onClick={() => navigateToVideo(currentIndex + 1)} disabled={currentIndex === allVideoFiles.length - 1} className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#2a0f1c] border border-[#e0185a]/30 text-[#e0185a] text-[12px] font-medium disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#3a1525] transition">
                                         Next
-                                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                                            <path d="M5 2L10 7L5 12" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-                                        </svg>
+                                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M5 2L10 7L5 12" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
                                     </button>
                                 </div>
                             )}
 
-                            {/* Up Next Preview */}
+                            {/* Up Next */}
                             {nextVideo && (
-                                <div
-                                    onClick={() => navigateToVideo(currentIndex + 1)}
-                                    className="mx-3 mb-3 flex items-center gap-2 bg-[#2a0f1c]/60 border border-[#e0185a]/20 rounded-xl px-3 py-2 cursor-pointer hover:bg-[#2a0f1c] transition"
-                                >
+                                <div onClick={() => navigateToVideo(currentIndex + 1)} className="mx-3 mb-3 flex items-center gap-2 bg-[#2a0f1c]/60 border border-[#e0185a]/20 rounded-xl px-3 py-2 cursor-pointer hover:bg-[#2a0f1c] transition">
                                     <div className="w-7 h-7 rounded-full bg-[#e0185a]/20 flex items-center justify-center flex-shrink-0">
-                                        <svg width="12" height="12" viewBox="0 0 20 20" fill="none">
-                                            <path d="M7 4.5L16 10L7 15.5V4.5Z" fill="#e0185a" />
-                                        </svg>
+                                        <svg width="12" height="12" viewBox="0 0 20 20" fill="none"><path d="M7 4.5L16 10L7 15.5V4.5Z" fill="#e0185a" /></svg>
                                     </div>
                                     <div className="min-w-0 flex-1">
                                         <p className="text-[#888] text-[10px] uppercase tracking-wider">Up Next</p>
                                         <p className="text-white text-[12px] font-medium truncate">{nextVideo.title}</p>
-                                        <p className="text-[#666] text-[10px] truncate">
-                                            {nextVideo.playerInfo?.playerName || "Video Drop"}
-                                        </p>
+                                        <p className="text-[#666] text-[10px] truncate">{nextVideo.playerInfo?.playerName || "Video Drop"}</p>
                                     </div>
                                 </div>
                             )}
 
-                            {/* Previous Video Preview */}
+                            {/* Previous */}
                             {prevVideo && (
-                                <div
-                                    onClick={() => navigateToVideo(currentIndex - 1)}
-                                    className="mx-3 mb-3 flex items-center gap-2 bg-[#1a1a2e]/60 border border-white/10 rounded-xl px-3 py-2 cursor-pointer hover:bg-[#1a1a2e] transition"
-                                >
+                                <div onClick={() => navigateToVideo(currentIndex - 1)} className="mx-3 mb-3 flex items-center gap-2 bg-[#1a1a2e]/60 border border-white/10 rounded-xl px-3 py-2 cursor-pointer hover:bg-[#1a1a2e] transition">
                                     <div className="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center flex-shrink-0">
-                                        <svg width="12" height="12" viewBox="0 0 20 20" fill="none">
-                                            <path d="M13 4.5L4 10L13 15.5V4.5Z" fill="#aaa" />
-                                        </svg>
+                                        <svg width="12" height="12" viewBox="0 0 20 20" fill="none"><path d="M13 4.5L4 10L13 15.5V4.5Z" fill="#aaa" /></svg>
                                     </div>
                                     <div className="min-w-0 flex-1">
                                         <p className="text-[#666] text-[10px] uppercase tracking-wider">Previous</p>
                                         <p className="text-[#aaa] text-[12px] font-medium truncate">{prevVideo.title}</p>
-                                        <p className="text-[#555] text-[10px] truncate">
-                                            {prevVideo.playerInfo?.playerName || "Video Drop"}
-                                        </p>
+                                        <p className="text-[#555] text-[10px] truncate">{prevVideo.playerInfo?.playerName || "Video Drop"}</p>
                                     </div>
                                 </div>
                             )}
@@ -1404,7 +1369,6 @@ export default function VideoDropCard() {
                             </p>
                         </div>
 
-                        {/* Stats */}
                         <div className="grid grid-cols-3 gap-2.5">
                             {[
                                 { label: "Plays", value: playsCount.toLocaleString() },
@@ -1428,13 +1392,9 @@ export default function VideoDropCard() {
                                     </svg>
                                     <p className="text-white text-[13px] font-medium">Video Script</p>
                                 </div>
-                                <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#C9115F]/15 text-[#C9115F] border border-[#C9115F]/30 font-medium tracking-wide">
-                                    Coming Soon
-                                </span>
+                                <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#C9115F]/15 text-[#C9115F] border border-[#C9115F]/30 font-medium tracking-wide">Coming Soon</span>
                             </div>
-                            <p className="text-[#555] text-[12px] leading-relaxed mb-3">
-                                Can&apos;t watch right now? Full video transcripts will be available here so you can read along at your own pace.
-                            </p>
+                            <p className="text-[#555] text-[12px] leading-relaxed mb-3">Can&apos;t watch right now? Full video transcripts will be available here so you can read along at your own pace.</p>
                             <div className="flex flex-col gap-2">
                                 {[1, 2, 3].map((i) => (
                                     <div key={i} className="h-3 bg-[#222226] rounded-full animate-pulse" style={{ width: `${90 - i * 15}%` }} />
@@ -1442,7 +1402,6 @@ export default function VideoDropCard() {
                             </div>
                         </div>
 
-                        {/* Meta */}
                         <div className="flex items-center gap-4 text-[12px] text-[#666]">
                             <div className="flex items-center gap-1.5">
                                 <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
@@ -1453,7 +1412,6 @@ export default function VideoDropCard() {
                             </div>
                         </div>
 
-                        {/* Watch progress bar */}
                         <div>
                             <div className="h-1 bg-[#2a2a2e] rounded-full overflow-hidden mb-1.5">
                                 <div className="h-full bg-[#e0185a] rounded-full transition-all duration-300" style={{ width: `${pct}%` }} />
@@ -1461,7 +1419,6 @@ export default function VideoDropCard() {
                             <p className="text-right text-[11px] text-[#666]">{pct}% watched</p>
                         </div>
 
-                        {/* Send Signal */}
                         <button
                             onClick={() => setShowSignalDialog(true)}
                             className="w-full bg-[#1e0a12] border border-[#e0185a] rounded-[14px] py-4 flex items-center justify-center gap-2 text-[#e0185a] text-[15px] font-medium hover:bg-[#2a0f1c] transition mt-auto"
@@ -1473,15 +1430,19 @@ export default function VideoDropCard() {
                             Send Signal
                         </button>
 
-                        <CommentsSection
-                            contentId={video?.id || ""}
-                            contentType="video"
-                            contentTitle={video?.title}
-                            className="mt-5"
-                        />
+                        <CommentsSection contentId={video?.id || ""} contentType="video" contentTitle={video?.title} className="mt-5" />
                     </div>
                 </div>
             </div>
+
+           
+            <PlaylistDialog
+                open={showPlaylistDialog}
+                onClose={() => setShowPlaylistDialog(false)}
+                itemId={video.id}
+                itemType="video" 
+                userId={getUserId()}
+            />
 
             {/* Share Dialog — mobile */}
             {showShareDialog && video && (
@@ -1527,20 +1488,10 @@ export default function VideoDropCard() {
                             </button>
                         </div>
                         <p className="text-gray-400 text-sm mb-4">Share your thoughts about &apos;{video.title}&apos;</p>
-                        <textarea
-                            value={signalMessage}
-                            onChange={e => setSignalMessage(e.target.value)}
-                            placeholder="Type your message here..."
-                            className="w-full bg-[#111114] text-white text-sm rounded-xl px-4 py-3 border border-[#2a2a2e] focus:outline-none focus:border-[#e0185a] resize-none"
-                            rows={4} maxLength={500} autoFocus
-                        />
+                        <textarea value={signalMessage} onChange={e => setSignalMessage(e.target.value)} placeholder="Type your message here..." className="w-full bg-[#111114] text-white text-sm rounded-xl px-4 py-3 border border-[#2a2a2e] focus:outline-none focus:border-[#e0185a] resize-none" rows={4} maxLength={500} autoFocus />
                         <div className="flex justify-end gap-3 mt-4">
                             <button onClick={() => setShowSignalDialog(false)} className="px-4 py-2 rounded-lg bg-[#2a2a2e] text-gray-300 text-sm font-medium hover:bg-[#3a3a3e] transition">Cancel</button>
-                            <button
-                                onClick={handleSendSignal}
-                                disabled={!signalMessage.trim() || sendingSignal}
-                                className="px-4 py-2 rounded-lg bg-[#e0185a] text-white text-sm font-medium hover:bg-[#f01e66] transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                            >
+                            <button onClick={handleSendSignal} disabled={!signalMessage.trim() || sendingSignal} className="px-4 py-2 rounded-lg bg-[#e0185a] text-white text-sm font-medium hover:bg-[#f01e66] transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
                                 {sendingSignal ? <><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />Sending...</> : "Send Signal"}
                             </button>
                         </div>

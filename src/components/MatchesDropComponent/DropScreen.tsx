@@ -1318,13 +1318,13 @@ export default function FullPlaylist() {
                             </div>
                         </div>
 
-                        <div className="mb-3 p-2 bg-[#1a1a1a] rounded-lg border border-white/5">
+                        {/* <div className="mb-3 p-2 bg-[#1a1a1a] rounded-lg border border-white/5">
                             <p className="text-gray-500 text-xs">Requesting as:</p>
                             <p className="text-[#C9115F] text-sm font-medium">
                                 {authLoading ? "Loading..." : displayName}
                                 {isAuthenticated && user && <span className="ml-2 text-xs text-green-400">(Verified)</span>}
                             </p>
-                        </div>
+                        </div> */}
 
                         <textarea
                             value={requestText}

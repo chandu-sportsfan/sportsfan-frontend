@@ -1878,8 +1878,6 @@
 
 
 
-
-
 "use client";
 import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
@@ -1887,8 +1885,10 @@ import axios from "axios";
 import { useAuth } from "@/context/AuthContext";
 import { useScripts } from "@/context/ScriptsContext";
 import CommentsSection from "@/src/components/CommentsSection";
+import PlaylistDialog from "../playlistdialog-component/playlistdialog";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
+
 
 interface MatchInfo {
     team1?: string;
@@ -2045,18 +2045,11 @@ function ScriptPanel({ matchInfo }: { matchInfo?: MatchInfo }) {
 
         setScriptLoading(true);
         fetchScriptContent(script.url)
-            .then((html) => {
-                if (html) {
-                    setScriptHtml(html);
-                } else {
-                    setScriptError(true);
-                }
-            })
+            .then((html) => { if (html) setScriptHtml(html); else setScriptError(true); })
             .catch(() => setScriptError(true))
             .finally(() => setScriptLoading(false));
     }, [matchInfo, findScript, fetchScriptContent]);
 
-    // ── No script found ───────────────────────────────────────────────────────
     if (!matchInfo || (!scriptLoading && !scriptHtml && !scriptError)) {
         return (
             <div className="bg-[#1a1a1e] border border-white/5 rounded-2xl p-4">
@@ -2065,13 +2058,9 @@ function ScriptPanel({ matchInfo }: { matchInfo?: MatchInfo }) {
                         <ScriptIcon />
                         <p className="text-white text-[13px] font-medium">Audio Script</p>
                     </div>
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#C9115F]/15 text-[#C9115F] border border-[#C9115F]/30 font-medium tracking-wide">
-                        Coming Soon
-                    </span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#C9115F]/15 text-[#C9115F] border border-[#C9115F]/30 font-medium tracking-wide">Coming Soon</span>
                 </div>
-                <p className="text-[#555] text-[12px] leading-relaxed mb-3">
-                    Can&apos;t listen right now? Full audio transcripts will be available here so you can read along at your own pace.
-                </p>
+                <p className="text-[#555] text-[12px] leading-relaxed mb-3">Can&apos;t listen right now? Full audio transcripts will be available here so you can read along at your own pace.</p>
                 <div className="flex flex-col gap-2">
                     {[1, 2, 3].map((i) => (
                         <div key={i} className="h-3 bg-[#222226] rounded-full animate-pulse" style={{ width: `${90 - i * 15}%` }} />
@@ -2081,14 +2070,10 @@ function ScriptPanel({ matchInfo }: { matchInfo?: MatchInfo }) {
         );
     }
 
-    // ── Loading ───────────────────────────────────────────────────────────────
     if (scriptLoading) {
         return (
             <div className="bg-[#1a1a1e] border border-white/5 rounded-2xl p-4">
-                <div className="flex items-center gap-2 mb-3">
-                    <ScriptIcon />
-                    <p className="text-white text-[13px] font-medium">Audio Script</p>
-                </div>
+                <div className="flex items-center gap-2 mb-3"><ScriptIcon /><p className="text-white text-[13px] font-medium">Audio Script</p></div>
                 <div className="flex flex-col gap-2">
                     {[1, 2, 3, 4].map((i) => (
                         <div key={i} className="h-3 bg-[#222226] rounded-full animate-pulse" style={{ width: `${95 - i * 10}%` }} />
@@ -2098,64 +2083,30 @@ function ScriptPanel({ matchInfo }: { matchInfo?: MatchInfo }) {
         );
     }
 
-    // ── Error ─────────────────────────────────────────────────────────────────
     if (scriptError) {
         return (
             <div className="bg-[#1a1a1e] border border-white/5 rounded-2xl p-4">
-                <div className="flex items-center gap-2 mb-2">
-                    <ScriptIcon />
-                    <p className="text-white text-[13px] font-medium">Audio Script</p>
-                </div>
+                <div className="flex items-center gap-2 mb-2"><ScriptIcon /><p className="text-white text-[13px] font-medium">Audio Script</p></div>
                 <p className="text-[#555] text-[12px]">Script could not be loaded.</p>
             </div>
         );
     }
 
-    // ── Script content ────────────────────────────────────────────────────────
     return (
         <div className="bg-[#1a1a1e] border border-white/5 rounded-2xl p-4">
             <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                    <ScriptIcon />
-                    <p className="text-white text-[13px] font-medium">Audio Script</p>
-                </div>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-medium tracking-wide">
-                    Available
-                </span>
+                <div className="flex items-center gap-2"><ScriptIcon /><p className="text-white text-[13px] font-medium">Audio Script</p></div>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-medium tracking-wide">Available</span>
             </div>
-
-            {/* Script body — clamp to ~6 lines unless expanded */}
-            <div
-                className={`relative overflow-hidden transition-all duration-300 ${expanded ? "max-h-[2000px]" : "max-h-[120px]"}`}
-            >
-                <div
-                    className="text-[#ccc] text-[12px] leading-relaxed script-content"
-                    dangerouslySetInnerHTML={{ __html: scriptHtml! }}
-                />
-                {/* Fade-out gradient when collapsed */}
-                {!expanded && (
-                    <div className="absolute bottom-0 left-0 right-0 h-10 bg-gradient-to-t from-[#1a1a1e] to-transparent pointer-events-none" />
-                )}
+            <div className={`relative overflow-hidden transition-all duration-300 ${expanded ? "max-h-[2000px]" : "max-h-[120px]"}`}>
+                <div className="text-[#ccc] text-[12px] leading-relaxed script-content" dangerouslySetInnerHTML={{ __html: scriptHtml! }} />
+                {!expanded && <div className="absolute bottom-0 left-0 right-0 h-10 bg-gradient-to-t from-[#1a1a1e] to-transparent pointer-events-none" />}
             </div>
-
-            <button
-                onClick={() => setExpanded((v) => !v)}
-                className="mt-3 flex items-center gap-1.5 text-[#C9115F] text-[12px] font-medium hover:text-[#e0185a] transition"
-            >
+            <button onClick={() => setExpanded((v) => !v)} className="mt-3 flex items-center gap-1.5 text-[#C9115F] text-[12px] font-medium hover:text-[#e0185a] transition">
                 {expanded ? (
-                    <>
-                        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                            <path d="M2 8L6 4L10 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                        Show less
-                    </>
+                    <><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 8L6 4L10 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>Show less</>
                 ) : (
-                    <>
-                        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                            <path d="M2 4L6 8L10 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                        Read full script
-                    </>
+                    <><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4L6 8L10 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>Read full script</>
                 )}
             </button>
         </div>
@@ -2200,6 +2151,9 @@ export default function AudioDropCard() {
     const [showShareDialog, setShowShareDialog] = useState(false);
     const [copied, setCopied] = useState(false);
 
+    // ── Playlist dialog — just a boolean now 
+    const [showPlaylistDialog, setShowPlaylistDialog] = useState(false);
+
     const audioRef = useRef<HTMLAudioElement | null>(null);
     const timerRef = useRef<NodeJS.Timeout | null>(null);
     const progressSaveRef = useRef<NodeJS.Timeout | null>(null);
@@ -2228,33 +2182,17 @@ export default function AudioDropCard() {
         const totalSecs = drop.durationSeconds || parseDurationToSeconds(duration);
         const pct = totalSecs > 0 ? Math.round((elapsedSecs / totalSecs) * 100) : 0;
         try {
-            await axios.post("/api/audio-progress", {
-                userId,
-                audioId: drop.id,
-                title: drop.title,
-                subtitle: drop.subtitle || "Audio Drop",
-                elapsed: elapsedSecs,
-                durationSeconds: totalSecs,
-                pct,
-                url: drop.audioUrl,
-            });
-        } catch (err) {
-            console.error("[audio-progress] save error:", err);
-        }
+            await axios.post("/api/audio-progress", { userId, audioId: drop.id, title: drop.title, subtitle: drop.subtitle || "Audio Drop", elapsed: elapsedSecs, durationSeconds: totalSecs, pct, url: drop.audioUrl });
+        } catch (err) { console.error("[audio-progress] save error:", err); }
     };
 
     const startProgressSaving = (drop: AudioDrop) => {
         if (progressSaveRef.current) clearInterval(progressSaveRef.current);
-        progressSaveRef.current = setInterval(() => {
-            saveProgressToApi(elapsedRef.current, drop);
-        }, 5000);
+        progressSaveRef.current = setInterval(() => { saveProgressToApi(elapsedRef.current, drop); }, 5000);
     };
 
     const stopProgressSaving = (drop: AudioDrop) => {
-        if (progressSaveRef.current) {
-            clearInterval(progressSaveRef.current);
-            progressSaveRef.current = null;
-        }
+        if (progressSaveRef.current) { clearInterval(progressSaveRef.current); progressSaveRef.current = null; }
         saveProgressToApi(elapsedRef.current, drop);
     };
 
@@ -2268,9 +2206,7 @@ export default function AudioDropCard() {
                 setPlaysCount(res.data.plays);
                 setAudioDrop((prev) => prev ? { ...prev, listens: res.data.plays } : prev);
             }
-        } catch (err) {
-            console.error("[listens] error:", err);
-        }
+        } catch (err) { console.error("[listens] error:", err); }
     };
 
     useEffect(() => { incrementListensRef.current = incrementListens; });
@@ -2303,13 +2239,7 @@ export default function AudioDropCard() {
         if (!signalMessage.trim() || !audioDrop?.id) return;
         setSendingSignal(true);
         try {
-            const response = await axios.post("/api/audio-messages", {
-                audioId: audioDrop.id,
-                audioTitle: audioDrop.title,
-                userId: getUserId() || "anonymous",
-                userName: getUserName(),
-                message: signalMessage.trim(),
-            });
+            const response = await axios.post("/api/audio-messages", { audioId: audioDrop.id, audioTitle: audioDrop.title, userId: getUserId() || "anonymous", userName: getUserName(), message: signalMessage.trim() });
             if (response.data.success) {
                 setSignalsCount((prev) => prev + 1);
                 setRecentSignals((prev) => [response.data.signal, ...prev].slice(0, 5));
@@ -2317,19 +2247,13 @@ export default function AudioDropCard() {
                 setSignalMessage("");
                 alert("Signal sent successfully!");
             }
-        } catch (error) {
-            console.error("Error sending signal:", error);
-            alert("Failed to send signal. Please try again.");
-        } finally {
-            setSendingSignal(false);
-        }
+        } catch (error) { console.error("Error sending signal:", error); alert("Failed to send signal. Please try again."); }
+        finally { setSendingSignal(false); }
     };
 
     useEffect(() => {
         fetchAudioData();
-        return () => {
-            if (progressSaveRef.current) clearInterval(progressSaveRef.current);
-        };
+        return () => { if (progressSaveRef.current) clearInterval(progressSaveRef.current); };
     }, [idParam, urlParam]);
 
     const fetchAudioData = async () => {
@@ -2348,30 +2272,13 @@ export default function AudioDropCard() {
             if (urlParam && !idParam) {
                 const decodedUrl = decodeURIComponent(urlParam);
                 audioIdRef.current = null;
-                setAudioDrop({
-                    title: "Audio Track",
-                    subtitle: "Audio Drop",
-                    description: "",
-                    listens: 0,
-                    signals: 0,
-                    duration: "0:00",
-                    engagement: 0,
-                    audioUrl: decodedUrl,
-                });
+                setAudioDrop({ title: "Audio Track", subtitle: "Audio Drop", description: "", listens: 0, signals: 0, duration: "0:00", engagement: 0, audioUrl: decodedUrl });
                 setLoading(false);
                 return;
             }
 
-            const response = await axios.get<{
-                success: boolean;
-                audioFiles: AudioFile[];
-            }>("/api/cloudinary/audio?limit=100");
-
-            if (!response.data.success || !response.data.audioFiles.length) {
-                setError("No audio files available.");
-                setLoading(false);
-                return;
-            }
+            const response = await axios.get<{ success: boolean; audioFiles: AudioFile[] }>("/api/cloudinary/audio?limit=100");
+            if (!response.data.success || !response.data.audioFiles.length) { setError("No audio files available."); setLoading(false); return; }
 
             const audioFiles = response.data.audioFiles;
             setAllAudioFiles(audioFiles);
@@ -2405,168 +2312,83 @@ export default function AudioDropCard() {
                     Promise.all([fetchSignalsCount(drop.id!), fetchRecentSignals(drop.id!)]),
                     axios.get("/api/cloudinary/plays"),
                 ]);
-                if (playsRes.data.plays) {
-                    setPlaysCount(playsRes.data.plays[drop.id!] ?? 0);
-                }
-                if (resumeAt > 0) {
-                    setElapsed(resumeAt);
-                    elapsedRef.current = resumeAt;
-                }
+                if (playsRes.data.plays) setPlaysCount(playsRes.data.plays[drop.id!] ?? 0);
+                if (resumeAt > 0) { setElapsed(resumeAt); elapsedRef.current = resumeAt; }
             } else {
                 setError("Audio drop not found.");
             }
-        } catch (err) {
-            console.error("Error fetching audio:", err);
-            setError("Failed to load audio.");
-        } finally {
-            audioReadyToPlayRef.current = true;
-            setLoading(false);
-        }
+        } catch (err) { console.error("Error fetching audio:", err); setError("Failed to load audio."); }
+        finally { audioReadyToPlayRef.current = true; setLoading(false); }
     };
 
     const fetchSignalsCount = async (audioId: string) => {
         try {
             const response = await axios.get(`/api/audio-messages?audioId=${audioId}&count=true`);
             if (response.data.success) setSignalsCount(response.data.count);
-        } catch (error) {
-            console.error("Error fetching signals count:", error);
-        }
+        } catch (error) { console.error("Error fetching signals count:", error); }
     };
 
     const fetchRecentSignals = async (audioId: string) => {
         try {
             const response = await axios.get(`/api/audio-messages?audioId=${audioId}&limit=5`);
             if (response.data.success) setRecentSignals(response.data.signals);
-        } catch (error) {
-            console.error("Error fetching recent signals:", error);
-        }
+        } catch (error) { console.error("Error fetching recent signals:", error); }
     };
 
     const openShareDialog = () => { setShowShareDialog(true); setCopied(false); };
     const closeShareDialog = () => { setShowShareDialog(false); setCopied(false); };
 
-    const handleShareToWhatsApp = () => {
-        if (!audioDrop) return;
-        const shareText = buildAudioDropShareText(audioDrop, urlParam);
-        window.open(`https://wa.me/?text=${encodeURIComponent(shareText)}`, "_blank");
-    };
-    const handleShareToThreads = () => {
-        if (!audioDrop) return;
-        window.open(`https://www.threads.net/intent/post?text=${encodeURIComponent(buildAudioDropShareText(audioDrop, urlParam))}`, "_blank");
-    };
-    const handleShareToInstagram = async () => {
-        if (!audioDrop) return;
-        await copyToClipboard(buildAudioDropShareText(audioDrop, urlParam));
-        setCopied(true);
-        setTimeout(() => setCopied(false), 1600);
-        window.open("https://www.instagram.com/", "_blank");
-    };
-    const handleShareToLinkedIn = () => {
-        if (!audioDrop) return;
-        const shareUrl = buildAudioDropShareUrl(audioDrop, urlParam);
-        window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`, "_blank");
-    };
-    const handleShareToX = () => {
-        if (!audioDrop) return;
-        const shareText = buildAudioDropShareText(audioDrop, urlParam);
-        window.open(`https://x.com/intent/tweet?text=${encodeURIComponent(shareText)}`, "_blank");
-    };
-    const handleCopyLink = async () => {
-        if (!audioDrop) return;
-        const ok = await copyToClipboard(buildAudioDropShareText(audioDrop, urlParam));
-        if (ok) { setCopied(true); setTimeout(() => setCopied(false), 1600); }
-    };
+    const handleShareToWhatsApp = () => { if (!audioDrop) return; window.open(`https://wa.me/?text=${encodeURIComponent(buildAudioDropShareText(audioDrop, urlParam))}`, "_blank"); };
+    const handleShareToThreads = () => { if (!audioDrop) return; window.open(`https://www.threads.net/intent/post?text=${encodeURIComponent(buildAudioDropShareText(audioDrop, urlParam))}`, "_blank"); };
+    const handleShareToInstagram = async () => { if (!audioDrop) return; await copyToClipboard(buildAudioDropShareText(audioDrop, urlParam)); setCopied(true); setTimeout(() => setCopied(false), 1600); window.open("https://www.instagram.com/", "_blank"); };
+    const handleShareToLinkedIn = () => { if (!audioDrop) return; window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(buildAudioDropShareUrl(audioDrop, urlParam))}`, "_blank"); };
+    const handleShareToX = () => { if (!audioDrop) return; window.open(`https://x.com/intent/tweet?text=${encodeURIComponent(buildAudioDropShareText(audioDrop, urlParam))}`, "_blank"); };
+    const handleCopyLink = async () => { if (!audioDrop) return; const ok = await copyToClipboard(buildAudioDropShareText(audioDrop, urlParam)); if (ok) { setCopied(true); setTimeout(() => setCopied(false), 1600); } };
 
     useEffect(() => {
         const url = audioDrop?.audioUrl;
         if (!url) return;
-
         hasCountedListen.current = false;
         audioIdRef.current = audioDrop?.id ?? null;
-
-        if (audioRef.current) {
-            audioRef.current.pause();
-            audioRef.current.src = "";
-        }
-
+        if (audioRef.current) { audioRef.current.pause(); audioRef.current.src = ""; }
         const audio = new Audio(url);
         audioRef.current = audio;
-
         audio.addEventListener("play", () => setPlaying(true));
         audio.addEventListener("pause", () => setPlaying(false));
-
         audio.addEventListener("loadedmetadata", () => {
             const secs = audio.duration;
             if (secs && !isNaN(secs) && isFinite(secs) && secs > 0) {
                 const m = Math.floor(secs / 60);
                 const s = Math.floor(secs % 60);
                 setDuration(`${m}:${s.toString().padStart(2, "0")}`);
-                if (resumeAt > 0) {
-                    audio.currentTime = resumeAt;
-                    setElapsed(resumeAt);
-                    elapsedRef.current = resumeAt;
-                }
-                if (audioReadyToPlayRef.current) {
-                    setPlaying(true);
-                } else {
-                    const pollReady = setInterval(() => {
-                        if (audioReadyToPlayRef.current) {
-                            clearInterval(pollReady);
-                            setPlaying(true);
-                        }
-                    }, 100);
-                }
+                if (resumeAt > 0) { audio.currentTime = resumeAt; setElapsed(resumeAt); elapsedRef.current = resumeAt; }
+                if (audioReadyToPlayRef.current) { setPlaying(true); }
+                else { const pollReady = setInterval(() => { if (audioReadyToPlayRef.current) { clearInterval(pollReady); setPlaying(true); } }, 100); }
             }
         });
-
         audio.addEventListener("ended", () => {
-            setPlaying(false);
-            setElapsed(0);
-            elapsedRef.current = 0;
+            setPlaying(false); setElapsed(0); elapsedRef.current = 0;
             incrementListensRef.current();
             const userId = getUserId();
             const drop = audioDropRef.current;
-            if (userId && drop?.id) {
-                axios.delete(`/api/audio-progress?userId=${userId}&audioId=${encodeURIComponent(drop.id)}`)
-                    .catch(err => console.error("[audio-progress] clear error:", err));
-            }
+            if (userId && drop?.id) axios.delete(`/api/audio-progress?userId=${userId}&audioId=${encodeURIComponent(drop.id)}`).catch(err => console.error("[audio-progress] clear error:", err));
             if (progressSaveRef.current) clearInterval(progressSaveRef.current);
-            setTimeout(() => {
-                const nextIndex = currentIndexRef.current + 1;
-                if (nextIndex < allAudioFilesRef.current.length) {
-                    navigateToAudioRef.current(nextIndex);
-                }
-            }, 1000);
+            setTimeout(() => { const nextIndex = currentIndexRef.current + 1; if (nextIndex < allAudioFilesRef.current.length) navigateToAudioRef.current(nextIndex); }, 1000);
         });
-
         audio.load();
-
-        return () => {
-            audio.pause();
-            audio.src = "";
-        };
+        return () => { audio.pause(); audio.src = ""; };
     }, [audioDrop?.audioUrl]);
 
     useEffect(() => {
         const audio = audioRef.current;
         if (!audio || !audioDrop) return;
-        if (playing) {
-            audio.play().catch(console.error);
-            timerRef.current = setInterval(() => setElapsed(audio.currentTime), 1000);
-            startProgressSaving(audioDrop);
-        } else {
-            audio.pause();
-            if (timerRef.current) clearInterval(timerRef.current);
-            if (audioDropRef.current) stopProgressSaving(audioDropRef.current);
-        }
+        if (playing) { audio.play().catch(console.error); timerRef.current = setInterval(() => setElapsed(audio.currentTime), 1000); startProgressSaving(audioDrop); }
+        else { audio.pause(); if (timerRef.current) clearInterval(timerRef.current); if (audioDropRef.current) stopProgressSaving(audioDropRef.current); }
         return () => { if (timerRef.current) clearInterval(timerRef.current); };
     }, [playing]);
 
     useEffect(() => {
-        return () => {
-            if (timerRef.current) clearInterval(timerRef.current);
-            if (progressSaveRef.current) clearInterval(progressSaveRef.current);
-        };
+        return () => { if (timerRef.current) clearInterval(timerRef.current); if (progressSaveRef.current) clearInterval(progressSaveRef.current); };
     }, []);
 
     if (loading) {
@@ -2617,8 +2439,8 @@ export default function AudioDropCard() {
     );
 
     return (
-        <div className="min-h-screen bg-[#0d0d10]">
-            <div className="max-w-6xl mx-auto p-4 sm:p-6 lg:p-10 pb-15">
+        <div className="min-h-screen bg-[#0d0d10] w-full overflow-x-hidden">
+            <div className="max-w-6xl mx-auto p-4 lg:p-10 pb-20">
 
                 <Link href="/MainModules/MatchesDropContent" className="inline-flex items-center gap-2 text-gray-400 hover:text-white mb-6 transition">
                     <button className="flex items-center gap-2 text-gray-400 hover:text-white mb-6 transition cursor-pointer">
@@ -2635,36 +2457,43 @@ export default function AudioDropCard() {
                             <p className="text-[#888] text-[12px] mt-0.5">{audioDrop.subtitle || "Audio Drop"}</p>
                         </div>
                     </div>
-                    <button
-                        onClick={openShareDialog}
-                        className="w-8 h-8 rounded-full bg-[#1e1e22] flex items-center justify-center cursor-pointer hover:bg-[#2a2a2e] transition"
-                    >
-                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                            <circle cx="12" cy="3" r="1.8" stroke="#aaa" strokeWidth="1.4" />
-                            <circle cx="12" cy="13" r="1.8" stroke="#aaa" strokeWidth="1.4" />
-                            <circle cx="4" cy="8" r="1.8" stroke="#aaa" strokeWidth="1.4" />
-                            <path d="M10.3 3.9L5.7 7.1M10.3 12.1L5.7 8.9" stroke="#aaa" strokeWidth="1.4" strokeLinecap="round" />
-                        </svg>
-                    </button>
+                    <div className="flex items-center gap-2">
+                        {/* Playlist button — opens the extracted component */}
+                        <button
+                            onClick={() => setShowPlaylistDialog(true)}
+                            className="w-8 h-8 rounded-full bg-[#1e1e22] flex items-center justify-center cursor-pointer hover:bg-[#2a2a2e] transition"
+                            title="Add to Playlist"
+                        >
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                <path d="M2 4h9M2 8h7M2 12h5" stroke="#aaa" strokeWidth="1.4" strokeLinecap="round" />
+                                <circle cx="13" cy="11" r="2.5" stroke="#aaa" strokeWidth="1.3" />
+                                <path d="M13 9.5V7l2.5-.5" stroke="#aaa" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                        </button>
+                        <button onClick={openShareDialog} className="w-8 h-8 rounded-full bg-[#1e1e22] flex items-center justify-center cursor-pointer hover:bg-[#2a2a2e] transition">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                <circle cx="12" cy="3" r="1.8" stroke="#aaa" strokeWidth="1.4" />
+                                <circle cx="12" cy="13" r="1.8" stroke="#aaa" strokeWidth="1.4" />
+                                <circle cx="4" cy="8" r="1.8" stroke="#aaa" strokeWidth="1.4" />
+                                <path d="M10.3 3.9L5.7 7.1M10.3 12.1L5.7 8.9" stroke="#aaa" strokeWidth="1.4" strokeLinecap="round" />
+                            </svg>
+                        </button>
+                    </div>
                 </div>
 
                 {/* Resume banner */}
                 {resumeAt > 0 && (
                     <div className="mb-4 px-4 py-2 bg-[#C9115F]/10 border border-[#C9115F]/30 rounded-xl flex items-center gap-2">
-                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                            <path d="M5 3L11 7L5 11V3Z" fill="#C9115F" />
-                        </svg>
-                        <p className="text-[#C9115F] text-[12px]">
-                            Resuming from {Math.floor(resumeAt / 60)}:{String(Math.floor(resumeAt % 60)).padStart(2, "0")}
-                        </p>
+                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M5 3L11 7L5 11V3Z" fill="#C9115F" /></svg>
+                        <p className="text-[#C9115F] text-[12px]">Resuming from {Math.floor(resumeAt / 60)}:{String(Math.floor(resumeAt % 60)).padStart(2, "0")}</p>
                     </div>
                 )}
 
                 {/* Main layout */}
-                <div className="flex flex-col lg:flex-row gap-6">
+                <div className="flex flex-col lg:flex-row gap-6 w-full min-w-0">
 
-                    {/* Audio Player - Left column */}
-                    <div className="w-full lg:w-[400px] flex-shrink-0">
+                    {/* Audio Player */}
+                    <div className="w-full lg:w-[400px] lg:max-w-[400px] flex-shrink-0">
                         <div className="bg-[#111114] rounded-2xl overflow-hidden border border-[#2a2a2e]">
                             <div className="bg-[#1a0a10] p-6 flex flex-col items-center gap-4">
                                 <div className="w-[80px] h-[80px] rounded-full bg-[#c0204a] flex items-center justify-center">
@@ -2691,7 +2520,6 @@ export default function AudioDropCard() {
                                     )}
                                 </button>
 
-                                {/* Progress bar */}
                                 <div className="w-full">
                                     <div className="h-1 bg-[#2a2a2e] rounded-full overflow-hidden mb-1.5">
                                         <div className="h-full bg-[#e0185a] rounded-full transition-all duration-300" style={{ width: `${pct}%` }} />
@@ -2702,71 +2530,42 @@ export default function AudioDropCard() {
                                     </div>
                                 </div>
 
-                                {/* Prev / Next Navigation */}
                                 {allAudioFiles.length > 1 && (
                                     <div className="flex items-center justify-between w-full gap-2">
-                                        <button
-                                            onClick={() => navigateToAudio(currentIndex - 1)}
-                                            disabled={currentIndex === 0}
-                                            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#2a0f1c] border border-[#e0185a]/30 text-[#e0185a] text-[12px] font-medium disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#3a1525] transition"
-                                        >
-                                            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                                                <path d="M9 2L4 7L9 12" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-                                            </svg>
+                                        <button onClick={() => navigateToAudio(currentIndex - 1)} disabled={currentIndex === 0} className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#2a0f1c] border border-[#e0185a]/30 text-[#e0185a] text-[12px] font-medium disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#3a1525] transition">
+                                            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 2L4 7L9 12" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
                                             Prev
                                         </button>
                                         <span className="text-[#666] text-[11px]">{currentIndex + 1} / {allAudioFiles.length}</span>
-                                        <button
-                                            onClick={() => navigateToAudio(currentIndex + 1)}
-                                            disabled={currentIndex === allAudioFiles.length - 1}
-                                            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#2a0f1c] border border-[#e0185a]/30 text-[#e0185a] text-[12px] font-medium disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#3a1525] transition"
-                                        >
+                                        <button onClick={() => navigateToAudio(currentIndex + 1)} disabled={currentIndex === allAudioFiles.length - 1} className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#2a0f1c] border border-[#e0185a]/30 text-[#e0185a] text-[12px] font-medium disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#3a1525] transition">
                                             Next
-                                            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                                                <path d="M5 2L10 7L5 12" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-                                            </svg>
+                                            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M5 2L10 7L5 12" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
                                         </button>
                                     </div>
                                 )}
 
-                                {/* Up Next Preview */}
                                 {nextAudio && (
-                                    <div
-                                        onClick={() => navigateToAudio(currentIndex + 1)}
-                                        className="w-full flex items-center gap-2 bg-[#2a0f1c]/60 border border-[#e0185a]/20 rounded-xl px-3 py-2 cursor-pointer hover:bg-[#2a0f1c] transition"
-                                    >
+                                    <div onClick={() => navigateToAudio(currentIndex + 1)} className="w-full flex items-center gap-2 bg-[#2a0f1c]/60 border border-[#e0185a]/20 rounded-xl px-3 py-2 cursor-pointer hover:bg-[#2a0f1c] transition">
                                         <div className="w-7 h-7 rounded-full bg-[#e0185a]/20 flex items-center justify-center flex-shrink-0">
-                                            <svg width="12" height="12" viewBox="0 0 20 20" fill="none">
-                                                <path d="M7 4.5L16 10L7 15.5V4.5Z" fill="#e0185a" />
-                                            </svg>
+                                            <svg width="12" height="12" viewBox="0 0 20 20" fill="none"><path d="M7 4.5L16 10L7 15.5V4.5Z" fill="#e0185a" /></svg>
                                         </div>
                                         <div className="min-w-0 flex-1">
                                             <p className="text-[#888] text-[10px] uppercase tracking-wider">Up Next</p>
                                             <p className="text-white text-[12px] font-medium truncate">{audioFileToAudioDrop(nextAudio).title}</p>
-                                            <p className="text-[#666] text-[10px] truncate">
-                                                {nextAudio.matchInfo?.speaker?.replace(/^toss report\s*/i, "").replace(/^script\s*/i, "").replace(/^story\s*/i, "").trim() || "Audio Drop"}
-                                            </p>
+                                            <p className="text-[#666] text-[10px] truncate">{nextAudio.matchInfo?.speaker?.replace(/^toss report\s*/i, "").replace(/^script\s*/i, "").replace(/^story\s*/i, "").trim() || "Audio Drop"}</p>
                                         </div>
                                     </div>
                                 )}
 
-                                {/* Previous Audio Preview */}
                                 {prevAudio && (
-                                    <div
-                                        onClick={() => navigateToAudio(currentIndex - 1)}
-                                        className="w-full flex items-center gap-2 bg-[#1a1a2e]/60 border border-white/10 rounded-xl px-3 py-2 cursor-pointer hover:bg-[#1a1a2e] transition"
-                                    >
+                                    <div onClick={() => navigateToAudio(currentIndex - 1)} className="w-full flex items-center gap-2 bg-[#1a1a2e]/60 border border-white/10 rounded-xl px-3 py-2 cursor-pointer hover:bg-[#1a1a2e] transition">
                                         <div className="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center flex-shrink-0">
-                                            <svg width="12" height="12" viewBox="0 0 20 20" fill="none">
-                                                <path d="M13 4.5L4 10L13 15.5V4.5Z" fill="#aaa" />
-                                            </svg>
+                                            <svg width="12" height="12" viewBox="0 0 20 20" fill="none"><path d="M13 4.5L4 10L13 15.5V4.5Z" fill="#aaa" /></svg>
                                         </div>
                                         <div className="min-w-0 flex-1">
                                             <p className="text-[#666] text-[10px] uppercase tracking-wider">Previous</p>
                                             <p className="text-[#aaa] text-[12px] font-medium truncate">{audioFileToAudioDrop(prevAudio).title}</p>
-                                            <p className="text-[#555] text-[10px] truncate">
-                                                {prevAudio.matchInfo?.speaker?.replace(/^toss report\s*/i, "").replace(/^script\s*/i, "").replace(/^story\s*/i, "").trim() || "Audio Drop"}
-                                            </p>
+                                            <p className="text-[#555] text-[10px] truncate">{prevAudio.matchInfo?.speaker?.replace(/^toss report\s*/i, "").replace(/^script\s*/i, "").replace(/^story\s*/i, "").trim() || "Audio Drop"}</p>
                                         </div>
                                     </div>
                                 )}
@@ -2774,18 +2573,15 @@ export default function AudioDropCard() {
                         </div>
                     </div>
 
-                    {/* Info Panel - Right column */}
-                    <div className="flex-1 bg-[#111114] rounded-2xl border border-[#2a2a2e] p-5 flex flex-col gap-4">
+                    {/* Info Panel */}
+                    <div className="flex-1 min-w-0 bg-[#111114] rounded-2xl border border-[#2a2a2e] p-5 flex flex-col gap-4">
                         <div>
                             <h1 className="text-white text-[20px] font-medium leading-snug mb-1">{audioDrop.title}</h1>
-                            {audioDrop.speaker && (
-                                <p className="text-[#C9115F] text-[12px] mb-1">by {audioDrop.speaker}</p>
-                            )}
+                            {audioDrop.speaker && <p className="text-[#C9115F] text-[12px] mb-1">by {audioDrop.speaker}</p>}
                             <p className="text-[#888] text-[13px] leading-relaxed">{audioDrop.description}</p>
                         </div>
 
-                        {/* Stats */}
-                        <div className="grid grid-cols-3 gap-2.5">
+                        <div className="grid grid-cols-3 gap-2.5 w-full">
                             {[
                                 { label: "Plays", value: playsCount.toLocaleString() },
                                 { label: "Signals", value: signalsCount.toLocaleString() },
@@ -2798,28 +2594,19 @@ export default function AudioDropCard() {
                             ))}
                         </div>
 
-                        {/* ── Script Panel (live) ── */}
                         <ScriptPanel matchInfo={audioDrop.matchInfo} />
 
-                        {/* Meta */}
-                        <div className="flex items-center gap-4 text-[12px] text-[#666]">
+                        <div className="flex flex-row flex-wrap items-center gap-4 text-[12px] text-[#666]">
                             <div className="flex items-center gap-1.5">
-                                <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-                                    <rect x="1.5" y="2.5" width="10" height="9" rx="1.5" stroke="#666" strokeWidth="1.2" />
-                                    <path d="M1.5 5.5h10M4.5 1v3M8.5 1v3" stroke="#666" strokeWidth="1.2" strokeLinecap="round" />
-                                </svg>
+                                <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><rect x="1.5" y="2.5" width="10" height="9" rx="1.5" stroke="#666" strokeWidth="1.2" /><path d="M1.5 5.5h10M4.5 1v3M8.5 1v3" stroke="#666" strokeWidth="1.2" strokeLinecap="round" /></svg>
                                 {audioDrop.date || "Recent"}
                             </div>
                             <div className="flex items-center gap-1.5">
-                                <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-                                    <circle cx="6.5" cy="4.5" r="2.5" stroke="#666" strokeWidth="1.2" />
-                                    <path d="M2 11c0-2 2-3 4.5-3s4.5 1 4.5 3" stroke="#666" strokeWidth="1.2" strokeLinecap="round" />
-                                </svg>
+                                <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="6.5" cy="4.5" r="2.5" stroke="#666" strokeWidth="1.2" /><path d="M2 11c0-2 2-3 4.5-3s4.5 1 4.5 3" stroke="#666" strokeWidth="1.2" strokeLinecap="round" /></svg>
                                 {audioDrop.room || "Audio Room"}
                             </div>
                         </div>
 
-                        {/* Listen progress bar */}
                         <div>
                             <div className="h-1 bg-[#2a2a2e] rounded-full overflow-hidden mb-1.5">
                                 <div className="h-full bg-[#e0185a] rounded-full transition-all duration-300" style={{ width: `${pct}%` }} />
@@ -2827,7 +2614,6 @@ export default function AudioDropCard() {
                             <p className="text-right text-[11px] text-[#666]">{pct}% listened</p>
                         </div>
 
-                        {/* Send Signal */}
                         <button
                             onClick={() => setShowSignalDialog(true)}
                             className="w-full bg-[#1e0a12] border border-[#e0185a] rounded-[14px] py-4 flex items-center justify-center gap-2 text-[#e0185a] text-[15px] font-medium hover:bg-[#2a0f1c] transition mt-auto"
@@ -2839,17 +2625,21 @@ export default function AudioDropCard() {
                             Send Signal
                         </button>
 
-                        <CommentsSection
-                            contentId={audioDrop.id || ""}
-                            contentType="audio"
-                            contentTitle={audioDrop.title}
-                            className="mt-5"
-                        />
+                        <CommentsSection contentId={audioDrop.id || ""} contentType="audio" contentTitle={audioDrop.title} className="mt-5" />
                     </div>
                 </div>
             </div>
 
-            {/* Share Dialog - mobile */}
+            {/* ── PlaylistDialog component ── */}
+            <PlaylistDialog
+                open={showPlaylistDialog}
+                onClose={() => setShowPlaylistDialog(false)}
+                itemId={audioDrop.id || ""}
+                itemType="audio" 
+                userId={getUserId()}
+            />
+
+            {/* Share Dialog */}
             {showShareDialog && audioDrop && (
                 <>
                     <button type="button" className="fixed inset-0 z-40 bg-black/70 lg:hidden" onClick={closeShareDialog} />
@@ -2863,8 +2653,6 @@ export default function AudioDropCard() {
                         <div className="flex flex-row flex-nowrap items-center gap-1.5 mb-2 overflow-x-auto">{shareButtons("w-8 h-8")}</div>
                         {copied && <p className="text-xs text-emerald-400">Copied to clipboard</p>}
                     </div>
-
-                    {/* Share Dialog - desktop */}
                     <div className="hidden lg:flex fixed inset-0 z-50 items-center justify-center bg-black/60" onClick={closeShareDialog}>
                         <div className="bg-[#1a1a1e] rounded-2xl border border-white/10 p-4 w-[300px] shadow-2xl" onClick={e => e.stopPropagation()}>
                             <div className="flex items-center justify-between mb-3">
@@ -2895,20 +2683,10 @@ export default function AudioDropCard() {
                             </button>
                         </div>
                         <p className="text-gray-400 text-sm mb-4">Share your thoughts about &apos;{audioDrop.title}&apos;</p>
-                        <textarea
-                            value={signalMessage}
-                            onChange={e => setSignalMessage(e.target.value)}
-                            placeholder="Type your message here..."
-                            className="w-full bg-[#111114] text-white text-sm rounded-xl px-4 py-3 border border-[#2a2a2e] focus:outline-none focus:border-[#e0185a] resize-none"
-                            rows={4} maxLength={500} autoFocus
-                        />
+                        <textarea value={signalMessage} onChange={e => setSignalMessage(e.target.value)} placeholder="Type your message here..." className="w-full bg-[#111114] text-white text-sm rounded-xl px-4 py-3 border border-[#2a2a2e] focus:outline-none focus:border-[#e0185a] resize-none" rows={4} maxLength={500} autoFocus />
                         <div className="flex justify-end gap-3 mt-4">
                             <button onClick={() => setShowSignalDialog(false)} className="px-4 py-2 rounded-lg bg-[#2a2a2e] text-gray-300 text-sm font-medium hover:bg-[#3a3a3e] transition">Cancel</button>
-                            <button
-                                onClick={handleSendSignal}
-                                disabled={!signalMessage.trim() || sendingSignal}
-                                className="px-4 py-2 rounded-lg bg-[#e0185a] text-white text-sm font-medium hover:bg-[#f01e66] transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                            >
+                            <button onClick={handleSendSignal} disabled={!signalMessage.trim() || sendingSignal} className="px-4 py-2 rounded-lg bg-[#e0185a] text-white text-sm font-medium hover:bg-[#f01e66] transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
                                 {sendingSignal ? <><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />Sending...</> : "Send Signal"}
                             </button>
                         </div>

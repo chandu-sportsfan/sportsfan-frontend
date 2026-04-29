@@ -371,12 +371,12 @@ export default function MainModulesLayout({
   };
 
   return (
-    <div className="min-h-screen bg-black text-white flex flex-col lg:flex-row items-start">
+    <div className="min-h-screen bg-black text-white flex flex-col lg:flex-row">
       {renderSidebar()}
 
       <main className="flex-1 min-w-0 w-full overflow-x-hidden">
-        <div className="w-full max-w-[1600px] mx-auto">{children}</div>
-
+        {/* <div className="w-full max-w-[1600px] mx-auto">{children}</div> */}
+        {children}
         <div className="fixed bottom-27 right-6 md:bottom-22 md:right-6 z-50">
           <button
             onClick={() => setIsInviteOpen(true)}

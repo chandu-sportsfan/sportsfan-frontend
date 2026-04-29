@@ -140,6 +140,7 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { useAuth } from "@/context/AuthContext";
+import { ArrowDown } from "lucide-react";
 
 interface Comment {
   id: string;
@@ -365,7 +366,7 @@ export default function CommentsSection({
         ) : (
           comments.map((comment) => (
             <div key={comment.id} className="flex items-start gap-3">
-              <div className="h-5 w-5 lg:h-8 lg:w-8 shrink-0 rounded-full bg-gradient-to-br from-amber-400 via-orange-500 to-pink-500 flex items-center justify-center text-white text-[11px] font-semibold">
+              <div className="h-3 w-3 md:h-5 md:w-5 lg:h-8 lg:w-8 mt-1 shrink-0 rounded-full bg-gradient-to-br from-amber-400 via-orange-500 to-pink-500 flex items-center justify-center text-white text-[6px] md:text-[11px] font-semibold">
                 {comment.userName?.charAt(0).toUpperCase() || "U"}
               </div>
 
@@ -389,7 +390,7 @@ export default function CommentsSection({
                     <span className="text-xs">{comment.likes || 0}</span>
                   </button>
                 </div>
-                <p className="mt-1 text-[13px] leading-snug text-white/90 break-words">
+                <p className="mt-1 text-[10px] lg:text-[13px] leading-snug text-white/90 break-words">
                   {comment.commentText}
                 </p>
                 <button
@@ -430,9 +431,9 @@ export default function CommentsSection({
                 {(comment.replyCount || 0) > (comment.replies?.length || 0) && (
                   <button
                     onClick={() => fetchReplies(comment.id)}
-                    className="mt-1 text-[10px] text-pink-500 hover:text-pink-400 transition"
+                    className="mt-1 text-[10px] text-pink-500 hover:text-pink-400 transition flex items-center whitespace-nowrap"
                   >
-                    Load more replies...
+                    View more replies <ArrowDown className="w-3 h-3 flex shrink-0"/>
                   </button>
                 )}
               </div>

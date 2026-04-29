@@ -61,6 +61,7 @@
 //     stats: [
 //       { label: "Teams", value: "10" },
 //       { label: "Drops", value: "0" },
+//       { label: "Plays", value: "0" },
 //     ],
 //     buttonText: "View Playlist",
 //     buttonIcon: "play",
@@ -81,7 +82,24 @@
 //     buttonIcon: "chart",
 //     buttonUrl: ""
 //   },
+//    {
+//     id: 3,
+//     title: "Playlists",
+//     subtitle: "All your favorite sports content in one place",
+//     image: "/images/cricketarticlessecond.jpg",
+//     profileUrl: "/MainModules/Playlists",
+//     stats: [
+//       { label: "Sports", value: "12+" },
+//       { label: "Athletes", value: "500+" },
+//       { label: "Active", value: "1.8M" },
+//     ],
+//     buttonText: "View Full Playlist",
+//     buttonIcon: "chart",
+//     buttonUrl: ""
+//   },
 // ];
+
+
 
 // function getDisplayTitle(audio: AudioFile): string {
 //   const title = (audio.title || "").toLowerCase();
@@ -113,7 +131,7 @@
 //   );
 // }
 
-// // ── Latest Audio List ─────────────────────────────────────────────────────────
+// // ── Latest Audio List 
 // function LatestAudioList() {
 //   const [audioFiles, setAudioFiles] = useState<AudioFile[]>([]);
 //   const [loading, setLoading] = useState(true);
@@ -235,25 +253,45 @@
 //   useEffect(() => {
 //     const fetchDrops = async () => {
 //       try {
-//         const response = await axios.get(`/api/cloudinary/audio`);
-//         const totalCount = response.data.totalCount || response.data.audioFiles?.length || 0;
+//         const [audioRes, playsRes] = await Promise.allSettled([
+//           axios.get(`/api/cloudinary/audio`),
+//           axios.get(`/api/cloudinary/plays`),
+//         ]);
+
+//         const totalCount =
+//           audioRes.status === "fulfilled"
+//             ? audioRes.value.data.totalCount || audioRes.value.data.audioFiles?.length || 0
+//             : 0;
+
+//         const playsMap: Record<string, number> =
+//           playsRes.status === "fulfilled" ? playsRes.value.data.plays || {} : {};
+
+//         const totalPlays = Object.values(playsMap).reduce((sum, n) => sum + n, 0);
+
+//         // Format: 1200 → "1.2K", 1000000 → "1M"
+//         const formatPlays = (n: number) => {
+//           if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+//           if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
+//           return n.toString();
+//         };
+
 //         setCardsData(prevCards =>
 //           prevCards.map(card =>
 //             card.id === 1
 //               ? {
 //                   ...card,
-//                   stats: card.stats.map(stat =>
-//                     stat.label === "Drops"
-//                       ? { ...stat, value: totalCount.toString() }
-//                       : stat
-//                   )
+//                   stats: card.stats.map(stat => {
+//                     if (stat.label === "Drops") return { ...stat, value: totalCount.toString() };
+//                     if (stat.label === "Plays") return { ...stat, value: formatPlays(totalPlays) };
+//                     return stat;
+//                   }),
 //                 }
 //               : card
 //           )
 //         );
 //       } catch (err: unknown) {
-//         console.log("Audio drop count error:", err);
-//         setError("Failed to load audio drops count.");
+//         console.log("Stats fetch error:", err);
+//         setError("Failed to load stats.");
 //       } finally {
 //         setLoading(false);
 //       }
@@ -292,7 +330,7 @@
 //                   <div key={i} className="bg-[#1c1c1c] p-2 rounded-lg">
 //                     <p className="text-gray-400 text-[9px]">{stat.label}</p>
 //                     <p className="font-semibold text-[12px]">
-//                       {loading && card.id === 1 && stat.label === "Drops" ? (
+//                       {loading && card.id === 1 && (stat.label === "Drops" || stat.label === "Plays") ? (
 //                         <span className="inline-block w-8 h-3 bg-gray-700 rounded animate-pulse"></span>
 //                       ) : (
 //                         stat.value
@@ -349,11 +387,28 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 "use client";
 import Link from "next/link";
-import { Mic, Play } from "lucide-react";
+import { Mic, Play, List } from "lucide-react";
 import { useEffect, useState } from "react";
 import axios from "axios";
+import { useAuth } from "@/context/AuthContext";
 
 type Stat = {
   label: string;
@@ -371,6 +426,14 @@ type CardProps = {
   buttonIcon?: "play" | "chart";
   buttonUrl?: string;
 };
+
+interface Playlist {
+  id: string;
+  name: string;
+  audioIds: string[];
+  createdAt: number;
+  updatedAt: number;
+}
 
 interface MatchInfo {
   team1?: string;
@@ -433,6 +496,21 @@ const homeCardsData: CardProps[] = [
     buttonIcon: "chart",
     buttonUrl: ""
   },
+  {
+    id: 3,
+    title: "My Playlists",
+    subtitle: "All your favorite sports content in one place",
+    image: "/images/cricketarticlessecond.jpg",
+    profileUrl: "/MainModules/Playlists",
+    stats: [
+      { label: "Playlists", value: "0" },
+      { label: "Total Drops", value: "0" },
+      { label: "Saved", value: "0" },
+    ],
+    buttonText: "View All Playlists",
+    buttonIcon: "chart",
+    buttonUrl: "/MainModules/Playlists"
+  },
 ];
 
 function getDisplayTitle(audio: AudioFile): string {
@@ -458,10 +536,83 @@ function getSpeakerLabel(audio: AudioFile): string {
     .trim() || "Audio Drop";
 }
 
-// Newest-first sort by createdAt — safety net in case API order varies
+// Newest-first sort by createdAt
 function newestFirst<T extends { createdAt: string }>(arr: T[]): T[] {
   return [...arr].sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
+}
+
+// Format number (e.g., 1200 → "1.2K")
+function formatNumber(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
+  return n.toString();
+}
+
+// ── Latest Playlists List ─────────────────────────────────────────────────────
+function LatestPlaylistsList({ userId }: { userId: string | null }) {
+  const [playlists, setPlaylists] = useState<Playlist[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!userId) {
+      setLoading(false);
+      return;
+    }
+    
+    axios.get(`/api/playlists?userId=${userId}`)
+      .then(res => {
+        if (res.data.success) {
+          // Sort by createdAt descending and take latest 3
+          const sorted = res.data.playlists.sort((a: Playlist, b: Playlist) => b.createdAt - a.createdAt);
+          setPlaylists(sorted.slice(0, 3));
+        }
+      })
+      .catch(err => console.error("Error fetching playlists:", err))
+      .finally(() => setLoading(false));
+  }, [userId]);
+
+  if (loading) {
+    return (
+      <div className="flex flex-col gap-2 mt-2">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="h-12 bg-[#1c1c1c] rounded-lg animate-pulse" />
+        ))}
+      </div>
+    );
+  }
+
+  if (playlists.length === 0) {
+    return (
+      <div className="mt-2 text-center py-4">
+        <p className="text-gray-500 text-[11px]">No playlists yet</p>
+        <p className="text-gray-600 text-[9px] mt-1">Save audio, videos & articles to create playlists</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-2 mt-2">
+      {playlists.map((playlist) => (
+        <Link
+          key={playlist.id}
+          href={`/MainModules/Playlists?playlistId=${playlist.id}`}
+        >
+          <div className="flex items-center gap-2 bg-[#1c1c1c] rounded-lg px-2 py-2 hover:bg-[#2a2a2a] transition-colors cursor-pointer">
+            <List size={18} className="text-[#C9115F] flex-shrink-0" />
+            <div className="min-w-0 flex-1">
+              <p className="text-white text-[11px] lg:text-[12px] font-medium leading-tight truncate">
+                {playlist.name}
+              </p>
+              <p className="text-gray-500 text-[9px] lg:text-[10px] leading-tight">
+                {playlist.audioIds.length} {playlist.audioIds.length === 1 ? "drop" : "drops"}
+              </p>
+            </div>
+          </div>
+        </Link>
+      ))}
+    </div>
   );
 }
 
@@ -471,7 +622,6 @@ function LatestAudioList() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Fetch more than 2 so the client-side sort has enough data to pick the true latest
     axios.get(`/api/cloudinary/audio?limit=10`)
       .then(res => {
         if (res.data.success) {
@@ -528,7 +678,6 @@ function LatestVideoList() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Fetch more than 2 so client-side sort picks the true latest
     axios.get(`/api/cloudinary/video?limit=10`)
       .then(res => {
         if (res.data.success) {
@@ -580,10 +729,54 @@ function LatestVideoList() {
 
 // ── Main Component ────────────────────────────────────────────────────────────
 export default function HomeCardsSection() {
+  const { user } = useAuth();
   const [cardsData, setCardsData] = useState<CardProps[]>(homeCardsData);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
+  const [playlistStats, setPlaylistStats] = useState({ totalPlaylists: 0, totalDrops: 0 });
 
+  const userId = user?.userId || null;
+
+  // Fetch playlist stats
+  useEffect(() => {
+    if (!userId) return;
+
+    const fetchPlaylistStats = async () => {
+      try {
+        const res = await axios.get(`/api/playlists?userId=${userId}`);
+        if (res.data.success) {
+          const playlists = res.data.playlists || [];
+          const totalPlaylists = playlists.length;
+          const totalDrops = playlists.reduce((sum: number, p: Playlist) => sum + p.audioIds.length, 0);
+          
+          setPlaylistStats({ totalPlaylists, totalDrops });
+          
+          // Update the My Playlists card stats
+          setCardsData(prevCards =>
+            prevCards.map(card =>
+              card.id === 3
+                ? {
+                    ...card,
+                    stats: card.stats.map(stat => {
+                      if (stat.label === "Playlists") return { ...stat, value: totalPlaylists.toString() };
+                      if (stat.label === "Total Drops") return { ...stat, value: totalDrops.toString() };
+                      if (stat.label === "Saved") return { ...stat, value: formatNumber(totalDrops) };
+                      return stat;
+                    }),
+                  }
+                : card
+            )
+          );
+        }
+      } catch (err) {
+        console.error("Error fetching playlist stats:", err);
+      }
+    };
+
+    fetchPlaylistStats();
+  }, [userId]);
+
+  // Fetch drops and plays stats for IPL card
   useEffect(() => {
     const fetchDrops = async () => {
       try {
@@ -602,13 +795,6 @@ export default function HomeCardsSection() {
 
         const totalPlays = Object.values(playsMap).reduce((sum, n) => sum + n, 0);
 
-        // Format: 1200 → "1.2K", 1000000 → "1M"
-        const formatPlays = (n: number) => {
-          if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-          if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
-          return n.toString();
-        };
-
         setCardsData(prevCards =>
           prevCards.map(card =>
             card.id === 1
@@ -616,7 +802,7 @@ export default function HomeCardsSection() {
                   ...card,
                   stats: card.stats.map(stat => {
                     if (stat.label === "Drops") return { ...stat, value: totalCount.toString() };
-                    if (stat.label === "Plays") return { ...stat, value: formatPlays(totalPlays) };
+                    if (stat.label === "Plays") return { ...stat, value: formatNumber(totalPlays) };
                     return stat;
                   }),
                 }
@@ -657,7 +843,7 @@ export default function HomeCardsSection() {
               </div>
             </div>
 
-            {/* Stats - Only show for card 1 */}
+            {/* Stats - For IPL card */}
             {card.id === 1 && (
               <div className="grid grid-cols-3 gap-2 mt-2 text-center">
                 {card.stats.map((stat, i) => (
@@ -675,7 +861,21 @@ export default function HomeCardsSection() {
               </div>
             )}
 
-            {/* Latest drops — only on card 1 */}
+            {/* Stats - For My Playlists card */}
+            {card.id === 3 && (
+              <div className="grid grid-cols-3 gap-2 mt-2 text-center">
+                {card.stats.map((stat, i) => (
+                  <div key={i} className="bg-[#1c1c1c] p-2 rounded-lg">
+                    <p className="text-gray-400 text-[9px]">{stat.label}</p>
+                    <p className="font-semibold text-[12px] text-white">
+                      {stat.value}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Latest drops — only on IPL card (id: 1) */}
             {card.id === 1 && (
               <>
                 <p className="text-gray-500 text-[10px] mt-3 mb-1 font-medium uppercase tracking-wide">
@@ -686,8 +886,18 @@ export default function HomeCardsSection() {
               </>
             )}
 
-            {/* Button - Only show for card 1 */}
-            {card.id === 1 && (
+            {/* Latest Playlists — only on My Playlists card (id: 3) */}
+            {card.id === 3 && (
+              <>
+                <p className="text-gray-500 text-[10px] mt-3 mb-1 font-medium uppercase tracking-wide">
+                  Recent Playlists
+                </p>
+                <LatestPlaylistsList userId={userId} />
+              </>
+            )}
+
+            {/* Button - Show for card 1 and card 3 */}
+            {(card.id === 1 || card.id === 3) && (
               <div className="mt-auto pt-2">
                 <Link href={card.buttonUrl || "#"}>
                   <button className="w-full bg-gradient-to-r from-pink-500 to-orange-500 py-1.5 rounded-full font-semibold text-[13px] flex items-center justify-center gap-2 cursor-pointer">

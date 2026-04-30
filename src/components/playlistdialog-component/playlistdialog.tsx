@@ -42,7 +42,7 @@ export default function PlaylistDialog({ open, onClose, itemId, itemType, userId
             setPlaylistsLoading(false);
         }
     };
-
+//need to look at it
     const handleCreatePlaylist = async () => {
         if (!playlistName.trim() || !userId) return;
         setCreatingPlaylist(true);

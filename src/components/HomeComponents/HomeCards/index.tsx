@@ -465,6 +465,20 @@ interface VideoFile {
   };
 }
 
+// IPL Teams mapping for filtering
+const IPL_TEAMS: Record<string, string[]> = {
+  "Mumbai Indians": ["MI", "Mumbai"],
+  "Chennai Super Kings": ["CSK", "Chennai"],
+  "Royal Challengers Bengaluru": ["RCB", "Bengaluru", "Bangalore"],
+  "Sunrisers Hyderabad": ["SRH", "Hyderabad"],
+  "Kolkata Knight Riders": ["KKR", "Kolkata"],
+  "Delhi Capitals": ["DC", "Delhi"],
+  "Rajasthan Royals": ["RR", "Rajasthan"],
+  "Punjab Kings": ["PBKS", "Punjab"],
+  "Lucknow Super Giants": ["LSG", "Lucknow"],
+  "Gujarat Titans": ["GT", "Gujarat"],
+};
+
 const homeCardsData: CardProps[] = [
   {
     id: 1,
@@ -550,6 +564,17 @@ function formatNumber(n: number): string {
   return n.toString();
 }
 
+// Check if a drop is from an IPL match
+function isIPLDrop(matchInfo?: MatchInfo, title?: string): boolean {
+  if (!matchInfo) return false;
+  
+  // Check if team1 or team2 is an IPL team
+  const teams = [matchInfo.team1, matchInfo.team2];
+  const allTeamKeys = Object.keys(IPL_TEAMS);
+  
+  return teams.some(team => team && allTeamKeys.includes(team));
+}
+
 // ── Latest Playlists List ─────────────────────────────────────────────────────
 function LatestPlaylistsList({ userId }: { userId: string | null }) {
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
@@ -616,17 +641,26 @@ function LatestPlaylistsList({ userId }: { userId: string | null }) {
   );
 }
 
-// ── Latest Audio List ─────────────────────────────────────────────────────────
+// ── Latest Audio List (IPL + Fallback) ─────────────────────────────────────
 function LatestAudioList() {
   const [audioFiles, setAudioFiles] = useState<AudioFile[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    axios.get(`/api/cloudinary/audio?limit=10`)
+    axios.get(`/api/cloudinary/audio?limit=50`)
       .then(res => {
         if (res.data.success) {
+          // Sort all by newest first
           const sorted = newestFirst(res.data.audioFiles as AudioFile[]);
-          setAudioFiles(sorted.slice(0, 2));
+          
+          // Try to filter for IPL drops
+          const iplDrops = sorted.filter((audio: AudioFile) => 
+            isIPLDrop(audio.matchInfo, audio.title)
+          );
+          
+          // Use IPL drops if we have at least 2, otherwise use latest drops
+          const dropsToShow = iplDrops.length >= 2 ? iplDrops : sorted;
+          setAudioFiles(dropsToShow.slice(0, 2));
         }
       })
       .catch(() => {})
@@ -672,17 +706,33 @@ function LatestAudioList() {
   );
 }
 
-// ── Latest Video List ─────────────────────────────────────────────────────────
+// ── Latest Video List (IPL + Fallback) ─────────────────────────────────────
 function LatestVideoList() {
   const [videoFiles, setVideoFiles] = useState<VideoFile[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    axios.get(`/api/cloudinary/video?limit=10`)
+    axios.get(`/api/cloudinary/video?limit=50`)
       .then(res => {
         if (res.data.success) {
+          // Sort all by newest first
           const sorted = newestFirst(res.data.videoFiles as VideoFile[]);
-          setVideoFiles(sorted.slice(0, 2));
+          
+          // Try to filter for IPL videos by checking title for IPL team names
+          const iplVideos = sorted.filter((video: VideoFile) => {
+            const title = video.title.toUpperCase();
+            const allTeamKeys = Object.keys(IPL_TEAMS);
+            
+            // Check if title contains any IPL team name or abbreviation
+            return allTeamKeys.some(team => {
+              const abbrs = IPL_TEAMS[team];
+              return abbrs.some(abbr => title.includes(abbr.toUpperCase()));
+            });
+          });
+          
+          // Use IPL videos if we have at least 2, otherwise use latest videos
+          const videosToShow = iplVideos.length >= 2 ? iplVideos : sorted;
+          setVideoFiles(videosToShow.slice(0, 2));
         }
       })
       .catch(() => {})

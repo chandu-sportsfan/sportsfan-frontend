@@ -118,7 +118,7 @@ export default function ClubProfileActions({ club }: Props) {
             <PlaylistDialog
                 open={showPlaylistDialog}
                 onClose={() => setShowPlaylistDialog(false)}
-                itemId={club.id || club.name || "club_profile"}  // Use club ID or name
+                itemId={club.name || "club_profile"}  // Use club ID or name
                 itemType="teams360" 
                 userId={getUserId()}
             />

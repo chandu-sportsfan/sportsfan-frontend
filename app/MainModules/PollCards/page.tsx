@@ -7,7 +7,7 @@ import { Poll, PollOption } from "@/types/Polls";
 interface PollCardProps {
   poll: Poll;
   onVote?: (pollId: string, optionId: string, userId?: string) => Promise<void>;
-  userId?: string | null; // Add userId prop
+  userId?: string | null;
 }
 
 // ─── Countdown hook 
@@ -121,6 +121,7 @@ export default function PollCard({ poll, onVote, userId }: PollCardProps) {
   const countdown = useCountdown(poll.endsAt);
   const isInactive = !poll.active || !countdown;
 
+  
   // Check local storage on mount
   useEffect(() => {
     const alreadyVoted = hasLocalVoted(poll.id, userId);
@@ -163,6 +164,9 @@ export default function PollCard({ poll, onVote, userId }: PollCardProps) {
   );
 
   const showResults = voted || isInactive;
+   if (!poll) {
+    return null;
+  }
 
   return (
     <div

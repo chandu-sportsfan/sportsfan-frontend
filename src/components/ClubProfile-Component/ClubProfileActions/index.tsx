@@ -114,7 +114,7 @@ export default function ClubProfileActions({ club }: Props) {
                 </div>
             </div>
             
-            {/* ✅ PlaylistDialog - Render ONCE outside the loop */}
+            {/*  PlaylistDialog - Render ONCE outside the loop */}
             <PlaylistDialog
                 open={showPlaylistDialog}
                 onClose={() => setShowPlaylistDialog(false)}

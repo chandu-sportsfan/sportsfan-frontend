@@ -110,9 +110,15 @@ const nextConfig = {
         // Sportsfan360 Profile
         { source: '/api/sportsfan360card', destination: `${apiTarget}/api/sportsfan360card` },
 
-          // Playlists
+        // Playlists
         { source: '/api/playlists', destination: `${apiTarget}/api/playlists` },
         { source: '/api/playlists/:path*', destination: `${apiTarget}/api/playlists/:path*` },
+
+        //Polls
+        { source: '/api/polls/:id/vote', destination: `${apiTarget}/api/polls/:id/vote` },
+        { source: '/api/polls/:id', destination: `${apiTarget}/api/polls/:id` },
+        { source: '/api/polls', destination: `${apiTarget}/api/polls` },
+        { source: '/api/polls/:path*', destination: `${apiTarget}/api/polls/:path*` },
 
         //Comments
         { source: '/api/comments', destination: `${apiTarget}/api/comments` },

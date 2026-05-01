@@ -2024,8 +2024,9 @@ const copyToClipboard = async (text: string) => {
     }
 };
 
-// ─── Script Panel ─────────────────────────────────────────────────────────────
 
+
+// ─── Script Panel 
 function ScriptPanel({ matchInfo }: { matchInfo?: MatchInfo }) {
     const { findScript, fetchScriptContent } = useScripts();
     const [scriptHtml, setScriptHtml] = useState<string | null>(null);
@@ -2050,9 +2051,10 @@ function ScriptPanel({ matchInfo }: { matchInfo?: MatchInfo }) {
             .finally(() => setScriptLoading(false));
     }, [matchInfo, findScript, fetchScriptContent]);
 
+    // No matchInfo or no script found - Coming Soon
     if (!matchInfo || (!scriptLoading && !scriptHtml && !scriptError)) {
         return (
-            <div className="bg-[#1a1a1e] border border-white/5 rounded-2xl p-4">
+            <div className="bg-[#1a1a1e] border border-white/5 rounded-2xl p-4 h-[200px] flex-shrink-0 overflow-hidden">
                 <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
                         <ScriptIcon />
@@ -2070,10 +2072,14 @@ function ScriptPanel({ matchInfo }: { matchInfo?: MatchInfo }) {
         );
     }
 
+    // Loading state
     if (scriptLoading) {
         return (
-            <div className="bg-[#1a1a1e] border border-white/5 rounded-2xl p-4">
-                <div className="flex items-center gap-2 mb-3"><ScriptIcon /><p className="text-white text-[13px] font-medium">Audio Script</p></div>
+            <div className="bg-[#1a1a1e] border border-white/5 rounded-2xl p-4 h-[200px] flex-shrink-0 overflow-hidden">
+                <div className="flex items-center gap-2 mb-3">
+                    <ScriptIcon />
+                    <p className="text-white text-[13px] font-medium">Audio Script</p>
+                </div>
                 <div className="flex flex-col gap-2">
                     {[1, 2, 3, 4].map((i) => (
                         <div key={i} className="h-3 bg-[#222226] rounded-full animate-pulse" style={{ width: `${95 - i * 10}%` }} />
@@ -2083,34 +2089,62 @@ function ScriptPanel({ matchInfo }: { matchInfo?: MatchInfo }) {
         );
     }
 
+    // Error state
     if (scriptError) {
         return (
-            <div className="bg-[#1a1a1e] border border-white/5 rounded-2xl p-4">
-                <div className="flex items-center gap-2 mb-2"><ScriptIcon /><p className="text-white text-[13px] font-medium">Audio Script</p></div>
+            <div className="bg-[#1a1a1e] border border-white/5 rounded-2xl p-4 h-[200px] flex-shrink-0 overflow-hidden">
+                <div className="flex items-center gap-2 mb-2">
+                    <ScriptIcon />
+                    <p className="text-white text-[13px] font-medium">Audio Script</p>
+                </div>
                 <p className="text-[#555] text-[12px]">Script could not be loaded.</p>
             </div>
         );
     }
-
-    return (
-        <div className="bg-[#1a1a1e] border border-white/5 rounded-2xl p-4">
+return (
+    <div className="flex-shrink-0 min-w-0">
+        <div
+            className={`bg-[#1a1a1e] border border-white/5 rounded-2xl p-4
+                ${expanded ? "" : "h-[200px] overflow-y-auto"}`}
+            style={!expanded ? { scrollbarWidth: "thin", scrollbarColor: "#3a3a3e #1a1a1e" } : undefined}
+        >
             <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2"><ScriptIcon /><p className="text-white text-[13px] font-medium">Audio Script</p></div>
+                <div className="flex items-center gap-2">
+                    <ScriptIcon />
+                    <p className="text-white text-[13px] font-medium">Audio Script</p>
+                </div>
                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-medium tracking-wide">Available</span>
             </div>
-            <div className={`relative overflow-hidden transition-all duration-300 ${expanded ? "max-h-[2000px]" : "max-h-[120px]"}`}>
-                <div className="text-[#ccc] text-[12px] leading-relaxed script-content" dangerouslySetInnerHTML={{ __html: scriptHtml! }} />
-                {!expanded && <div className="absolute bottom-0 left-0 right-0 h-10 bg-gradient-to-t from-[#1a1a1e] to-transparent pointer-events-none" />}
-            </div>
-            <button onClick={() => setExpanded((v) => !v)} className="mt-3 flex items-center gap-1.5 text-[#C9115F] text-[12px] font-medium hover:text-[#e0185a] transition">
+            {/* <div className="text-[#ccc] text-[12px] leading-relaxed script-content" dangerouslySetInnerHTML={{ __html: scriptHtml! }} /> */}
+            <div 
+    className="text-[#ccc] text-[12px] leading-relaxed script-content overflow-hidden w-full min-w-0" 
+    style={{ overflowWrap: "break-word", wordBreak: "break-word" }}
+    dangerouslySetInnerHTML={{ __html: scriptHtml! }} 
+/>
+            <button
+                onClick={() => setExpanded((v) => !v)}
+                className="mt-3 flex items-center gap-1.5 text-[#C9115F] text-[12px] font-medium hover:text-[#e0185a] transition sticky bottom-0 bg-[#1a1a1e] py-1"
+            >
                 {expanded ? (
-                    <><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 8L6 4L10 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>Show less</>
+                    <>
+                        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                            <path d="M2 8L6 4L10 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                        Show less
+                    </>
                 ) : (
-                    <><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4L6 8L10 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>Read full script</>
+                    <>
+                        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                            <path d="M2 4L6 8L10 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                        Read full script
+                    </>
                 )}
             </button>
         </div>
-    );
+    </div>
+);
+   
 }
 
 function ScriptIcon() {
@@ -2122,7 +2156,7 @@ function ScriptIcon() {
     );
 }
 
-// ─── Main Component ───────────────────────────────────────────────────────────
+// ─── Main Component 
 
 export default function AudioDropCard() {
     const { user, getUserName } = useAuth();
@@ -2439,7 +2473,7 @@ export default function AudioDropCard() {
     );
 
     return (
-        <div className="min-h-screen bg-[#0d0d10] w-full overflow-x-hidden">
+        <div className="min-h-screen bg-[#0d0d10] w-full">
             <div className="max-w-6xl mx-auto p-4 lg:p-10 pb-20">
 
                 <Link href="/MainModules/MatchesDropContent" className="inline-flex items-center gap-2 text-gray-400 hover:text-white mb-6 transition">
@@ -2490,11 +2524,15 @@ export default function AudioDropCard() {
                 )}
 
                 {/* Main layout */}
-                <div className="flex flex-col lg:flex-row gap-6 w-full min-w-0">
+                <div className="flex flex-col lg:flex-row lg:items-stretch gap-6 w-full min-w-0">
 
                     {/* Audio Player */}
+                    {/* <div className="w-full lg:w-[400px] lg:max-w-[400px] flex-shrink-0 lg:self-start">
+                        <div className="bg-[#111114] rounded-2xl border border-[#2a2a2e]">
+                            <div className="bg-[#1a0a10] p-6 flex flex-col items-center gap-4"> */}
+
                     <div className="w-full lg:w-[400px] lg:max-w-[400px] flex-shrink-0">
-                        <div className="bg-[#111114] rounded-2xl overflow-hidden border border-[#2a2a2e]">
+                        <div className="bg-[#111114] rounded-2xl border border-[#2a2a2e]">
                             <div className="bg-[#1a0a10] p-6 flex flex-col items-center gap-4">
                                 <div className="w-[80px] h-[80px] rounded-full bg-[#c0204a] flex items-center justify-center">
                                     <svg width="20" height="20" viewBox="0 0 34 34" fill="none">
@@ -2574,7 +2612,7 @@ export default function AudioDropCard() {
                     </div>
 
                     {/* Info Panel */}
-                    <div className="flex-1 min-w-0 bg-[#111114] rounded-2xl border border-[#2a2a2e] p-5 flex flex-col gap-4">
+                    <div className="flex-1 min-w-0 min-h-0 bg-[#111114] rounded-2xl border border-[#2a2a2e] p-5 flex flex-col gap-4">
                         <div>
                             <h1 className="text-white text-[20px] font-medium leading-snug mb-1">{audioDrop.title}</h1>
                             {audioDrop.speaker && <p className="text-[#C9115F] text-[12px] mb-1">by {audioDrop.speaker}</p>}
@@ -2594,7 +2632,10 @@ export default function AudioDropCard() {
                             ))}
                         </div>
 
-                        <ScriptPanel matchInfo={audioDrop.matchInfo} />
+                       {/* Where ScriptPanel is used in the Info Panel */}
+<div className="min-w-0 w-full overflow-hidden">
+    <ScriptPanel matchInfo={audioDrop.matchInfo} />
+</div>
 
                         <div className="flex flex-row flex-wrap items-center gap-4 text-[12px] text-[#666]">
                             <div className="flex items-center gap-1.5">
@@ -2635,7 +2676,7 @@ export default function AudioDropCard() {
                 open={showPlaylistDialog}
                 onClose={() => setShowPlaylistDialog(false)}
                 itemId={audioDrop.id || ""}
-                itemType="audio" 
+                itemType="audio"
                 userId={getUserId()}
             />
 

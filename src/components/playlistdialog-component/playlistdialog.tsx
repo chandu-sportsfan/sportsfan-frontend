@@ -7,14 +7,14 @@ interface PlaylistDialogProps {
     open: boolean;
     onClose: () => void;
     itemId: string;
-    itemType: "audio" | "video" | "article";
+    itemType: "audio" | "video" | "article" | "teams360" | "players360";
     userId: string | null;
 }
 
 interface Playlist {
     id: string;
     name: string;
-    audioIds: string[];          // stores all item IDs (audio + video) in one array
+    audioIds: string[];          
 }
 
 export default function PlaylistDialog({ open, onClose, itemId, itemType, userId }: PlaylistDialogProps) {

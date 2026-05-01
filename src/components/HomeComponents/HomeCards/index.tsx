@@ -575,6 +575,28 @@ function isIPLDrop(matchInfo?: MatchInfo, title?: string): boolean {
   return teams.some(team => team && allTeamKeys.includes(team));
 }
 
+// Extract match name from audio title (e.g., "GT vs RCB" from "GT vs RCB - TOSS REPORT")
+function extractMatchName(title: string): string {
+  if (!title) return "";
+  
+  // Try to extract text before " - " which typically separates match name from type
+  const dashIndex = title.indexOf(" - ");
+  if (dashIndex > 0) {
+    return title.substring(0, dashIndex).trim();
+  }
+  
+  // If no dash found, try to extract before common keywords
+  const keywords = ["TOSS REPORT", "POST MATCH", "PRE MATCH", "MATCH ANALYSIS", "HIGHLIGHTS"];
+  for (const keyword of keywords) {
+    if (title.toUpperCase().includes(keyword)) {
+      const keywordIndex = title.toUpperCase().indexOf(keyword);
+      return title.substring(0, keywordIndex).trim();
+    }
+  }
+  
+  return "";
+}
+
 // ── Latest Playlists List ─────────────────────────────────────────────────────
 function LatestPlaylistsList({ userId }: { userId: string | null }) {
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
@@ -693,10 +715,10 @@ function LatestAudioList() {
                 {getDisplayTitle(audio)}
               </p>
               <p className="text-gray-500 text-[9px] lg:text-[12px] leading-tight">
-                {getSpeakerLabel(audio)}
-                {audio.matchInfo?.team1
-                  ? ` · ${audio.matchInfo.team1} vs ${audio.matchInfo.team2}`
-                  : ""}
+                {extractMatchName(audio.title)
+                  ? `${getSpeakerLabel(audio)} · ${extractMatchName(audio.title)}`
+                  : `${getDisplayTitle(audio)} · ${getSpeakerLabel(audio)}`
+                }
               </p>
             </div>
           </div>

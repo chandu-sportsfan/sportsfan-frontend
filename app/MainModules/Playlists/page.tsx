@@ -682,7 +682,7 @@ function ConfirmDeleteDropModal({ item, onConfirm, onCancel, loading }: {
                 </div>
                 <h3 className="text-white text-[15px] font-semibold text-center mb-1">Remove from Playlist</h3>
                 <p className="text-[#888] text-[12px] text-center mb-5">
-                    Remove "{item.title}" from this playlist?
+                    Remove &apos;{item.title}&apos; from this playlist?
                 </p>
                 <div className="flex gap-2">
                     <button onClick={onCancel} className="flex-1 py-2.5 rounded-xl bg-[#2a2a2e] text-[#ccc] text-[13px] font-medium hover:bg-[#3a3a3e] transition">Cancel</button>

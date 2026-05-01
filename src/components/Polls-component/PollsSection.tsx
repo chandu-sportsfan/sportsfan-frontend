@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { Poll } from "@/types/Polls";
-import PollCard from "./page";
 import { useAuth } from "@/context/AuthContext";
+import PollCard from "./PollCard";
 
 async function fetchActivePolls(): Promise<Poll[]> {
   const res = await fetch("/api/polls");

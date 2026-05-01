@@ -39,7 +39,8 @@ import HomeBanners from "@/src/components/HomeComponents/HomeBanners/index";
 import HomeCardsSection from "@/src/components/HomeComponents/HomeCards";
 import Player360CardsSection from "@/src/components/HomeComponents/Player360Cards";
 import Team360CardsSection from "@/src/components/HomeComponents/Team360Cards";
-import PollsSection from "../PollCards/Pollssection";
+import PollCardsPage from "../PollCards/page";
+
 
 export default function HomePage() {
   return (
@@ -49,7 +50,7 @@ export default function HomePage() {
         <HomeBanners />
         <ContinueListening />
         <HomeCardsSection />
-        <PollsSection />
+        <PollCardsPage />
         <Team360CardsSection />
         <Player360CardsSection />
         <CricketArticles />

@@ -45,6 +45,7 @@ function OptionRow({
   voted,
   inactive,
   onVote,
+  index,
 }: {
   option: PollOption;
   percent: number;
@@ -54,12 +55,24 @@ function OptionRow({
   voted: boolean;
   inactive: boolean;
   onVote: (id: string) => void;
+  index: number;
 }) {
   const barColor = (() => {
-    if (!isQuiz) return "bg-emerald-500";
-    if (isSelected && option.isCorrect) return "bg-emerald-500";
-    if (isSelected && !option.isCorrect) return "bg-orange-500";
-    return "bg-emerald-500";
+    if (isQuiz) {
+      if (isSelected && option.isCorrect) return "bg-emerald-500";
+      if (isSelected && !option.isCorrect) return "bg-orange-500";
+      if (voted && option.isCorrect) return "bg-emerald-500";
+    }
+    
+    const colors = [
+      "bg-blue-500",
+      "bg-purple-500",
+      "bg-amber-500",
+      "bg-rose-500",
+      "bg-cyan-500",
+      "bg-indigo-500"
+    ];
+    return colors[index % colors.length];
   })();
 
   const canClick = !voted && !inactive;
@@ -184,7 +197,7 @@ export default function PollCard({ poll, onVote, userId }: PollCardProps) {
       </div>
 
       <div className="px-3 pb-3 space-y-2">
-        {options.map((opt) => (
+        {options.map((opt, index) => (
           <OptionRow
             key={opt.id}
             option={opt}
@@ -195,6 +208,7 @@ export default function PollCard({ poll, onVote, userId }: PollCardProps) {
             voted={voted}
             inactive={isInactive}
             onVote={handleVote}
+            index={index}
           />
         ))}
       </div>

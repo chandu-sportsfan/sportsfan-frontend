@@ -244,7 +244,7 @@ export default function MainModulesLayout({
       <main className="flex-1 min-w-0 w-full">
         {/* <div className="w-full max-w-[1600px] mx-auto">{children}</div> */}
         {children}
-        <div className="fixed bottom-27 right-6 md:bottom-22 md:right-6 z-50">
+        <div className="fixed bottom-28 right-4 md:bottom-28 md:right-6 lg:bottom-27 lg:right-6 z-50">
           <button
             onClick={() => setIsInviteOpen(true)}
             className="group relative flex items-center justify-center w-7 h-7 lg:w-14 lg:h-14 rounded-full bg-gradient-to-r from-[#C9115F] to-[#e85d04] shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110 active:scale-95"

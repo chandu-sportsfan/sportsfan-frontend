@@ -7,7 +7,7 @@ export default function GlobalActionBar() {
   return (
     <>
       {/* Feedback Button - Bottom Right */}
-      <div className="fixed bottom-6 right-6 z-50">
+      <div className="fixed bottom-20 right-4 md:bottom-20 md:right-6 lg:bottom-6 lg:right-6 z-50">
         <Link href="/MainModules/Feedback">
           <button
             className="group relative flex items-center justify-center w-7 h-7 lg:w-14 lg:h-14 rounded-full bg-gradient-to-r from-[#C9115F] to-[#e85d04] shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110 active:scale-95"

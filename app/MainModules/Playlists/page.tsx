@@ -11,18 +11,18 @@
 // interface Playlist {
 //     id: string;
 //     name: string;
-//     audioIds: string[];   // holds both audio and video IDs
+//     audioIds: string[];   // holds all item IDs (audio, video, article)
 //     createdAt: number;
 //     updatedAt: number;
 // }
 
-// // Unified drop item — works for audio and video
+// // Unified drop item — works for audio, video, and article
 // interface DropItem {
 //     id: string;
 //     title: string;
 //     url: string;
 //     duration: string;
-//     type: "audio" | "video";
+//     type: "audio" | "video" | "article";
 //     subtitle: string;
 // }
 
@@ -53,6 +53,15 @@
 //         <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
 //             <rect x="1" y="3" width="10" height="10" rx="1.5" stroke="currentColor" strokeWidth="1.3" />
 //             <path d="M11 6l4-2v8l-4-2V6z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
+//         </svg>
+//     );
+// }
+
+// function ArticleIcon() {
+//     return (
+//         <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+//             <rect x="1.5" y="1.5" width="9" height="9" rx="1" stroke="currentColor" strokeWidth="1.2" />
+//             <path d="M3.5 4h5M3.5 6h4M3.5 8h3" stroke="currentColor" strokeWidth="1" strokeLinecap="round" />
 //         </svg>
 //     );
 // }
@@ -164,37 +173,50 @@
 // function DropCard({ item, onRemove }: { item: DropItem; onRemove: () => void }) {
 //     const router = useRouter();
 
-//     const route = item.type === "video"
-//         ? `/MainModules/MatchesDropContent/VideoDropScreen?id=${item.id}`
-//         : `/MainModules/MatchesDropContent/AudioDropScreen?id=${item.id}`;
+//     const getRoute = () => {
+//         if (item.type === "video") {
+//             return `/MainModules/MatchesDropContent/VideoDropScreen?id=${item.id}`;
+//         } else if (item.type === "audio") {
+//             return `/MainModules/MatchesDropContent/AudioDropScreen?id=${item.id}`;
+//         } else {
+//             return `/MainModules/CricketArticles/${item.id}`;
+//         }
+//     };
+
+//     const route = getRoute();
 
 //     return (
 //         <div className="group flex items-center gap-3 bg-[#1a1a1e] hover:bg-[#202026] border border-white/5 hover:border-[#C9115F]/20 rounded-xl px-3 py-3 transition-all duration-200">
-//             {/* Type badge + play */}
+//             {/* Type badge + play/read button */}
 //             <button
 //                 onClick={() => router.push(route)}
 //                 className="w-8 h-8 rounded-full bg-[#C9115F]/20 hover:bg-[#C9115F] flex items-center justify-center flex-shrink-0 text-[#C9115F] hover:text-white transition-all duration-200"
 //             >
-//                 <PlayIcon />
+//                 {item.type === "article" ? <ArticleIcon /> : <PlayIcon />}
 //             </button>
 
 //             {/* Info */}
 //             <div className="flex-1 min-w-0 cursor-pointer" onClick={() => router.push(route)}>
 //                 <div className="flex items-center gap-1.5 mb-0.5">
-//                     {/* Audio / Video label */}
-//                     <span className={`flex items-center gap-1 text-[9px] font-medium px-1.5 py-0.5 rounded-md ${item.type === "video" ? "bg-blue-500/15 text-blue-400" : "bg-[#C9115F]/15 text-[#C9115F]"}`}>
-//                         {item.type === "video" ? <VideoIcon /> : <AudioIcon />}
-//                         {item.type === "video" ? "Video" : "Audio"}
+//                     <span className={`flex items-center gap-1 text-[9px] font-medium px-1.5 py-0.5 rounded-md ${
+//                         item.type === "video" ? "bg-blue-500/15 text-blue-400" : 
+//                         item.type === "audio" ? "bg-[#C9115F]/15 text-[#C9115F]" : 
+//                         "bg-green-500/15 text-green-400"
+//                     }`}>
+//                         {item.type === "video" ? <VideoIcon /> : 
+//                          item.type === "audio" ? <AudioIcon /> : 
+//                          <ArticleIcon />}
+//                         {item.type === "video" ? "Video" : item.type === "audio" ? "Audio" : "Article"}
 //                     </span>
 //                 </div>
 //                 <p className="text-white text-[13px] font-medium truncate leading-tight">{item.title}</p>
 //                 <p className="text-[#666] text-[11px] truncate mt-0.5">{item.subtitle}</p>
 //             </div>
 
-//             {/* Duration */}
+//             {/* Duration/Read time */}
 //             <span className="text-[#555] text-[11px] font-mono flex-shrink-0">{item.duration}</span>
 
-//             {/* Remove */}
+//             {/* Remove button */}
 //             <button
 //                 onClick={onRemove}
 //                 className="w-7 h-7 rounded-lg bg-transparent hover:bg-red-500/15 flex items-center justify-center text-[#555] hover:text-red-400 transition opacity-0 group-hover:opacity-100"
@@ -254,32 +276,63 @@
 //         }
 //     };
 
-//     // ── Fetch ALL audio + video files once, build a unified ID → DropItem map ─
+//     // ── Fetch ALL audio + video + article files once, build a unified ID → DropItem map ─
 //     useEffect(() => {
 //         const fetchAllMedia = async () => {
 //             try {
-//                 const [audioRes, videoRes] = await Promise.all([
+//                 const [audioRes, videoRes, articleRes] = await Promise.all([
 //                     axios.get("/api/cloudinary/audio?limit=200"),
 //                     axios.get("/api/cloudinary/video?limit=200"),
+//                     axios.get("/api/cricket-articles?limit=200"),
 //                 ]);
 
 //                 const map = new Map<string, DropItem>();
 
+//                 // Process audio files
 //                 if (audioRes.data.success) {
 //                     for (const a of audioRes.data.audioFiles) {
 //                         const subtitle = a.matchInfo?.type
 //                             ? `${a.matchInfo.type.replace(/_/g, " ")} — ${a.matchInfo.team1 ?? ""} vs ${a.matchInfo.team2 ?? ""}`
 //                             : "Audio Drop";
-//                         map.set(a.id, { id: a.id, title: a.title, url: a.url, duration: a.duration, type: "audio", subtitle });
+//                         map.set(a.id, { 
+//                             id: a.id, 
+//                             title: a.title, 
+//                             url: a.url, 
+//                             duration: a.duration, 
+//                             type: "audio", 
+//                             subtitle 
+//                         });
 //                     }
 //                 }
 
+//                 // Process video files
 //                 if (videoRes.data.success) {
 //                     for (const v of videoRes.data.videoFiles) {
 //                         const subtitle = v.playerInfo?.playerName
 //                             ? `${v.playerInfo.playerName} · Chapter ${v.playerInfo.chapterNumber}`
 //                             : "Video Drop";
-//                         map.set(v.id, { id: v.id, title: v.title, url: v.url, duration: v.duration, type: "video", subtitle });
+//                         map.set(v.id, { 
+//                             id: v.id, 
+//                             title: v.title, 
+//                             url: v.url, 
+//                             duration: v.duration, 
+//                             type: "video", 
+//                             subtitle 
+//                         });
+//                     }
+//                 }
+
+//                 // Process articles
+//                 if (articleRes.data.success && articleRes.data.articles) {
+//                     for (const a of articleRes.data.articles) {
+//                         map.set(a.id, { 
+//                             id: a.id, 
+//                             title: a.title, 
+//                             url: `/MainModules/CricketArticles/${a.id}`, 
+//                             duration: a.readTime || "5 min", 
+//                             type: "article", 
+//                             subtitle: `${a.badge || "Article"} • ${a.views || "0"} views` 
+//                         });
 //                     }
 //                 }
 
@@ -313,7 +366,7 @@
 //             setDropItems(resolveDrops(selectedPlaylist, allItemsMap));
 //             setDropsLoading(false);
 //         }
-//     }, [mediaLoaded, allItemsMap]);
+//     }, [mediaLoaded, allItemsMap, selectedPlaylist]);
 
 //     // ── Rename ────────────────────────────────────────────────────────────────
 //     const handleRename = async (newName: string) => {
@@ -404,7 +457,7 @@
 //                                     <PlaylistIcon size={22} />
 //                                 </div>
 //                                 <p className="text-[#555] text-[13px]">No drops in this playlist yet.</p>
-//                                 <p className="text-[#444] text-[11px] mt-1">Open an Audio or Video Drop and tap the playlist icon to add it.</p>
+//                                 <p className="text-[#444] text-[11px] mt-1">Open any Audio, Video, or Article and tap the playlist icon to add it.</p>
 //                             </div>
 //                         ) : (
 //                             <div className="flex flex-col gap-2">
@@ -439,7 +492,7 @@
 //                                     <PlaylistIcon size={24} />
 //                                 </div>
 //                                 <p className="text-[#666] text-[14px] font-medium">No playlists yet</p>
-//                                 <p className="text-[#444] text-[12px] mt-1 max-w-[220px]">Open any Audio or Video Drop and tap the playlist icon to create one.</p>
+//                                 <p className="text-[#444] text-[12px] mt-1 max-w-[220px]">Open any Audio, Video, or Article and tap the playlist icon to create one.</p>
 //                             </div>
 //                         ) : (
 //                             <div className="flex flex-col gap-3">
@@ -495,6 +548,9 @@
 
 
 
+
+
+
 "use client";
 import { useState, useEffect } from "react";
 import axios from "axios";
@@ -508,18 +564,18 @@ import { ArrowLeft } from "lucide-react";
 interface Playlist {
     id: string;
     name: string;
-    audioIds: string[];   // holds all item IDs (audio, video, article)
+    audioIds: string[];   // holds all item IDs (audio, video, article, club)
     createdAt: number;
     updatedAt: number;
 }
 
-// Unified drop item — works for audio, video, and article
+// Unified drop item — works for audio, video, article, and club
 interface DropItem {
     id: string;
     title: string;
     url: string;
     duration: string;
-    type: "audio" | "video" | "article";
+    type: "audio" | "video" | "article" | "club";
     subtitle: string;
 }
 
@@ -559,6 +615,16 @@ function ArticleIcon() {
         <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
             <rect x="1.5" y="1.5" width="9" height="9" rx="1" stroke="currentColor" strokeWidth="1.2" />
             <path d="M3.5 4h5M3.5 6h4M3.5 8h3" stroke="currentColor" strokeWidth="1" strokeLinecap="round" />
+        </svg>
+    );
+}
+
+function ClubIcon() {
+    return (
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+            <circle cx="12" cy="7" r="4" />
+            <path d="M17 3.5a4 4 0 0 1 0 7" />
         </svg>
     );
 }
@@ -603,7 +669,33 @@ function ChevronLeft() {
     );
 }
 
-// ─── Confirm Delete Modal ─────────────────────────────────────────────────────
+// ─── Confirm Delete Drop Modal ────────────────────────────────────────────────
+
+function ConfirmDeleteDropModal({ item, onConfirm, onCancel, loading }: {
+    item: DropItem; onConfirm: () => void; onCancel: () => void; loading: boolean;
+}) {
+    return (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/80 p-4" onClick={onCancel}>
+            <div className="bg-[#1a1a1e] border border-white/10 rounded-2xl p-6 w-[280px] shadow-2xl" onClick={e => e.stopPropagation()}>
+                <div className="w-10 h-10 rounded-full bg-red-500/15 flex items-center justify-center mb-4 mx-auto text-red-400">
+                    <TrashIcon />
+                </div>
+                <h3 className="text-white text-[15px] font-semibold text-center mb-1">Remove from Playlist</h3>
+                <p className="text-[#888] text-[12px] text-center mb-5">
+                    Remove &apos;{item.title}&apos; from this playlist?
+                </p>
+                <div className="flex gap-2">
+                    <button onClick={onCancel} className="flex-1 py-2.5 rounded-xl bg-[#2a2a2e] text-[#ccc] text-[13px] font-medium hover:bg-[#3a3a3e] transition">Cancel</button>
+                    <button onClick={onConfirm} disabled={loading} className="flex-1 py-2.5 rounded-xl bg-red-500 text-white text-[13px] font-medium hover:bg-red-600 transition disabled:opacity-50 flex items-center justify-center gap-1.5">
+                        {loading ? <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-white" /> : "Remove"}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// ─── Confirm Delete Playlist Modal ───────────────────────────────────────────
 
 function ConfirmModal({ title, message, onConfirm, onCancel, loading }: {
     title: string; message: string; onConfirm: () => void; onCancel: () => void; loading: boolean;
@@ -675,8 +767,10 @@ function DropCard({ item, onRemove }: { item: DropItem; onRemove: () => void }) 
             return `/MainModules/MatchesDropContent/VideoDropScreen?id=${item.id}`;
         } else if (item.type === "audio") {
             return `/MainModules/MatchesDropContent/AudioDropScreen?id=${item.id}`;
-        } else {
+        } else if (item.type === "article") {
             return `/MainModules/CricketArticles/${item.id}`;
+        } else {
+            return `/MainModules/ClubProfileScreen/${item.id}`;
         }
     };
 
@@ -689,7 +783,7 @@ function DropCard({ item, onRemove }: { item: DropItem; onRemove: () => void }) 
                 onClick={() => router.push(route)}
                 className="w-8 h-8 rounded-full bg-[#C9115F]/20 hover:bg-[#C9115F] flex items-center justify-center flex-shrink-0 text-[#C9115F] hover:text-white transition-all duration-200"
             >
-                {item.type === "article" ? <ArticleIcon /> : <PlayIcon />}
+                {item.type === "article" ? <ArticleIcon /> : item.type === "club" ? <ClubIcon /> : <PlayIcon />}
             </button>
 
             {/* Info */}
@@ -698,12 +792,14 @@ function DropCard({ item, onRemove }: { item: DropItem; onRemove: () => void }) 
                     <span className={`flex items-center gap-1 text-[9px] font-medium px-1.5 py-0.5 rounded-md ${
                         item.type === "video" ? "bg-blue-500/15 text-blue-400" : 
                         item.type === "audio" ? "bg-[#C9115F]/15 text-[#C9115F]" : 
-                        "bg-green-500/15 text-green-400"
+                        item.type === "article" ? "bg-green-500/15 text-green-400" :
+                        "bg-purple-500/15 text-purple-400"
                     }`}>
                         {item.type === "video" ? <VideoIcon /> : 
                          item.type === "audio" ? <AudioIcon /> : 
-                         <ArticleIcon />}
-                        {item.type === "video" ? "Video" : item.type === "audio" ? "Audio" : "Article"}
+                         item.type === "article" ? <ArticleIcon /> :
+                         <ClubIcon />}
+                        {item.type === "video" ? "Video" : item.type === "audio" ? "Audio" : item.type === "article" ? "Article" : "Club"}
                     </span>
                 </div>
                 <p className="text-white text-[13px] font-medium truncate leading-tight">{item.title}</p>
@@ -748,8 +844,10 @@ export default function PlaylistsPage() {
     // Modals
     const [renameTarget, setRenameTarget] = useState<Playlist | null>(null);
     const [deleteTarget, setDeleteTarget] = useState<Playlist | null>(null);
+    const [deleteDropTarget, setDeleteDropTarget] = useState<DropItem | null>(null);
     const [renameLoading, setRenameLoading] = useState(false);
     const [deleteLoading, setDeleteLoading] = useState(false);
+    const [deleteDropLoading, setDeleteDropLoading] = useState(false);
     const [removingId, setRemovingId] = useState<string | null>(null);
 
     const getUserId = () => user?.userId || null;
@@ -773,14 +871,15 @@ export default function PlaylistsPage() {
         }
     };
 
-    // ── Fetch ALL audio + video + article files once, build a unified ID → DropItem map ─
+    // ── Fetch ALL audio + video + article + club files once ───────────────────
     useEffect(() => {
         const fetchAllMedia = async () => {
             try {
-                const [audioRes, videoRes, articleRes] = await Promise.all([
+                const [audioRes, videoRes, articleRes, clubRes] = await Promise.all([
                     axios.get("/api/cloudinary/audio?limit=200"),
                     axios.get("/api/cloudinary/video?limit=200"),
                     axios.get("/api/cricket-articles?limit=200"),
+                    axios.get("/api/club-profiles?limit=200"),
                 ]);
 
                 const map = new Map<string, DropItem>();
@@ -833,6 +932,20 @@ export default function PlaylistsPage() {
                     }
                 }
 
+                // Process club profiles
+                if (clubRes.data.success && clubRes.data.clubs) {
+                    for (const c of clubRes.data.clubs) {
+                        map.set(c.id, { 
+                            id: c.id, 
+                            title: c.name, 
+                            url: `/MainModules/ClubProfileScreen/${c.id}`, 
+                            duration: "Club", 
+                            type: "club", 
+                            subtitle: `${c.league || "Cricket"} • ${c.stats?.points || "0"} pts` 
+                        });
+                    }
+                }
+
                 setAllItemsMap(map);
                 setMediaLoaded(true);
             } catch (err) {
@@ -881,7 +994,7 @@ export default function PlaylistsPage() {
         finally { setRenameLoading(false); }
     };
 
-    // ── Delete ────────────────────────────────────────────────────────────────
+    // ── Delete Playlist ───────────────────────────────────────────────────────
     const handleDelete = async () => {
         if (!deleteTarget) return;
         setDeleteLoading(true);
@@ -894,20 +1007,26 @@ export default function PlaylistsPage() {
         finally { setDeleteLoading(false); }
     };
 
-    // ── Remove single item ────────────────────────────────────────────────────
+    // ── Remove single drop from playlist ──────────────────────────────────────
     const handleRemoveDrop = async (itemId: string) => {
         if (!selectedPlaylist) return;
-        setRemovingId(itemId);
+        setDeleteDropLoading(true);
         try {
-            const res = await axios.put("/api/playlists", { playlistId: selectedPlaylist.id, userId: getUserId(), action: "remove", audioId: itemId });
+            const res = await axios.put("/api/playlists", { 
+                playlistId: selectedPlaylist.id, 
+                userId: getUserId(), 
+                action: "remove", 
+                audioId: itemId 
+            });
             if (res.data.success) {
                 const updated = res.data.playlist as Playlist;
                 setPlaylists(prev => prev.map(p => p.id === updated.id ? updated : p));
                 setSelectedPlaylist(updated);
                 setDropItems(prev => prev.filter(d => d.id !== itemId));
+                setDeleteDropTarget(null);
             }
         } catch (err) { console.error("Remove drop error:", err); }
-        finally { setRemovingId(null); }
+        finally { setDeleteDropLoading(false); }
     };
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -939,7 +1058,7 @@ export default function PlaylistsPage() {
                                     <EditIcon />Rename
                                 </button>
                                 <button onClick={() => setDeleteTarget(selectedPlaylist)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#1e1e22] text-red-400 hover:bg-red-500/15 text-[12px] font-medium transition">
-                                    <TrashIcon />Delete
+                                    <TrashIcon />Delete Playlist
                                 </button>
                             </div>
                         </div>
@@ -954,13 +1073,13 @@ export default function PlaylistsPage() {
                                     <PlaylistIcon size={22} />
                                 </div>
                                 <p className="text-[#555] text-[13px]">No drops in this playlist yet.</p>
-                                <p className="text-[#444] text-[11px] mt-1">Open any Audio, Video, or Article and tap the playlist icon to add it.</p>
+                                <p className="text-[#444] text-[11px] mt-1">Open any Audio, Video, Article, or Club and tap the playlist icon to add it.</p>
                             </div>
                         ) : (
                             <div className="flex flex-col gap-2">
                                 {dropItems.map(item => (
-                                    <div key={item.id} className={removingId === item.id ? "opacity-40 pointer-events-none" : ""}>
-                                        <DropCard item={item} onRemove={() => handleRemoveDrop(item.id)} />
+                                    <div key={item.id} className={deleteDropTarget?.id === item.id ? "opacity-40 pointer-events-none" : ""}>
+                                        <DropCard item={item} onRemove={() => setDeleteDropTarget(item)} />
                                     </div>
                                 ))}
                             </div>
@@ -989,7 +1108,7 @@ export default function PlaylistsPage() {
                                     <PlaylistIcon size={24} />
                                 </div>
                                 <p className="text-[#666] text-[14px] font-medium">No playlists yet</p>
-                                <p className="text-[#444] text-[12px] mt-1 max-w-[220px]">Open any Audio, Video, or Article and tap the playlist icon to create one.</p>
+                                <p className="text-[#444] text-[12px] mt-1 max-w-[220px]">Open any Audio, Video, Article, or Club and tap the playlist icon to create one.</p>
                             </div>
                         ) : (
                             <div className="flex flex-col gap-3">
@@ -1024,8 +1143,10 @@ export default function PlaylistsPage() {
                 )}
             </div>
 
+            {/* Modals */}
             {renameTarget && <RenameModal playlist={renameTarget} onConfirm={handleRename} onCancel={() => setRenameTarget(null)} loading={renameLoading} />}
             {deleteTarget && <ConfirmModal title="Delete Playlist" message={`"${deleteTarget.name}" will be permanently deleted.`} onConfirm={handleDelete} onCancel={() => setDeleteTarget(null)} loading={deleteLoading} />}
+            {deleteDropTarget && <ConfirmDeleteDropModal item={deleteDropTarget} onConfirm={() => handleRemoveDrop(deleteDropTarget.id)} onCancel={() => setDeleteDropTarget(null)} loading={deleteDropLoading} />}
         </div>
     );
 }

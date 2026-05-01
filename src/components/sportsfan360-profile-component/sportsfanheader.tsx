@@ -2,6 +2,8 @@
 import axios from "axios";
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import { ArrowLeft } from "lucide-react";
+import Link from "next/link";
 
 interface Drop {
   id: string;
@@ -91,6 +93,10 @@ export default function Sportsfan360ProfileHeader() {
 
   return (
     <div className="flex flex-col items-center  pt-6 md:pt-8 pb-2 gap-4 md:gap-5">
+         <Link href="/MainModules/HomePage" className="inline-flex items-center gap-2 text-[#666] hover:text-white mb-6 transition text-sm">
+                            <ArrowLeft size={16} />
+                            Back
+                        </Link>
       {/* Gradient ring avatar */}
       <div className="rounded-full p-[3px] px-4 md:px-6 bg-gradient-to-br from-[#e91e8c] to-[#ff5722] w-28 h-28 md:w-36 md:h-36 lg:w-32 lg:h-32 shrink-0">
         <div className="w-full h-full rounded-full overflow-hidden bg-[#111111]">
@@ -123,7 +129,7 @@ export default function Sportsfan360ProfileHeader() {
       {/* Stats pills - showing drops count */}
       <div className="flex items-center gap-3">
         {/* <span className="px-4 md:px-5 py-2 rounded-full bg-[#1c1c1c] border border-[#363636] text-[#d4d4d4] text-[13px] md:text-sm font-medium">
-          📊 {profile.drops?.length || 0} Audio Drops
+           {profile.drops?.length || 0} Audio Drops
         </span> */}
         <span className="px-4 md:px-5 py-2 rounded-full bg-[#e91e8c] text-white text-[13px] md:text-sm font-semibold whitespace-nowrap">
           ⚡ SportsFan360

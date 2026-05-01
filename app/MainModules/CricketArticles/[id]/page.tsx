@@ -678,7 +678,7 @@ export default function CricketArticleDetail() {
                 <img
                     src={article.image}
                     alt={article.title}
-                    className="w-full object-fit max-h-[320px]"
+                    className="w-full object-fit"
                 />
             </div>
             <p className="text-center text-[11px] text-gray-500 mb-5">{article.title}</p>

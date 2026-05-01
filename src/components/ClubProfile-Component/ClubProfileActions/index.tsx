@@ -1,6 +1,9 @@
 "use client";
 
 import { ClubProfile } from "@/types/ClubProfile";
+import PlaylistDialog from "../../playlistdialog-component/playlistdialog";
+import { useState } from "react";
+import { useAuth } from "@/context/AuthContext";
 
 interface Props {
     club: ClubProfile;
@@ -14,8 +17,11 @@ function SectionLabel({ text }: { text: string }) {
         </div>
     );
 }
-
 export default function ClubProfileActions({ club }: Props) {
+    const { user } = useAuth();
+    const [showPlaylistDialog, setShowPlaylistDialog] = useState(false); 
+    const getUserId = () => user?.userId || null;
+    
     const careerStatItems = [
         { value: club.stats.runs, label: "RUNS" },
         { value: club.stats.sr, label: "SR" },
@@ -27,8 +33,7 @@ export default function ClubProfileActions({ club }: Props) {
 
             {/* ── Row 1: Follow · Watch Me · Share ── */}
             <div className="flex items-center gap-2 md:gap-3">
-
-                {/* Follow – gradient pill */}
+                {/* Follow button */}
                 <button className="flex flex-1 items-center justify-center gap-2 h-[46px] md:h-[52px] rounded-full bg-gradient-to-r from-[#e91e8c] to-[#ff5722] text-white text-[14px] md:text-base font-bold tracking-wide border-0 cursor-pointer hover:opacity-90 transition-opacity">
                     <svg width="17" height="17" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
                         <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
@@ -39,13 +44,17 @@ export default function ClubProfileActions({ club }: Props) {
                     Follow
                 </button>
 
-                {/* Watch Me – outlined */}
-                <button className="flex flex-1 items-center justify-center gap-2 h-[46px] md:h-[52px] rounded-full bg-transparent border border-[#e91e8c] text-[#e91e8c] text-[14px] md:text-base font-bold cursor-pointer hover:bg-[#e91e8c]/10 transition-colors">
-                    <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
-                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-                        <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                {/* Playlist button */}
+                <button
+                    onClick={() => setShowPlaylistDialog(true)}
+                    className="w-12 h-12 rounded-full p-2 bg-gradient-to-r from-[#e91e8c] to-[#ff5722] flex items-center justify-center cursor-pointer hover:bg-[#2a2a2e] transition"
+                    title="Add to Playlist"
+                >
+                    <svg width="18" height="18" viewBox="0 0 16 16" fill="none">
+                        <path d="M2 4h9M2 8h7M2 12h5" stroke="white" strokeWidth="1.4" strokeLinecap="round" />
+                        <circle cx="13" cy="11" r="2.5" stroke="white" strokeWidth="1.3" />
+                        <path d="M13 9.5V7l2.5-.5" stroke="white" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
-                    Watch Me
                 </button>
 
                 {/* Share icon */}
@@ -60,15 +69,14 @@ export default function ClubProfileActions({ club }: Props) {
                 </button>
             </div>
 
-            {/* ── Avatar Jersey CTA ── */}
-            <button className="flex w-full items-center justify-center gap-2 h-12 md:h-[52px] rounded-full bg-transparent border border-[#e91e8c] text-[#e91e8c] text-[13px] md:text-sm font-bold cursor-pointer hover:bg-[#e91e8c]/10 transition-colors">
-                <svg width="17" height="17" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                    <path d="M20.38 3.46L16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.57a1 1 0 0 0 .99.84H7v10a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V10h3.15a1 1 0 0 0 .99-.84l.58-3.57a2 2 0 0 0-1.34-2.23z" />
+            {/* Watch Me – outlined */}
+            <button className="flex flex-1 items-center justify-center gap-2 h-[46px] md:h-[52px] p-2 rounded-full bg-transparent border border-[#e91e8c] text-[#e91e8c] text-[14px] md:text-base font-bold cursor-pointer hover:bg-[#e91e8c]/10 transition-colors">
+                <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
+                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                    <path d="M13.73 21a2 2 0 0 1-3.46 0" />
                 </svg>
-                Make My Avatar in This Jersey
+                Watch Me
             </button>
-
-           
 
             {/* ── Team Overview ── */}
             <div className="w-full bg-[#111111] border border-[#2a2a2a] rounded-[28px] p-5 md:p-6">
@@ -90,8 +98,7 @@ export default function ClubProfileActions({ club }: Props) {
                     ].map((item, index) => (
                         <div
                             key={item.label}
-                            className={`flex items-center px-5 py-4 ${index !== 3 ? "border-b border-[#1f1f1f]" : ""
-                                }`}
+                            className={`flex items-center px-5 py-4 ${index !== 3 ? "border-b border-[#1f1f1f]" : ""}`}
                         >
                             <span className="w-[90px] text-[#9a9a9a] text-[12px] md:text-[15px] tracking-wide">
                                 {item.label}
@@ -106,6 +113,15 @@ export default function ClubProfileActions({ club }: Props) {
                     ))}
                 </div>
             </div>
-            </div>
-            );
+            
+            {/*  PlaylistDialog - Render ONCE outside the loop */}
+            <PlaylistDialog
+                open={showPlaylistDialog}
+                onClose={() => setShowPlaylistDialog(false)}
+                itemId={club.name || "club_profile"}  // Use club ID or name
+                itemType="teams360" 
+                userId={getUserId()}
+            />
+        </div>
+    );
 }

@@ -6,8 +6,10 @@ import { useAuth } from "@/context/AuthContext";
 import PredictionCard from "@/src/components/Prediction-component/PredictionCard";
 import PredictionResult from "@/src/components/Prediction-component/Predictionresult";
 import PredictionLeaderboard from "@/src/components/Prediction-component/Predictionleaderboard";
+import { ArrowLeft } from "lucide-react";
+import Link from "next/link";
 
-// ─── API helpers ───────────────────────────────────────────────────────────────
+// ─── API helpers 
 
 async function fetchPolls(): Promise<Poll[]> {
   const res = await fetch("/api/polls");
@@ -81,6 +83,12 @@ export default function PredictionsPage() {
 
   return (
     <div className="min-h-screen px-4 py-6 max-w-6xl mx-auto space-y-6">
+         <Link href="/MainModules/HomePage" className="inline-flex items-center gap-2 text-gray-400 hover:text-white mb-6 transition">
+                            <button className="flex items-center gap-2 text-gray-400 hover:text-white mb-6 transition cursor-pointer">
+                                <ArrowLeft size={18} />
+                                <span className="text-sm">Back</span>
+                            </button>
+                        </Link>
 
       {/* Page title */}
       <div>

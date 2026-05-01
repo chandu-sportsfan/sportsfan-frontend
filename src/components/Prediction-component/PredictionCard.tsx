@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Poll, PollOption, UserPrediction } from "@/types/Polls";
 
+
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
 function getStorageKey(pollId: string, userId?: string | null) {
@@ -209,6 +210,7 @@ function PredictionQuestion({ poll, userId, onVote }: PredictionQuestionProps) {
 
   return (
     <div className="space-y-2">
+        
       {/* Question header */}
       <div className="flex items-center justify-between">
         <p className="text-sm font-semibold text-white/80">{poll.title}</p>

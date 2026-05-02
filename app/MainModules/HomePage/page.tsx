@@ -45,7 +45,6 @@ import PollCardsPage from "../PollCards/page";
 export default function HomePage() {
   return (
     <div className="flex flex-col w-full">
-      <Header />
       <div className="flex flex-col gap-6 px-4 lg:px-6 py-4 w-full">
         <HomeBanners />
         <ContinueListening />

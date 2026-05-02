@@ -1,5 +1,6 @@
 "use client";
 
+import Header from "@/src/components/HomeComponents/Header";
 import BottomNav from "@/src/components/HomeComponents/Bottomnav";
 import InviteFriendModal from "@/src/components/InviteFriendModal";
 import axios from "axios";
@@ -242,6 +243,7 @@ export default function MainModulesLayout({
       {renderSidebar()}
 
       <main className="flex-1 min-w-0 w-full">
+        <Header />
         {/* <div className="w-full max-w-[1600px] mx-auto">{children}</div> */}
         {children}
         <div className="fixed bottom-28 right-4 md:bottom-28 md:right-6 lg:bottom-27 lg:right-6 z-50">

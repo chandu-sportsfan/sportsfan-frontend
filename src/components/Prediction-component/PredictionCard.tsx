@@ -308,9 +308,9 @@ export default function PredictionCard({
       </div>
 
       {/* Questions */}
-      <div className="px-5 py-4 space-y-6 divide-y divide-white/5">
-        {polls.map((poll, i) => (
-          <div key={poll.id} className={i !== 0 ? "pt-5" : ""}>
+      <div className="px-5 py-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {polls.map((poll) => (
+          <div key={poll.id} className="w-full bg-[#1a1a2e]/50 border border-white/5 rounded-xl p-4">
             <PredictionQuestion poll={poll} userId={userId} onVote={onVote} />
           </div>
         ))}

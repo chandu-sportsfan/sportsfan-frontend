@@ -3,67 +3,6 @@
 import { useState } from "react";
 import { LeaderboardEntry } from "@/types/Polls";
 
-// ─── Mock data ─────────────────────────────────────────────────────────────────
-
-const MOCK_GLOBAL: LeaderboardEntry[] = [
-  {
-    rank: 1,
-    userId: "u1",
-    username: "CricketKing99",
-    initials: "CK",
-    avatarColor: "#7c3aed",
-    totalPoints: 1240,
-    correctPredictions: 18,
-    totalPredictions: 20,
-    rankChange: 2,
-    streak: "Perfect streak",
-  },
-  {
-    rank: 2,
-    userId: "u2",
-    username: "RCBForever",
-    initials: "RF",
-    avatarColor: "#dc2626",
-    totalPoints: 1180,
-    correctPredictions: 17,
-    totalPredictions: 20,
-    rankChange: 1,
-  },
-  {
-    rank: 3,
-    userId: "u3",
-    username: "MI_Paltan",
-    initials: "MP",
-    avatarColor: "#0284c7",
-    totalPoints: 1050,
-    correctPredictions: 15,
-    totalPredictions: 20,
-    rankChange: -1,
-  },
-  {
-    rank: 4,
-    userId: "u4",
-    username: "KKR_Superfan",
-    initials: "KS",
-    avatarColor: "#854d0e",
-    totalPoints: 990,
-    correctPredictions: 14,
-    totalPredictions: 20,
-    rankChange: 3,
-  },
-  {
-    rank: 5,
-    userId: "u5",
-    username: "CSK_Whistle",
-    initials: "CW",
-    avatarColor: "#ca8a04",
-    totalPoints: 920,
-    correctPredictions: 13,
-    totalPredictions: 20,
-    rankChange: -2,
-  },
-];
-
 const MOCK_FRIENDS: LeaderboardEntry[] = [
   {
     rank: 1,
@@ -87,19 +26,6 @@ const MOCK_FRIENDS: LeaderboardEntry[] = [
     totalPredictions: 16,
     rankChange: 0,
   },
-  {
-    rank: 3,
-    userId: "me",
-    username: "You",
-    initials: "YO",
-    avatarColor: "#e91e8c",
-    totalPoints: 520,
-    correctPredictions: 8,
-    totalPredictions: 16,
-    pointsToday: 120,
-    rankChange: 4,
-    isCurrentUser: true,
-  },
 ];
 
 const MOCK_MY_TEAM: LeaderboardEntry[] = [
@@ -114,29 +40,20 @@ const MOCK_MY_TEAM: LeaderboardEntry[] = [
     totalPredictions: 16,
     rankChange: 0,
   },
-  {
-    rank: 2,
-    userId: "me",
-    username: "You",
-    initials: "YO",
-    avatarColor: "#e91e8c",
-    totalPoints: 520,
-    correctPredictions: 8,
-    totalPredictions: 16,
-    pointsToday: 120,
-    rankChange: 4,
-    isCurrentUser: true,
-  },
 ];
-
-const MOCK_DATA: Record<string, LeaderboardEntry[]> = {
-  Global: MOCK_GLOBAL,
-  Friends: MOCK_FRIENDS,
-  "My Team": MOCK_MY_TEAM,
-};
 
 const TABS = ["Global", "Friends", "My Team"] as const;
 type Tab = (typeof TABS)[number];
+
+// Helper to generate a consistent color from string
+function stringToColor(str: string) {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const c = (hash & 0x00FFFFFF).toString(16).toUpperCase();
+  return "#" + "00000".substring(0, 6 - c.length) + c;
+}
 
 // ─── Medal icon ────────────────────────────────────────────────────────────────
 
@@ -220,21 +137,69 @@ function LeaderRow({ entry, currentUserRank }: { entry: LeaderboardEntry; curren
 // ─── Main Leaderboard ──────────────────────────────────────────────────────────
 
 export interface PredictionLeaderboardProps {
-  totalParticipants?: number;
-  currentUserRank?: number;
-  currentUserPoints?: number;
+  initialTotalParticipants?: number;
+  initialCurrentUserRank?: number;
+  initialCurrentUserPoints?: number;
 }
 
+import { useEffect } from "react";
+
 export default function PredictionLeaderboard({
-  totalParticipants = 12841,
-  currentUserRank = 247,
-  currentUserPoints = 520,
+  initialTotalParticipants = 0,
+  initialCurrentUserRank = 0,
+  initialCurrentUserPoints = 0,
 }: PredictionLeaderboardProps) {
   const [activeTab, setActiveTab] = useState<Tab>("Global");
-  const entries = MOCK_DATA[activeTab];
-  const currentUser = entries.find((e) => e.isCurrentUser);
+  const [globalEntries, setGlobalEntries] = useState<LeaderboardEntry[]>([]);
+  const [totalParticipants, setTotalParticipants] = useState(initialTotalParticipants);
+  const [currentUserData, setCurrentUserData] = useState<LeaderboardEntry | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchLeaderboard() {
+      try {
+        const res = await fetch("/api/leaderboard");
+        const json = await res.json();
+        if (json.success && json.data) {
+          interface RawLeaderboardEntry {
+            userId: string;
+            username: string;
+            totalPoints: number;
+            correctPredictions: number;
+            totalPredictions: number;
+            rank: number;
+          }
+          const mappedEntries = json.data.entries.map((e: RawLeaderboardEntry) => ({
+            ...e,
+            initials: e.username.substring(0, 2).toUpperCase(),
+            avatarColor: stringToColor(e.userId),
+          }));
+          setGlobalEntries(mappedEntries);
+          setTotalParticipants(json.data.totalParticipants);
+          if (json.data.currentUser) {
+            const current = json.data.currentUser;
+            setCurrentUserData({
+              ...current,
+              initials: current.username.substring(0, 2).toUpperCase(),
+              avatarColor: "#e91e8c",
+              isCurrentUser: true,
+            });
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch leaderboard", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchLeaderboard();
+  }, []);
+
+  const entries = activeTab === "Global" ? globalEntries : activeTab === "Friends" ? MOCK_FRIENDS : MOCK_MY_TEAM;
+  const currentUser = activeTab === "Global" ? currentUserData : entries.find((e) => e.isCurrentUser);
   const topEntries = entries.filter((e) => !e.isCurrentUser).slice(0, 5);
   const hiddenCount = Math.max(0, entries.filter((e) => !e.isCurrentUser).length - topEntries.length);
+  const currentUserRank = currentUser ? currentUser.rank : initialCurrentUserRank;
 
   return (
     <div className="w-full rounded-2xl overflow-hidden bg-[#0d0d1a] border border-white/10">
@@ -246,10 +211,12 @@ export default function PredictionLeaderboard({
             {totalParticipants.toLocaleString()} participants · Updates live
           </p>
         </div>
-        <div className="text-right">
-          <p className="text-[11px] text-white/35">Your rank</p>
-          <p className="text-sm font-black text-[#e879f9]">#{currentUserRank}</p>
-        </div>
+        {(currentUserRank > 0) && (
+          <div className="text-right">
+            <p className="text-[11px] text-white/35">Your rank</p>
+            <p className="text-sm font-black text-[#e879f9]">#{currentUserRank}</p>
+          </div>
+        )}
       </div>
 
       {/* Tabs */}
@@ -271,10 +238,18 @@ export default function PredictionLeaderboard({
       </div>
 
       {/* Entries */}
-      <div className="px-2 pb-2 space-y-0.5">
-        {topEntries.map((entry) => (
-          <LeaderRow key={entry.userId} entry={entry} currentUserRank={currentUserRank} />
-        ))}
+      <div className="px-2 pb-2 space-y-0.5 min-h-[150px]">
+        {loading ? (
+          <div className="flex items-center justify-center py-10 text-white/30 text-sm">Loading leaderboard...</div>
+        ) : entries.length === 0 ? (
+          <div className="flex items-center justify-center py-10 text-white/30 text-sm">No predictions yet</div>
+        ) : (
+          <>
+            {topEntries.map((entry) => (
+              <LeaderRow key={entry.userId} entry={entry} currentUserRank={currentUserRank} />
+            ))}
+          </>
+        )}
 
         {/* Hidden rows indicator */}
         {hiddenCount > 0 && (

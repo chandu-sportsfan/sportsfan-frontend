@@ -69,9 +69,9 @@ export default function PredictionsPage() {
   // Split polls: active vs ended
   const activePolls = polls.filter((p) => p.active);
   const endedPolls = polls.filter((p) => !p.active);
-// const now = new Date();
-// const activePolls = polls.filter((p) => p.active && new Date(p.endsAt) > now);
-// const endedPolls = polls.filter((p) => !p.active || new Date(p.endsAt) <= now);
+  // const now = new Date();
+  // const activePolls = polls.filter((p) => p.active && new Date(p.endsAt) > now);
+  // const endedPolls = polls.filter((p) => !p.active || new Date(p.endsAt) <= now);
 
   // Group active polls by matchId (or show all together if no matchId)
   const matchGroups = activePolls.reduce<Record<string, Poll[]>>((acc, poll) => {
@@ -82,13 +82,13 @@ export default function PredictionsPage() {
   }, {});
 
   return (
-    <div className="min-h-screen px-4 py-6 max-w-6xl mx-auto space-y-6">
-         <Link href="/MainModules/HomePage" className="inline-flex items-center gap-2 text-gray-400 hover:text-white mb-6 transition">
-                            <button className="flex items-center gap-2 text-gray-400 hover:text-white mb-6 transition cursor-pointer">
-                                <ArrowLeft size={18} />
-                                <span className="text-sm">Back</span>
-                            </button>
-                        </Link>
+    <div className="min-h-screen px-4 py-6 max-w-6xl mx-auto space-y-6 pb-20">
+      <Link href="/MainModules/HomePage" className="inline-flex items-center gap-2 text-gray-400 hover:text-white mb-6 transition">
+        <button className="flex items-center gap-2 text-gray-400 hover:text-white mb-6 transition cursor-pointer">
+          <ArrowLeft size={18} />
+          <span className="text-sm">Back</span>
+        </button>
+      </Link>
 
       {/* Page title */}
       <div>
@@ -140,11 +140,7 @@ export default function PredictionsPage() {
 
       {/* Leaderboard */}
       {!loading && (
-        <PredictionLeaderboard
-          totalParticipants={12841}
-          currentUserRank={247}
-          currentUserPoints={520}
-        />
+        <PredictionLeaderboard />
       )}
     </div>
   );

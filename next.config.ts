@@ -120,6 +120,10 @@ const nextConfig = {
         { source: '/api/polls', destination: `${apiTarget}/api/polls` },
         { source: '/api/polls/:path*', destination: `${apiTarget}/api/polls/:path*` },
 
+        // Leaderboard
+        { source: '/api/leaderboard', destination: `${apiTarget}/api/leaderboard` },
+        { source: '/api/leaderboard/:path*', destination: `${apiTarget}/api/leaderboard/:path*` },
+
         //Comments
         { source: '/api/comments', destination: `${apiTarget}/api/comments` },
 

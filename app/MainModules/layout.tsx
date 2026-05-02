@@ -239,7 +239,7 @@ export default function MainModulesLayout({
   };
 
   return (
-    <div className="min-h-screen bg-black text-white flex flex-col lg:flex-row overflow-x-hidden">
+    <div className="min-h-screen bg-black text-white flex flex-col lg:flex-row ">
       {renderSidebar()}
 
       <main className="flex-1 min-w-0 w-full">

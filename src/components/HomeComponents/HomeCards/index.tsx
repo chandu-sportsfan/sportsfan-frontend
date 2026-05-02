@@ -311,7 +311,7 @@ function LatestPlaylistsList({ userId }: { userId: string | null }) {
         </div>
       )}
 
-      {teamPlaylists.length > 0 && (
+      {/* {teamPlaylists.length > 0 && (
         <div className="pt-2">
           <p className="text-gray-500 text-[10px] font-medium uppercase tracking-wide mb-1">Team 360 Playlists</p>
           <div className="flex flex-col gap-2">
@@ -332,7 +332,7 @@ function LatestPlaylistsList({ userId }: { userId: string | null }) {
             ))}
           </div>
         </div>
-      )}
+      )} */}
     </div>
   );
 }

@@ -46,6 +46,7 @@
 
 'use client';
 import { ArrowLeft } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 export default function CircleCricketClient() {
@@ -62,6 +63,14 @@ export default function CircleCricketClient() {
           <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
           <span className="text-sm">Back</span>
         </button>
+      </div>
+
+      <div>
+        <Link href="/MainModules/FanBattle" className="ml-auto">
+          <button className="text-2xl text-white font-bold px-4 py-3 border-b border-white/5">
+           Fan Battle
+          </button>
+          </Link>
       </div>
 
       {/* Game */}

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Poll } from "@/types/Polls";
 import { useAuth } from "@/context/AuthContext";
 import PollCard from "./PollCard";
+import Link from "next/link";
 
 async function fetchActivePolls(): Promise<Poll[]> {
   const res = await fetch("/api/polls");
@@ -44,6 +45,8 @@ export default function PollsSection() {
   const { user } = useAuth();
   const [polls, setPolls] = useState<Poll[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showMenu, setShowMenu] = useState(false);
+  
 
   useEffect(() => {
     fetchActivePolls()
@@ -55,9 +58,53 @@ export default function PollsSection() {
 
   return (
     <section className="w-full">
-      <div className="flex items-center gap-2 mb-3">
+      {/* <div className="flex items-center gap-2 mb-3 justify-between">
         <h1 className="text-[20px] text-white font-bold">Polls &amp; Quizzes</h1>
-      </div>
+        <Link href="/MainModules/Prediction" className="ml-auto">
+          <button>Poll history</button>
+        </Link>
+      </div> */}
+      <div className="flex items-center gap-2 mb-3">
+  <h1 className="text-[20px] text-white font-bold">Polls &amp; Quizzes</h1>
+  
+  {/* Three dots menu */}
+  <div className="relative">
+    <button
+      onClick={() => setShowMenu(!showMenu)}
+      className="w-8 h-8 rounded-full bg-[#1e1e22] flex items-center justify-center hover:bg-[#2a2a2e] transition"
+    >
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <circle cx="8" cy="3" r="1.5" fill="#aaa" />
+        <circle cx="8" cy="8" r="1.5" fill="#aaa" />
+        <circle cx="8" cy="13" r="1.5" fill="#aaa" />
+      </svg>
+    </button>
+    
+    {/* Dropdown menu */}
+    {showMenu && (
+      <>
+        <div 
+          className="fixed inset-0 z-40" 
+          onClick={() => setShowMenu(false)} 
+        />
+        <div className="absolute right-0 mt-2 w-40 bg-[#1a1a1e] border border-white/10 rounded-lg shadow-xl z-50 overflow-hidden">
+          <Link href="/MainModules/Prediction" className="block">
+            <button 
+              onClick={() => setShowMenu(false)}
+              className="w-full px-4 py-2 text-left text-sm text-gray-300 hover:bg-[#2a2a2e] transition flex items-center gap-2"
+            >
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <path d="M2 4h10M2 7h10M2 10h10" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+                <circle cx="11" cy="7" r="2" stroke="currentColor" strokeWidth="1.2" />
+              </svg>
+              Poll History
+            </button>
+          </Link>
+        </div>
+      </>
+    )}
+  </div>
+</div>
 
       <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
         {loading ? (

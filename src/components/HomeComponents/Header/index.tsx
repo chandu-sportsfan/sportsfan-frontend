@@ -72,7 +72,7 @@ export default function Header() {
     };
 
     return (
-        <div className="w-full px-4 lg:px-6 py-3 border-b border-pink-500/20 bg-black flex flex-col gap-3">
+        <div className="w-full px-4 lg:px-6 py-3 border-b border-pink-500/20 bg-black flex flex-col gap-3 sticky top-0 z-50">
             {/* Top row */}
             <div className="flex items-center justify-between">
                 <Link href="/MainModules/HomePage">

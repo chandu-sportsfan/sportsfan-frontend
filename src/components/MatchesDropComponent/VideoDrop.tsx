@@ -796,6 +796,7 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import axios from "axios";
 import { useAuth } from "@/context/AuthContext";
 import CommentsSection from "@/src/components/CommentsSection";
@@ -874,8 +875,11 @@ const copyToClipboard = async (text: string) => {
 
 export default function VideoDropCard() {
     const { user, getUserName } = useAuth();
+    const router = useRouter();
     const searchParams = useSearchParams();
     const idParam = searchParams.get("id");
+    const fromPlaylist = searchParams.get("from") === "playlist";
+    const playlistId = searchParams.get("playlistId");
     const resumeAt = parseFloat(searchParams.get("resume") || "0");
 
     const [playing, setPlaying] = useState(false);
@@ -916,6 +920,14 @@ export default function VideoDropCard() {
     useEffect(() => { currentIndexRef.current = currentIndex; }, [currentIndex]);
 
     const getUserId = () => user?.userId || null;
+
+    const handleBack = () => {
+        if (fromPlaylist && playlistId) {
+            router.push(`/MainModules/Playlists?playlistId=${encodeURIComponent(playlistId)}`);
+            return;
+        }
+        router.back();
+    };
 
     const saveProgressToApi = async (elapsedSecs: number, vid: VideoFile) => {
         const userId = getUserId();
@@ -1163,7 +1175,7 @@ export default function VideoDropCard() {
         <div className="flex justify-center items-center bg-[#0d0d10] min-h-screen">
             <div className="text-center">
                 <p className="text-red-400 mb-4">{error || "Video not found"}</p>
-                <button onClick={() => window.history.back()} className="bg-pink-500 px-4 py-2 rounded text-white hover:bg-pink-600">Go Back</button>
+                <button onClick={handleBack} className="bg-pink-500 px-4 py-2 rounded text-white hover:bg-pink-600">Go Back</button>
             </div>
         </div>
     );
@@ -1199,7 +1211,7 @@ export default function VideoDropCard() {
                 {/* Header */}
                 <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
-                        <button onClick={() => window.history.back()}>
+                        <button onClick={handleBack}>
                             <div className="w-8 h-8 rounded-full bg-[#1e1e22] flex items-center justify-center cursor-pointer">
                                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                                     <path d="M9 2L4 7L9 12" stroke="#fff" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />

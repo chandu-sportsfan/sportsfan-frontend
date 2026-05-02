@@ -555,7 +555,7 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { useAuth } from "@/context/AuthContext";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 
@@ -759,14 +759,15 @@ function RenameModal({ playlist, onConfirm, onCancel, loading }: {
 
 // ─── Drop Card ────────────────────────────────────────────────────────────────
 
-function DropCard({ item, onRemove }: { item: DropItem; onRemove: () => void }) {
+function DropCard({ item, onRemove, originPlaylistId }: { item: DropItem; onRemove: () => void; originPlaylistId?: string }) {
     const router = useRouter();
 
     const getRoute = () => {
+        const playlistQuery = originPlaylistId ? `&from=playlist&playlistId=${encodeURIComponent(originPlaylistId)}` : "";
         if (item.type === "video") {
-            return `/MainModules/MatchesDropContent/VideoDropScreen?id=${item.id}`;
+            return `/MainModules/MatchesDropContent/VideoDropScreen?id=${item.id}${playlistQuery}`;
         } else if (item.type === "audio") {
-            return `/MainModules/MatchesDropContent/AudioDropScreen?id=${item.id}`;
+            return `/MainModules/MatchesDropContent/AudioDropScreen?id=${item.id}${playlistQuery}`;
         } else if (item.type === "article") {
             return `/MainModules/CricketArticles/${item.id}`;
         } else {
@@ -828,6 +829,8 @@ function DropCard({ item, onRemove }: { item: DropItem; onRemove: () => void }) 
 export default function PlaylistsPage() {
     const { user } = useAuth();
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const playlistIdFromQuery = searchParams.get("playlistId");
 
     const [playlists, setPlaylists] = useState<Playlist[]>([]);
     const [loading, setLoading] = useState(true);
@@ -970,6 +973,15 @@ export default function PlaylistsPage() {
         setDropItems(resolveDrops(pl, allItemsMap));
     };
 
+    useEffect(() => {
+        if (!playlistIdFromQuery || playlists.length === 0) return;
+
+        const playlist = playlists.find((item) => item.id === playlistIdFromQuery);
+        if (playlist) {
+            openPlaylist(playlist);
+        }
+    }, [playlistIdFromQuery, playlists, allItemsMap, mediaLoaded]);
+
     // Re-resolve if media finishes loading while playlist is already open
     useEffect(() => {
         if (mediaLoaded && selectedPlaylist) {
@@ -1079,7 +1091,7 @@ export default function PlaylistsPage() {
                             <div className="flex flex-col gap-2">
                                 {dropItems.map(item => (
                                     <div key={item.id} className={deleteDropTarget?.id === item.id ? "opacity-40 pointer-events-none" : ""}>
-                                        <DropCard item={item} onRemove={() => setDeleteDropTarget(item)} />
+                                        <DropCard item={item} onRemove={() => setDeleteDropTarget(item)} originPlaylistId={selectedPlaylist.id} />
                                     </div>
                                 ))}
                             </div>

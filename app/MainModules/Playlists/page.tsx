@@ -569,6 +569,40 @@ interface Playlist {
     updatedAt: number;
 }
 
+interface Team360Post {
+    id: string;
+    teamName: string;
+}
+
+interface Team360Playlist {
+    id: string;
+    team360PostId: string;
+    audioDrops: unknown[];
+    videoDrops: unknown[];
+    createdAt: number;
+    updatedAt: number;
+}
+
+interface TeamPlaylistCard {
+    id: string;
+    teamName: string;
+    dropCount: number;
+    href: string;
+}
+
+const IPL_TEAM_NAMES = [
+    "Mumbai Indians",
+    "Chennai Super Kings",
+    "Royal Challengers Bengaluru",
+    "Sunrisers Hyderabad",
+    "Kolkata Knight Riders",
+    "Delhi Capitals",
+    "Rajasthan Royals",
+    "Punjab Kings",
+    "Lucknow Super Giants",
+    "Gujarat Titans",
+];
+
 // Unified drop item — works for audio, video, article, and club
 interface DropItem {
     id: string;
@@ -833,7 +867,9 @@ export default function PlaylistsPage() {
     const playlistIdFromQuery = searchParams.get("playlistId");
 
     const [playlists, setPlaylists] = useState<Playlist[]>([]);
+    const [teamPlaylists, setTeamPlaylists] = useState<TeamPlaylistCard[]>([]);
     const [loading, setLoading] = useState(true);
+    const [teamPlaylistsLoading, setTeamPlaylistsLoading] = useState(true);
 
     // Detail view
     const [selectedPlaylist, setSelectedPlaylist] = useState<Playlist | null>(null);
@@ -861,6 +897,49 @@ export default function PlaylistsPage() {
         if (!userId) { setLoading(false); return; }
         fetchPlaylists(userId);
     }, [user]);
+
+    useEffect(() => {
+        const fetchTeamPlaylists = async () => {
+            setTeamPlaylistsLoading(true);
+            try {
+                const [teamRes, playlistRes] = await Promise.all([
+                    axios.get<{ posts?: Team360Post[] }>("/api/team360"),
+                    axios.get<{ success?: boolean; playlists?: Team360Playlist[] }>("/api/team360-playlist"),
+                ]);
+
+                const teamPosts = teamRes.data.posts || [];
+                const playlistsData = playlistRes.data.success && Array.isArray(playlistRes.data.playlists)
+                    ? playlistRes.data.playlists
+                    : [];
+
+                const teamNameById = new Map(teamPosts.map((post) => [post.id, post.teamName] as const));
+
+                const countsByTeamName = new Map<string, number>();
+                for (const playlist of playlistsData) {
+                    const teamName = teamNameById.get(playlist.team360PostId);
+                    if (!teamName) continue;
+                    const dropCount = (playlist.audioDrops?.length || 0) + (playlist.videoDrops?.length || 0);
+                    countsByTeamName.set(teamName, (countsByTeamName.get(teamName) || 0) + dropCount);
+                }
+
+                const teamCards = IPL_TEAM_NAMES.map((teamName) => ({
+                    id: teamName,
+                    teamName,
+                    dropCount: countsByTeamName.get(teamName) || 0,
+                    href: `/MainModules/MatchesDropContent?team=${encodeURIComponent(teamName)}`,
+                }));
+
+                setTeamPlaylists(teamCards);
+            } catch (err) {
+                console.error("Error fetching team playlists:", err);
+                setTeamPlaylists([]);
+            } finally {
+                setTeamPlaylistsLoading(false);
+            }
+        };
+
+        fetchTeamPlaylists();
+    }, []);
 
     const fetchPlaylists = async (userId: string) => {
         setLoading(true);
@@ -1103,7 +1182,9 @@ export default function PlaylistsPage() {
                         <div className="flex items-center justify-between mb-6">
                             <div>
                                 <h1 className="text-white text-[22px] font-semibold">My Playlists</h1>
-                                <p className="text-[#666] text-[12px] mt-0.5">{playlists.length} playlist{playlists.length !== 1 ? "s" : ""}</p>
+                                <p className="text-[#666] text-[12px] mt-0.5">
+                                    {playlists.length + teamPlaylists.length} playlist{playlists.length + teamPlaylists.length !== 1 ? "s" : ""}
+                                </p>
                             </div>
                             <div className="w-9 h-9 rounded-full bg-[#1e1e22] flex items-center justify-center text-[#C9115F]">
                                 <PlaylistIcon size={18} />
@@ -1114,43 +1195,88 @@ export default function PlaylistsPage() {
                             <div className="flex flex-col gap-3">
                                 {[1, 2, 3, 4].map(i => <div key={i} className="h-[72px] bg-[#1a1a1e] rounded-2xl animate-pulse" />)}
                             </div>
-                        ) : playlists.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center py-20 text-center">
-                                <div className="w-16 h-16 rounded-full bg-[#1a1a1e] flex items-center justify-center mb-4 text-[#444]">
-                                    <PlaylistIcon size={24} />
-                                </div>
-                                <p className="text-[#666] text-[14px] font-medium">No playlists yet</p>
-                                <p className="text-[#444] text-[12px] mt-1 max-w-[220px]">Open any Audio, Video, Article, or Club and tap the playlist icon to create one.</p>
-                            </div>
                         ) : (
                             <div className="flex flex-col gap-3">
-                                {playlists.map((pl, idx) => (
-                                    <div
-                                        key={pl.id}
-                                        className="group relative flex items-center gap-4 bg-[#111114] hover:bg-[#16161a] border border-[#1e1e22] hover:border-[#C9115F]/25 rounded-2xl px-4 py-4 transition-all duration-200 cursor-pointer"
-                                        style={{ animationDelay: `${idx * 40}ms` }}
-                                        onClick={() => openPlaylist(pl)}
-                                    >
-                                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#C9115F]/30 to-[#3a0a0a] flex items-center justify-center flex-shrink-0 text-[#C9115F]">
-                                            <PlaylistIcon size={20} />
+                                {playlists.length > 0 ? (
+                                    playlists.map((pl, idx) => (
+                                        <div
+                                            key={pl.id}
+                                            className="group relative flex items-center gap-4 bg-[#111114] hover:bg-[#16161a] border border-[#1e1e22] hover:border-[#C9115F]/25 rounded-2xl px-4 py-4 transition-all duration-200 cursor-pointer"
+                                            style={{ animationDelay: `${idx * 40}ms` }}
+                                            onClick={() => openPlaylist(pl)}
+                                        >
+                                            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#C9115F]/30 to-[#3a0a0a] flex items-center justify-center flex-shrink-0 text-[#C9115F]">
+                                                <PlaylistIcon size={20} />
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-white text-[14px] font-medium truncate">{pl.name}</p>
+                                                <p className="text-[#555] text-[11px] mt-0.5">{pl.audioIds.length} drop{pl.audioIds.length !== 1 ? "s" : ""}</p>
+                                            </div>
+                                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition">
+                                                <button onClick={e => { e.stopPropagation(); setRenameTarget(pl); }} className="w-7 h-7 rounded-lg bg-[#2a2a2e] flex items-center justify-center text-[#888] hover:text-white hover:bg-[#3a3a3e] transition" title="Rename">
+                                                    <EditIcon />
+                                                </button>
+                                                <button onClick={e => { e.stopPropagation(); setDeleteTarget(pl); }} className="w-7 h-7 rounded-lg bg-[#2a2a2e] flex items-center justify-center text-red-400 hover:bg-red-500/15 transition" title="Delete">
+                                                    <TrashIcon />
+                                                </button>
+                                            </div>
+                                            <ChevronRight />
                                         </div>
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-white text-[14px] font-medium truncate">{pl.name}</p>
-                                            <p className="text-[#555] text-[11px] mt-0.5">{pl.audioIds.length} drop{pl.audioIds.length !== 1 ? "s" : ""}</p>
+                                    ))
+                                ) : (
+                                    <div className="flex flex-col items-center justify-center py-20 text-center">
+                                        <div className="w-16 h-16 rounded-full bg-[#1a1a1e] flex items-center justify-center mb-4 text-[#444]">
+                                            <PlaylistIcon size={24} />
                                         </div>
-                                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition">
-                                            <button onClick={e => { e.stopPropagation(); setRenameTarget(pl); }} className="w-7 h-7 rounded-lg bg-[#2a2a2e] flex items-center justify-center text-[#888] hover:text-white hover:bg-[#3a3a3e] transition" title="Rename">
-                                                <EditIcon />
-                                            </button>
-                                            <button onClick={e => { e.stopPropagation(); setDeleteTarget(pl); }} className="w-7 h-7 rounded-lg bg-[#2a2a2e] flex items-center justify-center text-red-400 hover:bg-red-500/15 transition" title="Delete">
-                                                <TrashIcon />
-                                            </button>
-                                        </div>
-                                        <ChevronRight />
+                                        <p className="text-[#666] text-[14px] font-medium">No saved playlists yet</p>
+                                        <p className="text-[#444] text-[12px] mt-1 max-w-[220px]">Open any Audio, Video, Article, or Club and tap the playlist icon to create one.</p>
                                     </div>
-                                ))}
+                                )}
                             </div>
                         )}
+
+                        <div className="mt-8">
+                            <div className="flex items-center justify-between mb-4">
+                                <div>
+                                    <h2 className="text-white text-[18px] font-semibold">Team 360 Playlists</h2>
+                                    <p className="text-[#666] text-[12px] mt-0.5">All team playlists from Team 360 World</p>
+                                </div>
+                                <div className="w-9 h-9 rounded-full bg-[#1e1e22] flex items-center justify-center text-[#C9115F]">
+                                    <PlaylistIcon size={18} />
+                                </div>
+                            </div>
+
+                            {teamPlaylistsLoading ? (
+                                <div className="flex flex-col gap-3">
+                                    {[1, 2, 3].map(i => <div key={i} className="h-[72px] bg-[#1a1a1e] rounded-2xl animate-pulse" />)}
+                                </div>
+                            ) : teamPlaylists.length === 0 ? (
+                                <div className="flex flex-col items-center justify-center py-16 text-center">
+                                    <div className="w-14 h-14 rounded-full bg-[#1a1a1e] flex items-center justify-center mb-4 text-[#444]">
+                                        <PlaylistIcon size={22} />
+                                    </div>
+                                    <p className="text-[#666] text-[14px] font-medium">No Team 360 playlists yet</p>
+                                    <p className="text-[#444] text-[12px] mt-1 max-w-[240px]">Team playlists will appear here once they are created.</p>
+                                </div>
+                            ) : (
+                                <div className="flex flex-col gap-3">
+                                    {teamPlaylists.map((playlist) => (
+                                        <Link key={playlist.id} href={playlist.href}>
+                                            <div className="group relative flex items-center gap-4 bg-[#111114] hover:bg-[#16161a] border border-[#1e1e22] hover:border-[#C9115F]/25 rounded-2xl px-4 py-4 transition-all duration-200 cursor-pointer">
+                                                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#C9115F]/30 to-[#3a0a0a] flex items-center justify-center flex-shrink-0 text-[#C9115F]">
+                                                    <PlaylistIcon size={20} />
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-white text-[14px] font-medium truncate">{playlist.teamName}</p>
+                                                    <p className="text-[#555] text-[11px] mt-0.5">{playlist.dropCount} drop{playlist.dropCount === 1 ? "" : "s"}</p>
+                                                </div>
+                                                <ChevronRight />
+                                            </div>
+                                        </Link>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
                     </>
                 )}
             </div>

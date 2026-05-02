@@ -31,6 +31,27 @@ interface Playlist {
   updatedAt: number;
 }
 
+interface Team360Post {
+  id: string;
+  teamName: string;
+}
+
+interface Team360Playlist {
+  id: string;
+  team360PostId: string;
+  audioDrops: unknown[];
+  videoDrops: unknown[];
+  createdAt: number;
+  updatedAt: number;
+}
+
+interface TeamPlaylistItem {
+  id: string;
+  title: string;
+  dropCount: number;
+  href: string;
+}
+
 interface MatchInfo {
   team1?: string;
   team2?: string;
@@ -87,9 +108,9 @@ const homeCardsData: CardProps[] = [
       { label: "Drops", value: "0" },
       { label: "Plays", value: "0" },
     ],
-    buttonText: "View Playlist",
+    buttonText: "View Full Playlist",
     buttonIcon: "play",
-    buttonUrl: "/MainModules/MatchesDropContent"
+    buttonUrl: "/MainModules/MatchesDropContent",
   },
   {
     id: 2,
@@ -171,27 +192,85 @@ function isIPLDrop(matchInfo?: MatchInfo, title?: string): boolean {
   return teams.some(team => team && allTeamKeys.includes(team));
 }
 
+// Extract match name from audio title (e.g., "GT vs RCB" from "GT vs RCB - TOSS REPORT")
+function extractMatchName(title: string): string {
+  if (!title) return "";
+  
+  // Try to extract text before " - " which typically separates match name from type
+  const dashIndex = title.indexOf(" - ");
+  if (dashIndex > 0) {
+    return title.substring(0, dashIndex).trim();
+  }
+  
+  // If no dash found, try to extract before common keywords
+  const keywords = ["TOSS REPORT", "POST MATCH", "PRE MATCH", "MATCH ANALYSIS", "HIGHLIGHTS"];
+  for (const keyword of keywords) {
+    if (title.toUpperCase().includes(keyword)) {
+      const keywordIndex = title.toUpperCase().indexOf(keyword);
+      return title.substring(0, keywordIndex).trim();
+    }
+  }
+  
+  return "";
+}
+
 // ── Latest Playlists List ─────────────────────────────────────────────────────
 function LatestPlaylistsList({ userId }: { userId: string | null }) {
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
+  const [teamPlaylists, setTeamPlaylists] = useState<TeamPlaylistItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!userId) {
-      setLoading(false);
-      return;
-    }
-    
-    axios.get(`/api/playlists?userId=${userId}`)
-      .then(res => {
-        if (res.data.success) {
-          // Sort by createdAt descending and take latest 3
-          const sorted = res.data.playlists.sort((a: Playlist, b: Playlist) => b.createdAt - a.createdAt);
+    const fetchPlaylists = async () => {
+      setLoading(true);
+
+      try {
+        const [userPlaylistsRes, teamPostsRes, teamPlaylistsRes] = await Promise.all([
+          userId 
+            ? axios.get(`/api/playlists?userId=${userId}`) 
+            : Promise.resolve({ data: { success: true, playlists: [] } }),
+          axios.get("/api/team360"),
+          axios.get("/api/team360-playlist")
+        ]);
+
+        if (userPlaylistsRes.data.success) {
+          const sorted = (userPlaylistsRes.data.playlists || []).sort((a: Playlist, b: Playlist) => b.createdAt - a.createdAt);
           setPlaylists(sorted.slice(0, 3));
+        } else {
+          setPlaylists([]);
         }
-      })
-      .catch(err => console.error("Error fetching playlists:", err))
-      .finally(() => setLoading(false));
+
+        const teamPosts: Team360Post[] = teamPostsRes.data.posts || [];
+        const teamNameById = new Map(teamPosts.map((post) => [post.id, post.teamName] as const));
+
+        const latestTeamPlaylists = (teamPlaylistsRes.data?.success && Array.isArray(teamPlaylistsRes.data.playlists)
+          ? (teamPlaylistsRes.data.playlists as Team360Playlist[])
+          : [])
+          .sort((a, b) => b.createdAt - a.createdAt)
+          .slice(0, 3)
+          .map((playlist) => {
+            const dropCount = (playlist.audioDrops?.length || 0) + (playlist.videoDrops?.length || 0);
+            const teamName = teamNameById.get(playlist.team360PostId) || "Team 360 Playlist";
+
+            return {
+              id: playlist.id,
+              title: teamName,
+              dropCount,
+              href: `/MainModules/MatchesDropContent?team=${encodeURIComponent(teamName)}`,
+            };
+          });
+
+        setTeamPlaylists(latestTeamPlaylists);
+      } catch (err) {
+        console.error("Error fetching playlists:", err);
+        setPlaylists([]);
+        setTeamPlaylists([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPlaylists();
   }, [userId]);
 
   if (loading) {
@@ -204,35 +283,56 @@ function LatestPlaylistsList({ userId }: { userId: string | null }) {
     );
   }
 
-  if (playlists.length === 0) {
-    return (
-      <div className="mt-2 text-center py-4">
-        <p className="text-gray-500 text-[11px]">No playlists yet</p>
-        <p className="text-gray-600 text-[9px] mt-1">Save audio, videos & articles to create playlists</p>
-      </div>
-    );
-  }
-
   return (
     <div className="flex flex-col gap-2 mt-2">
-      {playlists.map((playlist) => (
-        <Link
-          key={playlist.id}
-          href={`/MainModules/Playlists?playlistId=${playlist.id}`}
-        >
-          <div className="flex items-center gap-2 bg-[#1c1c1c] rounded-lg px-2 py-2 hover:bg-[#2a2a2a] transition-colors cursor-pointer">
-            <List size={18} className="text-[#C9115F] flex-shrink-0" />
-            <div className="min-w-0 flex-1">
-              <p className="text-white text-[11px] lg:text-[12px] font-medium leading-tight truncate">
-                {playlist.name}
-              </p>
-              <p className="text-gray-500 text-[9px] lg:text-[10px] leading-tight">
-                {playlist.audioIds.length} {playlist.audioIds.length === 1 ? "drop" : "drops"}
-              </p>
+      {playlists.length > 0 ? (
+        playlists.map((playlist) => (
+          <Link
+            key={playlist.id}
+            href={`/MainModules/Playlists?playlistId=${playlist.id}`}
+          >
+            <div className="flex items-center gap-2 bg-[#1c1c1c] rounded-lg px-2 py-2 hover:bg-[#2a2a2a] transition-colors cursor-pointer">
+              <List size={18} className="text-[#C9115F] flex-shrink-0" />
+              <div className="min-w-0 flex-1">
+                <p className="text-white text-[11px] lg:text-[12px] font-medium leading-tight truncate">
+                  {playlist.name}
+                </p>
+                <p className="text-gray-500 text-[9px] lg:text-[10px] leading-tight">
+                  {playlist.audioIds.length} {playlist.audioIds.length === 1 ? "drop" : "drops"}
+                </p>
+              </div>
             </div>
+          </Link>
+        ))
+      ) : (
+        <div className="mt-1 text-center py-2">
+          <p className="text-gray-500 text-[11px]">No personal playlists yet</p>
+          <p className="text-gray-600 text-[9px] mt-1">Team 360 playlists are shown below if available</p>
+        </div>
+      )}
+
+      {teamPlaylists.length > 0 && (
+        <div className="pt-2">
+          <p className="text-gray-500 text-[10px] font-medium uppercase tracking-wide mb-1">Team 360 Playlists</p>
+          <div className="flex flex-col gap-2">
+            {teamPlaylists.map((playlist) => (
+              <Link key={playlist.id} href={playlist.href}>
+                <div className="flex items-center gap-2 bg-[#1c1c1c] rounded-lg px-2 py-2 hover:bg-[#2a2a2a] transition-colors cursor-pointer">
+                  <List size={18} className="text-[#C9115F] flex-shrink-0" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-white text-[11px] lg:text-[12px] font-medium leading-tight truncate">
+                      {playlist.title}
+                    </p>
+                    <p className="text-gray-500 text-[9px] lg:text-[10px] leading-tight">
+                      {playlist.dropCount} {playlist.dropCount === 1 ? "drop" : "drops"}
+                    </p>
+                  </div>
+                </div>
+              </Link>
+            ))}
           </div>
-        </Link>
-      ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -289,10 +389,10 @@ function LatestAudioList() {
                 {getDisplayTitle(audio)}
               </p>
               <p className="text-gray-500 text-[9px] lg:text-[12px] leading-tight">
-                {getSpeakerLabel(audio)}
-                {audio.matchInfo?.team1
-                  ? ` · ${audio.matchInfo.team1} vs ${audio.matchInfo.team2}`
-                  : ""}
+                {extractMatchName(audio.title)
+                  ? `${getSpeakerLabel(audio)} · ${extractMatchName(audio.title)}`
+                  : `${getDisplayTitle(audio)} · ${getSpeakerLabel(audio)}`
+                }
               </p>
             </div>
           </div>

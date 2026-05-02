@@ -114,7 +114,7 @@ export default function RootLayout({
                       <VideoProvider>
                         <PlaysProvider>
                           <ScriptsProvider>
-                            {children}
+                            <main >{children}</main>
                           </ScriptsProvider>
                         </PlaysProvider>
                       </VideoProvider>

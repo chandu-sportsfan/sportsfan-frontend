@@ -320,15 +320,15 @@ export default function PlaylistDetailPage() {
                 console.log("📦 API Response:", res.data);
                 
                 if (res.data.success && res.data.playlist) {
-                    console.log("✅ Playlist found:", res.data.playlist);
+                    console.log(" Playlist found:", res.data.playlist);
                     setPlaylist(res.data.playlist);
                 } else {
-                    console.log("❌ Playlist not found in response");
+                    console.log(" Playlist not found in response");
                     setError("Playlist not found");
                     setPlaylist(null);
                 }
             } catch (err: unknown) {
-                console.error("❌ Error fetching playlist:", err instanceof Error ? err.message : "Unknown error");
+                console.error(" Error fetching playlist:", err instanceof Error ? err.message : "Unknown error");
                 setError("Failed to load playlist");
                 setPlaylist(null);
             } finally {

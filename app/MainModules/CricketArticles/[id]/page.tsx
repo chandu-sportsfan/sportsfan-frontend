@@ -388,10 +388,11 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import axios from "axios";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, ArrowDown, ArrowUp } from "lucide-react";
 import CommentsSection from "@/src/components/CommentsSection";
 import PlaylistDialog from "@/src/components/playlistdialog-component/playlistdialog";
 import { useAuth } from "@/context/AuthContext";
+
 
 type BadgeType = "FEATURE" | "ANALYSIS" | "OPINION" | "NEWS";
 
@@ -464,6 +465,43 @@ export default function CricketArticleDetail() {
     const [activePanel, setActivePanel] = useState<"comments" | "share" | null>(null);
     const [copied, setCopied] = useState(false);
     const [showPlaylistDialog, setShowPlaylistDialog] = useState(false);
+    // --- NEW SCROLL STATE & LOGIC ---
+    const [isNearTop, setIsNearTop] = useState(true);
+    const [isNearBottom, setIsNearBottom] = useState(false);
+
+    const scrollToTop = () => {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+    };
+
+    const scrollToBottom = () => {
+        window.scrollTo({ top: document.documentElement.scrollHeight, behavior: "smooth" });
+    };
+
+    useEffect(() => {
+        const handleScroll = () => {
+            const scrollY = window.scrollY;
+            const windowHeight = window.innerHeight;
+            const documentHeight = document.documentElement.scrollHeight;
+
+            const topThreshold = 500;
+            const bottomThreshold = 500;
+
+            setIsNearTop(scrollY < topThreshold);
+            
+            // FIX: Only show near bottom IF they have actually scrolled down away from the top!
+            setIsNearBottom(
+                scrollY + windowHeight >= documentHeight - bottomThreshold && scrollY > 200
+            );
+        };
+
+        window.addEventListener("scroll", handleScroll);
+        
+        // FIX: Delay the first check by 100ms so images have time to calculate their height
+        setTimeout(handleScroll, 100); 
+
+        return () => window.removeEventListener("scroll", handleScroll);
+    }, []);
+    // --------------------------------
     const getUserId = () => user?.userId || null;
 
     const buildArticleUrl = (articleId: string) => {
@@ -591,7 +629,30 @@ export default function CricketArticleDetail() {
 
     return (
         <div className="min-h-screen text-white  px-4 py-6 max-w-6xl mx-auto pb-20">
+            {/* --- NEW FLOATING BUTTONS --- */}
+            
+            {/* Down Arrow (Shows when near top) - Extra Translucent */}
+            {isNearTop && (
+                <button
+                    onClick={scrollToBottom}
+                    className="fixed bottom-10 left-1/2 -translate-x-1/2 z-50 bg-[#d4537e]/30 hover:bg-[#d4537e]/70 backdrop-blur-md border border-white/20 text-white p-3 rounded-full shadow-lg transition-all duration-300 animate-bounce"
+                    title="Scroll to bottom"
+                >
+                    <ArrowDown size={20} />
+                </button>
+            )}
 
+            {/* Up Arrow (Shows when near bottom) - Extra Translucent */}
+            {isNearBottom && (
+                <button
+                    onClick={scrollToTop}
+                    className="fixed top-24 left-1/2 -translate-x-1/2 z-50 bg-[#d4537e]/30 hover:bg-[#d4537e]/70 backdrop-blur-md border border-white/20 text-white p-3 rounded-full shadow-lg transition-all duration-300"
+                    title="Scroll to top"
+                >
+                    <ArrowUp size={20} />
+                </button>
+            )}
+            
             {/* Back */}
             <button onClick={() => router.back()} className="flex items-center gap-2 text-gray-400 hover:text-white mb-5 transition cursor-pointer">
                 <ArrowLeft size={16} />

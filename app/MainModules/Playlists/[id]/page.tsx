@@ -314,10 +314,10 @@ export default function PlaylistDetailPage() {
             setError(null);
             try {
                 const url = `/api/playlists?userId=${userId}&playlistId=${playlistId}`;
-                console.log("📡 Fetching playlist from URL:", url);
+                console.log("Fetching playlist from URL:", url);
                 
                 const res = await axios.get(url);
-                console.log("📦 API Response:", res.data);
+                console.log("API Response:", res.data);
                 
                 if (res.data.success && res.data.playlist) {
                     console.log(" Playlist found:", res.data.playlist);

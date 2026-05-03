@@ -1519,7 +1519,7 @@ export default function AudioDropCard() {
                              title="Add to Playlist"
                          >
                              <span className="text-gray-300 text-[10px] sm:text-xs font-semibold tracking-[0.15em] uppercase group-hover:text-white transition-colors">
-                                 Playlist
+                                 Add to Playlist
                              </span>
                          </button>
                         <button onClick={openShareDialog} className="w-8 h-8 rounded-full bg-[#1e1e22] flex items-center justify-center cursor-pointer hover:bg-[#2a2a2e] transition">

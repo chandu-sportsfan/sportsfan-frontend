@@ -1231,14 +1231,12 @@ export default function VideoDropCard() {
                         {/* ADD 3: Playlist button */}
                         <button
                             onClick={() => setShowPlaylistDialog(true)}
-                            className="relative px-4 py-2 bg-[#111111] rounded-xl border border-white/5 shadow-[0_4px_15px_rgb(0,0,0,0.5)] hover:bg-[#1a1a1a] transition-all duration-300 group active:scale-95 flex items-center justify-center"
+                            className="px-4 py-2 bg-[#111111] rounded-xl border border-white/5 shadow-[0_4px_15px_rgb(0,0,0,0.5)] hover:bg-[#1a1a1a] transition-all duration-300 group active:scale-95 flex items-center justify-center"
                             title="Add to Playlist"
                         >
                             <span className="text-gray-300 text-[10px] sm:text-xs font-semibold tracking-[0.15em] uppercase group-hover:text-white transition-colors">
-                                Playlist
+                                Add to Playlist
                             </span>
-                            {/* Cyan Dot */}
-                            <span className="absolute top-1.5 right-1.5 w-1 h-1 bg-[#00d2ff] rounded-full shadow-[0_0_6px_#00d2ff]"></span>
                         </button>
 
                         {/* Existing share button — unchanged */}

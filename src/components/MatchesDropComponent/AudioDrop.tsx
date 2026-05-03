@@ -1515,14 +1515,14 @@ export default function AudioDropCard() {
                         {/* Playlist button — opens the extracted component */}
                         <button
                             onClick={() => setShowPlaylistDialog(true)}
-                            className="w-8 h-8 rounded-full bg-[#1e1e22] flex items-center justify-center cursor-pointer hover:bg-[#2a2a2e] transition"
+                            className="relative px-4 py-2 bg-[#111111] rounded-xl border border-white/5 shadow-[0_4px_15px_rgb(0,0,0,0.5)] hover:bg-[#1a1a1a] transition-all duration-300 group active:scale-95 flex items-center justify-center"
                             title="Add to Playlist"
                         >
-                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                                <path d="M2 4h9M2 8h7M2 12h5" stroke="#aaa" strokeWidth="1.4" strokeLinecap="round" />
-                                <circle cx="13" cy="11" r="2.5" stroke="#aaa" strokeWidth="1.3" />
-                                <path d="M13 9.5V7l2.5-.5" stroke="#aaa" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-                            </svg>
+                            <span className="text-gray-300 text-[10px] sm:text-xs font-semibold tracking-[0.15em] uppercase group-hover:text-white transition-colors">
+                                Playlist
+                            </span>
+                            {/* Cyan Dot */}
+                            <span className="absolute top-1.5 right-1.5 w-1 h-1 bg-[#00d2ff] rounded-full shadow-[0_0_6px_#00d2ff]"></span>
                         </button>
                         <button onClick={openShareDialog} className="w-8 h-8 rounded-full bg-[#1e1e22] flex items-center justify-center cursor-pointer hover:bg-[#2a2a2e] transition">
                             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">

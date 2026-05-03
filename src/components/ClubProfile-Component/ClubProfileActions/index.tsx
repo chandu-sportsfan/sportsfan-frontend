@@ -50,10 +50,8 @@ export default function ClubProfileActions({ club }: Props) {
                     className="w-12 h-12 rounded-full p-2 bg-gradient-to-r from-[#e91e8c] to-[#ff5722] flex items-center justify-center cursor-pointer hover:bg-[#2a2a2e] transition"
                     title="Add to Playlist"
                 >
-                    <svg width="18" height="18" viewBox="0 0 16 16" fill="none">
-                        <path d="M2 4h9M2 8h7M2 12h5" stroke="white" strokeWidth="1.4" strokeLinecap="round" />
-                        <circle cx="13" cy="11" r="2.5" stroke="white" strokeWidth="1.3" />
-                        <path d="M13 9.5V7l2.5-.5" stroke="white" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M12 5v14M5 12h14" />
                     </svg>
                 </button>
 

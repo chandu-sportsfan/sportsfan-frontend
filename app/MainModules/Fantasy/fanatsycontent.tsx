@@ -65,13 +65,11 @@ export default function CircleCricketClient() {
         </button>
       </div>
 
-      <div>
-        <Link href="/MainModules/FanBattle" className="ml-auto">
-          <button className="text-2xl text-white font-bold px-4 py-3 border-b border-white/5">
-           Fan Battle
+      <a className="flex justify-center w-full pt-6 pb-4" href="/MainModules/FanBattle">
+          <button className="text-lg md:text-xl text-white font-bold px-8 py-2.5 rounded-full bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 shadow-lg hover:shadow-pink-500/25 transition-all duration-300 transform hover:-translate-y-1 active:translate-y-0 active:scale-95">
+              Fan Battle
           </button>
-          </Link>
-      </div>
+      </a>
 
       {/* Game */}
       <div className="p-3">

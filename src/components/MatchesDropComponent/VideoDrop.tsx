@@ -1235,7 +1235,7 @@ export default function VideoDropCard() {
                             title="Add to Playlist"
                         >
                             <span className="text-gray-300 text-[10px] sm:text-xs font-semibold tracking-[0.15em] uppercase group-hover:text-white transition-colors">
-                                Playlist
+                                Add to Playlist
                             </span>
                         </button>
 

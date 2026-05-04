@@ -1,11 +1,10 @@
 "use client";
-
+import { useState, useEffect } from "react";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
 
 type FormResult = "W" | "L" | "N";
-type TeamAbbr = "PBKS" | "RCB" | "RR" | "SRH" | "GT" | "CSK" | "DC" | "KKR" | "MI" | "LSG";
+type TeamAbbr = string;
 
 interface Team {
   pos: number;
@@ -15,64 +14,30 @@ interface Team {
   w: number;
   l: number;
   nr: number;
-  nrr: number;
+  nrr: string | number; 
   pts: number;
   form: FormResult[];
   qual: boolean;
 }
 
-interface BatterStat {
-  pos: number;
-  player: string;
-  team: TeamAbbr;
-  mat: number;
-  runs: number;
-  hs: string;
-  avg: number;
-  sr: number;
+interface UpcomingMatch {
+  id: string;
+  name: string;
+  date: string;
+  venue: string;
+  teams: string;
 }
 
-interface BowlerStat {
-  pos: number;
-  player: string;
-  team: TeamAbbr;
-  mat: number;
-  wkts: number;
-  bbi: string;
-  avg: number;
-  econ: number;
+// 1. NEW INTERFACE: For our Recent Results
+interface RecentResult {
+  id: string;
+  name: string;
+  date: string;
+  result: string;
 }
 
-type TabId = "table" | "orange" | "purple";
-
-const teams: Team[] = [
-  { pos: 1, abbr: "PBKS", name: "Punjab Kings", m: 8, w: 6, l: 1, nr: 1, nrr: +1.043, pts: 13, form: ["L", "W", "W", "W", "W"], qual: true },
-  { pos: 2, abbr: "RCB", name: "Royal Challengers Bengaluru", m: 8, w: 6, l: 2, nr: 0, nrr: +1.919, pts: 12, form: ["W", "W", "L", "W", "W"], qual: true },
-  { pos: 3, abbr: "SRH", name: "Sunrisers Hyderabad", m: 9, w: 6, l: 3, nr: 0, nrr: +0.815, pts: 12, form: ["W", "W", "W", "W", "W"], qual: true },
-  { pos: 4, abbr: "RR", name: "Rajasthan Royals", m: 9, w: 6, l: 3, nr: 0, nrr: +0.617, pts: 12, form: ["W", "L", "W", "L", "W"], qual: true },
-  { pos: 5, abbr: "GT", name: "Gujarat Titans", m: 8, w: 4, l: 4, nr: 0, nrr: -0.475, pts: 8, form: ["W", "L", "L", "W", "W"], qual: false },
-  { pos: 6, abbr: "CSK", name: "Chennai Super Kings", m: 8, w: 3, l: 5, nr: 0, nrr: -0.121, pts: 6, form: ["L", "W", "L", "W", "W"], qual: false },
-  { pos: 7, abbr: "DC", name: "Delhi Capitals", m: 8, w: 3, l: 5, nr: 0, nrr: -1.060, pts: 6, form: ["L", "L", "L", "W", "L"], qual: false },
-  { pos: 8, abbr: "KKR", name: "Kolkata Knight Riders", m: 8, w: 2, l: 5, nr: 1, nrr: -0.751, pts: 5, form: ["W", "W", "L", "L", "L"], qual: false },
-  { pos: 9, abbr: "MI", name: "Mumbai Indians", m: 8, w: 2, l: 6, nr: 0, nrr: -0.736, pts: 4, form: ["L", "W", "L", "L", "L"], qual: false },
-  { pos: 10, abbr: "LSG", name: "Lucknow Super Giants", m: 8, w: 2, l: 6, nr: 0, nrr: -1.106, pts: 4, form: ["L", "L", "L", "L", "L"], qual: false },
-];
-
-const orangeCapList: BatterStat[] = [
-  { pos: 1, player: "V. Sooryavanshi", team: "RR", mat: 9, runs: 400, hs: "103", avg: 44.44, sr: 238.09 },
-  { pos: 2, player: "Abhishek Sharma", team: "SRH", mat: 9, runs: 380, hs: "135*", avg: 54.29, sr: 212.29 },
-  { pos: 3, player: "KL Rahul", team: "DC", mat: 8, runs: 358, hs: "152*", avg: 51.14, sr: 185.49 },
-  { pos: 4, player: "Virat Kohli", team: "RCB", mat: 8, runs: 351, hs: "81", avg: 58.50, sr: 162.50 },
-  { pos: 5, player: "H. Klaasen", team: "SRH", mat: 9, runs: 349, hs: "65*", avg: 49.86, sr: 149.78 },
-];
-
-const purpleCapList: BowlerStat[] = [
-  { pos: 1, player: "Bhuvneshwar Kumar", team: "RCB", mat: 8, wkts: 14, bbi: "5/3", avg: 16.85, econ: 7.61 },
-  { pos: 1, player: "Jofra Archer", team: "RR", mat: 9, wkts: 14, bbi: "3/20", avg: 19.50, econ: 8.27 },
-  { pos: 1, player: "Anshul Kamboj", team: "CSK", mat: 8, wkts: 14, bbi: "3/22", avg: 16.92, econ: 8.56 },
-  { pos: 4, player: "Eshan Malinga", team: "SRH", mat: 9, wkts: 14, bbi: "4/32", avg: 18.21, econ: 9.44 },
-  { pos: 5, player: "Prince Yadav", team: "LSG", mat: 8, wkts: 13, bbi: "3/32", avg: 18.61, econ: 8.06 },
-];
+// 2. UPDATED TABS: Added the "recent" tab
+type TabId = "table" | "upcoming" | "recent";
 
 function FormPill({ result }: { result: FormResult }) {
   const map: Record<FormResult, { bg: string; text: string }> = {
@@ -87,22 +52,55 @@ function FormPill({ result }: { result: FormResult }) {
   );
 }
 
-function NRR({ value }: { value: number }) {
+function NRR({ value }: { value: string | number }) {
+  const numValue = Number(value);
   return (
-    <span className={value >= 0 ? "text-green-500" : "text-red-500"}>
-      {(value >= 0 ? "+" : "") + value.toFixed(3)}
+    <span className={numValue >= 0 ? "text-green-500" : "text-red-500"}>
+      {(numValue >= 0 ? "+" : "") + numValue.toFixed(3)}
     </span>
   );
 }
 
 export default function IPLPointsTable() {
-  const [tab, setTab] = useState<TabId>("table");
+    const [tab, setTab] = useState<TabId>("table");
+    
+    const [teams, setTeams] = useState<Team[]>([]);
+    const [upcomingMatches, setUpcomingMatches] = useState<UpcomingMatch[]>([]);
+    // 3. NEW STATE: To hold our recent results data
+    const [recentResults, setRecentResults] = useState<RecentResult[]>([]);
+    const [loading, setLoading] = useState(true);
 
-  const tabs: { id: TabId; label: string }[] = [
-    { id: "table", label: "Points Table" },
-    { id: "orange", label: "Orange Cap" },
-    { id: "purple", label: "Purple Cap" },
-  ];
+    useEffect(() => {
+        const fetchStats = async () => {
+            try {
+                const res = await fetch("/api/ipl-stats");
+                if (!res.ok) throw new Error("Network response was not ok");
+                
+                const data = await res.json();
+                
+                setTeams(data.pointsTable || []);
+                setUpcomingMatches(data.upcomingMatches || []); 
+                // Catch the new data from the backend!
+                setRecentResults(data.recentResults || []); 
+            } catch (error) {
+                console.error("Error fetching real-time stats:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchStats();
+    }, []);
+
+    const tabs: { id: TabId; label: string }[] = [
+        { id: "table", label: "Points Table" },
+        { id: "upcoming", label: "Upcoming Matches" },
+        { id: "recent", label: "Recent Results" }, // Added to the navigation!
+    ];
+
+    if (loading) {
+        return <div className="text-white text-center mt-20">Loading real-time stats...</div>;
+    }
 
   return (
     <>
@@ -116,8 +114,8 @@ export default function IPLPointsTable() {
       </div>
 
       <div className="max-w-7xl mx-auto mt-4 pb-4 mb-20 w-[300px] sm:w-[300px] md:w-[750px] lg:w-[1400px] bg-[#0d0d10] rounded-2xl border border-[#2a2a2e] overflow-hidden [scrollbar-height:none]">
-      {/* //  style={{ overscrollBehavior: 'contain' }} */}
-        {/* Tab Bar - stays fixed */}
+        
+        {/* Tab Bar */}
         <div className="flex border-b border-[#2a2a2e] px-2 overflow-x-auto">
           {tabs.map(({ id, label }) => (
             <button
@@ -133,9 +131,10 @@ export default function IPLPointsTable() {
           ))}
         </div>
 
-        {/* Scrollable Table Container - ONLY THIS scrolls */}
+        {/* Scrollable Container */}
         <div className="overflow-y-auto overflow-x-auto max-h-[400px] [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-          {/* Points Table */}
+          
+          {/* Points Table Tab */}
           {tab === "table" && (
             <table className="w-full min-w-[600px]">
               <thead className="bg-[#1a1a1e] sticky top-0 z-10">
@@ -181,69 +180,73 @@ export default function IPLPointsTable() {
             </table>
           )}
 
-          {/* Orange Cap Table */}
-          {tab === "orange" && (
-            <table className="w-full min-w-[500px]">
+          {/* Upcoming Matches Tab */}
+          {tab === "upcoming" && (
+             // ... (Keep your exact upcoming matches table here) ...
+             <table className="w-full min-w-[500px]">
               <thead className="bg-[#1a1a1e] sticky top-0 z-10">
                 <tr>
-                  <th className="px-3 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">#</th>
-                  <th className="px-3 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Player</th>
-                  <th className="px-3 py-3 text-center text-xs font-medium text-gray-400 uppercase tracking-wider">Team</th>
-                  <th className="px-3 py-3 text-center text-xs font-medium text-gray-400 uppercase tracking-wider">Mat</th>
-                  <th className="px-3 py-3 text-center text-xs font-medium text-gray-400 uppercase tracking-wider">Runs</th>
-                  <th className="px-3 py-3 text-center text-xs font-medium text-gray-400 uppercase tracking-wider">HS</th>
-                  <th className="px-3 py-3 text-center text-xs font-medium text-gray-400 uppercase tracking-wider">Avg</th>
-                  <th className="px-3 py-3 text-center text-xs font-medium text-gray-400 uppercase tracking-wider">SR</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Date</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Match</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Teams</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Venue</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#1e1e22]">
-                {orangeCapList.map((p, i) => (
-                  <tr key={i} className="hover:bg-[#1a1a1e] transition-colors">
-                    <td className="px-3 py-3 text-sm text-gray-500">{p.pos}</td>
-                    <td className="px-3 py-3 text-sm font-semibold text-white">{p.player}</td>
-                    <td className="px-3 py-3 text-center text-sm text-gray-400">{p.team}</td>
-                    <td className="px-3 py-3 text-center text-sm text-gray-300">{p.mat}</td>
-                    <td className="px-3 py-3 text-center text-sm text-white font-semibold">{p.runs}</td>
-                    <td className="px-3 py-3 text-center text-sm text-gray-300">{p.hs}</td>
-                    <td className="px-3 py-3 text-center text-sm text-gray-300">{p.avg.toFixed(2)}</td>
-                    <td className="px-3 py-3 text-center text-sm text-green-500">{p.sr.toFixed(2)}</td>
-                  </tr>
-                ))}
+                {upcomingMatches.length > 0 ? (
+                    upcomingMatches.map((match) => (
+                    <tr key={match.id} className="hover:bg-[#1a1a1e] transition-colors">
+                        <td className="px-4 py-4 text-sm text-gray-400 whitespace-nowrap">
+                            {new Date(match.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                        </td>
+                        <td className="px-4 py-4 text-sm text-gray-300">{match.name}</td>
+                        <td className="px-4 py-4 text-sm font-semibold text-white">{match.teams}</td>
+                        <td className="px-4 py-4 text-sm text-gray-500">{match.venue}</td>
+                    </tr>
+                    ))
+                ) : (
+                    <tr>
+                        <td colSpan={4} className="px-4 py-8 text-center text-gray-500 text-sm">
+                            No upcoming matches found.
+                        </td>
+                    </tr>
+                )}
               </tbody>
             </table>
           )}
 
-          {/* Purple Cap Table */}
-          {tab === "purple" && (
+          {/* 4. NEW UI: Recent Results Tab */}
+          {tab === "recent" && (
             <table className="w-full min-w-[500px]">
               <thead className="bg-[#1a1a1e] sticky top-0 z-10">
                 <tr>
-                  <th className="px-3 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">#</th>
-                  <th className="px-3 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Player</th>
-                  <th className="px-3 py-3 text-center text-xs font-medium text-gray-400 uppercase tracking-wider">Team</th>
-                  <th className="px-3 py-3 text-center text-xs font-medium text-gray-400 uppercase tracking-wider">Mat</th>
-                  <th className="px-3 py-3 text-center text-xs font-medium text-gray-400 uppercase tracking-wider">Wkts</th>
-                  <th className="px-3 py-3 text-center text-xs font-medium text-gray-400 uppercase tracking-wider">BBI</th>
-                  <th className="px-3 py-3 text-center text-xs font-medium text-gray-400 uppercase tracking-wider">Avg</th>
-                  <th className="px-3 py-3 text-center text-xs font-medium text-gray-400 uppercase tracking-wider">Econ</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Date</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Match</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Result</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#1e1e22]">
-                {purpleCapList.map((p, i) => (
-                  <tr key={i} className="hover:bg-[#1a1a1e] transition-colors">
-                    <td className="px-3 py-3 text-sm text-gray-500">{p.pos}</td>
-                    <td className="px-3 py-3 text-sm font-semibold text-white">{p.player}</td>
-                    <td className="px-3 py-3 text-center text-sm text-gray-400">{p.team}</td>
-                    <td className="px-3 py-3 text-center text-sm text-gray-300">{p.mat}</td>
-                    <td className="px-3 py-3 text-center text-sm text-white font-semibold">{p.wkts}</td>
-                    <td className="px-3 py-3 text-center text-sm text-gray-300">{p.bbi}</td>
-                    <td className="px-3 py-3 text-center text-sm text-gray-300">{p.avg.toFixed(2)}</td>
-                    <td className="px-3 py-3 text-center text-sm text-green-500">{p.econ.toFixed(2)}</td>
-                  </tr>
-                ))}
+                {recentResults.length > 0 ? (
+                    recentResults.map((match) => (
+                    <tr key={match.id} className="hover:bg-[#1a1a1e] transition-colors">
+                        <td className="px-4 py-4 text-sm text-gray-400 whitespace-nowrap w-32">
+                            {new Date(match.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                        </td>
+                        <td className="px-4 py-4 text-sm text-gray-300 w-1/3">{match.name}</td>
+                        <td className="px-4 py-4 text-sm font-semibold text-green-500">{match.result}</td>
+                    </tr>
+                    ))
+                ) : (
+                    <tr>
+                        <td colSpan={3} className="px-4 py-8 text-center text-gray-500 text-sm">
+                            No recent results available yet.
+                        </td>
+                    </tr>
+                )}
               </tbody>
             </table>
           )}
+          
         </div>
       </div>
     </>

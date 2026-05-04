@@ -1,3 +1,7 @@
+
+
+// chandu's code
+
 // "use client";
 
 // import { useEffect, useState } from "react";
@@ -17,6 +21,7 @@
 //     image: string;
 //     createdAt: number;
 //     updatedAt?: number;
+//     commentCount?: number; // Add comment count field
 // }
 
 // interface ApiResponse {
@@ -48,20 +53,38 @@
 //     const [copied, setCopied] = useState(false);
 
 //     useEffect(() => {
-//         const fetchArticles = async () => {
-//             try {
-//                 const res = await axios.get<ApiResponse>("/api/cricket-articles");
-//                 console.log("Fetched articles:", res.data);
-//                 setArticles(res.data.articles || []);
-//             } catch (error) {
-//                 console.error("Failed to fetch cricket articles", error);
-//             } finally {
-//                 setLoading(false);
-//             }
-//         };
+//    const fetchArticles = async () => {
+//     try {
+//         const res = await axios.get<ApiResponse>("/api/cricket-articles");
+//         const articlesData = res.data.articles || [];
+        
+//         const articlesWithComments = await Promise.all(
+//             articlesData.map(async (article) => {
+//                 try {
+//                     const commentsRes = await axios.get(
+//                         `/api/comments?contentId=${article.id}`  // removed count=true
+//                     );
+//                     const count = commentsRes.data.comments?.length ?? 0;
+//                     console.log("comments length",commentsRes.data.comments?.length)
+//                     return { ...article, commentCount: count };
+//                 } catch (err) {
+//                     console.error(`Error fetching comment count for article ${article.id}:`, err);
+//                     return { ...article, commentCount: 0 };
+//                 }
+//             })
+//         );
+        
+//         setArticles(articlesWithComments);
+//     } catch (error) {
+//         console.error("Failed to fetch cricket articles", error);
+//     } finally {
+//         setLoading(false);
+//     }
+// };
 
-//         fetchArticles();
-//     }, []);
+//     fetchArticles();
+// }, []);
+  
 
 //     const handleImageError = (id: string) => {
 //         setImageErrors(prev => ({ ...prev, [id]: true }));
@@ -159,7 +182,6 @@
 
 //     const visible = showAll ? articles : articles.slice(0, 4);
 
-
 //     if (loading) {
 //         return (
 //             <div className="flex justify-center items-center bg-[#0d0d10] min-h-screen">
@@ -222,7 +244,7 @@
 //                                         No image
 //                                     </div>
 //                                 )}
-//                                 <p className="absolute bottom-2 left-2 text-white text-[11px] bg-black/60 px-2 py-0.5 rounded whitespace-nowrap">
+//                                 <p className="absolute bottom-2 left-2 text-gray-100 text-[11px] bg-black/60 px-2 py-0.5 rounded whitespace-nowrap">
 //                                     {article.readTime}
 //                                     <span className="mx-1">•</span>
 //                                     {article.views}
@@ -263,6 +285,18 @@
 //                                         __html: article.description?.[0] ?? "No description available",
 //                                     }}
 //                                 />
+
+
+                            
+//                                 <div className="flex items-center gap-3 mt-1">
+//                                     <div className="flex items-center gap-1 text-gray-500">
+//                                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+//                                             <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
+//                                         </svg>
+//                                         <span className="text-[11px]">{article.commentCount || 0} comments</span>
+//                                     </div>
+//                                 </div>
+
 //                                 <span className="text-blue-400 text-[13px]">Read more ...</span>
 //                             </div>
 
@@ -377,6 +411,7 @@
 //         </div>
 //     );
 // }
+
 
 
 

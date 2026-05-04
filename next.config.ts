@@ -124,6 +124,12 @@ const nextConfig = {
         { source: '/api/leaderboard', destination: `${apiTarget}/api/leaderboard` },
         { source: '/api/leaderboard/:path*', destination: `${apiTarget}/api/leaderboard/:path*` },
 
+        // Fan Battle
+        { source: '/api/fanbattle/quiz', destination: `${apiTarget}/api/fanbattle/quiz` },
+        { source: '/api/fanbattle/quiz/:path*', destination: `${apiTarget}/api/fanbattle/quiz/:path*` },
+        { source: '/api/fanbattle/response', destination: `${apiTarget}/api/fanbattle/response` },
+        { source: '/api/fanbattle/response/:path*', destination: `${apiTarget}/api/fanbattle/response/:path*` },
+        
         //Comments
         { source: '/api/comments', destination: `${apiTarget}/api/comments` },
 

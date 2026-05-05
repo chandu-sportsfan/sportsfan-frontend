@@ -392,6 +392,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
 
 type BadgeType = "FEATURE" | "ANALYSIS" | "OPINION" | "NEWS";
 
@@ -403,10 +404,26 @@ interface Article {
     description: string[];
     readTime: string;
     views: string;
+    viewCount?: number;
+    likes?: number;
+    likeCount?: number;
+    likedBy?: string[];
     image: string;
     createdAt: number;
     updatedAt?: number;
     commentCount?: number; // Add comment count field
+}
+
+interface CommentItem {
+    id: string;
+    userId: string;
+    userName: string;
+    commentText: string;
+    isFlagged?: boolean;
+    flaggedByAdmin?: boolean;
+    flaggedBy?: string;
+    flagReason?: string;
+    flaggedAt?: number;
 }
 
 interface ApiResponse {
@@ -427,8 +444,49 @@ const BADGE_COLORS: Record<BadgeType, string> = {
     NEWS: "bg-blue-600",
 };
 
+const getViewCountStorageKey = (articleId: string) => `cricket_article_views_${articleId}`;
+
+const toViewCount = (viewsText: string | number | undefined) => {
+    if (typeof viewsText === "number") return viewsText;
+    if (!viewsText) return 0;
+    const numeric = String(viewsText).replace(/[^\d]/g, "");
+    return Number.parseInt(numeric, 10) || 0;
+};
+
+const formatViews = (count: number) => `${count} views`;
+
+const readStoredCount = (key: string) => {
+    if (typeof window === "undefined") return 0;
+    const raw = window.localStorage.getItem(key);
+    if (!raw) return 0;
+    const parsed = Number.parseInt(raw, 10);
+    return Number.isFinite(parsed) ? parsed : 0;
+};
+
+const writeStoredCount = (key: string, count: number) => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(key, String(Math.max(0, count)));
+};
+
+const normalizeArticle = (article: Article): Article => {
+    const persistedViews = Math.max(
+        article.viewCount ?? toViewCount(article.views),
+        readStoredCount(getViewCountStorageKey(article.id))
+    );
+
+    writeStoredCount(getViewCountStorageKey(article.id), persistedViews);
+
+    return {
+        ...article,
+        viewCount: persistedViews,
+        views: formatViews(persistedViews),
+    };
+};
+
 export default function CricketArticles() {
     const [articles, setArticles] = useState<Article[]>([]);
+    const { user } = useAuth();
+    const [flaggedCommentsByArticle, setFlaggedCommentsByArticle] = useState<Record<string, CommentItem | null>>({});
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [showAll, setShowAll] = useState(false);
@@ -436,29 +494,104 @@ export default function CricketArticles() {
     const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
     const [shareArticle, setShareArticle] = useState<Article | null>(null);
     const [copied, setCopied] = useState(false);
+    const [currentFlagged, setCurrentFlagged] = useState<{ articleId: string; comment: CommentItem } | null>(null);
+
+    const ackKey = (userId: string, commentId: string) => `flag_ack_${userId}_${commentId}`;
+
+    const isFlagAcked = (commentId: string) => {
+        try {
+            if (!user?.userId || typeof window === "undefined") return false;
+            return window.localStorage.getItem(ackKey(user.userId, commentId)) === "1";
+        } catch {
+            return false;
+        }
+    };
+
+    const ackFlag = (commentId: string) => {
+        try {
+            if (!user?.userId || typeof window === "undefined") return;
+            window.localStorage.setItem(ackKey(user.userId, commentId), "1");
+        } catch (e) {
+            console.error("Failed to acknowledge flagged comment", e);
+        }
+    };
+
+    const ackAndClose = (commentId: string) => {
+        // persist ack
+        ackFlag(commentId);
+
+        // remove acknowledged from map
+        setFlaggedCommentsByArticle((prev) => {
+            const next = { ...prev };
+            for (const k of Object.keys(next)) {
+                if (next[k]?.id === commentId) {
+                    delete next[k];
+                }
+            }
+            return next;
+        });
+
+        // find next unacknowledged flagged comment and show it
+        setTimeout(() => {
+            setFlaggedCommentsByArticle((latest) => {
+                const ids = Object.keys(latest || {});
+                const unacked = ids.filter((id) => !!(latest[id] && !isFlagAcked(latest[id]!.id)));
+                if (unacked.length > 0) {
+                    const nextComment = latest[unacked[0]];
+                    if (nextComment) {
+                        setCurrentFlagged({ articleId: unacked[0], comment: nextComment });
+                    } else {
+                        setCurrentFlagged(null);
+                    }
+                } else {
+                    setCurrentFlagged(null);
+                }
+                return latest;
+            });
+        }, 0);
+    };
 
     useEffect(() => {
    const fetchArticles = async () => {
     try {
         const res = await axios.get<ApiResponse>("/api/cricket-articles");
         const articlesData = res.data.articles || [];
-        
+        const flaggedMap: Record<string, CommentItem> = {};
         const articlesWithComments = await Promise.all(
             articlesData.map(async (article) => {
                 try {
                     const commentsRes = await axios.get(
-                        `/api/comments?contentId=${article.id}`  // removed count=true
+                        `/api/comments?contentId=${article.id}`
                     );
                     const count = commentsRes.data.comments?.length ?? 0;
-                    console.log("comments length",commentsRes.data.comments?.length)
-                    return { ...article, commentCount: count };
+                    console.log("comments length", commentsRes.data.comments?.length);
+
+                    const commentsList: CommentItem[] = commentsRes.data.comments || [];
+                    const flaggedForUser = user?.userId
+                        ? commentsList.find((c) => (c.userId === user.userId) && (c.isFlagged || c.flaggedByAdmin)) || null
+                        : null;
+                    if (flaggedForUser) {
+                        flaggedMap[article.id] = flaggedForUser;
+                    }
+
+                    return normalizeArticle({ ...article, commentCount: count });
                 } catch (err) {
                     console.error(`Error fetching comment count for article ${article.id}:`, err);
-                    return { ...article, commentCount: 0 };
+                    return normalizeArticle({ ...article, commentCount: 0 });
                 }
             })
         );
-        
+
+        // publish flagged map and open dialog for first unacknowledged flagged comment (homepage-only)
+        setFlaggedCommentsByArticle(flaggedMap);
+        if (user?.userId && Object.keys(flaggedMap).length > 0) {
+            const unacked = Object.keys(flaggedMap).filter((id) => !isFlagAcked(flaggedMap[id].id));
+            if (unacked.length > 0) {
+                const firstId = unacked[0];
+                setCurrentFlagged({ articleId: firstId, comment: flaggedMap[firstId] });
+            }
+        }
+
         setArticles(articlesWithComments);
     } catch (error) {
         console.error("Failed to fetch cricket articles", error);
@@ -468,7 +601,7 @@ export default function CricketArticles() {
 };
 
     fetchArticles();
-}, []);
+}, [user?.userId]);
   
 
     const handleImageError = (id: string) => {
@@ -680,6 +813,7 @@ export default function CricketArticles() {
                                         </svg>
                                         <span className="text-[11px]">{article.commentCount || 0} comments</span>
                                     </div>
+                                    {/* Homepage dialog will surface flagged comment details; remove per-card badge */}
                                 </div>
 
                                 <span className="text-blue-400 text-[13px]">Read more ...</span>
@@ -793,6 +927,78 @@ export default function CricketArticles() {
                     <p className="text-gray-400">No articles available</p>
                 </div>
             )}
+            {/* Homepage-only flagged comment modal */}
+            {currentFlagged && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-6" onClick={() => setCurrentFlagged(null)}>
+                    <div
+                        className="w-full max-w-lg rounded-2xl border border-amber-500/30 bg-[#141417] p-4 shadow-2xl"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex items-start justify-between gap-4">
+                            <div>
+                                <p className="text-amber-300 text-sm font-semibold uppercase tracking-wide">Warning</p>
+                                <h3 className="mt-1 text-white text-lg font-semibold">Flagged comment</h3>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => currentFlagged && ackAndClose(currentFlagged.comment.id)}
+                                className="text-gray-400 hover:text-white transition"
+                                aria-label="Close warning dialog"
+                            >
+                                <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
+                                    <path d="M15 5L5 15M5 5L15 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                                </svg>
+                            </button>
+                        </div>
+
+                        <div className="mt-4 space-y-3 rounded-xl border border-white/10 bg-black/20 p-3">
+                            <div>
+                                <p className="text-xs text-gray-400">Comment by</p>
+                                <p className="text-sm text-white font-medium">{currentFlagged.comment.userName}</p>
+                            </div>
+                            <div>
+                                <p className="text-xs text-gray-400">Comment</p>
+                                <p className="text-sm text-white/90 leading-snug break-words">{currentFlagged.comment.commentText}</p>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                    <p className="text-xs text-gray-400">Flagged by</p>
+                                    <p className="text-sm text-amber-300">{currentFlagged.comment.flaggedBy || (currentFlagged.comment.flaggedByAdmin ? 'Admin' : 'Moderator')}</p>
+                                </div>
+                                <div>
+                                    <p className="text-xs text-gray-400">Flagged status</p>
+                                    <p className="text-sm text-amber-300">{currentFlagged.comment.isFlagged || currentFlagged.comment.flaggedByAdmin ? 'Needs review' : 'Flagged'}</p>
+                                </div>
+                            </div>
+                            {currentFlagged.comment.flagReason && (
+                                <div>
+                                    <p className="text-xs text-gray-400">Reason</p>
+                                    <p className="text-sm text-white/90 break-words">{currentFlagged.comment.flagReason}</p>
+                                </div>
+                            )}
+                            {currentFlagged.comment.flaggedAt && (
+                                <div>
+                                    <p className="text-xs text-gray-400">Flagged at</p>
+                                    <p className="text-sm text-white/90">{new Date(currentFlagged.comment.flaggedAt).toLocaleString()}</p>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="mt-4 flex justify-end">
+                            <button
+                                type="button"
+                                onClick={() => currentFlagged && ackAndClose(currentFlagged.comment.id)}
+                                className="rounded-full bg-amber-500 px-4 py-2 text-sm font-medium text-black hover:bg-amber-400 transition"
+                            >
+                                Got it
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
+
+// Flagged comment modal (homepage)
+// placed outside the component's return to avoid nesting issues when applying patch

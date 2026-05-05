@@ -385,7 +385,7 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import axios from "axios";
 import { ArrowLeft, ArrowDown, ArrowUp } from "lucide-react";
@@ -402,6 +402,10 @@ interface ArticleDetail {
     title: string;
     readTime: string;
     views: string;
+    likes?: number;
+    viewCount?: number;
+    likeCount?: number;
+    likedBy?: string[];
     image: string;
     createdAt: number;
     updatedAt?: number;
@@ -413,6 +417,62 @@ const BADGE_COLORS: Record<BadgeType, string> = {
     ANALYSIS: "bg-blue-600",
     OPINION: "bg-purple-600",
     NEWS: "bg-orange-500",
+};
+
+const getLikeStorageKey = (articleId: string, actorId: string) => `cricket_article_like_${articleId}_${actorId}`;
+const getViewCountStorageKey = (articleId: string) => `cricket_article_views_${articleId}`;
+const getLikeCountStorageKey = (articleId: string) => `cricket_article_likes_${articleId}`;
+
+const toViewCount = (viewsText: string | number | undefined) => {
+    if (typeof viewsText === "number") return viewsText;
+    if (!viewsText) return 0;
+    const numeric = String(viewsText).replace(/[^\d]/g, "");
+    return Number.parseInt(numeric, 10) || 0;
+};
+
+const formatViews = (count: number) => `${count} views`;
+
+const readStoredCount = (key: string) => {
+    const raw = localStorage.getItem(key);
+    if (!raw) return 0;
+    const parsed = Number.parseInt(raw, 10);
+    return Number.isFinite(parsed) ? parsed : 0;
+};
+
+const writeStoredCount = (key: string, count: number) => {
+    localStorage.setItem(key, String(Math.max(0, count)));
+};
+
+const normalizeArticleStats = (rawArticle: Partial<ArticleDetail> | null | undefined): ArticleDetail | null => {
+    if (!rawArticle || !rawArticle.id) return null;
+
+    const resolvedViewCount =
+        typeof rawArticle.viewCount === "number"
+            ? rawArticle.viewCount
+            : toViewCount(rawArticle.views);
+
+    const resolvedLikeCount =
+        typeof rawArticle.likes === "number"
+            ? rawArticle.likes
+            : typeof rawArticle.likeCount === "number"
+                ? rawArticle.likeCount
+                : 0;
+
+    return {
+        id: rawArticle.id,
+        badge: (rawArticle.badge as BadgeType) || "NEWS",
+        title: rawArticle.title || "",
+        readTime: rawArticle.readTime || "",
+        views: rawArticle.views ? String(rawArticle.views) : formatViews(resolvedViewCount),
+        likes: resolvedLikeCount,
+        likeCount: resolvedLikeCount,
+        viewCount: resolvedViewCount,
+        likedBy: Array.isArray(rawArticle.likedBy) ? rawArticle.likedBy : [],
+        image: rawArticle.image || "",
+        createdAt: rawArticle.createdAt || Date.now(),
+        updatedAt: rawArticle.updatedAt,
+        description: Array.isArray(rawArticle.description) ? rawArticle.description : [],
+    };
 };
 
 function ShareIcon() {
@@ -455,16 +515,21 @@ export default function CricketArticleDetail() {
     const { id } = useParams();
     const router = useRouter();
     const { user, getUserName } = useAuth();
+    const articleId = Array.isArray(id) ? id[0] : id;
     const [article, setArticle] = useState<ArticleDetail | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
     // UI state
     const [liked, setLiked] = useState(false);
+    const [likeCount, setLikeCount] = useState(0);
+    const [viewCount, setViewCount] = useState(0);
+    const [likeSubmitting, setLikeSubmitting] = useState(false);
     const [bookmarked, setBookmarked] = useState(false);
     const [activePanel, setActivePanel] = useState<"comments" | "share" | null>(null);
     const [copied, setCopied] = useState(false);
     const [showPlaylistDialog, setShowPlaylistDialog] = useState(false);
+    const viewSyncedForArticle = useRef<string | null>(null);
     // --- NEW SCROLL STATE & LOGIC ---
     const [isNearTop, setIsNearTop] = useState(true);
     const [isNearBottom, setIsNearBottom] = useState(false);
@@ -503,6 +568,76 @@ export default function CricketArticleDetail() {
     }, []);
     // --------------------------------
     const getUserId = () => user?.userId || null;
+    const getLikeActorId = () => user?.userId || `guest:${getUserName()}`;
+
+    const applyStatsFromPayload = (payload: unknown) => {
+        const data = payload as {
+            article?: Partial<ArticleDetail>;
+            views?: number | string;
+            likes?: number;
+            viewCount?: number;
+            likeCount?: number;
+        };
+
+        setArticle((prev) => {
+            if (!prev) return prev;
+            const next = { ...prev };
+
+            const responseViewCount =
+                typeof data.article?.viewCount === "number"
+                    ? data.article.viewCount
+                    : typeof data.viewCount === "number"
+                        ? data.viewCount
+                        : undefined;
+
+            if (responseViewCount !== undefined) {
+                const persisted = Math.max(responseViewCount, readStoredCount(getViewCountStorageKey(prev.id)));
+                writeStoredCount(getViewCountStorageKey(prev.id), persisted);
+                setViewCount(persisted);
+                next.viewCount = responseViewCount;
+                next.views = formatViews(persisted);
+            } else if (data.article?.views !== undefined) {
+                const parsed = toViewCount(data.article.views);
+                const persisted = Math.max(parsed, readStoredCount(getViewCountStorageKey(prev.id)));
+                writeStoredCount(getViewCountStorageKey(prev.id), persisted);
+                setViewCount(persisted);
+                next.views = formatViews(persisted);
+                next.viewCount = persisted;
+            } else if (data.views !== undefined) {
+                const parsed = toViewCount(data.views);
+                const persisted = Math.max(parsed, readStoredCount(getViewCountStorageKey(prev.id)));
+                writeStoredCount(getViewCountStorageKey(prev.id), persisted);
+                setViewCount(persisted);
+                next.views = formatViews(persisted);
+                next.viewCount = persisted;
+            }
+
+            const responseLikeCount =
+                typeof data.article?.likes === "number"
+                    ? data.article.likes
+                    : typeof data.article?.likeCount === "number"
+                        ? data.article.likeCount
+                        : typeof data.likes === "number"
+                            ? data.likes
+                            : typeof data.likeCount === "number"
+                                ? data.likeCount
+                                : undefined;
+
+            if (responseLikeCount !== undefined) {
+                const persisted = Math.max(responseLikeCount, readStoredCount(getLikeCountStorageKey(prev.id)));
+                writeStoredCount(getLikeCountStorageKey(prev.id), persisted);
+                next.likes = persisted;
+                next.likeCount = persisted;
+                setLikeCount(persisted);
+            }
+
+            if (Array.isArray(data.article?.likedBy)) {
+                next.likedBy = data.article.likedBy;
+            }
+
+            return next;
+        });
+    };
 
     const buildArticleUrl = (articleId: string) => {
         if (typeof window === "undefined") return "";
@@ -511,7 +646,7 @@ export default function CricketArticleDetail() {
 
     const buildShareText = (target: ArticleDetail) => {
         const shareUrl = buildArticleUrl(target.id);
-        return [`Read ${target.title} on Sportsfan`, `${target.readTime} • ${target.views}`, `View article: ${shareUrl}`].join("\n");
+        return [`Read ${target.title} on Sportsfan`, `${target.readTime} • ${formatViews(viewCount)}`, `View article: ${shareUrl}`].join("\n");
     };
 
     const copyToClipboard = async (text: string) => {
@@ -585,11 +720,26 @@ export default function CricketArticleDetail() {
     };
 
     useEffect(() => {
-        if (!id) return;
+        if (!articleId) return;
         const fetchArticle = async () => {
             try {
-                const res = await axios.get(`/api/cricket-articles/${id}`);
-                setArticle(res.data.article);
+                const res = await axios.get(`/api/cricket-articles/${articleId}`);
+                const normalized = normalizeArticleStats(res.data.article);
+                if (!normalized) {
+                    setArticle(null);
+                    return;
+                }
+                const persistedViews = Math.max(normalized.viewCount ?? 0, readStoredCount(getViewCountStorageKey(normalized.id)));
+                const persistedLikes = Math.max(normalized.likeCount ?? normalized.likes ?? 0, readStoredCount(getLikeCountStorageKey(normalized.id)));
+                writeStoredCount(getViewCountStorageKey(normalized.id), persistedViews);
+                writeStoredCount(getLikeCountStorageKey(normalized.id), persistedLikes);
+                normalized.viewCount = persistedViews;
+                normalized.views = formatViews(persistedViews);
+                normalized.likeCount = persistedLikes;
+                normalized.likes = persistedLikes;
+                setArticle(normalized);
+                setViewCount(persistedViews);
+                setLikeCount(persistedLikes);
             } catch {
                 setError("Failed to load article.");
             } finally {
@@ -597,7 +747,113 @@ export default function CricketArticleDetail() {
             }
         };
         fetchArticle();
-    }, [id]);
+    }, [articleId]);
+
+    useEffect(() => {
+        if (!article?.id) return;
+        const actorId = getLikeActorId();
+        const storageKey = getLikeStorageKey(article.id, actorId);
+        const alreadyLiked =
+            (Array.isArray(article.likedBy) && article.likedBy.includes(actorId)) ||
+            localStorage.getItem(storageKey) === "1";
+
+        setLiked(alreadyLiked);
+        const resolvedLikeCount =
+            typeof article.likes === "number"
+                ? article.likes
+                : typeof article.likeCount === "number"
+                    ? article.likeCount
+                    : 0;
+        const persistedLikeCount = Math.max(resolvedLikeCount, readStoredCount(getLikeCountStorageKey(article.id)));
+        writeStoredCount(getLikeCountStorageKey(article.id), persistedLikeCount);
+        setLikeCount(persistedLikeCount);
+
+        const resolvedViewCount =
+            typeof article.viewCount === "number"
+                ? article.viewCount
+                : toViewCount(article.views);
+        const persistedViewCount = Math.max(resolvedViewCount, readStoredCount(getViewCountStorageKey(article.id)));
+        writeStoredCount(getViewCountStorageKey(article.id), persistedViewCount);
+        setViewCount(persistedViewCount);
+    }, [article?.id, article?.likes, article?.likeCount, user?.userId]);
+
+    useEffect(() => {
+        if (!article?.id) return;
+        if (viewSyncedForArticle.current === article.id) return;
+
+        viewSyncedForArticle.current = article.id;
+
+        const syncView = async () => {
+            const optimisticViews = Math.max(viewCount, toViewCount(article.views), article.viewCount || 0) + 1;
+            writeStoredCount(getViewCountStorageKey(article.id), optimisticViews);
+            setViewCount(optimisticViews);
+            setArticle((prev) => (prev && prev.id === article.id
+                ? { ...prev, viewCount: optimisticViews, views: formatViews(optimisticViews) }
+                : prev));
+
+            const requests = [
+                () => axios.post(`/api/cricket-articles/${article.id}/view`),
+                () => axios.post(`/api/cricket-articles/${article.id}/views`),
+                () => axios.patch(`/api/cricket-articles/${article.id}`, { action: "view" }),
+                () => axios.put(`/api/cricket-articles/${article.id}`, { action: "view" }),
+            ];
+
+            for (const request of requests) {
+                try {
+                    const res = await request();
+                    applyStatsFromPayload(res.data);
+                    return;
+                } catch {
+                    // Try the next known endpoint shape.
+                }
+            }
+        };
+
+        void syncView();
+    }, [article?.id]);
+
+    const handleLikeClick = async () => {
+        if (!article || likeSubmitting || liked) return;
+
+        const actorId = getLikeActorId();
+        const storageKey = getLikeStorageKey(article.id, actorId);
+        setLikeSubmitting(true);
+        const optimisticLikes = Math.max(likeCount, article.likes || 0, article.likeCount || 0) + 1;
+        writeStoredCount(getLikeCountStorageKey(article.id), optimisticLikes);
+        setLikeCount(optimisticLikes);
+        setLiked(true);
+        setArticle((prev) => (prev && prev.id === article.id
+            ? { ...prev, likes: optimisticLikes, likeCount: optimisticLikes }
+            : prev));
+
+        const payload = { userId: actorId, action: "like" };
+        const requests = [
+            () => axios.post(`/api/cricket-articles/${article.id}/like`, payload),
+            () => axios.post(`/api/cricket-articles/${article.id}/likes`, payload),
+            () => axios.patch(`/api/cricket-articles/${article.id}`, payload),
+            () => axios.put(`/api/cricket-articles/${article.id}`, payload),
+        ];
+
+        let backendUpdated = false;
+        for (const request of requests) {
+            try {
+                const res = await request();
+                applyStatsFromPayload(res.data);
+                backendUpdated = true;
+                break;
+            } catch {
+                // Try the next known endpoint shape.
+            }
+        }
+
+        localStorage.setItem(storageKey, "1");
+
+        if (!backendUpdated) {
+            // Keep optimistic count shown on UI when backend endpoint is unavailable.
+        }
+
+        setLikeSubmitting(false);
+    };
 
     if (loading) {
         return (
@@ -699,6 +955,10 @@ export default function CricketArticleDetail() {
                 <span>{new Date(article.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</span>
                 <span>·</span>
                 <span>{article.readTime}</span>
+                <span>·</span>
+                <span>{formatViews(viewCount)}</span>
+                <span>·</span>
+                <span>{likeCount} likes</span>
             </div>
 
             {/* Top share icons row */}
@@ -756,11 +1016,12 @@ export default function CricketArticleDetail() {
             <div className="flex items-center border-t border-b border-white/10 py-2 mb-4">
                 {/* Like */}
                 <button
-                    onClick={() => setLiked((l) => !l)}
-                    className={`flex flex-1 items-center justify-center gap-1.5 text-xs py-2 rounded-lg transition hover:bg-white/5 ${liked ? "text-pink-400" : "text-gray-400"}`}
+                    onClick={handleLikeClick}
+                    disabled={liked || likeSubmitting}
+                    className={`flex flex-1 items-center justify-center gap-1.5 text-xs py-2 rounded-lg transition hover:bg-white/5 ${liked ? "text-pink-400" : "text-gray-400"} ${(liked || likeSubmitting) ? "opacity-80 cursor-not-allowed" : ""}`}
                 >
                     <LikeIcon filled={liked} />
-                    <span>Like</span>
+                    <span>{liked ? `Liked (${likeCount})` : `Like (${likeCount})`}</span>
                 </button>
 
                 <div className="w-px h-6 bg-white/10" />

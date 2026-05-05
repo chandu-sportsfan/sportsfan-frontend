@@ -133,6 +133,8 @@ const nextConfig = {
         //Comments
         { source: '/api/comments', destination: `${apiTarget}/api/comments` },
 
+         { source: '/api/ipl-stats', destination: `${apiTarget}/api/ipl-stats` },
+
         { source: '/api/auth/host/me', destination: `${apiTarget}/api/auth/host/me` },
 
         // Feedback

@@ -9,7 +9,7 @@ type BattleRecord = {
   createdAt: string;
 };
 
-let battles: BattleRecord[] = [];
+const battles: BattleRecord[] = [];
 
 export async function POST(req: Request) {
   try {
@@ -31,7 +31,7 @@ export async function POST(req: Request) {
     battles.push(newBattle);
 
     return NextResponse.json({ ok: true, data: newBattle });
-  } catch (err) {
+  } catch {
     return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
   }
 }

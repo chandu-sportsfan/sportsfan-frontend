@@ -186,10 +186,17 @@ const ChallengesSection: React.FC = () => {
 
     return (
         <div className="w-full bg-[#121212] px-4 pb-4">
-            {/* Section Title */}
-            <h2 className="text-white text-[15px] font-bold mb-3">
-                Choose Your Challenge
-            </h2>
+            <div className="mb-3 flex items-center justify-between gap-3">
+                <h2 className="text-white text-[15px] font-bold">
+                    Choose Your Challenge
+                </h2>
+                <Link
+                    href="/MainModules/FanBattle/CreateBattle"
+                    className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[11px] font-semibold text-white transition-colors hover:bg-white/10"
+                >
+                    Create Battle
+                </Link>
+            </div>
 
             {/* Challenge Cards */}
             {challenges.map((c) => (

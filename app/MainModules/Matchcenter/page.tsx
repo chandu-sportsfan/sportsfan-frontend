@@ -42,7 +42,7 @@ export default function IPLPointsTable() {
     }
 
     return (
-        <div className="min-h-screen bg-[#0d0d10] p-4 sm:p-8">
+        <div className="min-h-screen bg-[#0d0d10] mb-15 p-4 sm:p-8">
             <div className="max-w-7xl mx-auto">
                 {/* Back Button */}
                 <Link href="/MainModules/HomePage" className="inline-flex items-center gap-2 text-gray-400 hover:text-white mb-6 transition-colors w-fit cursor-pointer">

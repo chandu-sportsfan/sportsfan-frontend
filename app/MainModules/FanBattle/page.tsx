@@ -1,6 +1,7 @@
 "use client";
 
 import ChallengesSection from "@/src/components/FanBattle-Component/Challengessection";
+import FanBattleCard from "@/src/components/FanBattle-Component/Fanbattlearena";
 import FanBattleHeader from "@/src/components/FanBattle-Component/Fanbattleheader";
 import React from "react";
 
@@ -11,9 +12,11 @@ export default function FanBattlePage() {
       <div className="w-full max-w-6xl mx-auto pt-8 pb-15">
         {/* Component 1: Header + Hero + Live Banner */}
         <FanBattleHeader />
-
+        <FanBattleCard />
         {/* Component 2: Challenges + Daily + Performance */}
         <ChallengesSection />
+
+
       </div>
     </div>
   );

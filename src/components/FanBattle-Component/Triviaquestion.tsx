@@ -55,24 +55,33 @@ const OptionButton: React.FC<OptionButtonProps> = ({
   onSelect,
 }) => {
   const isAnswered = answerState !== "idle";
-  const isSelectedCorrect = selected && isCorrect;
-  const isSelectedIncorrect = selected && !isCorrect;
-  const isUnselectedCorrect = !selected && isCorrect && isAnswered;
+  
+  // Determine button state
+  const isSelectedCorrect = isAnswered && selected && isCorrect;
+  const isSelectedIncorrect = isAnswered && selected && !isCorrect;
+  const isUnselectedCorrect = isAnswered && !selected && isCorrect;
 
   const getBorderAndBg = () => {
-    if (!isAnswered)
+    if (!isAnswered) {
       return "border border-[#2a2f3a] bg-[#151b26] hover:border-[#3a4150] hover:bg-[#1a2030] active:bg-[#1e2535]";
-    if (isUnselectedCorrect) return "border border-[#00c853] bg-[#0a2016]";
-    if (isSelectedCorrect) return "border border-[#00c853] bg-[#0d2b1a]";
-    if (isSelectedIncorrect) return "border border-[#e53935] bg-[#2b0d0d]";
-    return "border border-[#2a2f3a] bg-[#151b26]";
+    }
+    if (isSelectedCorrect) {
+      return "border border-[#00c853] bg-[#0d2b1a]";
+    }
+    if (isSelectedIncorrect) {
+      return "border border-[#e53935] bg-[#2b0d0d]";
+    }
+    if (isUnselectedCorrect) {
+      return "border border-[#00c853] bg-[#0a2016] opacity-80";
+    }
+    return "border border-[#2a2f3a] bg-[#151b26] opacity-60";
   };
 
   const getLabelColor = () => {
     if (!isAnswered) return "text-white";
-    if (isUnselectedCorrect) return "text-[#00e676]";
     if (isSelectedCorrect) return "text-[#00e676]";
     if (isSelectedIncorrect) return "text-[#ef5350]";
+    if (isUnselectedCorrect) return "text-[#00e676] opacity-80";
     return "text-[#6b7280]";
   };
 
@@ -82,52 +91,37 @@ const OptionButton: React.FC<OptionButtonProps> = ({
       disabled={isAnswered}
       className={`w-full flex items-center justify-between px-4 py-[14px] rounded-xl transition-all duration-200 ${getBorderAndBg()} cursor-pointer disabled:cursor-default`}
     >
-      <span
-        className={`text-[14px] sm:text-[15px] font-medium ${getLabelColor()}`}
-      >
+      <span className={`text-[14px] sm:text-[15px] font-medium ${getLabelColor()}`}>
         {label}
       </span>
 
-      {isAnswered &&
-        (isSelectedCorrect || isSelectedIncorrect || isUnselectedCorrect) && (
-          <span className="flex-shrink-0 ml-2">
-            {(isSelectedCorrect || isUnselectedCorrect) && (
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                <circle
-                  cx="12"
-                  cy="12"
-                  r="11"
-                  stroke="#00c853"
-                  strokeWidth="1.5"
-                />
-                <path
-                  d="M7 12.5l3.5 3.5 6.5-7"
-                  stroke="#00c853"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            )}
-            {isSelectedIncorrect && (
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                <circle
-                  cx="12"
-                  cy="12"
-                  r="11"
-                  stroke="#e53935"
-                  strokeWidth="1.5"
-                />
-                <path
-                  d="M8.5 8.5l7 7M15.5 8.5l-7 7"
-                  stroke="#e53935"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                />
-              </svg>
-            )}
-          </span>
-        )}
+      {isAnswered && (isSelectedCorrect || isSelectedIncorrect || isUnselectedCorrect) && (
+        <span className="flex-shrink-0 ml-2">
+          {(isSelectedCorrect || isUnselectedCorrect) && (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <circle cx="12" cy="12" r="11" stroke="#00c853" strokeWidth="1.5" />
+              <path
+                d="M7 12.5l3.5 3.5 6.5-7"
+                stroke="#00c853"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          )}
+          {isSelectedIncorrect && (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <circle cx="12" cy="12" r="11" stroke="#e53935" strokeWidth="1.5" />
+              <path
+                d="M8.5 8.5l7 7M15.5 8.5l-7 7"
+                stroke="#e53935"
+                strokeWidth="2"
+                strokeLinecap="round"
+              />
+            </svg>
+          )}
+        </span>
+      )}
     </button>
   );
 };
@@ -374,7 +368,6 @@ const TriviaQuestion: React.FC = () => {
   const userId = user?.userId ?? null;
   const userName = getUserName?.() ?? "";
   const userEmail = user?.email ?? "";
-//   const userAvatar = user?.userAvatar ?? "";
 
   const [quiz, setQuiz] = useState<FanBattleQuiz | null>(null);
   const [fetchError, setFetchError] = useState("");
@@ -382,7 +375,7 @@ const TriviaQuestion: React.FC = () => {
   // ── Session state — loaded from DB on mount ───────────────────────────────
   const [sessionCheckLoading, setSessionCheckLoading] = useState(true);
   const [existingCompletedSession, setExistingCompletedSession] =
-    useState<SessionSummary | null>(null); // quiz already fully played
+    useState<SessionSummary | null>(null);
 
   const [currentIndex, setCurrentIndex] = useState(0);
 
@@ -441,9 +434,6 @@ const TriviaQuestion: React.FC = () => {
   }, [quizId]);
 
   // ── Check DB for an existing session for this user+quiz ───────────────────
-  // This is the single source of truth — no localStorage needed.
-  // Assumes your API supports GET /api/fanbattle/session?quizId=X&userId=Y
-  // and returns { data: SessionSummary | null }
   useEffect(() => {
     if (!quizId || !userId) {
       setSessionCheckLoading(false);
@@ -454,21 +444,16 @@ const TriviaQuestion: React.FC = () => {
         const res = await axios.get(`/api/fanbattle/session`, {
           params: { quizId, userId },
         });
-        const existingSession: SessionSummary | null =
-          res.data?.data ?? null;
+        const existingSession: SessionSummary | null = res.data?.data ?? null;
 
         if (existingSession && existingSession.status === "completed") {
-          // User has fully completed this quiz before — block replay
           setExistingCompletedSession(existingSession);
         } else if (existingSession && existingSession.status === "in_progress") {
-          // Resume in-progress session: jump to where they left off
           setSessionId(existingSession.id);
           setSession(existingSession);
-          setCurrentIndex(existingSession.answeredCount); // resume at next unanswered question
+          setCurrentIndex(existingSession.answeredCount);
         }
-        // null → fresh start, do nothing
       } catch {
-        // If session check fails, allow play (fail open)
         console.warn("Could not check existing session, proceeding fresh.");
       } finally {
         setSessionCheckLoading(false);
@@ -505,7 +490,6 @@ const TriviaQuestion: React.FC = () => {
         userId,
         userName,
         userEmail,
-        // userAvatar,
         ...(sessionId ? { sessionId } : {}),
       });
 
@@ -530,7 +514,6 @@ const TriviaQuestion: React.FC = () => {
       );
     } catch (e: unknown) {
       console.error("Submit error:", e);
-      // Rollback on error
       setHasAnsweredCurrent(false);
       setAnswerState("idle");
       setExplanation("");
@@ -565,7 +548,6 @@ const TriviaQuestion: React.FC = () => {
 
   // ── Guards ────────────────────────────────────────────────────────────────
 
-  // Not logged in
   if (!userId && !sessionCheckLoading) {
     return (
       <div className="w-full mt-20 max-w-sm sm:max-w-md mx-auto bg-[#0f1520] rounded-2xl p-6 text-center">
@@ -578,18 +560,10 @@ const TriviaQuestion: React.FC = () => {
               strokeLinecap="round"
               strokeLinejoin="round"
             />
-            <circle
-              cx="12"
-              cy="7"
-              r="4"
-              stroke="#9ca3af"
-              strokeWidth="1.8"
-            />
+            <circle cx="12" cy="7" r="4" stroke="#9ca3af" strokeWidth="1.8" />
           </svg>
         </div>
-        <p className="text-white text-[16px] font-bold mb-1">
-          Login Required
-        </p>
+        <p className="text-white text-[16px] font-bold mb-1">Login Required</p>
         <p className="text-[#9ca3af] text-[13px] mb-5">
           Please log in to play Fan Battle.
         </p>
@@ -615,17 +589,12 @@ const TriviaQuestion: React.FC = () => {
     );
   }
 
-  // Still loading quiz or session check
   if (!quiz || sessionCheckLoading) return <LoadingScreen />;
 
-  // User already completed this quiz → show their previous results, no replay
   if (existingCompletedSession) {
-    return (
-      <AlreadyPlayedScreen session={existingCompletedSession} quiz={quiz} />
-    );
+    return <AlreadyPlayedScreen session={existingCompletedSession} quiz={quiz} />;
   }
 
-  // Just finished this session → show results
   if (showResults && session) {
     return <ResultsScreen session={session} quiz={quiz} />;
   }

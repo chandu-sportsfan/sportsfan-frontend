@@ -38,8 +38,7 @@ interface StatsData {
   purpleCap: PlayerRow[];
 }
 
-type TabId   = "table" | "caps";
-type CapTab  = "orange" | "purple";
+type TabId = "table" | "orange" | "purple";
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
@@ -230,48 +229,6 @@ function PurpleCapTable({ rows }: { rows: PlayerRow[] }) {
 
 // ─── Caps section wrapper (orange / purple sub-tabs) ─────────────────────────
 
-function CapsSection({
-  orangeCap,
-  purpleCap,
-}: {
-  orangeCap: PlayerRow[];
-  purpleCap: PlayerRow[];
-}) {
-  const [capTab, setCapTab] = useState<CapTab>("orange");
-
-  return (
-    <div>
-      {/* Sub-tab pills */}
-      <div className="flex gap-2 mb-4 px-1">
-        <button
-          onClick={() => setCapTab("orange")}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer ${
-            capTab === "orange"
-              ? "bg-orange-500 text-white"
-              : "bg-[#1a1a1e] text-gray-400 hover:text-white"
-          }`}
-        >
-          🟠 Orange Cap
-        </button>
-        <button
-          onClick={() => setCapTab("purple")}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer ${
-            capTab === "purple"
-              ? "bg-purple-600 text-white"
-              : "bg-[#1a1a1e] text-gray-400 hover:text-white"
-          }`}
-        >
-          🟣 Purple Cap
-        </button>
-      </div>
-
-      {capTab === "orange"
-        ? <OrangeCapTable rows={orangeCap} />
-        : <PurpleCapTable rows={purpleCap} />}
-    </div>
-  );
-}
-
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function IPLPointsTable() {
@@ -296,7 +253,8 @@ export default function IPLPointsTable() {
 
   const tabs: { id: TabId; label: string }[] = [
     { id: "table", label: "Points Table" },
-    { id: "caps",  label: "Orange/Purple Cap" },
+    { id: "orange", label: "Orange Cap 🟠" },
+    { id: "purple", label: "Purple Cap 🟣" },
   ];
 
   if (loading) {
@@ -349,10 +307,11 @@ export default function IPLPointsTable() {
           </div>
 
           {/* Content */}
+          {/* Content */}
           <div className="p-2 sm:p-4">
-            {tab === "table"
-              ? <PointsTable rows={data.pointsTable} />
-              : <CapsSection orangeCap={data.orangeCap} purpleCap={data.purpleCap} />}
+            {tab === "table" && <PointsTable rows={data.pointsTable} />}
+            {tab === "orange" && <OrangeCapTable rows={data.orangeCap} />}
+            {tab === "purple" && <PurpleCapTable rows={data.purpleCap} />}
           </div>
 
         </div>

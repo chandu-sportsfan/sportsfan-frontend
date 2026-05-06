@@ -5,6 +5,7 @@ import { Poll } from "@/types/Polls";
 import { useAuth } from "@/context/AuthContext";
 import PollCard from "./PollCard";
 import Link from "next/link";
+import UpcomingPollCard from "./UpcomingPollCard";
 
 async function fetchActivePolls(): Promise<Poll[]> {
   const res = await fetch("/api/polls");
@@ -113,15 +114,23 @@ export default function PollsSection() {
             <PollSkeleton />
           </>
         ) : (
-          polls.map((poll) => (
-            <div key={poll.id} className="flex-shrink-0">
-              <PollCard 
-                poll={poll} 
-                onVote={castVote} 
-                userId={user?.userId}
-              />
+          <>
+            {/* 1. Upcoming Poll Card moved to the Left (Start of the list) */}
+            <div className="flex-shrink-0">
+              <UpcomingPollCard />
             </div>
-          ))
+
+            {/* 2. Then map through the rest of the active polls */}
+            {polls.map((poll) => (
+              <div key={poll.id} className="flex-shrink-0">
+                <PollCard 
+                  poll={poll} 
+                  onVote={castVote} 
+                  userId={user?.userId}
+                />
+              </div>
+            ))}
+          </>
         )}
       </div>
     </section>

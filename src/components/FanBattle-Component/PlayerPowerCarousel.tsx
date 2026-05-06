@@ -272,6 +272,7 @@ import React, { useEffect, useState, useCallback, useRef } from "react";
 import axios from "axios";
 import { useAuth } from "@/context/AuthContext";
 
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface PlayerCard {
   id: string;
@@ -308,6 +309,12 @@ interface LeaderboardEntry {
   points: number;
   votes: number;
 }
+
+const LightningIcon = () => (
+  <svg width="11" height="11" viewBox="0 0 24 24" fill="#00e676">
+    <path d="M13 2L4.09 12.96H11L10 22L20.91 11.04H14L13 2Z" />
+  </svg>
+);
 
 // ─── Circle with Rank Inside ──────────────────────────────────────────────────
 const RankCircle: React.FC<{
@@ -357,29 +364,20 @@ const RankCircle: React.FC<{
   );
 };
 
-// ─── Trend Arrow ─────────────────────────────────────────────────────────────
-const TrendArrow: React.FC<{ trend: "up" | "down" }> = ({ trend }) => (
-  <svg
-    width="12"
-    height="12"
-    viewBox="0 0 24 24"
-    fill={trend === "up" ? "#00e676" : "#ef5350"}
-    className="flex-shrink-0"
-  >
-    {trend === "up" ? (
-      <path d="M7 14l5-5 5 5H7z" />
-    ) : (
-      <path d="M7 10l5 5 5-5H7z" />
-    )}
+const InfoIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ff5722" strokeWidth="2" strokeLinecap="round">
+    <circle cx="12" cy="12" r="10" />
+    <line x1="12" y1="16" x2="12" y2="12" />
+    <line x1="12" y1="8" x2="12.01" y2="8" strokeWidth="3" />
   </svg>
 );
 
-// ─── Lightning bolt icon ──────────────────────────────────────────────────────
-const LightningIcon = () => (
-  <svg width="11" height="11" viewBox="0 0 24 24" fill="#00e676">
-    <path d="M13 2L4.09 12.96H11L10 22L20.91 11.04H14L13 2Z" />
+const TrendArrow: React.FC<{ trend: "up" | "down" }> = ({ trend }) => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={trend === "up" ? "#00e676" : "#ef5350"} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0">
+    {trend === "up" ? <path d="M7 17L17 7M17 7H9M17 7V15" /> : <path d="M7 7L17 17M17 17H9M17 17V9" />}
   </svg>
 );
+// (You can delete the LightningIcon entirely)
 
 // ─── Player/Club Card ─────────────────────────────────────────────────────────
 const PowerCard: React.FC<{ item: PlayerCard }> = ({ item }) => (
@@ -705,10 +703,7 @@ const PlayerPowerCarousel: React.FC<PlayerPowerCarouselProps> = ({ onShowAll }) 
             by Power Points
           </p>
         </div>
-        <button
-          onClick={onShowAll}
-          className="text-[#e91e8c] text-[12px] font-semibold hover:text-[#ff4db8] transition-colors whitespace-nowrap mt-0.5 flex-shrink-0"
-        >
+        <button onClick={onShowAll} className="text-[#ff5722] text-[14px] font-bold hover:text-[#ff8a50] transition-colors whitespace-nowrap mt-1 flex-shrink-0 underline underline-offset-4">
           Show All
         </button>
       </div>

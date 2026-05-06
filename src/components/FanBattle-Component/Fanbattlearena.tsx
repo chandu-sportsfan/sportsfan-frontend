@@ -1,116 +1,1180 @@
+// "use client";
+
+// import { useState, useEffect, useRef, useCallback } from "react";
+// import axios from "axios";
+// import CreateBattle from "./CreateBattle";
+// import { useAuth } from "@/context/AuthContext";
+
+// interface PlayerProfile {
+//   id: string;
+//   name: string;
+//   playerName?: string;
+//   jerseyNumber?: number;
+//   role?: string;
+//   runs?: number;
+//   strikeRate?: number;
+//   age?: number;
+//   medals?: number;
+//   team?: string;
+//   specialization?: string;
+//   profile?: {
+//     name?: string;
+//     team?: string;
+//     role?: string;
+//     runs?: number;
+//     strikeRate?: number;
+//     age?: number;
+//   };
+// }
+
+// interface Battle {
+//   id: string;
+//   battleName: string;
+//   battleType: "PLAYERS" | "CLUBS";
+//   selectedPlayers: string[];
+//   selectedClubs: string[];
+//   invitedFriends: Array<{ email: string; name: string }>;
+//   userId: string;
+//   userName: string;
+//   createdAt: number;
+//   updatedAt: number;
+// }
+
+// interface LeaderboardEntry {
+//   rank: number;
+//   playerId: string;
+//   playerName: string;
+//   points: number;
+//   votes: number;
+// }
+
+// interface ExtendedPlayer extends PlayerProfile {
+//   jerseyColor?: {
+//     from: string;
+//     to: string;
+//     stroke: string;
+//     glow: string;
+//     innerStroke: string;
+//   };
+// }
+
+// const getJerseyColor = (playerName: string, team?: string) => {
+//   const colors = [
+//     { from: "#dc2626", to: "#7f1d1d", stroke: "#ef4444", glow: "rgba(220,38,38,0.45)", innerStroke: "#fca5a5" },
+//     { from: "#1d4ed8", to: "#1e3a8a", stroke: "#3b82f6", glow: "rgba(29,78,216,0.45)", innerStroke: "#93c5fd" },
+//     { from: "#0891b2", to: "#164e63", stroke: "#06b6d4", glow: "rgba(8,145,178,0.45)", innerStroke: "#a5f3fc" },
+//     { from: "#ca8a04", to: "#713f12", stroke: "#eab308", glow: "rgba(202,138,4,0.45)", innerStroke: "#fde047" },
+//     { from: "#7c3aed", to: "#3b0764", stroke: "#8b5cf6", glow: "rgba(124,58,237,0.45)", innerStroke: "#c4b5fd" },
+//     { from: "#059669", to: "#064e3b", stroke: "#10b981", glow: "rgba(5,150,105,0.45)", innerStroke: "#6ee7b7" },
+//     { from: "#db2777", to: "#831843", stroke: "#ec4899", glow: "rgba(219,39,119,0.45)", innerStroke: "#f9a8d4" },
+//     { from: "#ea580c", to: "#7c2d12", stroke: "#f97316", glow: "rgba(234,88,12,0.45)", innerStroke: "#fdba74" },
+//   ];
+//   const hash = playerName.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
+//   return colors[hash % colors.length];
+// };
+
+// const getJerseys = [
+//   { team: "Chennai Super Kings", path: "/images/CSK1.png" },
+//   { team: "Delhi Capitals", path: "/images/DC1.png" },
+//   { team: "Kolkata Knight Riders", path: "/images/KKR1.png" },
+//   { team: "Mumbai Indians", path: "/images/MI1.png" },
+//   { team: "Punjab Kings", path: "/images/PBKS1.png" },
+//   { team: "Royal Challengers Bengaluru", path: "/images/RCB1.png" },
+//   { team: "Rajasthan Royals", path: "/images/RR1.png" },
+//   { team: "Sunrisers Hyderabad", path: "/images/SH1.png" },
+//   { team: "Gujarat Titans", path: "/images/GT1.png" },
+//   { team: "Lucknow Super Giants", path: "/images/LSG1.png" },
+// ];
+
+// // Toast notification
+// function Toast({ message, type }: { message: string; type: "success" | "skip" | "error" }) {
+//   const bg =
+//     type === "success" ? "rgba(74,222,128,0.15)" :
+//     type === "skip" ? "rgba(248,113,113,0.15)" :
+//     "rgba(255,255,255,0.08)";
+//   const border =
+//     type === "success" ? "#4ade80" :
+//     type === "skip" ? "#f87171" :
+//     "#6b7280";
+//   const icon = type === "success" ? "⚡ " : type === "skip" ? "✗ " : "ℹ ";
+//   return (
+//     <div
+//       className="fixed top-6 left-1/2 z-50 px-5 py-3 rounded-2xl text-sm font-bold tracking-wide shadow-2xl"
+//       style={{
+//         transform: "translateX(-50%)",
+//         background: bg,
+//         border: `1px solid ${border}`,
+//         color: border,
+//         backdropFilter: "blur(12px)",
+//         animation: "toastIn 0.3s cubic-bezier(0.34,1.56,0.64,1)",
+//       }}
+//     >
+//       {icon}{message}
+//     </div>
+//   );
+// }
+
+// // Leaderboard Modal
+// function LeaderboardModal({
+//   battleName,
+//   leaderboard,
+//   votedPlayerIds,
+//   onClose,
+// }: {
+//   battleName: string;
+//   leaderboard: LeaderboardEntry[];
+//   votedPlayerIds: string[];
+//   onClose: () => void;
+// }) {
+//   const medals = ["🥇", "🥈", "🥉"];
+//   return (
+//     <div
+//       className="fixed inset-0 z-50 flex items-end justify-center"
+//       style={{ background: "rgba(0,0,0,0.75)", backdropFilter: "blur(6px)" }}
+//       onClick={onClose}
+//     >
+//       <div
+//         className="w-full max-w-sm rounded-t-3xl pb-8 pt-5 px-5"
+//         style={{
+//           background: "linear-gradient(180deg, #130820 0%, #0c0c1a 100%)",
+//           border: "1px solid rgba(255,255,255,0.08)",
+//           animation: "slideUp 0.35s cubic-bezier(0.34,1.56,0.64,1)",
+//         }}
+//         onClick={(e) => e.stopPropagation()}
+//       >
+//         {/* Handle */}
+//         <div className="w-10 h-1 bg-gray-700 rounded-full mx-auto mb-5" />
+
+//         <div className="flex items-center justify-between mb-5">
+//           <div>
+//             <h2 className="text-white font-bold text-lg">Leaderboard</h2>
+//             <p className="text-gray-500 text-xs mt-0.5">{battleName}</p>
+//           </div>
+//           <button
+//             onClick={onClose}
+//             className="w-8 h-8 rounded-full flex items-center justify-center text-gray-500 hover:text-white"
+//             style={{ background: "rgba(255,255,255,0.06)" }}
+//           >
+//             ✕
+//           </button>
+//         </div>
+
+//         {leaderboard.length === 0 ? (
+//           <div className="text-center py-10">
+//             <p className="text-4xl mb-3">🏆</p>
+//             <p className="text-gray-400 text-sm">No votes yet — be the first!</p>
+//           </div>
+//         ) : (
+//           <div className="flex flex-col gap-2.5">
+//             {leaderboard.map((entry) => {
+//               const hasVoted = votedPlayerIds.includes(entry.playerId);
+//               const color = getJerseyColor(entry.playerName);
+//               return (
+//                 <div
+//                   key={entry.playerId}
+//                   className="flex items-center gap-3 px-4 py-3 rounded-2xl"
+//                   style={{
+//                     background: entry.rank <= 3
+//                       ? `linear-gradient(90deg, ${color.from}22, transparent)`
+//                       : "rgba(255,255,255,0.04)",
+//                     border: `1px solid ${entry.rank <= 3 ? color.stroke + "44" : "rgba(255,255,255,0.06)"}`,
+//                   }}
+//                 >
+//                   <span className="text-xl w-7 text-center">
+//                     {entry.rank <= 3 ? medals[entry.rank - 1] : `${entry.rank}`}
+//                   </span>
+
+//                   <div className="flex-1 min-w-0">
+//                     <div className="flex items-center gap-2">
+//                       <p className="text-white font-semibold text-sm truncate">{entry.playerName}</p>
+//                       {hasVoted && (
+//                         <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full"
+//                           style={{ background: "#4ade8022", color: "#4ade80", border: "1px solid #4ade8044" }}>
+//                           Voted
+//                         </span>
+//                       )}
+//                     </div>
+//                     <p className="text-gray-600 text-[10px] mt-0.5">{entry.votes} vote{entry.votes !== 1 ? "s" : ""}</p>
+//                   </div>
+
+//                   <div className="text-right">
+//                     <p
+//                       className="font-black text-base"
+//                       style={{ color: entry.rank <= 3 ? color.stroke : "#9ca3af" }}
+//                     >
+//                       {entry.points}
+//                     </p>
+//                     <p className="text-gray-700 text-[9px] font-bold tracking-wider">PTS</p>
+//                   </div>
+//                 </div>
+//               );
+//             })}
+//           </div>
+//         )}
+//       </div>
+//     </div>
+//   );
+// }
+
+// // Main Component
+// export default function FanBattleCard() {
+//   const { user } = useAuth();
+//   const [currentIndex, setCurrentIndex] = useState(0);
+//   const [displayNumber, setDisplayNumber] = useState<number | string>("--");
+//   const [isScanning, setIsScanning] = useState(false);
+//   const [dragX, setDragX] = useState(0);
+//   const [isDragging, setIsDragging] = useState(false);
+//   const [swipeDir, setSwipeDir] = useState<"left" | "right" | null>(null);
+//   const [isAnimatingOut, setIsAnimatingOut] = useState(false);
+//   const [showCreate, setShowCreate] = useState(false);
+
+//   // Battles & players
+//   const [battles, setBattles] = useState<Battle[]>([]);
+//   const [currentBattleIndex, setCurrentBattleIndex] = useState(0);
+//   const [currentPlayers, setCurrentPlayers] = useState<ExtendedPlayer[]>([]);
+//   const [loading, setLoading] = useState(true);
+
+//   // Voting & leaderboard
+//   const [votedPlayerIds, setVotedPlayerIds] = useState<Set<string>>(new Set());
+//   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+//   const [showLeaderboard, setShowLeaderboard] = useState(false);
+//   const [toast, setToast] = useState<{ message: string; type: "success" | "skip" | "error" } | null>(null);
+//   const [isVoting, setIsVoting] = useState(false);
+
+//   const startX = useRef(0);
+//   const startY = useRef(0);
+//   const isDraggingRef = useRef(false);
+//   const dragXRef = useRef(0);
+//   const lockAxis = useRef<"h" | "v" | null>(null);
+//   const scanInterval = useRef<ReturnType<typeof setInterval> | null>(null);
+//   const scanTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+//   const cardRef = useRef<HTMLDivElement>(null);
+//   const toastTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+//   const showToast = (message: string, type: "success" | "skip" | "error") => {
+//     setToast({ message, type });
+//     if (toastTimeout.current) clearTimeout(toastTimeout.current);
+//     toastTimeout.current = setTimeout(() => setToast(null), 2200);
+//   };
+
+//   const checkPermission = useCallback(
+//     (battle: Battle): boolean => {
+//       if (!user?.userId) return false;
+//       if (battle.userId === user.userId) return true;
+//       return !!battle.invitedFriends?.some((f) => f.email === user.email);
+//     },
+//     [user]
+//   );
+
+//   // Fetch leaderboard scoped to a specific battle
+//   const fetchLeaderboard = useCallback(async (battleId: string) => {
+//     try {
+//       const res = await axios.get(
+//         `/api/battle/battle-vote?battleId=${battleId}&userId=${user?.userId || ""}`
+//       );
+//       if (res.data.success) {
+//         setLeaderboard(res.data.leaderboard || []);
+//         setVotedPlayerIds(new Set(res.data.votedPlayerIds || []));
+//       }
+//     } catch (err) {
+//       console.error("Error fetching leaderboard:", err);
+//     }
+//   }, [user]);
+
+//   // Fetch battles
+//   useEffect(() => {
+//     const fetchBattles = async () => {
+//       if (!user?.userId) { setLoading(false); return; }
+//       try {
+//         setLoading(true);
+//         const response = await axios.get(`/api/battle?userId=${user.userId}`);
+//         if (response.data.success && response.data.battles) {
+//           const accessible = response.data.battles.filter(checkPermission);
+//           setBattles(accessible);
+//           if (accessible.length > 0) {
+//             await fetchPlayersForBattle(accessible[0]);
+//             await fetchLeaderboard(accessible[0].id);
+//           }
+//         }
+//       } catch (err) {
+//         console.error("Error fetching battles:", err);
+//       } finally {
+//         setLoading(false);
+//       }
+//     };
+//     fetchBattles();
+//   }, [user, checkPermission]);
+
+//   const fetchPlayersForBattle = async (battle: Battle) => {
+//     if (battle.battleType !== "PLAYERS" || !battle.selectedPlayers.length) {
+//       setCurrentPlayers([]);
+//       return;
+//     }
+//     try {
+//       const playerPromises = battle.selectedPlayers.map(async (playerId) => {
+//         try {
+//           const response = await axios.get(`/api/player-profile/${playerId}`);
+//           const jerseyRes = await axios.get(
+//             `/api/player-profile/seasonstats?playerProfilesId=${playerId}`
+//           );
+//           const playerData = response.data.profile || response.data.data || response.data;
+//           const jerseyData = jerseyRes.data.seasons || jerseyRes.data.data || jerseyRes.data;
+//           const jerseyInfo = jerseyData?.[0]?.season?.jerseyNo || null;
+//           const player: ExtendedPlayer = {
+//             id: playerId,
+//             name: playerData.name || "Unknown",
+//             playerName: playerData.name,
+//             jerseyNumber: jerseyInfo || playerData.jerseyNumber || "--",
+//             role: playerData.specialization || playerData.overview?.specialization || playerData.bowlingStyle || "Player",
+//             runs: parseInt(playerData.stats?.runs) || 0,
+//             strikeRate: parseFloat(playerData.stats?.sr) || 0,
+//             age: parseInt(playerData.overview?.dob) || 25,
+//             medals: 0,
+//             team: playerData.team || "IPL Team",
+//             specialization: playerData.specialization || playerData.overview?.specialization || "All-rounder",
+//           };
+//           player.jerseyColor = getJerseyColor(player.name, player.team);
+//           return player;
+//         } catch {
+//           return null;
+//         }
+//       });
+//       const players = (await Promise.all(playerPromises)).filter(Boolean) as ExtendedPlayer[];
+//       setCurrentPlayers(players);
+//       setCurrentIndex(0);
+//     } catch (err) {
+//       console.error("Error fetching players:", err);
+//       setCurrentPlayers([]);
+//     }
+//   };
+
+//   // Record vote
+//   const recordVote = useCallback(
+//     async (player: ExtendedPlayer, direction: "left" | "right") => {
+//       if (!user?.userId || !battles[currentBattleIndex]) return;
+//       if (isVoting) return;
+
+//       const battleId = battles[currentBattleIndex].id;
+
+//       // Only prevent voting if already voted AND swiping right (voting)
+//       if (direction === "right" && votedPlayerIds.has(player.id)) {
+//         showToast("Already voted for this player!", "error");
+//         return;
+//       }
+
+//       setIsVoting(true);
+//       try {
+//         const res = await axios.post("/api/battle/battle-vote", {
+//           battleId,
+//           playerId: player.id,
+//           playerName: player.name,
+//           userId: user.userId,
+//           direction,
+//         });
+
+//         if (res.data.success) {
+//           if (direction === "right") {
+//             showToast(`+${res.data.pointsAwarded} pts for ${player.name}!`, "success");
+//             setVotedPlayerIds((prev) => new Set([...prev, player.id]));
+//             // Refresh leaderboard silently
+//             fetchLeaderboard(battleId);
+//           } else {
+//             showToast(`Skipped ${player.name}`, "skip");
+//           }
+//         }
+//       } catch (err: unknown) {
+//         if (axios.isAxiosError(err) && err.response?.data?.alreadyVoted) {
+//           showToast("Already voted for this player!", "error");
+//         }
+//       } finally {
+//         setIsVoting(false);
+//       }
+//     },
+//     [user, battles, currentBattleIndex, votedPlayerIds, isVoting, fetchLeaderboard]
+//   );
+
+//   const switchToNextBattle = useCallback(() => {
+//     const nextIndex = currentBattleIndex + 1;
+//     if (nextIndex < battles.length) {
+//       const nextBattle = battles[nextIndex];
+//       fetchPlayersForBattle(nextBattle);
+//       fetchLeaderboard(nextBattle.id);
+//       setCurrentBattleIndex(nextIndex);
+//       setCurrentIndex(0);
+//     }
+//   }, [currentBattleIndex, battles, fetchPlayersForBattle, fetchLeaderboard]);
+
+//   const switchToPreviousBattle = useCallback(() => {
+//     const prevIndex = currentBattleIndex - 1;
+//     if (prevIndex >= 0) {
+//       const prevBattle = battles[prevIndex];
+//       fetchPlayersForBattle(prevBattle);
+//       fetchLeaderboard(prevBattle.id);
+//       setCurrentBattleIndex(prevIndex);
+//       setCurrentIndex(0);
+//     }
+//   }, [currentBattleIndex, battles, fetchPlayersForBattle, fetchLeaderboard]);
+
+//   const player = currentPlayers[currentIndex];
+//   const color = player?.jerseyColor || getJerseyColor("Default");
+
+//   // Scan animation
+//   const startScan = useCallback(
+//     (index: number) => {
+//       if (!currentPlayers[index]) return;
+//       setIsScanning(true);
+//       let count = 0;
+//       if (scanInterval.current) clearInterval(scanInterval.current);
+//       scanInterval.current = setInterval(() => {
+//         setDisplayNumber(Math.floor(Math.random() * 99) + 1);
+//         count++;
+//         if (count >= 18) {
+//           clearInterval(scanInterval.current!);
+//           setDisplayNumber(currentPlayers[index].jerseyNumber || "--");
+//           setIsScanning(false);
+//         }
+//       }, 60);
+//     },
+//     [currentPlayers]
+//   );
+
+//   useEffect(() => {
+//     if (player) {
+//       setDisplayNumber(player.jerseyNumber || "--");
+//       if (scanTimeout.current) clearTimeout(scanTimeout.current);
+//       scanTimeout.current = setTimeout(() => startScan(currentIndex), 300);
+//       const interval = setInterval(() => startScan(currentIndex), 3000);
+//       return () => {
+//         clearInterval(interval);
+//         if (scanInterval.current) clearInterval(scanInterval.current);
+//         if (scanTimeout.current) clearTimeout(scanTimeout.current);
+//       };
+//     }
+//   }, [currentIndex, player, startScan]);
+
+//   // Swipe animation + vote trigger
+//   const animateSwipe = useCallback(
+//     (dir: "left" | "right") => {
+//       if (isAnimatingOut || !currentPlayers.length) return;
+//       const currentPlayer = currentPlayers[currentIndex];
+
+//       setSwipeDir(dir);
+//       setIsAnimatingOut(true);
+//       setIsDragging(false);
+//       setDragX(0);
+
+//       // Fire vote immediately (non-blocking)
+//       if (currentPlayer) {
+//         recordVote(currentPlayer, dir);
+//       }
+
+//       setTimeout(() => {
+//         // Both left (skip) and right (vote) should move to the next player
+//         if (currentIndex + 1 < currentPlayers.length) {
+//           setCurrentIndex((p) => p + 1);
+//         } else {
+//           // End of current battle, move to next battle
+//           switchToNextBattle();
+//         }
+//         setIsAnimatingOut(false);
+//         setSwipeDir(null);
+//         dragXRef.current = 0;
+//       }, 300);
+//     },
+//     [isAnimatingOut, currentIndex, currentPlayers, recordVote, switchToNextBattle, switchToPreviousBattle]
+//   );
+
+//   // Touch events for mobile
+//   useEffect(() => {
+//     const card = cardRef.current;
+//     if (!card) return;
+
+//     let touchStartX = 0;
+//     let touchStartY = 0;
+
+//     const handleTouchStart = (e: TouchEvent) => {
+//       if (isAnimatingOut) return;
+//       touchStartX = e.touches[0].clientX;
+//       touchStartY = e.touches[0].clientY;
+//       isDraggingRef.current = true;
+//       lockAxis.current = null;
+//       dragXRef.current = 0;
+//     };
+
+//     const handleTouchMove = (e: TouchEvent) => {
+//       if (!isDraggingRef.current || isAnimatingOut) return;
+      
+//       const touchX = e.touches[0].clientX;
+//       const touchY = e.touches[0].clientY;
+//       const deltaX = touchX - touchStartX;
+//       const deltaY = touchY - touchStartY;
+
+//       // Determine swipe axis after minimal movement
+//       if (!lockAxis.current && (Math.abs(deltaX) > 10 || Math.abs(deltaY) > 10)) {
+//         lockAxis.current = Math.abs(deltaX) > Math.abs(deltaY) ? "h" : "v";
+//       }
+
+//       // Only handle horizontal swipes
+//       if (lockAxis.current === "h") {
+//         e.preventDefault();
+//         dragXRef.current = deltaX;
+//         setDragX(deltaX);
+//         setIsDragging(true);
+//       }
+//     };
+
+//     const handleTouchEnd = () => {
+//       if (!isDraggingRef.current) return;
+      
+//       const deltaX = dragXRef.current;
+      
+//       if (lockAxis.current === "h" && Math.abs(deltaX) > 50 && !isAnimatingOut) {
+//         if (deltaX < 0) {
+//           // Swipe left - next player
+//           animateSwipe("left");
+//         } else if (deltaX > 0) {
+//           // Swipe right - previous player (vote)
+//           animateSwipe("right");
+//         }
+//       }
+      
+//       // Reset drag state
+//       setIsDragging(false);
+//       setDragX(0);
+//       dragXRef.current = 0;
+//       isDraggingRef.current = false;
+//       lockAxis.current = null;
+//     };
+
+//     const handleTouchCancel = () => {
+//       setIsDragging(false);
+//       setDragX(0);
+//       dragXRef.current = 0;
+//       isDraggingRef.current = false;
+//       lockAxis.current = null;
+//     };
+
+//     // Add event listeners with proper options
+//     card.addEventListener("touchstart", handleTouchStart, { passive: true });
+//     card.addEventListener("touchmove", handleTouchMove, { passive: false });
+//     card.addEventListener("touchend", handleTouchEnd);
+//     card.addEventListener("touchcancel", handleTouchCancel);
+
+//     return () => {
+//       card.removeEventListener("touchstart", handleTouchStart);
+//       card.removeEventListener("touchmove", handleTouchMove);
+//       card.removeEventListener("touchend", handleTouchEnd);
+//       card.removeEventListener("touchcancel", handleTouchCancel);
+//     };
+//   }, [animateSwipe, isAnimatingOut]);
+
+//   // Pointer events for desktop
+//   const handlePointerDown = (e: React.PointerEvent) => {
+//     if (isAnimatingOut) return;
+//     startX.current = e.clientX;
+//     isDraggingRef.current = true;
+//     dragXRef.current = 0;
+//     setIsDragging(true);
+//     (e.target as HTMLElement).setPointerCapture(e.pointerId);
+//   };
+
+//   const handlePointerMove = (e: React.PointerEvent) => {
+//     if (!isDraggingRef.current || isAnimatingOut) return;
+//     const deltaX = e.clientX - startX.current;
+//     dragXRef.current = deltaX;
+//     setDragX(deltaX);
+//   };
+
+//   const handlePointerUp = (e: React.PointerEvent) => {
+//     if (!isDraggingRef.current) return;
+    
+//     const deltaX = dragXRef.current;
+    
+//     if (Math.abs(deltaX) > 50 && !isAnimatingOut) {
+//       if (deltaX < 0) {
+//         animateSwipe("left");
+//       } else if (deltaX > 0) {
+//         animateSwipe("right");
+//       }
+//     }
+    
+//     setIsDragging(false);
+//     setDragX(0);
+//     dragXRef.current = 0;
+//     isDraggingRef.current = false;
+//   };
+
+//   // Card transform style
+//   const getCardTransform = (): React.CSSProperties => {
+//     if (isAnimatingOut) {
+//       return {
+//         transform: `translateX(${swipeDir === "left" ? -500 : 500}px) rotate(${swipeDir === "left" ? -15 : 15}deg)`,
+//         opacity: 0,
+//         transition: "transform 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1), opacity 0.25s ease",
+//       };
+//     }
+    
+//     if (isDragging && dragX !== 0) {
+//       const rotate = dragX * 0.03;
+//       return {
+//         transform: `translateX(${dragX}px) rotate(${rotate}deg)`,
+//         transition: "none",
+//         cursor: "grabbing",
+//       };
+//     }
+    
+//     return {
+//       transform: "translateX(0px) rotate(0deg)",
+//       opacity: 1,
+//       transition: "transform 0.4s cubic-bezier(0.2, 0.9, 0.4, 1.1), opacity 0.2s ease",
+//       cursor: "grab",
+//     };
+//   };
+
+//   const likeOpacity = dragX > 30 ? Math.min((dragX - 30) / 70, 1) : 0;
+//   const skipOpacity = dragX < -30 ? Math.min((-dragX - 30) / 70, 1) : 0;
+
+//   const alreadyVoted = player ? votedPlayerIds.has(player.id) : false;
+
+//   // Guards
+//   if (showCreate) return <CreateBattle onClose={() => setShowCreate(false)} />;
+
+//   if (loading) {
+//     return (
+//       <div className="min-h-screen flex items-center justify-center bg-[#07070f]">
+//         <div className="text-center">
+//           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500 mx-auto mb-4" />
+//           <p className="text-gray-400">Loading battles...</p>
+//         </div>
+//       </div>
+//     );
+//   }
+
+//   if (battles.length === 0) {
+//     return (
+//       <div className="min-h-screen flex flex-col items-center justify-center bg-[#07070f] px-4">
+//         <div className="text-center max-w-sm">
+//           <div className="w-20 h-20 rounded-full bg-[#1a1a2e] flex items-center justify-center mx-auto mb-4">
+//             <span className="text-3xl">⚔️</span>
+//           </div>
+//           <h2 className="text-white text-xl font-bold mb-2">No Battles Found</h2>
+//           <p className="text-gray-400 text-sm mb-6">
+//             You haven&apos;t created any battles yet. Create one to start challenging friends!
+//           </p>
+//           <button onClick={() => setShowCreate(true)}
+//             className="px-6 py-3 rounded-xl bg-gradient-to-r from-pink-500 to-orange-500 text-white font-semibold">
+//             Create Your First Battle
+//           </button>
+//         </div>
+//       </div>
+//     );
+//   }
+
+//   // if (!currentPlayers.length || !player) {
+//   //   return (
+//   //     <div className="min-h-screen flex items-center justify-center bg-[#07070f]">
+//   //       <div className="text-center">
+//   //         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500 mx-auto mb-4" />
+//   //         <p className="text-gray-400">Loading players...</p>
+//   //       </div>
+//   //     </div>
+//   //   );
+//   // }
+
+//   return (
+//     <div className="min-h-screen flex flex-col items-center justify-start bg-[#07070f] py-6 px-4 select-none overflow-hidden">
+//       {/* Toast */}
+//       {toast && <Toast message={toast.message} type={toast.type} />}
+
+//       {/* Leaderboard modal */}
+//       {showLeaderboard && (
+//         <LeaderboardModal
+//           battleName={battles[currentBattleIndex]?.battleName || "Battle"}
+//           leaderboard={leaderboard}
+//           votedPlayerIds={Array.from(votedPlayerIds)}
+//           onClose={() => setShowLeaderboard(false)}
+//         />
+//       )}
+
+//       {/* Header */}
+//       <div className="w-full max-w-sm flex items-center justify-between mb-5">
+//         <div>
+//           {/* <h1 className="text-white text-2xl font-bold tracking-tight">Fan Battle</h1> */}
+//           <p className="text-gray-500 text-2xl font-bold mt-0.5">
+//             {battles[currentBattleIndex]?.battleName?.charAt(0).toUpperCase() + battles[currentBattleIndex]?.battleName?.slice(1) || "Swipe to support"}
+//           </p>
+//         </div>
+//         <div className="flex gap-2">
+//           {/* Leaderboard button */}
+//           <button
+//             onClick={() => { fetchLeaderboard(battles[currentBattleIndex]?.id); setShowLeaderboard(true); }}
+//             className="flex items-center gap-1.5 bg-[#0e1a14] border border-emerald-800 text-emerald-400 text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-emerald-900/30 transition-colors"
+//           >
+//             🏆 Board
+//           </button>
+//           <button
+//             onClick={() => setShowCreate(true)}
+//             className="flex items-center gap-1.5 bg-[#160d25] border border-fuchsia-800 text-fuchsia-400 text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-fuchsia-900/30 transition-colors"
+//           >
+//             <svg width="11" height="11" viewBox="0 0 16 16" fill="none">
+//               <path d="M8 1v14M1 8h14" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+//             </svg>
+//             Create
+//           </button>
+//         </div>
+//       </div>
+
+//       {/* Battle progress */}
+//       {battles.length > 1 && (
+//         <div className="w-full max-w-sm mb-3">
+//           <div className="flex justify-between text-xs text-gray-500 mb-1">
+//             <span>Battle {currentBattleIndex + 1} of {battles.length}</span>
+//             <span>{currentIndex + 1}/{currentPlayers.length} players</span>
+//           </div>
+//           <div className="w-full h-1 bg-[#1a1a2e] rounded-full overflow-hidden">
+//             <div
+//               className="h-full bg-gradient-to-r from-pink-500 to-orange-500 rounded-full transition-all duration-300"
+//               style={{
+//                 width: `${((currentBattleIndex * currentPlayers.length + currentIndex + 1) /
+//                   (battles.length * currentPlayers.length)) * 100}%`,
+//               }}
+//             />
+//           </div>
+//         </div>
+//       )}
+
+//       {/* Card stack */}
+//       <div className="w-full max-w-sm relative" style={{ perspective: "1200px" }}>
+//         {/* Background cards */}
+//         <div className="absolute inset-0 rounded-2xl"
+//           style={{ background: "#0c091a", border: "1px solid rgba(255,255,255,0.05)", transform: "scale(0.94) translateY(12px)", zIndex: 0 }} />
+//         <div className="absolute inset-0 rounded-2xl"
+//           style={{ background: "#0a0814", border: "1px solid rgba(255,255,255,0.04)", transform: "scale(0.97) translateY(6px)", zIndex: 1 }} />
+
+//         {/* Main card */}
+//         <div
+//           ref={cardRef}
+//           className="relative w-full rounded-2xl overflow-hidden"
+//           style={{
+//             background: "linear-gradient(150deg, #130820 0%, #0c0c1a 45%, #150a0a 100%)",
+//             border: `1px solid ${color.stroke}44`,
+//             boxShadow: `0 0 60px ${color.glow}, 0 24px 60px rgba(0,0,0,0.7), inset 0 0 50px rgba(0,0,0,0.5)`,
+//             zIndex: 2,
+//             minHeight: 410,
+//             willChange: "transform",
+//             touchAction: "pan-y pinch-zoom",
+//             ...getCardTransform(),
+//           }}
+//           onPointerDown={handlePointerDown}
+//           onPointerMove={handlePointerMove}
+//           onPointerUp={handlePointerUp}
+//           onPointerLeave={handlePointerUp}
+//         >
+//           {/* Corner brackets */}
+//           {["top-3 left-3 border-t-2 border-l-2", "top-3 right-3 border-t-2 border-r-2",
+//             "bottom-3 left-3 border-b-2 border-l-2", "bottom-3 right-3 border-b-2 border-r-2"].map((cls, i) => (
+//             <div key={i} className={`absolute w-5 h-5 ${cls} rounded-sm`} style={{ borderColor: `${color.stroke}70` }} />
+//           ))}
+
+//           {/* Ambient dots */}
+//           <div className="absolute left-4 top-1/2 w-1.5 h-1.5 rounded-full" style={{ background: `${color.stroke}55` }} />
+//           <div className="absolute right-4 top-1/2 w-1.5 h-1.5 rounded-full" style={{ background: `${color.stroke}55` }} />
+
+//           {/* Top accent */}
+//           <div className="absolute top-0 left-0 right-0 h-px"
+//             style={{ background: `linear-gradient(90deg, transparent, ${color.stroke}cc, transparent)` }} />
+
+//           {/* "Already voted" badge */}
+//           {alreadyVoted && (
+//             <div className="absolute top-3 left-1/2 z-20 px-3 py-1 rounded-full text-[10px] font-bold"
+//               style={{
+//                 transform: "translateX(-50%)",
+//                 background: "rgba(74,222,128,0.15)",
+//                 border: "1px solid #4ade8066",
+//                 color: "#4ade80",
+//               }}>
+//               ✓ Voted
+//             </div>
+//           )}
+
+//           {/* LIKE stamp */}
+//           <div className="absolute inset-0 flex items-center justify-start pl-7 pointer-events-none z-10"
+//             style={{ opacity: likeOpacity, transition: isDragging ? "none" : "opacity 0.15s" }}>
+//             <div className="font-black text-2xl tracking-widest border-4 rounded-xl px-4 py-2"
+//               style={{ borderColor: "#4ade80", color: "#4ade80", transform: "rotate(-14deg)", textShadow: "0 0 12px rgba(74,222,128,0.5)" }}>
+//               +15 PTS
+//             </div>
+//           </div>
+
+//           {/* SKIP stamp */}
+//           <div className="absolute inset-0 flex items-center justify-end pr-7 pointer-events-none z-10"
+//             style={{ opacity: skipOpacity, transition: isDragging ? "none" : "opacity 0.15s" }}>
+//             <div className="font-black text-2xl tracking-widest border-4 rounded-xl px-4 py-2"
+//               style={{ borderColor: "#f87171", color: "#f87171", transform: "rotate(14deg)", textShadow: "0 0 12px rgba(248,113,113,0.5)" }}>
+//               SKIP
+//             </div>
+//           </div>
+
+//           <div className="flex flex-col items-center pt-8 pb-5 px-5">
+//             {/* Jersey */}
+//             <div className="relative flex items-center justify-center mb-4" style={{ width: 250, height: 250 }}>
+//               <div className="absolute inset-0"
+//                 style={{ background: `radial-gradient(ellipse at center, ${color.glow} 0%, transparent 68%)`, filter: "blur(16px)", transform: "scale(1.4)" }} />
+//               <img
+//                 src={getJerseys.find((j) => j.team === player?.team)?.path || "/images/MI1.png"}
+//                 alt={player?.team || "Jersey"}
+//                 className="w-[320px] h-[320px] object-contain relative z-10"
+//                 draggable={false}
+//               />
+//               <div className="absolute inset-0 flex items-center justify-center pt-5 z-20 pointer-events-none">
+//                 <span className="text-white font-bold font-mono"
+//                   style={{
+//                     fontSize: isScanning ? "30px" : "36px",
+//                     opacity: isScanning ? 0.6 : 1,
+//                     filter: isScanning ? "blur(0.8px)" : "none",
+//                     transition: isScanning ? "none" : "all 0.2s",
+//                     textShadow: "0 2px 4px rgba(0,0,0,0.5)",
+//                   }}>
+//                   {displayNumber}
+//                 </span>
+//               </div>
+//               {isScanning && (
+//                 <div className="absolute left-2 right-2 h-px pointer-events-none"
+//                   style={{ background: `linear-gradient(90deg, transparent, ${color.stroke}cc, transparent)`, animation: "scanLine 0.18s linear infinite", top: "50%" }} />
+//               )}
+//             </div>
+
+//             {/* Name */}
+//             <h2 className="text-white text-lg font-bold text-center leading-snug">{player.name}</h2>
+//             <p className="text-gray-500 text-xs mt-1 text-center">{player.team || "IPL"}</p>
+
+//             {/* Role badge */}
+//             <div className="flex items-center gap-2 mt-3 mb-4">
+//               <span className="text-white text-[10px] font-bold tracking-wider px-3 py-1 rounded-sm"
+//                 style={{ background: `linear-gradient(90deg, ${color.from}, ${color.to})` }}>
+//                 {player.role || player.specialization || "PLAYER"}
+//               </span>
+//               <span className="text-gray-500 text-xs">• India Cricket</span>
+//             </div>
+
+//             {/* Stats */}
+//             <div className="w-full grid grid-cols-3 gap-2 mb-3">
+//               {[
+//                 { label: "RUNS", value: player.runs?.toLocaleString() || "0" },
+//                 { label: "STRIKE RATE", value: player.strikeRate?.toFixed(1) || "0.0" },
+//                 { label: "AGE", value: player.age || 25 },
+//               ].map(({ label, value }) => (
+//                 <div key={label} className="flex flex-col items-center justify-center rounded-xl py-2.5"
+//                   style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
+//                   <span className="text-white text-sm font-bold leading-tight">{value}</span>
+//                   <span className="text-gray-600 text-[9px] font-bold tracking-widest mt-0.5">{label}</span>
+//                 </div>
+//               ))}
+//             </div>
+//           </div>
+//         </div>
+//       </div>
+
+//       {/* Action bar */}
+//       <div className="w-full max-w-sm mt-4 flex items-center justify-between px-5 py-3.5 rounded-2xl"
+//         style={{ background: "#0e0e18", border: "1px solid rgba(255,255,255,0.06)" }}>
+//         <button onClick={() => animateSwipe("left")}
+//           className="flex items-center gap-2 text-gray-400 text-xs font-medium hover:text-white transition-colors group">
+//           <span className="w-8 h-8 rounded-full flex items-center justify-center border border-gray-700 group-hover:border-gray-500 transition-colors text-sm"
+//             style={{ background: "rgba(255,255,255,0.05)" }}>
+//             ←
+//           </span>
+//           Skip
+//         </button>
+
+//         {/* Center: points indicator */}
+//         <div className="text-center">
+//           <p className="text-[10px] text-gray-600 font-bold tracking-widest">SWIPE RIGHT</p>
+//           <p className="text-xs font-black" style={{ color: color.stroke }}>+15 PTS</p>
+//         </div>
+
+//         <button onClick={() => animateSwipe("right")}
+//           className="flex items-center gap-2 text-xs font-semibold transition-colors"
+//           style={{ color: alreadyVoted ? "#6b7280" : color.stroke }}
+//           disabled={alreadyVoted}>
+//           {alreadyVoted ? "Voted ✓" : "Like"}
+//           <span className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm"
+//             style={{
+//               background: alreadyVoted
+//                 ? "rgba(107,114,128,0.3)"
+//                 : `linear-gradient(135deg, ${color.from}, ${color.to})`,
+//               boxShadow: alreadyVoted ? "none" : `0 0 14px ${color.glow}`,
+//             }}>
+//             →
+//           </span>
+//         </button>
+//       </div>
+
+//       <p className="text-gray-700 text-[9px] tracking-widest mt-3 uppercase">Swipe right to give +15 pts • Left to skip</p>
+
+//       {/* Dot indicators */}
+//       <div className="flex gap-1.5 mt-2.5">
+//         {currentPlayers.map((p, i) => (
+//           <button key={p.id} onClick={() => !isAnimatingOut && setCurrentIndex(i)}
+//             className="rounded-full transition-all duration-300"
+//             style={{
+//               width: i === currentIndex ? 18 : 6,
+//               height: 6,
+//               background: votedPlayerIds.has(p.id)
+//                 ? "#4ade80"
+//                 : i === currentIndex
+//                 ? (p.jerseyColor?.stroke || "#f472b6")
+//                 : "rgba(255,255,255,0.15)",
+//             }} />
+//         ))}
+//       </div>
+
+//       <style>{`
+//         @keyframes scanLine { 0% { top: 22%; } 50% { top: 78%; } 100% { top: 22%; } }
+//         @keyframes toastIn { from { opacity: 0; transform: translateX(-50%) translateY(-12px) scale(0.92); } to { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); } }
+//         @keyframes slideUp { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: translateY(0); } }
+//       `}</style>
+//     </div>
+//   );
+// }
+
+
+
+
+
+
+
+
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import axios from "axios";
+import CreateBattle from "./CreateBattle";
+import { useAuth } from "@/context/AuthContext";
 
-interface Player {
-  id: number;
+interface PlayerProfile {
+  id: string;
   name: string;
-  nameDev: string;
-  team: string;
-  role: string;
-  jerseyNumber: number;
-  runs: number;
-  strikeRate: number;
-  age: number;
-  medals: number;
-  jerseyColor: { from: string; to: string; stroke: string; glow: string; innerStroke: string };
+  playerName?: string;
+  jerseyNumber?: string | number;
+  role?: string;
+  runs?: number | string;
+  strikeRate?: number | string;
+  age?: number | string;
+  medals?: number;
+  team?: string;
+  specialization?: string;
+  type?: "PLAYER" | "CLUB";
+  wins?: number | string;
+  losses?: number | string;
+  points?: number | string;
+  city?: string;
+  avatar?: string;
+  about?: string;
+  overview?: {
+    captain: string;
+    coach: string;
+    owner: string;
+    venue: string;
+  };
+  stats?: {
+    runs: string;
+    sr: string;
+    avg: string;
+  };
 }
 
-const players: Player[] = [
-  {
-    id: 1,
-    name: "Virat Kohli",
-    nameDev: "विराट कोहली",
-    team: "Royal Challengers Bangalore",
-    role: "BATSMAN",
-    jerseyNumber: 18,
-    runs: 8074,
-    strikeRate: 130.4,
-    age: 35,
-    medals: 12,
-    jerseyColor: { from: "#dc2626", to: "#7f1d1d", stroke: "#ef4444", glow: "rgba(220,38,38,0.45)", innerStroke: "#fca5a5" },
-  },
-  {
-    id: 2,
-    name: "Rohit Sharma",
-    nameDev: "रोहित शर्मा",
-    team: "Mumbai Indians",
-    role: "BATSMAN",
-    jerseyNumber: 45,
-    runs: 6628,
-    strikeRate: 128.9,
-    age: 37,
-    medals: 15,
-    jerseyColor: { from: "#1d4ed8", to: "#1e3a8a", stroke: "#3b82f6", glow: "rgba(29,78,216,0.45)", innerStroke: "#93c5fd" },
-  },
-  {
-    id: 3,
-    name: "Jasprit Bumrah",
-    nameDev: "जसप्रीत बुमराह",
-    team: "Mumbai Indians",
-    role: "BOWLER",
-    jerseyNumber: 93,
-    runs: 56,
-    strikeRate: 102.3,
-    age: 30,
-    medals: 9,
-    jerseyColor: { from: "#0891b2", to: "#164e63", stroke: "#06b6d4", glow: "rgba(8,145,178,0.45)", innerStroke: "#a5f3fc" },
-  },
-  {
-    id: 4,
-    name: "MS Dhoni",
-    nameDev: "महेंद्र सिंह धोनी",
-    team: "Chennai Super Kings",
-    role: "WICKET KEEPER",
-    jerseyNumber: 7,
-    runs: 5082,
-    strikeRate: 135.2,
-    age: 42,
-    medals: 18,
-    jerseyColor: { from: "#ca8a04", to: "#713f12", stroke: "#eab308", glow: "rgba(202,138,4,0.45)", innerStroke: "#fde047" },
-  },
-  {
-    id: 5,
-    name: "Hardik Pandya",
-    nameDev: "हार्दिक पांड्या",
-    team: "Mumbai Indians",
-    role: "ALL ROUNDER",
-    jerseyNumber: 33,
-    runs: 3412,
-    strikeRate: 147.8,
-    age: 30,
-    medals: 11,
-    jerseyColor: { from: "#7c3aed", to: "#3b0764", stroke: "#8b5cf6", glow: "rgba(124,58,237,0.45)", innerStroke: "#c4b5fd" },
-  },
-  {
-    id: 6,
-    name: "KL Rahul",
-    nameDev: "केएल राहुल",
-    team: "Lucknow Super Giants",
-    role: "BATSMAN",
-    jerseyNumber: 1,
-    runs: 4683,
-    strikeRate: 134.6,
-    age: 32,
-    medals: 8,
-    jerseyColor: { from: "#059669", to: "#064e3b", stroke: "#10b981", glow: "rgba(5,150,105,0.45)", innerStroke: "#6ee7b7" },
-  },
-  {
-    id: 7,
-    name: "Suryakumar Yadav",
-    nameDev: "सूर्यकुमार यादव",
-    team: "Mumbai Indians",
-    role: "BATSMAN",
-    jerseyNumber: 63,
-    runs: 3963,
-    strikeRate: 157.3,
-    age: 33,
-    medals: 7,
-    jerseyColor: { from: "#db2777", to: "#831843", stroke: "#ec4899", glow: "rgba(219,39,119,0.45)", innerStroke: "#f9a8d4" },
-  },
+interface Battle {
+  id: string;
+  battleName: string;
+  battleType: "PLAYERS" | "CLUBS";
+  selectedPlayers: string[];
+  selectedClubs: string[];
+  invitedFriends: Array<{ email: string; name: string }>;
+  userId: string;
+  userName: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+interface LeaderboardEntry {
+  rank: number;
+  playerId: string;
+  playerName: string;
+  points: number;
+  votes: number;
+}
+
+interface ExtendedPlayer extends PlayerProfile {
+  jerseyColor?: {
+    from: string;
+    to: string;
+    stroke: string;
+    glow: string;
+    innerStroke: string;
+  };
+}
+
+const getJerseyColor = (playerName: string, team?: string) => {
+  const colors = [
+    { from: "#dc2626", to: "#7f1d1d", stroke: "#ef4444", glow: "rgba(220,38,38,0.45)", innerStroke: "#fca5a5" },
+    { from: "#1d4ed8", to: "#1e3a8a", stroke: "#3b82f6", glow: "rgba(29,78,216,0.45)", innerStroke: "#93c5fd" },
+    { from: "#0891b2", to: "#164e63", stroke: "#06b6d4", glow: "rgba(8,145,178,0.45)", innerStroke: "#a5f3fc" },
+    { from: "#ca8a04", to: "#713f12", stroke: "#eab308", glow: "rgba(202,138,4,0.45)", innerStroke: "#fde047" },
+    { from: "#7c3aed", to: "#3b0764", stroke: "#8b5cf6", glow: "rgba(124,58,237,0.45)", innerStroke: "#c4b5fd" },
+    { from: "#059669", to: "#064e3b", stroke: "#10b981", glow: "rgba(5,150,105,0.45)", innerStroke: "#6ee7b7" },
+    { from: "#db2777", to: "#831843", stroke: "#ec4899", glow: "rgba(219,39,119,0.45)", innerStroke: "#f9a8d4" },
+    { from: "#ea580c", to: "#7c2d12", stroke: "#f97316", glow: "rgba(234,88,12,0.45)", innerStroke: "#fdba74" },
+  ];
+  const hash = playerName.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  return colors[hash % colors.length];
+};
+
+const getJerseys = [
+  { team: "Chennai Super Kings", path: "/images/CSK1.png" },
+  { team: "Delhi Capitals", path: "/images/DC1.png" },
+  { team: "Kolkata Knight Riders", path: "/images/KKR1.png" },
+  { team: "Mumbai Indians", path: "/images/MI1.png" },
+  { team: "Punjab Kings", path: "/images/PBKS1.png" },
+  { team: "Royal Challengers Bengaluru", path: "/images/RCB1.png" },
+  { team: "Rajasthan Royals", path: "/images/RR1.png" },
+  { team: "Sunrisers Hyderabad", path: "/images/SH1.png" },
+  { team: "Gujarat Titans", path: "/images/GT1.png" },
+  { team: "Lucknow Super Giants", path: "/images/LSG1.png" },
 ];
 
+// Toast notification
+function Toast({ message, type }: { message: string; type: "success" | "skip" | "error" }) {
+  const bg =
+    type === "success" ? "rgba(74,222,128,0.15)" :
+    type === "skip" ? "rgba(248,113,113,0.15)" :
+    "rgba(255,255,255,0.08)";
+  const border =
+    type === "success" ? "#4ade80" :
+    type === "skip" ? "#f87171" :
+    "#6b7280";
+  const icon = type === "success" ? "⚡ " : type === "skip" ? "✗ " : "ℹ ";
+  return (
+    <div
+      className="fixed top-6 left-1/2 z-50 px-5 py-3 rounded-2xl text-sm font-bold tracking-wide shadow-2xl"
+      style={{
+        transform: "translateX(-50%)",
+        background: bg,
+        border: `1px solid ${border}`,
+        color: border,
+        backdropFilter: "blur(12px)",
+        animation: "toastIn 0.3s cubic-bezier(0.34,1.56,0.64,1)",
+      }}
+    >
+      {icon}{message}
+    </div>
+  );
+}
+
+// Leaderboard Modal
+function LeaderboardModal({
+  battleName,
+  leaderboard,
+  votedPlayerIds,
+  onClose,
+}: {
+  battleName: string;
+  leaderboard: LeaderboardEntry[];
+  votedPlayerIds: string[];
+  onClose: () => void;
+}) {
+  const medals = ["🥇", "🥈", "🥉"];
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center"
+      style={{ background: "rgba(0,0,0,0.75)", backdropFilter: "blur(6px)" }}
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-sm rounded-t-3xl pb-8 pt-5 px-5"
+        style={{
+          background: "linear-gradient(180deg, #130820 0%, #0c0c1a 100%)",
+          border: "1px solid rgba(255,255,255,0.08)",
+          animation: "slideUp 0.35s cubic-bezier(0.34,1.56,0.64,1)",
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="w-10 h-1 bg-gray-700 rounded-full mx-auto mb-5" />
+
+        <div className="flex items-center justify-between mb-5">
+          <div>
+            <h2 className="text-white font-bold text-lg">Leaderboard</h2>
+            <p className="text-gray-500 text-xs mt-0.5">{battleName}</p>
+          </div>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 rounded-full flex items-center justify-center text-gray-500 hover:text-white"
+            style={{ background: "rgba(255,255,255,0.06)" }}
+          >
+            ✕
+          </button>
+        </div>
+
+        {leaderboard.length === 0 ? (
+          <div className="text-center py-10">
+            <p className="text-4xl mb-3">🏆</p>
+            <p className="text-gray-400 text-sm">No votes yet — be the first!</p>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-2.5">
+            {leaderboard.map((entry) => {
+              const hasVoted = votedPlayerIds.includes(entry.playerId);
+              const color = getJerseyColor(entry.playerName);
+              return (
+                <div
+                  key={entry.playerId}
+                  className="flex items-center gap-3 px-4 py-3 rounded-2xl"
+                  style={{
+                    background: entry.rank <= 3
+                      ? `linear-gradient(90deg, ${color.from}22, transparent)`
+                      : "rgba(255,255,255,0.04)",
+                    border: `1px solid ${entry.rank <= 3 ? color.stroke + "44" : "rgba(255,255,255,0.06)"}`,
+                  }}
+                >
+                  <span className="text-xl w-7 text-center">
+                    {entry.rank <= 3 ? medals[entry.rank - 1] : `${entry.rank}`}
+                  </span>
+
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="text-white font-semibold text-sm truncate">{entry.playerName}</p>
+                      {hasVoted && (
+                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full"
+                          style={{ background: "#4ade8022", color: "#4ade80", border: "1px solid #4ade8044" }}>
+                          Voted
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-gray-600 text-[10px] mt-0.5">{entry.votes} vote{entry.votes !== 1 ? "s" : ""}</p>
+                  </div>
+
+                  <div className="text-right">
+                    <p
+                      className="font-black text-base"
+                      style={{ color: entry.rank <= 3 ? color.stroke : "#9ca3af" }}
+                    >
+                      {entry.points}
+                    </p>
+                    <p className="text-gray-700 text-[9px] font-bold tracking-wider">PTS</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Main Component
 export default function FanBattleCard() {
+  const { user } = useAuth();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [displayNumber, setDisplayNumber] = useState<number | string>("--");
   const [isScanning, setIsScanning] = useState(false);
@@ -118,6 +1182,18 @@ export default function FanBattleCard() {
   const [isDragging, setIsDragging] = useState(false);
   const [swipeDir, setSwipeDir] = useState<"left" | "right" | null>(null);
   const [isAnimatingOut, setIsAnimatingOut] = useState(false);
+  const [showCreate, setShowCreate] = useState(false);
+
+  const [battles, setBattles] = useState<Battle[]>([]);
+  const [currentBattleIndex, setCurrentBattleIndex] = useState(0);
+  const [currentItems, setCurrentItems] = useState<ExtendedPlayer[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const [votedPlayerIds, setVotedPlayerIds] = useState<Set<string>>(new Set());
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [toast, setToast] = useState<{ message: string; type: "success" | "skip" | "error" } | null>(null);
+  const [isVoting, setIsVoting] = useState(false);
 
   const startX = useRef(0);
   const startY = useRef(0);
@@ -127,119 +1203,347 @@ export default function FanBattleCard() {
   const scanInterval = useRef<ReturnType<typeof setInterval> | null>(null);
   const scanTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);
+  const toastTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const player = players[currentIndex];
-  const color = player.jerseyColor;
+  const showToast = (message: string, type: "success" | "skip" | "error") => {
+    setToast({ message, type });
+    if (toastTimeout.current) clearTimeout(toastTimeout.current);
+    toastTimeout.current = setTimeout(() => setToast(null), 2200);
+  };
 
-  const startScan = useCallback((index: number) => {
-    setIsScanning(true);
-    let count = 0;
-    const maxCount = 18;
-    if (scanInterval.current) clearInterval(scanInterval.current);
-    scanInterval.current = setInterval(() => {
-      setDisplayNumber(Math.floor(Math.random() * 99) + 1);
-      count++;
-      if (count >= maxCount) {
-        clearInterval(scanInterval.current!);
-        setDisplayNumber(players[index].jerseyNumber);
-        setIsScanning(false);
+  const checkPermission = useCallback(
+    (battle: Battle): boolean => {
+      if (!user?.userId) return false;
+      if (battle.userId === user.userId) return true;
+      return !!battle.invitedFriends?.some((f) => f.email === user.email);
+    },
+    [user]
+  );
+
+  const fetchLeaderboard = useCallback(async (battleId: string) => {
+    try {
+      const res = await axios.get(
+        `/api/battle/battle-vote?battleId=${battleId}&userId=${user?.userId || ""}`
+      );
+      if (res.data.success) {
+        setLeaderboard(res.data.leaderboard || []);
+        setVotedPlayerIds(new Set(res.data.votedPlayerIds || []));
       }
-    }, 60);
-  }, []);
+    } catch (err) {
+      console.error("Error fetching leaderboard:", err);
+    }
+  }, [user]);
 
   useEffect(() => {
-    setDisplayNumber(player.jerseyNumber);
-    if (scanTimeout.current) clearTimeout(scanTimeout.current);
-    scanTimeout.current = setTimeout(() => startScan(currentIndex), 300);
-    const interval = setInterval(() => startScan(currentIndex), 3000);
-    return () => {
-      clearInterval(interval);
-      if (scanInterval.current) clearInterval(scanInterval.current);
-      if (scanTimeout.current) clearTimeout(scanTimeout.current);
+    const fetchBattles = async () => {
+      if (!user?.userId) { setLoading(false); return; }
+      try {
+        setLoading(true);
+        const response = await axios.get(`/api/battle?userId=${user.userId}`);
+        if (response.data.success && response.data.battles) {
+          const accessible = response.data.battles.filter(checkPermission);
+          setBattles(accessible);
+          if (accessible.length > 0) {
+            await fetchItemsForBattle(accessible[0]);
+            await fetchLeaderboard(accessible[0].id);
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching battles:", err);
+      } finally {
+        setLoading(false);
+      }
     };
-  }, [currentIndex, player.jerseyNumber, startScan]);
+    fetchBattles();
+  }, [user, checkPermission]);
+
+  const fetchItemsForBattle = async (battle: Battle) => {
+    const isClubBattle = battle.battleType === "CLUBS";
+    const ids = isClubBattle ? battle.selectedClubs : battle.selectedPlayers;
+
+    if (!ids || ids.length === 0) {
+      setCurrentItems([]);
+      return;
+    }
+
+    try {
+      const promises = ids.map(async (id) => {
+        try {
+          if (isClubBattle) {
+            const response = await axios.get(`/api/club-profile/${id}`);
+            if (response.data.success) {
+              const club = response.data.profile;
+              const entity: ExtendedPlayer = {
+                id,
+                type: "CLUB",
+                name: club.name || "Unknown Club",
+                team: club.team || "IPL",
+                city: club.overview?.venue || "",
+                avatar: club.avatar || "",
+                role: "IPL Franchise",
+                wins: club.stats?.runs || "0",
+                losses: club.stats?.avg || "0",
+                points: club.stats?.sr || "0",
+                jerseyNumber: "CLB",
+                about: club.about,
+                overview: club.overview,
+                stats: club.stats,
+              };
+              entity.jerseyColor = getJerseyColor(entity.name, entity.team);
+              return entity;
+            }
+            return null;
+          } else {
+            const response = await axios.get(`/api/player-profile/${id}`);
+            const jerseyRes = await axios.get(
+              `/api/player-profile/seasonstats?playerProfilesId=${id}`
+            );
+            const playerData = response.data.profile || response.data.data || response.data;
+            const jerseyData = jerseyRes.data.seasons || jerseyRes.data.data || jerseyRes.data;
+            const jerseyInfo = jerseyData?.[0]?.season?.jerseyNo || null;
+            const player: ExtendedPlayer = {
+              id,
+              type: "PLAYER",
+              name: playerData.name || "Unknown",
+              playerName: playerData.name,
+              jerseyNumber: jerseyInfo || playerData.jerseyNumber || "--",
+              role: playerData.specialization || playerData.overview?.specialization || playerData.bowlingStyle || "Player",
+              runs: parseInt(playerData.stats?.runs) || 0,
+              strikeRate: parseFloat(playerData.stats?.sr) || 0,
+              age: parseInt(playerData.overview?.dob) || 25,
+              medals: 0,
+              team: playerData.team || "IPL Team",
+              specialization: playerData.specialization || playerData.overview?.specialization || "All-rounder",
+            };
+            player.jerseyColor = getJerseyColor(player.name, player.team);
+            return player;
+          }
+        } catch (err) {
+          console.error(`Error fetching ${isClubBattle ? "club" : "player"} ${id}:`, err);
+          return null;
+        }
+      });
+
+      const items = (await Promise.all(promises)).filter(Boolean) as ExtendedPlayer[];
+      setCurrentItems(items);
+      setCurrentIndex(0);
+    } catch (err) {
+      console.error("Error in fetchItemsForBattle:", err);
+      setCurrentItems([]);
+    }
+  };
+
+  const recordVote = useCallback(
+    async (item: ExtendedPlayer, direction: "left" | "right") => {
+      if (!user?.userId || !battles[currentBattleIndex]) return;
+      if (isVoting) return;
+
+      const battleId = battles[currentBattleIndex].id;
+
+      if (direction === "right" && votedPlayerIds.has(item.id)) {
+        showToast("Already voted for this item!", "error");
+        return;
+      }
+
+      setIsVoting(true);
+      try {
+        const res = await axios.post("/api/battle/battle-vote", {
+          battleId,
+          playerId: item.id,
+          playerName: item.name,
+          userId: user.userId,
+          direction,
+        });
+
+        if (res.data.success) {
+          if (direction === "right") {
+            showToast(`+${res.data.pointsAwarded} pts for ${item.name}!`, "success");
+            setVotedPlayerIds((prev) => new Set([...prev, item.id]));
+            fetchLeaderboard(battleId);
+          } else {
+            showToast(`Skipped ${item.name}`, "skip");
+          }
+        }
+      } catch (err: unknown) {
+        if (axios.isAxiosError(err) && err.response?.data?.alreadyVoted) {
+          showToast("Already voted for this item!", "error");
+        }
+      } finally {
+        setIsVoting(false);
+      }
+    },
+    [user, battles, currentBattleIndex, votedPlayerIds, isVoting, fetchLeaderboard]
+  );
+
+  const switchToNextBattle = useCallback(() => {
+    const nextIndex = currentBattleIndex + 1;
+    if (nextIndex < battles.length) {
+      const nextBattle = battles[nextIndex];
+      fetchItemsForBattle(nextBattle);
+      fetchLeaderboard(nextBattle.id);
+      setCurrentBattleIndex(nextIndex);
+      setCurrentIndex(0);
+    }
+  }, [currentBattleIndex, battles]);
+
+  const switchToPreviousBattle = useCallback(() => {
+    const prevIndex = currentBattleIndex - 1;
+    if (prevIndex >= 0) {
+      const prevBattle = battles[prevIndex];
+      fetchItemsForBattle(prevBattle);
+      fetchLeaderboard(prevBattle.id);
+      setCurrentBattleIndex(prevIndex);
+      setCurrentIndex(0);
+    }
+  }, [currentBattleIndex, battles]);
+
+  const currentItem = currentItems[currentIndex];
+  const color = currentItem?.jerseyColor || getJerseyColor("Default");
+
+  const startScan = useCallback(
+    (index: number) => {
+      if (!currentItems[index]) return;
+      setIsScanning(true);
+      let count = 0;
+      if (scanInterval.current) clearInterval(scanInterval.current);
+      scanInterval.current = setInterval(() => {
+        setDisplayNumber(Math.floor(Math.random() * 99) + 1);
+        count++;
+        if (count >= 18) {
+          clearInterval(scanInterval.current!);
+          setDisplayNumber(currentItems[index].jerseyNumber || "--");
+          setIsScanning(false);
+        }
+      }, 60);
+    },
+    [currentItems]
+  );
+
+  useEffect(() => {
+    if (currentItem && currentItem.type === "PLAYER") {
+      setDisplayNumber(currentItem.jerseyNumber || "--");
+      if (scanTimeout.current) clearTimeout(scanTimeout.current);
+      scanTimeout.current = setTimeout(() => startScan(currentIndex), 300);
+      const interval = setInterval(() => startScan(currentIndex), 3000);
+      return () => {
+        clearInterval(interval);
+        if (scanInterval.current) clearInterval(scanInterval.current);
+        if (scanTimeout.current) clearTimeout(scanTimeout.current);
+      };
+    } else if (currentItem && currentItem.type === "CLUB") {
+      setDisplayNumber("🏆");
+      setIsScanning(false);
+    }
+  }, [currentIndex, currentItem, startScan]);
 
   const animateSwipe = useCallback(
     (dir: "left" | "right") => {
-      if (isAnimatingOut) return;
+      if (isAnimatingOut || !currentItems.length) return;
+      const currentPlayer = currentItems[currentIndex];
+
       setSwipeDir(dir);
       setIsAnimatingOut(true);
       setIsDragging(false);
+      setDragX(0);
+
+      if (currentPlayer) {
+        recordVote(currentPlayer, dir);
+      }
+
       setTimeout(() => {
-        setCurrentIndex((prev) =>
-          dir === "left" ? (prev + 1) % players.length : (prev - 1 + players.length) % players.length
-        );
+        if (currentIndex + 1 < currentItems.length) {
+          setCurrentIndex((p) => p + 1);
+        } else {
+          switchToNextBattle();
+        }
         setIsAnimatingOut(false);
         setSwipeDir(null);
-        setDragX(0);
         dragXRef.current = 0;
-      }, 340);
+      }, 300);
     },
-    [isAnimatingOut]
+    [isAnimatingOut, currentIndex, currentItems, recordVote, switchToNextBattle]
   );
 
-  // Touch handling
+  // Touch events for mobile
   useEffect(() => {
     const card = cardRef.current;
     if (!card) return;
 
-    const onTouchStart = (e: TouchEvent) => {
-      startX.current = e.touches[0].clientX;
-      startY.current = e.touches[0].clientY;
+    let touchStartX = 0;
+    let touchStartY = 0;
+
+    const handleTouchStart = (e: TouchEvent) => {
+      if (isAnimatingOut) return;
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
       isDraggingRef.current = true;
       lockAxis.current = null;
       dragXRef.current = 0;
     };
 
-    const onTouchMove = (e: TouchEvent) => {
-      if (!isDraggingRef.current) return;
-      const dx = e.touches[0].clientX - startX.current;
-      const dy = e.touches[0].clientY - startY.current;
+    const handleTouchMove = (e: TouchEvent) => {
+      if (!isDraggingRef.current || isAnimatingOut) return;
+      
+      const touchX = e.touches[0].clientX;
+      const touchY = e.touches[0].clientY;
+      const deltaX = touchX - touchStartX;
+      const deltaY = touchY - touchStartY;
 
-      if (!lockAxis.current) {
-        lockAxis.current = Math.abs(dx) > Math.abs(dy) ? "h" : "v";
+      if (!lockAxis.current && (Math.abs(deltaX) > 10 || Math.abs(deltaY) > 10)) {
+        lockAxis.current = Math.abs(deltaX) > Math.abs(deltaY) ? "h" : "v";
       }
-      if (lockAxis.current === "v") return;
 
-      e.preventDefault();
-      dragXRef.current = dx;
-      setDragX(dx);
-      setIsDragging(true);
+      if (lockAxis.current === "h") {
+        e.preventDefault();
+        dragXRef.current = deltaX;
+        setDragX(deltaX);
+        setIsDragging(true);
+      }
     };
 
-    const onTouchEnd = () => {
+    const handleTouchEnd = () => {
       if (!isDraggingRef.current) return;
-      isDraggingRef.current = false;
-      const dx = dragXRef.current;
-      setIsDragging(false);
-      if (lockAxis.current === "h") {
-        if (dx < -60) animateSwipe("left");
-        else if (dx > 60) animateSwipe("right");
-        else {
-          setDragX(0);
-          dragXRef.current = 0;
+      
+      const deltaX = dragXRef.current;
+      
+      if (lockAxis.current === "h" && Math.abs(deltaX) > 50 && !isAnimatingOut) {
+        if (deltaX < 0) {
+          animateSwipe("left");
+        } else if (deltaX > 0) {
+          animateSwipe("right");
         }
-      } else {
-        setDragX(0);
-        dragXRef.current = 0;
       }
+      
+      setIsDragging(false);
+      setDragX(0);
+      dragXRef.current = 0;
+      isDraggingRef.current = false;
       lockAxis.current = null;
     };
 
-    card.addEventListener("touchstart", onTouchStart, { passive: true });
-    card.addEventListener("touchmove", onTouchMove, { passive: false });
-    card.addEventListener("touchend", onTouchEnd);
+    const handleTouchCancel = () => {
+      setIsDragging(false);
+      setDragX(0);
+      dragXRef.current = 0;
+      isDraggingRef.current = false;
+      lockAxis.current = null;
+    };
+
+    card.addEventListener("touchstart", handleTouchStart, { passive: true });
+    card.addEventListener("touchmove", handleTouchMove, { passive: false });
+    card.addEventListener("touchend", handleTouchEnd);
+    card.addEventListener("touchcancel", handleTouchCancel);
 
     return () => {
-      card.removeEventListener("touchstart", onTouchStart);
-      card.removeEventListener("touchmove", onTouchMove);
-      card.removeEventListener("touchend", onTouchEnd);
+      card.removeEventListener("touchstart", handleTouchStart);
+      card.removeEventListener("touchmove", handleTouchMove);
+      card.removeEventListener("touchend", handleTouchEnd);
+      card.removeEventListener("touchcancel", handleTouchCancel);
     };
-  }, [animateSwipe]);
+  }, [animateSwipe, isAnimatingOut]);
 
-  // Mouse/pointer handling
-  const onPointerDown = (e: React.PointerEvent) => {
-    if (e.pointerType === "touch") return;
+  const handlePointerDown = (e: React.PointerEvent) => {
+    if (isAnimatingOut) return;
     startX.current = e.clientX;
     isDraggingRef.current = true;
     dragXRef.current = 0;
@@ -247,98 +1551,169 @@ export default function FanBattleCard() {
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
   };
 
-  const onPointerMove = (e: React.PointerEvent) => {
-    if (!isDraggingRef.current || e.pointerType === "touch") return;
-    const dx = e.clientX - startX.current;
-    dragXRef.current = dx;
-    setDragX(dx);
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!isDraggingRef.current || isAnimatingOut) return;
+    const deltaX = e.clientX - startX.current;
+    dragXRef.current = deltaX;
+    setDragX(deltaX);
   };
 
-  const onPointerUp = (e: React.PointerEvent) => {
-    if (e.pointerType === "touch") return;
+  const handlePointerUp = (e: React.PointerEvent) => {
     if (!isDraggingRef.current) return;
-    isDraggingRef.current = false;
-    setIsDragging(false);
-    const dx = dragXRef.current;
-    if (dx < -60) animateSwipe("left");
-    else if (dx > 60) animateSwipe("right");
-    else {
-      setDragX(0);
-      dragXRef.current = 0;
+    
+    const deltaX = dragXRef.current;
+    
+    if (Math.abs(deltaX) > 50 && !isAnimatingOut) {
+      if (deltaX < 0) {
+        animateSwipe("left");
+      } else if (deltaX > 0) {
+        animateSwipe("right");
+      }
     }
+    
+    setIsDragging(false);
+    setDragX(0);
+    dragXRef.current = 0;
+    isDraggingRef.current = false;
   };
 
-  const cardTransform: React.CSSProperties = isAnimatingOut
-    ? {
-        transform: `translateX(${swipeDir === "left" ? -460 : 460}px) rotate(${swipeDir === "left" ? -14 : 14}deg)`,
+  const getCardTransform = (): React.CSSProperties => {
+    if (isAnimatingOut) {
+      return {
+        transform: `translateX(${swipeDir === "left" ? -500 : 500}px) rotate(${swipeDir === "left" ? -15 : 15}deg)`,
         opacity: 0,
-        transition: "transform 0.34s cubic-bezier(0.4,0,0.2,1), opacity 0.28s ease",
-      }
-    : isDragging
-    ? {
-        transform: `translateX(${dragX}px) rotate(${dragX * 0.045}deg)`,
+        transition: "transform 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1), opacity 0.25s ease",
+      };
+    }
+    
+    if (isDragging && dragX !== 0) {
+      const rotate = dragX * 0.03;
+      return {
+        transform: `translateX(${dragX}px) rotate(${rotate}deg)`,
         transition: "none",
         cursor: "grabbing",
-      }
-    : {
-        transform: "translateX(0px) rotate(0deg)",
-        opacity: 1,
-        transition: "transform 0.44s cubic-bezier(0.34,1.56,0.64,1), opacity 0.2s ease",
-        cursor: "grab",
       };
+    }
+    
+    return {
+      transform: "translateX(0px) rotate(0deg)",
+      opacity: 1,
+      transition: "transform 0.4s cubic-bezier(0.2, 0.9, 0.4, 1.1), opacity 0.2s ease",
+      cursor: "grab",
+    };
+  };
 
-  const likeOpacity = dragX > 40 ? Math.min((dragX - 40) / 90, 1) : 0;
-  const skipOpacity = dragX < -40 ? Math.min((-dragX - 40) / 90, 1) : 0;
+  const likeOpacity = dragX > 30 ? Math.min((dragX - 30) / 70, 1) : 0;
+  const skipOpacity = dragX < -30 ? Math.min((-dragX - 30) / 70, 1) : 0;
+
+  const alreadyVoted = currentItem ? votedPlayerIds.has(currentItem.id) : false;
+
+  if (showCreate) return <CreateBattle onClose={() => setShowCreate(false)} />;
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#07070f]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500 mx-auto mb-4" />
+          <p className="text-gray-400">Loading battles...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (battles.length === 0) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#07070f] px-4">
+        <div className="text-center max-w-sm">
+          <div className="w-20 h-20 rounded-full bg-[#1a1a2e] flex items-center justify-center mx-auto mb-4">
+            <span className="text-3xl">⚔️</span>
+          </div>
+          <h2 className="text-white text-xl font-bold mb-2">No Battles Found</h2>
+          <p className="text-gray-400 text-sm mb-6">
+            You haven&apos;t created any battles yet. Create one to start challenging friends!
+          </p>
+          <button onClick={() => setShowCreate(true)}
+            className="px-6 py-3 rounded-xl bg-gradient-to-r from-pink-500 to-orange-500 text-white font-semibold">
+            Create Your First Battle
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!currentItems.length || !currentItem) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#07070f]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500 mx-auto mb-4" />
+          <p className="text-gray-400">Loading items...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-start bg-[#07070f] py-6 px-4 select-none overflow-hidden">
-      {/* Header */}
+      {toast && <Toast message={toast.message} type={toast.type} />}
+
+      {showLeaderboard && (
+        <LeaderboardModal
+          battleName={battles[currentBattleIndex]?.battleName || "Battle"}
+          leaderboard={leaderboard}
+          votedPlayerIds={Array.from(votedPlayerIds)}
+          onClose={() => setShowLeaderboard(false)}
+        />
+      )}
+
       <div className="w-full max-w-sm flex items-center justify-between mb-5">
         <div>
-          <h1 className="text-white text-2xl font-bold tracking-tight">Fan Battle</h1>
-          <p className="text-gray-500 text-xs mt-0.5">Shake or swipe to show your support</p>
+          <p className="text-gray-500 text-2xl font-bold mt-0.5">
+            {battles[currentBattleIndex]?.battleName?.charAt(0).toUpperCase() + battles[currentBattleIndex]?.battleName?.slice(1) || "Swipe to support"}
+          </p>
         </div>
         <div className="flex gap-2">
-          <button className="flex items-center gap-1.5 bg-[#160d25] border border-fuchsia-800 text-fuchsia-400 text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-fuchsia-900/30 transition-colors">
+          <button
+            onClick={() => { fetchLeaderboard(battles[currentBattleIndex]?.id); setShowLeaderboard(true); }}
+            className="flex items-center gap-1.5 bg-[#0e1a14] border border-emerald-800 text-emerald-400 text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-emerald-900/30 transition-colors"
+          >
+            🏆 Board
+          </button>
+          <button
+            onClick={() => setShowCreate(true)}
+            className="flex items-center gap-1.5 bg-[#160d25] border border-fuchsia-800 text-fuchsia-400 text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-fuchsia-900/30 transition-colors"
+          >
             <svg width="11" height="11" viewBox="0 0 16 16" fill="none">
               <path d="M8 1v14M1 8h14" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
             </svg>
             Create
           </button>
-          <button className="flex items-center gap-1.5 bg-[#160d25] border border-fuchsia-800 text-fuchsia-400 text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-fuchsia-900/30 transition-colors">
-            <svg width="11" height="11" viewBox="0 0 16 16" fill="none">
-              <circle cx="5" cy="5" r="3" stroke="currentColor" strokeWidth="1.5" />
-              <circle cx="11" cy="5" r="3" stroke="currentColor" strokeWidth="1.5" />
-              <path d="M1 14c0-2.2 1.8-4 4-4h6c2.2 0 4 1.8 4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-            </svg>
-            Invite
-          </button>
         </div>
       </div>
 
-      {/* Card stack area */}
-      <div className="w-full max-w-sm relative" style={{ perspective: "1200px" }}>
-        {/* Ghost cards behind */}
-        <div
-          className="absolute inset-0 rounded-2xl"
-          style={{
-            background: "#0c091a",
-            border: "1px solid rgba(255,255,255,0.05)",
-            transform: "scale(0.94) translateY(12px)",
-            zIndex: 0,
-          }}
-        />
-        <div
-          className="absolute inset-0 rounded-2xl"
-          style={{
-            background: "#0a0814",
-            border: "1px solid rgba(255,255,255,0.04)",
-            transform: "scale(0.97) translateY(6px)",
-            zIndex: 1,
-          }}
-        />
+      {battles.length > 1 && (
+        <div className="w-full max-w-sm mb-3">
+          <div className="flex justify-between text-xs text-gray-500 mb-1">
+            <span>Battle {currentBattleIndex + 1} of {battles.length}</span>
+            <span>{currentIndex + 1}/{currentItems.length} items</span>
+          </div>
+          <div className="w-full h-1 bg-[#1a1a2e] rounded-full overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-pink-500 to-orange-500 rounded-full transition-all duration-300"
+              style={{
+                width: `${((currentBattleIndex * currentItems.length + currentIndex + 1) /
+                  (battles.length * currentItems.length)) * 100}%`,
+              }}
+            />
+          </div>
+        </div>
+      )}
 
-        {/* Main card */}
+      <div className="w-full max-w-sm relative" style={{ perspective: "1200px" }}>
+        <div className="absolute inset-0 rounded-2xl"
+          style={{ background: "#0c091a", border: "1px solid rgba(255,255,255,0.05)", transform: "scale(0.94) translateY(12px)", zIndex: 0 }} />
+        <div className="absolute inset-0 rounded-2xl"
+          style={{ background: "#0a0814", border: "1px solid rgba(255,255,255,0.04)", transform: "scale(0.97) translateY(6px)", zIndex: 1 }} />
+
         <div
           ref={cardRef}
           className="relative w-full rounded-2xl overflow-hidden"
@@ -349,236 +1724,210 @@ export default function FanBattleCard() {
             zIndex: 2,
             minHeight: 410,
             willChange: "transform",
-            ...cardTransform,
+            touchAction: "pan-y pinch-zoom",
+            ...getCardTransform(),
           }}
-          onPointerDown={onPointerDown}
-          onPointerMove={onPointerMove}
-          onPointerUp={onPointerUp}
-          onPointerLeave={onPointerUp}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerLeave={handlePointerUp}
         >
-          {/* Corner brackets */}
-          {[
-            "top-3 left-3 border-t-2 border-l-2",
-            "top-3 right-3 border-t-2 border-r-2",
-            "bottom-3 left-3 border-b-2 border-l-2",
-            "bottom-3 right-3 border-b-2 border-r-2",
-          ].map((cls, i) => (
+          {["top-3 left-3 border-t-2 border-l-2", "top-3 right-3 border-t-2 border-r-2",
+            "bottom-3 left-3 border-b-2 border-l-2", "bottom-3 right-3 border-b-2 border-r-2"].map((cls, i) => (
             <div key={i} className={`absolute w-5 h-5 ${cls} rounded-sm`} style={{ borderColor: `${color.stroke}70` }} />
           ))}
 
-          {/* Ambient dots */}
           <div className="absolute left-4 top-1/2 w-1.5 h-1.5 rounded-full" style={{ background: `${color.stroke}55` }} />
           <div className="absolute right-4 top-1/2 w-1.5 h-1.5 rounded-full" style={{ background: `${color.stroke}55` }} />
 
-          {/* Top accent stripe */}
-          <div
-            className="absolute top-0 left-0 right-0 h-px"
-            style={{ background: `linear-gradient(90deg, transparent, ${color.stroke}cc, transparent)` }}
-          />
+          <div className="absolute top-0 left-0 right-0 h-px"
+            style={{ background: `linear-gradient(90deg, transparent, ${color.stroke}cc, transparent)` }} />
 
-          {/* LIKE stamp */}
-          <div
-            className="absolute inset-0 flex items-center justify-start pl-7 pointer-events-none z-10"
-            style={{ opacity: likeOpacity, transition: isDragging ? "none" : "opacity 0.15s" }}
-          >
-            <div
-              className="font-black text-2xl tracking-widest border-4 rounded-xl px-4 py-2"
-              style={{ borderColor: "#4ade80", color: "#4ade80", transform: "rotate(-14deg)", textShadow: "0 0 12px rgba(74,222,128,0.5)" }}
-            >
-              LIKE
+          {alreadyVoted && (
+            <div className="absolute top-3 left-1/2 z-20 px-3 py-1 rounded-full text-[10px] font-bold"
+              style={{
+                transform: "translateX(-50%)",
+                background: "rgba(74,222,128,0.15)",
+                border: "1px solid #4ade8066",
+                color: "#4ade80",
+              }}>
+              ✓ Voted
+            </div>
+          )}
+
+          <div className="absolute inset-0 flex items-center justify-start pl-7 pointer-events-none z-10"
+            style={{ opacity: likeOpacity, transition: isDragging ? "none" : "opacity 0.15s" }}>
+            <div className="font-black text-2xl tracking-widest border-4 rounded-xl px-4 py-2"
+              style={{ borderColor: "#4ade80", color: "#4ade80", transform: "rotate(-14deg)", textShadow: "0 0 12px rgba(74,222,128,0.5)" }}>
+              +15 PTS
             </div>
           </div>
 
-          {/* SKIP stamp */}
-          <div
-            className="absolute inset-0 flex items-center justify-end pr-7 pointer-events-none z-10"
-            style={{ opacity: skipOpacity, transition: isDragging ? "none" : "opacity 0.15s" }}
-          >
-            <div
-              className="font-black text-2xl tracking-widest border-4 rounded-xl px-4 py-2"
-              style={{ borderColor: "#f87171", color: "#f87171", transform: "rotate(14deg)", textShadow: "0 0 12px rgba(248,113,113,0.5)" }}
-            >
+          <div className="absolute inset-0 flex items-center justify-end pr-7 pointer-events-none z-10"
+            style={{ opacity: skipOpacity, transition: isDragging ? "none" : "opacity 0.15s" }}>
+            <div className="font-black text-2xl tracking-widest border-4 rounded-xl px-4 py-2"
+              style={{ borderColor: "#f87171", color: "#f87171", transform: "rotate(14deg)", textShadow: "0 0 12px rgba(248,113,113,0.5)" }}>
               SKIP
             </div>
           </div>
 
           <div className="flex flex-col items-center pt-8 pb-5 px-5">
-            {/* Jersey with unique color */}
-            <div className="relative flex items-center justify-center mb-4" style={{ width: 130, height: 138 }}>
-              <div
-                className="absolute inset-0"
-                style={{
-                  background: `radial-gradient(ellipse at center, ${color.glow} 0%, transparent 68%)`,
-                  filter: "blur(16px)",
-                  transform: "scale(1.4)",
-                }}
-              />
-              <svg width="118" height="128" viewBox="0 0 110 120" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <defs>
-                  <linearGradient id={`jg${player.id}`} x1="0" y1="0" x2="110" y2="120" gradientUnits="userSpaceOnUse">
-                    <stop offset="0%" stopColor={color.from} stopOpacity="0.96" />
-                    <stop offset="100%" stopColor={color.to} stopOpacity="0.96" />
-                  </linearGradient>
-                </defs>
-                <path
-                  d="M30 8 L10 28 L22 34 L22 108 L88 108 L88 34 L100 28 L80 8 L70 18 C65 22 45 22 40 18 Z"
-                  fill={`url(#jg${player.id})`}
-                  stroke={color.stroke}
-                  strokeWidth="1.6"
+            <div className="relative flex items-center justify-center mb-4" style={{ width: 250, height: 250 }}>
+              <div className="absolute inset-0"
+                style={{ background: `radial-gradient(ellipse at center, ${color.glow} 0%, transparent 68%)`, filter: "blur(16px)", transform: "scale(1.4)" }} />
+              
+              {currentItem?.type === "CLUB" ? (
+                <img
+                  src={currentItem.avatar || "/images/default-club.png"}
+                  alt={currentItem.name}
+                  className="w-[200px] h-[200px] object-contain relative z-10 rounded-2xl"
+                  draggable={false}
                 />
-                <path
-                  d="M30 8 L10 28 L22 34 L22 108 L88 108 L88 34 L100 28 L80 8 L70 18 C65 22 45 22 40 18 Z"
-                  fill="none"
-                  stroke={color.innerStroke}
-                  strokeWidth="0.5"
-                  opacity="0.35"
-                />
-                <text
-                  x="55"
-                  y="78"
-                  textAnchor="middle"
-                  dominantBaseline="middle"
-                  fill="white"
-                  fontSize={isScanning ? "33" : "38"}
-                  fontWeight="bold"
-                  fontFamily="monospace"
-                  opacity={isScanning ? "0.6" : "1"}
-                  style={{ transition: isScanning ? "none" : "font-size 0.2s", filter: isScanning ? "blur(0.8px)" : "none" }}
-                >
-                  {displayNumber}
-                </text>
-              </svg>
-
-              {isScanning && (
-                <div
-                  className="absolute left-2 right-2 h-px pointer-events-none"
-                  style={{
-                    background: `linear-gradient(90deg, transparent, ${color.stroke}cc, transparent)`,
-                    animation: "scanLine 0.18s linear infinite",
-                    top: "50%",
-                  }}
-                />
+              ) : (
+                <>
+                  <img
+                    src={getJerseys.find((j) => j.team === currentItem?.team)?.path || "/images/MI1.png"}
+                    alt={currentItem?.team || "Jersey"}
+                    className="w-[320px] h-[320px] object-contain relative z-10"
+                    draggable={false}
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center pt-5 z-20 pointer-events-none">
+                    <span className="text-white font-bold font-mono"
+                      style={{
+                        fontSize: isScanning ? "30px" : "36px",
+                        opacity: isScanning ? 0.6 : 1,
+                        filter: isScanning ? "blur(0.8px)" : "none",
+                        transition: isScanning ? "none" : "all 0.2s",
+                        textShadow: "0 2px 4px rgba(0,0,0,0.5)",
+                      }}>
+                      {displayNumber}
+                    </span>
+                  </div>
+                  {isScanning && (
+                    <div className="absolute left-2 right-2 h-px pointer-events-none"
+                      style={{ background: `linear-gradient(90deg, transparent, ${color.stroke}cc, transparent)`, animation: "scanLine 0.18s linear infinite", top: "50%" }} />
+                  )}
+                </>
               )}
             </div>
 
-            {/* Name */}
-            <h2 className="text-white text-lg font-bold text-center leading-snug">
-              {player.name}{" "}
-              <span style={{ color: color.stroke }}>({player.nameDev})</span>
-            </h2>
-            <p className="text-gray-500 text-xs mt-1 text-center">{player.team}</p>
+            <h2 className="text-white text-lg font-bold text-center leading-snug">{currentItem.name}</h2>
+            <p className="text-gray-500 text-xs mt-1 text-center">{currentItem.team || "IPL"}</p>
 
-            {/* Role badge */}
             <div className="flex items-center gap-2 mt-3 mb-4">
-              <span
-                className="text-white text-[10px] font-bold tracking-wider px-3 py-1 rounded-sm"
-                style={{ background: `linear-gradient(90deg, ${color.from}, ${color.to})` }}
-              >
-                {player.role}
+              <span className="text-white text-[10px] font-bold tracking-wider px-3 py-1 rounded-sm"
+                style={{ background: `linear-gradient(90deg, ${color.from}, ${color.to})` }}>
+                {currentItem.role || currentItem.specialization || (currentItem.type === "CLUB" ? "IPL FRANCHISE" : "PLAYER")}
               </span>
-              <span className="text-gray-500 text-xs">• India Cricket</span>
+              <span className="text-gray-500 text-xs">• {currentItem.type === "CLUB" ? "Indian Premier League" : "India Cricket"}</span>
             </div>
 
-            {/* Stats */}
             <div className="w-full grid grid-cols-3 gap-2 mb-3">
-              {[
-                { label: "RUNS", value: player.runs.toLocaleString() },
-                { label: "MEDALS", value: player.medals },
-                { label: "AGE", value: player.age },
-              ].map(({ label, value }) => (
-                <div
-                  key={label}
-                  className="flex flex-col items-center justify-center rounded-xl py-2.5"
-                  style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}
-                >
-                  <span className="text-white text-sm font-bold leading-tight">{value}</span>
-                  <span className="text-gray-600 text-[9px] font-bold tracking-widest mt-0.5">{label}</span>
-                </div>
-              ))}
+              {currentItem?.type === "CLUB" ? (
+                <>
+                  <div className="flex flex-col items-center justify-center rounded-xl py-2.5"
+                    style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
+                    <span className="text-white text-sm font-bold leading-tight">{currentItem.stats?.runs || "0"}</span>
+                    <span className="text-gray-600 text-[9px] font-bold tracking-widest mt-0.5">RUNS</span>
+                  </div>
+                  <div className="flex flex-col items-center justify-center rounded-xl py-2.5"
+                    style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
+                    <span className="text-white text-sm font-bold leading-tight">{currentItem.stats?.sr || "0"}</span>
+                    <span className="text-gray-600 text-[9px] font-bold tracking-widest mt-0.5">STRIKE RATE</span>
+                  </div>
+                  <div className="flex flex-col items-center justify-center rounded-xl py-2.5"
+                    style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
+                    <span className="text-white text-sm font-bold leading-tight">{currentItem.stats?.avg || "0"}</span>
+                    <span className="text-gray-600 text-[9px] font-bold tracking-widest mt-0.5">AVERAGE</span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="flex flex-col items-center justify-center rounded-xl py-2.5"
+                    style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
+                    <span className="text-white text-sm font-bold leading-tight">{currentItem.runs?.toLocaleString() || "0"}</span>
+                    <span className="text-gray-600 text-[9px] font-bold tracking-widest mt-0.5">RUNS</span>
+                  </div>
+                  <div className="flex flex-col items-center justify-center rounded-xl py-2.5"
+                    style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
+                    <span className="text-white text-sm font-bold leading-tight">{typeof currentItem.strikeRate === "number" ? currentItem.strikeRate.toFixed(1) : currentItem.strikeRate || "0.0"}</span>
+                    <span className="text-gray-600 text-[9px] font-bold tracking-widest mt-0.5">STRIKE RATE</span>
+                  </div>
+                  <div className="flex flex-col items-center justify-center rounded-xl py-2.5"
+                    style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
+                    <span className="text-white text-sm font-bold leading-tight">{currentItem.age || 25}</span>
+                    <span className="text-gray-600 text-[9px] font-bold tracking-widest mt-0.5">AGE</span>
+                  </div>
+                </>
+              )}
             </div>
 
-            {/* Strike rate */}
-            <div
-              className="w-full flex items-center justify-between rounded-xl px-4 py-2 mb-4"
-              style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}
-            >
-              <span className="text-gray-500 text-[10px] font-bold tracking-widest">STRIKE RATE</span>
-              <span className="text-white text-sm font-bold">{player.strikeRate.toFixed(1)}</span>
-            </div>
-
-            {/* Jersey number pill */}
-            <div
-              className="px-10 py-2 rounded-full font-bold text-white text-sm tracking-widest"
-              style={{
-                background: `linear-gradient(90deg, ${color.from}, ${color.to})`,
-                boxShadow: `0 0 22px ${color.glow}`,
-              }}
-            >
-              # {player.jerseyNumber}
-            </div>
+            {currentItem?.type === "CLUB" && currentItem.overview && (
+              <div className="w-full mt-2 p-3 rounded-xl" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
+                <p className="text-gray-400 text-[10px] text-center">
+                  🏟️ {currentItem.overview.venue} | 👤 {currentItem.overview.captain}
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Action bar */}
-      <div
-        className="w-full max-w-sm mt-4 flex items-center justify-between px-5 py-3.5 rounded-2xl"
-        style={{ background: "#0e0e18", border: "1px solid rgba(255,255,255,0.06)" }}
-      >
-        <button
-          onClick={() => animateSwipe("right")}
-          className="flex items-center gap-2 text-gray-400 text-xs font-medium hover:text-white transition-colors group"
-        >
-          <span
-            className="w-8 h-8 rounded-full flex items-center justify-center border border-gray-700 group-hover:border-gray-500 transition-colors text-sm"
-            style={{ background: "rgba(255,255,255,0.05)" }}
-          >
+      <div className="w-full max-w-sm mt-4 flex items-center justify-between px-5 py-3.5 rounded-2xl"
+        style={{ background: "#0e0e18", border: "1px solid rgba(255,255,255,0.06)" }}>
+        <button onClick={() => animateSwipe("left")}
+          className="flex items-center gap-2 text-gray-400 text-xs font-medium hover:text-white transition-colors group">
+          <span className="w-8 h-8 rounded-full flex items-center justify-center border border-gray-700 group-hover:border-gray-500 transition-colors text-sm"
+            style={{ background: "rgba(255,255,255,0.05)" }}>
             ←
           </span>
-          Swipe left to skip
+          Skip
         </button>
-        <button
-          onClick={() => animateSwipe("left")}
+
+        <div className="text-center">
+          <p className="text-[10px] text-gray-600 font-bold tracking-widest">SWIPE RIGHT</p>
+          <p className="text-xs font-black" style={{ color: color.stroke }}>+15 PTS</p>
+        </div>
+
+        <button onClick={() => animateSwipe("right")}
           className="flex items-center gap-2 text-xs font-semibold transition-colors"
-          style={{ color: color.stroke }}
-        >
-          Swipe right to like
-          <span
-            className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm"
+          style={{ color: alreadyVoted ? "#6b7280" : color.stroke }}
+          disabled={alreadyVoted}>
+          {alreadyVoted ? "Voted ✓" : "Like"}
+          <span className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm"
             style={{
-              background: `linear-gradient(135deg, ${color.from}, ${color.to})`,
-              boxShadow: `0 0 14px ${color.glow}`,
-            }}
-          >
+              background: alreadyVoted
+                ? "rgba(107,114,128,0.3)"
+                : `linear-gradient(135deg, ${color.from}, ${color.to})`,
+              boxShadow: alreadyVoted ? "none" : `0 0 14px ${color.glow}`,
+            }}>
             →
           </span>
         </button>
       </div>
 
-      <p className="text-gray-700 text-[9px] tracking-widest mt-3 uppercase">Tap card for full details</p>
+      <p className="text-gray-700 text-[9px] tracking-widest mt-3 uppercase">Swipe right to give +15 pts • Left to skip</p>
 
-      {/* Dot indicators */}
       <div className="flex gap-1.5 mt-2.5">
-        {players.map((p, i) => (
-          <button
-            key={i}
-            onClick={() => !isAnimatingOut && setCurrentIndex(i)}
+        {currentItems.map((item, i) => (
+          <button key={item.id} onClick={() => !isAnimatingOut && setCurrentIndex(i)}
             className="rounded-full transition-all duration-300"
             style={{
               width: i === currentIndex ? 18 : 6,
               height: 6,
-              background: i === currentIndex ? p.jerseyColor.stroke : "rgba(255,255,255,0.15)",
-            }}
-          />
+              background: votedPlayerIds.has(item.id)
+                ? "#4ade80"
+                : i === currentIndex
+                ? (item.jerseyColor?.stroke || "#f472b6")
+                : "rgba(255,255,255,0.15)",
+            }} />
         ))}
       </div>
 
       <style>{`
-        @keyframes scanLine {
-          0%   { top: 22%; }
-          50%  { top: 78%; }
-          100% { top: 22%; }
-        }
+        @keyframes scanLine { 0% { top: 22%; } 50% { top: 78%; } 100% { top: 22%; } }
+        @keyframes toastIn { from { opacity: 0; transform: translateX(-50%) translateY(-12px) scale(0.92); } to { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: translateY(0); } }
       `}</style>
     </div>
   );

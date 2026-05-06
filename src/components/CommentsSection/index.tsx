@@ -154,6 +154,11 @@ interface Comment {
   parentCommentId?: string;
   replies?: Comment[];
   replyCount?: number;
+  isFlagged?: boolean;
+  flaggedByAdmin?: boolean;
+  flaggedBy?: string;
+  flagReason?: string;
+  flaggedAt?: number;
 }
 
 interface CommentsSectionProps {
@@ -177,6 +182,7 @@ export default function CommentsSection({
   const [replyTo, setReplyTo] = useState<Comment | null>(null);
   const [replyText, setReplyText] = useState("");
   const [expandedReplies, setExpandedReplies] = useState<Set<string>>(new Set());
+  const [flaggedComment, setFlaggedComment] = useState<Comment | null>(null);
 
   // Fetch comments when component mounts or contentId changes
   useEffect(() => {
@@ -336,6 +342,18 @@ export default function CommentsSection({
     return new Date(timestamp).toLocaleDateString();
   };
 
+  const isFlaggedComment = (comment: Comment) => Boolean(comment.isFlagged || comment.flaggedByAdmin);
+
+  const openFlagWarning = (comment: Comment) => {
+    setFlaggedComment(comment);
+  };
+
+  const closeFlagWarning = () => {
+    setFlaggedComment(null);
+  };
+
+  const getFlaggedByLabel = (comment: Comment) => comment.flaggedBy || (comment.flaggedByAdmin ? "Admin" : "Moderator");
+
   if (loading) {
     return (
       <section className={`mt-5 rounded-[24px] border border-[#26262b] bg-[#0b0b0d] px-4 py-4 ${className}`}>
@@ -380,19 +398,41 @@ export default function CommentsSection({
                       {formatTime(comment.createdAt)}
                     </span>
                   </div>
-                  <button
-                    onClick={() => likeComment(comment.id)}
-                    className="flex items-center gap-1 text-[#8a8a8a] hover:text-pink-500 transition"
-                  >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill={comment.likedBy?.includes(user?.userId || "") ? "#C9115F" : "none"} stroke="currentColor" strokeWidth="1.5">
-                      <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
-                    </svg>
-                    <span className="text-xs">{comment.likes || 0}</span>
-                  </button>
+                  <div className="flex items-center gap-2">
+                    {isFlaggedComment(comment) && (
+                      <button
+                        type="button"
+                        onClick={() => openFlagWarning(comment)}
+                        className="flex items-center gap-1 rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-1 text-[10px] font-medium text-amber-300 hover:bg-amber-500/20 transition"
+                        aria-label={`Open warning for flagged comment by ${comment.userName}`}
+                      >
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M12 9v4" />
+                          <path d="M12 17h.01" />
+                          <path d="M10.29 3.86L1.82 18a2 2 0 001.72 3h16.92a2 2 0 001.72-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                        </svg>
+                        Flagged
+                      </button>
+                    )}
+                    <button
+                      onClick={() => likeComment(comment.id)}
+                      className="flex items-center gap-1 text-[#8a8a8a] hover:text-pink-500 transition"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill={comment.likedBy?.includes(user?.userId || "") ? "#C9115F" : "none"} stroke="currentColor" strokeWidth="1.5">
+                        <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+                      </svg>
+                      <span className="text-xs">{comment.likes || 0}</span>
+                    </button>
+                  </div>
                 </div>
                 <p className="mt-1 text-[10px] lg:text-[13px] leading-snug text-white/90 break-words">
                   {comment.commentText}
                 </p>
+                {isFlaggedComment(comment) && (
+                  <p className="mt-1 text-[10px] text-amber-300/90">
+                    This comment was flagged by {getFlaggedByLabel(comment)}.
+                  </p>
+                )}
                 <button
                   onClick={() => setReplyTo(comment)}
                   className="mt-1 text-[11px] text-[#6f6f74] hover:text-pink-500 transition"
@@ -538,6 +578,75 @@ export default function CommentsSection({
         <p className="text-center text-xs text-gray-500 mt-2">
           Please sign in to join the conversation
         </p>
+      )}
+
+      {flaggedComment && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-6" onClick={closeFlagWarning}>
+          <div
+            className="w-full max-w-lg rounded-2xl border border-amber-500/30 bg-[#141417] p-4 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-amber-300 text-sm font-semibold uppercase tracking-wide">Warning</p>
+                <h3 className="mt-1 text-white text-lg font-semibold">Flagged comment</h3>
+              </div>
+              <button
+                type="button"
+                onClick={closeFlagWarning}
+                className="text-gray-400 hover:text-white transition"
+                aria-label="Close warning dialog"
+              >
+                <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
+                  <path d="M15 5L5 15M5 5L15 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="mt-4 space-y-3 rounded-xl border border-white/10 bg-black/20 p-3">
+              <div>
+                <p className="text-xs text-gray-400">Comment by</p>
+                <p className="text-sm text-white font-medium">{flaggedComment.userName}</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-400">Comment</p>
+                <p className="text-sm text-white/90 leading-snug break-words">{flaggedComment.commentText}</p>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <p className="text-xs text-gray-400">Flagged by</p>
+                  <p className="text-sm text-amber-300">{getFlaggedByLabel(flaggedComment)}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-400">Flagged status</p>
+                  <p className="text-sm text-amber-300">{flaggedComment.isFlagged || flaggedComment.flaggedByAdmin ? "Needs review" : "Flagged"}</p>
+                </div>
+              </div>
+              {flaggedComment.flagReason && (
+                <div>
+                  <p className="text-xs text-gray-400">Reason</p>
+                  <p className="text-sm text-white/90 break-words">{flaggedComment.flagReason}</p>
+                </div>
+              )}
+              {flaggedComment.flaggedAt && (
+                <div>
+                  <p className="text-xs text-gray-400">Flagged at</p>
+                  <p className="text-sm text-white/90">{formatTime(flaggedComment.flaggedAt)}</p>
+                </div>
+              )}
+            </div>
+
+            <div className="mt-4 flex justify-end">
+              <button
+                type="button"
+                onClick={closeFlagWarning}
+                className="rounded-full bg-amber-500 px-4 py-2 text-sm font-medium text-black hover:bg-amber-400 transition"
+              >
+                Got it
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </section>
   );

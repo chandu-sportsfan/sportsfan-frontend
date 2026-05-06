@@ -27,7 +27,7 @@ interface PlayerRow {
   runs?: number;
   wickets?: number;
   avg: string;
-  sr: string;
+  sr?: string;
   hs?: string;
   econ?: string;
 }

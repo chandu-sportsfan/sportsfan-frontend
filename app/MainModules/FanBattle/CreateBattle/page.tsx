@@ -3,5 +3,5 @@
 import CreateBattle from "@/src/components/FanBattle-Component/CreateBattle";
 
 export default function CreateBattlePage() {
-  return <CreateBattle />;
+  return <CreateBattle onClose={() => {}}  />;
 }

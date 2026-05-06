@@ -503,7 +503,7 @@
 
 //     const handleTouchMove = (e: TouchEvent) => {
 //       if (!isDraggingRef.current || isAnimatingOut) return;
-      
+
 //       const touchX = e.touches[0].clientX;
 //       const touchY = e.touches[0].clientY;
 //       const deltaX = touchX - touchStartX;
@@ -525,9 +525,9 @@
 
 //     const handleTouchEnd = () => {
 //       if (!isDraggingRef.current) return;
-      
+
 //       const deltaX = dragXRef.current;
-      
+
 //       if (lockAxis.current === "h" && Math.abs(deltaX) > 50 && !isAnimatingOut) {
 //         if (deltaX < 0) {
 //           // Swipe left - next player
@@ -537,7 +537,7 @@
 //           animateSwipe("right");
 //         }
 //       }
-      
+
 //       // Reset drag state
 //       setIsDragging(false);
 //       setDragX(0);
@@ -587,9 +587,9 @@
 
 //   const handlePointerUp = (e: React.PointerEvent) => {
 //     if (!isDraggingRef.current) return;
-    
+
 //     const deltaX = dragXRef.current;
-    
+
 //     if (Math.abs(deltaX) > 50 && !isAnimatingOut) {
 //       if (deltaX < 0) {
 //         animateSwipe("left");
@@ -597,7 +597,7 @@
 //         animateSwipe("right");
 //       }
 //     }
-    
+
 //     setIsDragging(false);
 //     setDragX(0);
 //     dragXRef.current = 0;
@@ -613,7 +613,7 @@
 //         transition: "transform 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1), opacity 0.25s ease",
 //       };
 //     }
-    
+
 //     if (isDragging && dragX !== 0) {
 //       const rotate = dragX * 0.03;
 //       return {
@@ -622,7 +622,7 @@
 //         cursor: "grabbing",
 //       };
 //     }
-    
+
 //     return {
 //       transform: "translateX(0px) rotate(0deg)",
 //       opacity: 1,
@@ -951,6 +951,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import axios from "axios";
 import CreateBattle from "./CreateBattle";
 import { useAuth } from "@/context/AuthContext";
+import { PencilIcon, UsersIcon } from "lucide-react";
 
 interface PlayerProfile {
   id: string;
@@ -1047,12 +1048,12 @@ const getJerseys = [
 function Toast({ message, type }: { message: string; type: "success" | "skip" | "error" }) {
   const bg =
     type === "success" ? "rgba(74,222,128,0.15)" :
-    type === "skip" ? "rgba(248,113,113,0.15)" :
-    "rgba(255,255,255,0.08)";
+      type === "skip" ? "rgba(248,113,113,0.15)" :
+        "rgba(255,255,255,0.08)";
   const border =
     type === "success" ? "#4ade80" :
-    type === "skip" ? "#f87171" :
-    "#6b7280";
+      type === "skip" ? "#f87171" :
+        "#6b7280";
   const icon = type === "success" ? "⚡ " : type === "skip" ? "✗ " : "ℹ ";
   return (
     <div
@@ -1172,6 +1173,158 @@ function LeaderboardModal({
   );
 }
 
+
+function HowFanBattleWorksModal({ onClose }: { onClose: () => void }) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center px-4 pb-15"
+      style={{ background: "rgba(0,0,0,0.75)", backdropFilter: "blur(6px)" }}
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-sm rounded-3xl overflow-hidden relative flex flex-col"
+        style={{
+          background: "linear-gradient(180deg, #1a0d2e 0%, #0c0c1a 100%)",
+          border: "1px solid rgba(255,255,255,0.08)",
+          animation: "slideUp 0.35s cubic-bezier(0.34,1.56,0.64,1)",
+          maxHeight: "85vh",
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Fixed Header */}
+        <div 
+          className="sticky top-0 z-20 flex flex-col items-center pt-6 pb-4 px-5 flex-shrink-0" 
+          style={{ 
+            background: "linear-gradient(180deg, #1a0d2e 0%, #1a0d2e 100%)",
+            borderBottom: "1px solid rgba(255,255,255,0.06)" 
+          }}
+        >
+          <div className="w-12 h-12 rounded-full flex items-center justify-center mb-3"
+            style={{ background: "rgba(236,72,153,0.15)", border: "1px solid rgba(236,72,153,0.3)" }}>
+            <span style={{ fontSize: 22 }}>📱</span>
+          </div>
+          <h2 className="text-white text-lg sm:text-xl font-bold text-center">How Fan Battle Works</h2>
+          <p className="text-gray-400 text-xs sm:text-sm text-center mt-1 leading-snug px-2">
+            Engage with player cards to support your favorites and influence the game!
+          </p>
+        </div>
+
+        {/* Fixed X Button */}
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center text-gray-500 hover:text-white transition-colors z-30"
+          style={{ background: "rgba(255,255,255,0.1)", backdropFilter: "blur(8px)" }}
+        >
+          ✕
+        </button>
+
+        {/* Scrollable Content */}
+        <div 
+          className="flex-1 overflow-y-auto px-4 sm:px-5 py-4 sm:py-5"
+          style={{ 
+            scrollbarWidth: "thin",
+            scrollbarColor: "rgba(255,255,255,0.2) rgba(0,0,0,0.2)"
+          }}
+        >
+          <div className="flex flex-col gap-3">
+            {/* Swipe Right */}
+            <div className="rounded-xl sm:rounded-2xl p-3 sm:p-4" 
+              style={{ background: "rgba(16,185,129,0.07)", border: "1px solid rgba(16,185,129,0.2)" }}>
+              <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
+                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center flex-shrink-0"
+                  style={{ background: "rgba(16,185,129,0.2)", border: "1px solid rgba(16,185,129,0.4)" }}>
+                  <span className="text-sm sm:text-base">→</span>
+                </div>
+                <span className="font-bold text-xs sm:text-sm" style={{ color: "#10b981" }}>Swipe Right →</span>
+              </div>
+              <ul className="flex flex-col gap-1.5">
+                {[
+                  "Like the player and add them to your favorites",
+                  "Boost their Power Points +15",
+                  "See more similar players"
+                ].map((text) => (
+                  <li key={text} className="flex items-start gap-2 text-xs text-gray-300">
+                    <span className="mt-1 w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: "#10b981" }} />
+                    <span className="flex-1">{text}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Swipe Left */}
+            <div className="rounded-xl sm:rounded-2xl p-3 sm:p-4" 
+              style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
+              <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
+                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center flex-shrink-0"
+                  style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)" }}>
+                  <span className="text-sm sm:text-base text-gray-400">←</span>
+                </div>
+                <span className="font-bold text-xs sm:text-sm text-gray-300">Swipe Left ←</span>
+              </div>
+              <ul className="flex flex-col gap-1.5">
+                {[
+                  "Skip to the next player",
+                  "No points awarded",
+                  "Help us learn your preferences"
+                ].map((text) => (
+                  <li key={text} className="flex items-start gap-2 text-xs text-gray-400">
+                    <span className="mt-1 w-1.5 h-1.5 rounded-full flex-shrink-0 bg-gray-600" />
+                    <span className="flex-1">{text}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Pro Tip */}
+            <div className="rounded-xl sm:rounded-2xl p-3 sm:p-4" 
+              style={{ background: "rgba(236,72,153,0.07)", border: "1px solid rgba(236,72,153,0.2)" }}>
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-sm">✨</span>
+                <p className="text-xs font-bold" style={{ color: "#ec4899" }}>Pro Tip</p>
+              </div>
+              <p className="text-xs text-gray-300 leading-relaxed">
+                Swipe right on players you love to help them climb the leaderboard! Each vote gives +15 Power Points.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <style jsx>{`
+        @keyframes slideUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
+        /* Custom scrollbar styling */
+        .overflow-y-auto::-webkit-scrollbar {
+          width: 4px;
+        }
+        
+        .overflow-y-auto::-webkit-scrollbar-track {
+          background: rgba(0, 0, 0, 0.2);
+          border-radius: 10px;
+        }
+        
+        .overflow-y-auto::-webkit-scrollbar-thumb {
+          background: rgba(255, 255, 255, 0.2);
+          border-radius: 10px;
+        }
+        
+        .overflow-y-auto::-webkit-scrollbar-thumb:hover {
+          background: rgba(255, 255, 255, 0.3);
+        }
+      `}</style>
+    </div>
+  );
+}
+
 // Main Component
 export default function FanBattleCard() {
   const { user } = useAuth();
@@ -1183,6 +1336,7 @@ export default function FanBattleCard() {
   const [swipeDir, setSwipeDir] = useState<"left" | "right" | null>(null);
   const [isAnimatingOut, setIsAnimatingOut] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
+  const [showHowItWorks, setShowHowItWorks] = useState(false);
 
   const [battles, setBattles] = useState<Battle[]>([]);
   const [currentBattleIndex, setCurrentBattleIndex] = useState(0);
@@ -1483,7 +1637,7 @@ export default function FanBattleCard() {
 
     const handleTouchMove = (e: TouchEvent) => {
       if (!isDraggingRef.current || isAnimatingOut) return;
-      
+
       const touchX = e.touches[0].clientX;
       const touchY = e.touches[0].clientY;
       const deltaX = touchX - touchStartX;
@@ -1503,9 +1657,9 @@ export default function FanBattleCard() {
 
     const handleTouchEnd = () => {
       if (!isDraggingRef.current) return;
-      
+
       const deltaX = dragXRef.current;
-      
+
       if (lockAxis.current === "h" && Math.abs(deltaX) > 50 && !isAnimatingOut) {
         if (deltaX < 0) {
           animateSwipe("left");
@@ -1513,7 +1667,7 @@ export default function FanBattleCard() {
           animateSwipe("right");
         }
       }
-      
+
       setIsDragging(false);
       setDragX(0);
       dragXRef.current = 0;
@@ -1560,9 +1714,9 @@ export default function FanBattleCard() {
 
   const handlePointerUp = (e: React.PointerEvent) => {
     if (!isDraggingRef.current) return;
-    
+
     const deltaX = dragXRef.current;
-    
+
     if (Math.abs(deltaX) > 50 && !isAnimatingOut) {
       if (deltaX < 0) {
         animateSwipe("left");
@@ -1570,7 +1724,7 @@ export default function FanBattleCard() {
         animateSwipe("right");
       }
     }
-    
+
     setIsDragging(false);
     setDragX(0);
     dragXRef.current = 0;
@@ -1585,7 +1739,7 @@ export default function FanBattleCard() {
         transition: "transform 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1), opacity 0.25s ease",
       };
     }
-    
+
     if (isDragging && dragX !== 0) {
       const rotate = dragX * 0.03;
       return {
@@ -1594,7 +1748,7 @@ export default function FanBattleCard() {
         cursor: "grabbing",
       };
     }
-    
+
     return {
       transform: "translateX(0px) rotate(0deg)",
       opacity: 1,
@@ -1656,6 +1810,8 @@ export default function FanBattleCard() {
     <div className="min-h-screen flex flex-col items-center justify-start bg-[#07070f] py-6 px-4 select-none overflow-hidden">
       {toast && <Toast message={toast.message} type={toast.type} />}
 
+      {showHowItWorks && <HowFanBattleWorksModal onClose={() => setShowHowItWorks(false)} />}
+
       {showLeaderboard && (
         <LeaderboardModal
           battleName={battles[currentBattleIndex]?.battleName || "Battle"}
@@ -1665,30 +1821,45 @@ export default function FanBattleCard() {
         />
       )}
 
-      <div className="w-full max-w-sm flex items-center justify-between mb-5">
-        <div>
-          <p className="text-gray-500 text-2xl font-bold mt-0.5">
-            {battles[currentBattleIndex]?.battleName?.charAt(0).toUpperCase() + battles[currentBattleIndex]?.battleName?.slice(1) || "Swipe to support"}
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <button
-            onClick={() => { fetchLeaderboard(battles[currentBattleIndex]?.id); setShowLeaderboard(true); }}
-            className="flex items-center gap-1.5 bg-[#0e1a14] border border-emerald-800 text-emerald-400 text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-emerald-900/30 transition-colors"
-          >
-            🏆 Board
-          </button>
-          <button
-            onClick={() => setShowCreate(true)}
-            className="flex items-center gap-1.5 bg-[#160d25] border border-fuchsia-800 text-fuchsia-400 text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-fuchsia-900/30 transition-colors"
-          >
-            <svg width="11" height="11" viewBox="0 0 16 16" fill="none">
-              <path d="M8 1v14M1 8h14" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
-            </svg>
-            Create
-          </button>
-        </div>
-      </div>
+      <div className="w-full max-w-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 mb-5">
+  <div className="flex items-center gap-2 w-full sm:w-auto">
+    <p className="text-gray-500 text-lg sm:text-2xl font-bold mt-0.5 flex-1 sm:flex-none truncate">
+      {battles[currentBattleIndex]?.battleName?.charAt(0).toUpperCase() + battles[currentBattleIndex]?.battleName?.slice(1) || "Swipe to support"}
+    </p>
+    <button
+      onClick={() => setShowHowItWorks(true)}
+      className="flex items-center justify-center w-6 h-6 rounded-full text-gray-400 hover:text-pink-400 transition-colors flex-shrink-0"
+      style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)", fontSize: 13, fontWeight: 700 }}
+      aria-label="How Fan Battle Works"
+    >
+      i
+    </button>
+  </div>
+  
+  <div className="flex gap-3 w-full sm:w-auto">
+    {/* Create Button */}
+    <button
+      onClick={() => setShowCreate(true)}
+      className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 rounded-md text-pink-500 border border-pink-600 bg-transparent text-xs sm:text-sm font-medium 
+      hover:bg-pink-600/10 hover:shadow-[0_0_10px_rgba(236,72,153,0.4)] transition-all duration-200"
+    >
+      <PencilIcon className="w-3 h-3" />
+      <span className="inline sm:inline">Create</span>
+    </button>
+
+    {/* Invite Button */}
+    <button
+      onClick={() => {
+        // Add your invite logic here
+      }}
+      className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 rounded-md text-pink-500 border border-pink-600 bg-transparent text-xs sm:text-sm font-medium 
+      hover:bg-pink-600/10 hover:shadow-[0_0_10px_rgba(236,72,153,0.4)] transition-all duration-200"
+    >
+      <UsersIcon className="w-3 h-3" />
+      <span className="inline sm:inline">Invite</span>
+    </button>
+  </div>
+</div>
 
       {battles.length > 1 && (
         <div className="w-full max-w-sm mb-3">
@@ -1734,8 +1905,8 @@ export default function FanBattleCard() {
         >
           {["top-3 left-3 border-t-2 border-l-2", "top-3 right-3 border-t-2 border-r-2",
             "bottom-3 left-3 border-b-2 border-l-2", "bottom-3 right-3 border-b-2 border-r-2"].map((cls, i) => (
-            <div key={i} className={`absolute w-5 h-5 ${cls} rounded-sm`} style={{ borderColor: `${color.stroke}70` }} />
-          ))}
+              <div key={i} className={`absolute w-5 h-5 ${cls} rounded-sm`} style={{ borderColor: `${color.stroke}70` }} />
+            ))}
 
           <div className="absolute left-4 top-1/2 w-1.5 h-1.5 rounded-full" style={{ background: `${color.stroke}55` }} />
           <div className="absolute right-4 top-1/2 w-1.5 h-1.5 rounded-full" style={{ background: `${color.stroke}55` }} />
@@ -1775,7 +1946,7 @@ export default function FanBattleCard() {
             <div className="relative flex items-center justify-center mb-4" style={{ width: 250, height: 250 }}>
               <div className="absolute inset-0"
                 style={{ background: `radial-gradient(ellipse at center, ${color.glow} 0%, transparent 68%)`, filter: "blur(16px)", transform: "scale(1.4)" }} />
-              
+
               {currentItem?.type === "CLUB" ? (
                 <img
                   src={currentItem.avatar || "/images/default-club.png"}
@@ -1918,8 +2089,8 @@ export default function FanBattleCard() {
               background: votedPlayerIds.has(item.id)
                 ? "#4ade80"
                 : i === currentIndex
-                ? (item.jerseyColor?.stroke || "#f472b6")
-                : "rgba(255,255,255,0.15)",
+                  ? (item.jerseyColor?.stroke || "#f472b6")
+                  : "rgba(255,255,255,0.15)",
             }} />
         ))}
       </div>

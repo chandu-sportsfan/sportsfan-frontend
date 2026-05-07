@@ -61,11 +61,12 @@ function TeamCell({ abbr, name }: { abbr: string; name: string }) {
 
 /** Player + team logo cell used in both cap tables */
 function PlayerCell({ player, teamAbbr }: { player: string; teamAbbr: string }) {
+  // Strip out orange or purple dot emojis sent by the backend
+  const cleanPlayerName = player.replace(/[🟠🟣]/g, "").trim();
+
   return (
     <div className="flex items-center gap-2">
-      {/* Team logo next to player name */}
       <div className="relative w-7 h-7 sm:w-8 sm:h-8 flex-shrink-0">
-        {/* Swapped to standard HTML <img>, pointing to the '/teams/' folder with uppercase */}
         <img
           src={`/teams/${teamAbbr.toUpperCase()}.png`}
           alt={teamAbbr}
@@ -73,7 +74,7 @@ function PlayerCell({ player, teamAbbr }: { player: string; teamAbbr: string }) 
         />
       </div>
       <div className="min-w-0">
-        <p className="text-white font-medium whitespace-nowrap">{player}</p>
+        <p className="text-white font-medium whitespace-nowrap">{cleanPlayerName}</p>
         <p className="text-gray-500 text-xs">{teamAbbr}</p>
       </div>
     </div>
@@ -253,8 +254,8 @@ export default function IPLPointsTable() {
 
   const tabs: { id: TabId; label: string }[] = [
     { id: "table", label: "Points Table" },
-    { id: "orange", label: "Orange Cap 🟠" },
-    { id: "purple", label: "Purple Cap 🟣" },
+    { id: "orange", label: "Orange Cap " },
+    { id: "purple", label: "Purple Cap " },
   ];
 
   if (loading) {
@@ -295,13 +296,15 @@ export default function IPLPointsTable() {
               <button
                 key={id}
                 onClick={() => setTab(id)}
-                className={`px-6 py-4 text-sm font-medium transition-all cursor-pointer ${
+                className={`flex items-center gap-2 px-6 py-4 text-sm font-medium transition-all cursor-pointer ${
                   tab === id
                     ? "text-[#C9115F] border-b-2 border-[#C9115F]"
                     : "text-gray-400 hover:text-gray-300"
                 }`}
               >
-                {label}
+                <span>{label}</span>
+                {id === "orange" && <img src="/teams/orange_cap.png" alt="Orange Cap" className="w-5 h-5 object-contain" />}
+                {id === "purple" && <img src="/teams/purple_cap.png" alt="Purple Cap" className="w-5 h-5 object-contain" />}
               </button>
             ))}
           </div>

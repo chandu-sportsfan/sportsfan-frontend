@@ -1,10 +1,12 @@
 "use client";
 import { useEffect, useState, useRef, useCallback } from "react";
 import Image from "next/image";
-import { MoreHorizontal, Search, Headphones, Play, Clock } from "lucide-react";
+import { MoreHorizontal, Search, Headphones, Play, Clock, Plus } from "lucide-react";
 import Link from "next/link";
 import { usePlayerProfile360 } from "@/context/PlayerProfile360Context";
 import axios from "axios";
+import { useAuth } from "@/context/AuthContext";
+import PlaylistDialog from "@/src/components/playlistdialog-component/playlistdialog";
 
 interface CatField {
     label: string;
@@ -63,7 +65,9 @@ interface PlaylistData {
 
 export default function Player360CardsSection() {
     const { homeData, loading, fetchPlayerHome } = usePlayerProfile360();
-
+    const { user } = useAuth();
+    const getUserId = () => user?.userId || null;
+    const [playlistPost, setPlaylistPost] = useState<Post | null>(null);
     const [posts, setPosts] = useState<Post[]>([]);
     const [searchTerm, setSearchTerm] = useState("");
     const [error, setError] = useState<string | null>(null);
@@ -457,7 +461,22 @@ export default function Player360CardsSection() {
                                                     </p>
                                                 </div>
                                             </div>
-                                            <MoreHorizontal size={18} className="text-gray-400" />
+                                            
+                                            {/* NEW ACTION ICONS CONTAINER */}
+                                            <div className="flex items-center gap-3">
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        e.stopPropagation();
+                                                        setPlaylistPost(post);
+                                                    }}
+                                                    className="text-gray-400 hover:text-white transition p-1 hover:bg-gray-800 rounded-full cursor-pointer"
+                                                    title="Add to Playlist"
+                                                >
+                                                    <Plus size={18} />
+                                                </button>
+                                                <MoreHorizontal size={18} className="text-gray-400" />
+                                            </div>
                                         </div>
                                     </Link>
 
@@ -695,6 +714,18 @@ export default function Player360CardsSection() {
                     </div>
                 )}
             </div>
+
+            {/* Playlist Dialog */}
+            {playlistPost && (
+                <PlaylistDialog
+                    open={!!playlistPost}
+                    onClose={() => setPlaylistPost(null)}
+                    itemId={playlistPost.id}
+                    itemType="players360" // Adjust this if your backend expects a different string
+                    userId={getUserId()}
+                />
+            )}
+
         </div>
     );
 }

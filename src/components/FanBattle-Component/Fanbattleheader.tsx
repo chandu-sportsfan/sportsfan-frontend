@@ -8,7 +8,7 @@ const FanBattleHeader: React.FC = () => {
     <div className="w-full bg-[#121212] px-4 pt-4 pb-4">
       {/* Top Nav */}
       <div className="flex items-center justify-between mb-5">
-        <Link href="/MainModules/HomePage">
+        <Link href="/MainModules/Fantasy">
           <button className="flex items-center justify-center cursor-pointer w-8 h-8 rounded-full bg-[#1e1e1e] hover:bg-[#2a2a2a] transition-colors">
             <svg
               width="18"

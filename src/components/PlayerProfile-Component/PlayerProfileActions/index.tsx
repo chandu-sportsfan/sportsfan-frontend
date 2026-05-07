@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Player } from "@/types/player";
 import { useAuth } from "@/context/AuthContext";
-import PlaylistDialog from "@/src/components/playlistdialog-component/playlistdialog";
+
 
 interface Props {
   player: Player;
@@ -127,13 +127,13 @@ export default function PlayerProfileActions({ player }: Props) {
         </div>
       </div>
 
-      <PlaylistDialog
+      {/* <PlaylistDialog
         open={showPlaylistDialog}
         onClose={() => setShowPlaylistDialog(false)}
         itemId={player.id} // Or however the ID is stored on your player object
         itemType="player360" // Adjust to match your backend type
         userId={getUserId()}
-      />
+      /> */}
     </div>
   );
 }

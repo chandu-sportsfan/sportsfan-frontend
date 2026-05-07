@@ -64,6 +64,10 @@ const nextConfig = {
         { source: '/api/user-points', destination: `${apiTarget}/api/user-points` },
         { source: '/api/user-points/:path*', destination: `${apiTarget}/api/user-points/:path*` },
 
+        //Notifications
+        { source: '/api/notifications', destination: `${apiTarget}/api/notifications` },
+        { source: '/api/notifications/:path*', destination: `${apiTarget}/api/notifications/:path*` },
+
         // Cloudinary
         { source: '/api/cloudinary/drops/seen', destination: `${apiTarget}/api/cloudinary/drops/seen` },
         { source: '/api/cloudinary/audio', destination: `${apiTarget}/api/cloudinary/audio` },

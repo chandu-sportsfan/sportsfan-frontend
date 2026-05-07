@@ -331,7 +331,7 @@ export default function NotificationsPage() {
 
       {/* ── Sticky header ── */}
       <div className="sticky top-0 z-20 border-b border-white/8 bg-[#07070f]/90 backdrop-blur-md">
-        <div className="mx-auto max-w-2xl px-4">
+        <div className="mx-auto max-w-6xl px-4">
 
           {/* Top bar */}
           <div className="flex items-center gap-3 py-4">
@@ -344,9 +344,9 @@ export default function NotificationsPage() {
 
             {/* Title + badge */}
             <div className="flex items-center gap-2.5 flex-1">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#e91e8c] to-[#d75a2d] text-white shadow-lg shadow-pink-900/30">
+              {/* <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#e91e8c] to-[#d75a2d] text-white shadow-lg shadow-pink-900/30">
                 <BellIcon />
-              </div>
+              </div> */}
               <div>
                 <h1 className="text-base font-bold leading-tight tracking-tight">
                   Notifications
@@ -423,7 +423,7 @@ export default function NotificationsPage() {
       </div>
 
       {/* ── Content ── */}
-      <div className="mx-auto max-w-2xl px-4 pt-4 space-y-3">
+      <div className="mx-auto max-w-6xl px-4 pt-4 space-y-3">
         {loading ? (
           // Skeleton loading state
           <>
@@ -434,9 +434,9 @@ export default function NotificationsPage() {
         ) : displayed.length === 0 ? (
           // Empty state
           <div className="flex flex-col items-center justify-center py-24 text-center select-none">
-            <div className="mb-5 flex h-20 w-20 items-center justify-center rounded-2xl border border-white/8 bg-white/3">
+            {/* <div className="mb-5 flex h-20 w-20 items-center justify-center rounded-2xl border border-white/8 bg-white/3">
               <BellIcon />
-            </div>
+            </div> */}
             <p className="text-base font-semibold text-white/25">
               {filter === "unread" ? "No unread notifications" : "No notifications yet"}
             </p>

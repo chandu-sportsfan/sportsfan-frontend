@@ -465,7 +465,8 @@ const PlayerPowerCarousel: React.FC<PlayerPowerCarouselProps> = ({ onShowAll }) 
 
   const checkPermission = useCallback(
     (battle: Battle): boolean => {
-      if (!user?.userId) return false;
+      // If no user, only show battles that might be public (or all if that's the requirement)
+      if (!user?.userId) return true; // Assuming we want to show all data to everyone
       if (battle.userId === user.userId) return true;
       return !!battle.invitedFriends?.some((f) => f.email === user.email);
     },
@@ -542,17 +543,12 @@ const PlayerPowerCarousel: React.FC<PlayerPowerCarouselProps> = ({ onShowAll }) 
   );
 
   const fetchPowerData = useCallback(async () => {
-    if (!user?.userId) {
-      setLoading(false);
-      return;
-    }
-
     try {
       if (isFirstFetch.current) {
         setLoading(true);
       }
 
-      const battlesResponse = await axios.get(`/api/battle?userId=${user.userId}`);
+      const battlesResponse = await axios.get(`/api/battle${user?.userId ? `?userId=${user.userId}` : ""}`);
 
       if (!battlesResponse.data.success || !battlesResponse.data.battles) {
         setPowerItems([]);

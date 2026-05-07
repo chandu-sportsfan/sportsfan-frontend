@@ -1825,8 +1825,8 @@ const recordVote = useCallback(
         />
       )}
 
-      <div className="w-full max-w-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 mb-5">
-  <div className="flex items-center gap-2 w-full sm:w-auto">
+      <div className="w-full max-w-sm flex flex-col  items-start sm:items-center justify-between gap-3 sm:gap-0 mb-5">
+  <div className="flex items-center justify-betweeen gap-2 w-full sm:w-auto">
     <p className="text-gray-500 text-lg sm:text-2xl font-bold mt-0.5 flex-1 sm:flex-none truncate">
       {battles[currentBattleIndex]?.battleName?.charAt(0).toUpperCase() + battles[currentBattleIndex]?.battleName?.slice(1) || "Swipe to support"}
     </p>

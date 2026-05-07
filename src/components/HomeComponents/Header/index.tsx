@@ -76,51 +76,52 @@ export default function Header() {
             {/* Top row */}
             <div className="flex items-center justify-between gap-4">
                 <div>
-                <Link href="/MainModules/HomePage">
-                    <h1 className="text-lg font-semibold lg:hidden cursor-pointer hover:text-pink-500 transition">SportsFan360</h1>
-                </Link>
+                    <Link href="/MainModules/HomePage">
+                        <h1 className="text-lg font-semibold lg:hidden cursor-pointer hover:text-pink-500 transition">SportsFan360</h1>
+                    </Link>
                 </div>
                 <div className="hidden lg:block" />
                 <div>
-                    <Link href="/MainModules/Notifications">
-                    <button>
-                    <Bell className="w-3 h-3"/>
-                    </button>
-                    </Link>
-                <Link href="/MainModules/Leaderboard">
-                    <button className="flex items-center gap-1 px-4 py-2 bg-gradient-to-r from-pink-500 to-orange-500 text-white text-sm font-bold rounded-full hover:from-pink-600 hover:to-orange-600 transition-colors">
-                        Leaderboard
-                    </button>
-                </Link>
-                <div className="flex gap-2 items-center">
-                    <LogoutButton />
-                </div>
+
+
+                    <div className="flex gap-2 items-center">
+                        <LogoutButton />
+                    </div>
                 </div>
             </div>
 
             {/* Search row with dropdown */}
             <div className="relative" ref={dropdownRef}>
-                <div className="flex items-center gap-2 bg-[#0d1117] px-3 py-2 rounded-full border border-pink-500/20">
-                    <Search size={16} className="text-pink-500 shrink-0" />
-                    <input
-                        ref={inputRef}
-                        type="text"
-                        value={searchQuery}
-                        onChange={handleInputChange}
-                        onFocus={() => {
-                            if (searchQuery.trim() && searchResults.length > 0) {
-                                setShowDropdown(true);
-                            }
-                        }}
-                        placeholder="Search players, teams, jersey numbers..."
-                        className="bg-transparent outline-none text-sm w-full text-white placeholder:text-gray-500"
-                    />
-                    {searchQuery && (
-                        <button onClick={handleClear} className="shrink-0">
-                            <X size={14} className="text-gray-400 hover:text-white" />
-                        </button>
-                    )}
-                </div>
+               
+               <div className="flex items-center gap-2">
+  <div className="flex-1 flex items-center gap-2 bg-[#0d1117] px-3 py-2 rounded-full border border-pink-500/20">
+    <Search size={16} className="text-pink-500 shrink-0" />
+    <input
+      ref={inputRef}
+      type="text"
+      value={searchQuery}
+      onChange={handleInputChange}
+      onFocus={() => {
+        if (searchQuery.trim() && searchResults.length > 0) {
+          setShowDropdown(true);
+        }
+      }}
+      placeholder="Search players, teams, jersey numbers..."
+      className="bg-transparent outline-none text-sm w-full text-white placeholder:text-gray-500"
+    />
+    {searchQuery && (
+      <button onClick={handleClear} className="shrink-0">
+        <X size={14} className="text-gray-400 hover:text-white" />
+      </button>
+    )}
+  </div>
+
+  <Link href="/MainModules/Notifications">
+    <button className="flex items-center justify-center w-10 h-10 rounded-full bg-[#0d1117] border border-pink-500/20 hover:bg-pink-500/10 transition-colors">
+      <Bell className="w-4 h-4 text-pink-500" />
+    </button>
+  </Link>
+</div>
 
                 {/* Search Results Dropdown */}
                 {showDropdown && (
@@ -135,7 +136,7 @@ export default function Header() {
                                 {searchResults.map((result) => (
                                     <Link
                                         key={`${result.type}-${result.id}`}
-                                        href={result.type === 'player' 
+                                        href={result.type === 'player'
                                             ? `/MainModules/PlayersProfile?id=${result.playerProfilesId}&tab=highlights`
                                             : `/MainModules/ClubsProfile?teamProfile=${encodeURIComponent(result.name)}`
                                         }
@@ -146,8 +147,8 @@ export default function Header() {
                                             <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-800 flex-shrink-0">
                                                 {result.type === 'player' ? (
                                                     result.image ? (
-                                                        <img 
-                                                            src={result.image} 
+                                                        <img
+                                                            src={result.image}
                                                             alt={result.name}
                                                             className="w-full h-full object-cover"
                                                         />
@@ -158,8 +159,8 @@ export default function Header() {
                                                     )
                                                 ) : (
                                                     result.logo ? (
-                                                        <img 
-                                                            src={result.logo} 
+                                                        <img
+                                                            src={result.logo}
                                                             alt={result.name}
                                                             className="w-full h-full object-cover"
                                                         />

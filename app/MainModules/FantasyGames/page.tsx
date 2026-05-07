@@ -85,59 +85,27 @@ export default function FantasyGamesHub() {
         {/* Games Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {games.map((game) => {
-            const CardComponent = game.href ? Link : "div";
-            const cardProps = game.href
-              ? { href: game.href, className: "group relative overflow-hidden rounded-2xl border border-[rgba(42,26,10,0.95)] transition-all hover:border-[rgba(245,158,11,0.6)] hover:shadow-2xl hover:shadow-amber-900/50 cursor-pointer" }
-              : { className: "group relative overflow-hidden rounded-2xl border border-[rgba(42,26,10,0.95)] transition-all opacity-75 cursor-not-allowed" };
+            const commonClassName = "group relative overflow-hidden rounded-2xl border border-[rgba(42,26,10,0.95)] transition-all";
+            
+            if (game.href) {
+              return (
+                <Link 
+                  key={game.id} 
+                  href={game.href} 
+                  className={`${commonClassName} hover:border-[rgba(245,158,11,0.6)] hover:shadow-2xl hover:shadow-amber-900/50 cursor-pointer`}
+                >
+                  <CardInner game={game} />
+                </Link>
+              );
+            }
 
             return (
-              <CardComponent key={game.id} {...cardProps}>
-              {/* Background gradient */}
-              <div
-                className={`absolute inset-0 bg-gradient-to-br ${game.color} opacity-20 group-hover:opacity-30 transition-opacity`}
-              />
-
-              {/* Overlay grid */}
-              <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSA2MCAwIEwgMCAwIEwgMCA2MCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJyZ2JhKDI0NSwyMDYsMzIsMS4wKSIgc3Ryb2tlLXdpZHRoPSIwLjUiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjZ3JpZCkiLz48L3N2Zz4=')] opacity-[0.02]" />
-
-              {/* Content */}
-              <div className="relative p-8 sm:p-10 z-10 h-full flex flex-col justify-between">
-                {/* Icon and Title */}
-                <div>
-                  <div className="mb-4 text-5xl">{game.icon}</div>
-                  <h2 className="title-font text-3xl font-bold text-[#f5d5a0] mb-1">
-                    {game.title}
-                  </h2>
-                  <p className="detail-font text-sm text-[#f59e0b] mb-4">
-                    {game.subtitle}
-                  </p>
-                  <p className="text-[#c4956a] text-sm leading-relaxed">
-                    {game.description}
-                  </p>
-                </div>
-
-                {/* Play Button */}
-                {game.href && (
-                  <div className="mt-8 flex items-center gap-3 text-[#f5d5a0] group-hover:gap-5 transition-all">
-                    <span className="font-bold text-sm letter-spacing[0.2em]">PLAY NOW</span>
-                    <ArrowRight
-                      size={20}
-                      className="group-hover:translate-x-1 transition-transform"
-                    />
-                  </div>
-                )}
-                {!game.href && (
-                  <div className="mt-8 flex items-center gap-3 text-[#8b7050]">
-                    <span className="font-bold text-sm letter-spacing[0.2em]">COMING SOON</span>
-                  </div>
-                )}
+              <div 
+                key={game.id} 
+                className={`${commonClassName} opacity-75 cursor-not-allowed`}
+              >
+                <CardInner game={game} />
               </div>
-
-              {/* Hover effect border */}
-              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                <div className="absolute inset-0 rounded-2xl border border-[rgba(245,158,11,0.3)] shadow-inset" />
-              </div>
-            </CardComponent>
             );
           })}
         </div>
@@ -153,5 +121,67 @@ export default function FantasyGamesHub() {
         </div>
       </div>
     </div>
+  );
+}
+
+interface FantasyGame {
+  id: string;
+  title: string;
+  subtitle: string;
+  description: string;
+  icon: string;
+  color: string;
+  href: string | null;
+}
+
+function CardInner({ game }: { game: FantasyGame }) {
+  return (
+    <>
+      {/* Background gradient */}
+      <div
+        className={`absolute inset-0 bg-gradient-to-br ${game.color} opacity-20 group-hover:opacity-30 transition-opacity`}
+      />
+
+      {/* Overlay grid */}
+      <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSA2MCAwIEwgMCAwIEwgMCA2MCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJyZ2JhKDI0NSwyMDYsMzIsMS4wKSIgc3Ryb2tlLXdpZHRoPSIwLjUiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjZ3JpZCkiLz48L3N2Zz4=')] opacity-[0.02]" />
+
+      {/* Content */}
+      <div className="relative p-8 sm:p-10 z-10 h-full flex flex-col justify-between">
+        {/* Icon and Title */}
+        <div>
+          <div className="mb-4 text-5xl">{game.icon}</div>
+          <h2 className="title-font text-3xl font-bold text-[#f5d5a0] mb-1">
+            {game.title}
+          </h2>
+          <p className="detail-font text-sm text-[#f59e0b] mb-4">
+            {game.subtitle}
+          </p>
+          <p className="text-[#c4956a] text-sm leading-relaxed">
+            {game.description}
+          </p>
+        </div>
+
+        {/* Play Button */}
+        {game.href && (
+          <div className="mt-8 flex items-center gap-3 text-[#f5d5a0] group-hover:gap-5 transition-all">
+            <span className="font-bold text-sm letter-spacing[0.2em]">PLAY NOW</span>
+            <ArrowRight
+              size={20}
+              className="group-hover:translate-x-1 transition-transform"
+            />
+          </div>
+        )}
+        {!game.href && (
+          <div className="mt-8 flex items-center gap-3 text-[#8b7050]">
+            <span className="font-bold text-sm letter-spacing[0.2em]">COMING SOON</span>
+          </div>
+        )}
+      </div>
+
+      {/* Hover effect border */}
+      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+        <div className="absolute inset-0 rounded-2xl border border-[rgba(245,158,11,0.3)] shadow-inset" />
+      </div>
+    </>
   );
 }

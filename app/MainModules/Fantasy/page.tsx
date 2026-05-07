@@ -1,58 +1,117 @@
-// 'use client'
 
-// import { ArrowLeft } from "lucide-react";
+
+
 // import type { Metadata } from "next";
-// import { useRouter } from "next/navigation";
+// import CircleCricketClient from "./fanatsycontent";
 // export const metadata: Metadata = {
 //   title: "Circle Cricket PRO - Play Cricket Game | SportsFan360",
-//   description: "Play Circle Cricket PRO - an interactive cricket game",
+//   description: "Play Circle Cricket PRO - an interactive cricket game where you bat against the computer. Choose your difficulty and format!",
+//   openGraph: {
+//     title: "Circle Cricket PRO | SportsFan360",
+//     description: "Interactive cricket batting game - Play now!",
+//     images: ["/images/circle-cricket-og.jpg"],
+//   },
 // };
 
 // export default function CircleCricketPage() {
-//     const router = useRouter()
-//   return (
-//     <div className="min-h-screen bg-[#05080f]">
-//       <div className="container mx-auto px-4 py-8">
-//         <div className="bg-gradient-to-r from-pink-500 to-orange-500 rounded-xl p-0.5">
-//              {/* Back button */}
-//             <button
-//                 onClick={() => router.back()}
-//                 className="flex items-center gap-2 text-gray-400 hover:text-white mb-6 transition"
-//             >
-//                 <ArrowLeft size={18} />
-//                 <span className="text-sm">Back</span>
-//             </button>
-
-//           <div className="bg-[#05080f] rounded-xl overflow-hidden">
-//             <iframe
-//               src="/circle-cricket-game.html"
-//               title="Circle Cricket PRO"
-//               className="w-full h-[800px] border-0"
-//               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-//               allowFullScreen
-//             />
-//           </div>
-//         </div>
-//       </div>
-//     </div>
-//   );
+//   return <CircleCricketClient />;
 // }
 
 
 
 
-import type { Metadata } from "next";
-import CircleCricketClient from "./fanatsycontent";
-export const metadata: Metadata = {
-  title: "Circle Cricket PRO - Play Cricket Game | SportsFan360",
-  description: "Play Circle Cricket PRO - an interactive cricket game where you bat against the computer. Choose your difficulty and format!",
-  openGraph: {
-    title: "Circle Cricket PRO | SportsFan360",
-    description: "Interactive cricket batting game - Play now!",
-    images: ["/images/circle-cricket-og.jpg"],
-  },
-};
+"use client";
 
-export default function CircleCricketPage() {
-  return <CircleCricketClient />;
+import ChallengesSection from "@/src/components/FanBattle-Component/Challengessection";
+import FanBattleCard from "@/src/components/FanBattle-Component/Fanbattlearena";
+import FanBattleHeader from "@/src/components/FanBattle-Component/Fanbattleheader";
+import PlayerPowerCarousel from "@/src/components/FanBattle-Component/PlayerPowerCarousel";
+import RankingsModal from "@/src/components/FanBattle-Component/RankingsModal";
+import React, { useState } from "react";
+import CircleCricketClient from "./fanatsycontent";
+
+const tabs = [
+  { id: "fan-battle", label: "Fan Battle", hasNew: true },
+  { id: "predictions", label: "Predictions & Polls", hasNew: true },
+  { id: "fantasy", label: "Fantasy Games", hasNew: false },
+];
+
+export default function FanBattlePage() {
+  const [isRankingsOpen, setIsRankingsOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState("fan-battle");
+
+  return (
+    <div className="relative overflow-hidden min-h-screen bg-[#121212] flex items-start justify-center">
+      <div className="w-full max-w-6xl mx-auto pt-8 pb-15">
+        {/* Component 1: Header + Hero + Live Banner */}
+        <FanBattleHeader />
+
+        {/* Tabs Section */}
+        <div className="mt-6 px-4">
+          {/* Tab Bar */}
+          <div className="relative flex items-center gap-1 border-b border-white/10">
+            {tabs.map((tab) => {
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`relative flex items-center gap-2 px-5 py-3 text-sm font-semibold tracking-wide transition-all duration-200 whitespace-nowrap
+                    ${isActive
+                      ? "text-white"
+                      : "text-white/40 hover:text-white/70"
+                    }`}
+                >
+                  {tab.label}
+
+                  {/* NEW badge */}
+                  {tab.hasNew && (
+                    <span className="flex items-center justify-center px-1.5 py-0.5 text-[9px] font-bold tracking-widest uppercase rounded-sm bg-[#FF3B5C] text-white leading-none">
+                      NEW
+                    </span>
+                  )}
+
+                  {/* Active underline indicator */}
+                  {isActive && (
+                    <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-[#FF3B5C] to-[#FF8C42] rounded-t-full" />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Tab Content */}
+        <div className="mt-4">
+          {activeTab === "fan-battle" && (
+            <>
+              {/* Component 2: Player Power Points Carousel */}
+              <PlayerPowerCarousel onShowAll={() => setIsRankingsOpen(true)} />
+              <FanBattleCard />
+              
+            
+            </>
+          )}
+
+          {activeTab === "predictions" && (
+            <div className="flex flex-col items-center justify-center text-white/30">
+                <ChallengesSection />
+            </div>
+          )}
+
+          {activeTab === "fantasy" && (
+            <div className="w-full">
+             <CircleCricketClient />
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Rankings Modal */}
+      <RankingsModal
+        isOpen={isRankingsOpen}
+        onClose={() => setIsRankingsOpen(false)}
+      />
+    </div>
+  );
 }

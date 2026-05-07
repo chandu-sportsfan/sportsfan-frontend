@@ -265,13 +265,11 @@
 
 
 
-
 "use client";
 
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import axios from "axios";
 import { useAuth } from "@/context/AuthContext";
-
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface PlayerCard {
@@ -310,9 +308,43 @@ interface LeaderboardEntry {
   votes: number;
 }
 
+// ─── FIX 1: Module-level profile cache ───────────────────────────────────────
+// Lives outside the component so it survives re-renders AND across poll cycles.
+// Profile data (name, team, avatar) never changes between polls — no need to
+// re-fetch it every 30 seconds. This is the single biggest quota reduction.
+interface CachedProfile {
+  id: string;
+  name: string;
+  type: "PLAYER" | "CLUB";
+  team: string;
+  avatar?: string;
+}
+const profileCache = new Map<string, CachedProfile>();
+
+// ─── Icons ────────────────────────────────────────────────────────────────────
 const LightningIcon = () => (
   <svg width="11" height="11" viewBox="0 0 24 24" fill="#00e676">
     <path d="M13 2L4.09 12.96H11L10 22L20.91 11.04H14L13 2Z" />
+  </svg>
+);
+
+const TrendArrow: React.FC<{ trend: "up" | "down" }> = ({ trend }) => (
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke={trend === "up" ? "#00e676" : "#ef5350"}
+    strokeWidth="3"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className="flex-shrink-0"
+  >
+    {trend === "up" ? (
+      <path d="M7 17L17 7M17 7H9M17 7V15" />
+    ) : (
+      <path d="M7 7L17 17M17 17H9M17 17V9" />
+    )}
   </svg>
 );
 
@@ -345,39 +377,18 @@ const RankCircle: React.FC<{
         height: size,
         border: `3px solid ${borderColor}`,
         background: "#121212",
-        boxShadow: glowColor !== "transparent"
-          ? `0 0 10px 2px ${glowColor}, inset 0 0 6px ${glowColor}`
-          : "none",
+        boxShadow:
+          glowColor !== "transparent"
+            ? `0 0 10px 2px ${glowColor}, inset 0 0 6px ${glowColor}`
+            : "none",
       }}
     >
-      <span
-        style={{
-          color: textColor,
-          fontSize: 16,
-          fontWeight: 700,
-          lineHeight: 1,
-        }}
-      >
+      <span style={{ color: textColor, fontSize: 16, fontWeight: 700, lineHeight: 1 }}>
         {rank}
       </span>
     </div>
   );
 };
-
-const InfoIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ff5722" strokeWidth="2" strokeLinecap="round">
-    <circle cx="12" cy="12" r="10" />
-    <line x1="12" y1="16" x2="12" y2="12" />
-    <line x1="12" y1="8" x2="12.01" y2="8" strokeWidth="3" />
-  </svg>
-);
-
-const TrendArrow: React.FC<{ trend: "up" | "down" }> = ({ trend }) => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={trend === "up" ? "#00e676" : "#ef5350"} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0">
-    {trend === "up" ? <path d="M7 17L17 7M17 7H9M17 7V15" /> : <path d="M7 7L17 17M17 17H9M17 17V9" />}
-  </svg>
-);
-// (You can delete the LightningIcon entirely)
 
 // ─── Player/Club Card ─────────────────────────────────────────────────────────
 const PowerCard: React.FC<{ item: PlayerCard }> = ({ item }) => (
@@ -402,12 +413,7 @@ const PowerCard: React.FC<{ item: PlayerCard }> = ({ item }) => (
     )}
 
     <div className="flex items-center gap-2.5">
-      <RankCircle
-        rank={item.rank}
-        prevRank={item.prevRank}
-        delta={item.delta}
-        size={52}
-      />
+      <RankCircle rank={item.rank} prevRank={item.prevRank} delta={item.delta} size={52} />
       <div className="flex flex-col min-w-0">
         <span className="text-white text-[11px] font-bold leading-tight line-clamp-2">
           {item.name}
@@ -447,191 +453,258 @@ const PlayerPowerCarousel: React.FC<PlayerPowerCarouselProps> = ({ onShowAll }) 
   const { user } = useAuth();
   const [powerItems, setPowerItems] = useState<PlayerCard[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Track previous points/ranks for delta calculation across polls
   const previousPointsRef = useRef<Map<string, number>>(new Map());
   const previousRanksRef = useRef<Map<string, number>>(new Map());
   const isFirstFetch = useRef(true);
 
-  const checkPermission = useCallback((battle: Battle): boolean => {
-    if (!user?.userId) return false;
-    if (battle.userId === user.userId) return true;
-    return !!battle.invitedFriends?.some((f) => f.email === user.email);
-  }, [user]);
+  // FIX 2: Track in-flight profile fetches to prevent duplicate concurrent requests.
+  // Without this, rapid re-renders can trigger the same profile fetch multiple times.
+  const inflightProfileFetches = useRef<Map<string, Promise<void>>>(new Map());
 
-  const fetchLeaderboardForBattle = useCallback(async (battleId: string): Promise<LeaderboardEntry[]> => {
-    try {
-      const res = await axios.get(
-        `/api/battle/battle-vote?battleId=${battleId}&userId=${user?.userId || ""}`
-      );
-      if (res.data.success) {
-        return res.data.leaderboard || [];
+  const checkPermission = useCallback(
+    (battle: Battle): boolean => {
+      if (!user?.userId) return false;
+      if (battle.userId === user.userId) return true;
+      return !!battle.invitedFriends?.some((f) => f.email === user.email);
+    },
+    [user]
+  );
+
+  const fetchLeaderboardForBattle = useCallback(
+    async (battleId: string): Promise<LeaderboardEntry[]> => {
+      try {
+        const res = await axios.get(
+          `/api/battle/battle-vote?battleId=${battleId}&userId=${user?.userId || ""}`
+        );
+        if (res.data.success) {
+          return res.data.leaderboard || [];
+        }
+        return [];
+      } catch (err) {
+        console.error("Error fetching leaderboard:", err);
+        return [];
       }
-      return [];
-    } catch (err) {
-      console.error("Error fetching leaderboard:", err);
-      return [];
-    }
-  }, [user]);
+    },
+    [user]
+  );
 
-  useEffect(() => {
-    const fetchPowerData = async () => {
-      if (!user?.userId) {
-        setLoading(false);
+  // FIX 1 (core): Fetch a profile only if not already cached.
+  // Re-uses any in-flight request for the same ID to avoid duplicate network calls.
+  const fetchProfileIfNeeded = useCallback(
+    async (id: string, battleType: "PLAYERS" | "CLUBS"): Promise<void> => {
+      // Already cached — nothing to do
+      if (profileCache.has(id)) return;
+
+      // Already being fetched by a concurrent call — wait for that one
+      if (inflightProfileFetches.current.has(id)) {
+        await inflightProfileFetches.current.get(id);
         return;
       }
 
-      try {
-        if (isFirstFetch.current) {
-          setLoading(true);
-        }
-
-        const battlesResponse = await axios.get(`/api/battle?userId=${user.userId}`);
-
-        if (!battlesResponse.data.success || !battlesResponse.data.battles) {
-          setPowerItems([]);
-          setLoading(false);
-          isFirstFetch.current = false;
-          return;
-        }
-
-        const accessibleBattles = battlesResponse.data.battles.filter(checkPermission);
-
-        if (accessibleBattles.length === 0) {
-          setPowerItems([]);
-          setLoading(false);
-          isFirstFetch.current = false;
-          return;
-        }
-
-        // Collect all unique items from all battles
-        const itemsMap = new Map<string, { id: string; name: string; type: "PLAYER" | "CLUB"; team: string; avatar?: string }>();
-
-        for (const battle of accessibleBattles) {
-          const ids = battle.battleType === "PLAYERS" ? battle.selectedPlayers : battle.selectedClubs;
-
-          for (const id of ids) {
-            if (!itemsMap.has(id)) {
-              try {
-                if (battle.battleType === "PLAYERS") {
-                  const response = await axios.get(`/api/player-profile/${id}`);
-                  const playerData = response.data.profile || response.data.data || response.data;
-                  itemsMap.set(id, {
-                    id,
-                    name: playerData.name || "Unknown Player",
-                    type: "PLAYER",
-                    team: playerData.team || "IPL",
-                    avatar: undefined,
-                  });
-                } else {
-                  const response = await axios.get(`/api/club-profile/${id}`);
-                  if (response.data.success) {
-                    const club = response.data.profile;
-                    itemsMap.set(id, {
-                      id,
-                      name: club.name || "Unknown Club",
-                      type: "CLUB",
-                      team: club.team || "IPL",
-                      avatar: club.avatar,
-                    });
-                  }
-                }
-              } catch (err) {
-                console.error(`Error fetching item ${id}:`, err);
-              }
+      const fetchPromise = (async () => {
+        try {
+          if (battleType === "PLAYERS") {
+            const response = await axios.get(`/api/player-profile/${id}`);
+            const playerData = response.data.profile || response.data.data || response.data;
+            profileCache.set(id, {
+              id,
+              name: playerData.name || "Unknown Player",
+              type: "PLAYER",
+              team: playerData.team || "IPL",
+              avatar: undefined,
+            });
+          } else {
+            const response = await axios.get(`/api/club-profile/${id}`);
+            if (response.data.success) {
+              const club = response.data.profile;
+              profileCache.set(id, {
+                id,
+                name: club.name || "Unknown Club",
+                type: "CLUB",
+                team: club.team || "IPL",
+                avatar: club.avatar,
+              });
             }
           }
+        } catch (err) {
+          console.error(`Error fetching profile ${id}:`, err);
+        } finally {
+          inflightProfileFetches.current.delete(id);
         }
+      })();
 
-        // Fetch leaderboard data for all battles and aggregate points
-        const pointsMap = new Map<string, number>();
+      inflightProfileFetches.current.set(id, fetchPromise);
+      await fetchPromise;
+    },
+    []
+  );
 
-        for (const battle of accessibleBattles) {
-          const leaderboard = await fetchLeaderboardForBattle(battle.id);
-          for (const entry of leaderboard) {
-            const currentPoints = pointsMap.get(entry.playerId) || 0;
-            pointsMap.set(entry.playerId, currentPoints + entry.points);
+  const fetchPowerData = useCallback(async () => {
+    if (!user?.userId) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      if (isFirstFetch.current) {
+        setLoading(true);
+      }
+
+      const battlesResponse = await axios.get(`/api/battle?userId=${user.userId}`);
+
+      if (!battlesResponse.data.success || !battlesResponse.data.battles) {
+        setPowerItems([]);
+        setLoading(false);
+        isFirstFetch.current = false;
+        return;
+      }
+
+      const accessibleBattles: Battle[] = battlesResponse.data.battles.filter(checkPermission);
+
+      if (accessibleBattles.length === 0) {
+        setPowerItems([]);
+        setLoading(false);
+        isFirstFetch.current = false;
+        return;
+      }
+
+      // Collect all unique IDs that need profile data
+      const idToBattleType = new Map<string, "PLAYERS" | "CLUBS">();
+      for (const battle of accessibleBattles) {
+        const ids =
+          battle.battleType === "PLAYERS" ? battle.selectedPlayers : battle.selectedClubs;
+        for (const id of ids) {
+          if (!idToBattleType.has(id)) {
+            idToBattleType.set(id, battle.battleType);
           }
         }
+      }
 
-        // Prepare items with points
-        const itemsWithPoints: { id: string; name: string; type: "PLAYER" | "CLUB"; team: string; avatar?: string; points: number }[] = [];
+      // FIX 1 (usage): Fetch only profiles NOT already in cache, in parallel
+      await Promise.all(
+        Array.from(idToBattleType.entries()).map(([id, battleType]) =>
+          fetchProfileIfNeeded(id, battleType)
+        )
+      );
 
-        for (const [id, details] of itemsMap) {
-          const points = pointsMap.get(id) || 0;
-          itemsWithPoints.push({
-            id,
-            name: details.name,
-            type: details.type,
-            team: details.team,
-            avatar: details.avatar,
-            points,
-          });
-        }
+      // Aggregate leaderboard points across all battles
+      // NOTE: only leaderboard data is re-fetched on every poll — not profiles
+      const pointsMap = new Map<string, number>();
+      await Promise.all(
+        accessibleBattles.map(async (battle) => {
+          const leaderboard = await fetchLeaderboardForBattle(battle.id);
+          for (const entry of leaderboard) {
+            pointsMap.set(entry.playerId, (pointsMap.get(entry.playerId) || 0) + entry.points);
+          }
+        })
+      );
 
-        // Sort by points descending to determine ranks
-        itemsWithPoints.sort((a, b) => b.points - a.points);
+      // Build items from cache + fresh points
+      const itemsWithPoints = Array.from(idToBattleType.keys())
+        .map((id) => {
+          const cached = profileCache.get(id);
+          if (!cached) return null;
+          return { ...cached, points: pointsMap.get(id) || 0 };
+        })
+        .filter((item): item is CachedProfile & { points: number } => item !== null);
 
-        // Take only top 20
-        const top20Items = itemsWithPoints.slice(0, 20);
+      // Sort by points, take top 20
+      itemsWithPoints.sort((a, b) => b.points - a.points);
+      const top20 = itemsWithPoints.slice(0, 20);
 
-        // Create final items with ranks and deltas
-        const items: PlayerCard[] = top20Items.map((item, index) => {
-          const rank = index + 1;
-          const points = item.points;
-          const prevPoints = previousPointsRef.current.get(item.id) || points;
-          const prevRank = previousRanksRef.current.get(item.id) || rank;
-          const delta = points - prevPoints;
-          const trend = delta >= 0 ? "up" : "down";
+      // Build final cards with rank deltas
+      const items: PlayerCard[] = top20.map((item, index) => {
+        const rank = index + 1;
+        const points = item.points;
+        const prevPoints = previousPointsRef.current.get(item.id) || points;
+        const prevRank = previousRanksRef.current.get(item.id) || rank;
+        const delta = points - prevPoints;
 
-          return {
-            id: item.id,
-            name: item.name,
-            points,
-            delta: Math.abs(delta),
-            prevPoints,
-            rank,
-            prevRank,
-            isLive: delta >= 15,
-            trend,
-            type: item.type,
-            avatar: item.avatar,
-            team: item.team,
-          };
-        });
+        return {
+          id: item.id,
+          name: item.name,
+          points,
+          delta: Math.abs(delta),
+          prevPoints,
+          rank,
+          prevRank,
+          isLive: delta >= 15,
+          trend: delta >= 0 ? "up" : "down",
+          type: item.type,
+          avatar: item.avatar,
+          team: item.team,
+        };
+      });
 
-        // Update refs for next comparison
-        const newPrevPoints = new Map<string, number>();
-        const newPrevRanks = new Map<string, number>();
-        items.forEach((item) => {
-          newPrevPoints.set(item.id, item.points);
-          newPrevRanks.set(item.id, item.rank);
-        });
-        previousPointsRef.current = newPrevPoints;
-        previousRanksRef.current = newPrevRanks;
+      // Update refs for next poll comparison
+      const newPrevPoints = new Map<string, number>();
+      const newPrevRanks = new Map<string, number>();
+      items.forEach((item) => {
+        newPrevPoints.set(item.id, item.points);
+        newPrevRanks.set(item.id, item.rank);
+      });
+      previousPointsRef.current = newPrevPoints;
+      previousRanksRef.current = newPrevRanks;
 
-        setPowerItems(items);
-        isFirstFetch.current = false;
-      } catch (err) {
-        console.error("Error fetching power data:", err);
-        setPowerItems([]);
-      } finally {
-        setLoading(false);
+      setPowerItems(items);
+      isFirstFetch.current = false;
+    } catch (err) {
+      console.error("Error fetching power data:", err);
+      setPowerItems([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [user, checkPermission, fetchLeaderboardForBattle, fetchProfileIfNeeded]);
+
+  useEffect(() => {
+    fetchPowerData();
+
+    // FIX 2: Pause polling when the browser tab is hidden.
+    // This alone halves quota usage for users who keep the app open in a background tab.
+    let interval: ReturnType<typeof setInterval> | null = null;
+
+    const startPolling = () => {
+      if (interval) return;
+      interval = setInterval(fetchPowerData, 30_000);
+    };
+
+    const stopPolling = () => {
+      if (interval) {
+        clearInterval(interval);
+        interval = null;
       }
     };
 
-    fetchPowerData();
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        stopPolling();
+      } else {
+        // Re-fetch immediately when the user comes back, then restart polling
+        fetchPowerData();
+        startPolling();
+      }
+    };
 
-    const interval = setInterval(fetchPowerData, 30000);
-    return () => clearInterval(interval);
-  }, [user, checkPermission, fetchLeaderboardForBattle]);
+    if (!document.hidden) {
+      startPolling();
+    }
 
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      stopPolling();
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [fetchPowerData]);
+
+  // ─── Loading state ────────────────────────────────────────────────────────
   if (loading) {
     return (
       <div className="w-full bg-[#121212] px-4 pb-4">
         <div className="flex items-start justify-between mb-1">
           <div>
-            <h2 className="text-white text-[15px] font-bold leading-tight">
-              Power Rankings
-            </h2>
+            <h2 className="text-white text-[15px] font-bold leading-tight">Power Rankings</h2>
             <p className="text-[#e53935] text-[11px] mt-0.5 leading-snug max-w-[220px]">
               Top 20 Players & Clubs by Power Points
             </p>
@@ -659,14 +732,13 @@ const PlayerPowerCarousel: React.FC<PlayerPowerCarouselProps> = ({ onShowAll }) 
     );
   }
 
+  // ─── Empty state ──────────────────────────────────────────────────────────
   if (powerItems.length === 0) {
     return (
       <div className="w-full bg-[#121212] px-4 pb-4">
         <div className="flex items-start justify-between mb-1">
           <div>
-            <h2 className="text-white text-[15px] font-bold leading-tight">
-              Power Rankings
-            </h2>
+            <h2 className="text-white text-[15px] font-bold leading-tight">Power Rankings</h2>
             <p className="text-[#e53935] text-[11px] mt-0.5 leading-snug max-w-[220px]">
               Top 20 Players & Clubs by Power Points
             </p>
@@ -688,22 +760,22 @@ const PlayerPowerCarousel: React.FC<PlayerPowerCarouselProps> = ({ onShowAll }) 
     );
   }
 
+  // ─── Carousel ─────────────────────────────────────────────────────────────
   return (
     <div className="w-full bg-[#121212] px-4 pb-4">
       <div className="flex items-start justify-between mb-1">
         <div>
-          <h2 className="text-white text-[15px] font-bold leading-tight">
-            Power Rankings
-          </h2>
+          <h2 className="text-white text-[15px] font-bold leading-tight">Power Rankings</h2>
           <p className="text-[#e53935] text-[11px] mt-0.5 leading-snug max-w-[220px]">
             Top 20{" "}
-            {powerItems.some((item) => item.type === "CLUB")
-              ? "Players & Clubs"
-              : "Players"}{" "}
-            by Power Points
+            {powerItems.some((item) => item.type === "CLUB") ? "Players & Clubs" : "Players"} by
+            Power Points
           </p>
         </div>
-        <button onClick={onShowAll} className="text-[#ff5722] text-[14px] font-bold hover:text-[#ff8a50] transition-colors whitespace-nowrap mt-1 flex-shrink-0 underline underline-offset-4">
+        <button
+          onClick={onShowAll}
+          className="text-[#ff5722] text-[14px] font-bold hover:text-[#ff8a50] transition-colors whitespace-nowrap mt-1 flex-shrink-0 underline underline-offset-4"
+        >
           Show All
         </button>
       </div>
@@ -728,10 +800,9 @@ const PlayerPowerCarousel: React.FC<PlayerPowerCarouselProps> = ({ onShowAll }) 
         `}</style>
 
         <div className="flex gap-3 animate-scroll">
-          {powerItems.length > 0 &&
-            [...powerItems, ...powerItems].map((item, index) => (
-              <PowerCard key={`${item.id}-${index}`} item={item} />
-            ))}
+          {[...powerItems, ...powerItems].map((item, index) => (
+            <PowerCard key={`${item.id}-${index}`} item={item} />
+          ))}
         </div>
       </div>
     </div>

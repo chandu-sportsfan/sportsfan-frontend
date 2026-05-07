@@ -60,6 +60,10 @@ const nextConfig = {
         { source: '/api/events', destination: `${apiTarget}/api/events` },
         { source: '/api/events/:path*', destination: `${apiTarget}/api/events/:path*` },
 
+        //Globalleaderboard
+        { source: '/api/user-points', destination: `${apiTarget}/api/user-points` },
+        { source: '/api/user-points/:path*', destination: `${apiTarget}/api/user-points/:path*` },
+
         // Cloudinary
         { source: '/api/cloudinary/drops/seen', destination: `${apiTarget}/api/cloudinary/drops/seen` },
         { source: '/api/cloudinary/audio', destination: `${apiTarget}/api/cloudinary/audio` },

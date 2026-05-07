@@ -25,9 +25,9 @@ const FanBattleHeader: React.FC = () => {
         </button>
         </Link>
 
-        <span className="text-white text-[24px] font-semibold tracking-wide">
+        {/* <span className="text-white text-[24px] font-semibold tracking-wide">
           Fan Battle
-        </span>
+        </span> */}
 
         <div className="flex items-center gap-1.5 bg-[#1e1e1e] px-3 py-1.5 rounded-full">
           <svg
@@ -44,15 +44,7 @@ const FanBattleHeader: React.FC = () => {
         </div>
       </div>
 
-      {/* Hero Text */}
-      <h1 className="text-white text-2xl sm:text-[15px] font-bold leading-tight mb-1">
-        Test Your Cricket IQ
-      </h1>
-      <p className="text-[#8a8a8a] text-[13px] sm:text-sm leading-relaxed mb-4">
-        Challenge yourself across three difficulty
-        <br />
-        levels and prove you&apos;re the ultimate cricket fan
-      </p>
+    
 
       {/* Live Match Banner */}
       <div className="w-full rounded-2xl bg-gradient-to-r from-[#2a1a2e] via-[#1e1028] to-[#1a1a2e] p-4 flex items-center justify-between border border-[#3a2040]">

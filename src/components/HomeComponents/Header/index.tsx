@@ -74,13 +74,27 @@ export default function Header() {
     return (
         <div className="w-full px-4 lg:px-6 py-3 border-b border-pink-500/20 bg-black flex flex-col gap-3 sticky top-0 z-50">
             {/* Top row */}
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-4">
+                <div>
                 <Link href="/MainModules/HomePage">
                     <h1 className="text-lg font-semibold lg:hidden cursor-pointer hover:text-pink-500 transition">SportsFan360</h1>
                 </Link>
+                </div>
                 <div className="hidden lg:block" />
+                <div>
+                    <Link href="/MainModules/Notifications">
+                    <button>
+                    <Bell className="w-3 h-3"/>
+                    </button>
+                    </Link>
+                <Link href="/MainModules/Leaderboard">
+                    <button className="flex items-center gap-1 px-4 py-2 bg-gradient-to-r from-pink-500 to-orange-500 text-white text-sm font-bold rounded-full hover:from-pink-600 hover:to-orange-600 transition-colors">
+                        Leaderboard
+                    </button>
+                </Link>
                 <div className="flex gap-2 items-center">
                     <LogoutButton />
+                </div>
                 </div>
             </div>
 

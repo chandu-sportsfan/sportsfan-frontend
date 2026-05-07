@@ -951,7 +951,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import axios from "axios";
 import CreateBattle from "./CreateBattle";
 import { useAuth } from "@/context/AuthContext";
-import { PencilIcon, UsersIcon } from "lucide-react";
+import { Pencil, Users } from "lucide-react";
 
 interface PlayerProfile {
   id: string;
@@ -1327,7 +1327,7 @@ function HowFanBattleWorksModal({ onClose }: { onClose: () => void }) {
 
 // Main Component
 export default function FanBattleCard() {
-  const { user } = useAuth();
+  const { user, getUserDisplayName } = useAuth();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [displayNumber, setDisplayNumber] = useState<number | string>("--");
   const [isScanning, setIsScanning] = useState(false);
@@ -1487,47 +1487,51 @@ export default function FanBattleCard() {
     }
   };
 
-  const recordVote = useCallback(
-    async (item: ExtendedPlayer, direction: "left" | "right") => {
-      if (!user?.userId || !battles[currentBattleIndex]) return;
-      if (isVoting) return;
+const recordVote = useCallback(
+  async (item: ExtendedPlayer, direction: "left" | "right") => {
+    if (!user?.userId || !battles[currentBattleIndex]) return;
+    if (isVoting) return;
 
-      const battleId = battles[currentBattleIndex].id;
+    const battleId = battles[currentBattleIndex].id;
 
-      if (direction === "right" && votedPlayerIds.has(item.id)) {
+    if (direction === "right" && votedPlayerIds.has(item.id)) {
+      showToast("Already voted for this item!", "error");
+      return;
+    }
+
+    setIsVoting(true);
+    try {
+      const res = await axios.post("/api/battle/battle-vote", {
+        battleId,
+        playerId: item.id,
+        playerName: item.name,
+        userId: user.userId,
+        userEmail: user.email || "", // ✅ Add this
+        userName: user.name || getUserDisplayName() || "User", // ✅ Fixed call
+        direction,
+      });
+
+      if (res.data.success) {
+        if (direction === "right") {
+          showToast(`+${res.data.playerPointsAwarded} pts for ${item.name}!`, "success");
+          setVotedPlayerIds((prev) => new Set([...prev, item.id]));
+          fetchLeaderboard(battleId);
+        } else {
+          showToast(`Skipped ${item.name}`, "skip");
+        }
+      }
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err) && err.response?.data?.alreadyVoted) {
         showToast("Already voted for this item!", "error");
-        return;
+      } else {
+        showToast("Error recording vote", "error");
       }
-
-      setIsVoting(true);
-      try {
-        const res = await axios.post("/api/battle/battle-vote", {
-          battleId,
-          playerId: item.id,
-          playerName: item.name,
-          userId: user.userId,
-          direction,
-        });
-
-        if (res.data.success) {
-          if (direction === "right") {
-            showToast(`+${res.data.pointsAwarded} pts for ${item.name}!`, "success");
-            setVotedPlayerIds((prev) => new Set([...prev, item.id]));
-            fetchLeaderboard(battleId);
-          } else {
-            showToast(`Skipped ${item.name}`, "skip");
-          }
-        }
-      } catch (err: unknown) {
-        if (axios.isAxiosError(err) && err.response?.data?.alreadyVoted) {
-          showToast("Already voted for this item!", "error");
-        }
-      } finally {
-        setIsVoting(false);
-      }
-    },
-    [user, battles, currentBattleIndex, votedPlayerIds, isVoting, fetchLeaderboard]
-  );
+    } finally {
+      setIsVoting(false);
+    }
+  },
+  [user, battles, currentBattleIndex, votedPlayerIds, isVoting, fetchLeaderboard]
+);
 
   const switchToNextBattle = useCallback(() => {
     const nextIndex = currentBattleIndex + 1;
@@ -1843,7 +1847,7 @@ export default function FanBattleCard() {
       className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 rounded-md text-pink-500 border border-pink-600 bg-transparent text-xs sm:text-sm font-medium 
       hover:bg-pink-600/10 hover:shadow-[0_0_10px_rgba(236,72,153,0.4)] transition-all duration-200"
     >
-      <PencilIcon className="w-3 h-3" />
+      <Pencil className="w-3 h-3" />
       <span className="inline sm:inline">Create</span>
     </button>
 
@@ -1855,7 +1859,7 @@ export default function FanBattleCard() {
       className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 rounded-md text-pink-500 border border-pink-600 bg-transparent text-xs sm:text-sm font-medium 
       hover:bg-pink-600/10 hover:shadow-[0_0_10px_rgba(236,72,153,0.4)] transition-all duration-200"
     >
-      <UsersIcon className="w-3 h-3" />
+      <Users className="w-3 h-3" />
       <span className="inline sm:inline">Invite</span>
     </button>
   </div>

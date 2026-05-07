@@ -2,6 +2,8 @@
 
 // import Image from "next/image";
 // import React, { useEffect, useMemo, useState } from "react";
+// import axios from "axios";
+// import { useAuth } from "@/context/AuthContext";
 
 // type BattlePlayer = {
 //   id: string;
@@ -11,17 +13,29 @@
 //   image?: string;
 // };
 
-// type BattleTeam = {
+// type BattleClub = {
 //   id: string;
 //   name: string;
+//   team: string;
 //   city: string;
-//   image?: string;
+//   avatar?: string;
+//   overview?: {
+//     captain: string;
+//     coach: string;
+//     owner: string;
+//     venue: string;
+//   };
+//   stats?: {
+//     runs: string;
+//     sr: string;
+//     avg: string;
+//   };
 // };
 
 // interface CreateBattleProps {
-//   onClose: () => void; // <-- replaces router.back()
+//   onClose: () => void;
 //   players?: BattlePlayer[];
-//   teams?: BattleTeam[];
+//   clubs?: BattleClub[];
 // }
 
 // type ApiPlayerItem = {
@@ -37,225 +51,56 @@
 //   role?: string;
 // };
 
-// type ApiTeamItem = {
-//   id?: string;
-//   teamName?: string;
-//   name?: string;
-//   city?: string;
-//   location?: string;
+// type ApiClubItem = {
+//   id: string;
+//   name: string;
+//   team: string;
+//   battingStyle?: string;
+//   bowlingStyle?: string;
+//   about?: string;
+//   avatar?: string;
+//   overview?: {
+//     captain: string;
+//     coach: string;
+//     owner: string;
+//     venue: string;
+//   };
+//   stats?: {
+//     runs: string;
+//     sr: string;
+//     avg: string;
+//   };
 // };
 
 // const fallbackPlayers: BattlePlayer[] = [
-//   // Mumbai Indians
 //   { id: "p1", name: "Rohit Sharma", team: "MI", role: "Batter" },
 //   { id: "p2", name: "Suryakumar Yadav", team: "MI", role: "Batter" },
 //   { id: "p3", name: "Jasprit Bumrah", team: "MI", role: "Bowler" },
 //   { id: "p4", name: "Hardik Pandya", team: "MI", role: "All-rounder" },
-//   { id: "p5", name: "Ishan Kishan", team: "MI", role: "Wicketkeeper" },
-//   { id: "p6", name: "Tim David", team: "MI", role: "Batter" },
-//   { id: "p7", name: "Dewald Brevis", team: "MI", role: "Batter" },
-//   { id: "p8", name: "Pat Cummins", team: "MI", role: "All-rounder" },
-//   { id: "p9", name: "Murugan Ashwin", team: "MI", role: "Bowler" },
-//   { id: "p10", name: "Nuwan Thushara", team: "MI", role: "Bowler" },
-//   { id: "p11", name: "Anmolpreet Singh", team: "MI", role: "Batter" },
-//   { id: "p12", name: "Dhawal Kulkarni", team: "MI", role: "Bowler" },
-//   { id: "p13", name: "Jason Behrendorff", team: "MI", role: "Bowler" },
-//   { id: "p14", name: "Gerald Coetzee", team: "MI", role: "Bowler" },
-//   { id: "p15", name: "Dilshan Madushanka", team: "MI", role: "Bowler" },
-
-//   // Chennai Super Kings
-//   { id: "p16", name: "MS Dhoni", team: "CSK", role: "Wicketkeeper" },
-//   { id: "p17", name: "Ravindra Jadeja", team: "CSK", role: "All-rounder" },
-//   { id: "p18", name: "Ruturaj Gaikwad", team: "CSK", role: "Batter" },
-//   { id: "p19", name: "Devon Conway", team: "CSK", role: "Batter" },
-//   { id: "p20", name: "Ambati Rayudu", team: "CSK", role: "Batter" },
-//   { id: "p21", name: "Shivam Dube", team: "CSK", role: "All-rounder" },
-//   { id: "p22", name: "Mukesh Choudhary", team: "CSK", role: "Bowler" },
-//   { id: "p23", name: "Tushar Jitesh Deshpande", team: "CSK", role: "All-rounder" },
-//   { id: "p24", name: "Prashant Solanki", team: "CSK", role: "Bowler" },
-//   { id: "p25", name: "Mitchell Santner", team: "CSK", role: "All-rounder" },
-//   { id: "p26", name: "Sam Curran", team: "CSK", role: "All-rounder" },
-//   { id: "p27", name: "Subhranshu Senapati", team: "CSK", role: "Batter" },
-//   { id: "p28", name: "Simarjeet Singh", team: "CSK", role: "Bowler" },
-//   { id: "p29", name: "Daryl Mitchell", team: "CSK", role: "Batter" },
-//   { id: "p30", name: "Matheesha Pathirana", team: "CSK", role: "Bowler" },
-
-//   // Royal Challengers Bangalore
-//   { id: "p31", name: "Virat Kohli", team: "RCB", role: "Batter" },
-//   { id: "p32", name: "Faf du Plessis", team: "RCB", role: "Batter" },
-//   { id: "p33", name: "Glenn Maxwell", team: "RCB", role: "All-rounder" },
-//   { id: "p34", name: "Rajat Patidar", team: "RCB", role: "Batter" },
-//   { id: "p35", name: "Dinesh Karthik", team: "RCB", role: "Wicketkeeper" },
-//   { id: "p36", name: "Shahbaz Ahmed", team: "RCB", role: "All-rounder" },
-//   { id: "p37", name: "Will Jacks", team: "RCB", role: "Batter" },
-//   { id: "p38", name: "Anuj Rawat", team: "RCB", role: "Wicketkeeper" },
-//   { id: "p39", name: "Mohammed Siraj", team: "RCB", role: "Bowler" },
-//   { id: "p40", name: "Josh Hazlewood", team: "RCB", role: "Bowler" },
-//   { id: "p41", name: "Yash Dayal", team: "RCB", role: "Bowler" },
-//   { id: "p42", name: "Reece Topley", team: "RCB", role: "Bowler" },
-//   { id: "p43", name: "Naveen ul Haq", team: "RCB", role: "Bowler" },
-//   { id: "p44", name: "Karn Sharma", team: "RCB", role: "Bowler" },
-//   { id: "p45", name: "Manoj Bhandage", team: "RCB", role: "Batter" },
-
-//   // Kolkata Knight Riders
-//   { id: "p46", name: "Shreyas Iyer", team: "KKR", role: "Batter" },
-//   { id: "p47", name: "Rinku Singh", team: "KKR", role: "Batter" },
-//   { id: "p48", name: "Nitish Rana", team: "KKR", role: "Batter" },
-//   { id: "p49", name: "Sunil Narine", team: "KKR", role: "All-rounder" },
-//   { id: "p50", name: "André Russell", team: "KKR", role: "All-rounder" },
-//   { id: "p51", name: "Pat Cummins", team: "KKR", role: "All-rounder" },
-//   { id: "p52", name: "Mitchell Starc", team: "KKR", role: "Bowler" },
-//   { id: "p53", name: "Harshit Rana", team: "KKR", role: "Bowler" },
-//   { id: "p54", name: "Varun Chakaravarthy", team: "KKR", role: "Bowler" },
-//   { id: "p55", name: "Ramandeep Singh", team: "KKR", role: "Bowler" },
-//   { id: "p56", name: "Anukul Roy", team: "KKR", role: "Bowler" },
-//   { id: "p57", name: "Suyash Sharma", team: "KKR", role: "Bowler" },
-//   { id: "p58", name: "Manish Pandey", team: "KKR", role: "Batter" },
-//   { id: "p59", name: "Phil Salt", team: "KKR", role: "Batter" },
-//   { id: "p60", name: "Shaun Marsh", team: "KKR", role: "Batter" },
-
-//   // Delhi Capitals
-//   { id: "p61", name: "David Warner", team: "DC", role: "Batter" },
-//   { id: "p62", name: "Rishabh Pant", team: "DC", role: "Wicketkeeper" },
-//   { id: "p63", name: "Sarfaraz Khan", team: "DC", role: "Batter" },
-//   { id: "p64", name: "Mandeep Singh", team: "DC", role: "Batter" },
-//   { id: "p65", name: "Prithvi Shaw", team: "DC", role: "Batter" },
-//   { id: "p66", name: "Axar Patel", team: "DC", role: "All-rounder" },
-//   { id: "p67", name: "Ashwin", team: "DC", role: "Bowler" },
-//   { id: "p68", name: "Khaleel Ahmed", team: "DC", role: "Bowler" },
-//   { id: "p69", name: "Mustafizur Rahman", team: "DC", role: "Bowler" },
-//   { id: "p70", name: "Chetan Sakariya", team: "DC", role: "Bowler" },
-//   { id: "p71", name: "Anrich Nortje", team: "DC", role: "Bowler" },
-//   { id: "p72", name: "Vicky Ostwal", team: "DC", role: "Bowler" },
-//   { id: "p73", name: "Mitchell Marsh", team: "DC", role: "All-rounder" },
-//   { id: "p74", name: "Lalit Yadav", team: "DC", role: "All-rounder" },
-//   { id: "p75", name: "Ripal Patel", team: "DC", role: "Batter" },
-
-//   // Lucknow Super Giants
-//   { id: "p76", name: "KL Rahul", team: "LSG", role: "Wicketkeeper" },
-//   { id: "p77", name: "Nicholas Pooran", team: "LSG", role: "Batter" },
-//   { id: "p78", name: "Ravi Bishnoi", team: "LSG", role: "Bowler" },
-//   { id: "p79", name: "Yudhvir Singh", team: "LSG", role: "Bowler" },
-//   { id: "p80", name: "Naveen ul Haq", team: "LSG", role: "Bowler" },
-//   { id: "p81", name: "Matt Henry", team: "LSG", role: "Bowler" },
-//   { id: "p82", name: "Avesh Khan", team: "LSG", role: "Bowler" },
-//   { id: "p83", name: "Mayank Yadav", team: "LSG", role: "Bowler" },
-//   { id: "p84", name: "Arjun Tendulkar", team: "LSG", role: "Bowler" },
-//   { id: "p85", name: "Justin Langer", team: "LSG", role: "All-rounder" },
-//   { id: "p86", name: "Deepak Hooda", team: "LSG", role: "All-rounder" },
-//   { id: "p87", name: "Krunal Pandya", team: "LSG", role: "All-rounder" },
-//   { id: "p88", name: "Marcus Stoinis", team: "LSG", role: "All-rounder" },
-//   { id: "p89", name: "Quinton de Kock", team: "LSG", role: "Wicketkeeper" },
-//   { id: "p90", name: "Devdutt Padikkal", team: "LSG", role: "Batter" },
-
-//   // Rajasthan Royals
-//   { id: "p91", name: "Sanju Samson", team: "RR", role: "Wicketkeeper" },
-//   { id: "p92", name: "Yashasvi Jaiswal", team: "RR", role: "Batter" },
-//   { id: "p93", name: "Riyan Parag", team: "RR", role: "All-rounder" },
-//   { id: "p94", name: "Devendra Bishoo", team: "RR", role: "Bowler" },
-//   { id: "p95", name: "Trent Boult", team: "RR", role: "Bowler" },
-//   { id: "p96", name: "Sandeep Sharma", team: "RR", role: "Bowler" },
-//   { id: "p97", name: "Navdeep Saini", team: "RR", role: "Bowler" },
-//   { id: "p98", name: "Manoj Bhandage", team: "RR", role: "Batter" },
-//   { id: "p99", name: "James Neesham", team: "RR", role: "All-rounder" },
-//   { id: "p100", name: "Dhruv Jurel", team: "RR", role: "Batter" },
-//   { id: "p101", name: "Karun Nair", team: "RR", role: "Batter" },
-//   { id: "p102", name: "Obed McCoy", team: "RR", role: "Bowler" },
-//   { id: "p103", name: "Kuldeep Yadav", team: "RR", role: "Bowler" },
-//   { id: "p104", name: "Ravichandran Ashwin", team: "RR", role: "All-rounder" },
-//   { id: "p105", name: "Jos Buttler", team: "RR", role: "Batter" },
-
-//   // Sunrisers Hyderabad
-//   { id: "p106", name: "Pat Cummins", team: "SRH", role: "All-rounder" },
-//   { id: "p107", name: "Heinrich Klaasen", team: "SRH", role: "Wicketkeeper" },
-//   { id: "p108", name: "Aiden Markram", team: "SRH", role: "Batter" },
-//   { id: "p109", name: "Abhishek Sharma", team: "SRH", role: "All-rounder" },
-//   { id: "p110", name: "Glenn Phillips", team: "SRH", role: "Batter" },
-//   { id: "p111", name: "Harry Brook", team: "SRH", role: "Batter" },
-//   { id: "p112", name: "Bhuvneshwar Kumar", team: "SRH", role: "Bowler" },
-//   { id: "p113", name: "T Natarajan", team: "SRH", role: "Bowler" },
-//   { id: "p114", name: "Mayank Markande", team: "SRH", role: "Bowler" },
-//   { id: "p115", name: "Adam Zampa", team: "SRH", role: "Bowler" },
-//   { id: "p116", name: "Marco Jansen", team: "SRH", role: "All-rounder" },
-//   { id: "p117", name: "Sanvvari Sharma", team: "SRH", role: "Bowler" },
-//   { id: "p118", name: "Rahul Tripathi", team: "SRH", role: "Batter" },
-//   { id: "p119", name: "Nitish Kumar Reddy", team: "SRH", role: "All-rounder" },
-//   { id: "p120", name: "Anmolpreet Singh", team: "SRH", role: "Batter" },
-
-//   // Punjab Kings
-//   { id: "p121", name: "Shikhar Dhawan", team: "PBKS", role: "Batter" },
-//   { id: "p122", name: "Jonny Bairstow", team: "PBKS", role: "Wicketkeeper" },
-//   { id: "p123", name: "Liam Livingstone", team: "PBKS", role: "Batter" },
-//   { id: "p124", name: "Arshdeep Singh", team: "PBKS", role: "Bowler" },
-//   { id: "p125", name: "Harpreet Brar", team: "PBKS", role: "Bowler" },
-//   { id: "p126", name: "Rabada", team: "PBKS", role: "Bowler" },
-//   { id: "p127", name: "Nathan Ellis", team: "PBKS", role: "Bowler" },
-//   { id: "p128", name: "Vaibhav Arora", team: "PBKS", role: "Bowler" },
-//   { id: "p129", name: "Jitesh Sharma", team: "PBKS", role: "Wicketkeeper" },
-//   { id: "p130", name: "Prabhsimran Singh", team: "PBKS", role: "Batter" },
-//   { id: "p131", name: "Bhanuka Rajapaksa", team: "PBKS", role: "Batter" },
-//   { id: "p132", name: "Shahrukh Khan", team: "PBKS", role: "All-rounder" },
-//   { id: "p133", name: "Ashutosh Sharma", team: "PBKS", role: "Batter" },
-//   { id: "p134", name: "Atharva Lomror", team: "PBKS", role: "All-rounder" },
-//   { id: "p135", name: "Moises Henriques", team: "PBKS", role: "All-rounder" },
-
-//   // Gujarat Titans
-//   { id: "p136", name: "Shubman Gill", team: "GT", role: "Batter" },
-//   { id: "p137", name: "Hardik Pandya", team: "GT", role: "All-rounder" },
-//   { id: "p138", name: "Rashid Khan", team: "GT", role: "All-rounder" },
-//   { id: "p139", name: "David Miller", team: "GT", role: "Batter" },
-//   { id: "p140", name: "Wriddhiman Saha", team: "GT", role: "Wicketkeeper" },
-//   { id: "p141", name: "Vijay Shankar", team: "GT", role: "All-rounder" },
-//   { id: "p142", name: "Darshan Nalkande", team: "GT", role: "Bowler" },
-//   { id: "p143", name: "Pradeep Sangwan", team: "GT", role: "Bowler" },
-//   { id: "p144", name: "Yash Dayal", team: "GT", role: "Bowler" },
-//   { id: "p145", name: "Sai Kishore", team: "GT", role: "Bowler" },
-//   { id: "p146", name: "Noor Ahmad", team: "GT", role: "Bowler" },
-//   { id: "p147", name: "Manish Pandey", team: "GT", role: "Batter" },
-//   { id: "p148", name: "Rahul Tewatia", team: "GT", role: "All-rounder" },
-//   { id: "p149", name: "Abhinav Manohar", team: "GT", role: "Batter" },
-//   { id: "p150", name: "Jayant Yadav", team: "GT", role: "Bowler" },
+//   { id: "p5", name: "Virat Kohli", team: "RCB", role: "Batter" },
+//   { id: "p6", name: "MS Dhoni", team: "CSK", role: "Wicketkeeper" },
 // ];
 
-// const fallbackTeams: BattleTeam[] = [
-//   { id: "t1", name: "Mumbai Indians", city: "Mumbai" },
-//   { id: "t2", name: "Chennai Super Kings", city: "Chennai" },
-//   { id: "t3", name: "Royal Challengers Bangalore", city: "Bengaluru" },
-//   { id: "t4", name: "Kolkata Knight Riders", city: "Kolkata" },
-//   { id: "t5", name: "Delhi Capitals", city: "Delhi" },
-//   { id: "t6", name: "Sunrisers Hyderabad", city: "Hyderabad" },
-//   { id: "t7", name: "Rajasthan Royals", city: "Jaipur" },
-//   { id: "t8", name: "Punjab Kings", city: "Mohali" },
-//   { id: "t9", name: "Lucknow Super Giants", city: "Lucknow" },
-//   { id: "t10", name: "Gujarat Titans", city: "Ahmedabad" },
+// const fallbackClubs: BattleClub[] = [
+//   { id: "1", name: "Mumbai Indians", team: "MI", city: "Mumbai" },
+//   { id: "2", name: "Chennai Super Kings", team: "CSK", city: "Chennai" },
+//   { id: "3", name: "Royal Challengers Bengaluru", team: "RCB", city: "Bengaluru" },
+//   { id: "4", name: "Kolkata Knight Riders", team: "KKR", city: "Kolkata" },
+//   { id: "5", name: "Delhi Capitals", team: "DC", city: "Delhi" },
 // ];
-
-// const IPL_TEAM_NAMES = new Set([
-//   "Mumbai Indians",
-//   "Chennai Super Kings",
-//   "Royal Challengers Bangalore",
-//   "Kolkata Knight Riders",
-//   "Delhi Capitals",
-//   "Sunrisers Hyderabad",
-//   "Rajasthan Royals",
-//   "Punjab Kings",
-//   "Lucknow Super Giants",
-//   "Gujarat Titans",
-// ]);
 
 // const MAX_PLAYERS = 5;
-// const MAX_TEAMS = 2;
+// const MAX_CLUBS = 2;
 // const MAX_DISPLAYED_PLAYERS = 5;
-// const MAX_DISPLAYED_TEAMS = 10;
+// const MAX_DISPLAYED_CLUBS = 10;
 
 // const normalizeText = (value: string) =>
 //   value.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
 
-// const scoreTeamMatch = (name: string, city: string, query: string) => {
+// const scoreClubMatch = (name: string, city: string, query: string) => {
 //   const normalizedName = normalizeText(name);
 //   const normalizedCity = normalizeText(city);
 //   const normalizedQuery = normalizeText(query);
-
 //   if (!normalizedQuery) return 0;
 //   if (normalizedName === normalizedQuery) return 0;
 //   if (normalizedName.startsWith(normalizedQuery)) return 1;
@@ -263,25 +108,25 @@
 //   if (normalizedCity === normalizedQuery) return 5;
 //   if (normalizedCity.startsWith(normalizedQuery)) return 6;
 //   if (normalizedCity.includes(normalizedQuery)) return 7 + normalizedCity.indexOf(normalizedQuery) / 100;
-
 //   return Number.POSITIVE_INFINITY;
 // };
 
 // const scorePlayerMatch = (name: string, query: string) => {
 //   const normalizedName = normalizeText(name);
 //   const normalizedQuery = normalizeText(query);
-
 //   if (!normalizedQuery) return 0;
 //   if (normalizedName === normalizedQuery) return 0;
 //   if (normalizedName.startsWith(normalizedQuery)) return 1;
-
 //   const words = normalizedName.split(" ");
 //   if (words.some((word) => word.startsWith(normalizedQuery))) return 2;
-
 //   const containsIndex = normalizedName.indexOf(normalizedQuery);
 //   if (containsIndex >= 0) return 3 + containsIndex / 100;
-
 //   return Number.POSITIVE_INFINITY;
+// };
+
+// const nameFromEmail = (email: string): string => {
+//   const local = email.split("@")[0] ?? email;
+//   return local.replace(/[._\-+]/g, " ").replace(/\s+/g, " ").trim();
 // };
 
 // const PlayersIcon = () => (
@@ -308,21 +153,25 @@
 //   </svg>
 // );
 
-// const CreateBattle: React.FC<CreateBattleProps> = ({ onClose, players, teams }) => {
+// const CreateBattle: React.FC<CreateBattleProps> = ({ onClose, players, clubs }) => {
+//   const { user, getUserName } = useAuth();
+
 //   const [playerData, setPlayerData] = useState<BattlePlayer[]>(fallbackPlayers);
-//   const [teamData, setTeamData] = useState<BattleTeam[]>(fallbackTeams);
+//   const [clubData, setClubData] = useState<BattleClub[]>(fallbackClubs);
 //   const [loading, setLoading] = useState(true);
 
 //   const [battleName, setBattleName] = useState("");
 //   const [battleType, setBattleType] = useState<"players" | "clubs">("players");
 //   const [playerSearch, setPlayerSearch] = useState("");
-//   const [teamSearch, setTeamSearch] = useState("");
+//   const [clubSearch, setClubSearch] = useState("");
 //   const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]);
-//   const [selectedTeams, setSelectedTeams] = useState<string[]>([]);
+//   const [selectedClubs, setSelectedClubs] = useState<string[]>([]);
 //   const [submitting, setSubmitting] = useState(false);
+//   const [submitError, setSubmitError] = useState<string | null>(null);
 
+//   // Invite state
 //   const [inviteInput, setInviteInput] = useState("");
-//   const [invitedEmails, setInvitedEmails] = useState<string[]>([]);
+//   const [invitedFriends, setInvitedFriends] = useState<{ email: string; name: string }[]>([]);
 //   const [emailSuggestions, setEmailSuggestions] = useState<string[]>([]);
 //   const [showSuggestions, setShowSuggestions] = useState(false);
 
@@ -339,64 +188,64 @@
 //     "lisa@example.com",
 //   ];
 
+//   // Fetch players and clubs data
 //   useEffect(() => {
 //     const fetchData = async () => {
 //       try {
 //         setLoading(true);
 
-//         const playerProfileRes = await fetch('/api/player-profile/home?limit=250').catch(() => null);
-//         if (playerProfileRes?.ok) {
-//           const json = await playerProfileRes.json();
-//           const posts = json.posts || json.data || [];
-//           const mapped = posts.map((p: ApiPlayerItem, idx: number) => ({
+//         // Fetch players
+//         try {
+//           const ppRes = await axios.get<{ posts?: ApiPlayerItem[]; data?: ApiPlayerItem[] }>(
+//             "/api/player-profile/home",
+//             { params: { limit: 250 } }
+//           );
+//           const posts = ppRes.data.posts || ppRes.data.data || [];
+//           const mappedPlayers = posts.map((p, idx) => ({
 //             id: p.playerProfilesId || p.id || `pp_${idx}`,
-//             name: p.playerName || p.profile?.name || p.player?.name || p.name || p.title || 'Unknown',
-//             team: p.team || p.logo || p.profile?.team || '',
-//             role: p.role || p.profile?.role || '',
+//             name: p.playerName || p.profile?.name || p.player?.name || p.name || p.title || "Unknown",
+//             team: p.team || p.logo || p.profile?.team || "",
+//             role: p.role || p.profile?.role || "",
 //           }));
-//           setPlayerData(mapped.length ? mapped : players?.length ? players : fallbackPlayers);
-//         } else {
-//           const playersRes = await fetch('/api/players').catch(() => null);
-//           if (playersRes?.ok) {
-//             const data = await playersRes.json();
-//             setPlayerData(data.data || (players?.length ? players : fallbackPlayers));
-//           } else {
-//             setPlayerData(players?.length ? players : fallbackPlayers);
-//           }
+//           setPlayerData(mappedPlayers.length ? mappedPlayers : (players?.length ? players : fallbackPlayers));
+//         } catch {
+//           setPlayerData(players?.length ? players : fallbackPlayers);
 //         }
 
-//         const team360Res = await fetch('/api/team360?limit=100').catch(() => null);
-//         if (team360Res?.ok) {
-//           const j = await team360Res.json();
-//           const tdata = j.data || j.teams || j.items || [];
-//           const mappedT = tdata
-//             .map((t: ApiTeamItem, i: number) => ({
-//               id: t.id || `t_${i}`,
-//               name: t.name || t.teamName || 'Unknown',
-//               city: t.city || t.location || '',
-//             }))
-//             .filter((team: BattleTeam) => IPL_TEAM_NAMES.has(team.name));
-//           setTeamData(mappedT.length ? mappedT : (teams?.length ? teams.filter((team) => IPL_TEAM_NAMES.has(team.name)) : fallbackTeams));
-//         } else {
-//           const teamsRes = await fetch('/api/teams').catch(() => null);
-//           if (teamsRes?.ok) {
-//             const data = await teamsRes.json();
-//             setTeamData((data.data || (teams?.length ? teams : fallbackTeams)).filter((team: BattleTeam) => IPL_TEAM_NAMES.has(team.name)));
+//         // Fetch clubs from API
+//         try {
+//           const clubRes = await axios.get<{ success: boolean; profiles: ApiClubItem[] }>(
+//             "/api/club-profile"
+//           );
+//           if (clubRes.data.success && clubRes.data.profiles) {
+//             const mappedClubs = clubRes.data.profiles.map((club) => ({
+//               id: club.id,
+//               name: club.name,
+//               team: club.team,
+//               city: club.overview?.venue || club.team || "",
+//               avatar: club.avatar,
+//               overview: club.overview,
+//               stats: club.stats,
+//             }));
+//             setClubData(mappedClubs.length ? mappedClubs : (clubs?.length ? clubs : fallbackClubs));
 //           } else {
-//             setTeamData(teams?.length ? teams.filter((team) => IPL_TEAM_NAMES.has(team.name)) : fallbackTeams);
+//             setClubData(clubs?.length ? clubs : fallbackClubs);
 //           }
+//         } catch (err) {
+//           console.error("Error fetching club profiles:", err);
+//           setClubData(clubs?.length ? clubs : fallbackClubs);
 //         }
 //       } catch (error) {
-//         console.error('Error fetching battle data:', error);
+//         console.error("Error fetching battle data:", error);
 //         setPlayerData(players?.length ? players : fallbackPlayers);
-//         setTeamData(teams?.length ? teams.filter((team) => IPL_TEAM_NAMES.has(team.name)) : fallbackTeams);
+//         setClubData(clubs?.length ? clubs : fallbackClubs);
 //       } finally {
 //         setLoading(false);
 //       }
 //     };
 
 //     fetchData();
-//   }, [players, teams]);
+//   }, [players, clubs]);
 
 //   const filteredPlayers = useMemo(() => {
 //     const q = playerSearch.trim();
@@ -404,23 +253,23 @@
 //       ? playerData
 //           .map((player) => ({ player, score: scorePlayerMatch(player.name || "", q) }))
 //           .filter(({ score }) => Number.isFinite(score))
-//           .sort((a, b) => a.score !== b.score ? a.score - b.score : a.player.name.localeCompare(b.player.name))
+//           .sort((a, b) => (a.score !== b.score ? a.score - b.score : a.player.name.localeCompare(b.player.name)))
 //           .map(({ player }) => player)
 //       : playerData;
 //     return matches.slice(0, MAX_DISPLAYED_PLAYERS);
 //   }, [playerData, playerSearch]);
 
-//   const filteredTeams = useMemo(() => {
-//     const q = teamSearch.trim();
+//   const filteredClubs = useMemo(() => {
+//     const q = clubSearch.trim();
 //     const matches = q
-//       ? teamData
-//           .map((team) => ({ team, score: scoreTeamMatch(team.name, team.city, q) }))
+//       ? clubData
+//           .map((club) => ({ club, score: scoreClubMatch(club.name, club.city, q) }))
 //           .filter(({ score }) => Number.isFinite(score))
-//           .sort((a, b) => a.score !== b.score ? a.score - b.score : a.team.name.localeCompare(b.team.name))
-//           .map(({ team }) => team)
-//       : teamData;
-//     return matches.slice(0, MAX_DISPLAYED_TEAMS);
-//   }, [teamData, teamSearch]);
+//           .sort((a, b) => (a.score !== b.score ? a.score - b.score : a.club.name.localeCompare(b.club.name)))
+//           .map(({ club }) => club)
+//       : clubData;
+//     return matches.slice(0, MAX_DISPLAYED_CLUBS);
+//   }, [clubData, clubSearch]);
 
 //   const togglePlayer = (playerId: string) => {
 //     setSelectedPlayers((current) => {
@@ -430,26 +279,28 @@
 //     });
 //   };
 
-//   const toggleTeam = (teamId: string) => {
-//     setSelectedTeams((current) => {
-//       if (current.includes(teamId)) return current.filter((id) => id !== teamId);
-//       if (current.length >= MAX_TEAMS) return current;
-//       return [...current, teamId];
+//   const toggleClub = (clubId: string) => {
+//     setSelectedClubs((current) => {
+//       if (current.includes(clubId)) return current.filter((id) => id !== clubId);
+//       if (current.length >= MAX_CLUBS) return current;
+//       return [...current, clubId];
 //     });
 //   };
 
 //   const currentPlayers = playerData.filter((p) => selectedPlayers.includes(p.id));
-//   const currentTeams = teamData.filter((t) => selectedTeams.includes(t.id));
-//   const selectedItems = battleType === "players" ? currentPlayers : currentTeams;
-//   const selectedCount = battleType === "players" ? selectedPlayers.length : selectedTeams.length;
-//   const maxCount = battleType === "players" ? MAX_PLAYERS : MAX_TEAMS;
+//   const currentClubs = clubData.filter((c) => selectedClubs.includes(c.id));
+//   const selectedItems = battleType === "players" ? currentPlayers : currentClubs;
+//   const selectedCount = battleType === "players" ? selectedPlayers.length : selectedClubs.length;
+//   const maxCount = battleType === "players" ? MAX_PLAYERS : MAX_CLUBS;
 
 //   const handleInviteInputChange = (value: string) => {
 //     setInviteInput(value);
 //     if (value.trim()) {
-//       const lastEmail = value.split(',').pop()?.trim() || '';
+//       const lastEmail = value.split(",").pop()?.trim() || "";
 //       const filtered = existingEmails.filter(
-//         (email) => email.toLowerCase().includes(lastEmail.toLowerCase()) && !invitedEmails.includes(email)
+//         (email) =>
+//           email.toLowerCase().includes(lastEmail.toLowerCase()) && 
+//           !invitedFriends.some(f => f.email === email)
 //       );
 //       setEmailSuggestions(filtered.slice(0, 5));
 //       setShowSuggestions(filtered.length > 0);
@@ -462,53 +313,81 @@
 //   const addEmail = (email: string) => {
 //     const trimmedEmail = email.trim();
 //     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-//     if (!emailRegex.test(trimmedEmail)) { alert('Please enter a valid email address'); return; }
-//     if (invitedEmails.includes(trimmedEmail)) { alert('Email already added'); return; }
-//     setInvitedEmails([...invitedEmails, trimmedEmail]);
-//     setInviteInput('');
+    
+//     if (!emailRegex.test(trimmedEmail)) { 
+//       alert("Please enter a valid email address"); 
+//       return; 
+//     }
+    
+//     if (invitedFriends.some(f => f.email === trimmedEmail)) { 
+//       alert("Email already added"); 
+//       return; 
+//     }
+    
+//     setInvitedFriends([...invitedFriends, { 
+//       email: trimmedEmail, 
+//       name: nameFromEmail(trimmedEmail) 
+//     }]);
+//     setInviteInput("");
 //     setEmailSuggestions([]);
 //     setShowSuggestions(false);
 //   };
 
 //   const removeEmail = (email: string) => {
-//     setInvitedEmails(invitedEmails.filter((e) => e !== email));
+//     setInvitedFriends(invitedFriends.filter(f => f.email !== email));
 //   };
 
 //   const handleInviteKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-//     if (e.key === 'Enter' || e.key === ',') {
+//     if (e.key === "Enter" || e.key === ",") {
 //       e.preventDefault();
-//       const email = inviteInput.split(',').pop()?.trim();
+//       const email = inviteInput.split(",").pop()?.trim();
 //       if (email) addEmail(email);
 //     }
 //   };
 
 //   const handleCreate = async () => {
-//     if (!battleName.trim()) { alert('Please enter a battle name'); return; }
-//     if (selectedCount === 0) { alert('Please select at least one item'); return; }
+//     setSubmitError(null);
+
+//     if (!battleName.trim()) { alert("Please enter a battle name"); return; }
+//     if (selectedCount === 0) { alert("Please select at least one item"); return; }
+
+//     const userId = user?.userId;
+//     const userName = getUserName() || user?.email || "Guest";
+
+//     if (!userId) {
+//       alert("You must be logged in to create a battle.");
+//       return;
+//     }
+
+//     const apiBattleType = battleType === "players" ? "PLAYERS" : "CLUBS";
+
+//     const payload = {
+//       battleName: battleName.trim(),
+//       battleType: apiBattleType,
+//       ...(apiBattleType === "PLAYERS"
+//         ? { selectedPlayers }
+//         : { selectedClubs }),
+//       invitedFriends,
+//       userId,
+//       userName,
+//     };
+
+//     console.log("Sending payload:", payload);
 
 //     setSubmitting(true);
 //     try {
-//       const res = await fetch('/api/battles', {
-//         method: 'POST',
-//         headers: { 'Content-Type': 'application/json' },
-//         body: JSON.stringify({
-//           name: battleName,
-//           type: battleType,
-//           players: selectedPlayers,
-//           teams: selectedTeams,
-//           invitedEmails,
-//         }),
-//       });
-
-//       const data = await res.json();
-//       if (res.ok) {
-//         onClose(); // <-- replaces router.back()
+//       await axios.post("/api/battle", payload);
+//       onClose();
+//     } catch (err: unknown) {
+//       if (axios.isAxiosError(err)) {
+//         const message = err.response?.data?.error || "Failed to create battle";
+//         setSubmitError(message);
+//         alert(message);
 //       } else {
-//         alert(data?.error || 'Failed to create battle');
+//         console.error(err);
+//         setSubmitError("Failed to create battle");
+//         alert("Failed to create battle");
 //       }
-//     } catch (err) {
-//       console.error(err);
-//       alert('Failed to create battle');
 //     } finally {
 //       setSubmitting(false);
 //     }
@@ -516,8 +395,10 @@
 
 //   return (
 //     <div className="min-h-screen w-full bg-[#07070f] flex items-start justify-center py-6 px-4">
-//       <div className="w-full max-w-sm flex flex-col rounded-2xl bg-[#1a1a1e] text-white shadow-2xl border border-white/10" style={{ maxHeight: "calc(100vh - 48px)" }}>
-//         {/* Header */}
+//       <div
+//         className="w-full max-w-sm flex flex-col rounded-2xl bg-[#1a1a1e] text-white shadow-2xl border border-white/10"
+//         style={{ maxHeight: "calc(100vh - 48px)" }}
+//       >
 //         <div className="border-b border-white/10 px-6 py-4 flex items-center justify-between shrink-0">
 //           <div className="flex items-center gap-3">
 //             <div className="h-10 w-10 rounded-lg overflow-hidden bg-[#d75a2d] flex-shrink-0 flex items-center justify-center text-xl">
@@ -525,7 +406,6 @@
 //             </div>
 //             <h2 className="text-xl font-bold">Create Battle</h2>
 //           </div>
-//           {/* Close goes back to card view, not a browser navigation */}
 //           <button
 //             onClick={onClose}
 //             className="text-white hover:opacity-70 transition-opacity flex-shrink-0"
@@ -535,9 +415,7 @@
 //           </button>
 //         </div>
 
-//         {/* Scrollable Content */}
 //         <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
-//           {/* Battle Name */}
 //           <div>
 //             <label className="block text-sm font-semibold text-white mb-2">Battle Name</label>
 //             <input
@@ -549,7 +427,6 @@
 //             />
 //           </div>
 
-//           {/* Battle Type */}
 //           <div>
 //             <label className="block text-sm font-semibold text-white mb-3">Battle Type</label>
 //             <div className="flex gap-3">
@@ -584,37 +461,39 @@
 //             </div>
 //           </div>
 
-//           {/* Search */}
 //           <div>
 //             <input
 //               type="text"
-//               value={battleType === "players" ? playerSearch : teamSearch}
+//               value={battleType === "players" ? playerSearch : clubSearch}
 //               onChange={(e) => {
 //                 if (battleType === "players") setPlayerSearch(e.target.value);
-//                 else setTeamSearch(e.target.value);
+//                 else setClubSearch(e.target.value);
 //               }}
 //               placeholder={`Search ${battleType}...`}
 //               className="w-full rounded-lg border border-white/15 bg-white/8 px-4 py-2.5 text-sm text-white outline-none placeholder:text-[#666] focus:border-white/30 focus:bg-white/12 transition-colors"
 //             />
 //           </div>
 
-//           {/* Selection Header */}
 //           <div className="flex items-center justify-between pt-2">
 //             <h3 className="text-sm font-semibold text-white">
 //               Select {battleType === "players" ? "Players" : "Clubs"}
 //             </h3>
-//             <span className="text-xs font-medium text-[#8a8a8a]">{selectedCount}/{maxCount} selected</span>
+//             <span className="text-xs font-medium text-[#8a8a8a]">
+//               {selectedCount}/{maxCount} selected
+//             </span>
 //           </div>
 
-//           {/* Items List */}
 //           <div className="space-y-2 pr-1">
 //             {loading ? (
-//               <div className="flex items-center justify-center py-8 text-sm text-[#8a8a8a]">Loading...</div>
-//             ) : (battleType === "players" ? filteredPlayers : filteredTeams).length > 0 ? (
-//               (battleType === "players" ? filteredPlayers : filteredTeams).map((item) => {
-//                 const isSelected = battleType === "players"
-//                   ? selectedPlayers.includes(item.id)
-//                   : selectedTeams.includes(item.id);
+//               <div className="flex items-center justify-center py-8 text-sm text-[#8a8a8a]">
+//                 Loading...
+//               </div>
+//             ) : (battleType === "players" ? filteredPlayers : filteredClubs).length > 0 ? (
+//               (battleType === "players" ? filteredPlayers : filteredClubs).map((item) => {
+//                 const isSelected =
+//                   battleType === "players"
+//                     ? selectedPlayers.includes(item.id)
+//                     : selectedClubs.includes(item.id);
 //                 const isLimitReached = selectedCount >= maxCount;
 //                 const isBlocked = !isSelected && isLimitReached;
 
@@ -631,7 +510,7 @@
 //                     onClick={() => {
 //                       if (isBlocked) return;
 //                       if (battleType === "players") togglePlayer(item.id);
-//                       else toggleTeam(item.id);
+//                       else toggleClub(item.id);
 //                     }}
 //                   >
 //                     <input
@@ -639,19 +518,31 @@
 //                       checked={isSelected}
 //                       onChange={() => {}}
 //                       disabled={isBlocked}
-//                       className={`h-5 w-5 rounded accent-[#d75a2d] shrink-0 ${isBlocked ? "cursor-not-allowed opacity-50" : "cursor-pointer"}`}
+//                       className={`h-5 w-5 rounded accent-[#d75a2d] shrink-0 ${
+//                         isBlocked ? "cursor-not-allowed opacity-50" : "cursor-pointer"
+//                       }`}
 //                     />
 //                     <div className="flex-1 min-w-0">
 //                       <p className="text-sm font-semibold text-white truncate">{item.name}</p>
-//                       {battleType === "clubs" ? (
-//                         <p className="text-xs text-[#888]">{(item as BattleTeam).city}</p>
-//                       ) : null}
+//                       {battleType === "clubs" && (item as BattleClub).city && (
+//                         <p className="text-xs text-[#888]">{(item as BattleClub).city}</p>
+//                       )}
+//                       {battleType === "players" && (item as BattlePlayer).role && (
+//                         <p className="text-xs text-[#888]">{(item as BattlePlayer).role}</p>
+//                       )}
 //                       {isBlocked && (
 //                         <p className="mt-0.5 text-[10px] font-medium uppercase tracking-wide text-[#ff8a80]">
 //                           Blocked — max {maxCount} selected
 //                         </p>
 //                       )}
 //                     </div>
+//                     {(battleType === "clubs" && (item as BattleClub).avatar) && (
+//                       <img
+//                         src={(item as BattleClub).avatar}
+//                         alt={item.name}
+//                         className="w-8 h-8 rounded-full object-cover"
+//                       />
+//                     )}
 //                   </div>
 //                 );
 //               })
@@ -662,7 +553,6 @@
 //             )}
 //           </div>
 
-//           {/* Selected Chips */}
 //           {selectedItems.length > 0 && (
 //             <div className="flex flex-wrap gap-2 pt-2">
 //               {selectedItems.map((item) => (
@@ -674,7 +564,7 @@
 //                   <button
 //                     onClick={() => {
 //                       if (battleType === "players") togglePlayer(item.id);
-//                       else toggleTeam(item.id);
+//                       else toggleClub(item.id);
 //                     }}
 //                     className="text-[#d75a2d]/70 hover:text-[#d75a2d]"
 //                   >
@@ -685,17 +575,18 @@
 //             </div>
 //           )}
 
-//           {/* Invite Friends */}
 //           <div>
-//             <label className="block text-sm font-semibold text-white mb-2">Invite Friend</label>
+//             <label className="block text-sm font-semibold text-white mb-2">Invite Friends</label>
 //             <div className="relative">
 //               <input
 //                 type="text"
 //                 value={inviteInput}
 //                 onChange={(e) => handleInviteInputChange(e.target.value)}
 //                 onKeyDown={handleInviteKeyDown}
-//                 onFocus={() => inviteInput.trim() && emailSuggestions.length > 0 && setShowSuggestions(true)}
-//                 placeholder="friend@email.com"
+//                 onFocus={() =>
+//                   inviteInput.trim() && emailSuggestions.length > 0 && setShowSuggestions(true)
+//                 }
+//                 placeholder="friend@email.com (press Enter or comma to add)"
 //                 className="w-full rounded-lg border border-white/15 bg-white/8 px-4 py-2.5 text-sm text-white outline-none placeholder:text-[#666] focus:border-white/30 focus:bg-white/12 transition-colors"
 //               />
 //               {showSuggestions && emailSuggestions.length > 0 && (
@@ -713,35 +604,48 @@
 //                 </div>
 //               )}
 //             </div>
-//             {invitedEmails.length > 0 && (
+            
+//             {invitedFriends.length > 0 && (
 //               <div className="flex flex-wrap gap-2 mt-3">
-//                 {invitedEmails.map((email) => (
+//                 {invitedFriends.map((friend) => (
 //                   <span
-//                     key={email}
+//                     key={friend.email}
 //                     className="inline-flex items-center gap-2 rounded-full border border-[#d75a2d]/40 bg-[#d75a2d]/15 px-3 py-1.5 text-xs font-medium text-[#ff9a6c]"
 //                   >
-//                     {email}
-//                     <button onClick={() => removeEmail(email)} className="text-[#d75a2d]/70 hover:text-[#d75a2d]">×</button>
+//                     {friend.name} ({friend.email})
+//                     <button
+//                       onClick={() => removeEmail(friend.email)}
+//                       className="text-[#d75a2d]/70 hover:text-[#d75a2d]"
+//                     >
+//                       ×
+//                     </button>
 //                   </span>
 //                 ))}
 //               </div>
 //             )}
+            
+//             <p className="text-[10px] text-[#666] mt-2">
+//               Add email addresses of friends you want to invite to this battle
+//             </p>
 //           </div>
+
+//           {submitError && (
+//             <p className="text-xs text-red-400 text-center">{submitError}</p>
+//           )}
 //         </div>
 
-//         {/* Footer */}
 //         <div className="border-t border-white/10 px-6 py-5 shrink-0">
 //           <button
 //             onClick={handleCreate}
 //             disabled={submitting}
 //             className={`flex w-full items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-bold text-white transition-all active:scale-95 ${
 //               submitting
-//                 ? 'bg-gray-600 cursor-not-allowed'
-//                 : 'bg-gradient-to-r from-[#e91e8c] to-[#d75a2d] hover:shadow-lg hover:shadow-pink-900/40'
+//                 ? "bg-gray-600 cursor-not-allowed"
+//                 : "bg-gradient-to-r from-[#e91e8c] to-[#d75a2d] hover:shadow-lg hover:shadow-pink-900/40"
 //             }`}
 //           >
 //             <PlusIcon />
-//             {submitting ? 'Creating...' : 'Create & Send Invite'}
+//             {submitting ? "Creating..." : "Create & Send Invite"}
 //           </button>
 //         </div>
 //       </div>
@@ -750,7 +654,6 @@
 // };
 
 // export default CreateBattle;
-
 
 
 
@@ -952,13 +855,11 @@ const CreateBattle: React.FC<CreateBattleProps> = ({ onClose, players, clubs }) 
     "lisa@example.com",
   ];
 
-  // Fetch players and clubs data
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
 
-        // Fetch players
         try {
           const ppRes = await axios.get<{ posts?: ApiPlayerItem[]; data?: ApiPlayerItem[] }>(
             "/api/player-profile/home",
@@ -971,12 +872,11 @@ const CreateBattle: React.FC<CreateBattleProps> = ({ onClose, players, clubs }) 
             team: p.team || p.logo || p.profile?.team || "",
             role: p.role || p.profile?.role || "",
           }));
-          setPlayerData(mappedPlayers.length ? mappedPlayers : (players?.length ? players : fallbackPlayers));
+          setPlayerData(mappedPlayers.length ? mappedPlayers : players?.length ? players : fallbackPlayers);
         } catch {
           setPlayerData(players?.length ? players : fallbackPlayers);
         }
 
-        // Fetch clubs from API
         try {
           const clubRes = await axios.get<{ success: boolean; profiles: ApiClubItem[] }>(
             "/api/club-profile"
@@ -991,7 +891,7 @@ const CreateBattle: React.FC<CreateBattleProps> = ({ onClose, players, clubs }) 
               overview: club.overview,
               stats: club.stats,
             }));
-            setClubData(mappedClubs.length ? mappedClubs : (clubs?.length ? clubs : fallbackClubs));
+            setClubData(mappedClubs.length ? mappedClubs : clubs?.length ? clubs : fallbackClubs);
           } else {
             setClubData(clubs?.length ? clubs : fallbackClubs);
           }
@@ -1063,8 +963,8 @@ const CreateBattle: React.FC<CreateBattleProps> = ({ onClose, players, clubs }) 
       const lastEmail = value.split(",").pop()?.trim() || "";
       const filtered = existingEmails.filter(
         (email) =>
-          email.toLowerCase().includes(lastEmail.toLowerCase()) && 
-          !invitedFriends.some(f => f.email === email)
+          email.toLowerCase().includes(lastEmail.toLowerCase()) &&
+          !invitedFriends.some((f) => f.email === email)
       );
       setEmailSuggestions(filtered.slice(0, 5));
       setShowSuggestions(filtered.length > 0);
@@ -1077,28 +977,28 @@ const CreateBattle: React.FC<CreateBattleProps> = ({ onClose, players, clubs }) 
   const addEmail = (email: string) => {
     const trimmedEmail = email.trim();
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    
-    if (!emailRegex.test(trimmedEmail)) { 
-      alert("Please enter a valid email address"); 
-      return; 
+
+    if (!emailRegex.test(trimmedEmail)) {
+      alert("Please enter a valid email address");
+      return;
     }
-    
-    if (invitedFriends.some(f => f.email === trimmedEmail)) { 
-      alert("Email already added"); 
-      return; 
+
+    if (invitedFriends.some((f) => f.email === trimmedEmail)) {
+      alert("Email already added");
+      return;
     }
-    
-    setInvitedFriends([...invitedFriends, { 
-      email: trimmedEmail, 
-      name: nameFromEmail(trimmedEmail) 
-    }]);
+
+    setInvitedFriends([
+      ...invitedFriends,
+      { email: trimmedEmail, name: nameFromEmail(trimmedEmail) },
+    ]);
     setInviteInput("");
     setEmailSuggestions([]);
     setShowSuggestions(false);
   };
 
   const removeEmail = (email: string) => {
-    setInvitedFriends(invitedFriends.filter(f => f.email !== email));
+    setInvitedFriends(invitedFriends.filter((f) => f.email !== email));
   };
 
   const handleInviteKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -1123,15 +1023,29 @@ const CreateBattle: React.FC<CreateBattleProps> = ({ onClose, players, clubs }) 
       return;
     }
 
+    // ── Flush any email still typed in the input box ──────────────────────
+    let finalInvitedFriends = [...invitedFriends];
+    const pendingEmail = inviteInput.trim().replace(/,+$/, "");
+    if (pendingEmail) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (emailRegex.test(pendingEmail) && !finalInvitedFriends.some((f) => f.email === pendingEmail)) {
+        finalInvitedFriends = [
+          ...finalInvitedFriends,
+          { email: pendingEmail, name: nameFromEmail(pendingEmail) },
+        ];
+        setInvitedFriends(finalInvitedFriends);
+        setInviteInput("");
+      }
+    }
+    // ─────────────────────────────────────────────────────────────────────
+
     const apiBattleType = battleType === "players" ? "PLAYERS" : "CLUBS";
 
     const payload = {
       battleName: battleName.trim(),
       battleType: apiBattleType,
-      ...(apiBattleType === "PLAYERS"
-        ? { selectedPlayers }
-        : { selectedClubs }),
-      invitedFriends,
+      ...(apiBattleType === "PLAYERS" ? { selectedPlayers } : { selectedClubs }),
+      invitedFriends: finalInvitedFriends,
       userId,
       userName,
     };
@@ -1300,7 +1214,7 @@ const CreateBattle: React.FC<CreateBattleProps> = ({ onClose, players, clubs }) 
                         </p>
                       )}
                     </div>
-                    {(battleType === "clubs" && (item as BattleClub).avatar) && (
+                    {battleType === "clubs" && (item as BattleClub).avatar && (
                       <img
                         src={(item as BattleClub).avatar}
                         alt={item.name}
@@ -1343,22 +1257,38 @@ const CreateBattle: React.FC<CreateBattleProps> = ({ onClose, players, clubs }) 
             <label className="block text-sm font-semibold text-white mb-2">Invite Friends</label>
             <div className="relative">
               <input
-                type="text"
+                type="email"
                 value={inviteInput}
                 onChange={(e) => handleInviteInputChange(e.target.value)}
                 onKeyDown={handleInviteKeyDown}
+                onBlur={() => {
+                  // Small delay so suggestion clicks register before blur hides them
+                  setTimeout(() => setShowSuggestions(false), 150);
+                }}
                 onFocus={() =>
                   inviteInput.trim() && emailSuggestions.length > 0 && setShowSuggestions(true)
                 }
-                placeholder="friend@email.com (press Enter or comma to add)"
-                className="w-full rounded-lg border border-white/15 bg-white/8 px-4 py-2.5 text-sm text-white outline-none placeholder:text-[#666] focus:border-white/30 focus:bg-white/12 transition-colors"
+                placeholder="friend@email.com — press Enter or comma to add"
+                className="w-full rounded-lg border border-white/15 bg-white/8 px-4 py-2.5 pr-24 text-sm text-white outline-none placeholder:text-[#666] focus:border-white/30 focus:bg-white/12 transition-colors"
               />
+              {/* ── Add button so users don't have to guess about Enter ── */}
+              <button
+                type="button"
+                onClick={() => {
+                  const email = inviteInput.trim().replace(/,+$/, "");
+                  if (email) addEmail(email);
+                }}
+                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md bg-[#d75a2d] px-3 py-1 text-xs font-semibold text-white hover:bg-[#c04e26] transition-colors"
+              >
+                Add
+              </button>
               {showSuggestions && emailSuggestions.length > 0 && (
                 <div className="absolute top-full left-0 right-0 mt-1 rounded-lg border border-white/15 bg-[#1a1a1e] z-10 shadow-lg">
                   {emailSuggestions.map((email) => (
                     <button
                       key={email}
                       type="button"
+                      onMouseDown={(e) => e.preventDefault()} // prevent blur before click
                       onClick={() => addEmail(email)}
                       className="w-full px-4 py-2.5 text-left text-sm text-white hover:bg-white/10 transition-colors first:rounded-t-lg last:rounded-b-lg"
                     >
@@ -1368,7 +1298,7 @@ const CreateBattle: React.FC<CreateBattleProps> = ({ onClose, players, clubs }) 
                 </div>
               )}
             </div>
-            
+
             {invitedFriends.length > 0 && (
               <div className="flex flex-wrap gap-2 mt-3">
                 {invitedFriends.map((friend) => (
@@ -1376,10 +1306,11 @@ const CreateBattle: React.FC<CreateBattleProps> = ({ onClose, players, clubs }) 
                     key={friend.email}
                     className="inline-flex items-center gap-2 rounded-full border border-[#d75a2d]/40 bg-[#d75a2d]/15 px-3 py-1.5 text-xs font-medium text-[#ff9a6c]"
                   >
-                    {friend.name} ({friend.email})
+                    {friend.name}
                     <button
                       onClick={() => removeEmail(friend.email)}
                       className="text-[#d75a2d]/70 hover:text-[#d75a2d]"
+                      title={friend.email}
                     >
                       ×
                     </button>
@@ -1387,9 +1318,9 @@ const CreateBattle: React.FC<CreateBattleProps> = ({ onClose, players, clubs }) 
                 ))}
               </div>
             )}
-            
+
             <p className="text-[10px] text-[#666] mt-2">
-              Add email addresses of friends you want to invite to this battle
+              Type an email and press <strong className="text-[#888]">Enter</strong>, <strong className="text-[#888]">,</strong> or click <strong className="text-[#888]">Add</strong> — they&apos;ll receive a battle invite link by email.
             </p>
           </div>
 

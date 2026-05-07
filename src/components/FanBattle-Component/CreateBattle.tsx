@@ -46,7 +46,7 @@ type ApiTeamItem = {
 };
 
 const fallbackPlayers: BattlePlayer[] = [
-  // Mumbai Indians
+  // Mumbai Indians 
   { id: "p1", name: "Rohit Sharma", team: "MI", role: "Batter" },
   { id: "p2", name: "Suryakumar Yadav", team: "MI", role: "Batter" },
   { id: "p3", name: "Jasprit Bumrah", team: "MI", role: "Bowler" },

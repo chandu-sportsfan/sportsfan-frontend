@@ -471,7 +471,7 @@ import { MoreHorizontal, Headphones, Plus } from "lucide-react";
 import axios from "axios";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
-import PlaylistDialog from "@/src/components/playlistdialog-component/playlistdialog";
+
 
 const TEAM_ABBR_MAP: Record<string, string[]> = {
   "Mumbai Indians": ["MI", "Mumbai"],
@@ -918,7 +918,7 @@ export default function Team360CardsSection() {
         })}
       </div>
       {/* Playlist Dialog */}
-      {playlistPost && (
+      {/* {playlistPost && (
         <PlaylistDialog
           open={!!playlistPost}
           onClose={() => setPlaylistPost(null)}
@@ -926,7 +926,7 @@ export default function Team360CardsSection() {
           itemType="team360" // Adjust this if your backend expects a different string
           userId={getUserId()}
         />
-      )}
+      )} */}
 
     </div>
   );

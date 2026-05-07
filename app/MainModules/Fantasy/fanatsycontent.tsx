@@ -1,0 +1,55 @@
+'use client';
+import { ArrowLeft } from "lucide-react";
+import { useRouter } from "next/navigation";
+
+export default function CircleCricketClient() {
+  const router = useRouter();
+  return (
+    <div className="flex flex-col bg-[#05080f] min-h-screen">
+      
+      {/* Back button */}
+      <div className="flex-shrink-0 px-4 py-3 border-b border-white/5">
+        <button
+          onClick={() => router.back()}
+          className="flex items-center gap-2 text-gray-400 hover:text-white transition group"
+        >
+          <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
+          <span className="text-sm">Back</span>
+        </button>
+      </div>
+
+      <a className="flex justify-start w-full pt-6 pb-4 pl-6 md:pl-8" href="/MainModules/FanBattle">
+    <div className="relative group cursor-pointer">
+        
+        {/* The Glowing Neon Gradient Edge */}
+        <div className="absolute -inset-[2px] bg-gradient-to-r from-rose-500 via-purple-500 to-cyan-500 rounded-full blur-[6px] opacity-75 group-hover:opacity-100 transition duration-300"></div>
+        
+        {/* The Dark Core Button */}
+        <button className="relative px-12 py-4 bg-[#0a0a0a] rounded-full flex items-center justify-center transition-all duration-300 active:scale-95">
+            <span className="text-gray-300 text-sm md:text-base font-semibold tracking-[0.2em] uppercase group-hover:text-white transition-colors">
+                Fan Battle
+            </span>
+        </button>
+        
+    </div>
+</a>
+
+      {/* Game */}
+      <div className="p-3">
+        <div className="bg-gradient-to-r from-pink-500 to-orange-500 rounded-xl p-0.5">
+          <div className="bg-[#05080f] rounded-xl overflow-hidden">
+            <iframe
+              src="/circle-cricket-game.html"
+              title="Circle Cricket PRO"
+              className="w-full border-0 block"
+              style={{ height: '80vh' }}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
+          </div>
+        </div>
+      </div>
+
+    </div>
+  );
+}

@@ -25,7 +25,7 @@ const FanBattleHeader: React.FC = () => {
         </button>
         </Link>
 
-        <span className="text-white text-[15px] font-semibold tracking-wide">
+        <span className="text-white text-[24px] font-semibold tracking-wide">
           Fan Battle
         </span>
 
@@ -45,7 +45,7 @@ const FanBattleHeader: React.FC = () => {
       </div>
 
       {/* Hero Text */}
-      <h1 className="text-white text-2xl sm:text-3xl font-bold leading-tight mb-1">
+      <h1 className="text-white text-2xl sm:text-[15px] font-bold leading-tight mb-1">
         Test Your Cricket IQ
       </h1>
       <p className="text-[#8a8a8a] text-[13px] sm:text-sm leading-relaxed mb-4">

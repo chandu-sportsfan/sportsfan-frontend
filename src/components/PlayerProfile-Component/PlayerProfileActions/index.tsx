@@ -1,6 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import { Player } from "@/types/player";
+import { useAuth } from "@/context/AuthContext";
+import PlaylistDialog from "@/src/components/playlistdialog-component/playlistdialog";
 
 interface Props {
   player: Player;
@@ -16,6 +19,10 @@ function SectionLabel({ text }: { text: string }) {
 }
 
 export default function PlayerProfileActions({ player }: Props) {
+  const { user } = useAuth();
+  const getUserId = () => user?.userId || null;
+  const [showPlaylistDialog, setShowPlaylistDialog] = useState(false);
+
   const careerStatItems = [
     { value: player.stats.runs, label: "RUNS" },
     { value: player.stats.sr, label: "SR" },
@@ -59,6 +66,18 @@ export default function PlayerProfileActions({ player }: Props) {
           </svg>
         </button>
       </div>
+
+      {/* ── Add to Playlist CTA ── */}
+      <button 
+        onClick={() => setShowPlaylistDialog(true)}
+        className="flex w-full items-center justify-center gap-2 h-12 md:h-[52px] rounded-full bg-transparent border border-[#e91e8c] text-[#e91e8c] text-[13px] md:text-sm font-bold cursor-pointer hover:bg-[#e91e8c]/10 transition-colors"
+      >
+        <svg width="17" height="17" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+        Add to Playlist
+      </button>
 
       {/* ── Avatar Jersey CTA ── */}
       <button className="flex w-full items-center justify-center gap-2 h-12 md:h-[52px] rounded-full bg-transparent border border-[#e91e8c] text-[#e91e8c] text-[13px] md:text-sm font-bold cursor-pointer hover:bg-[#e91e8c]/10 transition-colors">
@@ -107,6 +126,14 @@ export default function PlayerProfileActions({ player }: Props) {
           </div>
         </div>
       </div>
+
+      <PlaylistDialog
+        open={showPlaylistDialog}
+        onClose={() => setShowPlaylistDialog(false)}
+        itemId={player.id} // Or however the ID is stored on your player object
+        itemType="player360" // Adjust to match your backend type
+        userId={getUserId()}
+      />
     </div>
   );
 }

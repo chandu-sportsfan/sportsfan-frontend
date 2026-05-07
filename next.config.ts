@@ -124,8 +124,26 @@ const nextConfig = {
         { source: '/api/leaderboard', destination: `${apiTarget}/api/leaderboard` },
         { source: '/api/leaderboard/:path*', destination: `${apiTarget}/api/leaderboard/:path*` },
 
+         // Fan Battle Arena
+        { source: '/api/battle', destination: `${apiTarget}/api/battle` },
+        { source: '/api/battle/:path*', destination: `${apiTarget}/api/battle/:path*` },
+        { source: '/api/battle/battle-vote', destination: `${apiTarget}/api/battle/battle-vote` },
+        { source: '/api/battle/battle-vote/:path*', destination: `${apiTarget}/api/battle/battle-vote/:path*` },
+
+        //Jersey Numbers
+        { source: '/api/player-profile/seasonstats/playerProfilesId=:playerProfilesId', destination: `${apiTarget}/api/player-profile/seasonstats/playerProfilesId=:playerProfilesId` },
+
+        // Fan Battle
+        { source: '/api/fanbattle/quiz', destination: `${apiTarget}/api/fanbattle/quiz` },
+        { source: '/api/fanbattle/quiz/:path*', destination: `${apiTarget}/api/fanbattle/quiz/:path*` },
+        { source: '/api/fanbattle/response', destination: `${apiTarget}/api/fanbattle/response` },
+        { source: '/api/fanbattle/response/:path*', destination: `${apiTarget}/api/fanbattle/response/:path*` },
+
+        
         //Comments
         { source: '/api/comments', destination: `${apiTarget}/api/comments` },
+
+         { source: '/api/ipl-stats', destination: `${apiTarget}/api/ipl-stats` },
 
         { source: '/api/auth/host/me', destination: `${apiTarget}/api/auth/host/me` },
 

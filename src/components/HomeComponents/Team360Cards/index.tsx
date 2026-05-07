@@ -467,9 +467,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { MoreHorizontal, Headphones } from "lucide-react";
+import { MoreHorizontal, Headphones, Plus } from "lucide-react";
 import axios from "axios";
 import Link from "next/link";
+import { useAuth } from "@/context/AuthContext";
+import PlaylistDialog from "@/src/components/playlistdialog-component/playlistdialog";
 
 const TEAM_ABBR_MAP: Record<string, string[]> = {
   "Mumbai Indians": ["MI", "Mumbai"],
@@ -585,6 +587,9 @@ function MiniAudioRow({ drop }: { drop: AudioDrop }) {
 }
 
 export default function Team360CardsSection() {
+  const { user } = useAuth();
+  const getUserId = () => user?.userId || null;
+  const [playlistPost, setPlaylistPost] = useState<Post | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
   const [audioDropsMap, setAudioDropsMap] = useState<Record<string, AudioDrop[]>>({});
   const [loading, setLoading] = useState(true);
@@ -754,7 +759,21 @@ export default function Team360CardsSection() {
                     <p className="text-[10px] text-gray-400">{getISTTimeAgo(post.createdAt)}</p>
                   </div>
                 </div>
-                <MoreHorizontal size={18} className="text-gray-400" />
+                {/* NEW ACTION ICONS CONTAINER */}
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setPlaylistPost(post);
+                    }}
+                    className="text-gray-400 hover:text-white transition p-1 hover:bg-gray-800 rounded-full"
+                    title="Add to Playlist"
+                  >
+                    <Plus size={18} />
+                  </button>
+                  <MoreHorizontal size={18} className="text-gray-400" />
+                </div>
               </div>
 
               {/* Main Image */}
@@ -898,6 +917,16 @@ export default function Team360CardsSection() {
           );
         })}
       </div>
+      {/* Playlist Dialog */}
+      {playlistPost && (
+        <PlaylistDialog
+          open={!!playlistPost}
+          onClose={() => setPlaylistPost(null)}
+          itemId={playlistPost.id}
+          itemType="team360" // Adjust this if your backend expects a different string
+          userId={getUserId()}
+        />
+      )}
 
     </div>
   );

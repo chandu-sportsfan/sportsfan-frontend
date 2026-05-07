@@ -721,7 +721,7 @@ export default function Player360CardsSection() {
                     open={!!playlistPost}
                     onClose={() => setPlaylistPost(null)}
                     itemId={playlistPost.id}
-                    itemType="player360" // Adjust this if your backend expects a different string
+                    itemType="players360" // Adjust this if your backend expects a different string
                     userId={getUserId()}
                 />
             )}

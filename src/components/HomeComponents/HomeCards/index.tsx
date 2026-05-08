@@ -184,24 +184,24 @@ function formatNumber(n: number): string {
 // Check if a drop is from an IPL match
 function isIPLDrop(matchInfo?: MatchInfo, title?: string): boolean {
   if (!matchInfo) return false;
-  
+
   // Check if team1 or team2 is an IPL team
   const teams = [matchInfo.team1, matchInfo.team2];
   const allTeamKeys = Object.keys(IPL_TEAMS);
-  
+
   return teams.some(team => team && allTeamKeys.includes(team));
 }
 
 // Extract match name from audio title (e.g., "GT vs RCB" from "GT vs RCB - TOSS REPORT")
 function extractMatchName(title: string): string {
   if (!title) return "";
-  
+
   // Try to extract text before " - " which typically separates match name from type
   const dashIndex = title.indexOf(" - ");
   if (dashIndex > 0) {
     return title.substring(0, dashIndex).trim();
   }
-  
+
   // If no dash found, try to extract before common keywords
   const keywords = ["TOSS REPORT", "POST MATCH", "PRE MATCH", "MATCH ANALYSIS", "HIGHLIGHTS"];
   for (const keyword of keywords) {
@@ -210,7 +210,7 @@ function extractMatchName(title: string): string {
       return title.substring(0, keywordIndex).trim();
     }
   }
-  
+
   return "";
 }
 
@@ -226,8 +226,8 @@ function LatestPlaylistsList({ userId }: { userId: string | null }) {
 
       try {
         const [userPlaylistsRes, teamPostsRes, teamPlaylistsRes] = await Promise.all([
-          userId 
-            ? axios.get(`/api/playlists?userId=${userId}`) 
+          userId
+            ? axios.get(`/api/playlists?userId=${userId}`)
             : Promise.resolve({ data: { success: true, playlists: [] } }),
           axios.get("/api/team360"),
           axios.get("/api/team360-playlist")
@@ -343,23 +343,23 @@ function LatestAudioList() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    axios.get(`/api/cloudinary/audio?limit=50`)
+    axios.get(`/api/cloudinary/audio?limit=500`)
       .then(res => {
         if (res.data.success) {
           // Sort all by newest first
           const sorted = newestFirst(res.data.audioFiles as AudioFile[]);
-          
+
           // Try to filter for IPL drops
-          const iplDrops = sorted.filter((audio: AudioFile) => 
+          const iplDrops = sorted.filter((audio: AudioFile) =>
             isIPLDrop(audio.matchInfo, audio.title)
           );
-          
+
           // Use IPL drops if we have at least 2, otherwise use latest drops
           const dropsToShow = iplDrops.length >= 2 ? iplDrops : sorted;
           setAudioFiles(dropsToShow.slice(0, 2));
         }
       })
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => setLoading(false));
   }, []);
 
@@ -408,30 +408,30 @@ function LatestVideoList() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    axios.get(`/api/cloudinary/video?limit=50`)
+    axios.get(`/api/cloudinary/video?limit=150`)
       .then(res => {
         if (res.data.success) {
           // Sort all by newest first
           const sorted = newestFirst(res.data.videoFiles as VideoFile[]);
-          
+
           // Try to filter for IPL videos by checking title for IPL team names
           const iplVideos = sorted.filter((video: VideoFile) => {
             const title = video.title.toUpperCase();
             const allTeamKeys = Object.keys(IPL_TEAMS);
-            
+
             // Check if title contains any IPL team name or abbreviation
             return allTeamKeys.some(team => {
               const abbrs = IPL_TEAMS[team];
               return abbrs.some(abbr => title.includes(abbr.toUpperCase()));
             });
           });
-          
+
           // Use IPL videos if we have at least 2, otherwise use latest videos
           const videosToShow = iplVideos.length >= 2 ? iplVideos : sorted;
           setVideoFiles(videosToShow.slice(0, 2));
         }
       })
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => setLoading(false));
   }, []);
 
@@ -494,22 +494,22 @@ export default function HomeCardsSection() {
           const playlists = res.data.playlists || [];
           const totalPlaylists = playlists.length;
           const totalDrops = playlists.reduce((sum: number, p: Playlist) => sum + p.audioIds.length, 0);
-          
+
           setPlaylistStats({ totalPlaylists, totalDrops });
-          
+
           // Update the My Playlists card stats
           setCardsData(prevCards =>
             prevCards.map(card =>
               card.id === 3
                 ? {
-                    ...card,
-                    stats: card.stats.map(stat => {
-                      if (stat.label === "Playlists") return { ...stat, value: totalPlaylists.toString() };
-                      if (stat.label === "Total Drops") return { ...stat, value: totalDrops.toString() };
-                      if (stat.label === "Saved") return { ...stat, value: formatNumber(totalDrops) };
-                      return stat;
-                    }),
-                  }
+                  ...card,
+                  stats: card.stats.map(stat => {
+                    if (stat.label === "Playlists") return { ...stat, value: totalPlaylists.toString() };
+                    if (stat.label === "Total Drops") return { ...stat, value: totalDrops.toString() };
+                    if (stat.label === "Saved") return { ...stat, value: formatNumber(totalDrops) };
+                    return stat;
+                  }),
+                }
                 : card
             )
           );
@@ -527,14 +527,20 @@ export default function HomeCardsSection() {
     const fetchDrops = async () => {
       try {
         const [audioRes, playsRes] = await Promise.allSettled([
-          axios.get(`/api/cloudinary/audio`),
+          axios.get(`/api/cloudinary/audio?limit=500`),
           axios.get(`/api/cloudinary/plays`),
         ]);
 
+        // const totalCount =
+        //   audioRes.status === "fulfilled"
+        //     ? audioRes.value.data.totalCount || audioRes.value.data.audioFiles?.length || 0
+        //     : 0;
         const totalCount =
           audioRes.status === "fulfilled"
             ? audioRes.value.data.totalCount || audioRes.value.data.audioFiles?.length || 0
             : 0;
+
+        console.log("Final totalCount:", totalCount);
 
         const playsMap: Record<string, number> =
           playsRes.status === "fulfilled" ? playsRes.value.data.plays || {} : {};
@@ -545,13 +551,13 @@ export default function HomeCardsSection() {
           prevCards.map(card =>
             card.id === 1
               ? {
-                  ...card,
-                  stats: card.stats.map(stat => {
-                    if (stat.label === "Drops") return { ...stat, value: totalCount.toString() };
-                    if (stat.label === "Plays") return { ...stat, value: formatNumber(totalPlays) };
-                    return stat;
-                  }),
-                }
+                ...card,
+                stats: card.stats.map(stat => {
+                  if (stat.label === "Drops") return { ...stat, value: totalCount.toString() };
+                  if (stat.label === "Plays") return { ...stat, value: formatNumber(totalPlays) };
+                  return stat;
+                }),
+              }
               : card
           )
         );
@@ -657,21 +663,21 @@ export default function HomeCardsSection() {
             )}
 
             {/* Button - Show for card 1 and card 3 */}
-{(card.id === 1) && (
-  <div className="mt-auto pt-2 flex flex-col gap-2">
-    
-    {/* Points Table Button — only for IPL card */}
-    {card.id === 1 && (
-      <Link href="/MainModules/Matchcenter">
-        <button className="w-full bg-[#1c1c1c] border border-[#C9115F]/40 py-1.5 rounded-full font-semibold text-[13px] flex items-center justify-center gap-2 cursor-pointer text-white hover:bg-[#2a2a2a] transition-colors">
-          <span>🏆</span>
-          IPL 2026 Points Table
-        </button>
-      </Link>
-    )}
+            {(card.id === 1) && (
+              <div className="mt-auto pt-2 flex flex-col gap-2">
 
-  </div>
-)}
+                {/* Points Table Button — only for IPL card */}
+                {card.id === 1 && (
+                  <Link href="/MainModules/Matchcenter">
+                    <button className="w-full bg-[#1c1c1c] border border-[#C9115F]/40 py-1.5 rounded-full font-semibold text-[13px] flex items-center justify-center gap-2 cursor-pointer text-white hover:bg-[#2a2a2a] transition-colors">
+                      <span>🏆</span>
+                      IPL 2026 Points Table
+                    </button>
+                  </Link>
+                )}
+
+              </div>
+            )}
           </div>
         ))}
       </div>

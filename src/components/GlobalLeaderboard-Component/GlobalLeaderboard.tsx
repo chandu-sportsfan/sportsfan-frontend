@@ -1,62 +1,17 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import React from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { useLeaderboard } from '@/context/LeaderboardContext';
 import { ArrowLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
-interface LeaderboardUser {
-  userId: string;
-  userName: string;
-  userEmail: string;
-  totalPoints: number;
-  rank: number;
-}
-
 const GlobalLeaderboard: React.FC = () => {
   const { user } = useAuth();
-  const [leaderboard, setLeaderboard] = useState<LeaderboardUser[]>([]);
-  const [currentUserRank, setCurrentUserRank] = useState<number | null>(null);
-  const [currentUserPoints, setCurrentUserPoints] = useState<number | null>(null);
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null); // Store current user ID
-  const [loading, setLoading] = useState(true);
+  const { leaderboard, currentUserRank, currentUserPoints, loading } = useLeaderboard();
   const router = useRouter();
 
-  useEffect(() => {
-    if (user) {
-      fetchGlobalLeaderboard();
-    }
-  }, [user]);
-
-
-  const fetchGlobalLeaderboard = async () => {
-  try {
-    // ✅ Use user.userId like RankingsModal does — NOT user.uid
-    const userId = user?.userId || '';
-    
-    if (!userId) return;
-
-    const res = await axios.get(
-      `/api/user-points?userId=${encodeURIComponent(userId)}&limit=100`
-    );
-
-    if (res.data.success) {
-      setLeaderboard(res.data.leaderboard);
-      setCurrentUserId(userId); // ← also fix this, was never being set
-      if (res.data.currentUser) {
-        setCurrentUserRank(res.data.currentUser.rank);
-        setCurrentUserPoints(res.data.currentUser.points);
-      }
-    }
-  } catch (error) {
-    console.error('Error fetching leaderboard:', error);
-  } finally {
-    setLoading(false);
-  }
-};
-
-  if (loading) {
+  if (loading && leaderboard.length === 0) {
     return <div className="text-white p-4">Loading leaderboard...</div>;
   }
 
@@ -90,7 +45,7 @@ const GlobalLeaderboard: React.FC = () => {
             <div
               key={leaderboardUser.userId}
               className={`flex items-center justify-between p-3 rounded-lg ${
-                leaderboardUser.userId === currentUserId ? 'bg-[#2a2a2a] border border-[#ff6d00]' : 'bg-[#121212]'
+                leaderboardUser.userId === user?.userId ? 'bg-[#2a2a2a] border border-[#ff6d00]' : 'bg-[#121212]'
               }`}
             >
               <div className="flex items-center gap-3">

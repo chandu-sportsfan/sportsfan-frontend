@@ -951,6 +951,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import axios from "axios";
 import CreateBattle from "./CreateBattle";
 import { useAuth } from "@/context/AuthContext";
+import { useLeaderboard } from "@/context/LeaderboardContext";
 import { Pencil, Users } from "lucide-react";
 
 interface PlayerProfile {
@@ -1328,6 +1329,7 @@ function HowFanBattleWorksModal({ onClose }: { onClose: () => void }) {
 // Main Component
 export default function FanBattleCard() {
   const { user, getUserDisplayName } = useAuth();
+  const { refreshLeaderboard } = useLeaderboard();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [displayNumber, setDisplayNumber] = useState<number | string>("--");
   const [isScanning, setIsScanning] = useState(false);
@@ -1516,6 +1518,7 @@ const recordVote = useCallback(
           showToast(`+${res.data.playerPointsAwarded} pts for ${item.name}!`, "success");
           setVotedPlayerIds((prev) => new Set([...prev, item.id]));
           fetchLeaderboard(battleId);
+          refreshLeaderboard(); // ✅ Update global user points after vote
         } else {
           showToast(`Skipped ${item.name}`, "skip");
         }

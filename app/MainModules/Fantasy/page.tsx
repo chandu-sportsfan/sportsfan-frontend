@@ -108,8 +108,9 @@ import FanBattleCard from "@/src/components/FanBattle-Component/Fanbattlearena";
 import FanBattleHeader from "@/src/components/FanBattle-Component/Fanbattleheader";
 import PlayerPowerCarousel from "@/src/components/FanBattle-Component/PlayerPowerCarousel";
 import RankingsModal from "@/src/components/FanBattle-Component/RankingsModal";
-import React, { useState, useRef } from "react";
-import CircleCricketClient from "./fanatsycontent";
+import React, { useState, useRef, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
+import FantasyGamesHub from "../FantasyGames/page";
 
 const tabs = [
   { id: "fan-battle", label: "Fan Battle", hasNew: true },
@@ -118,9 +119,17 @@ const tabs = [
 ];
 
 export default function FanBattlePage() {
+  const searchParams = useSearchParams();
   const [isRankingsOpen, setIsRankingsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("fan-battle");
   const tabsContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const tabParam = searchParams.get("tab");
+    if (tabParam && tabs.some((t) => t.id === tabParam)) {
+      setActiveTab(tabParam);
+    }
+  }, [searchParams]);
 
   return (
     <div className="relative overflow-hidden min-h-screen bg-[#121212] flex items-start justify-center">
@@ -191,7 +200,7 @@ export default function FanBattlePage() {
 
           {activeTab === "fantasy" && (
             <div className="w-full">
-              <CircleCricketClient />
+              <FantasyGamesHub />
             </div>
           )}
         </div>

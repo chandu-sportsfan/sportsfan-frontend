@@ -27,6 +27,15 @@ export default function FantasyGamesHub() {
       href: "/MainModules/FantasyGames/circle-cricket",
     },
     {
+      id: "hand-cricket",
+      title: "Hand Cricket",
+      subtitle: "Classic Hand Cricket",
+      description: "Play the traditional hand-cricket game — choose odd/even, bowl and bat using hand gestures or taps.",
+      icon: "🤚",
+      color: "from-red-900 to-pink-700",
+      href: "/MainModules/FantasyGames/hand-cricket",
+    },
+    {
       id: "coming-soon",
       title: "Coming Soon",
       subtitle: "More Games Ahead",
@@ -38,7 +47,7 @@ export default function FantasyGamesHub() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 px-4 py-12 sm:px-6">
+    <div className="bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 px-4 py-12 sm:px-6">
       <style jsx global>{`
         .fantasy-hub {
           --text: #f5ead6;
@@ -64,13 +73,6 @@ export default function FantasyGamesHub() {
       <div className="fantasy-hub max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-16 text-center">
-          <button
-            onClick={() => router.back()}
-            className="mb-8 inline-flex items-center gap-2 px-4 py-2 rounded-full border border-[rgba(197,149,106,0.22)] bg-[rgba(20,13,6,0.9)] text-[#c4956a] hover:border-[rgba(245,158,11,0.6)] hover:text-[#f5d5a0] transition-all"
-          >
-            ← Back
-          </button>
-
           <h1 className="title-font text-4xl sm:text-5xl font-bold text-[#f5d5a0] mb-2">
             FANTASY GAMES
           </h1>

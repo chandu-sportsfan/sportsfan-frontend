@@ -916,7 +916,7 @@ export default function BookCricket() {
 
       <div className="shell">
         <div className="brand">
-          <button className="brand-back" onClick={() => router.back()}>← BACK</button>
+          <button className="brand-back" onClick={() => router.push('/MainModules/Fantasy?tab=fantasy')}>← BACK</button>
           <div className="brand-text">
             <div className="kicker title-font">SPORTSFAN360 PRESENTS</div>
             <div className="name title-font">

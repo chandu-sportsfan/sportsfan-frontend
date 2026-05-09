@@ -147,7 +147,10 @@ const nextConfig = {
         { source: '/api/fanbattle/response', destination: `${apiTarget}/api/fanbattle/response` },
         { source: '/api/fanbattle/response/:path*', destination: `${apiTarget}/api/fanbattle/response/:path*` },
 
-        
+        // Sessions
+        { source: '/api/fanbattle/session', destination: `${apiTarget}/api/fanbattle/session` },
+        { source: '/api/fanbattle/session/:path*', destination: `${apiTarget}/api/fanbattle/session/:path*` },
+
         //Comments
         { source: '/api/comments', destination: `${apiTarget}/api/comments` },
 

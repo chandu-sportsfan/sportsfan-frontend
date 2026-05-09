@@ -683,30 +683,40 @@ const PowerCard: React.FC<{ item: PlayerCard }> = ({ item }) => (
     )}
 
     {item.type === "CLUB" && item.avatar && (
-      <div className="absolute top-2.5 right-2.5 z-10">
+      <div className="absolute top-2 right-2 z-10 flex flex-col items-center">
         <img
           src={item.avatar}
           alt={item.name}
-          className="w-8 h-8 rounded-full object-cover border border-[#252525]"
+          className="w-10 h-10 rounded-full object-cover border border-[#252525]"
         />
+        <div className="flex items-center gap-1 mt-1">
+          <LightningIcon />
+          <span className="text-[#00e676] text-[11px] font-bold">
+            {item.points.toLocaleString()}
+          </span>
+        </div>
       </div>
     )}
 
     <div className="flex items-center gap-2.5">
       <RankCircle rank={item.rank} prevRank={item.prevRank} delta={item.delta} size={52} />
       <div className="flex flex-col min-w-0">
-        <span className="text-white text-[11px] font-bold leading-tight line-clamp-2">
-          {item.name}
-        </span>
-        <div className="flex items-center gap-1 mt-0.5">
-          <LightningIcon />
-          <span className="text-[#00e676] text-[13px] font-bold">
-            {item.points.toLocaleString()}
+        {item.type !== "CLUB" && item.name && (
+          <span className="text-white text-[11px] font-bold leading-tight line-clamp-2">
+            {item.name}
           </span>
-        </div>
-        {item.team && (
-          <span className="text-[#555] text-[8px] mt-0.5 truncate">{item.team}</span>
         )}
+        {item.type !== "CLUB" && (
+          <div className="flex items-center gap-1 mt-0.5">
+            <LightningIcon />
+            <span className="text-[#00e676] text-[13px] font-bold">
+              {item.points.toLocaleString()}
+            </span>
+          </div>
+        )}
+      
+          <span className="text-[#555] text-[8px] mt-0.5 truncate">{item.team}</span>
+    
       </div>
     </div>
 

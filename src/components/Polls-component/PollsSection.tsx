@@ -120,8 +120,13 @@ export default function PollsSection() {
               <UpcomingPollCard />
             </div>
 
-            {/* 2. Then map through the rest of the active polls */}
-            {polls.map((poll) => (
+            {/* 2. Filter out inactive and expired polls, then map through the rest */}
+            {polls
+              .filter((poll) => {
+                const hasNotExpired = new Date(poll.endsAt).getTime() > Date.now();
+                return poll.active && hasNotExpired;
+              })
+              .map((poll) => (
               <div key={poll.id} className="flex-shrink-0">
                 <PollCard 
                   poll={poll} 

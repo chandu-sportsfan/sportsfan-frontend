@@ -164,7 +164,7 @@ function renderCurl(ctx: CanvasRenderingContext2D, W: number, H: number, tx: num
   const reflected = pageCorners
     .filter(c => (c.x - mx) * fnx + (c.y - my) * fny > 0)
     .map(c => reflPt(c.x, c.y, fold));
-  let poly: Pt[] = [...ep, ...reflected];
+  const poly: Pt[] = [...ep, ...reflected];
   const cx0 = poly.reduce((s, p) => s + p.x, 0) / poly.length;
   const cy0 = poly.reduce((s, p) => s + p.y, 0) / poly.length;
   poly.sort((a, b) => Math.atan2(a.y - cy0, a.x - cx0) - Math.atan2(b.y - cy0, b.x - cx0));

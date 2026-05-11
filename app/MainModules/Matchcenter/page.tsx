@@ -482,7 +482,20 @@ function CapHoldersSection({ orangeCap, purpleCap, logos }: { orangeCap: PlayerR
                         <div className="flex items-center gap-2">
                           <TeamLogo abbr={p.team} size="sm" logos={logos} />
                           <div className="min-w-0">
-                            <p className="text-white whitespace-nowrap">{cleanPlayer(p.player)}</p>
+                           <div className="min-w-0">
+  {p.rank === 1 ? (
+    /* Vivid and Bold styling for Rank 1 */
+    <p className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-yellow-200 font-black text-sm whitespace-nowrap drop-shadow-[0_0_8px_rgba(251,146,60,0.4)]">
+      {cleanPlayer(p.player)}
+    </p>
+  ) : (
+    /* Standard styling for all other players */
+    <p className="text-white font-bold text-xs whitespace-nowrap">
+      {cleanPlayer(p.player)}
+    </p>
+  )}
+  <p className="text-gray-600 text-[10px]">{p.team}</p>
+</div>
                             <p className="text-gray-600 text-[10px]">{p.team}</p>
                           </div>
                         </div>
@@ -518,7 +531,20 @@ function CapHoldersSection({ orangeCap, purpleCap, logos }: { orangeCap: PlayerR
                         <div className="flex items-center gap-2">
                           <TeamLogo abbr={p.team} size="sm" logos={logos} />
                           <div className="min-w-0">
-                            <p className="text-white whitespace-nowrap">{cleanPlayer(p.player)}</p>
+                            <div className="min-w-0">
+  {p.rank === 1 ? (
+    /* Vivid and Bold styling for Rank 1 */
+    <p className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-300 font-black text-sm whitespace-nowrap drop-shadow-[0_0_8px_rgba(168,85,247,0.4)]">
+      {cleanPlayer(p.player)}
+    </p>
+  ) : (
+    /* Standard styling for all other players */
+    <p className="text-white font-bold text-xs whitespace-nowrap">
+      {cleanPlayer(p.player)}
+    </p>
+  )}
+  <p className="text-gray-600 text-[10px]">{p.team}</p>
+</div>
                             <p className="text-gray-600 text-[10px]">{p.team}</p>
                           </div>
                         </div>

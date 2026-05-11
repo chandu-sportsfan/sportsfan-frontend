@@ -963,7 +963,7 @@ const RankingsModal: React.FC<RankingsModalProps> = ({ isOpen, onClose }) => {
   );
 
   return (
-    <div className="absolute inset-0 z-50 flex flex-col bg-[#121212]">
+    <div className="absolute inset-0 z-50 flex flex-col bg-[#121212] pb-10">
       {/* ── Top Bar ── */}
       <div className="flex items-center justify-between px-4 pt-5 pb-3 bg-[#121212]">
         <div>

@@ -98,7 +98,7 @@
 //   { team: "Lucknow Super Giants", path: "/images/LSG1.png" },
 // ];
 
-// // Toast notification
+// // ── Toast ──────────────────────────────────────────────────────────────────────
 // function Toast({ message, type }: { message: string; type: "success" | "skip" | "error" }) {
 //   const bg =
 //     type === "success" ? "rgba(74,222,128,0.15)" :
@@ -126,7 +126,7 @@
 //   );
 // }
 
-// // Leaderboard Modal
+// // ── Leaderboard Modal ──────────────────────────────────────────────────────────
 // function LeaderboardModal({
 //   battleName,
 //   leaderboard,
@@ -155,7 +155,6 @@
 //         onClick={(e) => e.stopPropagation()}
 //       >
 //         <div className="w-10 h-1 bg-gray-700 rounded-full mx-auto mb-5" />
-
 //         <div className="flex items-center justify-between mb-5">
 //           <div>
 //             <h2 className="text-white font-bold text-lg">Leaderboard</h2>
@@ -169,7 +168,6 @@
 //             ✕
 //           </button>
 //         </div>
-
 //         {leaderboard.length === 0 ? (
 //           <div className="text-center py-10">
 //             <p className="text-4xl mb-3">🏆</p>
@@ -194,7 +192,6 @@
 //                   <span className="text-xl w-7 text-center">
 //                     {entry.rank <= 3 ? medals[entry.rank - 1] : `${entry.rank}`}
 //                   </span>
-
 //                   <div className="flex-1 min-w-0">
 //                     <div className="flex items-center gap-2">
 //                       <p className="text-white font-semibold text-sm truncate">{entry.playerName}</p>
@@ -207,12 +204,8 @@
 //                     </div>
 //                     <p className="text-gray-600 text-[10px] mt-0.5">{entry.votes} vote{entry.votes !== 1 ? "s" : ""}</p>
 //                   </div>
-
 //                   <div className="text-right">
-//                     <p
-//                       className="font-black text-base"
-//                       style={{ color: entry.rank <= 3 ? color.stroke : "#9ca3af" }}
-//                     >
+//                     <p className="font-black text-base" style={{ color: entry.rank <= 3 ? color.stroke : "#9ca3af" }}>
 //                       {entry.points}
 //                     </p>
 //                     <p className="text-gray-700 text-[9px] font-bold tracking-wider">PTS</p>
@@ -227,7 +220,7 @@
 //   );
 // }
 
-
+// // ── How Fan Battle Works Modal ─────────────────────────────────────────────────
 // function HowFanBattleWorksModal({ onClose }: { onClose: () => void }) {
 //   return (
 //     <div
@@ -245,12 +238,11 @@
 //         }}
 //         onClick={(e) => e.stopPropagation()}
 //       >
-//         {/* Fixed Header */}
 //         <div
 //           className="sticky top-0 z-20 flex flex-col items-center pt-6 pb-4 px-5 flex-shrink-0"
 //           style={{
 //             background: "linear-gradient(180deg, #1a0d2e 0%, #1a0d2e 100%)",
-//             borderBottom: "1px solid rgba(255,255,255,0.06)"
+//             borderBottom: "1px solid rgba(255,255,255,0.06)",
 //           }}
 //         >
 //           <div className="w-12 h-12 rounded-full flex items-center justify-center mb-3"
@@ -262,8 +254,6 @@
 //             Engage with player cards to support your favorites and influence the game!
 //           </p>
 //         </div>
-
-//         {/* Fixed X Button */}
 //         <button
 //           onClick={onClose}
 //           className="absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center text-gray-500 hover:text-white transition-colors z-30"
@@ -271,17 +261,11 @@
 //         >
 //           ✕
 //         </button>
-
-//         {/* Scrollable Content */}
 //         <div
 //           className="flex-1 overflow-y-auto px-4 sm:px-5 py-4 sm:py-5"
-//           style={{
-//             scrollbarWidth: "thin",
-//             scrollbarColor: "rgba(255,255,255,0.2) rgba(0,0,0,0.2)"
-//           }}
+//           style={{ scrollbarWidth: "thin", scrollbarColor: "rgba(255,255,255,0.2) rgba(0,0,0,0.2)" }}
 //         >
 //           <div className="flex flex-col gap-3">
-//             {/* Swipe Right */}
 //             <div className="rounded-xl sm:rounded-2xl p-3 sm:p-4"
 //               style={{ background: "rgba(16,185,129,0.07)", border: "1px solid rgba(16,185,129,0.2)" }}>
 //               <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
@@ -292,11 +276,7 @@
 //                 <span className="font-bold text-xs sm:text-sm" style={{ color: "#10b981" }}>Swipe Right →</span>
 //               </div>
 //               <ul className="flex flex-col gap-1.5">
-//                 {[
-//                   "Like the player and add them to your favorites",
-//                   "Boost their Power Points +15",
-//                   "See more similar players"
-//                 ].map((text) => (
+//                 {["Like the player and add them to your favorites", "Boost their Power Points +15", "See more similar players"].map((text) => (
 //                   <li key={text} className="flex items-start gap-2 text-xs text-gray-300">
 //                     <span className="mt-1 w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: "#10b981" }} />
 //                     <span className="flex-1">{text}</span>
@@ -304,8 +284,6 @@
 //                 ))}
 //               </ul>
 //             </div>
-
-//             {/* Swipe Left */}
 //             <div className="rounded-xl sm:rounded-2xl p-3 sm:p-4"
 //               style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
 //               <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
@@ -316,11 +294,7 @@
 //                 <span className="font-bold text-xs sm:text-sm text-gray-300">Swipe Left ←</span>
 //               </div>
 //               <ul className="flex flex-col gap-1.5">
-//                 {[
-//                   "Skip to the next player",
-//                   "No points awarded",
-//                   "Help us learn your preferences"
-//                 ].map((text) => (
+//                 {["Skip to the next player", "No points awarded", "Help us learn your preferences"].map((text) => (
 //                   <li key={text} className="flex items-start gap-2 text-xs text-gray-400">
 //                     <span className="mt-1 w-1.5 h-1.5 rounded-full flex-shrink-0 bg-gray-600" />
 //                     <span className="flex-1">{text}</span>
@@ -328,8 +302,6 @@
 //                 ))}
 //               </ul>
 //             </div>
-
-//             {/* Pro Tip */}
 //             <div className="rounded-xl sm:rounded-2xl p-3 sm:p-4"
 //               style={{ background: "rgba(236,72,153,0.07)", border: "1px solid rgba(236,72,153,0.2)" }}>
 //               <div className="flex items-center gap-2 mb-2">
@@ -343,43 +315,198 @@
 //           </div>
 //         </div>
 //       </div>
-
 //       <style jsx>{`
 //         @keyframes slideUp {
-//           from {
-//             opacity: 0;
-//             transform: translateY(20px);
-//           }
-//           to {
-//             opacity: 1;
-//             transform: translateY(0);
-//           }
+//           from { opacity: 0; transform: translateY(20px); }
+//           to { opacity: 1; transform: translateY(0); }
 //         }
-        
-//         /* Custom scrollbar styling */
-//         .overflow-y-auto::-webkit-scrollbar {
-//           width: 4px;
-//         }
-        
-//         .overflow-y-auto::-webkit-scrollbar-track {
-//           background: rgba(0, 0, 0, 0.2);
-//           border-radius: 10px;
-//         }
-        
-//         .overflow-y-auto::-webkit-scrollbar-thumb {
-//           background: rgba(255, 255, 255, 0.2);
-//           border-radius: 10px;
-//         }
-        
-//         .overflow-y-auto::-webkit-scrollbar-thumb:hover {
-//           background: rgba(255, 255, 255, 0.3);
-//         }
+//         .overflow-y-auto::-webkit-scrollbar { width: 4px; }
+//         .overflow-y-auto::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); border-radius: 10px; }
+//         .overflow-y-auto::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
+//         .overflow-y-auto::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.3); }
 //       `}</style>
 //     </div>
 //   );
 // }
 
-// // Main Component
+// // ── Battle Result Screen ───────────────────────────────────────────────────────
+// function BattleResultScreen({
+//   battleName,
+//   votedCount,
+//   skippedCount,
+//   pointsGiven,
+//   hasNextBattle,
+//   nextBattle,
+//   nextBattleIndex,
+//   totalBattles,
+//   nextItemCount,
+//   onPlayNext,
+//   onGoHome,
+//   onCreateBattle,
+//   isLoggedIn,
+// }: {
+//   battleName: string;
+//   votedCount: number;
+//   skippedCount: number;
+//   pointsGiven: number;
+//   hasNextBattle: boolean;
+//   nextBattle?: Battle;
+//   nextBattleIndex?: number;
+//   totalBattles?: number;
+//   nextItemCount?: number;
+//   onPlayNext: () => void;
+//   onGoHome: () => void;
+//   onCreateBattle: () => void;
+//   isLoggedIn: boolean;
+// }) {
+//   // ── All battles completed ──────────────────────────────────────────────────
+//   if (!hasNextBattle) {
+//     return (
+//       <div className="min-h-screen flex flex-col items-center justify-center bg-[#07070f] px-4">
+//         <div className="w-full max-w-sm flex flex-col gap-4">
+//           {/* Result summary */}
+//           <div className="flex flex-col items-center gap-4 bg-[#0f1520] rounded-2xl px-5 py-6"
+//             style={{ border: "1px solid rgba(255,255,255,0.07)" }}>
+//             <div className="w-14 h-14 rounded-full flex items-center justify-center"
+//               style={{ background: "rgba(74,222,128,0.1)", border: "1px solid rgba(74,222,128,0.25)" }}>
+//               <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+//                 <path d="M5 13l4 4L19 7" stroke="#4ade80" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+//               </svg>
+//             </div>
+//             <div className="text-center">
+//               <h2 className="text-white text-xl font-bold">Battle complete!</h2>
+//               <p className="text-gray-500 text-xs mt-1 truncate max-w-[220px]">{battleName}</p>
+//             </div>
+//             <div className="w-full grid grid-cols-3 gap-2">
+//               {[
+//                 { label: "VOTED", value: votedCount, color: "#4ade80" },
+//                 { label: "SKIPPED", value: skippedCount, color: "#9ca3af" },
+//                 { label: "PTS GIVEN", value: `+${pointsGiven}`, color: "#60a5fa" },
+//               ].map(({ label, value, color }) => (
+//                 <div key={label} className="flex flex-col items-center justify-center rounded-xl py-3"
+//                   style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
+//                   <span className="text-lg font-bold" style={{ color }}>{value}</span>
+//                   <span className="text-[9px] font-bold tracking-widest mt-0.5 text-gray-600">{label}</span>
+//                 </div>
+//               ))}
+//             </div>
+//           </div>
+
+//           {/* All done card */}
+//           <div className="flex flex-col items-center gap-4 bg-[#0f1520] rounded-2xl px-5 py-6"
+//             style={{ border: "1px solid rgba(255,255,255,0.07)" }}>
+//             <div className="w-14 h-14 rounded-full flex items-center justify-center"
+//               style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}>
+//               <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+//                 <circle cx="12" cy="12" r="10" stroke="#9ca3af" strokeWidth="1.5" />
+//                 <path d="M12 7v5l3 3" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+//               </svg>
+//             </div>
+//             <div className="text-center">
+//               <h3 className="text-white font-bold text-base">All battles played!</h3>
+//               <p className="text-gray-400 text-xs mt-1.5 leading-relaxed">
+//                 You&apos;ve completed all available battles. Check back soon for new ones!
+//               </p>
+//             </div>
+//             <div className="w-full h-px bg-[#1e2535]" />
+//             <div className="w-full flex flex-col gap-2.5">
+//               {/* <button
+//                 onClick={onGoHome}
+//                 className="w-full py-3 rounded-xl text-sm font-semibold text-gray-300"
+//                 style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)" }}>
+//                 Back to home
+//               </button> */}
+//               {isLoggedIn && (
+//                 <button
+//                   onClick={onCreateBattle}
+//                   className="w-full py-3 rounded-xl text-sm font-bold text-white"
+//                   style={{ background: "linear-gradient(90deg, #e91e8c, #ff6b35)" }}>
+//                   Create a battle
+//                 </button>
+//               )}
+//             </div>
+//           </div>
+//         </div>
+//       </div>
+//     );
+//   }
+
+//   // ── Next battle available ──────────────────────────────────────────────────
+//   return (
+//     <div className="min-h-screen flex flex-col items-center justify-center bg-[#07070f] px-4">
+//       <div className="w-full max-w-sm flex flex-col gap-4">
+//         {/* Result summary */}
+//         <div className="flex flex-col items-center gap-4 bg-[#0f1520] rounded-2xl px-5 py-6"
+//           style={{ border: "1px solid rgba(255,255,255,0.07)" }}>
+//           <div className="w-14 h-14 rounded-full flex items-center justify-center"
+//             style={{ background: "rgba(74,222,128,0.1)", border: "1px solid rgba(74,222,128,0.25)" }}>
+//             <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+//               <path d="M5 13l4 4L19 7" stroke="#4ade80" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+//             </svg>
+//           </div>
+//           <div className="text-center">
+//             <h2 className="text-white text-xl font-bold">Battle complete!</h2>
+//             <p className="text-gray-500 text-xs mt-1 truncate max-w-[220px]">{battleName}</p>
+//           </div>
+//           <div className="w-full grid grid-cols-3 gap-2">
+//             {[
+//               { label: "VOTED", value: votedCount, color: "#4ade80" },
+//               { label: "SKIPPED", value: skippedCount, color: "#9ca3af" },
+//               { label: "PTS GIVEN", value: `+${pointsGiven}`, color: "#60a5fa" },
+//             ].map(({ label, value, color }) => (
+//               <div key={label} className="flex flex-col items-center justify-center rounded-xl py-3"
+//                 style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
+//                 <span className="text-lg font-bold" style={{ color }}>{value}</span>
+//                 <span className="text-[9px] font-bold tracking-widest mt-0.5 text-gray-600">{label}</span>
+//               </div>
+//             ))}
+//           </div>
+//         </div>
+
+//         {/* Next battle card */}
+//         <div className="flex flex-col items-center gap-4 bg-[#0f1520] rounded-2xl px-5 py-6"
+//           style={{ border: "1px solid rgba(236,72,153,0.25)" }}>
+//           <div className="w-10 h-10 rounded-full flex items-center justify-center"
+//             style={{ background: "rgba(236,72,153,0.1)", border: "1px solid rgba(236,72,153,0.3)" }}>
+//             <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+//               <path d="M9 18l6-6-6-6" stroke="#ec4899" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+//             </svg>
+//           </div>
+//           <div className="text-center">
+//             <p className="text-[10px] font-bold tracking-widest text-gray-600">
+//               NEXT UP · BATTLE {nextBattleIndex} OF {totalBattles}
+//             </p>
+//             <h3 className="text-white font-bold text-base mt-1">
+//               {nextBattle?.battleName
+//                 ? nextBattle.battleName.charAt(0).toUpperCase() + nextBattle.battleName.slice(1)
+//                 : "Next Battle"}
+//             </h3>
+//             <p className="text-gray-500 text-xs mt-0.5">
+//               {nextItemCount} {nextBattle?.battleType === "CLUBS" ? "clubs" : "players"}
+//             </p>
+//           </div>
+//           <div className="w-full h-px bg-[#1e2535]" />
+//           <div className="w-full flex flex-col gap-2.5">
+//             <button
+//               onClick={onPlayNext}
+//               className="w-full py-3 rounded-xl text-sm font-bold text-white"
+//               style={{ background: "linear-gradient(90deg, #e91e8c, #ff6b35)" }}>
+//               Start battle
+//             </button>
+//             {/* <button
+//               onClick={onGoHome}
+//               className="w-full py-3 rounded-xl text-sm font-semibold text-gray-400"
+//               style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
+//               Back to home
+//             </button> */}
+//           </div>
+//         </div>
+//       </div>
+//     </div>
+//   );
+// }
+
+// // ── Main Component ─────────────────────────────────────────────────────────────
 // export default function FanBattleCard() {
 //   const { user, getUserDisplayName } = useAuth();
 //   const { refreshLeaderboard } = useLeaderboard();
@@ -404,6 +531,10 @@
 //   const [toast, setToast] = useState<{ message: string; type: "success" | "skip" | "error" } | null>(null);
 //   const [isVoting, setIsVoting] = useState(false);
 
+//   // ── NEW: result screen state ───────────────────────────────────────────────
+//   const [showBattleResult, setShowBattleResult] = useState(false);
+//   const [battleStats, setBattleStats] = useState({ voted: 0, skipped: 0, pointsGiven: 0 });
+
 //   const startX = useRef(0);
 //   const startY = useRef(0);
 //   const isDraggingRef = useRef(false);
@@ -422,9 +553,7 @@
 
 //   const checkPermission = useCallback(
 //     (battle: Battle): boolean => {
-//       // ✅ Admin battles are public and visible to everyone
 //       if (battle.userId === "admin_001") return true;
-
 //       if (!user?.userId) return false;
 //       if (battle.userId === user.userId) return true;
 //       return !!battle.invitedFriends?.some((f) => f.email === user.email);
@@ -450,7 +579,7 @@
 //     const fetchBattles = async () => {
 //       try {
 //         setLoading(true);
-//         const response = await axios.get(`/api/battle${user?.userId ? `?userId=${user.userId}` : ""}`);
+//         const response = await axios.get(`/api/battle`);
 //         if (response.data.success && response.data.battles) {
 //           const accessible = response.data.battles.filter(checkPermission);
 //           setBattles(accessible);
@@ -466,17 +595,12 @@
 //       }
 //     };
 //     fetchBattles();
-//   }, [user, checkPermission]);
+//   }, [user, checkPermission, fetchLeaderboard]);
 
 //   const fetchItemsForBattle = async (battle: Battle) => {
 //     const isClubBattle = battle.battleType === "CLUBS";
 //     const ids = isClubBattle ? battle.selectedClubs : battle.selectedPlayers;
-
-//     if (!ids || ids.length === 0) {
-//       setCurrentItems([]);
-//       return;
-//     }
-
+//     if (!ids || ids.length === 0) { setCurrentItems([]); return; }
 //     try {
 //       const promises = ids.map(async (id) => {
 //         try {
@@ -485,8 +609,7 @@
 //             if (response.data.success) {
 //               const club = response.data.profile;
 //               const entity: ExtendedPlayer = {
-//                 id,
-//                 type: "CLUB",
+//                 id, type: "CLUB",
 //                 name: club.name || "Unknown Club",
 //                 team: club.team || "IPL",
 //                 city: club.overview?.venue || "",
@@ -506,15 +629,12 @@
 //             return null;
 //           } else {
 //             const response = await axios.get(`/api/player-profile/${id}`);
-//             const jerseyRes = await axios.get(
-//               `/api/player-profile/seasonstats?playerProfilesId=${id}`
-//             );
+//             const jerseyRes = await axios.get(`/api/player-profile/seasonstats?playerProfilesId=${id}`);
 //             const playerData = response.data.profile || response.data.data || response.data;
 //             const jerseyData = jerseyRes.data.seasons || jerseyRes.data.data || jerseyRes.data;
 //             const jerseyInfo = jerseyData?.[0]?.season?.jerseyNo || null;
 //             const player: ExtendedPlayer = {
-//               id,
-//               type: "PLAYER",
+//               id, type: "PLAYER",
 //               name: playerData.name || "Unknown",
 //               playerName: playerData.name,
 //               jerseyNumber: jerseyInfo || playerData.jerseyNumber || "--",
@@ -534,7 +654,6 @@
 //           return null;
 //         }
 //       });
-
 //       const items = (await Promise.all(promises)).filter(Boolean) as ExtendedPlayer[];
 //       setCurrentItems(items);
 //       setCurrentIndex(0);
@@ -548,14 +667,11 @@
 //     async (item: ExtendedPlayer, direction: "left" | "right") => {
 //       if (!user?.userId || !battles[currentBattleIndex]) return;
 //       if (isVoting) return;
-
 //       const battleId = battles[currentBattleIndex].id;
-
 //       if (direction === "right" && votedPlayerIds.has(item.id)) {
 //         showToast("Already voted for this item!", "error");
 //         return;
 //       }
-
 //       setIsVoting(true);
 //       try {
 //         const res = await axios.post("/api/battle/battle-vote", {
@@ -563,19 +679,27 @@
 //           playerId: item.id,
 //           playerName: item.name,
 //           userId: user.userId,
-//           userEmail: user.email || "", // ✅ Add this
-//           userName: user.name || getUserDisplayName() || "User", // ✅ Fixed call
+//           userEmail: user.email || "",
+//           userName: user.name || getUserDisplayName() || "User",
 //           direction,
 //         });
-
 //         if (res.data.success) {
 //           if (direction === "right") {
-//             showToast(`+${res.data.playerPointsAwarded} pts for ${item.name}!`, "success");
+//             const pts = res.data.playerPointsAwarded || 15;
+//             showToast(`+${pts} pts for ${item.name}!`, "success");
 //             setVotedPlayerIds((prev) => new Set([...prev, item.id]));
+//             // ── track stats ────────────────────────────────────────────────
+//             setBattleStats((prev) => ({
+//               voted: prev.voted + 1,
+//               skipped: prev.skipped,
+//               pointsGiven: prev.pointsGiven + pts,
+//             }));
 //             fetchLeaderboard(battleId);
-//             refreshLeaderboard(); // ✅ Update global user points after vote
+//             refreshLeaderboard();
 //           } else {
 //             showToast(`Skipped ${item.name}`, "skip");
+//             // ── track stats ────────────────────────────────────────────────
+//             setBattleStats((prev) => ({ ...prev, skipped: prev.skipped + 1 }));
 //           }
 //         }
 //       } catch (err: unknown) {
@@ -588,19 +712,27 @@
 //         setIsVoting(false);
 //       }
 //     },
-//     [user, battles, currentBattleIndex, votedPlayerIds, isVoting, fetchLeaderboard]
+//     [user, battles, currentBattleIndex, votedPlayerIds, isVoting, fetchLeaderboard, refreshLeaderboard, getUserDisplayName]
 //   );
 
+//   // ── UPDATED: show result screen instead of jumping straight to next ────────
 //   const switchToNextBattle = useCallback(() => {
+//     setShowBattleResult(true);
+//   }, []);
+
+//   const handlePlayNextBattle = useCallback(() => {
 //     const nextIndex = currentBattleIndex + 1;
 //     if (nextIndex < battles.length) {
-//       const nextBattle = battles[nextIndex];
-//       fetchItemsForBattle(nextBattle);
-//       fetchLeaderboard(nextBattle.id);
+//       const next = battles[nextIndex];
+//       fetchItemsForBattle(next);
+//       fetchLeaderboard(next.id);
 //       setCurrentBattleIndex(nextIndex);
 //       setCurrentIndex(0);
+//       // reset stats for the new battle
+//       setBattleStats({ voted: 0, skipped: 0, pointsGiven: 0 });
+//       setShowBattleResult(false);
 //     }
-//   }, [currentBattleIndex, battles]);
+//   }, [currentBattleIndex, battles, fetchLeaderboard]);
 
 //   const switchToPreviousBattle = useCallback(() => {
 //     const prevIndex = currentBattleIndex - 1;
@@ -611,7 +743,7 @@
 //       setCurrentBattleIndex(prevIndex);
 //       setCurrentIndex(0);
 //     }
-//   }, [currentBattleIndex, battles]);
+//   }, [currentBattleIndex, battles, fetchLeaderboard]);
 
 //   const currentItem = currentItems[currentIndex];
 //   const color = currentItem?.jerseyColor || getJerseyColor("Default");
@@ -656,16 +788,11 @@
 //     (dir: "left" | "right") => {
 //       if (isAnimatingOut || !currentItems.length) return;
 //       const currentPlayer = currentItems[currentIndex];
-
 //       setSwipeDir(dir);
 //       setIsAnimatingOut(true);
 //       setIsDragging(false);
 //       setDragX(0);
-
-//       if (currentPlayer) {
-//         recordVote(currentPlayer, dir);
-//       }
-
+//       if (currentPlayer) recordVote(currentPlayer, dir);
 //       setTimeout(() => {
 //         if (currentIndex + 1 < currentItems.length) {
 //           setCurrentIndex((p) => p + 1);
@@ -680,14 +807,12 @@
 //     [isAnimatingOut, currentIndex, currentItems, recordVote, switchToNextBattle]
 //   );
 
-//   // Touch events for mobile
+//   // ── Touch events ───────────────────────────────────────────────────────────
 //   useEffect(() => {
 //     const card = cardRef.current;
 //     if (!card) return;
-
 //     let touchStartX = 0;
 //     let touchStartY = 0;
-
 //     const handleTouchStart = (e: TouchEvent) => {
 //       if (isAnimatingOut) return;
 //       touchStartX = e.touches[0].clientX;
@@ -696,19 +821,15 @@
 //       lockAxis.current = null;
 //       dragXRef.current = 0;
 //     };
-
 //     const handleTouchMove = (e: TouchEvent) => {
 //       if (!isDraggingRef.current || isAnimatingOut) return;
-
 //       const touchX = e.touches[0].clientX;
 //       const touchY = e.touches[0].clientY;
 //       const deltaX = touchX - touchStartX;
 //       const deltaY = touchY - touchStartY;
-
 //       if (!lockAxis.current && (Math.abs(deltaX) > 10 || Math.abs(deltaY) > 10)) {
 //         lockAxis.current = Math.abs(deltaX) > Math.abs(deltaY) ? "h" : "v";
 //       }
-
 //       if (lockAxis.current === "h") {
 //         e.preventDefault();
 //         dragXRef.current = deltaX;
@@ -716,27 +837,19 @@
 //         setIsDragging(true);
 //       }
 //     };
-
 //     const handleTouchEnd = () => {
 //       if (!isDraggingRef.current) return;
-
 //       const deltaX = dragXRef.current;
-
 //       if (lockAxis.current === "h" && Math.abs(deltaX) > 50 && !isAnimatingOut) {
-//         if (deltaX < 0) {
-//           animateSwipe("left");
-//         } else if (deltaX > 0) {
-//           animateSwipe("right");
-//         }
+//         if (deltaX < 0) animateSwipe("left");
+//         else if (deltaX > 0) animateSwipe("right");
 //       }
-
 //       setIsDragging(false);
 //       setDragX(0);
 //       dragXRef.current = 0;
 //       isDraggingRef.current = false;
 //       lockAxis.current = null;
 //     };
-
 //     const handleTouchCancel = () => {
 //       setIsDragging(false);
 //       setDragX(0);
@@ -744,12 +857,10 @@
 //       isDraggingRef.current = false;
 //       lockAxis.current = null;
 //     };
-
 //     card.addEventListener("touchstart", handleTouchStart, { passive: true });
 //     card.addEventListener("touchmove", handleTouchMove, { passive: false });
 //     card.addEventListener("touchend", handleTouchEnd);
 //     card.addEventListener("touchcancel", handleTouchCancel);
-
 //     return () => {
 //       card.removeEventListener("touchstart", handleTouchStart);
 //       card.removeEventListener("touchmove", handleTouchMove);
@@ -766,27 +877,19 @@
 //     setIsDragging(true);
 //     (e.target as HTMLElement).setPointerCapture(e.pointerId);
 //   };
-
 //   const handlePointerMove = (e: React.PointerEvent) => {
 //     if (!isDraggingRef.current || isAnimatingOut) return;
 //     const deltaX = e.clientX - startX.current;
 //     dragXRef.current = deltaX;
 //     setDragX(deltaX);
 //   };
-
 //   const handlePointerUp = (e: React.PointerEvent) => {
 //     if (!isDraggingRef.current) return;
-
 //     const deltaX = dragXRef.current;
-
 //     if (Math.abs(deltaX) > 50 && !isAnimatingOut) {
-//       if (deltaX < 0) {
-//         animateSwipe("left");
-//       } else if (deltaX > 0) {
-//         animateSwipe("right");
-//       }
+//       if (deltaX < 0) animateSwipe("left");
+//       else if (deltaX > 0) animateSwipe("right");
 //     }
-
 //     setIsDragging(false);
 //     setDragX(0);
 //     dragXRef.current = 0;
@@ -801,19 +904,12 @@
 //         transition: "transform 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1), opacity 0.25s ease",
 //       };
 //     }
-
 //     if (isDragging && dragX !== 0) {
 //       const rotate = dragX * 0.03;
-//       return {
-//         transform: `translateX(${dragX}px) rotate(${rotate}deg)`,
-//         transition: "none",
-//         cursor: "grabbing",
-//       };
+//       return { transform: `translateX(${dragX}px) rotate(${rotate}deg)`, transition: "none", cursor: "grabbing" };
 //     }
-
 //     return {
-//       transform: "translateX(0px) rotate(0deg)",
-//       opacity: 1,
+//       transform: "translateX(0px) rotate(0deg)", opacity: 1,
 //       transition: "transform 0.4s cubic-bezier(0.2, 0.9, 0.4, 1.1), opacity 0.2s ease",
 //       cursor: "grab",
 //     };
@@ -821,9 +917,9 @@
 
 //   const likeOpacity = dragX > 30 ? Math.min((dragX - 30) / 70, 1) : 0;
 //   const skipOpacity = dragX < -30 ? Math.min((-dragX - 30) / 70, 1) : 0;
-
 //   const alreadyVoted = currentItem ? votedPlayerIds.has(currentItem.id) : false;
 
+//   // ── Guards ─────────────────────────────────────────────────────────────────
 //   if (showCreate) return <CreateBattle onClose={() => setShowCreate(false)} />;
 
 //   if (loading) {
@@ -844,16 +940,61 @@
 //           <div className="w-20 h-20 rounded-full bg-[#1a1a2e] flex items-center justify-center mx-auto mb-4">
 //             <span className="text-3xl">⚔️</span>
 //           </div>
-//           <h2 className="text-white text-xl font-bold mb-2">No Battles Found</h2>
+//           <h2 className="text-white text-xl font-bold mb-2">No Battles Available</h2>
 //           <p className="text-gray-400 text-sm mb-6">
-//             You haven&apos;t created any battles yet. Create one to start challenging friends!
+//             {!user?.userId
+//               ? "Sign in to create battles and challenge friends!"
+//               : "Create a battle to start voting and competing!"}
 //           </p>
-//           <button onClick={() => setShowCreate(true)}
-//             className="px-6 py-3 rounded-xl bg-gradient-to-r from-pink-500 to-orange-500 text-white font-semibold">
-//             Create Your First Battle
-//           </button>
+//           {user?.userId && (
+//             <button onClick={() => setShowCreate(true)}
+//               className="px-6 py-3 rounded-xl bg-gradient-to-r from-pink-500 to-orange-500 text-white font-semibold">
+//               Create Your First Battle
+//             </button>
+//           )}
 //         </div>
 //       </div>
+//     );
+//   }
+
+//   // ── Battle result / next battle / all done screen ──────────────────────────
+//   if (showBattleResult) {
+//     const nextIndex = currentBattleIndex + 1;
+//     const hasNext = nextIndex < battles.length;
+//     const nextBattle = hasNext ? battles[nextIndex] : undefined;
+//     const nextItemCount = nextBattle
+//       ? (nextBattle.battleType === "CLUBS" ? nextBattle.selectedClubs : nextBattle.selectedPlayers).length
+//       : 0;
+
+//     return (
+//       <BattleResultScreen
+//         battleName={battles[currentBattleIndex]?.battleName || "Battle"}
+//         votedCount={battleStats.voted}
+//         skippedCount={battleStats.skipped}
+//         pointsGiven={battleStats.pointsGiven}
+//         hasNextBattle={hasNext}
+//         nextBattle={nextBattle}
+//         nextBattleIndex={hasNext ? nextIndex + 1 : undefined}
+//         totalBattles={battles.length}
+//         nextItemCount={nextItemCount}
+//         onPlayNext={handlePlayNextBattle}
+//         onGoHome={() => {
+//           setShowBattleResult(false);
+//           setBattleStats({ voted: 0, skipped: 0, pointsGiven: 0 });
+//           setCurrentBattleIndex(0);
+//           setCurrentIndex(0);
+//           // Re-load first battle
+//           if (battles.length > 0) {
+//             fetchItemsForBattle(battles[0]);
+//             fetchLeaderboard(battles[0].id);
+//           }
+//         }}
+//         onCreateBattle={() => {
+//           setShowBattleResult(false);
+//           setShowCreate(true);
+//         }}
+//         isLoggedIn={!!user?.userId}
+//       />
 //     );
 //   }
 
@@ -868,12 +1009,11 @@
 //     );
 //   }
 
+//   // ── Main card UI ───────────────────────────────────────────────────────────
 //   return (
 //     <div className="min-h-screen flex flex-col items-center justify-start bg-[#07070f] py-6 px-4 select-none overflow-hidden">
 //       {toast && <Toast message={toast.message} type={toast.type} />}
-
 //       {showHowItWorks && <HowFanBattleWorksModal onClose={() => setShowHowItWorks(false)} />}
-
 //       {showLeaderboard && (
 //         <LeaderboardModal
 //           battleName={battles[currentBattleIndex]?.battleName || "Battle"}
@@ -883,10 +1023,11 @@
 //         />
 //       )}
 
-//       <div className="w-full max-w-sm flex flex-col  items-start sm:items-center justify-between gap-3 sm:gap-0 mb-5">
-//         <div className="flex items-center justify-betweeen gap-2 w-full sm:w-auto">
+//       <div className="w-full max-w-sm flex flex-col items-start sm:items-center justify-between gap-3 sm:gap-0 mb-5">
+//         <div className="flex items-center justify-between gap-2 w-full sm:w-auto">
 //           <p className="text-gray-500 text-lg sm:text-2xl font-bold mt-0.5 flex-1 sm:flex-none truncate">
-//             {battles[currentBattleIndex]?.battleName?.charAt(0).toUpperCase() + battles[currentBattleIndex]?.battleName?.slice(1) || "Swipe to support"}
+//             {battles[currentBattleIndex]?.battleName?.charAt(0).toUpperCase() +
+//               battles[currentBattleIndex]?.battleName?.slice(1) || "Swipe to support"}
 //           </p>
 //           <button
 //             onClick={() => setShowHowItWorks(true)}
@@ -897,25 +1038,17 @@
 //             i
 //           </button>
 //         </div>
-
 //         <div className="flex gap-3 w-full sm:w-auto">
-//           {/* Create Button */}
 //           <button
 //             onClick={() => setShowCreate(true)}
-//             className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 rounded-md text-pink-500 border border-pink-600 bg-transparent text-xs sm:text-sm font-medium 
-//       hover:bg-pink-600/10 hover:shadow-[0_0_10px_rgba(236,72,153,0.4)] transition-all duration-200"
+//             className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 rounded-md text-pink-500 border border-pink-600 bg-transparent text-xs sm:text-sm font-medium hover:bg-pink-600/10 hover:shadow-[0_0_10px_rgba(236,72,153,0.4)] transition-all duration-200"
 //           >
 //             <Pencil className="w-3 h-3" />
 //             <span className="inline sm:inline">Create</span>
 //           </button>
-
-//           {/* Invite Button */}
 //           <button
-//             onClick={() => {
-//               // Add your invite logic here
-//             }}
-//             className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 rounded-md text-pink-500 border border-pink-600 bg-transparent text-xs sm:text-sm font-medium 
-//       hover:bg-pink-600/10 hover:shadow-[0_0_10px_rgba(236,72,153,0.4)] transition-all duration-200"
+//             onClick={() => {}}
+//             className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 rounded-md text-pink-500 border border-pink-600 bg-transparent text-xs sm:text-sm font-medium hover:bg-pink-600/10 hover:shadow-[0_0_10px_rgba(236,72,153,0.4)] transition-all duration-200"
 //           >
 //             <Users className="w-3 h-3" />
 //             <span className="inline sm:inline">Invite</span>
@@ -969,21 +1102,14 @@
 //             "bottom-3 left-3 border-b-2 border-l-2", "bottom-3 right-3 border-b-2 border-r-2"].map((cls, i) => (
 //               <div key={i} className={`absolute w-5 h-5 ${cls} rounded-sm`} style={{ borderColor: `${color.stroke}70` }} />
 //             ))}
-
 //           <div className="absolute left-4 top-1/2 w-1.5 h-1.5 rounded-full" style={{ background: `${color.stroke}55` }} />
 //           <div className="absolute right-4 top-1/2 w-1.5 h-1.5 rounded-full" style={{ background: `${color.stroke}55` }} />
-
 //           <div className="absolute top-0 left-0 right-0 h-px"
 //             style={{ background: `linear-gradient(90deg, transparent, ${color.stroke}cc, transparent)` }} />
 
 //           {alreadyVoted && (
 //             <div className="absolute top-3 left-1/2 z-20 px-3 py-1 rounded-full text-[10px] font-bold"
-//               style={{
-//                 transform: "translateX(-50%)",
-//                 background: "rgba(74,222,128,0.15)",
-//                 border: "1px solid #4ade8066",
-//                 color: "#4ade80",
-//               }}>
+//               style={{ transform: "translateX(-50%)", background: "rgba(74,222,128,0.15)", border: "1px solid #4ade8066", color: "#4ade80" }}>
 //               ✓ Voted
 //             </div>
 //           )}
@@ -995,7 +1121,6 @@
 //               +15 PTS
 //             </div>
 //           </div>
-
 //           <div className="absolute inset-0 flex items-center justify-end pr-7 pointer-events-none z-10"
 //             style={{ opacity: skipOpacity, transition: isDragging ? "none" : "opacity 0.15s" }}>
 //             <div className="font-black text-2xl tracking-widest border-4 rounded-xl px-4 py-2"
@@ -1008,14 +1133,9 @@
 //             <div className="relative flex items-center justify-center mb-4" style={{ width: 250, height: 250 }}>
 //               <div className="absolute inset-0"
 //                 style={{ background: `radial-gradient(ellipse at center, ${color.glow} 0%, transparent 68%)`, filter: "blur(16px)", transform: "scale(1.4)" }} />
-
 //               {currentItem?.type === "CLUB" ? (
-//                 <img
-//                   src={currentItem.avatar || "/images/default-club.png"}
-//                   alt={currentItem.name}
-//                   className="w-[200px] h-[200px] object-contain relative z-10 rounded-2xl"
-//                   draggable={false}
-//                 />
+//                 <img src={currentItem.avatar || "/images/default-club.png"} alt={currentItem.name}
+//                   className="w-[200px] h-[200px] object-contain relative z-10 rounded-2xl" draggable={false} />
 //               ) : (
 //                 <>
 //                   <img
@@ -1046,7 +1166,6 @@
 
 //             <h2 className="text-white text-lg font-bold text-center leading-snug">{currentItem.name}</h2>
 //             <p className="text-gray-500 text-xs mt-1 text-center">{currentItem.team || "IPL"}</p>
-
 //             <div className="flex items-center gap-2 mt-3 mb-4">
 //               <span className="text-white text-[10px] font-bold tracking-wider px-3 py-1 rounded-sm"
 //                 style={{ background: `linear-gradient(90deg, ${color.from}, ${color.to})` }}>
@@ -1083,7 +1202,9 @@
 //                   </div>
 //                   <div className="flex flex-col items-center justify-center rounded-xl py-2.5"
 //                     style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
-//                     <span className="text-white text-sm font-bold leading-tight">{typeof currentItem.strikeRate === "number" ? currentItem.strikeRate.toFixed(1) : currentItem.strikeRate || "0.0"}</span>
+//                     <span className="text-white text-sm font-bold leading-tight">
+//                       {typeof currentItem.strikeRate === "number" ? currentItem.strikeRate.toFixed(1) : currentItem.strikeRate || "0.0"}
+//                     </span>
 //                     <span className="text-gray-600 text-[9px] font-bold tracking-widest mt-0.5">STRIKE RATE</span>
 //                   </div>
 //                   <div className="flex flex-col items-center justify-center rounded-xl py-2.5"
@@ -1116,12 +1237,10 @@
 //           </span>
 //           Skip
 //         </button>
-
 //         <div className="text-center">
 //           <p className="text-[10px] text-gray-600 font-bold tracking-widest">SWIPE RIGHT</p>
 //           <p className="text-xs font-black" style={{ color: color.stroke }}>+15 PTS</p>
 //         </div>
-
 //         <button onClick={() => animateSwipe("right")}
 //           className="flex items-center gap-2 text-xs font-semibold transition-colors"
 //           style={{ color: alreadyVoted ? "#6b7280" : color.stroke }}
@@ -1129,9 +1248,7 @@
 //           {alreadyVoted ? "Voted ✓" : "Like"}
 //           <span className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm"
 //             style={{
-//               background: alreadyVoted
-//                 ? "rgba(107,114,128,0.3)"
-//                 : `linear-gradient(135deg, ${color.from}, ${color.to})`,
+//               background: alreadyVoted ? "rgba(107,114,128,0.3)" : `linear-gradient(135deg, ${color.from}, ${color.to})`,
 //               boxShadow: alreadyVoted ? "none" : `0 0 14px ${color.glow}`,
 //             }}>
 //             →
@@ -1165,13 +1282,6 @@
 //     </div>
 //   );
 // }
-
-
-
-
-
-
-
 
 
 
@@ -1279,7 +1389,7 @@ const getJerseys = [
   { team: "Lucknow Super Giants", path: "/images/LSG1.png" },
 ];
 
-// Toast notification
+// ── Toast ──────────────────────────────────────────────────────────────────────
 function Toast({ message, type }: { message: string; type: "success" | "skip" | "error" }) {
   const bg =
     type === "success" ? "rgba(74,222,128,0.15)" :
@@ -1307,7 +1417,7 @@ function Toast({ message, type }: { message: string; type: "success" | "skip" | 
   );
 }
 
-// Leaderboard Modal
+// ── Leaderboard Modal ──────────────────────────────────────────────────────────
 function LeaderboardModal({
   battleName,
   leaderboard,
@@ -1336,7 +1446,6 @@ function LeaderboardModal({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="w-10 h-1 bg-gray-700 rounded-full mx-auto mb-5" />
-
         <div className="flex items-center justify-between mb-5">
           <div>
             <h2 className="text-white font-bold text-lg">Leaderboard</h2>
@@ -1350,7 +1459,6 @@ function LeaderboardModal({
             ✕
           </button>
         </div>
-
         {leaderboard.length === 0 ? (
           <div className="text-center py-10">
             <p className="text-4xl mb-3">🏆</p>
@@ -1375,7 +1483,6 @@ function LeaderboardModal({
                   <span className="text-xl w-7 text-center">
                     {entry.rank <= 3 ? medals[entry.rank - 1] : `${entry.rank}`}
                   </span>
-
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <p className="text-white font-semibold text-sm truncate">{entry.playerName}</p>
@@ -1388,12 +1495,8 @@ function LeaderboardModal({
                     </div>
                     <p className="text-gray-600 text-[10px] mt-0.5">{entry.votes} vote{entry.votes !== 1 ? "s" : ""}</p>
                   </div>
-
                   <div className="text-right">
-                    <p
-                      className="font-black text-base"
-                      style={{ color: entry.rank <= 3 ? color.stroke : "#9ca3af" }}
-                    >
+                    <p className="font-black text-base" style={{ color: entry.rank <= 3 ? color.stroke : "#9ca3af" }}>
                       {entry.points}
                     </p>
                     <p className="text-gray-700 text-[9px] font-bold tracking-wider">PTS</p>
@@ -1408,7 +1511,7 @@ function LeaderboardModal({
   );
 }
 
-
+// ── How Fan Battle Works Modal ─────────────────────────────────────────────────
 function HowFanBattleWorksModal({ onClose }: { onClose: () => void }) {
   return (
     <div
@@ -1426,12 +1529,11 @@ function HowFanBattleWorksModal({ onClose }: { onClose: () => void }) {
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Fixed Header */}
         <div
           className="sticky top-0 z-20 flex flex-col items-center pt-6 pb-4 px-5 flex-shrink-0"
           style={{
             background: "linear-gradient(180deg, #1a0d2e 0%, #1a0d2e 100%)",
-            borderBottom: "1px solid rgba(255,255,255,0.06)"
+            borderBottom: "1px solid rgba(255,255,255,0.06)",
           }}
         >
           <div className="w-12 h-12 rounded-full flex items-center justify-center mb-3"
@@ -1443,8 +1545,6 @@ function HowFanBattleWorksModal({ onClose }: { onClose: () => void }) {
             Engage with player cards to support your favorites and influence the game!
           </p>
         </div>
-
-        {/* Fixed X Button */}
         <button
           onClick={onClose}
           className="absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center text-gray-500 hover:text-white transition-colors z-30"
@@ -1452,17 +1552,11 @@ function HowFanBattleWorksModal({ onClose }: { onClose: () => void }) {
         >
           ✕
         </button>
-
-        {/* Scrollable Content */}
         <div
           className="flex-1 overflow-y-auto px-4 sm:px-5 py-4 sm:py-5"
-          style={{
-            scrollbarWidth: "thin",
-            scrollbarColor: "rgba(255,255,255,0.2) rgba(0,0,0,0.2)"
-          }}
+          style={{ scrollbarWidth: "thin", scrollbarColor: "rgba(255,255,255,0.2) rgba(0,0,0,0.2)" }}
         >
           <div className="flex flex-col gap-3">
-            {/* Swipe Right */}
             <div className="rounded-xl sm:rounded-2xl p-3 sm:p-4"
               style={{ background: "rgba(16,185,129,0.07)", border: "1px solid rgba(16,185,129,0.2)" }}>
               <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
@@ -1473,11 +1567,7 @@ function HowFanBattleWorksModal({ onClose }: { onClose: () => void }) {
                 <span className="font-bold text-xs sm:text-sm" style={{ color: "#10b981" }}>Swipe Right →</span>
               </div>
               <ul className="flex flex-col gap-1.5">
-                {[
-                  "Like the player and add them to your favorites",
-                  "Boost their Power Points +15",
-                  "See more similar players"
-                ].map((text) => (
+                {["Like the player and add them to your favorites", "Boost their Power Points +15", "See more similar players"].map((text) => (
                   <li key={text} className="flex items-start gap-2 text-xs text-gray-300">
                     <span className="mt-1 w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: "#10b981" }} />
                     <span className="flex-1">{text}</span>
@@ -1485,8 +1575,6 @@ function HowFanBattleWorksModal({ onClose }: { onClose: () => void }) {
                 ))}
               </ul>
             </div>
-
-            {/* Swipe Left */}
             <div className="rounded-xl sm:rounded-2xl p-3 sm:p-4"
               style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
               <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
@@ -1497,11 +1585,7 @@ function HowFanBattleWorksModal({ onClose }: { onClose: () => void }) {
                 <span className="font-bold text-xs sm:text-sm text-gray-300">Swipe Left ←</span>
               </div>
               <ul className="flex flex-col gap-1.5">
-                {[
-                  "Skip to the next player",
-                  "No points awarded",
-                  "Help us learn your preferences"
-                ].map((text) => (
+                {["Skip to the next player", "No points awarded", "Help us learn your preferences"].map((text) => (
                   <li key={text} className="flex items-start gap-2 text-xs text-gray-400">
                     <span className="mt-1 w-1.5 h-1.5 rounded-full flex-shrink-0 bg-gray-600" />
                     <span className="flex-1">{text}</span>
@@ -1509,8 +1593,6 @@ function HowFanBattleWorksModal({ onClose }: { onClose: () => void }) {
                 ))}
               </ul>
             </div>
-
-            {/* Pro Tip */}
             <div className="rounded-xl sm:rounded-2xl p-3 sm:p-4"
               style={{ background: "rgba(236,72,153,0.07)", border: "1px solid rgba(236,72,153,0.2)" }}>
               <div className="flex items-center gap-2 mb-2">
@@ -1524,45 +1606,211 @@ function HowFanBattleWorksModal({ onClose }: { onClose: () => void }) {
           </div>
         </div>
       </div>
-
       <style jsx>{`
         @keyframes slideUp {
-          from {
-            opacity: 0;
-            transform: translateY(20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
         }
-        
-        /* Custom scrollbar styling */
-        .overflow-y-auto::-webkit-scrollbar {
-          width: 4px;
-        }
-        
-        .overflow-y-auto::-webkit-scrollbar-track {
-          background: rgba(0, 0, 0, 0.2);
-          border-radius: 10px;
-        }
-        
-        .overflow-y-auto::-webkit-scrollbar-thumb {
-          background: rgba(255, 255, 255, 0.2);
-          border-radius: 10px;
-        }
-        
-        .overflow-y-auto::-webkit-scrollbar-thumb:hover {
-          background: rgba(255, 255, 255, 0.3);
-        }
+        .overflow-y-auto::-webkit-scrollbar { width: 4px; }
+        .overflow-y-auto::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); border-radius: 10px; }
+        .overflow-y-auto::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
+        .overflow-y-auto::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.3); }
       `}</style>
     </div>
   );
 }
 
-// Main Component
+// ── Battle Result Screen ───────────────────────────────────────────────────────
+function BattleResultScreen({
+  battleName,
+  votedCount,
+  skippedCount,
+  pointsGiven,
+  hasNextBattle,
+  nextBattle,
+  nextBattleIndex,
+  totalBattles,
+  nextItemCount,
+  onPlayNext,
+  onCreateBattle,
+  isLoggedIn,
+}: {
+  battleName: string;
+  votedCount: number;
+  skippedCount: number;
+  pointsGiven: number;
+  hasNextBattle: boolean;
+  nextBattle?: Battle;
+  nextBattleIndex?: number;
+  totalBattles?: number;
+  nextItemCount?: number;
+  onPlayNext: () => void;
+  onCreateBattle: () => void;
+  isLoggedIn: boolean;
+}) {
+  if (!hasNextBattle) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#07070f] px-4">
+        <div className="w-full max-w-sm flex flex-col gap-4">
+          <div className="flex flex-col items-center gap-4 bg-[#0f1520] rounded-2xl px-5 py-6"
+            style={{ border: "1px solid rgba(255,255,255,0.07)" }}>
+            <div className="w-14 h-14 rounded-full flex items-center justify-center"
+              style={{ background: "rgba(74,222,128,0.1)", border: "1px solid rgba(74,222,128,0.25)" }}>
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+                <path d="M5 13l4 4L19 7" stroke="#4ade80" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </div>
+            <div className="text-center">
+              <h2 className="text-white text-xl font-bold">Battle complete!</h2>
+              <p className="text-gray-500 text-xs mt-1 truncate max-w-[220px]">{battleName}</p>
+            </div>
+            <div className="w-full grid grid-cols-3 gap-2">
+              {[
+                { label: "VOTED", value: votedCount, color: "#4ade80" },
+                { label: "SKIPPED", value: skippedCount, color: "#9ca3af" },
+                { label: "PTS GIVEN", value: `+${pointsGiven}`, color: "#60a5fa" },
+              ].map(({ label, value, color }) => (
+                <div key={label} className="flex flex-col items-center justify-center rounded-xl py-3"
+                  style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
+                  <span className="text-lg font-bold" style={{ color }}>{value}</span>
+                  <span className="text-[9px] font-bold tracking-widest mt-0.5 text-gray-600">{label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="flex flex-col items-center gap-4 bg-[#0f1520] rounded-2xl px-5 py-6"
+            style={{ border: "1px solid rgba(255,255,255,0.07)" }}>
+            <div className="w-14 h-14 rounded-full flex items-center justify-center"
+              style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}>
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="10" stroke="#9ca3af" strokeWidth="1.5" />
+                <path d="M12 7v5l3 3" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </div>
+            <div className="text-center">
+              <h3 className="text-white font-bold text-base">All battles played!</h3>
+              <p className="text-gray-400 text-xs mt-1.5 leading-relaxed">
+                You&apos;ve completed all available battles. Check back soon for new ones!
+              </p>
+            </div>
+            <div className="w-full h-px bg-[#1e2535]" />
+            <div className="w-full flex flex-col gap-2.5">
+              {isLoggedIn && (
+                <button
+                  onClick={onCreateBattle}
+                  className="w-full py-3 rounded-xl text-sm font-bold text-white"
+                  style={{ background: "linear-gradient(90deg, #e91e8c, #ff6b35)" }}>
+                  Create a battle
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center bg-[#07070f] px-4">
+      <div className="w-full max-w-sm flex flex-col gap-4">
+        <div className="flex flex-col items-center gap-4 bg-[#0f1520] rounded-2xl px-5 py-6"
+          style={{ border: "1px solid rgba(255,255,255,0.07)" }}>
+          <div className="w-14 h-14 rounded-full flex items-center justify-center"
+            style={{ background: "rgba(74,222,128,0.1)", border: "1px solid rgba(74,222,128,0.25)" }}>
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+              <path d="M5 13l4 4L19 7" stroke="#4ade80" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </div>
+          <div className="text-center">
+            <h2 className="text-white text-xl font-bold">Battle complete!</h2>
+            <p className="text-gray-500 text-xs mt-1 truncate max-w-[220px]">{battleName}</p>
+          </div>
+          <div className="w-full grid grid-cols-3 gap-2">
+            {[
+              { label: "VOTED", value: votedCount, color: "#4ade80" },
+              { label: "SKIPPED", value: skippedCount, color: "#9ca3af" },
+              { label: "PTS GIVEN", value: `+${pointsGiven}`, color: "#60a5fa" },
+            ].map(({ label, value, color }) => (
+              <div key={label} className="flex flex-col items-center justify-center rounded-xl py-3"
+                style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
+                <span className="text-lg font-bold" style={{ color }}>{value}</span>
+                <span className="text-[9px] font-bold tracking-widest mt-0.5 text-gray-600">{label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="flex flex-col items-center gap-4 bg-[#0f1520] rounded-2xl px-5 py-6"
+          style={{ border: "1px solid rgba(236,72,153,0.25)" }}>
+          <div className="w-10 h-10 rounded-full flex items-center justify-center"
+            style={{ background: "rgba(236,72,153,0.1)", border: "1px solid rgba(236,72,153,0.3)" }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <path d="M9 18l6-6-6-6" stroke="#ec4899" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </div>
+          <div className="text-center">
+            <p className="text-[10px] font-bold tracking-widest text-gray-600">
+              NEXT UP · BATTLE {nextBattleIndex} OF {totalBattles}
+            </p>
+            <h3 className="text-white font-bold text-base mt-1">
+              {nextBattle?.battleName
+                ? nextBattle.battleName.charAt(0).toUpperCase() + nextBattle.battleName.slice(1)
+                : "Next Battle"}
+            </h3>
+            <p className="text-gray-500 text-xs mt-0.5">
+              {nextItemCount} {nextBattle?.battleType === "CLUBS" ? "clubs" : "players"}
+            </p>
+          </div>
+          <div className="w-full h-px bg-[#1e2535]" />
+          <div className="w-full flex flex-col gap-2.5">
+            <button
+              onClick={onPlayNext}
+              className="w-full py-3 rounded-xl text-sm font-bold text-white"
+              style={{ background: "linear-gradient(90deg, #e91e8c, #ff6b35)" }}>
+              Start battle
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Already Played Screen ──────────────────────────────────────────────────────
+function AlreadyPlayedScreen({
+  onCreateBattle,
+  isLoggedIn,
+}: {
+  onCreateBattle: () => void;
+  isLoggedIn: boolean;
+}) {
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center bg-[#07070f] px-4">
+      <div className="text-center max-w-sm">
+        <div className="w-20 h-20 rounded-full bg-[#1a1a2e] flex items-center justify-center mx-auto mb-4"
+          style={{ border: "1px solid rgba(255,255,255,0.08)" }}>
+          <span className="text-3xl">✅</span>
+        </div>
+        <h2 className="text-white text-xl font-bold mb-2">You&apos;ve played all battles!</h2>
+        <p className="text-gray-400 text-sm mb-6 leading-relaxed">
+          Check back soon for new battles, or create your own to challenge friends.
+        </p>
+        {isLoggedIn && (
+          <button
+            onClick={onCreateBattle}
+            className="px-6 py-3 rounded-xl text-white font-semibold"
+            style={{ background: "linear-gradient(90deg, #e91e8c, #ff6b35)" }}
+          >
+            Create a Battle
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Main Component ─────────────────────────────────────────────────────────────
 export default function FanBattleCard() {
-  const { user, getUserDisplayName } = useAuth();
+  const { user, loading: authLoading, getUserDisplayName } = useAuth();
   const { refreshLeaderboard } = useLeaderboard();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [displayNumber, setDisplayNumber] = useState<number | string>("--");
@@ -1574,7 +1822,9 @@ export default function FanBattleCard() {
   const [showCreate, setShowCreate] = useState(false);
   const [showHowItWorks, setShowHowItWorks] = useState(false);
 
+  // ── battles: all accessible; playableBattles: not yet interacted with ─────
   const [battles, setBattles] = useState<Battle[]>([]);
+  const [playableBattles, setPlayableBattles] = useState<Battle[]>([]);
   const [currentBattleIndex, setCurrentBattleIndex] = useState(0);
   const [currentItems, setCurrentItems] = useState<ExtendedPlayer[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1583,10 +1833,16 @@ export default function FanBattleCard() {
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: "success" | "skip" | "error" } | null>(null);
-  const [isVoting, setIsVoting] = useState(false);
+
+  const [showBattleResult, setShowBattleResult] = useState(false);
+  const [battleStats, setBattleStats] = useState({ voted: 0, skipped: 0, pointsGiven: 0 });
+  // Snapshot of the battle name at completion time (before removal from list)
+  const [completedBattleName, setCompletedBattleName] = useState("");
+
+  // Track in-flight vote promises so result waits for the last one
+  const pendingVotePromises = useRef<Promise<void>[]>([]);
 
   const startX = useRef(0);
-  const startY = useRef(0);
   const isDraggingRef = useRef(false);
   const dragXRef = useRef(0);
   const lockAxis = useRef<"h" | "v" | null>(null);
@@ -1601,22 +1857,11 @@ export default function FanBattleCard() {
     toastTimeout.current = setTimeout(() => setToast(null), 2200);
   };
 
-  // ✅ Updated permission logic:
-  // - Admin battles (userId === "admin_001"): visible to everyone
-  // - Non-admin battles: only visible to creator and invited friends
-  // - Non-logged-in users: can only see admin battles
   const checkPermission = useCallback(
     (battle: Battle): boolean => {
-      // ✅ ADMIN BATTLES: Always visible to everyone
       if (battle.userId === "admin_001") return true;
-
-      // ✅ Non-logged-in users: only see admin battles (already handled above)
       if (!user?.userId) return false;
-
-      // ✅ Battle creator: can see their own battles
       if (battle.userId === user.userId) return true;
-
-      // ✅ Invited friends: can see battles they're invited to
       return !!battle.invitedFriends?.some((f) => f.email === user.email);
     },
     [user]
@@ -1636,41 +1881,102 @@ export default function FanBattleCard() {
     }
   }, [user]);
 
+  // ── Fetch battles + which ones user already interacted with ───────────────
+  // useEffect(() => {
+  //   const fetchBattles = async () => {
+  //     try {
+  //       setLoading(true);
+
+  //       const [battlesRes, playedRes] = await Promise.all([
+  //         axios.get(`/api/battle`),
+  //         user?.userId
+  //           ? axios.get(`/api/battle/battle-vote?userId=${user.userId}&checkPlayed=true`)
+  //           : Promise.resolve({ data: { interactedBattleIds: [] } }),
+  //       ]);
+
+  //       if (battlesRes.data.success && battlesRes.data.battles) {
+  //         const accessible: Battle[] = battlesRes.data.battles.filter(checkPermission);
+
+  //         // Any battle the user has touched at all (left or right) is "played"
+  //         const interactedIds = new Set<string>(playedRes.data.interactedBattleIds ?? []);
+  //         const unplayed = accessible.filter((b) => !interactedIds.has(b.id));
+
+  //         setBattles(accessible);
+  //         setPlayableBattles(unplayed);
+
+  //         if (unplayed.length > 0) {
+  //           await fetchItemsForBattle(unplayed[0]);
+  //           await fetchLeaderboard(unplayed[0].id);
+  //         }
+  //       }
+  //     } catch (err) {
+  //       console.error("Error fetching battles:", err);
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
+  //   fetchBattles();
+  // }, [user, checkPermission, fetchLeaderboard]);
+
   useEffect(() => {
+    if (authLoading) return;
+    
     const fetchBattles = async () => {
-      try {
-        setLoading(true);
-        // Fetch ALL battles from the API
-        const response = await axios.get(`/api/battle`);
-        
-        if (response.data.success && response.data.battles) {
-          // Filter battles based on permission rules
-          const accessible = response.data.battles.filter(checkPermission);
-          setBattles(accessible);
-          
-          if (accessible.length > 0) {
-            await fetchItemsForBattle(accessible[0]);
-            await fetchLeaderboard(accessible[0].id);
-          }
+    try {
+      setLoading(true);
+
+      // Fetch all battles
+      const battlesRes = await axios.get(`/api/battle`);
+      
+      // Fetch played battles separately
+      let interactedIds: string[] = [];
+      if (user?.userId) {
+        try {
+          const playedRes = await axios.get(`/api/battle/battle-vote?userId=${user.userId}&checkPlayed=true`);
+          console.log("Played battles response:", playedRes.data);
+          interactedIds = playedRes.data.interactedBattleIds || [];
+        } catch (err) {
+          console.error("Error fetching played battles:", err);
         }
-      } catch (err) {
-        console.error("Error fetching battles:", err);
-      } finally {
-        setLoading(false);
       }
-    };
+
+      if (battlesRes.data.success && battlesRes.data.battles) {
+        const accessible: Battle[] = battlesRes.data.battles.filter(checkPermission);
+        
+        // Filter out played battles
+        const interactedSet = new Set(interactedIds);
+        const unplayed = accessible.filter((b) => !interactedSet.has(b.id));
+        
+        console.log("Accessible Battle IDs:", accessible.map(b => b.id));
+        console.log("Interacted Battle IDs:", interactedIds);
+        console.log("All battles:", accessible.length);
+        console.log("Played battle IDs:", interactedIds);
+        console.log("Unplayed battles:", unplayed.length);
+
+        setBattles(accessible);
+        setPlayableBattles(unplayed);
+
+        if (unplayed.length > 0) {
+          await fetchItemsForBattle(unplayed[0]);
+          await fetchLeaderboard(unplayed[0].id);
+        } else {
+          setCurrentItems([]);
+        }
+      }
+    } catch (err) {
+      console.error("Error fetching battles:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
     fetchBattles();
-  }, [user, checkPermission, fetchLeaderboard]);
+  }, [user, authLoading, checkPermission]); // Add authLoading to dependencies
 
   const fetchItemsForBattle = async (battle: Battle) => {
     const isClubBattle = battle.battleType === "CLUBS";
     const ids = isClubBattle ? battle.selectedClubs : battle.selectedPlayers;
-
-    if (!ids || ids.length === 0) {
-      setCurrentItems([]);
-      return;
-    }
-
+    if (!ids || ids.length === 0) { setCurrentItems([]); return; }
     try {
       const promises = ids.map(async (id) => {
         try {
@@ -1679,8 +1985,7 @@ export default function FanBattleCard() {
             if (response.data.success) {
               const club = response.data.profile;
               const entity: ExtendedPlayer = {
-                id,
-                type: "CLUB",
+                id, type: "CLUB",
                 name: club.name || "Unknown Club",
                 team: club.team || "IPL",
                 city: club.overview?.venue || "",
@@ -1700,15 +2005,12 @@ export default function FanBattleCard() {
             return null;
           } else {
             const response = await axios.get(`/api/player-profile/${id}`);
-            const jerseyRes = await axios.get(
-              `/api/player-profile/seasonstats?playerProfilesId=${id}`
-            );
+            const jerseyRes = await axios.get(`/api/player-profile/seasonstats?playerProfilesId=${id}`);
             const playerData = response.data.profile || response.data.data || response.data;
             const jerseyData = jerseyRes.data.seasons || jerseyRes.data.data || jerseyRes.data;
             const jerseyInfo = jerseyData?.[0]?.season?.jerseyNo || null;
             const player: ExtendedPlayer = {
-              id,
-              type: "PLAYER",
+              id, type: "PLAYER",
               name: playerData.name || "Unknown",
               playerName: playerData.name,
               jerseyNumber: jerseyInfo || playerData.jerseyNumber || "--",
@@ -1728,10 +2030,11 @@ export default function FanBattleCard() {
           return null;
         }
       });
-
       const items = (await Promise.all(promises)).filter(Boolean) as ExtendedPlayer[];
       setCurrentItems(items);
       setCurrentIndex(0);
+      setBattleStats({ voted: 0, skipped: 0, pointsGiven: 0 });
+      pendingVotePromises.current = [];
     } catch (err) {
       console.error("Error in fetchItemsForBattle:", err);
       setCurrentItems([]);
@@ -1739,73 +2042,85 @@ export default function FanBattleCard() {
   };
 
   const recordVote = useCallback(
-    async (item: ExtendedPlayer, direction: "left" | "right") => {
-      if (!user?.userId || !battles[currentBattleIndex]) return;
-      if (isVoting) return;
-
-      const battleId = battles[currentBattleIndex].id;
+    (item: ExtendedPlayer, direction: "left" | "right"): Promise<void> => {
+      if (!user?.userId || !playableBattles[currentBattleIndex]) return Promise.resolve();
+      const battleId = playableBattles[currentBattleIndex].id;
 
       if (direction === "right" && votedPlayerIds.has(item.id)) {
         showToast("Already voted for this item!", "error");
-        return;
+        return Promise.resolve();
       }
 
-      setIsVoting(true);
-      try {
-        const res = await axios.post("/api/battle/battle-vote", {
-          battleId,
-          playerId: item.id,
-          playerName: item.name,
-          userId: user.userId,
-          userEmail: user.email || "",
-          userName: user.name || getUserDisplayName() || "User",
-          direction,
-        });
+      const promise = (async () => {
+        try {
+          const res = await axios.post("/api/battle/battle-vote", {
+            battleId,
+            playerId: item.id,
+            playerName: item.name,
+            userId: user.userId,
+            userEmail: user.email || "",
+            userName: user.name || getUserDisplayName() || "User",
+            direction,
+          });
 
-        if (res.data.success) {
-          if (direction === "right") {
-            showToast(`+${res.data.playerPointsAwarded} pts for ${item.name}!`, "success");
-            setVotedPlayerIds((prev) => new Set([...prev, item.id]));
-            fetchLeaderboard(battleId);
-            refreshLeaderboard();
+          if (res.data.success) {
+            if (direction === "right") {
+              const pts = res.data.playerPointsAwarded || 15;
+              showToast(`+${pts} pts for ${item.name}!`, "success");
+              setVotedPlayerIds((prev) => new Set([...prev, item.id]));
+              setBattleStats((prev) => ({
+                voted: prev.voted + 1,
+                skipped: prev.skipped,
+                pointsGiven: prev.pointsGiven + pts,
+              }));
+              fetchLeaderboard(battleId);
+              refreshLeaderboard();
+            } else {
+              showToast(`Skipped ${item.name}`, "skip");
+              setBattleStats((prev) => ({ ...prev, skipped: prev.skipped + 1 }));
+            }
+          }
+        } catch (err: unknown) {
+          if (axios.isAxiosError(err) && err.response?.data?.alreadyVoted) {
+            showToast("Already voted for this item!", "error");
           } else {
-            showToast(`Skipped ${item.name}`, "skip");
+            showToast("Error recording vote", "error");
           }
         }
-      } catch (err: unknown) {
-        if (axios.isAxiosError(err) && err.response?.data?.alreadyVoted) {
-          showToast("Already voted for this item!", "error");
-        } else {
-          showToast("Error recording vote", "error");
-        }
-      } finally {
-        setIsVoting(false);
-      }
+      })();
+
+      pendingVotePromises.current.push(promise);
+      return promise;
     },
-    [user, battles, currentBattleIndex, votedPlayerIds, isVoting, fetchLeaderboard, refreshLeaderboard, getUserDisplayName]
+    [user, playableBattles, currentBattleIndex, votedPlayerIds, fetchLeaderboard, refreshLeaderboard, getUserDisplayName]
   );
 
-  const switchToNextBattle = useCallback(() => {
-    const nextIndex = currentBattleIndex + 1;
-    if (nextIndex < battles.length) {
-      const nextBattle = battles[nextIndex];
-      fetchItemsForBattle(nextBattle);
-      fetchLeaderboard(nextBattle.id);
-      setCurrentBattleIndex(nextIndex);
-      setCurrentIndex(0);
-    }
-  }, [currentBattleIndex, battles, fetchLeaderboard]);
+  // ── Wait for all votes, snapshot name, remove from list, show result ───────
+  const switchToNextBattle = useCallback(async () => {
+    await Promise.allSettled(pendingVotePromises.current);
 
-  const switchToPreviousBattle = useCallback(() => {
-    const prevIndex = currentBattleIndex - 1;
-    if (prevIndex >= 0) {
-      const prevBattle = battles[prevIndex];
-      fetchItemsForBattle(prevBattle);
-      fetchLeaderboard(prevBattle.id);
-      setCurrentBattleIndex(prevIndex);
+    // Snapshot the completed battle's name before removing it
+    const justFinishedName = playableBattles[currentBattleIndex]?.battleName || "Battle";
+    setCompletedBattleName(justFinishedName);
+
+    // Remove the completed battle — next unplayed battle shifts to currentBattleIndex
+    setPlayableBattles((prev) => prev.filter((_, i) => i !== currentBattleIndex));
+
+    setShowBattleResult(true);
+  }, [currentBattleIndex, playableBattles]);
+
+  // ── Play next: next battle is now at currentBattleIndex after removal ──────
+  const handlePlayNextBattle = useCallback(() => {
+    // After removal in switchToNextBattle, the next battle is at currentBattleIndex
+    // (the list shifted left, so no increment needed)
+    const next = playableBattles[currentBattleIndex];
+    if (next) {
+      fetchItemsForBattle(next);
+      fetchLeaderboard(next.id);
       setCurrentIndex(0);
+      setShowBattleResult(false);
     }
-  }, [currentBattleIndex, battles, fetchLeaderboard]);
+  }, [currentBattleIndex, playableBattles, fetchLeaderboard]);
 
   const currentItem = currentItems[currentIndex];
   const color = currentItem?.jerseyColor || getJerseyColor("Default");
@@ -1850,38 +2165,39 @@ export default function FanBattleCard() {
     (dir: "left" | "right") => {
       if (isAnimatingOut || !currentItems.length) return;
       const currentPlayer = currentItems[currentIndex];
+      const isLastCard = currentIndex + 1 >= currentItems.length;
 
       setSwipeDir(dir);
       setIsAnimatingOut(true);
       setIsDragging(false);
       setDragX(0);
 
-      if (currentPlayer) {
-        recordVote(currentPlayer, dir);
-      }
+      const votePromise = currentPlayer ? recordVote(currentPlayer, dir) : Promise.resolve();
 
       setTimeout(() => {
-        if (currentIndex + 1 < currentItems.length) {
-          setCurrentIndex((p) => p + 1);
-        } else {
-          switchToNextBattle();
-        }
         setIsAnimatingOut(false);
         setSwipeDir(null);
         dragXRef.current = 0;
+
+        if (!isLastCard) {
+          setCurrentIndex((p) => p + 1);
+        } else {
+          // Last card: wait for final vote then show result
+          votePromise.finally(() => {
+            switchToNextBattle();
+          });
+        }
       }, 300);
     },
     [isAnimatingOut, currentIndex, currentItems, recordVote, switchToNextBattle]
   );
 
-  // Touch events for mobile
+  // ── Touch events ───────────────────────────────────────────────────────────
   useEffect(() => {
     const card = cardRef.current;
     if (!card) return;
-
     let touchStartX = 0;
     let touchStartY = 0;
-
     const handleTouchStart = (e: TouchEvent) => {
       if (isAnimatingOut) return;
       touchStartX = e.touches[0].clientX;
@@ -1890,19 +2206,15 @@ export default function FanBattleCard() {
       lockAxis.current = null;
       dragXRef.current = 0;
     };
-
     const handleTouchMove = (e: TouchEvent) => {
       if (!isDraggingRef.current || isAnimatingOut) return;
-
       const touchX = e.touches[0].clientX;
       const touchY = e.touches[0].clientY;
       const deltaX = touchX - touchStartX;
       const deltaY = touchY - touchStartY;
-
       if (!lockAxis.current && (Math.abs(deltaX) > 10 || Math.abs(deltaY) > 10)) {
         lockAxis.current = Math.abs(deltaX) > Math.abs(deltaY) ? "h" : "v";
       }
-
       if (lockAxis.current === "h") {
         e.preventDefault();
         dragXRef.current = deltaX;
@@ -1910,27 +2222,19 @@ export default function FanBattleCard() {
         setIsDragging(true);
       }
     };
-
     const handleTouchEnd = () => {
       if (!isDraggingRef.current) return;
-
       const deltaX = dragXRef.current;
-
       if (lockAxis.current === "h" && Math.abs(deltaX) > 50 && !isAnimatingOut) {
-        if (deltaX < 0) {
-          animateSwipe("left");
-        } else if (deltaX > 0) {
-          animateSwipe("right");
-        }
+        if (deltaX < 0) animateSwipe("left");
+        else if (deltaX > 0) animateSwipe("right");
       }
-
       setIsDragging(false);
       setDragX(0);
       dragXRef.current = 0;
       isDraggingRef.current = false;
       lockAxis.current = null;
     };
-
     const handleTouchCancel = () => {
       setIsDragging(false);
       setDragX(0);
@@ -1938,12 +2242,10 @@ export default function FanBattleCard() {
       isDraggingRef.current = false;
       lockAxis.current = null;
     };
-
     card.addEventListener("touchstart", handleTouchStart, { passive: true });
     card.addEventListener("touchmove", handleTouchMove, { passive: false });
     card.addEventListener("touchend", handleTouchEnd);
     card.addEventListener("touchcancel", handleTouchCancel);
-
     return () => {
       card.removeEventListener("touchstart", handleTouchStart);
       card.removeEventListener("touchmove", handleTouchMove);
@@ -1960,27 +2262,19 @@ export default function FanBattleCard() {
     setIsDragging(true);
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
   };
-
   const handlePointerMove = (e: React.PointerEvent) => {
     if (!isDraggingRef.current || isAnimatingOut) return;
     const deltaX = e.clientX - startX.current;
     dragXRef.current = deltaX;
     setDragX(deltaX);
   };
-
   const handlePointerUp = (e: React.PointerEvent) => {
     if (!isDraggingRef.current) return;
-
     const deltaX = dragXRef.current;
-
     if (Math.abs(deltaX) > 50 && !isAnimatingOut) {
-      if (deltaX < 0) {
-        animateSwipe("left");
-      } else if (deltaX > 0) {
-        animateSwipe("right");
-      }
+      if (deltaX < 0) animateSwipe("left");
+      else if (deltaX > 0) animateSwipe("right");
     }
-
     setIsDragging(false);
     setDragX(0);
     dragXRef.current = 0;
@@ -1995,19 +2289,12 @@ export default function FanBattleCard() {
         transition: "transform 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1), opacity 0.25s ease",
       };
     }
-
     if (isDragging && dragX !== 0) {
       const rotate = dragX * 0.03;
-      return {
-        transform: `translateX(${dragX}px) rotate(${rotate}deg)`,
-        transition: "none",
-        cursor: "grabbing",
-      };
+      return { transform: `translateX(${dragX}px) rotate(${rotate}deg)`, transition: "none", cursor: "grabbing" };
     }
-
     return {
-      transform: "translateX(0px) rotate(0deg)",
-      opacity: 1,
+      transform: "translateX(0px) rotate(0deg)", opacity: 1,
       transition: "transform 0.4s cubic-bezier(0.2, 0.9, 0.4, 1.1), opacity 0.2s ease",
       cursor: "grab",
     };
@@ -2015,12 +2302,12 @@ export default function FanBattleCard() {
 
   const likeOpacity = dragX > 30 ? Math.min((dragX - 30) / 70, 1) : 0;
   const skipOpacity = dragX < -30 ? Math.min((-dragX - 30) / 70, 1) : 0;
-
   const alreadyVoted = currentItem ? votedPlayerIds.has(currentItem.id) : false;
 
+  // ── Guards ─────────────────────────────────────────────────────────────────
   if (showCreate) return <CreateBattle onClose={() => setShowCreate(false)} />;
 
-  if (loading) {
+  if (loading || authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#07070f]">
         <div className="text-center">
@@ -2040,7 +2327,7 @@ export default function FanBattleCard() {
           </div>
           <h2 className="text-white text-xl font-bold mb-2">No Battles Available</h2>
           <p className="text-gray-400 text-sm mb-6">
-            {!user?.userId 
+            {!user?.userId
               ? "Sign in to create battles and challenge friends!"
               : "Create a battle to start voting and competing!"}
           </p>
@@ -2055,6 +2342,48 @@ export default function FanBattleCard() {
     );
   }
 
+  // ── All battles played — shown on refresh OR after finishing last battle ───
+  // showBattleResult must be checked BEFORE this so the result screen
+  // still renders after the last battle is removed from playableBattles
+  if (!showBattleResult && playableBattles.length === 0) {
+    return (
+      <AlreadyPlayedScreen
+        onCreateBattle={() => setShowCreate(true)}
+        isLoggedIn={!!user?.userId}
+      />
+    );
+  }
+
+  // ── Battle result screen ───────────────────────────────────────────────────
+  if (showBattleResult) {
+    // After removal in switchToNextBattle, next battle is now at currentBattleIndex
+    const nextBattle = playableBattles[currentBattleIndex];
+    const hasNext = !!nextBattle;
+    const nextItemCount = nextBattle
+      ? (nextBattle.battleType === "CLUBS" ? nextBattle.selectedClubs : nextBattle.selectedPlayers).length
+      : 0;
+
+    return (
+      <BattleResultScreen
+        battleName={completedBattleName}
+        votedCount={battleStats.voted}
+        skippedCount={battleStats.skipped}
+        pointsGiven={battleStats.pointsGiven}
+        hasNextBattle={hasNext}
+        nextBattle={nextBattle}
+        nextBattleIndex={hasNext ? currentBattleIndex + 1 : undefined}
+        totalBattles={playableBattles.length + 1} // +1 since current was already removed
+        nextItemCount={nextItemCount}
+        onPlayNext={handlePlayNextBattle}
+        onCreateBattle={() => {
+          setShowBattleResult(false);
+          setShowCreate(true);
+        }}
+        isLoggedIn={!!user?.userId}
+      />
+    );
+  }
+
   if (!currentItems.length || !currentItem) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#07070f]">
@@ -2066,15 +2395,14 @@ export default function FanBattleCard() {
     );
   }
 
+  // ── Main card UI ───────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen flex flex-col items-center justify-start bg-[#07070f] py-6 px-4 select-none overflow-hidden">
       {toast && <Toast message={toast.message} type={toast.type} />}
-
       {showHowItWorks && <HowFanBattleWorksModal onClose={() => setShowHowItWorks(false)} />}
-
       {showLeaderboard && (
         <LeaderboardModal
-          battleName={battles[currentBattleIndex]?.battleName || "Battle"}
+          battleName={playableBattles[currentBattleIndex]?.battleName || "Battle"}
           leaderboard={leaderboard}
           votedPlayerIds={Array.from(votedPlayerIds)}
           onClose={() => setShowLeaderboard(false)}
@@ -2084,7 +2412,10 @@ export default function FanBattleCard() {
       <div className="w-full max-w-sm flex flex-col items-start sm:items-center justify-between gap-3 sm:gap-0 mb-5">
         <div className="flex items-center justify-between gap-2 w-full sm:w-auto">
           <p className="text-gray-500 text-lg sm:text-2xl font-bold mt-0.5 flex-1 sm:flex-none truncate">
-            {battles[currentBattleIndex]?.battleName?.charAt(0).toUpperCase() + battles[currentBattleIndex]?.battleName?.slice(1) || "Swipe to support"}
+            {playableBattles[currentBattleIndex]?.battleName
+              ? playableBattles[currentBattleIndex].battleName.charAt(0).toUpperCase() +
+                playableBattles[currentBattleIndex].battleName.slice(1)
+              : "Swipe to support"}
           </p>
           <button
             onClick={() => setShowHowItWorks(true)}
@@ -2095,36 +2426,28 @@ export default function FanBattleCard() {
             i
           </button>
         </div>
-
         <div className="flex gap-3 w-full sm:w-auto">
-          {/* Create Button */}
           <button
             onClick={() => setShowCreate(true)}
-            className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 rounded-md text-pink-500 border border-pink-600 bg-transparent text-xs sm:text-sm font-medium 
-      hover:bg-pink-600/10 hover:shadow-[0_0_10px_rgba(236,72,153,0.4)] transition-all duration-200"
+            className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 rounded-md text-pink-500 border border-pink-600 bg-transparent text-xs sm:text-sm font-medium hover:bg-pink-600/10 hover:shadow-[0_0_10px_rgba(236,72,153,0.4)] transition-all duration-200"
           >
             <Pencil className="w-3 h-3" />
-            <span className="inline sm:inline">Create</span>
+            <span>Create</span>
           </button>
-
-          {/* Invite Button */}
           <button
-            onClick={() => {
-              // Add your invite logic here
-            }}
-            className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 rounded-md text-pink-500 border border-pink-600 bg-transparent text-xs sm:text-sm font-medium 
-      hover:bg-pink-600/10 hover:shadow-[0_0_10px_rgba(236,72,153,0.4)] transition-all duration-200"
+            onClick={() => {}}
+            className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 rounded-md text-pink-500 border border-pink-600 bg-transparent text-xs sm:text-sm font-medium hover:bg-pink-600/10 hover:shadow-[0_0_10px_rgba(236,72,153,0.4)] transition-all duration-200"
           >
             <Users className="w-3 h-3" />
-            <span className="inline sm:inline">Invite</span>
+            <span>Invite</span>
           </button>
         </div>
       </div>
 
-      {battles.length > 1 && (
+      {playableBattles.length > 1 && (
         <div className="w-full max-w-sm mb-3">
           <div className="flex justify-between text-xs text-gray-500 mb-1">
-            <span>Battle {currentBattleIndex + 1} of {battles.length}</span>
+            <span>Battle {currentBattleIndex + 1} of {playableBattles.length}</span>
             <span>{currentIndex + 1}/{currentItems.length} items</span>
           </div>
           <div className="w-full h-1 bg-[#1a1a2e] rounded-full overflow-hidden">
@@ -2132,7 +2455,7 @@ export default function FanBattleCard() {
               className="h-full bg-gradient-to-r from-pink-500 to-orange-500 rounded-full transition-all duration-300"
               style={{
                 width: `${((currentBattleIndex * currentItems.length + currentIndex + 1) /
-                  (battles.length * currentItems.length)) * 100}%`,
+                  (playableBattles.length * currentItems.length)) * 100}%`,
               }}
             />
           </div>
@@ -2167,21 +2490,14 @@ export default function FanBattleCard() {
             "bottom-3 left-3 border-b-2 border-l-2", "bottom-3 right-3 border-b-2 border-r-2"].map((cls, i) => (
               <div key={i} className={`absolute w-5 h-5 ${cls} rounded-sm`} style={{ borderColor: `${color.stroke}70` }} />
             ))}
-
           <div className="absolute left-4 top-1/2 w-1.5 h-1.5 rounded-full" style={{ background: `${color.stroke}55` }} />
           <div className="absolute right-4 top-1/2 w-1.5 h-1.5 rounded-full" style={{ background: `${color.stroke}55` }} />
-
           <div className="absolute top-0 left-0 right-0 h-px"
             style={{ background: `linear-gradient(90deg, transparent, ${color.stroke}cc, transparent)` }} />
 
           {alreadyVoted && (
             <div className="absolute top-3 left-1/2 z-20 px-3 py-1 rounded-full text-[10px] font-bold"
-              style={{
-                transform: "translateX(-50%)",
-                background: "rgba(74,222,128,0.15)",
-                border: "1px solid #4ade8066",
-                color: "#4ade80",
-              }}>
+              style={{ transform: "translateX(-50%)", background: "rgba(74,222,128,0.15)", border: "1px solid #4ade8066", color: "#4ade80" }}>
               ✓ Voted
             </div>
           )}
@@ -2193,7 +2509,6 @@ export default function FanBattleCard() {
               +15 PTS
             </div>
           </div>
-
           <div className="absolute inset-0 flex items-center justify-end pr-7 pointer-events-none z-10"
             style={{ opacity: skipOpacity, transition: isDragging ? "none" : "opacity 0.15s" }}>
             <div className="font-black text-2xl tracking-widest border-4 rounded-xl px-4 py-2"
@@ -2206,14 +2521,9 @@ export default function FanBattleCard() {
             <div className="relative flex items-center justify-center mb-4" style={{ width: 250, height: 250 }}>
               <div className="absolute inset-0"
                 style={{ background: `radial-gradient(ellipse at center, ${color.glow} 0%, transparent 68%)`, filter: "blur(16px)", transform: "scale(1.4)" }} />
-
               {currentItem?.type === "CLUB" ? (
-                <img
-                  src={currentItem.avatar || "/images/default-club.png"}
-                  alt={currentItem.name}
-                  className="w-[200px] h-[200px] object-contain relative z-10 rounded-2xl"
-                  draggable={false}
-                />
+                <img src={currentItem.avatar || "/images/default-club.png"} alt={currentItem.name}
+                  className="w-[200px] h-[200px] object-contain relative z-10 rounded-2xl" draggable={false} />
               ) : (
                 <>
                   <img
@@ -2244,13 +2554,14 @@ export default function FanBattleCard() {
 
             <h2 className="text-white text-lg font-bold text-center leading-snug">{currentItem.name}</h2>
             <p className="text-gray-500 text-xs mt-1 text-center">{currentItem.team || "IPL"}</p>
-
             <div className="flex items-center gap-2 mt-3 mb-4">
               <span className="text-white text-[10px] font-bold tracking-wider px-3 py-1 rounded-sm"
                 style={{ background: `linear-gradient(90deg, ${color.from}, ${color.to})` }}>
                 {currentItem.role || currentItem.specialization || (currentItem.type === "CLUB" ? "IPL FRANCHISE" : "PLAYER")}
               </span>
-              <span className="text-gray-500 text-xs">• {currentItem.type === "CLUB" ? "Indian Premier League" : "India Cricket"}</span>
+              <span className="text-gray-500 text-xs">
+                • {currentItem.type === "CLUB" ? "Indian Premier League" : "India Cricket"}
+              </span>
             </div>
 
             <div className="w-full grid grid-cols-3 gap-2 mb-3">
@@ -2281,7 +2592,11 @@ export default function FanBattleCard() {
                   </div>
                   <div className="flex flex-col items-center justify-center rounded-xl py-2.5"
                     style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
-                    <span className="text-white text-sm font-bold leading-tight">{typeof currentItem.strikeRate === "number" ? currentItem.strikeRate.toFixed(1) : currentItem.strikeRate || "0.0"}</span>
+                    <span className="text-white text-sm font-bold leading-tight">
+                      {typeof currentItem.strikeRate === "number"
+                        ? currentItem.strikeRate.toFixed(1)
+                        : currentItem.strikeRate || "0.0"}
+                    </span>
                     <span className="text-gray-600 text-[9px] font-bold tracking-widest mt-0.5">STRIKE RATE</span>
                   </div>
                   <div className="flex flex-col items-center justify-center rounded-xl py-2.5"
@@ -2294,7 +2609,8 @@ export default function FanBattleCard() {
             </div>
 
             {currentItem?.type === "CLUB" && currentItem.overview && (
-              <div className="w-full mt-2 p-3 rounded-xl" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
+              <div className="w-full mt-2 p-3 rounded-xl"
+                style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
                 <p className="text-gray-400 text-[10px] text-center">
                   🏟️ {currentItem.overview.venue} | 👤 {currentItem.overview.captain}
                 </p>
@@ -2314,16 +2630,16 @@ export default function FanBattleCard() {
           </span>
           Skip
         </button>
-
         <div className="text-center">
           <p className="text-[10px] text-gray-600 font-bold tracking-widest">SWIPE RIGHT</p>
           <p className="text-xs font-black" style={{ color: color.stroke }}>+15 PTS</p>
         </div>
-
-        <button onClick={() => animateSwipe("right")}
+        <button
+          onClick={() => animateSwipe("right")}
           className="flex items-center gap-2 text-xs font-semibold transition-colors"
           style={{ color: alreadyVoted ? "#6b7280" : color.stroke }}
-          disabled={alreadyVoted}>
+          disabled={alreadyVoted}
+        >
           {alreadyVoted ? "Voted ✓" : "Like"}
           <span className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm"
             style={{
@@ -2337,11 +2653,15 @@ export default function FanBattleCard() {
         </button>
       </div>
 
-      <p className="text-gray-700 text-[9px] tracking-widest mt-3 uppercase">Swipe right to give +15 pts • Left to skip</p>
+      <p className="text-gray-700 text-[9px] tracking-widest mt-3 uppercase">
+        Swipe right to give +15 pts • Left to skip
+      </p>
 
       <div className="flex gap-1.5 mt-2.5">
         {currentItems.map((item, i) => (
-          <button key={item.id} onClick={() => !isAnimatingOut && setCurrentIndex(i)}
+          <button
+            key={item.id}
+            onClick={() => !isAnimatingOut && setCurrentIndex(i)}
             className="rounded-full transition-all duration-300"
             style={{
               width: i === currentIndex ? 18 : 6,
@@ -2351,7 +2671,8 @@ export default function FanBattleCard() {
                 : i === currentIndex
                   ? (item.jerseyColor?.stroke || "#f472b6")
                   : "rgba(255,255,255,0.15)",
-            }} />
+            }}
+          />
         ))}
       </div>
 

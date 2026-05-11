@@ -959,30 +959,49 @@ const parseDurationToSeconds = (duration: string): number => {
 };
 
 function audioFileToAudioDrop(audio: AudioFile): AudioDrop {
+    
+    // 🚨 FIX: Extract matchInfo from the title if the backend failed to send it!
+    let fallbackMatchInfo = audio.matchInfo;
+    
+    if (!fallbackMatchInfo && audio.title && audio.title.toLowerCase().includes("vs")) {
+        const parts = audio.title.split(" ");
+        const vsIndex = parts.findIndex(p => p.toLowerCase() === "vs");
+        
+        if (vsIndex > 0 && vsIndex < parts.length - 1) {
+            fallbackMatchInfo = {
+                team1: parts[vsIndex - 1], // e.g., "RCB"
+                team2: parts[vsIndex + 1], // e.g., "MI"
+                type: audio.title.toLowerCase().includes("post match") ? "Post Match" 
+                    : audio.title.toLowerCase().includes("pre match") ? "Pre Match" 
+                    : "Audio Script"
+            };
+        }
+    }
+
     return {
         id: audio.id,
         title: audio.title,
-        subtitle: audio.matchInfo?.type
-            ? `${audio.matchInfo.type.replace(/_/g, " ")} — ${audio.matchInfo.team1 ?? ""} vs ${audio.matchInfo.team2 ?? ""}`
+        subtitle: fallbackMatchInfo?.type
+            ? `${fallbackMatchInfo.type.replace(/_/g, " ")} — ${fallbackMatchInfo.team1 ?? ""} vs ${fallbackMatchInfo.team2 ?? ""}`
             : "Audio Drop",
-        description: audio.matchInfo
-            ? `${audio.matchInfo.team1 ?? ""} vs ${audio.matchInfo.team2 ?? ""} — ${audio.matchInfo.type?.replace(/_/g, " ") ?? ""}`
+        description: fallbackMatchInfo
+            ? `${fallbackMatchInfo.team1 ?? ""} vs ${fallbackMatchInfo.team2 ?? ""} — ${fallbackMatchInfo.type?.replace(/_/g, " ") ?? ""}`
             : audio.title,
         listens: 0,
         signals: 0,
         duration: audio.duration,
         date: audio.createdAtFormatted,
-        room: audio.matchInfo?.team1
-            ? `${audio.matchInfo.team1} vs ${audio.matchInfo.team2}`
+        room: fallbackMatchInfo?.team1
+            ? `${fallbackMatchInfo.team1} vs ${fallbackMatchInfo.team2}`
             : "Audio Room",
         engagement: 0,
         audioUrl: audio.url,
         sizeFormatted: audio.sizeFormatted,
-        speaker: audio.matchInfo?.speaker,
-        team1: audio.matchInfo?.team1,
-        team2: audio.matchInfo?.team2,
+        speaker: fallbackMatchInfo?.speaker || audio.matchInfo?.speaker,
+        team1: fallbackMatchInfo?.team1,
+        team2: fallbackMatchInfo?.team2,
         durationSeconds: audio.durationSeconds,
-        matchInfo: audio.matchInfo,
+        matchInfo: fallbackMatchInfo, // 👈 Now passing the recovered data!
     };
 }
 

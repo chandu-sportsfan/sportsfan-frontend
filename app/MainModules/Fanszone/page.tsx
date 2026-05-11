@@ -1,11 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { 
   Trophy, Flame, MessageCircle, Gift, Users, Eye, 
   CheckCircle2, Share2, Award, ChevronRight, Dumbbell, 
-  Target, Medal, TrendingUp, X, Crown, Star
+  Target, Medal, TrendingUp, X
 } from "lucide-react";
 
 // Import your actual Leaderboard Component!
@@ -40,7 +40,6 @@ type MonthKey = keyof typeof monthlyPointsData;
 
 // --- REUSABLE STYLED COMPONENTS ---
 
-/** A deep, high-contrast premium card */
 function PremiumCard({
   children,
   className = "",
@@ -57,7 +56,7 @@ function PremiumCard({
       onClick={onClick}
       className={[
         "relative rounded-2xl border border-white/10",
-        "bg-[#09090b]", // Deep black instead of milky glass
+        "bg-[#09090b]", 
         "shadow-[0_8px_32px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(255,255,255,0.05)]",
         "transition-all duration-300 ease-out",
         onClick ? "cursor-pointer" : "",
@@ -72,7 +71,6 @@ function PremiumCard({
   );
 }
 
-/** Intense Neon Bar with a White-Hot Core Thumb */
 function NeonSlider({
   percent,
   colorClass = "from-rose-600 to-orange-500",
@@ -90,11 +88,10 @@ function NeonSlider({
         className={`absolute inset-y-0 left-0 rounded-full bg-gradient-to-r ${colorClass} transition-all duration-700`}
         style={{ width: `${percent}%` }}
       >
-        {/* White-hot glowing core */}
         <span
           className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-3 h-3 rounded-full bg-white z-10"
           style={{
-            boxShadow: `0 0 10px 2px ${glowColor}, 0 0 20px 6px ${glowColor}80` // 80 is hex for 50% opacity
+            boxShadow: `0 0 10px 2px ${glowColor}, 0 0 20px 6px ${glowColor}80` 
           }}
         />
       </div>
@@ -102,10 +99,7 @@ function NeonSlider({
   );
 }
 
-// ============================================================
 export default function FansonePage() {
-  const router = useRouter();
-
   const [selectedMonth, setSelectedMonth] = useState<MonthKey>("May 2026");
   const [showAllActivity, setShowAllActivity] = useState(false);
   const [showAllTopFans, setShowAllTopFans] = useState(false);
@@ -113,12 +107,11 @@ export default function FansonePage() {
 
   const currentMonthData = monthlyPointsData[selectedMonth];
 
-  // Helper to generate SVG points for the glowing line chart
   const generateChartPoints = (chartArray: number[]) => {
     const maxVal = Math.max(...chartArray);
     return chartArray.map((val, idx) => {
       const x = (idx / (chartArray.length - 1)) * 100;
-      const y = 100 - (val / maxVal) * 80; // Scale to 80% height to leave room for the dot
+      const y = 100 - (val / maxVal) * 80;
       return `${x},${y}`;
     }).join(" L ");
   };
@@ -129,7 +122,6 @@ export default function FansonePage() {
   return (
     <div className="min-h-screen bg-black text-white p-4 md:p-6 lg:p-8 font-sans relative overflow-x-hidden">
       
-      {/* Deep ambient background glows */}
       <div className="fixed inset-0 pointer-events-none z-0">
         <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-rose-600/10 rounded-full blur-[120px]" />
         <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-orange-600/10 rounded-full blur-[120px]" />
@@ -137,21 +129,20 @@ export default function FansonePage() {
 
       <div className="relative z-10 max-w-[1600px] mx-auto grid grid-cols-1 xl:grid-cols-4 gap-6">
 
-        {/* ─── MAIN CONTENT (3-col span) ──────────────────────────────── */}
         <div className="xl:col-span-3 flex flex-col gap-6">
 
-          {/* TOP ROW: Profile + Hero */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-            {/* ── Profile Card ── */}
             <PremiumCard className="p-5 flex flex-col justify-between">
-              {/* Avatar + name */}
               <div className="flex items-center gap-4 mb-6">
                 <div className="relative w-16 h-16 flex-shrink-0">
                   <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-rose-600 to-orange-500 blur-md opacity-70 animate-pulse" />
-                  <img
+                  <Image
                     src="https://i.pravatar.cc/150?img=11"
                     alt="Profile"
+                    width={64}
+                    height={64}
+                    unoptimized
                     className="relative w-full h-full rounded-full object-cover border-2 border-zinc-900"
                   />
                 </div>
@@ -169,7 +160,6 @@ export default function FansonePage() {
                 </div>
               </div>
 
-              {/* XP progress */}
               <div className="mb-6">
                 <div className="flex justify-between text-xs font-bold mb-2 text-rose-500">
                   <span>6,250 / 8,000 XP</span>
@@ -177,7 +167,6 @@ export default function FansonePage() {
                 <NeonSlider percent={78} />
               </div>
 
-              {/* Badges */}
               <div className="flex justify-between items-center text-center">
                 {[
                   { Icon: Trophy, label: "Auction\nWinner", color: "text-yellow-500", glow: "rgba(234,179,8,0.8)" },
@@ -188,8 +177,6 @@ export default function FansonePage() {
                     <div
                       className={`w-10 h-10 rounded-xl flex items-center justify-center bg-zinc-900 border border-white/5 transition-all duration-300 group-hover:scale-110 group-hover:border-white/20`}
                       style={{ boxShadow: `0 0 15px ${glow.replace("0.8", "0")}` }}
-                      onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.boxShadow = `0 0 15px ${glow}`)}
-                      onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.boxShadow = `0 0 15px ${glow.replace("0.8", "0")}`)}
                     >
                       <Icon className={`w-5 h-5 ${color}`} />
                     </div>
@@ -198,7 +185,6 @@ export default function FansonePage() {
                 ))}
               </div>
 
-              {/* Team Loyalty */}
               <div className="mt-6 pt-5 border-t border-white/10">
                 <p className="text-[10px] text-gray-500 mb-2 flex items-center gap-1 tracking-widest uppercase font-bold">
                   Team Loyalty
@@ -217,16 +203,12 @@ export default function FansonePage() {
               </div>
             </PremiumCard>
 
-            {/* ── Hero Banner (Saturated & Intense) ── */}
             <div className="lg:col-span-2 relative rounded-2xl overflow-hidden border border-white/10 group min-h-[250px] flex flex-col justify-center shadow-[0_16px_48px_rgba(0,0,0,0.8)] bg-black">
-              {/* Base Stadium Image */}
               <div
                 className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105 opacity-60 mix-blend-screen"
                 style={{ backgroundImage: "url('https://images.unsplash.com/photo-1504450758481-7338eba7524a?q=80&w=1200&auto=format&fit=crop')" }}
               />
-              {/* Saturated PBKS Color Tint */}
               <div className="absolute inset-0 bg-gradient-to-r from-black via-rose-950/80 to-orange-900/60 mix-blend-multiply" />
-              {/* Secondary Color Dodge layer for that bright "Neon" pop */}
               <div className="absolute inset-0 bg-gradient-to-tr from-rose-600/30 to-transparent mix-blend-color-dodge" />
 
               <div className="relative z-10 p-8 max-w-sm">
@@ -252,7 +234,6 @@ export default function FansonePage() {
             </div>
           </div>
 
-          {/* ── Quick Links Grid ── */}
           <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
             {[
               { icon: MessageCircle, color: "text-rose-500", glow: "rgba(244,63,94,0.5)", title: "Live Discussions", desc: "Chat, polls & reactions", meta: "1.2K online" },
@@ -265,9 +246,6 @@ export default function FansonePage() {
                 <div>
                   <div
                     className="w-10 h-10 rounded-xl flex items-center justify-center mb-3 bg-zinc-900 border border-white/5 transition-all duration-300 group-hover/card:bg-white/5"
-                    style={{ boxShadow: `0 0 15px ${item.glow.replace("0.5", "0")}` }}
-                    onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.boxShadow = `0 0 20px ${item.glow}`)}
-                    onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.boxShadow = `0 0 15px ${item.glow.replace("0.5", "0")}`)}
                   >
                     <item.icon className={`w-5 h-5 ${item.color}`} />
                   </div>
@@ -284,7 +262,6 @@ export default function FansonePage() {
             ))}
           </div>
 
-          {/* ── Engage & Earn Points ── */}
           <PremiumCard className="p-6 flex flex-col lg:flex-row items-center gap-8">
             <div className="flex-1 w-full">
               <h3 className="text-lg font-black tracking-tight mb-1 text-white">Engage & Earn Points</h3>
@@ -309,14 +286,13 @@ export default function FansonePage() {
               </div>
             </div>
 
-            {/* Level-up progress widget */}
             <div className="w-full lg:w-80 rounded-xl p-5 border border-white/10 bg-zinc-900/50 flex-shrink-0">
               <div className="flex items-center gap-4 mb-5">
                 <div className="w-12 h-12 rounded-xl border-2 border-rose-500 flex items-center justify-center font-black text-xl text-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.4),inset_0_0_10px_rgba(244,63,94,0.2)]">
                   7
                 </div>
                 <div>
-                  <h4 className="text-sm font-black text-white tracking-tight">You're doing great!</h4>
+                  <h4 className="text-sm font-black text-white tracking-tight">You&apos;re doing great!</h4>
                   <p className="text-xs text-gray-400 font-medium mt-0.5">1,550 XP to reach Level 8</p>
                 </div>
               </div>
@@ -329,12 +305,9 @@ export default function FansonePage() {
             </div>
           </PremiumCard>
 
-          {/* ── Bottom Row: Challenge / Top Fans / Recent Activity ── */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-            {/* Upcoming Challenge (Saturated Red Background) */}
             <div className="rounded-2xl p-6 relative overflow-hidden border border-rose-500/30 group cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_16px_40px_rgba(225,29,72,0.4)] bg-gradient-to-br from-rose-950 via-black to-black">
-              {/* Decorative intense glow */}
               <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-rose-600/40 via-transparent to-transparent pointer-events-none" />
               
               <Trophy className="absolute -bottom-4 -right-4 text-rose-500/10 pointer-events-none transition-transform duration-500 group-hover:rotate-12 group-hover:scale-125" style={{ width: 140, height: 140 }} />
@@ -347,7 +320,7 @@ export default function FansonePage() {
                   Predict the Match Winner
                 </h2>
                 <p className="text-xs text-gray-400 mb-6 font-medium">
-                  Predict the winner & score big!
+                  Predict the winner &amp; score big!
                 </p>
 
                 <div className="flex items-center gap-3 mb-6">
@@ -365,9 +338,8 @@ export default function FansonePage() {
               </div>
             </div>
 
-            {/* Today's Top Fans */}
             <PremiumCard className="p-6 flex flex-col" hoverEffect>
-              <h3 className="text-xs font-black tracking-widest text-gray-400 mb-5 uppercase">Today's Top Fans</h3>
+              <h3 className="text-xs font-black tracking-widest text-gray-400 mb-5 uppercase">Today&apos;s Top Fans</h3>
               <div className="flex flex-col gap-4 flex-1">
                 {extendedTopFans.slice(0, showAllTopFans ? undefined : 3).map((fan) => (
                   <div key={fan.rank} className="flex items-center justify-between group/fan hover:bg-zinc-900 rounded-lg px-2 -mx-2 transition-colors py-1">
@@ -381,7 +353,14 @@ export default function FansonePage() {
                         {fan.rank}
                       </span>
                       <div className="relative">
-                        <img src={`https://i.pravatar.cc/150?img=${fan.img}`} alt={fan.name} className="w-8 h-8 rounded-full object-cover border-2 border-zinc-900" />
+                        <Image 
+                          src={`https://i.pravatar.cc/150?img=${fan.img}`} 
+                          alt={fan.name} 
+                          width={32} 
+                          height={32} 
+                          unoptimized
+                          className="w-8 h-8 rounded-full object-cover border-2 border-zinc-900" 
+                        />
                         {fan.rank <= 3 && (
                           <div className="absolute inset-0 rounded-full" style={{
                             boxShadow: fan.rank === 1 ? "0 0 10px 1px rgba(234,179,8,0.8)"
@@ -401,7 +380,6 @@ export default function FansonePage() {
               </button>
             </PremiumCard>
 
-            {/* Recent Activity */}
             <PremiumCard className="p-6 flex flex-col" hoverEffect>
               <h3 className="text-xs font-black tracking-widest text-gray-400 mb-5 uppercase">Recent Activity</h3>
               <div className="flex flex-col gap-4 flex-1">
@@ -430,10 +408,8 @@ export default function FansonePage() {
           </div>
         </div>
 
-        {/* ─── RIGHT SIDEBAR ───────────────────────────────────────────── */}
         <div className="flex flex-col gap-6">
 
-          {/* Fan Meter */}
           <PremiumCard className="p-6">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-xs font-black tracking-widest uppercase text-gray-400">Fan Meter</h3>
@@ -455,7 +431,7 @@ export default function FansonePage() {
                     </div>
                     <div>
                       <h4 className="text-xs font-bold text-white tracking-tight">{meter.title}</h4>
-                      <p className="text-[10px] text-gray-400 mt-0.5 font-medium">You're feeling {meter.mood}</p>
+                      <p className="text-[10px] text-gray-400 mt-0.5 font-medium">You&apos;re feeling {meter.mood}</p>
                       <p className={`text-[10px] font-bold mt-0.5 ${meter.high ? "text-emerald-500" : "text-rose-500"}`}>
                         Fan energy is {meter.status} right now
                       </p>
@@ -476,7 +452,6 @@ export default function FansonePage() {
             </div>
           </PremiumCard>
 
-          {/* Glowing Line Chart Total Points */}
           <PremiumCard className="p-6 overflow-hidden">
             <div className="flex justify-between items-start mb-6">
               <div className="flex items-center gap-3">
@@ -506,7 +481,6 @@ export default function FansonePage() {
               </select>
             </div>
 
-            {/* Glowing SVG Line Chart (Replaces flat bars) */}
             <div className="relative h-24 w-full mt-2 -mx-2">
               <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="w-full h-full overflow-visible">
                 <defs>
@@ -522,14 +496,8 @@ export default function FansonePage() {
                     </feMerge>
                   </filter>
                 </defs>
-                
-                {/* Fill Area */}
                 <path d={chartFillPoints} fill="url(#chartGradient)" className="transition-all duration-700 ease-in-out" />
-                
-                {/* Glowing Stroke */}
                 <path d={chartLinePoints} fill="none" stroke="#f43f5e" strokeWidth="1.5" filter="url(#glow)" className="transition-all duration-700 ease-in-out" />
-                
-                {/* Data Points */}
                 {currentMonthData.chart.map((val, idx) => {
                   const maxVal = Math.max(...currentMonthData.chart);
                   const x = (idx / (currentMonthData.chart.length - 1)) * 100;
@@ -544,9 +512,7 @@ export default function FansonePage() {
             </div>
           </PremiumCard>
 
-          {/* Next Up (Saturated Background) */}
           <div className="relative rounded-2xl overflow-hidden border border-rose-500/30 group cursor-pointer transition-all duration-300 hover:-translate-y-1 shadow-[0_16px_40px_rgba(0,0,0,0.8)] bg-black">
-            {/* Background Image Saturated */}
             <div
               className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105 opacity-60 mix-blend-screen"
               style={{ backgroundImage: "url('https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?q=80&w=600&auto=format&fit=crop')" }}
@@ -564,7 +530,7 @@ export default function FansonePage() {
                 12 May 2026 • 7:30 PM
               </p>
               <p className="text-xs text-gray-400 font-medium mb-5">
-                Gear up, predict & cheer for India!
+                Gear up, predict &amp; cheer for India!
               </p>
               <button className="px-6 py-2.5 rounded-xl text-sm font-black tracking-wide text-white transition-all duration-300 bg-gradient-to-r from-rose-600 to-orange-500 shadow-[0_0_20px_rgba(244,63,94,0.5)] border border-rose-400/50 hover:scale-105">
                 Get Ready
@@ -575,7 +541,6 @@ export default function FansonePage() {
         </div>
       </div>
 
-      {/* ── ACTUAL COMPONENT MODAL ──────────────────────────────────── */}
       {isLeaderboardModalOpen && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"

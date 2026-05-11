@@ -90,7 +90,7 @@
 // ];
 
 // const MAX_PLAYERS = 5;
-// const MAX_CLUBS = 2;
+// const MAX_CLUBS = 5;
 // const MAX_DISPLAYED_PLAYERS = 5;
 // const MAX_DISPLAYED_CLUBS = 10;
 
@@ -757,7 +757,7 @@ const fallbackClubs: BattleClub[] = [
 ];
 
 const MAX_PLAYERS = 5;
-const MAX_CLUBS = 2;
+const MAX_CLUBS = 5;
 const MAX_DISPLAYED_PLAYERS = 5;
 const MAX_DISPLAYED_CLUBS = 10;
 
@@ -1133,7 +1133,7 @@ const CreateBattle: React.FC<CreateBattleProps> = ({ onClose, players, clubs }) 
                 <ClubsIcon />
                 <div className="text-left">
                   <div className="text-xs font-semibold">Clubs</div>
-                  <div className="text-[10px] opacity-70">Max 2</div>
+                  <div className="text-[10px] opacity-70">Max 5</div>
                 </div>
               </button>
             </div>

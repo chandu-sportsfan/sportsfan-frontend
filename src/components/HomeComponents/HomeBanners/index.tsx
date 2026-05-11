@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 
 const banners = [
   {
@@ -8,22 +9,26 @@ const banners = [
     title: "TATA IPL T20 2026",
     subtitle: "Experience cricket's biggest league",
     image: "/images/bannerone.png",
+    urlPath: '/MainModules/HomePage'
   },
   {
     id: 2,
     title: "Fan Zone",
     subtitle: "Exclusive Fan Content",
     image: "/images/fantasy_games_banner.png",
+    urlPath: '/MainModules/Fanszone'
   },
   {
     id: 3,
     title: "Fantasy Games",
     subtitle: "Pick players, score points & win big",
     image: "/images/fan_zone _banner.png",
+    urlPath: '/MainModules/Fantasy?tab=fantasy'
   },
 ];
 
 export default function HomeBanners() {
+  const router = useRouter();
   const mobileTrackRef = useRef<HTMLDivElement | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
 
@@ -55,7 +60,8 @@ export default function HomeBanners() {
         {banners.map((banner) => (
           <div
             key={banner.id}
-            className="min-w-[280px] h-40 rounded-xl overflow-hidden relative flex-shrink-0 snap-start"
+            onClick={() => router.push(banner.urlPath)}
+            className="min-w-[280px] h-40 rounded-xl overflow-hidden relative flex-shrink-0 snap-start cursor-pointer"
           >
             <img
               src={banner.image}
@@ -85,7 +91,8 @@ export default function HomeBanners() {
         {banners.map((banner) => (
           <div
             key={banner.id}
-            className="h-48 rounded-xl overflow-hidden relative"
+            onClick={() => router.push(banner.urlPath)}
+            className="h-48 rounded-xl overflow-hidden relative cursor-pointer"
           >
             <img
               src={banner.image}

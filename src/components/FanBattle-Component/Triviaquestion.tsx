@@ -1245,7 +1245,6 @@ function RestoredQuestionView({
 
 const TriviaQuestion: React.FC = () => {
   const searchParams = useSearchParams();
-  const router = useRouter();
 
   const levelParam = searchParams.get("level");
   const quizIdParam = searchParams.get("quizId");

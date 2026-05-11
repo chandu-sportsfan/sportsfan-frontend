@@ -83,11 +83,11 @@ export default function Header() {
                 </div>
                 <div className="hidden lg:block" />
                 <div>
- <Link href="/MainModules/Leaderboard">
+ {/* <Link href="/MainModules/Leaderboard">
   <button className="flex items-center justify-center w-10 h-10 rounded-full bg-[#0d1117] border border-pink-500/20 hover:bg-pink-500/10 transition-colors">
     Leaderboard
   </button>
-  </Link>
+  </Link> */}
   
 
                     <div className="flex gap-2 items-center">

@@ -64,13 +64,13 @@ function getAC(): AudioContext {
 function beep(f: number, type: OscillatorType, dur: number, vol: number, delay = 0): void {
   try {
     const A = getAC(), o = A.createOscillator(), g = A.createGain();
-    o.type = type; o.frequency.value = f;
+      o.type = type; o.frequency.setValueAtTime(f, A.currentTime);
     g.gain.setValueAtTime(0.001, A.currentTime + delay);
     g.gain.linearRampToValueAtTime(vol, A.currentTime + delay + 0.012);
     g.gain.exponentialRampToValueAtTime(0.001, A.currentTime + delay + dur);
     o.connect(g); g.connect(A.destination);
     o.start(A.currentTime + delay); o.stop(A.currentTime + delay + dur + 0.05);
-  } catch (e) { }
+  } catch (_e) { }
 }
 function crowdRoar(vol: number, dur: number): void {
   try {
@@ -88,7 +88,7 @@ function crowdRoar(vol: number, dur: number): void {
     const bq2 = A.createBiquadFilter(); bq2.type = "lowpass"; bq2.frequency.value = 2200;
     const g = A.createGain(); g.gain.value = vol;
     src.connect(bq); bq.connect(bq2); bq2.connect(g); g.connect(A.destination); src.start();
-  } catch (e) { }
+  } catch (_e) { }
 }
 const audio = {
   tick: () => beep(660, "sine", 0.1, 0.15),
@@ -108,7 +108,7 @@ const audio = {
       g2.gain.setValueAtTime(0.4, A.currentTime);
       g2.gain.exponentialRampToValueAtTime(0.001, A.currentTime + 0.18);
       o.connect(g2); g2.connect(A.destination); o.start(); o.stop(A.currentTime + 0.2);
-    } catch (e) { }
+    } catch (_e) { }
   },
   miss: () => {
     beep(140, "sawtooth", 0.25, 0.1);
@@ -124,7 +124,7 @@ const audio = {
       const bq = A.createBiquadFilter(); bq.type = "lowpass"; bq.frequency.value = 320;
       const g = A.createGain(); g.gain.value = 0.45;
       src.connect(bq); bq.connect(g); g.connect(A.destination); src.start();
-    } catch (e) { }
+    } catch (_e) { }
   },
   wkt: () => {
     [310, 265, 225, 185, 150].forEach((f, i) => beep(f, "triangle", 0.28, 0.11, i * 0.11));
@@ -138,7 +138,7 @@ const audio = {
       const g = A.createGain(); g.gain.value = 0.7;
       src.connect(bq); bq.connect(g); g.connect(A.destination); src.start();
       crowdRoar(0.3, 1.2);
-    } catch (e) { }
+    } catch (_e) { }
   },
   four: () => { [440, 554, 659, 880].forEach((f, i) => beep(f, "sine", 0.22, 0.1, i * 0.07)); crowdRoar(0.55, 1.4); },
   six: () => {

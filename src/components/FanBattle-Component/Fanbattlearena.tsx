@@ -1343,6 +1343,17 @@ interface Battle {
   updatedAt: number;
 }
 
+interface BattleSession {
+  id?: string;
+  battleId: string;
+  userId: string;
+  status: string;
+  userName?: string;
+  userEmail?: string;
+  createdAt?: number;
+  updatedAt?: number;
+}
+
 interface LeaderboardEntry {
   rank: number;
   playerId: string;
@@ -1918,360 +1929,358 @@ export default function FanBattleCard() {
   //   fetchBattles();
   // }, [user, checkPermission, fetchLeaderboard]);
 
-  useEffect(() => {
-    if (authLoading) return;
-    
-    const fetchBattles = async () => {
+ useEffect(() => {
+  if (authLoading) return;
+
+  const fetchBattles = async () => {
     try {
       setLoading(true);
 
       // Fetch all battles
       const battlesRes = await axios.get(`/api/battle`);
+
+      if (!battlesRes.data.success || !battlesRes.data.battles) {
+        setBattles([]);
+        setPlayableBattles([]);
+        setLoading(false);
+        return;
+      }
+
+      const accessible: Battle[] = battlesRes.data.battles.filter(checkPermission);
       
-      // Fetch played battles separately
-      let interactedIds: string[] = [];
+      // Fetch completed battle sessions for the user
+      let completedBattleIds: string[] = [];
       if (user?.userId) {
         try {
-          const playedRes = await axios.get(`/api/battle/battle-vote?userId=${user.userId}&checkPlayed=true`);
-          console.log("Played battles response:", playedRes.data);
-          interactedIds = playedRes.data.interactedBattleIds || [];
+          // Fetch all completed sessions for this user
+          const sessionsRes = await axios.get(`/api/battle/battle-session?userId=${user.userId}`);
+          if (sessionsRes.data.success && sessionsRes.data.data) {
+            // If the API returns an array of sessions
+            const sessions = Array.isArray(sessionsRes.data.data) ? sessionsRes.data.data : [sessionsRes.data.data];
+            completedBattleIds = sessions
+              .filter((session: BattleSession) => session.status === "completed")
+              .map((session: BattleSession) => session.battleId);
+          }
         } catch (err) {
-          console.error("Error fetching played battles:", err);
+          console.error("Error fetching completed battles:", err);
         }
       }
 
-      if (battlesRes.data.success && battlesRes.data.battles) {
-        const accessible: Battle[] = battlesRes.data.battles.filter(checkPermission);
-        
-        // Filter out played battles
-        const interactedSet = new Set(interactedIds);
-        const unplayed = accessible.filter((b) => !interactedSet.has(b.id));
-        
-        console.log("Accessible Battle IDs:", accessible.map(b => b.id));
-        console.log("Interacted Battle IDs:", interactedIds);
-        console.log("All battles:", accessible.length);
-        console.log("Played battle IDs:", interactedIds);
-        console.log("Unplayed battles:", unplayed.length);
+      // Filter out completed battles
+      const completedSet = new Set(completedBattleIds.map(id => String(id).trim()));
+      const unplayed = accessible.filter((b) => {
+        const bid = String(b.id).trim();
+        return !completedSet.has(bid);
+      });
 
-        setBattles(accessible);
-        setPlayableBattles(unplayed);
+      console.log("Accessible Battle IDs (normalized):", accessible.map(b => String(b.id).trim()));
+      console.log("Completed Battle IDs (normalized):", Array.from(completedSet));
+      console.log("All battles:", accessible.length);
+      console.log("Unplayed battles:", unplayed.length);
+      
+      if (unplayed.length > 0) {
+        console.log("First Unplayed Battle ID:", unplayed[0].id);
+      }
 
-        if (unplayed.length > 0) {
-          await fetchItemsForBattle(unplayed[0]);
-          await fetchLeaderboard(unplayed[0].id);
-        } else {
-          setCurrentItems([]);
-        }
+      setBattles(accessible);
+      setPlayableBattles(unplayed);
+
+      if (unplayed.length > 0) {
+        await fetchItemsForBattle(unplayed[0]);
+        await fetchLeaderboard(unplayed[0].id);
+      } else {
+        setCurrentItems([]);
       }
     } catch (err) {
       console.error("Error fetching battles:", err);
+      setBattles([]);
+      setPlayableBattles([]);
     } finally {
       setLoading(false);
     }
   };
-  
-    fetchBattles();
-  }, [user, authLoading, checkPermission]); // Add authLoading to dependencies
 
-  const fetchItemsForBattle = async (battle: Battle) => {
-    const isClubBattle = battle.battleType === "CLUBS";
-    const ids = isClubBattle ? battle.selectedClubs : battle.selectedPlayers;
-    if (!ids || ids.length === 0) { setCurrentItems([]); return; }
-    try {
-      const promises = ids.map(async (id) => {
-        try {
-          if (isClubBattle) {
-            const response = await axios.get(`/api/club-profile/${id}`);
-            if (response.data.success) {
-              const club = response.data.profile;
-              const entity: ExtendedPlayer = {
-                id, type: "CLUB",
-                name: club.name || "Unknown Club",
-                team: club.team || "IPL",
-                city: club.overview?.venue || "",
-                avatar: club.avatar || "",
-                role: "IPL Franchise",
-                wins: club.stats?.runs || "0",
-                losses: club.stats?.avg || "0",
-                points: club.stats?.sr || "0",
-                jerseyNumber: "CLB",
-                about: club.about,
-                overview: club.overview,
-                stats: club.stats,
-              };
-              entity.jerseyColor = getJerseyColor(entity.name, entity.team);
-              return entity;
-            }
-            return null;
-          } else {
-            const response = await axios.get(`/api/player-profile/${id}`);
-            const jerseyRes = await axios.get(`/api/player-profile/seasonstats?playerProfilesId=${id}`);
-            const playerData = response.data.profile || response.data.data || response.data;
-            const jerseyData = jerseyRes.data.seasons || jerseyRes.data.data || jerseyRes.data;
-            const jerseyInfo = jerseyData?.[0]?.season?.jerseyNo || null;
-            const player: ExtendedPlayer = {
-              id, type: "PLAYER",
-              name: playerData.name || "Unknown",
-              playerName: playerData.name,
-              jerseyNumber: jerseyInfo || playerData.jerseyNumber || "--",
-              role: playerData.specialization || playerData.overview?.specialization || playerData.bowlingStyle || "Player",
-              runs: parseInt(playerData.stats?.runs) || 0,
-              strikeRate: parseFloat(playerData.stats?.sr) || 0,
-              age: parseInt(playerData.overview?.dob) || 25,
-              medals: 0,
-              team: playerData.team || "IPL Team",
-              specialization: playerData.specialization || playerData.overview?.specialization || "All-rounder",
+  fetchBattles();
+}, [user, authLoading, checkPermission]);
+
+const fetchItemsForBattle = async (battle: Battle) => {
+  const isClubBattle = battle.battleType === "CLUBS";
+  const ids = isClubBattle ? battle.selectedClubs : battle.selectedPlayers;
+  if (!ids || ids.length === 0) { setCurrentItems([]); return; }
+  try {
+    const promises = ids.map(async (id) => {
+      try {
+        if (isClubBattle) {
+          const response = await axios.get(`/api/club-profile/${id}`);
+          if (response.data.success) {
+            const club = response.data.profile;
+            const entity: ExtendedPlayer = {
+              id, type: "CLUB",
+              name: club.name || "Unknown Club",
+              team: club.team || "IPL",
+              city: club.overview?.venue || "",
+              avatar: club.avatar || "",
+              role: "IPL Franchise",
+              wins: club.stats?.runs || "0",
+              losses: club.stats?.avg || "0",
+              points: club.stats?.sr || "0",
+              jerseyNumber: "CLB",
+              about: club.about,
+              overview: club.overview,
+              stats: club.stats,
             };
-            player.jerseyColor = getJerseyColor(player.name, player.team);
-            return player;
+            entity.jerseyColor = getJerseyColor(entity.name, entity.team);
+            return entity;
           }
-        } catch (err) {
-          console.error(`Error fetching ${isClubBattle ? "club" : "player"} ${id}:`, err);
           return null;
-        }
-      });
-      const items = (await Promise.all(promises)).filter(Boolean) as ExtendedPlayer[];
-      setCurrentItems(items);
-      setCurrentIndex(0);
-      setBattleStats({ voted: 0, skipped: 0, pointsGiven: 0 });
-      pendingVotePromises.current = [];
-    } catch (err) {
-      console.error("Error in fetchItemsForBattle:", err);
-      setCurrentItems([]);
-    }
-  };
-
-  const recordVote = useCallback(
-    (item: ExtendedPlayer, direction: "left" | "right"): Promise<void> => {
-      if (!user?.userId || !playableBattles[currentBattleIndex]) return Promise.resolve();
-      const battleId = playableBattles[currentBattleIndex].id;
-
-      if (direction === "right" && votedPlayerIds.has(item.id)) {
-        showToast("Already voted for this item!", "error");
-        return Promise.resolve();
-      }
-
-      const promise = (async () => {
-        try {
-          const res = await axios.post("/api/battle/battle-vote", {
-            battleId,
-            playerId: item.id,
-            playerName: item.name,
-            userId: user.userId,
-            userEmail: user.email || "",
-            userName: user.name || getUserDisplayName() || "User",
-            direction,
-          });
-
-          if (res.data.success) {
-            if (direction === "right") {
-              const pts = res.data.playerPointsAwarded || 15;
-              showToast(`+${pts} pts for ${item.name}!`, "success");
-              setVotedPlayerIds((prev) => new Set([...prev, item.id]));
-              setBattleStats((prev) => ({
-                voted: prev.voted + 1,
-                skipped: prev.skipped,
-                pointsGiven: prev.pointsGiven + pts,
-              }));
-              fetchLeaderboard(battleId);
-              refreshLeaderboard();
-            } else {
-              showToast(`Skipped ${item.name}`, "skip");
-              setBattleStats((prev) => ({ ...prev, skipped: prev.skipped + 1 }));
-            }
-          }
-        } catch (err: unknown) {
-          if (axios.isAxiosError(err) && err.response?.data?.alreadyVoted) {
-            showToast("Already voted for this item!", "error");
-          } else {
-            showToast("Error recording vote", "error");
-          }
-        }
-      })();
-
-      pendingVotePromises.current.push(promise);
-      return promise;
-    },
-    [user, playableBattles, currentBattleIndex, votedPlayerIds, fetchLeaderboard, refreshLeaderboard, getUserDisplayName]
-  );
-
-  // ── Wait for all votes, snapshot name, remove from list, show result ───────
-  const switchToNextBattle = useCallback(async () => {
-    await Promise.allSettled(pendingVotePromises.current);
-
-    // Snapshot the completed battle's name before removing it
-    const justFinishedName = playableBattles[currentBattleIndex]?.battleName || "Battle";
-    setCompletedBattleName(justFinishedName);
-
-    // Remove the completed battle — next unplayed battle shifts to currentBattleIndex
-    setPlayableBattles((prev) => prev.filter((_, i) => i !== currentBattleIndex));
-
-    setShowBattleResult(true);
-  }, [currentBattleIndex, playableBattles]);
-
-  // ── Play next: next battle is now at currentBattleIndex after removal ──────
-  const handlePlayNextBattle = useCallback(() => {
-    // After removal in switchToNextBattle, the next battle is at currentBattleIndex
-    // (the list shifted left, so no increment needed)
-    const next = playableBattles[currentBattleIndex];
-    if (next) {
-      fetchItemsForBattle(next);
-      fetchLeaderboard(next.id);
-      setCurrentIndex(0);
-      setShowBattleResult(false);
-    }
-  }, [currentBattleIndex, playableBattles, fetchLeaderboard]);
-
-  const currentItem = currentItems[currentIndex];
-  const color = currentItem?.jerseyColor || getJerseyColor("Default");
-
-  const startScan = useCallback(
-    (index: number) => {
-      if (!currentItems[index]) return;
-      setIsScanning(true);
-      let count = 0;
-      if (scanInterval.current) clearInterval(scanInterval.current);
-      scanInterval.current = setInterval(() => {
-        setDisplayNumber(Math.floor(Math.random() * 99) + 1);
-        count++;
-        if (count >= 18) {
-          clearInterval(scanInterval.current!);
-          setDisplayNumber(currentItems[index].jerseyNumber || "--");
-          setIsScanning(false);
-        }
-      }, 60);
-    },
-    [currentItems]
-  );
-
-  useEffect(() => {
-    if (currentItem && currentItem.type === "PLAYER") {
-      setDisplayNumber(currentItem.jerseyNumber || "--");
-      if (scanTimeout.current) clearTimeout(scanTimeout.current);
-      scanTimeout.current = setTimeout(() => startScan(currentIndex), 300);
-      const interval = setInterval(() => startScan(currentIndex), 3000);
-      return () => {
-        clearInterval(interval);
-        if (scanInterval.current) clearInterval(scanInterval.current);
-        if (scanTimeout.current) clearTimeout(scanTimeout.current);
-      };
-    } else if (currentItem && currentItem.type === "CLUB") {
-      setDisplayNumber("🏆");
-      setIsScanning(false);
-    }
-  }, [currentIndex, currentItem, startScan]);
-
-  const animateSwipe = useCallback(
-    (dir: "left" | "right") => {
-      if (isAnimatingOut || !currentItems.length) return;
-      const currentPlayer = currentItems[currentIndex];
-      const isLastCard = currentIndex + 1 >= currentItems.length;
-
-      setSwipeDir(dir);
-      setIsAnimatingOut(true);
-      setIsDragging(false);
-      setDragX(0);
-
-      const votePromise = currentPlayer ? recordVote(currentPlayer, dir) : Promise.resolve();
-
-      setTimeout(() => {
-        setIsAnimatingOut(false);
-        setSwipeDir(null);
-        dragXRef.current = 0;
-
-        if (!isLastCard) {
-          setCurrentIndex((p) => p + 1);
         } else {
-          // Last card: wait for final vote then show result
-          votePromise.finally(() => {
-            switchToNextBattle();
-          });
+          const response = await axios.get(`/api/player-profile/${id}`);
+          const jerseyRes = await axios.get(`/api/player-profile/seasonstats?playerProfilesId=${id}`);
+          const playerData = response.data.profile || response.data.data || response.data;
+          const jerseyData = jerseyRes.data.seasons || jerseyRes.data.data || jerseyRes.data;
+          const jerseyInfo = jerseyData?.[0]?.season?.jerseyNo || null;
+          const player: ExtendedPlayer = {
+            id, type: "PLAYER",
+            name: playerData.name || "Unknown",
+            playerName: playerData.name,
+            jerseyNumber: jerseyInfo || playerData.jerseyNumber || "--",
+            role: playerData.specialization || playerData.overview?.specialization || playerData.bowlingStyle || "Player",
+            runs: parseInt(playerData.stats?.runs) || 0,
+            strikeRate: parseFloat(playerData.stats?.sr) || 0,
+            age: parseInt(playerData.overview?.dob) || 25,
+            medals: 0,
+            team: playerData.team || "IPL Team",
+            specialization: playerData.specialization || playerData.overview?.specialization || "All-rounder",
+          };
+          player.jerseyColor = getJerseyColor(player.name, player.team);
+          return player;
         }
-      }, 300);
-    },
-    [isAnimatingOut, currentIndex, currentItems, recordVote, switchToNextBattle]
-  );
+      } catch (err) {
+        console.error(`Error fetching ${isClubBattle ? "club" : "player"} ${id}:`, err);
+        return null;
+      }
+    });
+    const items = (await Promise.all(promises)).filter(Boolean) as ExtendedPlayer[];
+    setCurrentItems(items);
+    setCurrentIndex(0);
+    setBattleStats({ voted: 0, skipped: 0, pointsGiven: 0 });
+    pendingVotePromises.current = [];
+  } catch (err) {
+    console.error("Error in fetchItemsForBattle:", err);
+    setCurrentItems([]);
+  }
+};
 
-  // ── Touch events ───────────────────────────────────────────────────────────
-  useEffect(() => {
-    const card = cardRef.current;
-    if (!card) return;
-    let touchStartX = 0;
-    let touchStartY = 0;
-    const handleTouchStart = (e: TouchEvent) => {
-      if (isAnimatingOut) return;
-      touchStartX = e.touches[0].clientX;
-      touchStartY = e.touches[0].clientY;
-      isDraggingRef.current = true;
-      lockAxis.current = null;
-      dragXRef.current = 0;
-    };
-    const handleTouchMove = (e: TouchEvent) => {
-      if (!isDraggingRef.current || isAnimatingOut) return;
-      const touchX = e.touches[0].clientX;
-      const touchY = e.touches[0].clientY;
-      const deltaX = touchX - touchStartX;
-      const deltaY = touchY - touchStartY;
-      if (!lockAxis.current && (Math.abs(deltaX) > 10 || Math.abs(deltaY) > 10)) {
-        lockAxis.current = Math.abs(deltaX) > Math.abs(deltaY) ? "h" : "v";
+const recordVote = useCallback(
+  (item: ExtendedPlayer, direction: "left" | "right"): Promise<void> => {
+    if (!user?.userId || !playableBattles[currentBattleIndex]) return Promise.resolve();
+    const battleId = playableBattles[currentBattleIndex].id;
+
+    if (direction === "right" && votedPlayerIds.has(item.id)) {
+      showToast("Already voted for this item!", "error");
+      return Promise.resolve();
+    }
+
+    const promise = (async () => {
+      try {
+        const res = await axios.post("/api/battle/battle-vote", {
+          battleId,
+          playerId: item.id,
+          playerName: item.name,
+          userId: user.userId,
+          userEmail: user.email || "",
+          userName: user.name || getUserDisplayName() || "User",
+          direction,
+        });
+
+        if (res.data.success) {
+          if (direction === "right") {
+            const pts = res.data.playerPointsAwarded || 15;
+            showToast(`+${pts} pts for ${item.name}!`, "success");
+            setVotedPlayerIds((prev) => new Set([...prev, item.id]));
+            setBattleStats((prev) => ({
+              voted: prev.voted + 1,
+              skipped: prev.skipped,
+              pointsGiven: prev.pointsGiven + pts,
+            }));
+            fetchLeaderboard(battleId);
+            refreshLeaderboard();
+          } else {
+            showToast(`Skipped ${item.name}`, "skip");
+            setBattleStats((prev) => ({ ...prev, skipped: prev.skipped + 1 }));
+          }
+        }
+      } catch (err: unknown) {
+        if (axios.isAxiosError(err) && err.response?.data?.alreadyVoted) {
+          showToast("Already voted for this item!", "error");
+        } else {
+          showToast("Error recording vote", "error");
+        }
       }
-      if (lockAxis.current === "h") {
-        e.preventDefault();
-        dragXRef.current = deltaX;
-        setDragX(deltaX);
-        setIsDragging(true);
+    })();
+
+    pendingVotePromises.current.push(promise);
+    return promise;
+  },
+  [user, playableBattles, currentBattleIndex, votedPlayerIds, fetchLeaderboard, refreshLeaderboard, getUserDisplayName]
+);
+
+// ── Wait for all votes, snapshot name, remove from list, show result ───────
+// const switchToNextBattle = useCallback(async () => {
+//   await Promise.allSettled(pendingVotePromises.current);
+
+//   // Snapshot the completed battle's name before removing it
+//   const justFinishedName = playableBattles[currentBattleIndex]?.battleName || "Battle";
+//   setCompletedBattleName(justFinishedName);
+
+//   // Remove the completed battle — next unplayed battle shifts to currentBattleIndex
+//   setPlayableBattles((prev) => prev.filter((_, i) => i !== currentBattleIndex));
+
+//   setShowBattleResult(true);
+// }, [currentBattleIndex, playableBattles]);
+
+const switchToNextBattle = useCallback(async () => {
+  await Promise.allSettled(pendingVotePromises.current);
+
+  // Mark current battle as completed
+  const currentBattle = playableBattles[currentBattleIndex];
+  if (currentBattle && user?.userId) {
+    try {
+      await axios.post("/api/battle/battle-session", {
+        battleId: currentBattle.id,
+        userId: user.userId,
+        userName: user.name || getUserDisplayName(),
+        userEmail: user.email || "",
+      });
+      console.log("Battle marked as completed:", currentBattle.id);
+    } catch (err) {
+      console.error("Error marking battle as completed:", err);
+    }
+  }
+
+  const justFinishedName = playableBattles[currentBattleIndex]?.battleName || "Battle";
+  setCompletedBattleName(justFinishedName);
+  setPlayableBattles((prev) => prev.filter((_, i) => i !== currentBattleIndex));
+  setShowBattleResult(true);
+}, [currentBattleIndex, playableBattles, user, getUserDisplayName]);
+
+// ── Play next: next battle is now at currentBattleIndex after removal ──────
+const handlePlayNextBattle = useCallback(() => {
+  // After removal in switchToNextBattle, the next battle is at currentBattleIndex
+  // (the list shifted left, so no increment needed)
+  const next = playableBattles[currentBattleIndex];
+  if (next) {
+    fetchItemsForBattle(next);
+    fetchLeaderboard(next.id);
+    setCurrentIndex(0);
+    setShowBattleResult(false);
+  }
+}, [currentBattleIndex, playableBattles, fetchLeaderboard]);
+
+const currentItem = currentItems[currentIndex];
+const color = currentItem?.jerseyColor || getJerseyColor("Default");
+
+const startScan = useCallback(
+  (index: number) => {
+    if (!currentItems[index]) return;
+    setIsScanning(true);
+    let count = 0;
+    if (scanInterval.current) clearInterval(scanInterval.current);
+    scanInterval.current = setInterval(() => {
+      setDisplayNumber(Math.floor(Math.random() * 99) + 1);
+      count++;
+      if (count >= 18) {
+        clearInterval(scanInterval.current!);
+        setDisplayNumber(currentItems[index].jerseyNumber || "--");
+        setIsScanning(false);
       }
-    };
-    const handleTouchEnd = () => {
-      if (!isDraggingRef.current) return;
-      const deltaX = dragXRef.current;
-      if (lockAxis.current === "h" && Math.abs(deltaX) > 50 && !isAnimatingOut) {
-        if (deltaX < 0) animateSwipe("left");
-        else if (deltaX > 0) animateSwipe("right");
-      }
-      setIsDragging(false);
-      setDragX(0);
-      dragXRef.current = 0;
-      isDraggingRef.current = false;
-      lockAxis.current = null;
-    };
-    const handleTouchCancel = () => {
-      setIsDragging(false);
-      setDragX(0);
-      dragXRef.current = 0;
-      isDraggingRef.current = false;
-      lockAxis.current = null;
-    };
-    card.addEventListener("touchstart", handleTouchStart, { passive: true });
-    card.addEventListener("touchmove", handleTouchMove, { passive: false });
-    card.addEventListener("touchend", handleTouchEnd);
-    card.addEventListener("touchcancel", handleTouchCancel);
+    }, 60);
+  },
+  [currentItems]
+);
+
+useEffect(() => {
+  if (currentItem && currentItem.type === "PLAYER") {
+    setDisplayNumber(currentItem.jerseyNumber || "--");
+    if (scanTimeout.current) clearTimeout(scanTimeout.current);
+    scanTimeout.current = setTimeout(() => startScan(currentIndex), 300);
+    const interval = setInterval(() => startScan(currentIndex), 3000);
     return () => {
-      card.removeEventListener("touchstart", handleTouchStart);
-      card.removeEventListener("touchmove", handleTouchMove);
-      card.removeEventListener("touchend", handleTouchEnd);
-      card.removeEventListener("touchcancel", handleTouchCancel);
+      clearInterval(interval);
+      if (scanInterval.current) clearInterval(scanInterval.current);
+      if (scanTimeout.current) clearTimeout(scanTimeout.current);
     };
-  }, [animateSwipe, isAnimatingOut]);
+  } else if (currentItem && currentItem.type === "CLUB") {
+    setDisplayNumber("🏆");
+    setIsScanning(false);
+  }
+}, [currentIndex, currentItem, startScan]);
 
-  const handlePointerDown = (e: React.PointerEvent) => {
+const animateSwipe = useCallback(
+  (dir: "left" | "right") => {
+    if (isAnimatingOut || !currentItems.length) return;
+    const currentPlayer = currentItems[currentIndex];
+    const isLastCard = currentIndex + 1 >= currentItems.length;
+
+    setSwipeDir(dir);
+    setIsAnimatingOut(true);
+    setIsDragging(false);
+    setDragX(0);
+
+    const votePromise = currentPlayer ? recordVote(currentPlayer, dir) : Promise.resolve();
+
+    setTimeout(() => {
+      setIsAnimatingOut(false);
+      setSwipeDir(null);
+      dragXRef.current = 0;
+
+      if (!isLastCard) {
+        setCurrentIndex((p) => p + 1);
+      } else {
+        // Last card: wait for final vote then show result
+        votePromise.finally(() => {
+          switchToNextBattle();
+        });
+      }
+    }, 300);
+  },
+  [isAnimatingOut, currentIndex, currentItems, recordVote, switchToNextBattle]
+);
+
+// ── Touch events ───────────────────────────────────────────────────────────
+useEffect(() => {
+  const card = cardRef.current;
+  if (!card) return;
+  let touchStartX = 0;
+  let touchStartY = 0;
+  const handleTouchStart = (e: TouchEvent) => {
     if (isAnimatingOut) return;
-    startX.current = e.clientX;
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
     isDraggingRef.current = true;
+    lockAxis.current = null;
     dragXRef.current = 0;
-    setIsDragging(true);
-    (e.target as HTMLElement).setPointerCapture(e.pointerId);
   };
-  const handlePointerMove = (e: React.PointerEvent) => {
+  const handleTouchMove = (e: TouchEvent) => {
     if (!isDraggingRef.current || isAnimatingOut) return;
-    const deltaX = e.clientX - startX.current;
-    dragXRef.current = deltaX;
-    setDragX(deltaX);
+    const touchX = e.touches[0].clientX;
+    const touchY = e.touches[0].clientY;
+    const deltaX = touchX - touchStartX;
+    const deltaY = touchY - touchStartY;
+    if (!lockAxis.current && (Math.abs(deltaX) > 10 || Math.abs(deltaY) > 10)) {
+      lockAxis.current = Math.abs(deltaX) > Math.abs(deltaY) ? "h" : "v";
+    }
+    if (lockAxis.current === "h") {
+      e.preventDefault();
+      dragXRef.current = deltaX;
+      setDragX(deltaX);
+      setIsDragging(true);
+    }
   };
-  const handlePointerUp = (e: React.PointerEvent) => {
+  const handleTouchEnd = () => {
     if (!isDraggingRef.current) return;
     const deltaX = dragXRef.current;
-    if (Math.abs(deltaX) > 50 && !isAnimatingOut) {
+    if (lockAxis.current === "h" && Math.abs(deltaX) > 50 && !isAnimatingOut) {
       if (deltaX < 0) animateSwipe("left");
       else if (deltaX > 0) animateSwipe("right");
     }
@@ -2279,408 +2288,454 @@ export default function FanBattleCard() {
     setDragX(0);
     dragXRef.current = 0;
     isDraggingRef.current = false;
+    lockAxis.current = null;
   };
+  const handleTouchCancel = () => {
+    setIsDragging(false);
+    setDragX(0);
+    dragXRef.current = 0;
+    isDraggingRef.current = false;
+    lockAxis.current = null;
+  };
+  card.addEventListener("touchstart", handleTouchStart, { passive: true });
+  card.addEventListener("touchmove", handleTouchMove, { passive: false });
+  card.addEventListener("touchend", handleTouchEnd);
+  card.addEventListener("touchcancel", handleTouchCancel);
+  return () => {
+    card.removeEventListener("touchstart", handleTouchStart);
+    card.removeEventListener("touchmove", handleTouchMove);
+    card.removeEventListener("touchend", handleTouchEnd);
+    card.removeEventListener("touchcancel", handleTouchCancel);
+  };
+}, [animateSwipe, isAnimatingOut]);
 
-  const getCardTransform = (): React.CSSProperties => {
-    if (isAnimatingOut) {
-      return {
-        transform: `translateX(${swipeDir === "left" ? -500 : 500}px) rotate(${swipeDir === "left" ? -15 : 15}deg)`,
-        opacity: 0,
-        transition: "transform 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1), opacity 0.25s ease",
-      };
-    }
-    if (isDragging && dragX !== 0) {
-      const rotate = dragX * 0.03;
-      return { transform: `translateX(${dragX}px) rotate(${rotate}deg)`, transition: "none", cursor: "grabbing" };
-    }
+const handlePointerDown = (e: React.PointerEvent) => {
+  if (isAnimatingOut) return;
+  startX.current = e.clientX;
+  isDraggingRef.current = true;
+  dragXRef.current = 0;
+  setIsDragging(true);
+  (e.target as HTMLElement).setPointerCapture(e.pointerId);
+};
+const handlePointerMove = (e: React.PointerEvent) => {
+  if (!isDraggingRef.current || isAnimatingOut) return;
+  const deltaX = e.clientX - startX.current;
+  dragXRef.current = deltaX;
+  setDragX(deltaX);
+};
+const handlePointerUp = (e: React.PointerEvent) => {
+  if (!isDraggingRef.current) return;
+  const deltaX = dragXRef.current;
+  if (Math.abs(deltaX) > 50 && !isAnimatingOut) {
+    if (deltaX < 0) animateSwipe("left");
+    else if (deltaX > 0) animateSwipe("right");
+  }
+  setIsDragging(false);
+  setDragX(0);
+  dragXRef.current = 0;
+  isDraggingRef.current = false;
+};
+
+const getCardTransform = (): React.CSSProperties => {
+  if (isAnimatingOut) {
     return {
-      transform: "translateX(0px) rotate(0deg)", opacity: 1,
-      transition: "transform 0.4s cubic-bezier(0.2, 0.9, 0.4, 1.1), opacity 0.2s ease",
-      cursor: "grab",
+      transform: `translateX(${swipeDir === "left" ? -500 : 500}px) rotate(${swipeDir === "left" ? -15 : 15}deg)`,
+      opacity: 0,
+      transition: "transform 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1), opacity 0.25s ease",
     };
+  }
+  if (isDragging && dragX !== 0) {
+    const rotate = dragX * 0.03;
+    return { transform: `translateX(${dragX}px) rotate(${rotate}deg)`, transition: "none", cursor: "grabbing" };
+  }
+  return {
+    transform: "translateX(0px) rotate(0deg)", opacity: 1,
+    transition: "transform 0.4s cubic-bezier(0.2, 0.9, 0.4, 1.1), opacity 0.2s ease",
+    cursor: "grab",
   };
+};
 
-  const likeOpacity = dragX > 30 ? Math.min((dragX - 30) / 70, 1) : 0;
-  const skipOpacity = dragX < -30 ? Math.min((-dragX - 30) / 70, 1) : 0;
-  const alreadyVoted = currentItem ? votedPlayerIds.has(currentItem.id) : false;
+const likeOpacity = dragX > 30 ? Math.min((dragX - 30) / 70, 1) : 0;
+const skipOpacity = dragX < -30 ? Math.min((-dragX - 30) / 70, 1) : 0;
+const alreadyVoted = currentItem ? votedPlayerIds.has(currentItem.id) : false;
 
-  // ── Guards ─────────────────────────────────────────────────────────────────
-  if (showCreate) return <CreateBattle onClose={() => setShowCreate(false)} />;
+// ── Guards ─────────────────────────────────────────────────────────────────
+if (showCreate) return <CreateBattle onClose={() => setShowCreate(false)} />;
 
-  if (loading || authLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#07070f]">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500 mx-auto mb-4" />
-          <p className="text-gray-400">Loading battles...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (battles.length === 0) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-[#07070f] px-4">
-        <div className="text-center max-w-sm">
-          <div className="w-20 h-20 rounded-full bg-[#1a1a2e] flex items-center justify-center mx-auto mb-4">
-            <span className="text-3xl">⚔️</span>
-          </div>
-          <h2 className="text-white text-xl font-bold mb-2">No Battles Available</h2>
-          <p className="text-gray-400 text-sm mb-6">
-            {!user?.userId
-              ? "Sign in to create battles and challenge friends!"
-              : "Create a battle to start voting and competing!"}
-          </p>
-          {user?.userId && (
-            <button onClick={() => setShowCreate(true)}
-              className="px-6 py-3 rounded-xl bg-gradient-to-r from-pink-500 to-orange-500 text-white font-semibold">
-              Create Your First Battle
-            </button>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  // ── All battles played — shown on refresh OR after finishing last battle ───
-  // showBattleResult must be checked BEFORE this so the result screen
-  // still renders after the last battle is removed from playableBattles
-  if (!showBattleResult && playableBattles.length === 0) {
-    return (
-      <AlreadyPlayedScreen
-        onCreateBattle={() => setShowCreate(true)}
-        isLoggedIn={!!user?.userId}
-      />
-    );
-  }
-
-  // ── Battle result screen ───────────────────────────────────────────────────
-  if (showBattleResult) {
-    // After removal in switchToNextBattle, next battle is now at currentBattleIndex
-    const nextBattle = playableBattles[currentBattleIndex];
-    const hasNext = !!nextBattle;
-    const nextItemCount = nextBattle
-      ? (nextBattle.battleType === "CLUBS" ? nextBattle.selectedClubs : nextBattle.selectedPlayers).length
-      : 0;
-
-    return (
-      <BattleResultScreen
-        battleName={completedBattleName}
-        votedCount={battleStats.voted}
-        skippedCount={battleStats.skipped}
-        pointsGiven={battleStats.pointsGiven}
-        hasNextBattle={hasNext}
-        nextBattle={nextBattle}
-        nextBattleIndex={hasNext ? currentBattleIndex + 1 : undefined}
-        totalBattles={playableBattles.length + 1} // +1 since current was already removed
-        nextItemCount={nextItemCount}
-        onPlayNext={handlePlayNextBattle}
-        onCreateBattle={() => {
-          setShowBattleResult(false);
-          setShowCreate(true);
-        }}
-        isLoggedIn={!!user?.userId}
-      />
-    );
-  }
-
-  if (!currentItems.length || !currentItem) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#07070f]">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500 mx-auto mb-4" />
-          <p className="text-gray-400">Loading items...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // ── Main card UI ───────────────────────────────────────────────────────────
+if (loading || authLoading) {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-start bg-[#07070f] py-6 px-4 select-none overflow-hidden">
-      {toast && <Toast message={toast.message} type={toast.type} />}
-      {showHowItWorks && <HowFanBattleWorksModal onClose={() => setShowHowItWorks(false)} />}
-      {showLeaderboard && (
-        <LeaderboardModal
-          battleName={playableBattles[currentBattleIndex]?.battleName || "Battle"}
-          leaderboard={leaderboard}
-          votedPlayerIds={Array.from(votedPlayerIds)}
-          onClose={() => setShowLeaderboard(false)}
-        />
-      )}
-
-      <div className="w-full max-w-sm flex flex-col items-start sm:items-center justify-between gap-3 sm:gap-0 mb-5">
-        <div className="flex items-center justify-between gap-2 w-full sm:w-auto">
-          <p className="text-gray-500 text-lg sm:text-2xl font-bold mt-0.5 flex-1 sm:flex-none truncate">
-            {playableBattles[currentBattleIndex]?.battleName
-              ? playableBattles[currentBattleIndex].battleName.charAt(0).toUpperCase() +
-                playableBattles[currentBattleIndex].battleName.slice(1)
-              : "Swipe to support"}
-          </p>
-          <button
-            onClick={() => setShowHowItWorks(true)}
-            className="flex items-center justify-center w-6 h-6 rounded-full text-gray-400 hover:text-pink-400 transition-colors flex-shrink-0"
-            style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)", fontSize: 13, fontWeight: 700 }}
-            aria-label="How Fan Battle Works"
-          >
-            i
-          </button>
-        </div>
-        <div className="flex gap-3 w-full sm:w-auto">
-          <button
-            onClick={() => setShowCreate(true)}
-            className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 rounded-md text-pink-500 border border-pink-600 bg-transparent text-xs sm:text-sm font-medium hover:bg-pink-600/10 hover:shadow-[0_0_10px_rgba(236,72,153,0.4)] transition-all duration-200"
-          >
-            <Pencil className="w-3 h-3" />
-            <span>Create</span>
-          </button>
-          <button
-            onClick={() => {}}
-            className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 rounded-md text-pink-500 border border-pink-600 bg-transparent text-xs sm:text-sm font-medium hover:bg-pink-600/10 hover:shadow-[0_0_10px_rgba(236,72,153,0.4)] transition-all duration-200"
-          >
-            <Users className="w-3 h-3" />
-            <span>Invite</span>
-          </button>
-        </div>
+    <div className="min-h-screen flex items-center justify-center bg-[#07070f]">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500 mx-auto mb-4" />
+        <p className="text-gray-400">Loading battles...</p>
       </div>
+    </div>
+  );
+}
 
-      {playableBattles.length > 1 && (
-        <div className="w-full max-w-sm mb-3">
-          <div className="flex justify-between text-xs text-gray-500 mb-1">
-            <span>Battle {currentBattleIndex + 1} of {playableBattles.length}</span>
-            <span>{currentIndex + 1}/{currentItems.length} items</span>
-          </div>
-          <div className="w-full h-1 bg-[#1a1a2e] rounded-full overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-pink-500 to-orange-500 rounded-full transition-all duration-300"
-              style={{
-                width: `${((currentBattleIndex * currentItems.length + currentIndex + 1) /
-                  (playableBattles.length * currentItems.length)) * 100}%`,
-              }}
-            />
-          </div>
+if (battles.length === 0) {
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center bg-[#07070f] px-4">
+      <div className="text-center max-w-sm">
+        <div className="w-20 h-20 rounded-full bg-[#1a1a2e] flex items-center justify-center mx-auto mb-4">
+          <span className="text-3xl">⚔️</span>
         </div>
-      )}
-
-      <div className="w-full max-w-sm relative" style={{ perspective: "1200px" }}>
-        <div className="absolute inset-0 rounded-2xl"
-          style={{ background: "#0c091a", border: "1px solid rgba(255,255,255,0.05)", transform: "scale(0.94) translateY(12px)", zIndex: 0 }} />
-        <div className="absolute inset-0 rounded-2xl"
-          style={{ background: "#0a0814", border: "1px solid rgba(255,255,255,0.04)", transform: "scale(0.97) translateY(6px)", zIndex: 1 }} />
-
-        <div
-          ref={cardRef}
-          className="relative w-full rounded-2xl overflow-hidden"
-          style={{
-            background: "linear-gradient(150deg, #130820 0%, #0c0c1a 45%, #150a0a 100%)",
-            border: `1px solid ${color.stroke}44`,
-            boxShadow: `0 0 60px ${color.glow}, 0 24px 60px rgba(0,0,0,0.7), inset 0 0 50px rgba(0,0,0,0.5)`,
-            zIndex: 2,
-            minHeight: 410,
-            willChange: "transform",
-            touchAction: "pan-y pinch-zoom",
-            ...getCardTransform(),
-          }}
-          onPointerDown={handlePointerDown}
-          onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerUp}
-          onPointerLeave={handlePointerUp}
-        >
-          {["top-3 left-3 border-t-2 border-l-2", "top-3 right-3 border-t-2 border-r-2",
-            "bottom-3 left-3 border-b-2 border-l-2", "bottom-3 right-3 border-b-2 border-r-2"].map((cls, i) => (
-              <div key={i} className={`absolute w-5 h-5 ${cls} rounded-sm`} style={{ borderColor: `${color.stroke}70` }} />
-            ))}
-          <div className="absolute left-4 top-1/2 w-1.5 h-1.5 rounded-full" style={{ background: `${color.stroke}55` }} />
-          <div className="absolute right-4 top-1/2 w-1.5 h-1.5 rounded-full" style={{ background: `${color.stroke}55` }} />
-          <div className="absolute top-0 left-0 right-0 h-px"
-            style={{ background: `linear-gradient(90deg, transparent, ${color.stroke}cc, transparent)` }} />
-
-          {alreadyVoted && (
-            <div className="absolute top-3 left-1/2 z-20 px-3 py-1 rounded-full text-[10px] font-bold"
-              style={{ transform: "translateX(-50%)", background: "rgba(74,222,128,0.15)", border: "1px solid #4ade8066", color: "#4ade80" }}>
-              ✓ Voted
-            </div>
-          )}
-
-          <div className="absolute inset-0 flex items-center justify-start pl-7 pointer-events-none z-10"
-            style={{ opacity: likeOpacity, transition: isDragging ? "none" : "opacity 0.15s" }}>
-            <div className="font-black text-2xl tracking-widest border-4 rounded-xl px-4 py-2"
-              style={{ borderColor: "#4ade80", color: "#4ade80", transform: "rotate(-14deg)", textShadow: "0 0 12px rgba(74,222,128,0.5)" }}>
-              +15 PTS
-            </div>
-          </div>
-          <div className="absolute inset-0 flex items-center justify-end pr-7 pointer-events-none z-10"
-            style={{ opacity: skipOpacity, transition: isDragging ? "none" : "opacity 0.15s" }}>
-            <div className="font-black text-2xl tracking-widest border-4 rounded-xl px-4 py-2"
-              style={{ borderColor: "#f87171", color: "#f87171", transform: "rotate(14deg)", textShadow: "0 0 12px rgba(248,113,113,0.5)" }}>
-              SKIP
-            </div>
-          </div>
-
-          <div className="flex flex-col items-center pt-8 pb-5 px-5">
-            <div className="relative flex items-center justify-center mb-4" style={{ width: 250, height: 250 }}>
-              <div className="absolute inset-0"
-                style={{ background: `radial-gradient(ellipse at center, ${color.glow} 0%, transparent 68%)`, filter: "blur(16px)", transform: "scale(1.4)" }} />
-              {currentItem?.type === "CLUB" ? (
-                <img src={currentItem.avatar || "/images/default-club.png"} alt={currentItem.name}
-                  className="w-[200px] h-[200px] object-contain relative z-10 rounded-2xl" draggable={false} />
-              ) : (
-                <>
-                  <img
-                    src={getJerseys.find((j) => j.team === currentItem?.team)?.path || "/images/MI1.png"}
-                    alt={currentItem?.team || "Jersey"}
-                    className="w-[320px] h-[320px] object-contain relative z-10"
-                    draggable={false}
-                  />
-                  <div className="absolute inset-0 flex items-center justify-center pt-5 z-20 pointer-events-none">
-                    <span className="text-white font-bold font-mono"
-                      style={{
-                        fontSize: isScanning ? "30px" : "36px",
-                        opacity: isScanning ? 0.6 : 1,
-                        filter: isScanning ? "blur(0.8px)" : "none",
-                        transition: isScanning ? "none" : "all 0.2s",
-                        textShadow: "0 2px 4px rgba(0,0,0,0.5)",
-                      }}>
-                      {displayNumber}
-                    </span>
-                  </div>
-                  {isScanning && (
-                    <div className="absolute left-2 right-2 h-px pointer-events-none"
-                      style={{ background: `linear-gradient(90deg, transparent, ${color.stroke}cc, transparent)`, animation: "scanLine 0.18s linear infinite", top: "50%" }} />
-                  )}
-                </>
-              )}
-            </div>
-
-            <h2 className="text-white text-lg font-bold text-center leading-snug">{currentItem.name}</h2>
-            <p className="text-gray-500 text-xs mt-1 text-center">{currentItem.team || "IPL"}</p>
-            <div className="flex items-center gap-2 mt-3 mb-4">
-              <span className="text-white text-[10px] font-bold tracking-wider px-3 py-1 rounded-sm"
-                style={{ background: `linear-gradient(90deg, ${color.from}, ${color.to})` }}>
-                {currentItem.role || currentItem.specialization || (currentItem.type === "CLUB" ? "IPL FRANCHISE" : "PLAYER")}
-              </span>
-              <span className="text-gray-500 text-xs">
-                • {currentItem.type === "CLUB" ? "Indian Premier League" : "India Cricket"}
-              </span>
-            </div>
-
-            <div className="w-full grid grid-cols-3 gap-2 mb-3">
-              {currentItem?.type === "CLUB" ? (
-                <>
-                  <div className="flex flex-col items-center justify-center rounded-xl py-2.5"
-                    style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
-                    <span className="text-white text-sm font-bold leading-tight">{currentItem.stats?.runs || "0"}</span>
-                    <span className="text-gray-600 text-[9px] font-bold tracking-widest mt-0.5">RUNS</span>
-                  </div>
-                  <div className="flex flex-col items-center justify-center rounded-xl py-2.5"
-                    style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
-                    <span className="text-white text-sm font-bold leading-tight">{currentItem.stats?.sr || "0"}</span>
-                    <span className="text-gray-600 text-[9px] font-bold tracking-widest mt-0.5">STRIKE RATE</span>
-                  </div>
-                  <div className="flex flex-col items-center justify-center rounded-xl py-2.5"
-                    style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
-                    <span className="text-white text-sm font-bold leading-tight">{currentItem.stats?.avg || "0"}</span>
-                    <span className="text-gray-600 text-[9px] font-bold tracking-widest mt-0.5">AVERAGE</span>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="flex flex-col items-center justify-center rounded-xl py-2.5"
-                    style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
-                    <span className="text-white text-sm font-bold leading-tight">{currentItem.runs?.toLocaleString() || "0"}</span>
-                    <span className="text-gray-600 text-[9px] font-bold tracking-widest mt-0.5">RUNS</span>
-                  </div>
-                  <div className="flex flex-col items-center justify-center rounded-xl py-2.5"
-                    style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
-                    <span className="text-white text-sm font-bold leading-tight">
-                      {typeof currentItem.strikeRate === "number"
-                        ? currentItem.strikeRate.toFixed(1)
-                        : currentItem.strikeRate || "0.0"}
-                    </span>
-                    <span className="text-gray-600 text-[9px] font-bold tracking-widest mt-0.5">STRIKE RATE</span>
-                  </div>
-                  <div className="flex flex-col items-center justify-center rounded-xl py-2.5"
-                    style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
-                    <span className="text-white text-sm font-bold leading-tight">{currentItem.age || 25}</span>
-                    <span className="text-gray-600 text-[9px] font-bold tracking-widest mt-0.5">AGE</span>
-                  </div>
-                </>
-              )}
-            </div>
-
-            {currentItem?.type === "CLUB" && currentItem.overview && (
-              <div className="w-full mt-2 p-3 rounded-xl"
-                style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
-                <p className="text-gray-400 text-[10px] text-center">
-                  🏟️ {currentItem.overview.venue} | 👤 {currentItem.overview.captain}
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
+        <h2 className="text-white text-xl font-bold mb-2">No Battles Available</h2>
+        <p className="text-gray-400 text-sm mb-6">
+          {!user?.userId
+            ? "Sign in to create battles and challenge friends!"
+            : "Create a battle to start voting and competing!"}
+        </p>
+        {user?.userId && (
+          <button onClick={() => setShowCreate(true)}
+            className="px-6 py-3 rounded-xl bg-gradient-to-r from-pink-500 to-orange-500 text-white font-semibold">
+            Create Your First Battle
+          </button>
+        )}
       </div>
+    </div>
+  );
+}
 
-      <div className="w-full max-w-sm mt-4 flex items-center justify-between px-5 py-3.5 rounded-2xl"
-        style={{ background: "#0e0e18", border: "1px solid rgba(255,255,255,0.06)" }}>
-        <button onClick={() => animateSwipe("left")}
-          className="flex items-center gap-2 text-gray-400 text-xs font-medium hover:text-white transition-colors group">
-          <span className="w-8 h-8 rounded-full flex items-center justify-center border border-gray-700 group-hover:border-gray-500 transition-colors text-sm"
-            style={{ background: "rgba(255,255,255,0.05)" }}>
-            ←
-          </span>
-          Skip
-        </button>
-        <div className="text-center">
-          <p className="text-[10px] text-gray-600 font-bold tracking-widest">SWIPE RIGHT</p>
-          <p className="text-xs font-black" style={{ color: color.stroke }}>+15 PTS</p>
-        </div>
+// ── All battles played — shown on refresh OR after finishing last battle ───
+// showBattleResult must be checked BEFORE this so the result screen
+// still renders after the last battle is removed from playableBattles
+if (!showBattleResult && playableBattles.length === 0) {
+  return (
+    <AlreadyPlayedScreen
+      onCreateBattle={() => setShowCreate(true)}
+      isLoggedIn={!!user?.userId}
+    />
+  );
+}
+
+// ── Battle result screen ───────────────────────────────────────────────────
+if (showBattleResult) {
+  // After removal in switchToNextBattle, next battle is now at currentBattleIndex
+  const nextBattle = playableBattles[currentBattleIndex];
+  const hasNext = !!nextBattle;
+  const nextItemCount = nextBattle
+    ? (nextBattle.battleType === "CLUBS" ? nextBattle.selectedClubs : nextBattle.selectedPlayers).length
+    : 0;
+
+  return (
+    <BattleResultScreen
+      battleName={completedBattleName}
+      votedCount={battleStats.voted}
+      skippedCount={battleStats.skipped}
+      pointsGiven={battleStats.pointsGiven}
+      hasNextBattle={hasNext}
+      nextBattle={nextBattle}
+      nextBattleIndex={hasNext ? currentBattleIndex + 1 : undefined}
+      totalBattles={playableBattles.length + 1} // +1 since current was already removed
+      nextItemCount={nextItemCount}
+      onPlayNext={handlePlayNextBattle}
+      onCreateBattle={() => {
+        setShowBattleResult(false);
+        setShowCreate(true);
+      }}
+      isLoggedIn={!!user?.userId}
+    />
+  );
+}
+
+if (!currentItems.length || !currentItem) {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-[#07070f]">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500 mx-auto mb-4" />
+        <p className="text-gray-400">Loading items...</p>
+      </div>
+    </div>
+  );
+}
+
+// ── Main card UI ───────────────────────────────────────────────────────────
+return (
+  <div className="min-h-screen flex flex-col items-center justify-start bg-[#07070f] py-6 px-4 select-none overflow-hidden">
+    {toast && <Toast message={toast.message} type={toast.type} />}
+    {showHowItWorks && <HowFanBattleWorksModal onClose={() => setShowHowItWorks(false)} />}
+    {showLeaderboard && (
+      <LeaderboardModal
+        battleName={playableBattles[currentBattleIndex]?.battleName || "Battle"}
+        leaderboard={leaderboard}
+        votedPlayerIds={Array.from(votedPlayerIds)}
+        onClose={() => setShowLeaderboard(false)}
+      />
+    )}
+
+    <div className="w-full max-w-sm flex flex-col items-start sm:items-center justify-between gap-3 sm:gap-0 mb-5">
+      <div className="flex items-center justify-between gap-2 w-full sm:w-auto">
+        <p className="text-gray-500 text-lg sm:text-2xl font-bold mt-0.5 flex-1 sm:flex-none truncate">
+          {playableBattles[currentBattleIndex]?.battleName
+            ? playableBattles[currentBattleIndex].battleName.charAt(0).toUpperCase() +
+            playableBattles[currentBattleIndex].battleName.slice(1)
+            : "Swipe to support"}
+        </p>
         <button
-          onClick={() => animateSwipe("right")}
-          className="flex items-center gap-2 text-xs font-semibold transition-colors"
-          style={{ color: alreadyVoted ? "#6b7280" : color.stroke }}
-          disabled={alreadyVoted}
+          onClick={() => setShowHowItWorks(true)}
+          className="flex items-center justify-center w-6 h-6 rounded-full text-gray-400 hover:text-pink-400 transition-colors flex-shrink-0"
+          style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)", fontSize: 13, fontWeight: 700 }}
+          aria-label="How Fan Battle Works"
         >
-          {alreadyVoted ? "Voted ✓" : "Like"}
-          <span className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm"
-            style={{
-              background: alreadyVoted
-                ? "rgba(107,114,128,0.3)"
-                : `linear-gradient(135deg, ${color.from}, ${color.to})`,
-              boxShadow: alreadyVoted ? "none" : `0 0 14px ${color.glow}`,
-            }}>
-            →
-          </span>
+          i
         </button>
       </div>
+      <div className="flex gap-3 w-full sm:w-auto">
+        <button
+          onClick={() => setShowCreate(true)}
+          className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 rounded-md text-pink-500 border border-pink-600 bg-transparent text-xs sm:text-sm font-medium hover:bg-pink-600/10 hover:shadow-[0_0_10px_rgba(236,72,153,0.4)] transition-all duration-200"
+        >
+          <Pencil className="w-3 h-3" />
+          <span>Create</span>
+        </button>
+        <button
+          onClick={() => { }}
+          className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 rounded-md text-pink-500 border border-pink-600 bg-transparent text-xs sm:text-sm font-medium hover:bg-pink-600/10 hover:shadow-[0_0_10px_rgba(236,72,153,0.4)] transition-all duration-200"
+        >
+          <Users className="w-3 h-3" />
+          <span>Invite</span>
+        </button>
+      </div>
+    </div>
 
-      <p className="text-gray-700 text-[9px] tracking-widest mt-3 uppercase">
-        Swipe right to give +15 pts • Left to skip
-      </p>
-
-      <div className="flex gap-1.5 mt-2.5">
-        {currentItems.map((item, i) => (
-          <button
-            key={item.id}
-            onClick={() => !isAnimatingOut && setCurrentIndex(i)}
-            className="rounded-full transition-all duration-300"
+    {playableBattles.length > 1 && (
+      <div className="w-full max-w-sm mb-3">
+        <div className="flex justify-between text-xs text-gray-500 mb-1">
+          <span>Battle {currentBattleIndex + 1} of {playableBattles.length}</span>
+          <span>{currentIndex + 1}/{currentItems.length} items</span>
+        </div>
+        <div className="w-full h-1 bg-[#1a1a2e] rounded-full overflow-hidden">
+          <div
+            className="h-full bg-gradient-to-r from-pink-500 to-orange-500 rounded-full transition-all duration-300"
             style={{
-              width: i === currentIndex ? 18 : 6,
-              height: 6,
-              background: votedPlayerIds.has(item.id)
-                ? "#4ade80"
-                : i === currentIndex
-                  ? (item.jerseyColor?.stroke || "#f472b6")
-                  : "rgba(255,255,255,0.15)",
+              width: `${((currentBattleIndex * currentItems.length + currentIndex + 1) /
+                (playableBattles.length * currentItems.length)) * 100}%`,
             }}
           />
-        ))}
+        </div>
       </div>
+    )}
 
-      <style>{`
+    <div className="w-full max-w-sm relative" style={{ perspective: "1200px" }}>
+      <div className="absolute inset-0 rounded-2xl"
+        style={{ background: "#0c091a", border: "1px solid rgba(255,255,255,0.05)", transform: "scale(0.94) translateY(12px)", zIndex: 0 }} />
+      <div className="absolute inset-0 rounded-2xl"
+        style={{ background: "#0a0814", border: "1px solid rgba(255,255,255,0.04)", transform: "scale(0.97) translateY(6px)", zIndex: 1 }} />
+
+      <div
+        ref={cardRef}
+        className="relative w-full rounded-2xl overflow-hidden"
+        style={{
+          background: "linear-gradient(150deg, #130820 0%, #0c0c1a 45%, #150a0a 100%)",
+          border: `1px solid ${color.stroke}44`,
+          boxShadow: `0 0 60px ${color.glow}, 0 24px 60px rgba(0,0,0,0.7), inset 0 0 50px rgba(0,0,0,0.5)`,
+          zIndex: 2,
+          minHeight: 410,
+          willChange: "transform",
+          touchAction: "pan-y pinch-zoom",
+          ...getCardTransform(),
+        }}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerLeave={handlePointerUp}
+      >
+        {["top-3 left-3 border-t-2 border-l-2", "top-3 right-3 border-t-2 border-r-2",
+          "bottom-3 left-3 border-b-2 border-l-2", "bottom-3 right-3 border-b-2 border-r-2"].map((cls, i) => (
+            <div key={i} className={`absolute w-5 h-5 ${cls} rounded-sm`} style={{ borderColor: `${color.stroke}70` }} />
+          ))}
+        <div className="absolute left-4 top-1/2 w-1.5 h-1.5 rounded-full" style={{ background: `${color.stroke}55` }} />
+        <div className="absolute right-4 top-1/2 w-1.5 h-1.5 rounded-full" style={{ background: `${color.stroke}55` }} />
+        <div className="absolute top-0 left-0 right-0 h-px"
+          style={{ background: `linear-gradient(90deg, transparent, ${color.stroke}cc, transparent)` }} />
+
+        {alreadyVoted && (
+          <div className="absolute top-3 left-1/2 z-20 px-3 py-1 rounded-full text-[10px] font-bold"
+            style={{ transform: "translateX(-50%)", background: "rgba(74,222,128,0.15)", border: "1px solid #4ade8066", color: "#4ade80" }}>
+            ✓ Voted
+          </div>
+        )}
+
+        <div className="absolute inset-0 flex items-center justify-start pl-7 pointer-events-none z-10"
+          style={{ opacity: likeOpacity, transition: isDragging ? "none" : "opacity 0.15s" }}>
+          <div className="font-black text-2xl tracking-widest border-4 rounded-xl px-4 py-2"
+            style={{ borderColor: "#4ade80", color: "#4ade80", transform: "rotate(-14deg)", textShadow: "0 0 12px rgba(74,222,128,0.5)" }}>
+            +15 PTS
+          </div>
+        </div>
+        <div className="absolute inset-0 flex items-center justify-end pr-7 pointer-events-none z-10"
+          style={{ opacity: skipOpacity, transition: isDragging ? "none" : "opacity 0.15s" }}>
+          <div className="font-black text-2xl tracking-widest border-4 rounded-xl px-4 py-2"
+            style={{ borderColor: "#f87171", color: "#f87171", transform: "rotate(14deg)", textShadow: "0 0 12px rgba(248,113,113,0.5)" }}>
+            SKIP
+          </div>
+        </div>
+
+        <div className="flex flex-col items-center pt-8 pb-5 px-5">
+          <div className="relative flex items-center justify-center mb-4" style={{ width: 250, height: 250 }}>
+            <div className="absolute inset-0"
+              style={{ background: `radial-gradient(ellipse at center, ${color.glow} 0%, transparent 68%)`, filter: "blur(16px)", transform: "scale(1.4)" }} />
+            {currentItem?.type === "CLUB" ? (
+              <img src={currentItem.avatar || "/images/default-club.png"} alt={currentItem.name}
+                className="w-[200px] h-[200px] object-contain relative z-10 rounded-2xl" draggable={false} />
+            ) : (
+              <>
+                <img
+                  src={getJerseys.find((j) => j.team === currentItem?.team)?.path || "/images/MI1.png"}
+                  alt={currentItem?.team || "Jersey"}
+                  className="w-[320px] h-[320px] object-contain relative z-10"
+                  draggable={false}
+                />
+                <div className="absolute inset-0 flex items-center justify-center pt-5 z-20 pointer-events-none">
+                  <span className="text-white font-bold font-mono"
+                    style={{
+                      fontSize: isScanning ? "30px" : "36px",
+                      opacity: isScanning ? 0.6 : 1,
+                      filter: isScanning ? "blur(0.8px)" : "none",
+                      transition: isScanning ? "none" : "all 0.2s",
+                      textShadow: "0 2px 4px rgba(0,0,0,0.5)",
+                    }}>
+                    {displayNumber}
+                  </span>
+                </div>
+                {isScanning && (
+                  <div className="absolute left-2 right-2 h-px pointer-events-none"
+                    style={{ background: `linear-gradient(90deg, transparent, ${color.stroke}cc, transparent)`, animation: "scanLine 0.18s linear infinite", top: "50%" }} />
+                )}
+              </>
+            )}
+          </div>
+
+          <h2 className="text-white text-lg font-bold text-center leading-snug">{currentItem.name}</h2>
+          <p className="text-gray-500 text-xs mt-1 text-center">{currentItem.team || "IPL"}</p>
+          <div className="flex items-center gap-2 mt-3 mb-4">
+            <span className="text-white text-[10px] font-bold tracking-wider px-3 py-1 rounded-sm"
+              style={{ background: `linear-gradient(90deg, ${color.from}, ${color.to})` }}>
+              {currentItem.role || currentItem.specialization || (currentItem.type === "CLUB" ? "IPL FRANCHISE" : "PLAYER")}
+            </span>
+            <span className="text-gray-500 text-xs">
+              • {currentItem.type === "CLUB" ? "Indian Premier League" : "India Cricket"}
+            </span>
+          </div>
+
+          <div className="w-full grid grid-cols-3 gap-2 mb-3">
+            {currentItem?.type === "CLUB" ? (
+              <>
+                <div className="flex flex-col items-center justify-center rounded-xl py-2.5"
+                  style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
+                  <span className="text-white text-sm font-bold leading-tight">{currentItem.stats?.runs || "0"}</span>
+                  <span className="text-gray-600 text-[9px] font-bold tracking-widest mt-0.5">RUNS</span>
+                </div>
+                <div className="flex flex-col items-center justify-center rounded-xl py-2.5"
+                  style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
+                  <span className="text-white text-sm font-bold leading-tight">{currentItem.stats?.sr || "0"}</span>
+                  <span className="text-gray-600 text-[9px] font-bold tracking-widest mt-0.5">STRIKE RATE</span>
+                </div>
+                <div className="flex flex-col items-center justify-center rounded-xl py-2.5"
+                  style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
+                  <span className="text-white text-sm font-bold leading-tight">{currentItem.stats?.avg || "0"}</span>
+                  <span className="text-gray-600 text-[9px] font-bold tracking-widest mt-0.5">AVERAGE</span>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex flex-col items-center justify-center rounded-xl py-2.5"
+                  style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
+                  <span className="text-white text-sm font-bold leading-tight">{currentItem.runs?.toLocaleString() || "0"}</span>
+                  <span className="text-gray-600 text-[9px] font-bold tracking-widest mt-0.5">RUNS</span>
+                </div>
+                <div className="flex flex-col items-center justify-center rounded-xl py-2.5"
+                  style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
+                  <span className="text-white text-sm font-bold leading-tight">
+                    {typeof currentItem.strikeRate === "number"
+                      ? currentItem.strikeRate.toFixed(1)
+                      : currentItem.strikeRate || "0.0"}
+                  </span>
+                  <span className="text-gray-600 text-[9px] font-bold tracking-widest mt-0.5">STRIKE RATE</span>
+                </div>
+                <div className="flex flex-col items-center justify-center rounded-xl py-2.5"
+                  style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
+                  <span className="text-white text-sm font-bold leading-tight">{currentItem.age || 25}</span>
+                  <span className="text-gray-600 text-[9px] font-bold tracking-widest mt-0.5">AGE</span>
+                </div>
+              </>
+            )}
+          </div>
+
+          {currentItem?.type === "CLUB" && currentItem.overview && (
+            <div className="w-full mt-2 p-3 rounded-xl"
+              style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
+              <p className="text-gray-400 text-[10px] text-center">
+                🏟️ {currentItem.overview.venue} | 👤 {currentItem.overview.captain}
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+
+    <div className="w-full max-w-sm mt-4 flex items-center justify-between px-5 py-3.5 rounded-2xl"
+      style={{ background: "#0e0e18", border: "1px solid rgba(255,255,255,0.06)" }}>
+      <button onClick={() => animateSwipe("left")}
+        className="flex items-center gap-2 text-gray-400 text-xs font-medium hover:text-white transition-colors group">
+        <span className="w-8 h-8 rounded-full flex items-center justify-center border border-gray-700 group-hover:border-gray-500 transition-colors text-sm"
+          style={{ background: "rgba(255,255,255,0.05)" }}>
+          ←
+        </span>
+        Skip
+      </button>
+      <div className="text-center">
+        <p className="text-[10px] text-gray-600 font-bold tracking-widest">SWIPE RIGHT</p>
+        <p className="text-xs font-black" style={{ color: color.stroke }}>+15 PTS</p>
+      </div>
+      <button
+        onClick={() => animateSwipe("right")}
+        className="flex items-center gap-2 text-xs font-semibold transition-colors"
+        style={{ color: alreadyVoted ? "#6b7280" : color.stroke }}
+        disabled={alreadyVoted}
+      >
+        {alreadyVoted ? "Voted ✓" : "Like"}
+        <span className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm"
+          style={{
+            background: alreadyVoted
+              ? "rgba(107,114,128,0.3)"
+              : `linear-gradient(135deg, ${color.from}, ${color.to})`,
+            boxShadow: alreadyVoted ? "none" : `0 0 14px ${color.glow}`,
+          }}>
+          →
+        </span>
+      </button>
+    </div>
+
+    <p className="text-gray-700 text-[9px] tracking-widest mt-3 uppercase">
+      Swipe right to give +15 pts • Left to skip
+    </p>
+
+    <div className="flex gap-1.5 mt-2.5">
+      {currentItems.map((item, i) => (
+        <button
+          key={item.id}
+          onClick={() => !isAnimatingOut && setCurrentIndex(i)}
+          className="rounded-full transition-all duration-300"
+          style={{
+            width: i === currentIndex ? 18 : 6,
+            height: 6,
+            background: votedPlayerIds.has(item.id)
+              ? "#4ade80"
+              : i === currentIndex
+                ? (item.jerseyColor?.stroke || "#f472b6")
+                : "rgba(255,255,255,0.15)",
+          }}
+        />
+      ))}
+    </div>
+
+    <style>{`
         @keyframes scanLine { 0% { top: 22%; } 50% { top: 78%; } 100% { top: 22%; } }
         @keyframes toastIn { from { opacity: 0; transform: translateX(-50%) translateY(-12px) scale(0.92); } to { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); } }
         @keyframes slideUp { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: translateY(0); } }
       `}</style>
-    </div>
-  );
+  </div>
+);
 }

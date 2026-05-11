@@ -11,15 +11,15 @@ const banners = [
   },
   {
     id: 2,
-    title: "Watch Along",
-    subtitle: "With Ravi Chandra Ashwin",
-    image: "/images/watchsoon.png",
+    title: "Fan Zone",
+    subtitle: "Exclusive Fan Content",
+    image: "/images/fantasy_games_banner.png",
   },
   {
     id: 3,
-    title: "Dream Panel",
-    subtitle: "Special Interview Virat Kohli",
-    image: "/images/bannerthree.png",
+    title: "Fantasy Games",
+    subtitle: "Pick players, score points & win big",
+    image: "/images/fan_zone _banner.png",
   },
 ];
 

@@ -137,6 +137,9 @@ const nextConfig = {
         { source: '/api/battle/:path*', destination: `${apiTarget}/api/battle/:path*` },
         { source: '/api/battle/battle-vote', destination: `${apiTarget}/api/battle/battle-vote` },
         { source: '/api/battle/battle-vote/:path*', destination: `${apiTarget}/api/battle/battle-vote/:path*` },
+          { source: '/api/battle/battle-session', destination: `${apiTarget}/api/battle/battle-session` },
+        { source: '/api/battle/battle-session/:path*', destination: `${apiTarget}/api/battle/battle-session/:path*` },
+
 
         //Jersey Numbers
         { source: '/api/player-profile/seasonstats/playerProfilesId=:playerProfilesId', destination: `${apiTarget}/api/player-profile/seasonstats/playerProfilesId=:playerProfilesId` },

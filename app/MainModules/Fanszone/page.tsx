@@ -3,562 +3,1085 @@
 import { useState } from "react";
 import Image from "next/image";
 import { 
-  Trophy, Flame, MessageCircle, Gift, Users, Eye, 
-  CheckCircle2, Share2, Award, ChevronRight, Dumbbell, 
-  Target, Medal, TrendingUp, X
+  Search, Sparkles, SlidersHorizontal, LogOut, ChevronDown,
+  Trophy, Flame, MessageCircle, Share2, Eye, CheckCircle2, 
+  Award, TrendingUp, Play, ThumbsUp, Radio, FileText, 
+  Gamepad2, UserPlus, Bell, LayoutGrid, Calendar, Filter,
+  Download, ChevronLeft, ChevronRight, MoreHorizontal // <-- Added LayoutGrid and Calendar
+
 } from "lucide-react";
 
-// Import your actual Leaderboard Component!
-import GlobalLeaderboard from "@/src/components/GlobalLeaderboard-Component/GlobalLeaderboard";
-
 // --- MOCK DATA ---
-const monthlyPointsData = {
-  "May 2026": { points: "12,450", growth: "+850", chart: [20, 35, 30, 50, 45, 65, 55, 80, 70, 90, 100] },
-  "Apr 2026": { points: "11,600", growth: "+1200", chart: [30, 40, 35, 50, 45, 60, 55, 70, 65, 80, 75] },
-  "Mar 2026": { points: "10,400", growth: "+900", chart: [20, 25, 30, 40, 35, 50, 45, 60, 55, 65, 70] },
-  "Feb 2026": { points: "9,500", growth: "+400", chart: [15, 20, 18, 25, 30, 28, 35, 40, 38, 45, 50] },
-  "Jan 2026": { points: "9,100", growth: "+0", chart: [10, 12, 15, 14, 20, 18, 22, 25, 24, 30, 35] },
-};
-
-const extendedActivities = [
-  { icon: Trophy, color: "text-yellow-500", text: "You predicted PBKS to win Gold!", pts: "+50 XP", time: "2h ago" },
-  { icon: CheckCircle2, color: "text-blue-500", text: "Voted in Fan Poll", pts: "+20 XP", time: "1d ago" },
-  { icon: Share2, color: "text-emerald-500", text: "Shared a Fan Moment", pts: "+15 XP", time: "2d ago" },
-  { icon: MessageCircle, color: "text-pink-500", text: "Started a Watch Party Chat", pts: "+30 XP", time: "3d ago" },
-  { icon: Flame, color: "text-orange-500", text: "Maintained 7-day login streak", pts: "+100 XP", time: "4d ago" },
+const earningBreakdown = [
+  { label: "Watch / Listen", percent: 35, xp: "4,350 XP", color: "#f43f5e" }, // rose-500
+  { label: "Social Engagement", percent: 20, xp: "2,500 XP", color: "#3b82f6" }, // blue-500
+  { label: "Activities", percent: 25, xp: "3,100 XP", color: "#eab308" }, // yellow-500
+  { label: "Fantasy & Predictions", percent: 15, xp: "1,900 XP", color: "#f97316" }, // orange-500
+  { label: "Community", percent: 5, xp: "600 XP", color: "#a855f7" }, // purple-500
 ];
 
-const extendedTopFans = [
-  { rank: 1, name: "VikramKing", xp: "2,450 XP", img: "12" },
-  { rank: 2, name: "BlueArmy", xp: "2,120 XP", img: "13" },
-  { rank: 3, name: "RohitFan18", xp: "1,980 XP", img: "14" },
-  { rank: 4, name: "PBKSSher", xp: "1,850 XP", img: "15" },
-  { rank: 5, name: "CricketCrazy", xp: "1,720 XP", img: "16" },
+const pointsJourneyData = [
+  { label: "Content", percent: 40, xp: "33,860 XP", color: "#f43f5e" }, // rose
+  { label: "Engagement", percent: 25, xp: "21,150 XP", color: "#3b82f6" }, // blue
+  { label: "Fantasy", percent: 20, xp: "16,930 XP", color: "#eab308" }, // yellow
+  { label: "Community", percent: 10, xp: "8,460 XP", color: "#a855f7" }, // purple
+  { label: "Bonus", percent: 5, xp: "4,250 XP", color: "#ec4899" }, // pink
 ];
 
-type MonthKey = keyof typeof monthlyPointsData;
+const topActivitiesData = [
+  { icon: UserPlus, title: "Register on SportsFan360", xp: "+100 XP", desc: "1 time", color: "text-emerald-500", bg: "bg-emerald-500/10 border-emerald-500/20" },
+  { icon: UserPlus, title: "Invite Friends", xp: "+100 XP", desc: "3 invites", color: "text-emerald-500", bg: "bg-emerald-500/10 border-emerald-500/20" },
+  { icon: Gamepad2, title: "Fantasy - Fan Battle", xp: "+50 XP", desc: "7 battles", color: "text-yellow-500", bg: "bg-yellow-500/10 border-yellow-500/20" },
+  { icon: Play, title: "Play Fantasy Games", xp: "+50 XP", desc: "5 games", color: "text-purple-500", bg: "bg-purple-500/10 border-purple-500/20" },
+  { icon: FileText, title: "Read News Article", xp: "+25 XP", desc: "14 articles", color: "text-rose-500", bg: "bg-rose-500/10 border-rose-500/20" },
+];
 
-// --- REUSABLE STYLED COMPONENTS ---
+// We will reuse `earningHistoryData` for the main table to save space, 
+// as it has the exact structure needed for the All Activities table!
 
-function PremiumCard({
-  children,
-  className = "",
-  onClick,
-  hoverEffect = false,
-}: {
-  children: React.ReactNode;
-  className?: string;
-  onClick?: () => void;
-  hoverEffect?: boolean;
-}) {
+const activityFeedData = [
+  { category: "CONTENT", action: "Read: IPL 2026 Dispatch, May 10", points: "+25 XP", time: "2m ago", icon: FileText, color: "text-yellow-500", bg: "bg-yellow-500/10 border-yellow-500/20" },
+  { category: "ENGAGEMENT", action: "Voted in Poll: Best Knock of the Day", points: "+15 XP", time: "15m ago", icon: CheckCircle2, color: "text-indigo-400", bg: "bg-indigo-500/10 border-indigo-500/20" },
+  { category: "CONTENT", action: "Watched Video Drop: CSK vs LSG Highlights", points: "+20 XP", time: "20m ago", icon: Play, color: "text-emerald-500", bg: "bg-emerald-500/10 border-emerald-500/20" },
+  { category: "ENGAGEMENT", action: "Liked a Post", points: "+10 XP", time: "35m ago", icon: ThumbsUp, color: "text-rose-500", bg: "bg-rose-500/10 border-rose-500/20" },
+  { category: "ENGAGEMENT", action: "Shared a Post", points: "+15 XP", time: "45m ago", icon: Share2, color: "text-purple-500", bg: "bg-purple-500/10 border-purple-500/20" },
+  { category: "COMMUNITY", action: "Sent 2 Signals to friends", points: "+10 XP", time: "1h ago", icon: Radio, color: "text-blue-400", bg: "bg-blue-500/10 border-blue-500/20" },
+  { category: "FANTASY", action: "Joined IPL Fan Battle", points: "+50 XP", time: "1h ago", icon: Gamepad2, color: "text-yellow-500", bg: "bg-yellow-500/10 border-yellow-500/20" },
+  { category: "CONTENT", action: "Read News Article: PBKS vs DC Preview", points: "+25 XP", time: "2h ago", icon: FileText, color: "text-emerald-500", bg: "bg-emerald-500/10 border-emerald-500/20" },
+  { category: "FANTASY", action: "Invited 2 friends to Fan Battle", points: "+20 XP", time: "3h ago", icon: Gamepad2, color: "text-rose-500", bg: "bg-rose-500/10 border-rose-500/20" },
+  { category: "PREDICTIONS", action: "Predicted PBKS to win", points: "+25 XP", time: "3h ago", icon: Trophy, color: "text-rose-500", bg: "bg-rose-500/10 border-rose-500/20" },
+];
+
+const earningHistoryData = [
+  { date: "May 11, 2026", time: "10:24 PM", icon: FileText, action: "Read News Article", details: "Read: IPL 2026 Dispatch, May 10", points: "+25 XP", type: "Content", typeColor: "text-yellow-500 border-yellow-500/20 bg-yellow-500/10" },
+  { date: "May 11, 2026", time: "09:45 PM", icon: CheckCircle2, action: "Voted in Poll", details: "Poll: Best Knock of the Day", points: "+15 XP", type: "Engagement", typeColor: "text-indigo-400 border-indigo-500/20 bg-indigo-500/10" },
+  { date: "May 11, 2026", time: "09:30 PM", icon: Play, action: "Watched Video Drop", details: "CSK vs LSG Highlights", points: "+20 XP", type: "Content", typeColor: "text-emerald-500 border-emerald-500/20 bg-emerald-500/10" },
+  { date: "May 11, 2026", time: "08:15 PM", icon: Share2, action: "Shared a Post", details: "Shared match highlights", points: "+15 XP", type: "Engagement", typeColor: "text-purple-500 border-purple-500/20 bg-purple-500/10" },
+  { date: "May 11, 2026", time: "07:40 PM", icon: ThumbsUp, action: "Liked a Post", details: "Liked a fan post", points: "+10 XP", type: "Engagement", typeColor: "text-rose-500 border-rose-500/20 bg-rose-500/10" },
+  { date: "May 11, 2026", time: "07:20 PM", icon: Radio, action: "Send Signals", details: "Sent 2 signals to friends", points: "+10 XP", type: "Community", typeColor: "text-blue-400 border-blue-500/20 bg-blue-500/10" },
+  { date: "May 11, 2026", time: "06:55 PM", icon: Gamepad2, action: "Fantasy - Fan Battle", details: "Joined IPL Fan Battle", points: "+50 XP", type: "Fantasy", typeColor: "text-yellow-500 border-yellow-500/20 bg-yellow-500/10" },
+  { date: "May 11, 2026", time: "06:40 PM", icon: Gamepad2, action: "Invite to Fan Battle", details: "Invited 2 friends", points: "+20 XP", type: "Fantasy", typeColor: "text-rose-500 border-rose-500/20 bg-rose-500/10" },
+  { date: "May 11, 2026", time: "05:30 PM", icon: Award, action: "Made Prediction", details: "Predicted PBKS to win", points: "+25 XP", type: "Engagement", typeColor: "text-purple-500 border-purple-500/20 bg-purple-500/10" },
+  { date: "May 11, 2026", time: "04:15 PM", icon: CheckCircle2, action: "Participated in Poll", details: "Poll: Player of the Match", points: "+15 XP", type: "Engagement", typeColor: "text-indigo-400 border-indigo-500/20 bg-indigo-500/10" },
+  { date: "May 11, 2026", time: "03:05 PM", icon: Bell, action: "Requested Drops", details: "Requested CSK Highlights", points: "+15 XP", type: "Content", typeColor: "text-pink-500 border-pink-500/20 bg-pink-500/10" },
+  { date: "May 11, 2026", time: "02:20 PM", icon: UserPlus, action: "Registered on SportsFan360", details: "Welcome to SportsFan360!", points: "+100 XP", type: "Account", typeColor: "text-blue-500 border-blue-500/20 bg-blue-500/10" },
+  { date: "May 10, 2026", time: "11:10 PM", icon: UserPlus, action: "Invite Friends", details: "Invited 3 friends", points: "+100 XP", type: "Referral", typeColor: "text-emerald-500 border-emerald-500/20 bg-emerald-500/10" },
+];
+
+const earnPointsActions = [
+  { icon: Play, title: "Watch / Listen to Drops", xp: "+20 XP", desc: "12 Actions", color: "text-yellow-500", bg: "bg-yellow-500/10" },
+  { icon: ThumbsUp, title: "Like a Post", xp: "+10 XP", desc: "28 Actions", color: "text-rose-500", bg: "bg-rose-500/10" },
+  { icon: Share2, title: "Share a Post", xp: "+15 XP", desc: "18 Actions", color: "text-purple-500", bg: "bg-purple-500/10" },
+  { icon: Radio, title: "Send Signals", xp: "+10 XP", desc: "9 Actions", color: "text-blue-500", bg: "bg-blue-500/10" },
+  { icon: Bell, title: "Request Drops", xp: "+15 XP", desc: "6 Actions", color: "text-pink-500", bg: "bg-pink-500/10" },
+  { icon: FileText, title: "Read News Article", xp: "+25 XP", desc: "14 Articles", color: "text-yellow-500", bg: "bg-yellow-500/10" },
+  { icon: CheckCircle2, title: "Take Part in Polls", xp: "+15 XP", desc: "8 Polls", color: "text-yellow-500", bg: "bg-yellow-500/10" },
+  { icon: Gamepad2, title: "Fantasy - Fan Battles", xp: "+50 XP", desc: "7 Battles", color: "text-orange-500", bg: "bg-orange-500/10" },
+  { icon: Award, title: "Make Predictions", xp: "+25 XP", desc: "10 Predictions", color: "text-yellow-500", bg: "bg-yellow-500/10" },
+  { icon: Play, title: "Play Fantasy Games", xp: "+50 XP", desc: "5 Games", color: "text-rose-500", bg: "bg-rose-500/10" },
+  { icon: UserPlus, title: "Register on SportsFan360", xp: "+100 XP", desc: "1 Time", color: "text-purple-500", bg: "bg-purple-500/10" },
+  { icon: UserPlus, title: "Invite Friends", xp: "+100 XP", desc: "3 Invites", color: "text-emerald-500", bg: "bg-emerald-500/10" },
+  { icon: Gamepad2, title: "Invite to Fan Battles", xp: "+20 XP", desc: "4 Invites", color: "text-rose-500", bg: "bg-rose-500/10" },
+];
+
+const recentActivityList = [
+  { icon: FileText, action: "Read:", detail: "IPL 2026 Dispatch, May 10", xp: "+25 XP", time: "2m ago", color: "text-rose-500" },
+  { icon: Play, action: "Watched:", detail: "CSK vs LSG Highlights", xp: "+20 XP", time: "15m ago", color: "text-emerald-500" },
+  { icon: Share2, action: "Shared a Post", detail: "", xp: "+15 XP", time: "32m ago", color: "text-purple-500" },
+  { icon: CheckCircle2, action: "Voted in Poll:", detail: "Best Knock of the Day", xp: "+15 XP", time: "1h ago", color: "text-blue-500" },
+  { icon: Trophy, action: "Predicted PBKS to win", detail: "", xp: "+25 XP", time: "2h ago", color: "text-rose-500" },
+];
+
+const trendData = [30, 45, 40, 60, 55, 75, 70, 90, 85, 100];
+
+// --- REUSABLE COMPONENTS ---
+
+function DonutChart({ data }: { data: typeof earningBreakdown }) {
+  let cumulativePercent = 0;
+  
   return (
-    <div
-      onClick={onClick}
-      className={[
-        "relative rounded-2xl border border-white/10",
-        "bg-[#09090b]", 
-        "shadow-[0_8px_32px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(255,255,255,0.05)]",
-        "transition-all duration-300 ease-out",
-        onClick ? "cursor-pointer" : "",
-        hoverEffect
-          ? "hover:-translate-y-1 hover:border-rose-500/40 hover:shadow-[0_16px_48px_rgba(0,0,0,0.9),0_0_32px_rgba(244,63,94,0.15),inset_0_1px_0_rgba(255,255,255,0.1)]"
-          : "",
-        className,
-      ].join(" ")}
-    >
-      {children}
-    </div>
-  );
-}
-
-function NeonSlider({
-  percent,
-  colorClass = "from-rose-600 to-orange-500",
-  height = "h-1.5",
-  glowColor = "#f43f5e"
-}: {
-  percent: number;
-  colorClass?: string;
-  height?: string;
-  glowColor?: string;
-}) {
-  return (
-    <div className={`relative w-full ${height} bg-zinc-900 rounded-full overflow-visible shadow-inner`}>
-      <div
-        className={`absolute inset-y-0 left-0 rounded-full bg-gradient-to-r ${colorClass} transition-all duration-700`}
-        style={{ width: `${percent}%` }}
-      >
-        <span
-          className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-3 h-3 rounded-full bg-white z-10"
-          style={{
-            boxShadow: `0 0 10px 2px ${glowColor}, 0 0 20px 6px ${glowColor}80` 
-          }}
-        />
+    <div className="relative w-40 h-40 md:w-48 md:h-48 shrink-0">
+      <svg viewBox="0 0 100 100" className="w-full h-full transform -rotate-90">
+        {data.map((slice, i) => {
+          const dasharray = `${slice.percent} 100`;
+          const dashoffset = -cumulativePercent;
+          cumulativePercent += slice.percent;
+          return (
+            <circle
+              key={i}
+              cx="50" cy="50" r="15.91549430918954" // Circumference = 100
+              fill="transparent"
+              stroke={slice.color}
+              strokeWidth="6"
+              strokeDasharray={dasharray}
+              strokeDashoffset={dashoffset}
+              className="transition-all duration-1000 ease-out"
+            />
+          );
+        })}
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+        <span className="text-xl md:text-2xl font-black text-white">12,450</span>
+        <span className="text-[10px] md:text-xs text-gray-400 font-bold uppercase tracking-wider">XP</span>
       </div>
     </div>
   );
 }
 
-export default function FansonePage() {
-  const [selectedMonth, setSelectedMonth] = useState<MonthKey>("May 2026");
-  const [showAllActivity, setShowAllActivity] = useState(false);
-  const [showAllTopFans, setShowAllTopFans] = useState(false);
-  const [isLeaderboardModalOpen, setIsLeaderboardModalOpen] = useState(false);
-
-  const currentMonthData = monthlyPointsData[selectedMonth];
-
-  const generateChartPoints = (chartArray: number[]) => {
-    const maxVal = Math.max(...chartArray);
-    return chartArray.map((val, idx) => {
-      const x = (idx / (chartArray.length - 1)) * 100;
-      const y = 100 - (val / maxVal) * 80;
-      return `${x},${y}`;
-    }).join(" L ");
-  };
-
-  const chartLinePoints = `M ${generateChartPoints(currentMonthData.chart)}`;
-  const chartFillPoints = `${chartLinePoints} L 100,100 L 0,100 Z`;
+function MiniTrendLine({ data }: { data: number[] }) {
+  const maxVal = Math.max(...data);
+  // Add a little padding to the bottom so the line doesn't hit the absolute edge
+  const minVal = Math.min(...data) - 10; 
+  const range = maxVal - minVal;
 
   return (
-    <div className="min-h-screen bg-black text-white p-4 md:p-6 lg:p-8 font-sans relative overflow-x-hidden">
+    // Removed preserveAspectRatio="none" and used a wider viewBox (240x120) 
+    // so it naturally matches the aspect ratio of the card without stretching dots.
+    <svg viewBox="0 -10 240 120" className="w-full h-24 overflow-visible">
+      {/* The Glow Effect */}
+      <path 
+        d={`M ${data.map((val, idx) => `${(idx / (data.length - 1)) * 240},${100 - ((val - minVal) / range) * 100}`).join(" L ")}`} 
+        fill="none" 
+        stroke="#f43f5e" 
+        strokeWidth="4" 
+        className="drop-shadow-[0_4px_12px_rgba(244,63,94,0.8)]"
+      />
+      {/* The White Dots */}
+      {data.map((val, idx) => {
+        const x = (idx / (data.length - 1)) * 240;
+        const y = 100 - ((val - minVal) / range) * 100;
+        return <circle key={idx} cx={x} cy={y} r="4" fill="#fff" />;
+      })}
+    </svg>
+  );
+}
+
+export default function FanZoneDashboard() {
+  const [activeTab, setActiveTab] = useState("My Analytics");
+
+  return (
+    <div className="min-h-screen bg-[#050505] text-white font-sans selection:bg-rose-500/30 pb-20">
       
-      <div className="fixed inset-0 pointer-events-none z-0">
-        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-rose-600/10 rounded-full blur-[120px]" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-orange-600/10 rounded-full blur-[120px]" />
-      </div>
+      {/* 1. TOP NAVIGATION BAR */}
+      <header className="sticky top-0 z-50 flex flex-wrap md:flex-nowrap items-center justify-between gap-4 px-4 md:px-6 py-4 bg-[#09090b]/80 backdrop-blur-md border-b border-white/5">
+        
+        {/* Left Side: Search & Actions */}
+        <div className="flex flex-1 items-center gap-2 md:gap-4 w-full md:w-auto">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+            <input 
+              type="text" 
+              placeholder="Search..." 
+              className="w-full bg-[#18181b] border border-white/10 rounded-full py-2 pl-10 pr-4 text-sm focus:outline-none focus:border-rose-500/50 text-gray-300"
+            />
+          </div>
+          <button className="flex items-center justify-center p-2 md:px-4 md:py-2 rounded-full bg-rose-500/10 text-rose-500 border border-rose-500/20 text-sm font-bold hover:bg-rose-500/20 transition-colors shrink-0">
+            <Sparkles className="w-4 h-4 md:mr-2" /> <span className="hidden md:inline">Ask AI</span>
+          </button>
+          <button className="flex items-center justify-center p-2 md:px-4 md:py-2 rounded-full bg-[#18181b] border border-white/10 text-gray-300 text-sm font-bold hover:bg-white/5 transition-colors shrink-0">
+            <SlidersHorizontal className="w-4 h-4 md:mr-2" /> <span className="hidden md:inline">Preferences</span>
+          </button>
+        </div>
 
-      <div className="relative z-10 max-w-[1600px] mx-auto grid grid-cols-1 xl:grid-cols-4 gap-6">
+        {/* Right Side: Profile & Points */}
+        <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-end border-t border-white/5 md:border-t-0 pt-3 md:pt-0">
+          <div className="text-right">
+            <div className="flex items-center gap-1.5 justify-end">
+              <StarIcon className="w-3 h-3 text-rose-500" />
+              <span className="text-sm font-black text-white">12,450</span>
+            </div>
+            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Points</p>
+          </div>
+          <div className="h-8 w-px bg-white/10 hidden md:block mx-2" />
+          <div className="flex items-center gap-3 cursor-pointer hover:bg-white/5 p-1 pr-3 rounded-full transition-colors border border-transparent hover:border-white/10">
+            <div className="w-9 h-9 rounded-full bg-rose-900 flex items-center justify-center font-bold border border-rose-500/50 shrink-0">
+              A
+            </div>
+            <div className="text-left hidden sm:block">
+              <p className="text-sm font-bold text-white leading-tight whitespace-nowrap">Arjun Mehta</p>
+              <p className="text-[10px] text-rose-400 font-medium">Pro Member</p>
+            </div>
+            <ChevronDown className="w-4 h-4 text-gray-500 hidden sm:block" />
+          </div>
+          <button className="text-gray-500 hover:text-rose-500 transition-colors flex items-center gap-1 text-sm font-bold ml-auto md:ml-2">
+             <LogOut className="w-4 h-4 md:mr-1" /> <span className="hidden sm:inline">Logout</span>
+          </button>
+        </div>
+      </header>
 
-        <div className="xl:col-span-3 flex flex-col gap-6">
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-            <PremiumCard className="p-5 flex flex-col justify-between">
-              <div className="flex items-center gap-4 mb-6">
-                <div className="relative w-16 h-16 flex-shrink-0">
-                  <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-rose-600 to-orange-500 blur-md opacity-70 animate-pulse" />
-                  <Image
-                    src="https://i.pravatar.cc/150?img=11"
-                    alt="Profile"
-                    width={64}
-                    height={64}
-                    unoptimized
-                    className="relative w-full h-full rounded-full object-cover border-2 border-zinc-900"
-                  />
-                </div>
-                <div>
-                  <h2 className="text-lg font-bold tracking-tight flex items-center gap-1.5 text-white">
-                    PBKS_SuperFan
-                    <CheckCircle2 className="w-4 h-4 text-rose-500 drop-shadow-[0_0_8px_rgba(244,63,94,1)]" />
-                  </h2>
-                  <p className="text-xs text-gray-400 mt-0.5">
-                    Rising Fan{" "}
-                    <span className="ml-1.5 inline-block border border-white/10 bg-zinc-800 px-2 py-0.5 rounded text-[10px] text-gray-300 font-semibold uppercase tracking-wider">
-                      Level 7
-                    </span>
-                  </p>
-                </div>
+      <main className="max-w-[1400px] mx-auto p-6 space-y-6">
+        
+        {/* 2. HERO SECTION */}
+        <div className="relative rounded-2xl overflow-hidden border border-white/10 bg-[#09090b] flex items-center min-h-[220px]">
+          {/* Background Image & Gradients */}
+          <div 
+            className="absolute inset-0 bg-cover bg-center opacity-40 mix-blend-screen"
+            style={{ backgroundImage: "url('https://images.unsplash.com/photo-1504450758481-7338eba7524a?q=80&w=1200&auto=format&fit=crop')" }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-black via-rose-950/80 to-transparent" />
+          
+          <div className="relative z-10 p-8 w-full flex flex-col md:flex-row items-center justify-between gap-8">
+            <div>
+              <h1 className="text-5xl md:text-6xl font-black tracking-tighter text-white mb-2 drop-shadow-lg">
+                FAN ZONE
+              </h1>
+              <p className="text-lg md:text-xl font-medium text-gray-300 mb-6">
+                Connect. Engage. Belong.
+              </p>
+              <div className="flex gap-4">
+                <button className="px-6 py-2.5 rounded-full text-sm font-bold text-white bg-rose-600 hover:bg-rose-500 transition-colors shadow-[0_0_20px_rgba(225,29,72,0.4)]">
+                  Connect with Fans
+                </button>
+                <button className="px-6 py-2.5 rounded-full text-sm font-bold text-white border border-white/20 bg-black/40 hover:bg-white/10 transition-colors backdrop-blur-sm">
+                  Watch Live
+                </button>
               </div>
+            </div>
 
-              <div className="mb-6">
-                <div className="flex justify-between text-xs font-bold mb-2 text-rose-500">
-                  <span>6,250 / 8,000 XP</span>
-                </div>
-                <NeonSlider percent={78} />
+            {/* Total Points Mini-Card overlaid on right */}
+            <div className="bg-[#09090b]/80 backdrop-blur-md border border-white/10 rounded-2xl p-5 w-72 shadow-2xl">
+              <div className="flex justify-between items-center mb-1">
+                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Total Points</p>
+                <button className="text-xs text-gray-400 flex items-center gap-1 hover:text-white">
+                  May 2026 <ChevronDown className="w-3 h-3" />
+                </button>
               </div>
+              <h2 className="text-3xl font-black text-white mb-1">12,450 XP</h2>
+              <p className="text-xs text-emerald-500 font-bold flex items-center gap-1 mb-4">
+                <TrendingUp className="w-3 h-3" /> +850 <span className="text-gray-500 font-medium ml-1">vs Apr 2026</span>
+              </p>
+              <MiniTrendLine data={[20, 30, 25, 40, 35, 50, 45, 60, 55, 70, 80]} />
+            </div>
+          </div>
+        </div>
 
-              <div className="flex justify-between items-center text-center">
-                {[
-                  { Icon: Trophy, label: "Auction\nWinner", color: "text-yellow-500", glow: "rgba(234,179,8,0.8)" },
-                  { Icon: Target, label: "Top\nPredictor", color: "text-rose-500", glow: "rgba(244,63,94,0.8)" },
-                  { Icon: Flame, label: "Loyal\nFan", color: "text-orange-500", glow: "rgba(249,115,22,0.8)" },
-                ].map(({ Icon, label, color, glow }, i) => (
-                  <div key={i} className="flex flex-col items-center gap-1.5 group cursor-pointer">
-                    <div
-                      className={`w-10 h-10 rounded-xl flex items-center justify-center bg-zinc-900 border border-white/5 transition-all duration-300 group-hover:scale-110 group-hover:border-white/20`}
-                      style={{ boxShadow: `0 0 15px ${glow.replace("0.8", "0")}` }}
-                    >
-                      <Icon className={`w-5 h-5 ${color}`} />
-                    </div>
-                    <span className="text-[10px] text-gray-400 leading-tight whitespace-pre-line font-medium">{label}</span>
-                  </div>
-                ))}
+        {/* 3. STATS ROW */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="md:col-span-2 bg-[#09090b] border border-white/10 rounded-2xl p-5 flex items-center gap-5">
+            <div className="w-14 h-14 rounded-xl border-2 border-rose-500 flex items-center justify-center font-black text-2xl text-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.3)]">
+              7
+            </div>
+            <div className="flex-1">
+              <h3 className="text-base font-bold text-white mb-1">You&apos;re doing great!</h3>
+              <div className="flex justify-between items-end mb-2">
+                <p className="text-xs text-gray-400">1,550 XP to reach Level 8</p>
+                <p className="text-xs font-bold text-gray-400">6,450 / 8,000 XP</p>
               </div>
-
-              <div className="mt-6 pt-5 border-t border-white/10">
-                <p className="text-[10px] text-gray-500 mb-2 flex items-center gap-1 tracking-widest uppercase font-bold">
-                  Team Loyalty
-                  <span className="w-3.5 h-3.5 rounded-full border border-gray-600 text-[8px] flex items-center justify-center text-gray-500">i</span>
-                </p>
-                <div className="flex items-center gap-3">
-                  <span className="text-2xl font-black tracking-tighter text-zinc-800 select-none">PBKS</span>
-                  <div className="flex-1">
-                    <p className="text-sm font-bold tracking-tight text-white">Punjab Kings</p>
-                    <div className="flex items-center gap-2 mt-2">
-                      <NeonSlider percent={78} colorClass="from-blue-700 to-sky-400" glowColor="#38bdf8" />
-                    </div>
-                    <p className="text-[10px] text-gray-400 mt-1.5">Die-Hard PBKS Fan • 78%</p>
-                  </div>
-                </div>
-              </div>
-            </PremiumCard>
-
-            <div className="lg:col-span-2 relative rounded-2xl overflow-hidden border border-white/10 group min-h-[250px] flex flex-col justify-center shadow-[0_16px_48px_rgba(0,0,0,0.8)] bg-black">
-              <div
-                className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105 opacity-60 mix-blend-screen"
-                style={{ backgroundImage: "url('https://images.unsplash.com/photo-1504450758481-7338eba7524a?q=80&w=1200&auto=format&fit=crop')" }}
-              />
-              <div className="absolute inset-0 bg-gradient-to-r from-black via-rose-950/80 to-orange-900/60 mix-blend-multiply" />
-              <div className="absolute inset-0 bg-gradient-to-tr from-rose-600/30 to-transparent mix-blend-color-dodge" />
-
-              <div className="relative z-10 p-8 max-w-sm">
-                <h1 className="text-6xl font-black tracking-tighter mb-2 text-white drop-shadow-[0_0_15px_rgba(244,63,94,0.6)]">
-                  FAN ZONE
-                </h1>
-                <p className="text-base font-bold tracking-widest uppercase mb-3 text-rose-400 drop-shadow-md">
-                  Connect • Engage • Belong
-                </p>
-                <p className="text-sm text-gray-300 mb-8 leading-relaxed font-medium">
-                  The ultimate space for true fans to connect, compete and celebrate.
-                </p>
-
-                <div className="flex gap-4">
-                  <button className="px-6 py-3 rounded-xl text-sm font-black tracking-wide text-white transition-all duration-300 bg-gradient-to-r from-rose-600 to-orange-500 shadow-[0_0_20px_rgba(244,63,94,0.5)] hover:shadow-[0_0_30px_rgba(244,63,94,0.8)] hover:scale-105 border border-rose-400/50">
-                    Connect with Fans
-                  </button>
-                  <button className="px-6 py-3 rounded-xl text-sm font-bold tracking-wide text-white border border-white/20 bg-black/40 backdrop-blur-md hover:bg-white/10 transition-all duration-300">
-                    Watch Live
-                  </button>
+              <div className="w-full h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                <div className="h-full bg-gradient-to-r from-rose-600 to-orange-500 w-[78%] rounded-full relative">
+                   <div className="absolute right-0 top-0 bottom-0 w-2 bg-white rounded-full shadow-[0_0_10px_rgba(255,255,255,1)]" />
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-            {[
-              { icon: MessageCircle, color: "text-rose-500", glow: "rgba(244,63,94,0.5)", title: "Live Discussions", desc: "Chat, polls & reactions", meta: "1.2K online" },
-              { icon: Trophy, color: "text-yellow-500", glow: "rgba(234,179,8,0.5)", title: "Fan Challenges", desc: "Compete & earn badges", meta: "5 Active" },
-              { icon: Gift, color: "text-pink-500", glow: "rgba(236,72,153,0.5)", title: "Rewards & Perks", desc: "Exclusive rewards for fans", meta: "12 New" },
-              { icon: Award, color: "text-orange-500", glow: "rgba(249,115,22,0.5)", title: "Leaderboard", desc: "Rank up & earn bragging rights", meta: "Top 12%", onClick: () => setIsLeaderboardModalOpen(true) },
-              { icon: Users, color: "text-violet-500", glow: "rgba(139,92,246,0.5)", title: "Connect with Fans", desc: "Grow your network worldwide", meta: "2.4K Fans" },
-            ].map((item, idx) => (
-              <PremiumCard key={idx} onClick={item.onClick} hoverEffect className="p-4 flex flex-col justify-between min-h-[130px] group/card">
-                <div>
-                  <div
-                    className="w-10 h-10 rounded-xl flex items-center justify-center mb-3 bg-zinc-900 border border-white/5 transition-all duration-300 group-hover/card:bg-white/5"
-                  >
-                    <item.icon className={`w-5 h-5 ${item.color}`} />
-                  </div>
-                  <h3 className="text-sm font-bold tracking-tight mb-1 text-white">{item.title}</h3>
-                  <p className="text-[10px] text-gray-400 leading-snug mb-3">{item.desc}</p>
-                </div>
-                <div className="flex items-center justify-between mt-auto">
-                  <span className="text-[10px] font-bold text-gray-500 flex items-center gap-1.5 uppercase tracking-wider">
-                    <Users className="w-3 h-3" /> {item.meta}
-                  </span>
-                  <ChevronRight className="w-4 h-4 text-gray-600 group-hover/card:text-white group-hover/card:translate-x-1 transition-all" />
-                </div>
-              </PremiumCard>
-            ))}
+          <div className="bg-[#09090b] border border-white/10 rounded-2xl p-5 flex items-center justify-between group cursor-pointer hover:border-white/20 transition-colors">
+             <div className="flex items-center gap-4">
+               <div className="w-12 h-12 rounded-full bg-yellow-500/10 flex items-center justify-center border border-yellow-500/20">
+                 <Trophy className="w-6 h-6 text-yellow-500" />
+               </div>
+               <div>
+                 <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Your Rank</p>
+                 <h3 className="text-2xl font-black text-white leading-tight">24</h3>
+                 <p className="text-xs text-emerald-500 font-bold flex items-center gap-1 mt-0.5">
+                   ↑ 8 <span className="text-gray-500 font-medium">This Month</span>
+                 </p>
+               </div>
+             </div>
           </div>
 
-          <PremiumCard className="p-6 flex flex-col lg:flex-row items-center gap-8">
-            <div className="flex-1 w-full">
-              <h3 className="text-lg font-black tracking-tight mb-1 text-white">Engage & Earn Points</h3>
-              <p className="text-xs text-gray-400 mb-6 font-medium">Participate in activities and earn exciting points</p>
+          <div className="bg-[#09090b] border border-white/10 rounded-2xl p-5 flex items-center justify-between group cursor-pointer hover:border-white/20 transition-colors">
+            <div className="flex items-center gap-4">
+               <div className="w-12 h-12 rounded-full bg-purple-500/10 flex items-center justify-center border border-purple-500/20">
+                 <Award className="w-6 h-6 text-purple-500" />
+               </div>
+               <div>
+                 <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Top 10%</p>
+                 <h3 className="text-base font-bold text-white leading-tight">Elite Fan</h3>
+                 <p className="text-xs text-gray-500 font-medium mt-0.5">Keep Going!</p>
+               </div>
+             </div>
+             <div className="text-right">
+                <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Badges</p>
+                <h3 className="text-xl font-black text-white">12</h3>
+                <span className="text-[10px] text-rose-500 font-bold mt-1 block group-hover:text-rose-400">View All →</span>
+             </div>
+          </div>
+        </div>
 
-              <div className="flex flex-wrap gap-6">
-                {[
-                  { icon: Eye, title: "Watch Live", pts: "+20 XP", color: "text-sky-500" },
-                  { icon: CheckCircle2, title: "Vote & Polls", pts: "+15 XP", color: "text-violet-500" },
-                  { icon: MessageCircle, title: "Live Chat", pts: "+10 XP", color: "text-pink-500" },
-                  { icon: Share2, title: "Share Moments", pts: "+25 XP", color: "text-orange-500" },
-                  { icon: Trophy, title: "Complete Challenges", pts: "+50 XP", color: "text-yellow-500" },
-                ].map((act, i) => (
-                  <div key={i} className="flex flex-col gap-1.5 group cursor-pointer hover:-translate-y-0.5 transition-transform">
-                    <div className="flex items-center gap-2 text-xs font-bold text-gray-300 group-hover:text-white transition-colors">
-                      <act.icon className={`w-4 h-4 ${act.color}`} />
-                      {act.title}
+        {/* 4. TABS NAVIGATION */}
+        <div className="border-b border-white/10 flex gap-8 px-2 overflow-x-auto custom-scrollbar">
+          {/* ---> Update this array below <--- */}
+          {["My Analytics", "Earning History", "Activity Feed", "All Activities"].map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`pb-4 text-sm font-bold whitespace-nowrap transition-all relative ${
+                activeTab === tab ? "text-rose-500" : "text-gray-400 hover:text-gray-200"
+              }`}
+            >
+              {tab}
+              {activeTab === tab && (
+                <div className="absolute bottom-0 left-0 w-full h-0.5 bg-rose-500 rounded-t-full shadow-[0_-2px_10px_rgba(244,63,94,0.5)]" />
+              )}
+            </button>
+          ))}
+        </div>
+
+        {/* 5. TAB CONTENT - MY ANALYTICS */}
+        {activeTab === "My Analytics" && (
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            
+            {/* Overview Card */}
+            <div className="bg-[#09090b] border border-white/10 rounded-2xl p-6">
+              <h3 className="text-xs font-black tracking-widest text-gray-400 uppercase mb-6 flex items-center gap-1.5">
+                Overview <InfoIcon />
+              </h3>
+              
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start lg:items-center">
+                
+                {/* Col 1: Left Stats */}
+                <div className="w-full">
+                  <select className="bg-[#18181b] border border-white/10 text-sm font-bold rounded-lg px-3 py-2 text-white focus:outline-none focus:border-rose-500 w-40 mb-6">
+                    <option>May 2026</option>
+                    <option>Apr 2026</option>
+                  </select>
+                  <div className="space-y-6">
+                    <div>
+                      <p className="text-xs text-gray-400 font-medium mb-1">This Month</p>
+                      <div className="flex items-end gap-3">
+                        <h4 className="text-2xl font-black text-white leading-none">12,450 XP</h4>
+                        <span className="text-xs text-emerald-500 font-bold mb-0.5">↑ 850 <span className="text-gray-500">vs Apr 2026</span></span>
+                      </div>
                     </div>
-                    <span className={`text-xs font-black ${act.color} drop-shadow-md`}>{act.pts}</span>
+                    <div>
+                      <p className="text-xs text-gray-400 font-medium mb-1">All Time</p>
+                      <div className="flex items-end gap-3">
+                        <h4 className="text-2xl font-black text-white leading-none">84,650 XP</h4>
+                        <span className="text-xs text-gray-500 font-medium mb-0.5">Since Feb 2025</span>
+                      </div>
+                    </div>
                   </div>
-                ))}
+                </div>
+
+                {/* Col 2: Donut Chart & Legend */}
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-8 w-full py-4 lg:py-0 border-t border-white/10 lg:border-0">
+                  <DonutChart data={earningBreakdown} />
+                  <div className="space-y-3 w-full sm:w-auto">
+                    {earningBreakdown.map((item, i) => (
+                      <div key={i} className="flex items-center justify-between sm:justify-start gap-4 text-sm">
+                        <div className="flex items-center gap-3">
+                          <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
+                          <span className="text-gray-300 w-auto sm:w-32">{item.label}</span>
+                        </div>
+                        <div className="flex items-center gap-2 sm:gap-4">
+                          <span className="font-bold text-white w-8 text-right">{item.percent}%</span>
+                          <span className="text-gray-400 w-16 text-right">{item.xp}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Col 3: Recent Trend */}
+                <div className="border-t lg:border-t-0 lg:border-l border-white/10 pt-8 lg:pt-0 lg:pl-8 h-full flex flex-col justify-between w-full overflow-hidden">
+                  <div>
+                    <h3 className="text-xs font-black tracking-widest text-gray-400 uppercase mb-4 flex items-center gap-1.5">
+                      Recent Trend <InfoIcon />
+                    </h3>
+                    <div className="flex gap-2 bg-[#18181b] p-1 rounded-lg w-max mb-4">
+                      {["7D", "30D", "90D"].map((range) => (
+                        <button key={range} className={`px-3 py-1 rounded-md text-xs font-bold transition-colors ${range === "30D" ? "bg-white/10 text-white" : "text-gray-500 hover:text-white"}`}>
+                          {range}
+                        </button>
+                      ))}
+                    </div>
+                    <h4 className="text-3xl font-black text-emerald-500 mb-1 whitespace-nowrap">+2,450 XP</h4>
+                    <p className="text-xs text-emerald-500 font-bold mb-4">
+                      ↑ 24% <span className="text-gray-500">vs Apr 2026</span>
+                    </p>
+                  </div>
+                  <MiniTrendLine data={trendData} />
+                  <div className="flex justify-between text-[10px] text-gray-500 font-bold mt-2">
+                    <span>May 1</span>
+                    <span>May 11</span>
+                    <span>May 21</span>
+                    <span>May 31</span>
+                  </div>
+                </div>
               </div>
             </div>
 
-            <div className="w-full lg:w-80 rounded-xl p-5 border border-white/10 bg-zinc-900/50 flex-shrink-0">
-              <div className="flex items-center gap-4 mb-5">
-                <div className="w-12 h-12 rounded-xl border-2 border-rose-500 flex items-center justify-center font-black text-xl text-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.4),inset_0_0_10px_rgba(244,63,94,0.2)]">
-                  7
+            {/* How You Earn Points Grid */}
+            <div className="bg-[#09090b] border border-white/10 rounded-2xl p-6">
+              <h3 className="text-xs font-black tracking-widest text-gray-400 uppercase mb-6 flex items-center gap-1.5">
+                How You Earn Points <InfoIcon />
+              </h3>
+              
+              <div className="flex flex-col lg:flex-row gap-6">
+                <div className="flex-1 grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {earnPointsActions.map((action, i) => (
+                    <div key={i} className="bg-[#18181b] border border-white/5 rounded-xl p-4 flex flex-col items-center justify-center text-center hover:bg-white/5 transition-colors cursor-pointer group">
+                      <div className={`w-10 h-10 rounded-full ${action.bg} flex items-center justify-center mb-3 group-hover:scale-110 transition-transform`}>
+                        <action.icon className={`w-4 h-4 ${action.color}`} />
+                      </div>
+                      <h4 className="text-xs font-bold text-gray-300 mb-1">{action.title}</h4>
+                      <p className={`text-sm font-black ${action.color} mb-1`}>{action.xp}</p>
+                      <p className="text-[10px] text-gray-500">{action.desc}</p>
+                    </div>
+                  ))}
                 </div>
-                <div>
-                  <h4 className="text-sm font-black text-white tracking-tight">You&apos;re doing great!</h4>
-                  <p className="text-xs text-gray-400 font-medium mt-0.5">1,550 XP to reach Level 8</p>
+
+                {/* Promo Card */}
+                <div className="w-full lg:w-72 rounded-xl bg-gradient-to-br from-rose-900 to-black border border-rose-500/30 p-6 flex flex-col justify-center relative overflow-hidden group cursor-pointer">
+                  <div className="absolute -right-6 -bottom-6 opacity-20 group-hover:scale-110 transition-transform duration-500">
+                    <Trophy className="w-40 h-40 text-rose-500" />
+                  </div>
+                  <div className="relative z-10">
+                    <h3 className="text-xl font-black text-white mb-2 leading-tight">Maximize Your Points</h3>
+                    <p className="text-xs text-gray-300 mb-6 font-medium">Engage more, climb higher!</p>
+                    <button className="bg-rose-600 hover:bg-rose-500 text-white text-sm font-bold py-2.5 px-6 rounded-full w-max shadow-[0_0_15px_rgba(225,29,72,0.4)] transition-colors">
+                      View All Activities →
+                    </button>
+                  </div>
                 </div>
               </div>
-              <NeonSlider percent={65} />
-              <div className="text-right mt-3">
-                <button className="text-[10px] font-bold text-rose-500 hover:text-rose-400 uppercase tracking-widest transition-colors">
+            </div>
+
+            {/* Bottom Row: Recent Activity & Streak */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              
+              {/* Recent Activity List */}
+              <div className="bg-[#09090b] border border-white/10 rounded-2xl p-6 flex flex-col">
+                <h3 className="text-xs font-black tracking-widest text-gray-400 uppercase mb-6">Recent Activity</h3>
+                <div className="flex-1 space-y-5">
+                  {recentActivityList.map((item, i) => (
+                    <div key={i} className="flex items-center justify-between group">
+                      <div className="flex items-center gap-4">
+                        <div className={`w-8 h-8 rounded-full bg-[#18181b] border border-white/5 flex items-center justify-center ${item.color}`}>
+                          <item.icon className="w-4 h-4" />
+                        </div>
+                        <p className="text-sm">
+                          <span className="font-bold text-white mr-1">{item.action}</span>
+                          <span className="text-gray-400">{item.detail}</span>
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className={`text-sm font-black ${item.color}`}>{item.xp}</p>
+                        <p className="text-[10px] text-gray-500 font-medium">{item.time}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <button className="text-xs font-bold text-rose-500 hover:text-rose-400 text-center w-full mt-6 py-2 border border-rose-500/20 rounded-lg hover:bg-rose-500/5 transition-colors uppercase tracking-widest">
+                  View All Activity →
+                </button>
+              </div>
+
+              {/* Streak & Invite */}
+              <div className="space-y-6">
+                
+                {/* Streak Card */}
+                <div className="bg-[#09090b] border border-white/10 rounded-2xl p-6">
+                  <h3 className="text-xs font-black tracking-widest text-gray-400 uppercase mb-4 flex items-center gap-1.5">
+                    Your Streak <InfoIcon />
+                  </h3>
+                  <div className="flex items-baseline gap-2 mb-1">
+                    <h2 className="text-4xl font-black text-white">12</h2>
+                    <span className="text-xl font-medium text-gray-400">Days</span>
+                  </div>
+                  <p className="text-sm text-gray-400 mb-6">Keep it going, don&apos;t break your streak!</p>
+                  
+                  <div className="flex justify-between items-center">
+                    {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day, idx) => {
+                      const isActive = idx < 6; // Mocking Mon-Sat as active
+                      return (
+                        <div key={day} className="flex flex-col items-center gap-2">
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 ${isActive ? 'bg-rose-600 border-rose-500 text-white shadow-[0_0_10px_rgba(225,29,72,0.5)]' : 'bg-[#18181b] border-white/10 text-gray-600'}`}>
+                            {isActive ? <CheckCircle2 className="w-5 h-5" /> : null}
+                          </div>
+                          <span className={`text-xs font-bold ${isActive ? 'text-white' : 'text-gray-500'}`}>{day}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Invite Promo */}
+                <div className="bg-[#09090b] border border-rose-500/20 rounded-2xl p-6 flex items-center justify-between overflow-hidden relative group cursor-pointer hover:border-rose-500/50 transition-colors">
+                  <div className="absolute right-0 top-1/2 -translate-y-1/2 opacity-30 group-hover:scale-110 transition-transform duration-500 translate-x-4">
+                    <UserPlus className="w-32 h-32 text-rose-500" />
+                  </div>
+                  <div className="relative z-10">
+                    <h3 className="text-lg font-black text-white mb-1">Invite Friends & Earn</h3>
+                    <p className="text-sm text-gray-400 mb-4">Earn 100 XP for each friend who joins!</p>
+                    <button className="bg-gradient-to-r from-rose-600 to-orange-500 text-white text-sm font-bold py-2.5 px-6 rounded-full hover:shadow-[0_0_15px_rgba(225,29,72,0.4)] transition-all">
+                      Invite Now
+                    </button>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+          </div>
+        )}
+
+        {/* 6. TAB CONTENT - EARNING HISTORY */}
+        {activeTab === "Earning History" && (
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            
+            <div className="bg-[#09090b] border border-white/10 rounded-2xl p-6">
+              {/* Header */}
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                <div>
+                  <h3 className="text-lg font-black text-white mb-1">Earning History</h3>
+                  <p className="text-xs text-gray-400 font-medium">Track how you earn points across all activities.</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Total Points Earned</p>
+                  <h3 className="text-2xl font-black text-emerald-500">84,650 XP</h3>
+                </div>
+              </div>
+
+              {/* Filters */}
+              <div className="flex flex-wrap gap-4 mb-6">
+                <div className="relative w-48">
+                  <LayoutGrid className="w-4 h-4 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2 z-10 pointer-events-none" />
+                  <select className="w-full bg-[#18181b] border border-white/10 text-xs font-bold rounded-xl pl-10 pr-8 py-3 text-white focus:outline-none focus:border-rose-500 appearance-none cursor-pointer">
+                    <option>All Activities</option>
+                    <option>Content</option>
+                    <option>Engagement</option>
+                    <option>Fantasy</option>
+                  </select>
+                  <ChevronDown className="w-4 h-4 text-gray-500 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+                </div>
+                
+                <div className="relative w-48">
+                  <Calendar className="w-4 h-4 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2 z-10 pointer-events-none" />
+                  <select className="w-full bg-[#18181b] border border-white/10 text-xs font-bold rounded-xl pl-10 pr-8 py-3 text-white focus:outline-none focus:border-rose-500 appearance-none cursor-pointer">
+                    <option>All Time</option>
+                    <option>This Month</option>
+                    <option>Last 7 Days</option>
+                  </select>
+                  <ChevronDown className="w-4 h-4 text-gray-500 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+                </div>
+              </div>
+
+              {/* Data Table */}
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-white/10">
+                      <th className="py-4 px-2 text-[10px] font-black text-gray-500 uppercase tracking-widest w-40">Date</th>
+                      <th className="py-4 px-2 text-[10px] font-black text-gray-500 uppercase tracking-widest">Activity</th>
+                      <th className="py-4 px-2 text-[10px] font-black text-gray-500 uppercase tracking-widest">Details</th>
+                      <th className="py-4 px-2 text-[10px] font-black text-gray-500 uppercase tracking-widest text-right">Points</th>
+                      <th className="py-4 px-2 pl-8 text-[10px] font-black text-gray-500 uppercase tracking-widest w-32">Type</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {earningHistoryData.map((row, idx) => (
+                      <tr key={idx} className="border-b border-white/5 hover:bg-white/5 transition-colors group">
+                        <td className="py-3 px-2">
+                          <p className="text-xs text-gray-300 font-medium">{row.date}</p>
+                          <p className="text-[10px] text-gray-500">{row.time}</p>
+                        </td>
+                        <td className="py-3 px-2">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-lg bg-[#18181b] border border-white/10 flex items-center justify-center flex-shrink-0 group-hover:border-white/20 transition-colors">
+                              <row.icon className="w-4 h-4 text-gray-400" />
+                            </div>
+                            <span className="text-xs font-bold text-white">{row.action}</span>
+                          </div>
+                        </td>
+                        <td className="py-3 px-2 text-xs text-gray-400 font-medium">
+                          {row.details}
+                        </td>
+                        <td className="py-3 px-2 text-right">
+                          <span className="text-xs font-black text-emerald-500">{row.points}</span>
+                        </td>
+                        <td className="py-3 px-2 pl-8">
+                          <span className={`inline-flex items-center justify-center px-2.5 py-1 rounded-md text-[10px] font-bold border ${row.typeColor}`}>
+                            {row.type}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Load More Button */}
+              <div className="mt-6 text-center">
+                <button className="bg-[#18181b] border border-white/10 text-xs font-bold text-white px-6 py-2.5 rounded-full hover:bg-white/10 transition-colors inline-flex items-center gap-2">
+                  Load More <ChevronDown className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Bottom Row: Recent Activity & Streak (Duplicated for consistency as seen in screenshot) */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="bg-[#09090b] border border-white/10 rounded-2xl p-6 flex flex-col">
+                <h3 className="text-xs font-black tracking-widest text-gray-400 uppercase mb-6">Recent Activity</h3>
+                <div className="flex-1 space-y-5">
+                  {recentActivityList.map((item, i) => (
+                    <div key={i} className="flex items-center justify-between group">
+                      <div className="flex items-center gap-4">
+                        <div className={`w-8 h-8 rounded-full bg-[#18181b] border border-white/5 flex items-center justify-center ${item.color}`}>
+                          <item.icon className="w-4 h-4" />
+                        </div>
+                        <p className="text-sm">
+                          <span className="font-bold text-white mr-1">{item.action}</span>
+                          <span className="text-gray-400">{item.detail}</span>
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className={`text-sm font-black ${item.color}`}>{item.xp}</p>
+                        <p className="text-[10px] text-gray-500 font-medium">{item.time}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <button className="text-xs font-bold text-rose-500 hover:text-rose-400 text-center w-full mt-6 py-2 border border-rose-500/20 rounded-lg hover:bg-rose-500/5 transition-colors uppercase tracking-widest">
+                  View All Activity →
+                </button>
+              </div>
+
+              <div className="space-y-6">
+                <div className="bg-[#09090b] border border-white/10 rounded-2xl p-6">
+                  <h3 className="text-xs font-black tracking-widest text-gray-400 uppercase mb-4 flex items-center gap-1.5">
+                    Your Streak <InfoIcon />
+                  </h3>
+                  <div className="flex items-baseline gap-2 mb-1">
+                    <h2 className="text-4xl font-black text-white">12</h2>
+                    <span className="text-xl font-medium text-gray-400">Days</span>
+                  </div>
+                  <p className="text-sm text-gray-400 mb-6">Keep it going, don&apos;t break your streak!</p>
+                  
+                  <div className="flex justify-between items-center">
+                    {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day, idx) => {
+                      const isActive = idx < 6;
+                      return (
+                        <div key={day} className="flex flex-col items-center gap-2">
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 ${isActive ? 'bg-rose-600 border-rose-500 text-white shadow-[0_0_10px_rgba(225,29,72,0.5)]' : 'bg-[#18181b] border-white/10 text-gray-600'}`}>
+                            {isActive ? <CheckCircle2 className="w-5 h-5" /> : null}
+                          </div>
+                          <span className={`text-xs font-bold ${isActive ? 'text-white' : 'text-gray-500'}`}>{day}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="bg-[#09090b] border border-rose-500/20 rounded-2xl p-6 flex items-center justify-between overflow-hidden relative group cursor-pointer hover:border-rose-500/50 transition-colors">
+                  <div className="absolute right-0 top-1/2 -translate-y-1/2 opacity-30 group-hover:scale-110 transition-transform duration-500 translate-x-4">
+                    <UserPlus className="w-32 h-32 text-rose-500" />
+                  </div>
+                  <div className="relative z-10">
+                    <h3 className="text-lg font-black text-white mb-1">Invite Friends & Earn</h3>
+                    <p className="text-sm text-gray-400 mb-4">Earn 100 XP for each friend who joins!</p>
+                    <button className="bg-gradient-to-r from-rose-600 to-orange-500 text-white text-sm font-bold py-2.5 px-6 rounded-full hover:shadow-[0_0_15px_rgba(225,29,72,0.4)] transition-all">
+                      Invite Now
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        )}
+
+        {/* 7. TAB CONTENT - ACTIVITY FEED */}
+        {activeTab === "Activity Feed" && (
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Left Column: Activity Feed List */}
+              <div className="lg:col-span-2 bg-[#09090b] border border-white/10 rounded-2xl p-6">
+                
+                {/* Header & Filters */}
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+                  <div>
+                    <h3 className="text-lg font-black text-white mb-1">Activity Feed</h3>
+                    <p className="text-xs text-gray-400 font-medium">All your recent actions and engagement in one place.</p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="relative w-40 hidden sm:block">
+                      <select className="w-full bg-[#18181b] border border-white/10 text-xs font-bold rounded-xl pl-4 pr-8 py-2.5 text-white focus:outline-none focus:border-rose-500 appearance-none cursor-pointer">
+                        <option>All Activities</option>
+                        <option>Content</option>
+                        <option>Engagement</option>
+                      </select>
+                      <ChevronDown className="w-4 h-4 text-gray-500 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    </div>
+                    <button className="flex items-center gap-2 px-4 py-2.5 border border-white/10 rounded-xl text-xs font-bold text-white hover:bg-white/5 transition-colors bg-[#18181b]">
+                      <Filter className="w-4 h-4" /> Filter
+                    </button>
+                  </div>
+                </div>
+
+                {/* Feed Items */}
+                <div className="space-y-1">
+                  {activityFeedData.map((item, idx) => (
+                    <div key={idx} className="flex items-center justify-between p-3 rounded-xl hover:bg-white/5 transition-colors group">
+                      <div className="flex items-center gap-4">
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 border ${item.bg}`}>
+                          <item.icon className={`w-5 h-5 ${item.color}`} />
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-black tracking-widest text-gray-500 uppercase mb-0.5">{item.category}</p>
+                          <p className="text-sm font-bold text-white group-hover:text-rose-100 transition-colors">{item.action}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className={`text-sm font-black ${item.color}`}>{item.points}</p>
+                        <p className="text-[10px] text-gray-500 font-medium mt-0.5">{item.time}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Load More */}
+                <div className="mt-6 pt-4 border-t border-white/5 text-center">
+                  <button className="bg-[#18181b] border border-white/10 text-xs font-bold text-white px-6 py-2.5 rounded-full hover:bg-white/10 transition-colors inline-flex items-center gap-2">
+                    Load More <ChevronDown className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Right Column: How to Earn Points Sidebar */}
+              <div className="bg-[#09090b] border border-white/10 rounded-2xl p-6 h-max sticky top-24">
+                <h3 className="text-base font-black text-white mb-1">How to Earn Points</h3>
+                <p className="text-xs text-gray-400 font-medium mb-6">More actions, more points!</p>
+                
+                <div className="flex flex-col gap-4 mb-8 h-[500px] overflow-y-auto custom-scrollbar pr-2">
+                  {earnPointsActions.map((action, i) => (
+                    <div key={i} className="flex items-center justify-between hover:bg-white/5 p-2 -mx-2 rounded-lg transition-colors">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-[#18181b] flex items-center justify-center border border-white/5">
+                          <action.icon className="w-4 h-4 text-gray-400" />
+                        </div>
+                        <span className="text-xs font-bold text-gray-300">{action.title}</span>
+                      </div>
+                      <span className={`text-xs font-black ${action.color}`}>{action.xp}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <button className="w-full bg-rose-600 hover:bg-rose-500 text-white text-sm font-bold py-3.5 rounded-xl transition-colors shadow-[0_0_15px_rgba(225,29,72,0.3)] hover:shadow-[0_0_25px_rgba(225,29,72,0.5)]">
                   View All Activities →
                 </button>
               </div>
             </div>
-          </PremiumCard>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-            <div className="rounded-2xl p-6 relative overflow-hidden border border-rose-500/30 group cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_16px_40px_rgba(225,29,72,0.4)] bg-gradient-to-br from-rose-950 via-black to-black">
-              <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-rose-600/40 via-transparent to-transparent pointer-events-none" />
-              
-              <Trophy className="absolute -bottom-4 -right-4 text-rose-500/10 pointer-events-none transition-transform duration-500 group-hover:rotate-12 group-hover:scale-125" style={{ width: 140, height: 140 }} />
-
-              <div className="relative z-10">
-                <h3 className="text-[10px] font-black uppercase tracking-widest mb-2 text-rose-500">
-                  Upcoming Challenge
-                </h3>
-                <h2 className="text-2xl font-black tracking-tight mb-2 text-white">
-                  Predict the Match Winner
-                </h2>
-                <p className="text-xs text-gray-400 mb-6 font-medium">
-                  Predict the winner &amp; score big!
-                </p>
-
-                <div className="flex items-center gap-3 mb-6">
-                  <span className="text-[11px] px-3 py-1.5 rounded-lg flex items-center gap-1.5 font-black tracking-tight bg-yellow-500/20 text-yellow-500 border border-yellow-500/30">
-                    <Trophy className="w-3 h-3" /> 50 XP
-                  </span>
-                  <span className="text-[11px] px-3 py-1.5 rounded-lg flex items-center gap-1.5 text-gray-300 font-bold bg-white/10 border border-white/10">
-                    ⏱ 3 Days Left
-                  </span>
+            {/* Bottom Row: Recent Activity & Streak (Duplicated for consistency) */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="bg-[#09090b] border border-white/10 rounded-2xl p-6 flex flex-col">
+                <h3 className="text-xs font-black tracking-widest text-gray-400 uppercase mb-6">Recent Activity</h3>
+                <div className="flex-1 space-y-5">
+                  {recentActivityList.map((item, i) => (
+                    <div key={i} className="flex items-center justify-between group">
+                      <div className="flex items-center gap-4">
+                        <div className={`w-8 h-8 rounded-full bg-[#18181b] border border-white/5 flex items-center justify-center ${item.color}`}>
+                          <item.icon className="w-4 h-4" />
+                        </div>
+                        <p className="text-sm">
+                          <span className="font-bold text-white mr-1">{item.action}</span>
+                          <span className="text-gray-400">{item.detail}</span>
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className={`text-sm font-black ${item.color}`}>{item.xp}</p>
+                        <p className="text-[10px] text-gray-500 font-medium">{item.time}</p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-
-                <button className="w-full py-3 rounded-xl text-sm font-black tracking-wide text-white transition-all duration-300 bg-gradient-to-r from-rose-600 to-orange-500 shadow-[0_0_20px_rgba(244,63,94,0.5)] border border-rose-400/50 hover:scale-[1.02]">
-                  Participate Now
+                <button className="text-xs font-bold text-rose-500 hover:text-rose-400 text-center w-full mt-6 py-2 border border-rose-500/20 rounded-lg hover:bg-rose-500/5 transition-colors uppercase tracking-widest">
+                  View All Activity →
                 </button>
               </div>
-            </div>
 
-            <PremiumCard className="p-6 flex flex-col" hoverEffect>
-              <h3 className="text-xs font-black tracking-widest text-gray-400 mb-5 uppercase">Today&apos;s Top Fans</h3>
-              <div className="flex flex-col gap-4 flex-1">
-                {extendedTopFans.slice(0, showAllTopFans ? undefined : 3).map((fan) => (
-                  <div key={fan.rank} className="flex items-center justify-between group/fan hover:bg-zinc-900 rounded-lg px-2 -mx-2 transition-colors py-1">
-                    <div className="flex items-center gap-3">
-                      <span className={`text-[11px] font-black w-4 text-center ${
-                          fan.rank === 1 ? "text-yellow-500 drop-shadow-[0_0_5px_rgba(234,179,8,1)]"
-                        : fan.rank === 2 ? "text-slate-300 drop-shadow-[0_0_5px_rgba(203,213,225,1)]"
-                        : fan.rank === 3 ? "text-amber-600 drop-shadow-[0_0_5px_rgba(217,119,6,1)]"
-                        : "text-gray-600"
-                      }`}>
-                        {fan.rank}
-                      </span>
-                      <div className="relative">
-                        <Image 
-                          src={`https://i.pravatar.cc/150?img=${fan.img}`} 
-                          alt={fan.name} 
-                          width={32} 
-                          height={32} 
-                          unoptimized
-                          className="w-8 h-8 rounded-full object-cover border-2 border-zinc-900" 
-                        />
-                        {fan.rank <= 3 && (
-                          <div className="absolute inset-0 rounded-full" style={{
-                            boxShadow: fan.rank === 1 ? "0 0 10px 1px rgba(234,179,8,0.8)"
-                                     : fan.rank === 2 ? "0 0 10px 1px rgba(203,213,225,0.6)"
-                                     : "0 0 10px 1px rgba(217,119,6,0.6)"
-                          }} />
-                        )}
-                      </div>
-                      <span className="text-xs font-bold text-white tracking-tight">{fan.name}</span>
-                    </div>
-                    <span className="text-[11px] font-black text-rose-500">{fan.xp}</span>
-                  </div>
-                ))}
-              </div>
-              <button onClick={() => setShowAllTopFans(!showAllTopFans)} className="text-[10px] font-bold text-rose-500 hover:text-rose-400 uppercase tracking-widest mt-4">
-                {showAllTopFans ? "Show Less ↑" : "View Leaderboard →"}
-              </button>
-            </PremiumCard>
-
-            <PremiumCard className="p-6 flex flex-col" hoverEffect>
-              <h3 className="text-xs font-black tracking-widest text-gray-400 mb-5 uppercase">Recent Activity</h3>
-              <div className="flex flex-col gap-4 flex-1">
-                {extendedActivities.slice(0, showAllActivity ? undefined : 3).map((act, i) => (
-                  <div key={i} className="flex items-center justify-between gap-2 group/act hover:bg-zinc-900 rounded-lg px-2 -mx-2 transition-colors py-1">
-                    <div className="flex items-center gap-3 overflow-hidden">
-                      <div className="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center bg-black border border-white/10">
-                        <act.icon className={`w-4 h-4 ${act.color}`} />
-                      </div>
-                      <span className="text-xs font-medium text-gray-300 truncate group-hover/act:text-white transition-colors">
-                        {act.text}
-                      </span>
-                    </div>
-                    <div className="flex flex-col items-end flex-shrink-0">
-                      <span className={`text-[11px] font-black ${act.color}`}>{act.pts}</span>
-                      <span className="text-[9px] text-gray-500 font-bold mt-0.5">{act.time}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <button onClick={() => setShowAllActivity(!showAllActivity)} className="text-[10px] font-bold text-rose-500 hover:text-rose-400 uppercase tracking-widest mt-4">
-                {showAllActivity ? "Show Less ↑" : "View All Activity →"}
-              </button>
-            </PremiumCard>
-
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-6">
-
-          <PremiumCard className="p-6">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xs font-black tracking-widest uppercase text-gray-400">Fan Meter</h3>
-              <button className="text-[10px] text-rose-500 hover:text-rose-400 font-bold uppercase tracking-wider">
-                View History
-              </button>
-            </div>
-
-            <div className="flex flex-col gap-6">
-              {[
-                { icon: Dumbbell, title: "Training Session", mood: "😍", status: "HIGH", percent: 85, high: true },
-                { icon: Target, title: "Match Moment", mood: "🤯", status: "HIGH", percent: 75, high: true },
-                { icon: Medal, title: "Medal Ceremony", mood: "🥺", status: "LOW", percent: 25, high: false },
-              ].map((meter, i) => (
-                <div key={i}>
-                  <div className="flex items-start gap-3 mb-3">
-                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center border ${meter.high ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-rose-500/10 border-rose-500/20'}`}>
-                      <meter.icon className={`w-4 h-4 ${meter.high ? "text-emerald-500" : "text-rose-500"}`} />
-                    </div>
-                    <div>
-                      <h4 className="text-xs font-bold text-white tracking-tight">{meter.title}</h4>
-                      <p className="text-[10px] text-gray-400 mt-0.5 font-medium">You&apos;re feeling {meter.mood}</p>
-                      <p className={`text-[10px] font-bold mt-0.5 ${meter.high ? "text-emerald-500" : "text-rose-500"}`}>
-                        Fan energy is {meter.status} right now
-                      </p>
-                    </div>
-                  </div>
-                  <div className="relative w-full h-2 bg-zinc-900 rounded-full shadow-inner">
-                    <div
-                      className={`absolute inset-y-0 left-0 rounded-full transition-all duration-700 ${meter.high ? 'bg-gradient-to-r from-emerald-700 to-emerald-400' : 'bg-gradient-to-r from-rose-700 to-rose-400'}`}
-                      style={{ width: `${meter.percent}%`, boxShadow: meter.high ? "0 0 10px rgba(52,211,153,0.6)" : "0 0 10px rgba(244,63,94,0.6)" }}
-                    />
-                    <Flame
-                      className={`absolute -top-1.5 w-4 h-4 drop-shadow-[0_0_8px_rgba(255,255,255,0.8)] ${meter.high ? "text-emerald-300" : "text-orange-400"}`}
-                      style={{ left: `calc(${meter.percent}% - 8px)` }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </PremiumCard>
-
-          <PremiumCard className="p-6 overflow-hidden">
-            <div className="flex justify-between items-start mb-6">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-yellow-500/10 border border-yellow-500/20 shadow-[0_0_15px_rgba(234,179,8,0.2)]">
-                  <Trophy className="w-5 h-5 text-yellow-500" />
-                </div>
-                <div>
-                  <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest">Total Points</p>
-                  <h3 className="text-2xl font-black tracking-tighter flex items-center gap-2 text-white">
-                    {currentMonthData.points} XP
-                    {currentMonthData.growth !== "+0" && (
-                      <span className="text-[11px] text-emerald-500 flex items-center font-bold tracking-tight drop-shadow-[0_0_5px_rgba(16,185,129,0.8)]">
-                        <TrendingUp className="w-3 h-3 mr-0.5" /> {currentMonthData.growth}
-                      </span>
-                    )}
+              <div className="space-y-6">
+                <div className="bg-[#09090b] border border-white/10 rounded-2xl p-6">
+                  <h3 className="text-xs font-black tracking-widest text-gray-400 uppercase mb-4 flex items-center gap-1.5">
+                    Your Streak <InfoIcon />
                   </h3>
+                  <div className="flex items-baseline gap-2 mb-1">
+                    <h2 className="text-4xl font-black text-white">12</h2>
+                    <span className="text-xl font-medium text-gray-400">Days</span>
+                  </div>
+                  <p className="text-sm text-gray-400 mb-6">Keep it going, don&apos;t break your streak!</p>
+                  
+                  <div className="flex justify-between items-center">
+                    {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day, idx) => {
+                      const isActive = idx < 6;
+                      return (
+                        <div key={day} className="flex flex-col items-center gap-2">
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 ${isActive ? 'bg-rose-600 border-rose-500 text-white shadow-[0_0_10px_rgba(225,29,72,0.5)]' : 'bg-[#18181b] border-white/10 text-gray-600'}`}>
+                            {isActive ? <CheckCircle2 className="w-5 h-5" /> : null}
+                          </div>
+                          <span className={`text-xs font-bold ${isActive ? 'text-white' : 'text-gray-500'}`}>{day}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="bg-[#09090b] border border-rose-500/20 rounded-2xl p-6 flex items-center justify-between overflow-hidden relative group cursor-pointer hover:border-rose-500/50 transition-colors">
+                  <div className="absolute right-0 top-1/2 -translate-y-1/2 opacity-30 group-hover:scale-110 transition-transform duration-500 translate-x-4">
+                    <UserPlus className="w-32 h-32 text-rose-500" />
+                  </div>
+                  <div className="relative z-10">
+                    <h3 className="text-lg font-black text-white mb-1">Invite Friends & Earn</h3>
+                    <p className="text-sm text-gray-400 mb-4">Earn 100 XP for each friend who joins!</p>
+                    <button className="bg-gradient-to-r from-rose-600 to-orange-500 text-white text-sm font-bold py-2.5 px-6 rounded-full hover:shadow-[0_0_15px_rgba(225,29,72,0.4)] transition-all">
+                      Invite Now
+                    </button>
+                  </div>
                 </div>
               </div>
-              <select
-                value={selectedMonth}
-                onChange={(e) => setSelectedMonth(e.target.value as MonthKey)}
-                className="bg-black border border-white/10 text-xs font-bold rounded-lg px-2 py-1.5 text-gray-300 focus:outline-none focus:border-rose-500/50 cursor-pointer"
-              >
-                {Object.keys(monthlyPointsData).map((month) => (
-                  <option key={month} value={month} className="bg-zinc-900">{month}</option>
-                ))}
-              </select>
             </div>
 
-            <div className="relative h-24 w-full mt-2 -mx-2">
-              <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="w-full h-full overflow-visible">
-                <defs>
-                  <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="rgba(244,63,94,0.5)" />
-                    <stop offset="100%" stopColor="rgba(244,63,94,0)" />
-                  </linearGradient>
-                  <filter id="glow">
-                    <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
-                    <feMerge>
-                      <feMergeNode in="coloredBlur"/>
-                      <feMergeNode in="SourceGraphic"/>
-                    </feMerge>
-                  </filter>
-                </defs>
-                <path d={chartFillPoints} fill="url(#chartGradient)" className="transition-all duration-700 ease-in-out" />
-                <path d={chartLinePoints} fill="none" stroke="#f43f5e" strokeWidth="1.5" filter="url(#glow)" className="transition-all duration-700 ease-in-out" />
-                {currentMonthData.chart.map((val, idx) => {
-                  const maxVal = Math.max(...currentMonthData.chart);
-                  const x = (idx / (currentMonthData.chart.length - 1)) * 100;
-                  const y = 100 - (val / maxVal) * 80;
-                  return (
-                    <circle key={idx} cx={x} cy={y} r={idx === currentMonthData.chart.length - 1 ? "2.5" : "1"} 
-                            fill="#fff" filter={idx === currentMonthData.chart.length - 1 ? "url(#glow)" : ""} 
-                            className="transition-all duration-700 ease-in-out" />
-                  );
-                })}
-              </svg>
-            </div>
-          </PremiumCard>
+          </div>
+        )}
 
-          <div className="relative rounded-2xl overflow-hidden border border-rose-500/30 group cursor-pointer transition-all duration-300 hover:-translate-y-1 shadow-[0_16px_40px_rgba(0,0,0,0.8)] bg-black">
-            <div
-              className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105 opacity-60 mix-blend-screen"
-              style={{ backgroundImage: "url('https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?q=80&w=600&auto=format&fit=crop')" }}
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black via-rose-950/80 to-transparent mix-blend-multiply" />
-            <div className="absolute inset-0 bg-gradient-to-tr from-rose-600/30 to-transparent mix-blend-color-dodge" />
+        {/* 8. TAB CONTENT - ALL ACTIVITIES */}
+        {activeTab === "All Activities" && (
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+              
+              {/* Left Column: Full Table */}
+              <div className="xl:col-span-2 space-y-6">
+                
+                {/* Header & Filters */}
+                <div className="flex flex-col gap-4 mb-2">
+                  <div>
+                    <h3 className="text-xl font-black text-white mb-1">All Activities</h3>
+                    <p className="text-sm text-gray-400 font-medium">A complete log of everything you&apos;ve done to earn points.</p>
+                  </div>
+                  
+                  <div className="flex flex-wrap items-center justify-between gap-4">
+                    <div className="flex flex-wrap items-center gap-3">
+                      <div className="relative w-40">
+                        <LayoutGrid className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 z-10" />
+                        <select className="w-full bg-[#18181b] border border-white/10 text-xs font-bold rounded-xl pl-9 pr-8 py-2.5 text-white focus:border-rose-500 appearance-none cursor-pointer">
+                          <option>All Activities</option>
+                        </select>
+                        <ChevronDown className="w-4 h-4 text-gray-500 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      </div>
+                      <div className="relative w-40">
+                        <Filter className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 z-10" />
+                        <select className="w-full bg-[#18181b] border border-white/10 text-xs font-bold rounded-xl pl-9 pr-8 py-2.5 text-white focus:border-rose-500 appearance-none cursor-pointer">
+                          <option>All Categories</option>
+                        </select>
+                        <ChevronDown className="w-4 h-4 text-gray-500 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      </div>
+                      <div className="relative w-36">
+                        <Filter className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 z-10" />
+                        <select className="w-full bg-[#18181b] border border-white/10 text-xs font-bold rounded-xl pl-9 pr-8 py-2.5 text-white focus:border-rose-500 appearance-none cursor-pointer">
+                          <option>All Types</option>
+                        </select>
+                        <ChevronDown className="w-4 h-4 text-gray-500 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      </div>
+                      <div className="relative w-48">
+                        <Calendar className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 z-10" />
+                        <select className="w-full bg-[#18181b] border border-white/10 text-xs font-bold rounded-xl pl-9 pr-8 py-2.5 text-white focus:border-rose-500 appearance-none cursor-pointer">
+                          <option>May 1 - May 31, 2026</option>
+                        </select>
+                        <ChevronDown className="w-4 h-4 text-gray-500 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      </div>
+                    </div>
+                    
+                    <button className="flex items-center gap-2 px-4 py-2.5 border border-white/10 rounded-xl text-xs font-bold text-white hover:bg-white/5 transition-colors bg-[#18181b]">
+                      <Download className="w-4 h-4" /> Export
+                    </button>
+                  </div>
+                </div>
 
-            <div className="relative z-10 p-6">
-              <p className="text-[10px] font-black uppercase tracking-widest mb-1 text-rose-500">
-                Next Up
-              </p>
-              <h2 className="text-2xl font-black tracking-tight mb-1 text-white">India vs Australia</h2>
-              <p className="text-xs text-gray-300 font-bold flex items-center gap-2 mb-4">
-                <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse shadow-[0_0_10px_rgba(244,63,94,1)]" />
-                12 May 2026 • 7:30 PM
-              </p>
-              <p className="text-xs text-gray-400 font-medium mb-5">
-                Gear up, predict &amp; cheer for India!
-              </p>
-              <button className="px-6 py-2.5 rounded-xl text-sm font-black tracking-wide text-white transition-all duration-300 bg-gradient-to-r from-rose-600 to-orange-500 shadow-[0_0_20px_rgba(244,63,94,0.5)] border border-rose-400/50 hover:scale-105">
-                Get Ready
-              </button>
+                {/* The Table */}
+                <div className="bg-[#09090b] border border-white/10 rounded-2xl p-6 overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-white/10">
+                        <th className="py-4 px-2 text-[10px] font-black text-gray-500 uppercase tracking-widest w-40">Date & Time</th>
+                        <th className="py-4 px-2 text-[10px] font-black text-gray-500 uppercase tracking-widest">Activity</th>
+                        <th className="py-4 px-2 text-[10px] font-black text-gray-500 uppercase tracking-widest">Details</th>
+                        <th className="py-4 px-2 text-[10px] font-black text-gray-500 uppercase tracking-widest text-right">Points</th>
+                        <th className="py-4 px-2 pl-8 text-[10px] font-black text-gray-500 uppercase tracking-widest w-32">Type</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {/* We slice earningHistoryData to show how pagination would look */}
+                      {earningHistoryData.slice(0, 10).map((row, idx) => (
+                        <tr key={idx} className="border-b border-white/5 hover:bg-white/5 transition-colors group">
+                          <td className="py-3 px-2">
+                            <p className="text-xs text-gray-300 font-medium">{row.date}</p>
+                            <p className="text-[10px] text-gray-500">{row.time}</p>
+                          </td>
+                          <td className="py-3 px-2">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-lg bg-[#18181b] border border-white/10 flex items-center justify-center flex-shrink-0 group-hover:border-white/20 transition-colors">
+                                <row.icon className="w-4 h-4 text-gray-400" />
+                              </div>
+                              <span className="text-xs font-bold text-white">{row.action}</span>
+                            </div>
+                          </td>
+                          <td className="py-3 px-2 text-xs text-gray-400 font-medium">
+                            {row.details}
+                          </td>
+                          <td className="py-3 px-2 text-right">
+                            <span className="text-xs font-black text-emerald-500">{row.points}</span>
+                          </td>
+                          <td className="py-3 px-2 pl-8">
+                            <span className={`inline-flex items-center justify-center px-2.5 py-1 rounded-md text-[10px] font-bold border ${row.typeColor}`}>
+                              {row.type}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+
+                  {/* Pagination */}
+                  <div className="mt-6 pt-6 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">
+                      Showing 1 – 10 of 142 activities
+                    </p>
+                    <div className="flex items-center gap-1">
+                      <button className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-500 hover:bg-white/5 hover:text-white transition-colors border border-transparent">
+                        <ChevronLeft className="w-4 h-4" />
+                      </button>
+                      <button className="w-8 h-8 rounded-lg flex items-center justify-center bg-rose-600 text-white font-bold text-xs shadow-[0_0_10px_rgba(225,29,72,0.5)]">
+                        1
+                      </button>
+                      <button className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-white/5 hover:text-white transition-colors font-bold text-xs">
+                        2
+                      </button>
+                      <button className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-white/5 hover:text-white transition-colors font-bold text-xs">
+                        3
+                      </button>
+                      <button className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-500 pointer-events-none">
+                        <MoreHorizontal className="w-4 h-4" />
+                      </button>
+                      <button className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-white/5 hover:text-white transition-colors font-bold text-xs">
+                        8
+                      </button>
+                      <button className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 border border-white/10 hover:bg-white/5 hover:text-white transition-colors">
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Keep Going Promo */}
+                <div className="bg-gradient-to-r from-rose-950 via-rose-900 to-orange-950 border border-rose-500/30 rounded-2xl p-6 flex items-center justify-between overflow-hidden relative">
+                   <div className="flex items-center gap-6 relative z-10">
+                     <Trophy className="w-16 h-16 text-yellow-500 drop-shadow-[0_0_15px_rgba(234,179,8,0.5)]" />
+                     <div>
+                       <h3 className="text-xl font-black text-white mb-1">Keep Going, You&apos;re on Fire!</h3>
+                       <p className="text-sm text-gray-300 font-medium">You&apos;ve earned 24% more points this month.</p>
+                     </div>
+                   </div>
+                   <button className="relative z-10 bg-gradient-to-r from-rose-600 to-orange-500 text-white text-sm font-bold py-3 px-6 rounded-full shadow-[0_0_15px_rgba(225,29,72,0.4)] hover:scale-105 transition-transform">
+                     Explore More Ways to Earn →
+                   </button>
+                </div>
+              </div>
+
+              {/* Right Column: Sidebar */}
+              <div className="space-y-6">
+                
+                {/* Total Points Header */}
+                <div className="bg-[#09090b] border border-white/10 rounded-2xl p-6 relative overflow-hidden group">
+                  <div className="absolute right-[-20%] top-[-20%] opacity-10 group-hover:scale-110 transition-transform duration-700">
+                    <Trophy className="w-48 h-48 text-rose-500" />
+                  </div>
+                  <div className="relative z-10">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Total Points Earned</p>
+                    <h3 className="text-3xl font-black text-emerald-500 mb-2">84,650 XP</h3>
+                    <p className="text-xs font-bold text-emerald-500 flex items-center gap-1">
+                      This Period ↑ 24% <span className="text-gray-500 ml-1">vs Apr 1 – Apr 30, 2026</span>
+                    </p>
+                  </div>
+                </div>
+
+                {/* Points Journey */}
+                <div className="bg-[#09090b] border border-white/10 rounded-2xl p-6">
+                  <h3 className="text-base font-black text-white mb-1">Your Points Journey</h3>
+                  <p className="text-xs text-gray-400 font-medium mb-6">See how you&apos;re growing</p>
+                  
+                  <div className="flex justify-center mb-8">
+                    <DonutChart data={pointsJourneyData} />
+                  </div>
+
+                  <div className="space-y-4">
+                    {pointsJourneyData.map((item, i) => (
+                      <div key={i} className="flex items-center justify-between text-sm">
+                        <div className="flex items-center gap-3">
+                          <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }} />
+                          <span className="text-gray-300">{item.label}</span>
+                        </div>
+                        <div className="flex gap-4">
+                          <span className="font-bold text-white text-right w-10">{item.percent}%</span>
+                          <span className="text-gray-400 text-right w-20">({item.xp})</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Top Activities */}
+                <div className="bg-[#09090b] border border-white/10 rounded-2xl p-6">
+                  <h3 className="text-base font-black text-white mb-1">Top Activities</h3>
+                  <p className="text-xs text-gray-400 font-medium mb-6">By points earned</p>
+                  
+                  <div className="flex flex-col gap-5 mb-6">
+                    {topActivitiesData.map((action, i) => (
+                      <div key={i} className="flex items-start gap-4">
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 border ${action.bg}`}>
+                          <action.icon className={`w-5 h-5 ${action.color}`} />
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="text-sm font-bold text-gray-200 mb-0.5">{action.title}</h4>
+                          <p className={`text-xs font-black ${action.color} mb-0.5`}>{action.xp}</p>
+                          <p className="text-[10px] text-gray-500 font-medium">{action.desc}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <button className="w-full bg-rose-600/10 hover:bg-rose-600/20 text-rose-500 border border-rose-500/20 text-sm font-bold py-3 rounded-xl transition-colors tracking-wide">
+                    View All Activities →
+                  </button>
+                </div>
+
+              </div>
             </div>
           </div>
+        )}
 
-        </div>
-      </div>
-
-      {isLeaderboardModalOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
-          onClick={(e) => e.target === e.currentTarget && setIsLeaderboardModalOpen(false)}
-        >
-          <div className="relative w-full max-w-5xl max-h-[90vh] flex flex-col rounded-2xl border border-white/10 overflow-hidden bg-[#09090b] shadow-[0_32px_80px_rgba(0,0,0,0.9),0_0_64px_rgba(244,63,94,0.15)]">
-            <button
-              onClick={() => setIsLeaderboardModalOpen(false)}
-              className="absolute top-4 right-4 z-[60] w-10 h-10 rounded-full flex items-center justify-center bg-black/50 border border-white/10 text-gray-400 hover:text-white hover:bg-white/10 transition-all backdrop-blur-md"
-            >
-              <X className="w-5 h-5" />
-            </button>
-            <div className="overflow-y-auto w-full h-full custom-scrollbar">
-               <GlobalLeaderboard />
-            </div>
-          </div>
-        </div>
-      )}
+      </main>
     </div>
+  );
+}
+
+// Small helper icon component
+function InfoIcon() {
+  return (
+    <span className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full border border-gray-600 text-[9px] text-gray-500 cursor-help hover:text-gray-300 hover:border-gray-400 transition-colors">
+      i
+    </span>
+  );
+}
+
+// Simple star icon SVG
+function StarIcon(props: any) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
+      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+    </svg>
   );
 }

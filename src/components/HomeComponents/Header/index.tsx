@@ -356,12 +356,12 @@ export default function Header() {
 
   return (
     <>
-      {/* ── DESKTOP (1440px+) ───────────────────────────────────────────── */}
+      {/* ── DESKTOP (1440px+)  */}
       <header className="hidden xl:flex w-full items-center gap-4 px-6 py-3 bg-[#0a0a0a] border-b border-white/5 sticky top-0 z-50">
         {/* Logo */}
-        <Link href="/MainModules/HomePage" className="flex-shrink-0">
-          {/* <LogoMark size={48} /> */}
-        </Link>
+        {/* <Link href="/MainModules/HomePage" className="flex-shrink-0">
+          <LogoMark size={48} />
+        </Link> */}
 
         {/* Search + Ask AI */}
         <div className="relative flex-1 max-w-2xl" ref={dropdownRef}>

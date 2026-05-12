@@ -484,10 +484,13 @@ function CapHoldersSection({ orangeCap, purpleCap, logos }: { orangeCap: PlayerR
                           <div className="min-w-0">
                            <div className="min-w-0">
   {p.rank === 1 ? (
-    /* Vivid and Bold styling for Rank 1 */
-    <p className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-yellow-200 font-black text-sm whitespace-nowrap drop-shadow-[0_0_8px_rgba(251,146,60,0.4)]">
-      {cleanPlayer(p.player)}
-    </p>
+    /* Vivid and Bold styling for Rank 1 with Cap Icon */
+    <div className="flex items-center gap-1.5">
+      <img src="/teams/orange_cap.png" alt="Orange Cap" className="w-4 h-4 object-contain" />
+      <p className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-yellow-200 font-black text-sm whitespace-nowrap drop-shadow-[0_0_8px_rgba(251,146,60,0.4)]">
+        {cleanPlayer(p.player)}
+      </p>
+    </div>
   ) : (
     /* Standard styling for all other players */
     <p className="text-white font-bold text-xs whitespace-nowrap">
@@ -533,10 +536,13 @@ function CapHoldersSection({ orangeCap, purpleCap, logos }: { orangeCap: PlayerR
                           <div className="min-w-0">
                             <div className="min-w-0">
   {p.rank === 1 ? (
-    /* Vivid and Bold styling for Rank 1 */
-    <p className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-300 font-black text-sm whitespace-nowrap drop-shadow-[0_0_8px_rgba(168,85,247,0.4)]">
-      {cleanPlayer(p.player)}
-    </p>
+    /* Vivid and Bold styling for Rank 1 with Cap Icon */
+    <div className="flex items-center gap-1.5">
+      <img src="/teams/purple_cap.png" alt="Purple Cap" className="w-4 h-4 object-contain" />
+      <p className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-300 font-black text-sm whitespace-nowrap drop-shadow-[0_0_8px_rgba(168,85,247,0.4)]">
+        {cleanPlayer(p.player)}
+      </p>
+    </div>
   ) : (
     /* Standard styling for all other players */
     <p className="text-white font-bold text-xs whitespace-nowrap">

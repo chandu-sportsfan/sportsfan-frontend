@@ -15,14 +15,14 @@ const banners = [
     id: 2,
     title: "Fan Zone",
     subtitle: "Exclusive Fan Content",
-    image: "/images/fantasy_games_banner.png",
+     image: "/images/fan_zone _banner.png",
     urlPath: '/MainModules/Fanszone'
   },
   {
     id: 3,
     title: "Fantasy Games",
     subtitle: "Pick players, score points & win big",
-    image: "/images/fan_zone _banner.png",
+    image: "/images/fantasy_games_banner.png",
     urlPath: '/MainModules/Fantasy?tab=fantasy'
   },
 ];

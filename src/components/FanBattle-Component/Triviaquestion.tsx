@@ -1186,7 +1186,7 @@ function ResultsScreen({ result, level }: { result: LevelResult; level: string }
       : 0;
 
   return (
-    <div className="w-full mt-20 max-w-sm sm:max-w-md mx-auto bg-[#0f1520] rounded-2xl overflow-hidden px-4 py-6">
+    <div className="w-full mt-20 pb-10 max-w-sm sm:max-w-md mx-auto bg-[#0f1520] rounded-2xl overflow-hidden px-4 py-6">
       <div className="text-center mb-6">
         <div
           className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3"
@@ -1984,7 +1984,7 @@ const TriviaQuestion: React.FC = () => {
   }
 
   return (
-    <div className="w-full mt-20 max-w-sm sm:max-w-md mx-auto bg-[#0f1520] rounded-2xl overflow-hidden">
+    <div className="w-full mt-20 mb-10 max-w-sm sm:max-w-md mx-auto bg-[#0f1520] rounded-2xl overflow-hidden">
       {/* Header */}
       <div className="px-4 pt-4 pb-3 bg-[#0f1520]">
         <div className="flex items-center gap-2 mb-3">

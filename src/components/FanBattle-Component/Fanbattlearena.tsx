@@ -1400,7 +1400,7 @@ const getJerseys = [
   { team: "Lucknow Super Giants", path: "/images/LSG1.png" },
 ];
 
-// ── Toast ──────────────────────────────────────────────────────────────────────
+// ── Toast 
 function Toast({ message, type }: { message: string; type: "success" | "skip" | "error" }) {
   const bg =
     type === "success" ? "rgba(74,222,128,0.15)" :
@@ -1428,7 +1428,7 @@ function Toast({ message, type }: { message: string; type: "success" | "skip" | 
   );
 }
 
-// ── Leaderboard Modal ──────────────────────────────────────────────────────────
+// ── Leaderboard Modal 
 function LeaderboardModal({
   battleName,
   leaderboard,
@@ -1522,7 +1522,7 @@ function LeaderboardModal({
   );
 }
 
-// ── How Fan Battle Works Modal ─────────────────────────────────────────────────
+// ── How Fan Battle Works Modal 
 function HowFanBattleWorksModal({ onClose }: { onClose: () => void }) {
   return (
     <div

@@ -9,6 +9,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import SportsFan360Footer from "@/src/components/footer-component/Footer";
 
 // ─── Types 
 interface UserProfile {
@@ -186,7 +187,7 @@ function UserSidebar() {
   );
 }
 
-// ─── Root Layout ──────────────────────────────────────────────────────────────
+// ─── Root Layout 
 export default function MainModulesLayout({
   children,
 }: {
@@ -259,6 +260,8 @@ export default function MainModulesLayout({
             <UserPlus className="text-white w-3 h-3 md:w-6 md:h-6" />
           </button>
         </div>
+
+        <SportsFan360Footer />
 
         <div className="lg:hidden">
           <BottomNav />

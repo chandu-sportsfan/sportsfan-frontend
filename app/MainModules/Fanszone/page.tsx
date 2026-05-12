@@ -1,14 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 import { 
   Search, Sparkles, SlidersHorizontal, LogOut, ChevronDown,
-  Trophy, Flame, MessageCircle, Share2, Eye, CheckCircle2, 
+  Trophy, Share2, CheckCircle2, 
   Award, TrendingUp, Play, ThumbsUp, Radio, FileText, 
   Gamepad2, UserPlus, Bell, LayoutGrid, Calendar, Filter,
-  Download, ChevronLeft, ChevronRight, MoreHorizontal // <-- Added LayoutGrid and Calendar
-
+  Download, ChevronLeft, ChevronRight, MoreHorizontal
 } from "lucide-react";
 
 // --- MOCK DATA ---
@@ -1077,8 +1075,8 @@ function InfoIcon() {
   );
 }
 
-// Simple star icon SVG
-function StarIcon(props: any) {
+// Simple star icon SVG with proper TypeScript types
+function StarIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
       <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />

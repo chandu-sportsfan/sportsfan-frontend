@@ -40,7 +40,7 @@ import HomeCardsSection from "@/src/components/HomeComponents/HomeCards";
 import Player360CardsSection from "@/src/components/HomeComponents/Player360Cards";
 import Team360CardsSection from "@/src/components/HomeComponents/Team360Cards";
 import PollCardsPage from "../PollCards/page";
-
+import NewsCenter from "@/src/components/HomeComponents/NewsCenter"; // NEW IMPORT
 
 export default function HomePage() {
   return (
@@ -52,6 +52,10 @@ export default function HomePage() {
         <PollCardsPage />
         <Team360CardsSection />
         <Player360CardsSection />
+        
+        {/* Added News Center Here */}
+        <NewsCenter />
+        
         <CricketArticles />
       </div>
     </div>

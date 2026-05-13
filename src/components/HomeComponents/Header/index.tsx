@@ -223,14 +223,10 @@ import { useGlobalSearch } from "@/context/GlobalSearchContext";
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useLeaderboard } from "@/context/LeaderboardContext";
+import { useAuth } from "@/context/AuthContext";
 
-// ─── Mock user data (replace with real auth/context) ───────────────────────
-const USER = {
-    name: "Arjun Mehta",
-    role: "Pro Member",
-    points: 12450,
-    avatar: "",
-};
+
 
 export default function Header() {
     const {
@@ -241,6 +237,15 @@ export default function Header() {
         performSearch,
         clearSearch,
     } = useGlobalSearch();
+     const { currentUserPoints } = useLeaderboard();
+     const { user, getUserDisplayName, loading: authLoading } = useAuth();
+     
+    // Helper to format points (e.g., 12.5k for 12500)
+    const formatPoints = (pts: number | undefined | null) => {
+        if (!pts) return "0";
+        if (pts >= 1000) return (pts / 1000).toFixed(1) + "k";
+        return pts.toLocaleString();
+    };
 
     const [showDropdown, setShowDropdown] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
@@ -442,7 +447,7 @@ export default function Header() {
                     <div className="flex items-center gap-2 bg-[#111] border border-white/10 rounded-full px-4 py-2.5">
                         <Star size={16} className="text-pink-500 fill-pink-500" />
                         <div className="flex flex-col leading-tight">
-                            <span className="text-white font-semibold text-sm">{USER.points.toLocaleString()}</span>
+                            <span className="text-white font-semibold text-sm">{formatPoints(currentUserPoints)}</span>
                             {/* <span className="text-gray-500 text-xs">Points</span> */}
                         </div>
                     </div>
@@ -458,10 +463,14 @@ export default function Header() {
                             onClick={() => setShowProfileDropdown((v) => !v)}
                             className="flex items-center gap-2 bg-[#111] border border-white/10 rounded-full pl-1 pr-3 py-1 hover:bg-white/5 transition-colors"
                         >
-                            <Avatar src={USER.avatar} name={USER.name} size={34} ring />
+                            <Avatar src={""} name={authLoading ? "" : getUserDisplayName()} size={34} ring />
                             <div className="flex flex-col items-start leading-tight">
-                                <span className="text-white font-medium text-sm">{USER.name}</span>
-                                <span className="text-pink-400 text-xs">{USER.role}</span>
+                                <span className="text-white font-medium text-sm">
+                                    {authLoading ? "Loading..." : getUserDisplayName()}
+                                </span>
+                                <span className="text-pink-400 text-xs">
+                                    {authLoading ? "..." : (user?.role || "Pro Member")}
+                                </span>
                             </div>
                             <ChevronDown size={14} className={`text-gray-400 ml-1 transition-transform duration-200 ${showProfileDropdown ? "rotate-180" : ""}`} />
                         </button>
@@ -474,7 +483,7 @@ export default function Header() {
                 </div>
             </header>
 
-            {/* ── TABLET (768px – 1279px) ─────────────────────────────────────── */}
+            {/*  TABLET (768px – 1279px)  */}
             <header className="hidden md:flex xl:hidden w-full items-center gap-3 px-4 py-2 bg-[#0a0a0a] border-b border-white/5 sticky top-0 z-50">
                 <Link href="/MainModules/HomePage" className="flex-shrink-0">
                     <Image src="/images/Logo.png" alt="SportsFan360 logo" width={32} height={36} className="shrink-0" />
@@ -517,8 +526,8 @@ export default function Header() {
                 <div className="flex items-center gap-2 bg-[#111] border border-white/10 rounded-full px-3 py-2">
                     <Star size={14} className="text-pink-500 fill-pink-500" />
                     <div className="flex flex-col leading-tight">
-                        <span className="text-white font-semibold text-xs">{USER.points.toLocaleString()}</span>
-                        <span className="text-gray-500 text-[10px]">Points</span>
+                        <span className="text-white font-semibold text-xs">{formatPoints(currentUserPoints)}</span>
+                        {/* <span className="text-gray-500 text-[10px]">Points</span> */}
                     </div>
                 </div>
 
@@ -533,7 +542,7 @@ export default function Header() {
                         onClick={() => setShowProfileDropdown((v) => !v)}
                         className="flex items-center gap-1.5 bg-[#111] border border-white/10 rounded-full pl-1 pr-2 py-1 hover:bg-white/5 transition-colors"
                     >
-                        <Avatar src={USER.avatar} name={USER.name} size={30} ring />
+                        <Avatar src={""} name={authLoading ? "" : getUserDisplayName()} size={30} ring />
                         {/* <div className="flex flex-col items-start leading-tight">
                             <span className="text-white font-medium text-xs">{USER.name}</span>
                             <span className="text-pink-400 text-[10px]">{USER.role}</span>
@@ -548,12 +557,7 @@ export default function Header() {
                 </div>
             </header>
 
-            {/* ── MOBILE (< 768px) ────────────────────────────────────────────── */}
-            {/*
-                FIX 1: position fixed (not sticky) — sticky fails when a parent has overflow:hidden
-                FIX 2: w-screen + left-0 + right-0 — full viewport width, never shifts
-                FIX 3: overflow-x hidden on header — clips any internal overflow
-            */}
+            {/* ── MOBILE (< 768px)  */}
             <header
                 className="flex md:hidden flex-col bg-[#0a0a0a] border-b border-white/5"
                 style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 50, overflowX: "hidden" }}
@@ -609,7 +613,7 @@ export default function Header() {
                         <div className="w-9 h-9 flex flex-col items-center justify-center bg-[#111] border border-white/10 rounded-full group-hover:bg-white/5 transition-colors gap-0.5">
                             <Star size={10} className="text-pink-500 fill-pink-500" />
                             <span className="text-[9px] text-gray-400 font-medium leading-none">
-                                {(USER.points / 1000).toFixed(1)}k
+                                {formatPoints(currentUserPoints)}
                             </span>
                         </div>
                     </button>
@@ -624,7 +628,7 @@ export default function Header() {
                     {/* Avatar / Profile — dropdown opens upward */}
                     <div className="relative" ref={mobileProfileDropdownRef}>
                         <button onClick={() => setShowProfileDropdown((v) => !v)}>
-                            <Avatar src={USER.avatar} name={USER.name} size={36} ring />
+                            <Avatar src={""} name={authLoading ? "" : getUserDisplayName()} size={36} ring />
                         </button>
                         {showProfileDropdown && (
                             <div className="absolute right-0 -top-5 bottom-full mb-2 mt-15 w-48 bg-[#111] border border-white/10 rounded-2xl shadow-2xl shadow-black/60 overflow-hidden z-150">
@@ -635,11 +639,7 @@ export default function Header() {
                 </div>
             </header>
 
-            {/*
-                Spacer that pushes page content below the fixed mobile header.
-                row1 ≈ 52px + row2 ≈ 52px = 104px. Adjust if you change padding.
-                Only renders on mobile (md:hidden).
-            */}
+          
             <div className="h-[104px] md:hidden" aria-hidden="true" />
         </>
     );

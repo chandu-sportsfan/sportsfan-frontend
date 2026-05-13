@@ -1,6 +1,7 @@
 // SportsFan360Footer.tsx
 // Next.js + TypeScript + Tailwind CSS (inline classes only, no style tags)
 
+import { Globe } from "lucide-react";
 import React from "react";
 
 // ─── SVG Icon Components ────────────────────────────────────────────────────
@@ -106,6 +107,7 @@ const SportsFan360Footer: React.FC = () => {
     { label: "X (Twitter)", href: "https://x.com/sportsfan_360", icon: <XIcon /> },
     { label: "Instagram", href: "https://www.instagram.com/sportsfan_360/", icon: <InstagramIcon /> },
     { label: "YouTube", href: "https://www.youtube.com/@sportsfan_360", icon: <YouTubeIcon /> },
+    {label: "Website", href: "https://www.sportsfan360.com", icon: <Globe />},
   ];
 
   return (
@@ -193,24 +195,9 @@ const SportsFan360Footer: React.FC = () => {
             </div>
           </div>
 
-          {/* Right: website link */}
-          <a
-            href="https://www.sportsfan360.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs text-pink-500 hover:text-pink-300 transition-colors duration-200 underline underline-offset-2 decoration-pink-800 hover:decoration-pink-400 break-all sm:break-normal"
-          >
-            https://www.sportsfan360.com
-          </a>
+        
         </div>
-
-        {/* Version pill */}
-        <div className="mt-4 flex justify-center sm:justify-start">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-900 border border-zinc-800 text-[11px] text-zinc-500 tracking-wide">
-            <span className="w-1.5 h-1.5 rounded-full bg-pink-600 animate-pulse" />
-            Version 0.0.02
-          </span>
-        </div>
+        
 
       </div>
 

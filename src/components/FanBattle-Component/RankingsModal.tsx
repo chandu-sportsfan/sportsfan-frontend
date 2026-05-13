@@ -875,14 +875,16 @@ const RankingsModal: React.FC<RankingsModalProps> = ({ isOpen, onClose }) => {
     }
 
     try {
-      const battlesRes = await axios.get(`/api/battle?userId=${user.userId}`);
+      // Fetch ALL battles for global rankings
+      const battlesRes = await axios.get(`/api/battle`);
       if (!battlesRes.data.success || !battlesRes.data.battles) {
         setAthletes([]);
         setLoading(false);
         return;
       }
 
-      const accessibleBattles: Battle[] = battlesRes.data.battles.filter(checkPermission);
+      // Include ALL battles for global rankings
+      const accessibleBattles: Battle[] = battlesRes.data.battles;
       if (accessibleBattles.length === 0) {
         setAthletes([]);
         setLoading(false);
@@ -963,7 +965,7 @@ const RankingsModal: React.FC<RankingsModalProps> = ({ isOpen, onClose }) => {
   );
 
   return (
-    <div className="absolute inset-0 z-50 flex flex-col bg-[#121212] pb-10">
+    <div className="fixed top-[104px] md:top-[64px] lg:left-[84px] inset-x-0 bottom-0 z-40 flex flex-col bg-[#121212] pb-10">
       {/* ── Top Bar ── */}
       <div className="flex items-center justify-between px-4 pt-5 pb-3 bg-[#121212]">
         <div>
@@ -1074,8 +1076,8 @@ const RankingsModal: React.FC<RankingsModalProps> = ({ isOpen, onClose }) => {
 
         {/* Community tab */}
         {activeTab === "community" && (
-          <div className="flex flex-col items-center justify-center h-full py-20 px-6 text-center">
-            <div className="w-16 h-16 rounded-full bg-[#1a1a1a] flex items-center justify-center mb-4">
+          <div className="flex flex-col items-center py-12 px-6 text-center">
+            <div className="w-16 h-16 rounded-full bg-[#1a1a1a] flex items-center justify-center mb-4 mx-auto">
               <span className="text-2xl">💬</span>
             </div>
             <p className="text-white font-bold text-sm mb-1">Community chat coming soon</p>

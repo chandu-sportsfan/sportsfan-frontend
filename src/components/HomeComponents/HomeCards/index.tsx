@@ -671,7 +671,7 @@ export default function HomeCardsSection() {
                   <Link href="/MainModules/Matchcenter">
                     <button className="w-full bg-[#1c1c1c] border border-[#C9115F]/40 py-1.5 rounded-full font-semibold text-[13px] flex items-center justify-center gap-2 cursor-pointer text-white hover:bg-[#2a2a2a] transition-colors">
                       <span>🏆</span>
-                      IPL 2026 Points Table
+                     Match center
                     </button>
                   </Link>
                 )}

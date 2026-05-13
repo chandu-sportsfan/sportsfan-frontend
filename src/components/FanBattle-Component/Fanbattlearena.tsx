@@ -1659,6 +1659,9 @@ function BattleResultScreen({
   onCreateBattle: () => void;
   isLoggedIn: boolean;
 }) {
+  const { user } = useAuth();
+  const { leaderboard, currentUserRank, currentUserPoints, loading } = useLeaderboard();
+
   if (!hasNextBattle) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-[#07070f] px-4">
@@ -1689,6 +1692,48 @@ function BattleResultScreen({
               ))}
             </div>
           </div>
+
+          {/* Inline Leaderboard for completion screen */}
+          <div className="rounded-2xl w-full p-5 bg-[#0f1520] border border-white/5 text-left">
+            <h3 className="text-white text-sm font-bold mb-4">Global Leaderboard</h3>
+            <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1 no-scrollbar">
+              {loading && leaderboard.length === 0 ? (
+                <div className="text-gray-500 text-center py-4 text-[10px] italic">Loading...</div>
+              ) : leaderboard.length > 0 ? (
+                <>
+                  {leaderboard.slice(0, 5).map((lbUser) => (
+                    <div key={lbUser.userId} className={`flex items-center justify-between p-2 rounded-xl border ${lbUser.userId === user?.userId ? 'bg-[#ff6d00]/10 border-[#ff6d00]/30' : 'bg-[#1a1a2e]/50 border-white/5'}`}>
+                      <div className="flex items-center gap-2">
+                        <span className={`font-bold w-5 text-center text-[10px] ${lbUser.rank <= 3 ? 'text-[#ffa726]' : 'text-gray-500'}`}>#{lbUser.rank}</span>
+                        <span className="text-white text-xs font-medium truncate max-w-[100px]">{lbUser.userName}</span>
+                      </div>
+                      <span className="text-[#ff6d00] font-bold text-xs">{lbUser.totalPoints} <span className="text-[9px] text-gray-600">PTS</span></span>
+                    </div>
+                  ))}
+                  {user?.userId && !leaderboard.slice(0, 5).some(u => u.userId === user.userId) && (
+                    <>
+                      <div className="flex justify-center py-0.5"><div className="h-2 w-px bg-white/10" /></div>
+                      {leaderboard.find(u => u.userId === user.userId) && (
+                        (() => {
+                          const lbUser = leaderboard.find(u => u.userId === user.userId)!;
+                          return (
+                            <div className="flex items-center justify-between p-2 rounded-xl bg-[#ff6d00]/10 border border-[#ff6d00]/30">
+                              <div className="flex items-center gap-2">
+                                <span className="font-bold w-5 text-center text-[10px] text-gray-500">#{lbUser.rank}</span>
+                                <span className="text-white text-xs font-medium max-w-[100px]">{lbUser.userName}</span>
+                              </div>
+                              <span className="text-[#ff6d00] font-bold text-xs">{lbUser.totalPoints} <span className="text-[9px] text-gray-600">PTS</span></span>
+                            </div>
+                          );
+                        })()
+                      )}
+                    </>
+                  )}
+                </>
+              ) : null}
+            </div>
+          </div>
+
           <div className="flex flex-col items-center gap-4 bg-[#0f1520] rounded-2xl px-5 py-6"
             style={{ border: "1px solid rgba(255,255,255,0.07)" }}>
             <div className="w-14 h-14 rounded-full flex items-center justify-center"
@@ -1722,7 +1767,7 @@ function BattleResultScreen({
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-[#07070f] px-4">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-[#07070f] px-4 py-6">
       <div className="w-full max-w-sm flex flex-col gap-4">
         <div className="flex flex-col items-center gap-4 bg-[#0f1520] rounded-2xl px-5 py-6"
           style={{ border: "1px solid rgba(255,255,255,0.07)" }}>
@@ -1750,6 +1795,48 @@ function BattleResultScreen({
             ))}
           </div>
         </div>
+
+        {/* Inline Leaderboard for transition screen */}
+        <div className="rounded-2xl w-full p-4 bg-[#0f1520] border border-white/5 text-left">
+          <h3 className="text-white text-[11px] font-bold mb-3 uppercase tracking-wider text-gray-500">Standings</h3>
+          <div className="space-y-1.5 max-h-[160px] overflow-y-auto pr-1 no-scrollbar">
+            {loading && leaderboard.length === 0 ? (
+              <div className="text-gray-500 text-center py-2 text-[10px] italic">Loading...</div>
+            ) : leaderboard.length > 0 ? (
+              <>
+                {leaderboard.slice(0, 3).map((lbUser) => (
+                  <div key={lbUser.userId} className={`flex items-center justify-between p-2 rounded-xl border ${lbUser.userId === user?.userId ? 'bg-[#ff6d00]/10 border-[#ff6d00]/30' : 'bg-[#1a1a2e]/50 border-white/5'}`}>
+                    <div className="flex items-center gap-2">
+                      <span className={`font-bold w-5 text-center text-[10px] ${lbUser.rank <= 3 ? 'text-[#ffa726]' : 'text-gray-500'}`}>#{lbUser.rank}</span>
+                      <span className="text-white text-xs font-medium truncate max-w-[100px]">{lbUser.userName}</span>
+                    </div>
+                    <span className="text-[#ff6d00] font-bold text-xs">{lbUser.totalPoints}</span>
+                  </div>
+                ))}
+                {user?.userId && !leaderboard.slice(0, 3).some(u => u.userId === user.userId) && (
+                  <>
+                    <div className="flex justify-center py-0.5"><div className="h-1.5 w-px bg-white/10" /></div>
+                    {leaderboard.find(u => u.userId === user.userId) && (
+                      (() => {
+                        const lbUser = leaderboard.find(u => u.userId === user.userId)!;
+                        return (
+                          <div className="flex items-center justify-between p-2 rounded-xl bg-[#ff6d00]/10 border border-[#ff6d00]/30">
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold w-5 text-center text-[10px] text-gray-500">#{lbUser.rank}</span>
+                              <span className="text-white text-xs font-medium max-w-[100px]">{lbUser.userName}</span>
+                            </div>
+                            <span className="text-[#ff6d00] font-bold text-xs">{lbUser.totalPoints}</span>
+                          </div>
+                        );
+                      })()
+                    )}
+                  </>
+                )}
+              </>
+            ) : null}
+          </div>
+        </div>
+
         <div className="flex flex-col items-center gap-4 bg-[#0f1520] rounded-2xl px-5 py-6"
           style={{ border: "1px solid rgba(236,72,153,0.25)" }}>
           <div className="w-10 h-10 rounded-full flex items-center justify-center"
@@ -1794,9 +1881,12 @@ function AlreadyPlayedScreen({
   onCreateBattle: () => void;
   isLoggedIn: boolean;
 }) {
+  const { user } = useAuth();
+  const { leaderboard, currentUserRank, currentUserPoints, loading } = useLeaderboard();
+
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-[#07070f] px-4">
-      <div className="text-center max-w-sm">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-[#07070f] px-4 py-10">
+      <div className="text-center w-full max-w-lg">
         <div className="w-20 h-20 rounded-full bg-[#1a1a2e] flex items-center justify-center mx-auto mb-4"
           style={{ border: "1px solid rgba(255,255,255,0.08)" }}>
           <span className="text-3xl">✅</span>
@@ -1805,10 +1895,100 @@ function AlreadyPlayedScreen({
         <p className="text-gray-400 text-sm mb-6 leading-relaxed">
           Check back soon for new battles, or create your own to challenge friends.
         </p>
+
+        {/* Inline Leaderboard */}
+        <div className="rounded-2xl w-full p-5 mb-8 bg-[#0f1520] border border-white/5 text-left">
+          <div className="mb-4 flex items-center justify-between">
+            <h3 className="text-white text-base font-bold">Global Leaderboard</h3>
+            {currentUserRank && currentUserRank > 0 && (
+              <div className="text-[10px] bg-[#ff6d00]/20 text-[#ff6d00] border border-[#ff6d00]/30 px-2 py-1 rounded-full font-bold">
+                RANK #{currentUserRank}
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1 no-scrollbar">
+            {loading && leaderboard.length === 0 ? (
+              <div className="text-gray-500 text-center py-4 text-xs italic">Loading rankings...</div>
+            ) : leaderboard.length > 0 ? (
+              <>
+                {leaderboard.slice(0, 10).map((lbUser) => (
+                  <div
+                    key={lbUser.userId}
+                    className={`flex items-center justify-between p-2.5 rounded-xl transition-colors ${
+                      lbUser.userId === user?.userId ? 'bg-[#ff6d00]/10 border border-[#ff6d00]/30' : 'bg-[#1a1a2e]/50 border border-white/5'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className={`font-bold w-6 text-center text-xs ${lbUser.rank <= 3 ? 'text-[#ffa726]' : 'text-gray-500'}`}>
+                        #{lbUser.rank}
+                      </span>
+                      <span className="text-white text-sm font-medium max-w-[120px]">{lbUser.userName}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span className="text-[#ff6d00] font-bold text-sm">{lbUser.totalPoints}</span>
+                      <span className="text-gray-600 text-[10px]">PTS</span>
+                    </div>
+                  </div>
+                ))}
+                
+                {/* Show current user if not in top 10 */}
+                {user?.userId && !leaderboard.slice(0, 10).some(u => u.userId === user.userId) && (
+                  <>
+                    <div className="flex justify-center py-1">
+                      <div className="h-4 w-px bg-white/10" />
+                    </div>
+                    {leaderboard.find(u => u.userId === user.userId) ? (
+                      (() => {
+                        const lbUser = leaderboard.find(u => u.userId === user.userId)!;
+                        return (
+                          <div
+                            className="flex items-center justify-between p-2.5 rounded-xl transition-colors bg-[#ff6d00]/10 border border-[#ff6d00]/30"
+                          >
+                            <div className="flex items-center gap-3">
+                              <span className="font-bold w-6 text-center text-xs text-gray-500">
+                                #{lbUser.rank}
+                              </span>
+                              <span className="text-white text-sm font-medium truncate max-w-[120px]">{lbUser.userName}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <span className="text-[#ff6d00] font-bold text-sm">{lbUser.totalPoints}</span>
+                              <span className="text-gray-600 text-[10px]">PTS</span>
+                            </div>
+                          </div>
+                        );
+                      })()
+                    ) : currentUserRank && currentUserRank > 10 ? (
+                      <div
+                        className="flex items-center justify-between p-2.5 rounded-xl transition-colors bg-[#ff6d00]/10 border border-[#ff6d00]/30"
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="font-bold w-6 text-center text-xs text-gray-500">
+                            #{currentUserRank}
+                          </span>
+                          <span className="text-white text-sm font-medium truncate max-w-[120px]">{user.name || "You"}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <span className="text-[#ff6d00] font-bold text-sm">{currentUserPoints || 0}</span>
+                          <span className="text-gray-600 text-[10px]">PTS</span>
+                        </div>
+                      </div>
+                    ) : null}
+                  </>
+                )}
+              </>
+            ) : (
+              <div className="text-center py-6 text-gray-600 text-xs">
+                No rankings available yet.
+              </div>
+            )}
+          </div>
+        </div>
+
         {isLoggedIn && (
           <button
             onClick={onCreateBattle}
-            className="px-6 py-3 rounded-xl text-white font-semibold"
+            className="w-full py-4 rounded-2xl text-white font-bold text-sm transition-transform active:scale-95 shadow-lg shadow-pink-500/20"
             style={{ background: "linear-gradient(90deg, #e91e8c, #ff6b35)" }}
           >
             Create a Battle

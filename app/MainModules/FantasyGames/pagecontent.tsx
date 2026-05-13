@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Trophy, Zap, Gamepad2, Rocket } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 export default function FantasyGamesHub() {
@@ -11,115 +11,84 @@ export default function FantasyGamesHub() {
     {
       id: "book-cricket",
       title: "Book Cricket",
-      subtitle: "Classic Classroom Game",
-      description: "Flip pages to generate random page numbers. The last digit decides your score. Get 12 balls or 3 wickets.",
-      icon: "📖",
-      color: "from-amber-900 to-yellow-900",
+      subtitle: "CLASSIC CLASSROOM",
+      description: "Relive the nostalgia. Flip pages to score runs and take wickets in this legendary classroom game.",
+      icon: <Gamepad2 size={32} className="text-[#e91e8c]" />,
+      emoji: "📖",
+      color: "from-[#e91e8c] to-[#ff6b35]",
       href: "/MainModules/FantasyGames/book-cricket",
+      isHot: true,
     },
     {
       id: "circle-cricket",
       title: "Circle Cricket",
-      subtitle: "Fast-Paced Action",
-      description: "Bat, chase, and swing the format. Experience the dynamic circle-based cricket game with instant feedback.",
-      icon: "🎯",
-      color: "from-blue-900 to-cyan-900",
+      subtitle: "FAST-PACED ACTION",
+      description: "Bat, chase, and swing the format. Experience dynamic circle-based cricket with instant feedback.",
+      icon: <Zap size={32} className="text-[#60a5fa]" />,
+      emoji: "🎯",
+      color: "from-blue-600 to-cyan-500",
       href: "/MainModules/FantasyGames/circle-cricket",
+      isHot: false,
     },
     {
       id: "hand-cricket",
       title: "Hand Cricket",
-      subtitle: "Classic Hand Cricket",
-      description: "Play the traditional hand-cricket game — choose odd/even, bowl and bat using hand gestures or taps.",
-      icon: "🤚",
-      color: "from-red-900 to-pink-700",
+      subtitle: "GESTURE MASTER",
+      description: "Play the traditional hand-cricket game — choose odd/even, bowl and bat using taps.",
+      icon: <Trophy size={32} className="text-[#fbbf24]" />,
+      emoji: "🤚",
+      color: "from-amber-500 to-orange-400",
       href: "/MainModules/FantasyGames/hand-cricket",
+      isHot: false,
     },
     {
       id: "coming-soon",
-      title: "Coming Soon",
-      subtitle: "More Games Ahead",
-      description: "We're working on exciting new cricket fantasy games. Stay tuned for more thrilling gaming experiences coming your way.",
-      icon: "🚀",
-      color: "from-purple-900 to-pink-900",
+      title: "Cricket Pro",
+      subtitle: "NEXT GENERATION",
+      description: "We're working on exciting new cricket fantasy games. Stay tuned for the ultimate experience.",
+      icon: <Rocket size={32} className="text-[#a855f7]" />,
+      emoji: "🚀",
+      color: "from-purple-600 to-pink-500",
       href: null,
+      isHot: false,
     },
   ];
 
   return (
-    <div className="bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 px-4 py-12 sm:px-6">
-      <style jsx global>{`
-        .fantasy-hub {
-          --text: #f5ead6;
-          --muted: #8b7050;
-          --amber: #f59e0b;
-          --bg: #090603;
-        }
+    <div className="min-h-screen bg-[#07070f] px-4 py-12 sm:px-6 relative overflow-hidden">
+      {/* Background Decorative Elements */}
+      <div className="absolute top-0 left-1/4 w-96 h-96 bg-pink-600/10 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-orange-600/10 rounded-full blur-[120px] pointer-events-none" />
 
-        .fantasy-hub * {
-          box-sizing: border-box;
-        }
-
-        .fantasy-hub .title-font {
-          font-family: "Bebas Neue", sans-serif;
-          letter-spacing: 0.08em;
-        }
-
-        .fantasy-hub .detail-font {
-          font-family: "Special Elite", serif;
-        }
-      `}</style>
-
-      <div className="fantasy-hub max-w-6xl mx-auto">
+      <div className="max-w-6xl mx-auto relative z-10">
         {/* Header */}
         <div className="mb-16 text-center">
-          <h1 className="title-font text-4xl sm:text-5xl font-bold text-[#f5d5a0] mb-2">
-            FANTASY GAMES
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 mb-4">
+            <span className="w-2 h-2 rounded-full bg-[#e91e8c] animate-pulse" />
+            <span className="text-[10px] font-bold text-gray-400 tracking-widest uppercase">Gaming Hub</span>
+          </div>
+          <h1 className="text-4xl sm:text-6xl font-black text-white mb-4 tracking-tight">
+            FANTASY <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#e91e8c] to-[#ff6b35]">GAMES</span>
           </h1>
-          <p className="text-[#c4956a] text-sm sm:text-base letter-spacing[0.2em] mb-2">
-            SPORTSFAN360 PRESENTS
-          </p>
-          <p className="text-[#8b7050] text-sm max-w-2xl mx-auto">
-            Choose your cricket experience. Pick a game, test your skills, and build your fantasy cricket legacy.
+          <p className="text-gray-500 text-sm sm:text-base max-w-xl mx-auto leading-relaxed font-medium">
+            Test your skills, support your favorites, and build your legacy in the ultimate cricket gaming destination.
           </p>
         </div>
 
         {/* Games Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {games.map((game) => {
-            const commonClassName = "group relative overflow-hidden rounded-2xl border border-[rgba(42,26,10,0.95)] transition-all";
-            
-            if (game.href) {
-              return (
-                <Link 
-                  key={game.id} 
-                  href={game.href} 
-                  className={`${commonClassName} hover:border-[rgba(245,158,11,0.6)] hover:shadow-2xl hover:shadow-amber-900/50 cursor-pointer`}
-                >
-                  <CardInner game={game} />
-                </Link>
-              );
-            }
-
-            return (
-              <div 
-                key={game.id} 
-                className={`${commonClassName} opacity-75 cursor-not-allowed`}
-              >
-                <CardInner game={game} />
-              </div>
-            );
-          })}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6">
+          {games.map((game) => (
+            <GameCard key={game.id} game={game} />
+          ))}
         </div>
 
         {/* Footer Info */}
-        <div className="mt-16 text-center">
-          <p className="text-[#8b6540] text-xs letter-spacing[0.2em]">
-            <a href="https://sportsfan360.com" target="_blank" rel="noreferrer" className="text-[#f59e0b] hover:underline">
-              sportsfan360.com
-            </a>
-            {' '}— Fantasy Cricket Games
-          </p>
+        <div className="mt-20 text-center">
+          <div className="inline-block p-[1px] rounded-full bg-gradient-to-r from-white/5 via-white/20 to-white/5">
+            <div className="px-6 py-2 rounded-full bg-[#07070f] text-gray-600 text-[10px] font-bold tracking-[0.2em] uppercase">
+              Powered by SportsFan360
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -131,59 +100,69 @@ interface FantasyGame {
   title: string;
   subtitle: string;
   description: string;
-  icon: string;
+  icon: React.ReactNode;
+  emoji: string;
   color: string;
   href: string | null;
+  isHot: boolean;
 }
 
-function CardInner({ game }: { game: FantasyGame }) {
+function GameCard({ game }: { game: FantasyGame }) {
+  const isAvailable = !!game.href;
+
   return (
-    <>
-      {/* Background gradient */}
-      <div
-        className={`absolute inset-0 bg-gradient-to-br ${game.color} opacity-20 group-hover:opacity-30 transition-opacity`}
-      />
+    <div className={`group relative rounded-2xl sm:rounded-3xl overflow-hidden border transition-all duration-500 flex flex-col h-full ${
+      isAvailable 
+        ? "bg-[#0f1520] border-white/5 hover:border-[#e91e8c]/30 hover:shadow-2xl hover:shadow-[#e91e8c]/10" 
+        : "bg-[#0f1520]/50 border-white/5 opacity-80"
+    }`}>
+      {/* Highlight glow */}
+      <div className={`absolute -top-16 -right-16 w-32 h-32 bg-gradient-to-br ${game.color} blur-[40px] opacity-0 group-hover:opacity-20 transition-opacity duration-700`} />
 
-      {/* Overlay grid */}
-      <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSA2MCAwIEwgMCAwIEwgMCA2MCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJyZ2JhKDI0NSwyMDYsMzIsMS4wKSIgc3Ryb2tlLXdpZHRoPSIwLjUiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjZ3JpZCkiLz48L3N2Zz4=')] opacity-[0.02]" />
+      <div className="p-4 sm:p-8 flex flex-col h-full">
+        <div className="flex justify-between items-start mb-4">
+          <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-500 shadow-xl">
+            {/* Scale icon for mobile */}
+            <div className="scale-75 sm:scale-100">
+              {game.icon}
+            </div>
+          </div>
+          {game.isHot && (
+            <span className="px-1.5 py-0.5 rounded-md bg-[#e91e8c] text-white text-[7px] sm:text-[9px] font-black tracking-tighter uppercase">HOT</span>
+          )}
+        </div>
 
-      {/* Content */}
-      <div className="relative p-8 sm:p-10 z-10 h-full flex flex-col justify-between">
-        {/* Icon and Title */}
-        <div>
-          <div className="mb-4 text-5xl">{game.icon}</div>
-          <h2 className="title-font text-3xl font-bold text-[#f5d5a0] mb-1">
+        <div className="flex-1">
+          <div className="flex items-center gap-2 mb-1">
+            <span className={`text-[8px] sm:text-[10px] font-bold tracking-widest uppercase text-transparent bg-clip-text bg-gradient-to-r ${game.color}`}>
+              {game.subtitle}
+            </span>
+          </div>
+          <h2 className="text-base sm:text-xl font-black text-white mb-2 tracking-tight line-clamp-2">
             {game.title}
           </h2>
-          <p className="detail-font text-sm text-[#f59e0b] mb-4">
-            {game.subtitle}
-          </p>
-          <p className="text-[#c4956a] text-sm leading-relaxed">
+          <p className="text-gray-500 text-[10px] sm:text-sm leading-tight sm:leading-relaxed font-medium mb-4 line-clamp-2 sm:line-clamp-none">
             {game.description}
           </p>
         </div>
 
-        {/* Play Button */}
-        {game.href && (
-          <div className="mt-8 flex items-center gap-3 text-[#f5d5a0] group-hover:gap-5 transition-all">
-            <span className="font-bold text-sm letter-spacing[0.2em]">PLAY NOW</span>
-            <ArrowRight
-              size={20}
-              className="group-hover:translate-x-1 transition-transform"
-            />
-          </div>
-        )}
-        {!game.href && (
-          <div className="mt-8 flex items-center gap-3 text-[#8b7050]">
-            <span className="font-bold text-sm letter-spacing[0.2em]">COMING SOON</span>
-          </div>
-        )}
+        <div className="mt-auto">
+          {isAvailable ? (
+            <Link 
+              href={game.href!}
+              className="inline-flex items-center gap-2 sm:gap-3 px-4 py-2 sm:px-6 sm:py-3 rounded-lg sm:rounded-xl text-white text-[9px] sm:text-xs font-bold transition-all hover:gap-4 shadow-lg active:scale-95 whitespace-nowrap"
+              style={{ background: "linear-gradient(90deg, #e91e8c, #ff6b35)" }}
+            >
+              PLAY NOW
+              <ArrowRight size={14} className="sm:w-4 sm:h-4" />
+            </Link>
+          ) : (
+            <div className="inline-flex items-center gap-2 px-4 py-2 sm:px-6 sm:py-3 rounded-lg sm:rounded-xl bg-white/5 border border-white/10 text-gray-500 text-[9px] sm:text-xs font-bold cursor-not-allowed whitespace-nowrap">
+              COMING SOON
+            </div>
+          )}
+        </div>
       </div>
-
-      {/* Hover effect border */}
-      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-        <div className="absolute inset-0 rounded-2xl border border-[rgba(245,158,11,0.3)] shadow-inset" />
-      </div>
-    </>
+    </div>
   );
 }

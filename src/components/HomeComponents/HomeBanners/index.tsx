@@ -9,7 +9,7 @@ const banners = [
     title: "TATA IPL T20 2026",
     subtitle: "Experience cricket's biggest league",
     image: "/images/bannerone.png",
-    urlPath: '/MainModules/HomePage'
+    urlPath: '/MainModules/MatchesDropContent'
   },
   {
     id: 2,

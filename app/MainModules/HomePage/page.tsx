@@ -33,7 +33,6 @@
 "use client";
 
 import ContinueListening from "@/src/components/HomeComponents/ContinueListening/index";
-import CricketArticles from "@/src/components/HomeComponents/CricketArticles/index";
 import Header from "@/src/components/HomeComponents/Header/index";
 import HomeBanners from "@/src/components/HomeComponents/HomeBanners/index";
 import HomeCardsSection from "@/src/components/HomeComponents/HomeCards";
@@ -55,8 +54,6 @@ export default function HomePage() {
         
         {/* Added News Center Here */}
         <NewsCenter />
-        
-        <CricketArticles />
       </div>
     </div>
   );

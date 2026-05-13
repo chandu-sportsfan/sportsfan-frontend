@@ -225,6 +225,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useLeaderboard } from "@/context/LeaderboardContext";
 import { useAuth } from "@/context/AuthContext";
+import LogoutButton from "../LogoutButton";
 
 
 
@@ -386,7 +387,7 @@ export default function Header() {
                 className="flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors group">
                 <SlidersHorizontal size={16} className="text-pink-400" />
                 <span className="text-pink-400 text-sm font-medium">Preferences</span>
-                <span className="ml-auto text-[10px] font-semibold bg-pink-500/20 text-pink-400 px-2 py-0.5 rounded-full border border-pink-500/30">
+                <span className="ml-auto text-[8px] font-semibold bg-pink-500/20 text-pink-400 px-2 py-0.5 rounded-full border border-pink-500/30">
                     Recommended
                 </span>
             </Link>
@@ -397,11 +398,10 @@ export default function Header() {
                 <span className="text-white text-sm font-medium">Settings</span>
             </Link>
             <div className="h-px bg-white/5 mx-4" />
-            <button onClick={onClose}
-                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors group">
+            <LogoutButton className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors group">
                 <LogOut size={16} className="text-gray-400 group-hover:text-red-400 transition-colors" />
                 <span className="text-white group-hover:text-red-400 text-sm font-medium transition-colors">Logout</span>
-            </button>
+            </LogoutButton>
         </div>
     );
 
@@ -564,7 +564,7 @@ export default function Header() {
             {/* ── MOBILE (< 768px)  */}
             <header
                 className="flex md:hidden flex-col bg-[#0a0a0a] border-b border-white/5"
-                style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 50, overflowX: "hidden" }}
+                style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 50 }}
             >
                 {/* Row 1: Logo + Search + Ask AI */}
                 <div className="flex items-center gap-2 px-3 pt-2.5 pb-2 w-full">
@@ -637,7 +637,7 @@ export default function Header() {
                             <Avatar src={""} name={authLoading ? "" : getUserDisplayName()} size={36} ring />
                         </button>
                         {showProfileDropdown && (
-                            <div className="absolute right-0 -top-5 bottom-full mb-2 mt-15 w-48 bg-[#111] border border-white/10 rounded-2xl shadow-2xl shadow-black/60 overflow-hidden z-150">
+                            <div className="absolute right-0 top-full mt-2 w-48 bg-[#111] border border-white/10 rounded-2xl shadow-2xl shadow-black/60 overflow-hidden z-[100]">
                                 <ProfileMenu onClose={() => setShowProfileDropdown(false)} />
                             </div>
                         )}

@@ -35,9 +35,10 @@
 
 
 "use client";
+import React from "react";
 import { LogOut } from "lucide-react";
 
-export default function LogoutButton() {
+export default function LogoutButton({ className, children }: { className?: string; children?: React.ReactNode }) {
   const handleLogout = async () => {
     try {
       // 1. Get CSRF token
@@ -55,7 +56,7 @@ export default function LogoutButton() {
     }
 
     // 3. Clear HttpOnly cookies via our local server route
-    await fetch("/api/logout", { method: "POST" }).catch(() => {});
+    await fetch("/api/logout", { method: "POST" }).catch(() => { });
 
     // 4. Clear localStorage
     localStorage.removeItem("watchalong_user_name");
@@ -67,10 +68,14 @@ export default function LogoutButton() {
   return (
     <button
       onClick={handleLogout}
-      className="text-sm text-red-400 hover:text-red-300 cursor-pointer transition flex items-center gap-1"
+      className={className || "text-sm text-red-400 hover:text-red-300 cursor-pointer transition flex items-center gap-1"}
     >
-      <LogOut size={16} />
-      Logout
+      {children || (
+        <>
+          <LogOut size={16} />
+          Logout
+        </>
+      )}
     </button>
   );
 }

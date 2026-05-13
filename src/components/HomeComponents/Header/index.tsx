@@ -426,10 +426,12 @@ export default function Header() {
                                 <X size={14} className="text-gray-500 hover:text-white transition-colors" />
                             </button>
                         )}
+                        <Link href="/MainModules/AskAI">
                         <button className="flex items-center gap-1.5 bg-[#1a1a1a] hover:bg-[#222] border border-white/10 text-pink-400 text-sm font-medium px-4 py-2 rounded-full transition-colors whitespace-nowrap">
                             <Sparkles size={14} className="text-pink-400" />
                             Ask AI
                         </button>
+                      </Link>
                     </div>
                     {showDropdown && (
                         <div className="absolute top-full left-0 right-0 mt-2 bg-[#111] border border-pink-500/20 rounded-2xl shadow-2xl z-50 max-h-[400px] overflow-y-auto">
@@ -506,10 +508,12 @@ export default function Header() {
                                 <X size={13} className="text-gray-500 hover:text-white transition-colors" />
                             </button>
                         )}
-                        <button className="flex items-center gap-1.5 bg-[#1a1a1a] hover:bg-[#222] border border-white/10 text-pink-400 text-xs font-medium px-3 py-1.5 rounded-full transition-colors whitespace-nowrap">
-                            <Sparkles size={12} />
-                            Ask AI
-                        </button>
+                        <Link href="/MainModules/AskAI">
+                            <button className="flex items-center gap-1.5 bg-[#1a1a1a] hover:bg-[#222] border border-white/10 text-pink-400 text-xs font-medium px-3 py-1.5 rounded-full transition-colors whitespace-nowrap">
+                                <Sparkles size={12} />
+                                Ask AI
+                            </button>
+                        </Link>
                     </div>
                     {showDropdown && (
                         <div className="absolute top-full left-0 right-0 mt-2 bg-[#111] border border-pink-500/20 rounded-2xl shadow-2xl z-50 max-h-[400px] overflow-y-auto">
@@ -586,10 +590,12 @@ export default function Header() {
                                     <X size={13} className="text-gray-500 hover:text-white transition-colors" />
                                 </button>
                             )}
+                            <Link href="/MainModules/AskAI">
                             <button className="flex items-center gap-1 bg-[#1a1a1a] hover:bg-[#222] border border-white/10 text-pink-400 text-xs font-medium px-3 py-1.5 rounded-full transition-colors whitespace-nowrap shrink-0">
                                 <Sparkles size={11} />
                                 Ask AI
                             </button>
+                             </Link>
                         </div>
                         {showDropdown && (
                             <div className="absolute top-full left-0 right-0 mt-2 bg-[#111] border border-pink-500/20 rounded-2xl shadow-2xl z-50 max-h-[60vh] overflow-y-auto">

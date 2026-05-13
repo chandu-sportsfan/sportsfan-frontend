@@ -74,7 +74,9 @@ const nextConfig = {
         { source: '/api/cloudinary/video', destination: `${apiTarget}/api/cloudinary/video` },
         { source: '/api/cloudinary/plays', destination: `${apiTarget}/api/cloudinary/plays` },
         { source: '/api/cloudinary/scripts', destination: `${apiTarget}/api/cloudinary/scripts` },
+        { source: '/api/cloudinary/iplpulse', destination: `${apiTarget}/api/cloudinary/iplpulse` },
         { source: '/api/cloudinary/:path*', destination: `${apiTarget}/api/cloudinary/:path*` },
+        
 
         // Plays
         { source: '/api/plays', destination: `${apiTarget}/api/plays` },

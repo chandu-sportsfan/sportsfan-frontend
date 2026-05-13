@@ -65,7 +65,7 @@ export default function FanBattlePage() {
     <div className="relative overflow-hidden min-h-screen bg-[#121212] flex items-start justify-center">
       <div className="w-full max-w-6xl mx-auto pt-8 pb-15">
         {/* Component 1: Header + Hero + Live Banner */}
-        <FanBattleHeader />
+        {/* <FanBattleHeader /> */}
 
         {/* Tabs Section */}
         <div className="mt-6 px-4">

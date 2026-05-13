@@ -24,24 +24,6 @@ const FanBattleHeader: React.FC = () => {
           </svg>
         </button>
         </Link>
-
-        {/* <span className="text-white text-[24px] font-semibold tracking-wide">
-          Fan Battle
-        </span> */}
-
-        <div className="flex items-center gap-1.5 bg-[#1e1e1e] px-3 py-1.5 rounded-full">
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="#FFD700"
-            stroke="#FFD700"
-            strokeWidth="1"
-          >
-            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-          </svg>
-          <span className="text-white text-[13px] font-bold">1,240 pts</span>
-        </div>
       </div>
 
     

@@ -111,11 +111,13 @@ import RankingsModal from "@/src/components/FanBattle-Component/RankingsModal";
 import React, { useState, useRef, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import FantasyGamesHub from "../FantasyGames/page";
+import { Sword, BarChart2, Trophy, ArrowLeft } from "lucide-react";
+import Link from "next/link";
 
 const tabs = [
-  { id: "fan-battle", label: "Fan Battle", hasNew: true },
-  { id: "predictions", label: "Predictions & Polls", hasNew: true },
-  { id: "fantasy", label: "Fantasy Games", hasNew: false },
+  { id: "fan-battle", label: "Fan Battle", icon: Sword, hasNew: true },
+  { id: "predictions", label: "Predictions & Polls", icon: BarChart2, hasNew: true },
+  { id: "fantasy", label: "Fantasy Games", icon: Trophy, hasNew: false },
 ];
 
 export default function FanBattlePage() {
@@ -134,51 +136,54 @@ export default function FanBattlePage() {
   return (
     <div className="relative overflow-hidden min-h-screen bg-[#121212] flex items-start justify-center">
       <div className="w-full max-w-6xl mx-auto pt-8 pb-15">
+        <Link href="/MainModules/HomePage" className="inline-flex items-center gap-2 text-gray-400 hover:text-white mb-6 transition px-4">
+          <button className="flex items-center gap-2 text-gray-400 hover:text-white transition cursor-pointer">
+            <ArrowLeft size={18} />
+             <span className="text-sm">Back</span>
+          </button>
+        </Link>
         {/* Component 1: Header + Hero + Live Banner */}
-        <FanBattleHeader />
+        {/* <FanBattleHeader /> */}
 
         {/* Tabs Section */}
-        <div className="mt-6 px-4">
-          {/* Tab Bar - Made horizontally scrollable */}
-          <div className="relative border-b border-white/10">
-            <div 
-              ref={tabsContainerRef}
-              className="flex items-center gap-1 overflow-x-auto"
-              style={{
-                scrollbarWidth: "none", // Hide scrollbar in Firefox
-                msOverflowStyle: "none", // Hide scrollbar in IE/Edge
-                WebkitOverflowScrolling: "touch", // Smooth scrolling on iOS
-              }}
-            >
-              {tabs.map((tab) => {
-                const isActive = activeTab === tab.id;
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`relative flex items-center gap-2 px-5 py-3 text-sm font-semibold tracking-wide transition-all duration-200 whitespace-nowrap shrink-0
-                      ${isActive
-                        ? "text-white"
-                        : "text-white/40 hover:text-white/70"
-                      }`}
-                  >
-                    {tab.label}
+        <div className="mt-8 px-4 overflow-hidden">
+          {/* Tab Bar - Premium Pill Style */}
+          <div 
+            ref={tabsContainerRef}
+            className="flex items-center justify-center gap-2 p-1.5 bg-[#1a1a1a]/80 backdrop-blur-md rounded-2xl border border-white/5 overflow-x-auto no-scrollbar shadow-xl"
+            style={{
+              WebkitOverflowScrolling: "touch",
+            }}
+          >
+            {tabs.map((tab) => {
+              const isActive = activeTab === tab.id;
+              const Icon = tab.icon;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`relative flex items-center gap-2.5 px-6 py-3.5 rounded-xl text-sm font-bold tracking-wide transition-all duration-300 whitespace-nowrap shrink-0 group
+                    ${isActive
+                      ? "text-white shadow-lg shadow-pink-500/20"
+                      : "text-white/40 hover:text-white/70 hover:bg-white/5"
+                    }`}
+                  style={isActive ? {
+                    background: "linear-gradient(90deg, #e91e8c, #ff6b35)",
+                  } : {}}
+                >
+                  <Icon size={16} className={`${isActive ? "text-white" : "text-white/40 group-hover:text-white/70"} transition-colors`} />
+                  {tab.label}
 
-                    {/* NEW badge */}
-                    {tab.hasNew && (
-                      <span className="flex items-center justify-center px-1.5 py-0.5 text-[9px] font-bold tracking-widest uppercase rounded-sm bg-[#FF3B5C] text-white leading-none">
-                        NEW
-                      </span>
-                    )}
-
-                    {/* Active underline indicator */}
-                    {isActive && (
-                      <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-[#FF3B5C] to-[#FF8C42] rounded-t-full" />
-                    )}
-                  </button>
-                );
-              })}
-            </div>
+                  {/* NEW badge */}
+                  {tab.hasNew && (
+                    <span className={`flex items-center justify-center px-1.5 py-0.5 text-[8px] font-black tracking-tighter uppercase rounded-md leading-none
+                      ${isActive ? "bg-white text-[#e91e8c]" : "bg-[#e91e8c] text-white"}`}>
+                      NEW
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </div>
         </div>
 

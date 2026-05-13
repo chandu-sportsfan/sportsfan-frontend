@@ -10,6 +10,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import SportsFan360Footer from "@/src/components/footer-component/Footer";
+import { useAuth } from "@/context/AuthContext";
 
 // ─── Types 
 interface UserProfile {
@@ -129,12 +130,18 @@ function HostSidebar({ user }: { user: UserProfile }) {
 // ─── User Sidebar (for regular users) ──────────────────────────────────────────
 function UserSidebar() {
   const pathname = usePathname();
+  const { user } = useAuth();
+  const isMatchIntelligence = user?.email?.endsWith("@sportsfan360.com");
 
   const sidebarItems = [
     { name: "Feed", icon: "/images/feed.png", href: "/MainModules/HomePage" },
     { name: "Watch Along", icon: "/images/live.png", href: "/MainModules/WatchAlong" },
     { name: "Fantasy", icon: "/images/battle.png", href: "/MainModules/Fantasy" },
-    { name: "Store", icon: "/images/store.png", href: "/MainModules/Store" },
+    { 
+      name: isMatchIntelligence ? "Match Intelligence" : "Store", 
+      icon: "/images/store.png", 
+      href: "/MainModules/Store" 
+    },
     { name: "Fan Zone", icon: "/images/profile.png", href: "/MainModules/Fanszone" },
   ];
 

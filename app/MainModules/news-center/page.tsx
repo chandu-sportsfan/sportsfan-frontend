@@ -2,9 +2,22 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { ArrowLeft, Bell, Heart, Share2, ArrowRight, Calendar, CheckCircle2 } from 'lucide-react';
 // FIX: Using relative path from app/news-center/page.tsx to types/news.ts
 import { NewsArticle } from '../../../types/news';
+
+// Type for the external cricket API response (narrowed to avoid `any`)
+type CricketApiArticle = {
+  id?: string | number;
+  title?: string;
+  description?: string[];
+  summary?: string;
+  badge?: string;
+  image?: string;
+  cdn_url?: string;
+  createdAt?: number | string;
+};
 
 // Strip HTML tags from text
 const stripHtmlTags = (html: string) => {
@@ -34,7 +47,7 @@ export default function DetailedNewsCenter() {
         const newsArticles = (newsData?.articles || []) as NewsArticle[];
 
         // Try to fetch Cricket Articles from local proxy
-        let cricketArticles: any[] = [];
+        let cricketArticles: CricketApiArticle[] = [];
         try {
           const cricketRes = await fetch('/api/cricket-articles');
           if (cricketRes.ok) {
@@ -49,7 +62,7 @@ export default function DetailedNewsCenter() {
 
         // Transform cricket articles to match NewsArticle structure
         const transformedCricket: NewsArticle[] = (Array.isArray(cricketArticles) ? cricketArticles : [])
-          .map((article: any) => ({
+          .map((article: CricketApiArticle) => ({
             rank: 0,
             title: article.title || '',
             summary: article.description?.[0] || article.summary || '',
@@ -57,14 +70,14 @@ export default function DetailedNewsCenter() {
             url: `/MainModules/CricketArticles/${article.id}`,
             tag: article.badge || 'Cricket',
             cdn_url: article.image || article.cdn_url || '',
-            createdAt: article.createdAt || Date.now()
+            createdAt: typeof article.createdAt === 'number' ? article.createdAt : (article.createdAt ? Date.parse(String(article.createdAt)) : Date.now())
           }));
 
         // Merge both arrays
         const mergedArticles = [...newsArticles, ...transformedCricket];
 
         // Sort by date (latest first)
-        mergedArticles.sort((a: any, b: any) => {
+        mergedArticles.sort((a: NewsArticle, b: NewsArticle) => {
           const dateA = (a.createdAt || 0) as number;
           const dateB = (b.createdAt || 0) as number;
           return dateB - dateA;
@@ -111,13 +124,15 @@ export default function DetailedNewsCenter() {
           {articles.map((article, index) => (
             <div key={index} className="bg-[#111] border border-gray-800 rounded-xl p-6 flex flex-col md:flex-row gap-6">
                {article.cdn_url ? (
-                 <div className="md:w-[120px] md:h-[100px] shrink-0">
-                   <img
+                 <div className="md:w-[120px] md:h-[100px] shrink-0 relative">
+                   <Image
                      src={article.cdn_url}
                      alt={article.title}
+                     width={120}
+                     height={100}
                      className="w-full h-full object-cover rounded-lg"
                      onError={(e) => {
-                       e.currentTarget.style.display = 'none';
+                       (e.currentTarget as HTMLImageElement).style.display = 'none';
                      }}
                    />
                  </div>

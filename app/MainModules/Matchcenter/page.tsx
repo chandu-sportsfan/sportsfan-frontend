@@ -6,13 +6,12 @@ import {
   ChevronRight,
   Trophy,
   Crown,
-  Users,
-  Swords,
   RefreshCw,
   MapPin, // New
   XCircle, // New
   Star, // New
-  X // New
+  X, // New
+  Target, LineChart, Crosshair, Zap, Diamond, Flame
 } from "lucide-react";
 import Link from "next/link";
 
@@ -93,6 +92,14 @@ interface RecentMatch {
   oversB?: string;
 }
 
+interface ExtraStatRow {
+  rank: number;
+  player: string;
+  team: string;
+  value: string;
+  subValue: string;
+}
+
 interface StatsData {
   teamLogos: Record<string, string>;
   pointsTable: TeamRow[];
@@ -110,6 +117,16 @@ interface StatsData {
     q2: MatchCard;
     final: MatchCard;
   };
+  extraStats: {
+    bestBowling: ExtraStatRow[];
+    battingAvg: ExtraStatRow[];
+    bowlingAvg: ExtraStatRow[];
+    mostHundreds: ExtraStatRow[];
+    mostEcon: ExtraStatRow[];
+    maxSixes: ExtraStatRow[];
+    maxFours: ExtraStatRow[];
+    boundaries: ExtraStatRow[];
+  };
 }
 
 type TabId = "table" | "stats" | "matches" | "playoffs";
@@ -118,15 +135,19 @@ type TabId = "table" | "stats" | "matches" | "playoffs";
 
 function TeamLogo({ abbr, logos, size = "md" }: { abbr: string; logos?: Record<string, string>; size?: "sm" | "md" | "lg" | "xl" }) {
   const sizes = { sm: "w-6 h-6", md: "w-8 h-8", lg: "w-12 h-12", xl: "w-16 h-16" };
-  const src = logos?.[abbr] || `/teams/${abbr?.toUpperCase()}.png`;
+  const src = logos?.[abbr] || (abbr && abbr !== "TBD" ? `/teams/${abbr.toUpperCase()}.png` : null);
   return (
-    <div className={`${sizes[size]} flex-shrink-0 flex items-center justify-center`}>
-      <img
-        src={src}
-        alt={abbr}
-        className="w-full h-full object-contain"
-        onError={(e) => { (e.currentTarget as HTMLImageElement).style.opacity = "0.3"; }}
-      />
+    <div className={`${sizes[size]} flex-shrink-0 flex items-center justify-center bg-white/5 rounded-full overflow-hidden`}>
+      {src ? (
+        <img
+          src={src}
+          alt={abbr}
+          className="w-full h-full object-contain"
+          onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+        />
+      ) : (
+        <span className="text-[9px] font-bold text-gray-500 uppercase">{abbr?.slice(0,3) || ""}</span>
+      )}
     </div>
   );
 }
@@ -482,23 +503,7 @@ function CapHoldersSection({ orangeCap, purpleCap, logos }: { orangeCap: PlayerR
                         <div className="flex items-center gap-2">
                           <TeamLogo abbr={p.team} size="sm" logos={logos} />
                           <div className="min-w-0">
-                           <div className="min-w-0">
-  {p.rank === 1 ? (
-    /* Vivid and Bold styling for Rank 1 with Cap Icon */
-    <div className="flex items-center gap-1.5">
-      <img src="/teams/orange_cap.png" alt="Orange Cap" className="w-4 h-4 object-contain" />
-      <p className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-yellow-200 font-black text-sm whitespace-nowrap drop-shadow-[0_0_8px_rgba(251,146,60,0.4)]">
-        {cleanPlayer(p.player)}
-      </p>
-    </div>
-  ) : (
-    /* Standard styling for all other players */
-    <p className="text-white font-bold text-xs whitespace-nowrap">
-      {cleanPlayer(p.player)}
-    </p>
-  )}
-  <p className="text-gray-600 text-[10px]">{p.team}</p>
-</div>
+                            <p className="text-white whitespace-nowrap">{cleanPlayer(p.player)}</p>
                             <p className="text-gray-600 text-[10px]">{p.team}</p>
                           </div>
                         </div>
@@ -534,23 +539,7 @@ function CapHoldersSection({ orangeCap, purpleCap, logos }: { orangeCap: PlayerR
                         <div className="flex items-center gap-2">
                           <TeamLogo abbr={p.team} size="sm" logos={logos} />
                           <div className="min-w-0">
-                            <div className="min-w-0">
-  {p.rank === 1 ? (
-    /* Vivid and Bold styling for Rank 1 with Cap Icon */
-    <div className="flex items-center gap-1.5">
-      <img src="/teams/purple_cap.png" alt="Purple Cap" className="w-4 h-4 object-contain" />
-      <p className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-300 font-black text-sm whitespace-nowrap drop-shadow-[0_0_8px_rgba(168,85,247,0.4)]">
-        {cleanPlayer(p.player)}
-      </p>
-    </div>
-  ) : (
-    /* Standard styling for all other players */
-    <p className="text-white font-bold text-xs whitespace-nowrap">
-      {cleanPlayer(p.player)}
-    </p>
-  )}
-  <p className="text-gray-600 text-[10px]">{p.team}</p>
-</div>
+                            <p className="text-white whitespace-nowrap">{cleanPlayer(p.player)}</p>
                             <p className="text-gray-600 text-[10px]">{p.team}</p>
                           </div>
                         </div>
@@ -637,97 +626,199 @@ function PointsTableTab({ rows, logos }: { rows: TeamRow[]; logos: Record<string
   );
 }
 
+
+function StatCard({
+  title, subtitle, icon, data, logos, valueLabel, subValueLabel, limit
+}: {
+  title: string; subtitle?: string; icon: React.ReactNode;
+  data: { rank: number; player: string; team: string; mainValue: string | number; subValue?: string | number }[];
+  logos: Record<string, string>; valueLabel: string; subValueLabel?: string; limit?: number;
+}) {
+  const shownData = limit ? data.slice(0, limit) : data;
+
+  if (!data || data.length === 0) return null;
+
+  return (
+    <div className="rounded-xl overflow-hidden flex flex-col h-full" style={{ background: "#0d0e1c", border: "1px solid #1e1e30" }}>
+      <div className="flex items-center gap-2.5 px-4 py-3 border-b border-[#1e1e30]">
+        {icon}
+        <div>
+          <span className="text-white font-bold text-sm uppercase tracking-wider">{title}</span>
+          {subtitle && <p className="text-[9px] text-gray-500 uppercase tracking-widest">{subtitle}</p>}
+        </div>
+      </div>
+      {/* 🛠️ Removed overflow-x-auto here */}
+      <div className="flex-1">
+        {/* 🛠️ Removed min-w-[300px] here */}
+        <table className="w-full border-collapse text-xs">
+          <thead>
+            <tr className="text-gray-600 text-[10px] uppercase tracking-wider border-b border-[#13131f]">
+              <th className="py-2 px-3 text-left w-6">#</th>
+              <th className="py-2 px-3 text-left">Player</th>
+              <th className="py-2 px-3 text-center">Team</th>
+              <th className="py-2 px-3 text-right">{valueLabel}</th>
+              {subValueLabel && <th className="py-2 px-3 text-right">{subValueLabel}</th>}
+            </tr>
+          </thead>
+          <tbody>
+            {shownData.map((row, idx) => (
+              <tr key={`${row.rank}-${idx}`} className="border-b border-[#13131f] hover:bg-white/[0.02] transition-colors">
+                <td className="py-2.5 px-3">
+                  {idx === 0 ? (
+                    <div className="w-5 h-5 rounded-full bg-yellow-500/20 text-yellow-500 flex items-center justify-center font-bold text-[10px]">
+                      1
+                    </div>
+                  ) : (
+                    <span className="text-gray-500 font-bold">{row.rank}</span>
+                  )}
+                </td>
+                <td className="py-2.5 px-3 text-white font-medium">{row.player}</td>
+                <td className="py-2.5 px-3 text-center">
+                  <div className="flex items-center justify-center">
+                    <TeamLogo abbr={row.team} size="sm" logos={logos} />
+                  </div>
+                </td>
+                <td className="py-2.5 px-3 text-right text-yellow-500 font-bold">{row.mainValue}</td>
+                {subValueLabel && <td className="py-2.5 px-3 text-right text-gray-400">{row.subValue}</td>}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
 // ─── Stats Tab ────────────────────────────────────────────────────────────────
 
-function StatsTab({ highestScores, mostFifties, logos }: { highestScores: HighestScoreRow[]; mostFifties: MostFiftiesRow[]; logos: Record<string, string> }) {
+function StatsTab({ data }: { data: StatsData }) {
   const [viewAll, setViewAll] = useState(false);
-  const shownScores = viewAll ? highestScores : highestScores.slice(0, 4);
-  const shownFifties = viewAll ? mostFifties : mostFifties.slice(0, 4);
+  const limit = viewAll ? undefined : 5;
+
+  // 1. Define a union type of all possible stat rows
+  type AnyStatRow = HighestScoreRow | MostFiftiesRow | ExtraStatRow;
+
+  // 2. Safely type the array and use Record to access dynamic keys without 'any'
+  const mapData = (arr: AnyStatRow[] | undefined, mainKey: string, subKey?: string) => 
+    (arr || []).map(item => {
+      // Safely treat the item as a dictionary to extract the dynamic values
+      const record = item as unknown as Record<string, string | number | undefined>;
+      
+      return {
+        rank: item.rank,
+        player: item.player,
+        team: item.team,
+        mainValue: record[mainKey] || record["value"] || "", 
+        subValue: subKey ? (record[subKey] || record["subValue"]) : undefined
+      };
+    });
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-white font-bold text-base">Stats</h3>
+      <div className="flex items-center justify-between mb-4 px-1">
+        <h3 className="text-white font-bold text-base">Tournament Statistics</h3>
         <button
           onClick={() => setViewAll((v) => !v)}
-          className="text-xs font-semibold text-[#e91e8c] hover:text-pink-400 transition-colors"
+          className="text-xs font-semibold text-[#e91e8c] hover:text-pink-400 transition-colors bg-pink-500/10 px-3 py-1.5 rounded-full"
         >
-          {viewAll ? "Show Less" : "View All"}
+          {viewAll ? "Show Top 5" : "View Top 10"}
         </button>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {/* Highest Score */}
-        <div
-          className="rounded-xl overflow-hidden"
-          style={{ background: "#0d0e1c", border: "1px solid #1e1e30" }}
-        >
-          <div className="flex items-center gap-2.5 px-4 py-3 border-b border-[#1e1e30]">
-            <Trophy size={16} className="text-blue-400" />
-            <span className="text-white font-bold text-sm">Highest Score</span>
-          </div>
-          <table className="w-full border-collapse text-xs">
-            <thead>
-              <tr className="text-gray-600 text-[10px] uppercase tracking-wider border-b border-[#13131f]">
-                <th className="py-2 px-4 text-left w-6">#</th>
-                <th className="py-2 px-4 text-left">Player</th>
-                <th className="py-2 px-4 text-center">Team</th>
-                <th className="py-2 px-4 text-right">Score</th>
-              </tr>
-            </thead>
-            <tbody>
-              {shownScores.map((row) => (
-                <tr key={row.rank} className="border-b border-[#13131f] hover:bg-white/[0.02] transition-colors">
-                  <td className="py-2.5 px-4 text-yellow-500 font-bold">{row.rank}</td>
-                  <td className="py-2.5 px-4 text-white">{row.player}</td>
-                  <td className="py-2.5 px-4 text-center">
-                    <div className="flex items-center justify-center gap-1.5">
-                      <TeamLogo abbr={row.team} size="sm" logos={logos} />
-                      <span className="text-gray-400">{row.team}</span>
-                    </div>
-                  </td>
-                  <td className="py-2.5 px-4 text-right text-white font-bold">{row.score}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+      {/* 3-Column Grid for Desktop, 2 for Tablet, 1 for Mobile */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
+        
+        <StatCard
+          title="Highest Individual Scores"
+          subtitle="IPL 2026 • Top 10"
+          icon={<Target size={16} className="text-purple-400" />}
+          data={mapData(data.highestScores, "score")}
+          logos={data.teamLogos}
+          valueLabel="Score"
+          limit={limit}
+        />
 
-        {/* Most Fifties */}
-        <div
-          className="rounded-xl overflow-hidden"
-          style={{ background: "#0d0e1c", border: "1px solid #1e1e30" }}
-        >
-          <div className="flex items-center gap-2.5 px-4 py-3 border-b border-[#1e1e30]">
-            <Crown size={16} className="text-purple-400" />
-            <span className="text-white font-bold text-sm">Most Fifties</span>
-          </div>
-          <table className="w-full border-collapse text-xs">
-            <thead>
-              <tr className="text-gray-600 text-[10px] uppercase tracking-wider border-b border-[#13131f]">
-                <th className="py-2 px-4 text-left w-6">#</th>
-                <th className="py-2 px-4 text-left">Player</th>
-                <th className="py-2 px-4 text-center">Team</th>
-                <th className="py-2 px-4 text-right">Fifties</th>
-              </tr>
-            </thead>
-            <tbody>
-              {shownFifties.map((row) => (
-                <tr key={row.rank} className="border-b border-[#13131f] hover:bg-white/[0.02] transition-colors">
-                  <td className="py-2.5 px-4 text-yellow-500 font-bold">{row.rank}</td>
-                  <td className="py-2.5 px-4 text-white">{row.player}</td>
-                  <td className="py-2.5 px-4 text-center">
-                    <div className="flex items-center justify-center gap-1.5">
-                      <TeamLogo abbr={row.team} size="sm" logos={logos} />
-                      <span className="text-gray-400">{row.team}</span>
-                    </div>
-                  </td>
-                  <td className="py-2.5 px-4 text-right text-purple-400 font-bold">{row.fifties}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <StatCard
+          title="Best Batting Average"
+          subtitle="IPL 2026 • Min 5 Innings"
+          icon={<LineChart size={16} className="text-blue-400" />}
+          data={mapData(data.extraStats?.battingAvg, "value", "subValue")}
+          logos={data.teamLogos}
+          valueLabel="Average"
+          subValueLabel="Runs"
+          limit={limit}
+        />
+
+        <StatCard
+          title="Best Bowling Average"
+          subtitle="IPL 2026 • Min 5 Wickets"
+          icon={<Crosshair size={16} className="text-pink-400" />}
+          data={mapData(data.extraStats?.bowlingAvg, "value", "subValue")}
+          logos={data.teamLogos}
+          valueLabel="Average"
+          subValueLabel="Wkts"
+          limit={limit}
+        />
+
+        <StatCard
+          title="Best Bowling Figures"
+          subtitle="IPL 2026 • Top 10"
+          icon={<Zap size={16} className="text-yellow-400" />}
+          data={mapData(data.extraStats?.bestBowling, "value")}
+          logos={data.teamLogos}
+          valueLabel="Figures"
+          limit={limit}
+        />
+
+        <StatCard
+          title="Most Economical Bowlers"
+          subtitle="IPL 2026 • Min 5 Wickets"
+          icon={<Diamond size={16} className="text-cyan-400" />}
+          data={mapData(data.extraStats?.mostEcon, "value", "subValue")}
+          logos={data.teamLogos}
+          valueLabel="Economy"
+          subValueLabel="Wkts" // Or matches depending on your subValue data
+          limit={limit}
+        />
+
+        <StatCard
+          title="Maximum Sixes"
+          subtitle="IPL 2026 • Top 10"
+          icon={<Star size={16} className="text-rose-400" />}
+          data={mapData(data.extraStats?.maxSixes, "value")}
+          logos={data.teamLogos}
+          valueLabel="Sixes"
+          limit={limit}
+        />
+
+        <StatCard
+          title="Maximum Fours"
+          subtitle="IPL 2026 • Top 10"
+          icon={<Flame size={16} className="text-orange-500" />}
+          data={mapData(data.extraStats?.maxFours, "value")}
+          logos={data.teamLogos}
+          valueLabel="Fours"
+          limit={limit}
+        />
+
+        <StatCard
+          title="Total Boundaries"
+          subtitle="IPL 2026 • Fours + Sixes"
+          icon={<Trophy size={16} className="text-emerald-400" />}
+          data={mapData(data.extraStats?.boundaries, "value")}
+          logos={data.teamLogos}
+          valueLabel="Boundaries"
+          limit={limit}
+        />
+
+        <StatCard
+          title="Most Fifties"
+          subtitle="IPL 2026 • Top 10"
+          icon={<Crown size={16} className="text-indigo-400" />}
+          data={mapData(data.mostFifties, "fifties")}
+          logos={data.teamLogos}
+          valueLabel="50s"
+          limit={limit}
+        />
       </div>
     </div>
   );
@@ -1333,7 +1424,7 @@ export default function IPLDashboard() {
           <TabBar activeTab={tab} onChange={setTab} />
           <div className="p-4">
             {tab === "table" && <PointsTableTab rows={data.pointsTable} logos={data.teamLogos} />}
-            {tab === "stats" && <StatsTab highestScores={data.highestScores} mostFifties={data.mostFifties} logos={data.teamLogos} />}
+            {tab === "stats" && <StatsTab data={data} />}
             {tab === "matches" && <MatchesTab upcomingMatches={data.upcomingMatches} recentMatches={data.recentMatches} logos={data.teamLogos} />}
             
             {/* Update this line: */}

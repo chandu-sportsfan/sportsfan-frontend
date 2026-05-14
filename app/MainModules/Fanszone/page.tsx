@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
+import { useLeaderboard } from "@/context/LeaderboardContext";
 import { 
-  Search, Sparkles, SlidersHorizontal, LogOut, ChevronDown,
-  Trophy, Share2, CheckCircle2, 
+  ChevronDown, Trophy, Share2, CheckCircle2, 
   Award, TrendingUp, Play, ThumbsUp, Radio, FileText, 
   Gamepad2, UserPlus, Bell, LayoutGrid, Calendar, Filter,
   Download, ChevronLeft, ChevronRight, MoreHorizontal
@@ -94,32 +95,34 @@ const trendData = [30, 45, 40, 60, 55, 75, 70, 90, 85, 100];
 
 // --- REUSABLE COMPONENTS ---
 
-function DonutChart({ data }: { data: typeof earningBreakdown }) {
-  let cumulativePercent = 0;
-  
+function DonutChart({ data, totalPoints }: { data: typeof earningBreakdown, totalPoints?: string }) {
+  // Pre-calculate the offsets to keep the linter happy
+  let currentOffset = 0;
+  const slices = data.map((slice) => {
+    const dasharray = `${slice.percent} 100`;
+    const dashoffset = -currentOffset;
+    currentOffset += slice.percent;
+    return { ...slice, dasharray, dashoffset };
+  });
+
   return (
     <div className="relative w-40 h-40 md:w-48 md:h-48 shrink-0">
       <svg viewBox="0 0 100 100" className="w-full h-full transform -rotate-90">
-        {data.map((slice, i) => {
-          const dasharray = `${slice.percent} 100`;
-          const dashoffset = -cumulativePercent;
-          cumulativePercent += slice.percent;
-          return (
-            <circle
-              key={i}
-              cx="50" cy="50" r="15.91549430918954" // Circumference = 100
-              fill="transparent"
-              stroke={slice.color}
-              strokeWidth="6"
-              strokeDasharray={dasharray}
-              strokeDashoffset={dashoffset}
-              className="transition-all duration-1000 ease-out"
-            />
-          );
-        })}
+        {slices.map((slice, i) => (
+          <circle
+            key={i}
+            cx="50" cy="50" r="15.91549430918954"
+            fill="transparent"
+            stroke={slice.color}
+            strokeWidth="6"
+            strokeDasharray={slice.dasharray}
+            strokeDashoffset={slice.dashoffset}
+            className="transition-all duration-1000 ease-out"
+          />
+        ))}
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-        <span className="text-xl md:text-2xl font-black text-white">12,450</span>
+        <span className="text-xl md:text-2xl font-black text-white">{totalPoints || "0"}</span>
         <span className="text-[10px] md:text-xs text-gray-400 font-bold uppercase tracking-wider">XP</span>
       </div>
     </div>
@@ -156,6 +159,15 @@ function MiniTrendLine({ data }: { data: number[] }) {
 
 export default function FanZoneDashboard() {
   const [activeTab, setActiveTab] = useState("My Analytics");
+  
+  // 1. Fetch live points from your context
+  const { currentUserPoints } = useLeaderboard();
+  
+  // 2. Format the points with commas (e.g. 55, or 12,450)
+  const displayPoints = currentUserPoints ? currentUserPoints.toLocaleString() : "0";
+
+  
+// ...
 
   return (
     <div className="min-h-screen bg-[#050505] text-white font-sans selection:bg-rose-500/30 pb-20">
@@ -191,8 +203,9 @@ export default function FanZoneDashboard() {
               </div>
             </div>
 
+            
             {/* Total Points Mini-Card overlaid on right */}
-            {/* Total Points Mini-Card overlaid on right */}
+           {/* Total Points Mini-Card overlaid on right */}
             <div className="bg-[#09090b] border border-white/5 rounded-2xl p-6 w-full md:w-[320px] shadow-2xl relative z-10 hidden md:block">
               <div className="flex justify-between items-center mb-4">
                 <p className="text-[10px] font-black uppercase tracking-widest text-gray-500">Total Points</p>
@@ -200,7 +213,10 @@ export default function FanZoneDashboard() {
                   May 2026 <ChevronDown className="w-3 h-3" />
                 </button>
               </div>
-              <h2 className="text-4xl font-black text-white mb-2">12,450 XP</h2>
+              
+              {/* DYNAMIC POINTS HERE */}
+              <h2 className="text-4xl font-black text-white mb-2">{displayPoints} XP</h2>
+              
               <p className="text-xs text-emerald-500 font-bold flex items-center gap-1 mb-6">
                 <TrendingUp className="w-3 h-3" /> +850 <span className="text-gray-500 font-medium ml-1">vs Apr 2026</span>
               </p>
@@ -211,8 +227,9 @@ export default function FanZoneDashboard() {
           </div>
         </div>
 
-        {/* 3. STATS ROW */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+{/* 3. STATS ROW */}
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+          
           <div className="md:col-span-2 bg-[#09090b] border border-white/10 rounded-2xl p-5 flex items-center gap-5">
             <div className="w-14 h-14 rounded-xl border-2 border-rose-500 flex items-center justify-center font-black text-2xl text-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.3)]">
               7
@@ -257,12 +274,19 @@ export default function FanZoneDashboard() {
                  <p className="text-xs text-gray-500 font-medium mt-0.5">Keep Going!</p>
                </div>
              </div>
-             <div className="text-right">
+             <div className="text-right flex flex-col justify-center h-full">
                 <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Badges</p>
                 <h3 className="text-xl font-black text-white">12</h3>
                 <span className="text-[10px] text-rose-500 font-bold mt-1 block group-hover:text-rose-400">View All →</span>
              </div>
           </div>
+
+          {/* NEW LIVE LEADERBOARD BUTTON */}
+          <Link href="/MainModules/Leaderboard" className="bg-gradient-to-br from-rose-600 to-orange-500 rounded-2xl p-5 flex flex-col items-center justify-center group hover:scale-[1.02] transition-transform shadow-[0_0_15px_rgba(225,29,72,0.2)] cursor-pointer border border-rose-400/30">
+             <Trophy className="w-7 h-7 text-white mb-1.5 group-hover:scale-110 group-hover:-translate-y-1 transition-all duration-300 drop-shadow-md" />
+             <h3 className="text-sm font-black text-white text-center leading-tight tracking-wide drop-shadow-sm">Live<br/>Leaderboard</h3>
+          </Link>
+
         </div>
 
         {/* 4. TABS NAVIGATION */}
@@ -288,7 +312,7 @@ export default function FanZoneDashboard() {
         {activeTab === "My Analytics" && (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             
-           {/* Overview Card */}
+          {/* Overview Card */}
             <div className="bg-[#09090b] border border-white/10 rounded-2xl p-6 md:p-8">
               <h3 className="text-[10px] font-black tracking-widest text-gray-500 uppercase mb-8 flex items-center gap-1.5">
                 Overview <InfoIcon />
@@ -309,7 +333,7 @@ export default function FanZoneDashboard() {
                     <div>
                       <p className="text-xs text-gray-400 font-medium mb-1">This Month</p>
                       <div className="flex items-end gap-3">
-                        <h4 className="text-3xl font-black text-white leading-none">12,450 XP</h4>
+                        <h4 className="text-3xl font-black text-white leading-none">{displayPoints} XP</h4>
                         <span className="text-xs text-emerald-500 font-bold mb-0.5">↑ 850 <span className="text-gray-500 font-medium">vs Apr 2026</span></span>
                       </div>
                     </div>
@@ -325,7 +349,7 @@ export default function FanZoneDashboard() {
 
                 {/* Col 2: Donut Chart & Legend (Span 5) */}
                 <div className="xl:col-span-5 flex flex-col sm:flex-row items-center justify-center gap-6 lg:gap-10 w-full py-6 xl:py-0 border-t border-white/10 xl:border-t-0 xl:border-l xl:pl-8">
-                  <DonutChart data={earningBreakdown} />
+                  <DonutChart data={earningBreakdown} totalPoints={displayPoints} />
                   <div className="space-y-4 w-full sm:w-auto">
                     {earningBreakdown.map((item, i) => (
                       <div key={i} className="flex items-center justify-between sm:justify-start gap-4 text-sm whitespace-nowrap">
@@ -1039,10 +1063,10 @@ function InfoIcon() {
 }
 
 // Simple star icon SVG with proper TypeScript types
-function StarIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
-      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-    </svg>
-  );
-}
+// function StarIcon(props: React.SVGProps<SVGSVGElement>) {
+//   return (
+//     <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
+//       <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+//     </svg>
+//   );
+// }

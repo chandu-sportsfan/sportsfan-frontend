@@ -76,7 +76,7 @@ const nextConfig = {
         { source: '/api/cloudinary/scripts', destination: `${apiTarget}/api/cloudinary/scripts` },
         { source: '/api/cloudinary/iplpulse', destination: `${apiTarget}/api/cloudinary/iplpulse` },
         { source: '/api/cloudinary/:path*', destination: `${apiTarget}/api/cloudinary/:path*` },
-        
+
 
         // Plays
         { source: '/api/plays', destination: `${apiTarget}/api/plays` },
@@ -85,6 +85,8 @@ const nextConfig = {
         { source: '/api/cloudinary/plays', destination: `${apiTarget}/api/cloudinary/plays` },
         { source: '/api/cloudinary/plays/:path*', destination: `${apiTarget}/api/cloudinary/plays/:path*` },
 
+        { source: '/api/ipl-pulse/spotlight', destination: `${apiTarget}/api/ipl-pulse/spotlight` },
+        { source: '/api/ipl-pulse/spotlight/:path*', destination: `${apiTarget}/api/ipl-pulse/spotlight/:path*` },
 
         // Global Search
         { source: '/api/global-search', destination: `${apiTarget}/api/global-search` },
@@ -134,12 +136,12 @@ const nextConfig = {
         { source: '/api/leaderboard', destination: `${apiTarget}/api/leaderboard` },
         { source: '/api/leaderboard/:path*', destination: `${apiTarget}/api/leaderboard/:path*` },
 
-         // Fan Battle Arena
+        // Fan Battle Arena
         { source: '/api/battle', destination: `${apiTarget}/api/battle` },
         { source: '/api/battle/:path*', destination: `${apiTarget}/api/battle/:path*` },
         { source: '/api/battle/battle-vote', destination: `${apiTarget}/api/battle/battle-vote` },
         { source: '/api/battle/battle-vote/:path*', destination: `${apiTarget}/api/battle/battle-vote/:path*` },
-          { source: '/api/battle/battle-session', destination: `${apiTarget}/api/battle/battle-session` },
+        { source: '/api/battle/battle-session', destination: `${apiTarget}/api/battle/battle-session` },
         { source: '/api/battle/battle-session/:path*', destination: `${apiTarget}/api/battle/battle-session/:path*` },
 
 
@@ -159,7 +161,7 @@ const nextConfig = {
         //Comments
         { source: '/api/comments', destination: `${apiTarget}/api/comments` },
 
-         { source: '/api/ipl-stats', destination: `${apiTarget}/api/ipl-stats` },
+        { source: '/api/ipl-stats', destination: `${apiTarget}/api/ipl-stats` },
 
         { source: '/api/auth/host/me', destination: `${apiTarget}/api/auth/host/me` },
 

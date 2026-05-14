@@ -224,6 +224,8 @@ interface AudioProgress {
 
 type ProgressItem = VideoProgress | AudioProgress;
 
+const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+
 export default function ContinueListening() {
     const { user } = useAuth();
     const [inProgress, setInProgress] = useState<ProgressItem[]>([]);
@@ -246,31 +248,28 @@ export default function ContinueListening() {
                     axios.get(`/api/audio-progress?userId=${user.userId}`),
                 ]);
 
-                console.log("[ContinueListening] video response:", videoRes);
-                console.log("[ContinueListening] audio response:", audioRes);
+                const now = Date.now();
+                const threshold = now - THIRTY_DAYS_MS;
 
                 const videoItems: VideoProgress[] =
                     videoRes.status === "fulfilled" && videoRes.value.data.success
-                        ? (videoRes.value.data.progress || []).map(
-                              (v: Omit<VideoProgress, "_type">) => ({
+                        ? (videoRes.value.data.progress || [])
+                              .map((v: Omit<VideoProgress, "_type">) => ({
                                   ...v,
                                   _type: "video" as const,
-                              })
-                          )
+                              }))
+                              .filter((v: VideoProgress) => v.pausedAt > threshold)
                         : [];
 
                 const audioItems: AudioProgress[] =
                     audioRes.status === "fulfilled" && audioRes.value.data.success
-                        ? (audioRes.value.data.progress || []).map(
-                              (a: Omit<AudioProgress, "_type">) => ({
+                        ? (audioRes.value.data.progress || [])
+                              .map((a: Omit<AudioProgress, "_type">) => ({
                                   ...a,
                                   _type: "audio" as const,
-                              })
-                          )
+                              }))
+                              .filter((a: AudioProgress) => a.pausedAt > threshold)
                         : [];
-
-                console.log("[ContinueListening] videoItems:", videoItems.length, videoItems);
-                console.log("[ContinueListening] audioItems:", audioItems.length, audioItems);
 
                 setHasVideo(videoItems.length > 0);
                 setHasAudio(audioItems.length > 0);
@@ -340,9 +339,14 @@ export default function ContinueListening() {
 
     return (
         <div className="w-full">
-            <h2 className="text-pink-500 text-lg sm:text-xl font-semibold mb-3">
-                {heading}
-            </h2>
+            <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between mb-3 gap-1">
+                <h2 className="text-pink-500 text-lg sm:text-xl font-semibold">
+                    {heading}
+                </h2>
+                <span className="text-gray-500 text-[10px] sm:text-xs">
+                    Paused content will be cleared after 30 days
+                </span>
+            </div>
 
             <div
                 ref={scrollRef}
@@ -439,3 +443,4 @@ export default function ContinueListening() {
         </div>
     );
 }
+

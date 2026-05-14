@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
 
 type NavItem = {
   name: string;
@@ -10,16 +11,23 @@ type NavItem = {
   url?: string;
 };
 
-const bottomNavData: NavItem[] = [
-  { name: "Feed", logo: "/images/feed.png", url: "/MainModules/HomePage" },
-  { name: "Watch Along", logo: "/images/watch.png", url: "/MainModules/WatchAlong" },
-  { name: "Fan Battle", logo: "/images/battle.png", url: "/MainModules/Fantasy" },
-  { name: "Store", logo: "/images/store.png", url: "/MainModules/Store" },
-  { name: "Fan Zone", logo: "/images/profile.png", url: "/MainModules/Fanszone" },
-];
 
 export default function BottomNav() {
   const pathname = usePathname();
+  const { user } = useAuth();
+  const isMatchIntelligence = user?.email?.endsWith("@sportsfan360.com");
+
+  const bottomNavData: NavItem[] = [
+    { name: "Feed", logo: "/images/feed.png", url: "/MainModules/HomePage" },
+    { name: "Watch Along", logo: "/images/watch.png", url: "/MainModules/WatchAlong" },
+    { name: "Fan Battle", logo: "/images/battle.png", url: "/MainModules/Fantasy" },
+    { 
+      name: isMatchIntelligence ? "Match Intelligence" : "Store", 
+      logo: "/images/store.png", 
+      url: "/MainModules/Store" 
+    },
+    { name: "Fan Zone", logo: "/images/profile.png", url: "/MainModules/Fanszone" },
+  ];
 
   return (
     <div className="fixed bottom-0 left-0 w-full bg-black border-t border-pink-500/30 py-2 flex justify-around z-50">

@@ -92,6 +92,13 @@ interface RecentMatch {
   oversA?: string;
   oversB?: string;
 }
+interface ExtraStatRow {
+  rank: number;
+  player: string;
+  team: string;
+  value: string | number;
+  subValue?: string;
+}
 
 interface StatsData {
   teamLogos: Record<string, string>;
@@ -104,11 +111,22 @@ interface StatsData {
   recentMatches: MatchCard[];
   highestScores: HighestScoreRow[];
   mostFifties: MostFiftiesRow[];
-  playoffs: {
+  extraStats: {
+    bestBowling: ExtraStatRow[];
+    battingAvg: ExtraStatRow[];
+    bowlingAvg: ExtraStatRow[];
+    mostHundreds: ExtraStatRow[];
+    mostEcon: ExtraStatRow[];
+    maxSixes: ExtraStatRow[];
+    maxFours: ExtraStatRow[];
+    boundaries: ExtraStatRow[];
+  };
+    playoffs: {
     q1: MatchCard;
     eliminator: MatchCard;
     q2: MatchCard;
     final: MatchCard;
+
   };
 }
 
@@ -605,9 +623,19 @@ function PointsTableTab({ rows, logos }: { rows: TeamRow[]; logos: Record<string
   );
 }
 function StatCard({ 
-  title, icon: Icon, rows, logos, valueLabel, accentColor 
+  title, 
+  icon: Icon, 
+  rows, 
+  logos, 
+  valueLabel, 
+  accentColor 
 }: { 
-  title: string; icon: any; rows: any[]; logos: any; valueLabel: string; accentColor: string 
+  title: string; 
+  icon: React.ElementType; 
+  rows: ExtraStatRow[]; 
+  logos: Record<string, string>; 
+  valueLabel: string; 
+  accentColor: string;
 }) {
   return (
     <div className="rounded-xl overflow-hidden" style={{ background: "#0d0e1c", border: "1px solid #1e1e30" }}>
@@ -632,11 +660,15 @@ function StatCard({
                   <TeamLogo abbr={row.team} size="sm" logos={logos} />
                   <div className="min-w-0">
                     <p className="text-white truncate">{row.player}</p>
-                    <p className="text-[9px] text-gray-500 uppercase">{row.team} {row.subValue ? `• ${row.subValue}` : ""}</p>
+                    <p className="text-[9px] text-gray-500 uppercase">
+                      {row.team} {row.subValue ? `• ${row.subValue}` : ""}
+                    </p>
                   </div>
                 </div>
               </td>
-              <td className={`py-2.5 px-4 text-right font-bold ${accentColor}`}>{row.value || row.score || row.fifties}</td>
+              <td className={`py-2.5 px-4 text-right font-bold ${accentColor}`}>
+                {row.value}
+              </td>
             </tr>
           ))}
         </tbody>
@@ -646,26 +678,44 @@ function StatCard({
 }
 // ─── Stats Tab ────────────────────────────────────────────────────────────────
 
-function StatsTab({ data }: { data: any }) {
+function StatsTab({ data }: { data: StatsData }) {
   const [viewAll, setViewAll] = useState(false);
   const logos = data.teamLogos;
   const extra = data.extraStats;
 
-  const limit = (arr: any[]) => viewAll ? arr : arr.slice(0, 4);
+  // Helper to limit rows shown based on the View All toggle
+  const limit = (arr: ExtraStatRow[]) => viewAll ? arr : arr.slice(0, 4);
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-white font-bold text-base">Season Leaders</h3>
-        <button onClick={() => setViewAll(!viewAll)} className="text-xs font-semibold text-[#e91e8c]">
+        <button 
+          onClick={() => setViewAll(!viewAll)} 
+          className="text-xs font-semibold text-[#e91e8c] hover:text-pink-400 transition-colors"
+        >
           {viewAll ? "Show Less" : "View All"}
         </button>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {/* Row 1: Traditional */}
-        <StatCard title="Highest Score" icon={Trophy} rows={limit(data.highestScores)} logos={logos} valueLabel="Runs" accentColor="text-blue-400" />
-        <StatCard title="Most Fifties" icon={Crown} rows={limit(data.mostFifties)} logos={logos} valueLabel="50s" accentColor="text-purple-400" />
+        {/* Row 1: Traditional Stats (Mapped to match ExtraStatRow shape) */}
+        <StatCard 
+          title="Highest Score" 
+          icon={Trophy} 
+          rows={limit(data.highestScores.map(r => ({ rank: r.rank, player: r.player, team: r.team, value: r.score })))} 
+          logos={logos} 
+          valueLabel="Runs" 
+          accentColor="text-blue-400" 
+        />
+        <StatCard 
+          title="Most Fifties" 
+          icon={Crown} 
+          rows={limit(data.mostFifties.map(r => ({ rank: r.rank, player: r.player, team: r.team, value: r.fifties })))} 
+          logos={logos} 
+          valueLabel="50s" 
+          accentColor="text-purple-400" 
+        />
 
         {/* Row 2: Boundaries */}
         <StatCard title="Maximum Sixes" icon={Swords} rows={limit(extra.maxSixes)} logos={logos} valueLabel="6s" accentColor="text-orange-400" />
@@ -1287,7 +1337,7 @@ export default function IPLDashboard() {
           <TabBar activeTab={tab} onChange={setTab} />
           <div className="p-4">
             {tab === "table" && <PointsTableTab rows={data.pointsTable} logos={data.teamLogos} />}
-            {tab === "stats" && <StatsTab highestScores={data.highestScores} mostFifties={data.mostFifties} logos={data.teamLogos} />}
+            {tab === "stats" && <StatsTab data={data} />}
             {tab === "matches" && <MatchesTab upcomingMatches={data.upcomingMatches} recentMatches={data.recentMatches} logos={data.teamLogos} />}
             
             {/* Update this line: */}

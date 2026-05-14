@@ -161,51 +161,6 @@ export default function FanZoneDashboard() {
     <div className="min-h-screen bg-[#050505] text-white font-sans selection:bg-rose-500/30 pb-20">
       
       {/* 1. TOP NAVIGATION BAR */}
-      <header className="sticky top-0 z-50 flex flex-wrap md:flex-nowrap items-center justify-between gap-4 px-4 md:px-6 py-4 bg-[#09090b]/80 backdrop-blur-md border-b border-white/5">
-        
-        {/* Left Side: Search & Actions */}
-        <div className="flex flex-1 items-center gap-2 md:gap-4 w-full md:w-auto">
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-            <input 
-              type="text" 
-              placeholder="Search..." 
-              className="w-full bg-[#18181b] border border-white/10 rounded-full py-2 pl-10 pr-4 text-sm focus:outline-none focus:border-rose-500/50 text-gray-300"
-            />
-          </div>
-          <button className="flex items-center justify-center p-2 md:px-4 md:py-2 rounded-full bg-rose-500/10 text-rose-500 border border-rose-500/20 text-sm font-bold hover:bg-rose-500/20 transition-colors shrink-0">
-            <Sparkles className="w-4 h-4 md:mr-2" /> <span className="hidden md:inline">Ask AI</span>
-          </button>
-          <button className="flex items-center justify-center p-2 md:px-4 md:py-2 rounded-full bg-[#18181b] border border-white/10 text-gray-300 text-sm font-bold hover:bg-white/5 transition-colors shrink-0">
-            <SlidersHorizontal className="w-4 h-4 md:mr-2" /> <span className="hidden md:inline">Preferences</span>
-          </button>
-        </div>
-
-        {/* Right Side: Profile & Points */}
-        <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-end border-t border-white/5 md:border-t-0 pt-3 md:pt-0">
-          <div className="text-right">
-            <div className="flex items-center gap-1.5 justify-end">
-              <StarIcon className="w-3 h-3 text-rose-500" />
-              <span className="text-sm font-black text-white">12,450</span>
-            </div>
-            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Points</p>
-          </div>
-          <div className="h-8 w-px bg-white/10 hidden md:block mx-2" />
-          <div className="flex items-center gap-3 cursor-pointer hover:bg-white/5 p-1 pr-3 rounded-full transition-colors border border-transparent hover:border-white/10">
-            <div className="w-9 h-9 rounded-full bg-rose-900 flex items-center justify-center font-bold border border-rose-500/50 shrink-0">
-              A
-            </div>
-            <div className="text-left hidden sm:block">
-              <p className="text-sm font-bold text-white leading-tight whitespace-nowrap">Arjun Mehta</p>
-              <p className="text-[10px] text-rose-400 font-medium">Pro Member</p>
-            </div>
-            <ChevronDown className="w-4 h-4 text-gray-500 hidden sm:block" />
-          </div>
-          <button className="text-gray-500 hover:text-rose-500 transition-colors flex items-center gap-1 text-sm font-bold ml-auto md:ml-2">
-             <LogOut className="w-4 h-4 md:mr-1" /> <span className="hidden sm:inline">Logout</span>
-          </button>
-        </div>
-      </header>
 
       <main className="max-w-[1400px] mx-auto p-6 space-y-6">
         

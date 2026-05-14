@@ -482,23 +482,7 @@ function CapHoldersSection({ orangeCap, purpleCap, logos }: { orangeCap: PlayerR
                         <div className="flex items-center gap-2">
                           <TeamLogo abbr={p.team} size="sm" logos={logos} />
                           <div className="min-w-0">
-                           <div className="min-w-0">
-  {p.rank === 1 ? (
-    /* Vivid and Bold styling for Rank 1 with Cap Icon */
-    <div className="flex items-center gap-1.5">
-      <img src="/teams/orange_cap.png" alt="Orange Cap" className="w-4 h-4 object-contain" />
-      <p className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-yellow-200 font-black text-sm whitespace-nowrap drop-shadow-[0_0_8px_rgba(251,146,60,0.4)]">
-        {cleanPlayer(p.player)}
-      </p>
-    </div>
-  ) : (
-    /* Standard styling for all other players */
-    <p className="text-white font-bold text-xs whitespace-nowrap">
-      {cleanPlayer(p.player)}
-    </p>
-  )}
-  <p className="text-gray-600 text-[10px]">{p.team}</p>
-</div>
+                            <p className="text-white whitespace-nowrap">{cleanPlayer(p.player)}</p>
                             <p className="text-gray-600 text-[10px]">{p.team}</p>
                           </div>
                         </div>
@@ -534,23 +518,7 @@ function CapHoldersSection({ orangeCap, purpleCap, logos }: { orangeCap: PlayerR
                         <div className="flex items-center gap-2">
                           <TeamLogo abbr={p.team} size="sm" logos={logos} />
                           <div className="min-w-0">
-                            <div className="min-w-0">
-  {p.rank === 1 ? (
-    /* Vivid and Bold styling for Rank 1 with Cap Icon */
-    <div className="flex items-center gap-1.5">
-      <img src="/teams/purple_cap.png" alt="Purple Cap" className="w-4 h-4 object-contain" />
-      <p className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-300 font-black text-sm whitespace-nowrap drop-shadow-[0_0_8px_rgba(168,85,247,0.4)]">
-        {cleanPlayer(p.player)}
-      </p>
-    </div>
-  ) : (
-    /* Standard styling for all other players */
-    <p className="text-white font-bold text-xs whitespace-nowrap">
-      {cleanPlayer(p.player)}
-    </p>
-  )}
-  <p className="text-gray-600 text-[10px]">{p.team}</p>
-</div>
+                            <p className="text-white whitespace-nowrap">{cleanPlayer(p.player)}</p>
                             <p className="text-gray-600 text-[10px]">{p.team}</p>
                           </div>
                         </div>
@@ -636,98 +604,84 @@ function PointsTableTab({ rows, logos }: { rows: TeamRow[]; logos: Record<string
     </div>
   );
 }
-
+function StatCard({ 
+  title, icon: Icon, rows, logos, valueLabel, accentColor 
+}: { 
+  title: string; icon: any; rows: any[]; logos: any; valueLabel: string; accentColor: string 
+}) {
+  return (
+    <div className="rounded-xl overflow-hidden" style={{ background: "#0d0e1c", border: "1px solid #1e1e30" }}>
+      <div className="flex items-center gap-2.5 px-4 py-3 border-b border-[#1e1e30]">
+        <Icon size={16} className={accentColor} />
+        <span className="text-white font-bold text-sm">{title}</span>
+      </div>
+      <table className="w-full border-collapse text-xs">
+        <thead>
+          <tr className="text-gray-600 text-[10px] uppercase tracking-wider border-b border-[#13131f]">
+            <th className="py-2 px-4 text-left w-6">#</th>
+            <th className="py-2 px-4 text-left">Player</th>
+            <th className="py-2 px-4 text-right">{valueLabel}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row, i) => (
+            <tr key={i} className="border-b border-[#13131f] hover:bg-white/[0.02] transition-colors">
+              <td className="py-2.5 px-4 text-yellow-500 font-bold">{row.rank}</td>
+              <td className="py-2.5 px-4">
+                <div className="flex items-center gap-2">
+                  <TeamLogo abbr={row.team} size="sm" logos={logos} />
+                  <div className="min-w-0">
+                    <p className="text-white truncate">{row.player}</p>
+                    <p className="text-[9px] text-gray-500 uppercase">{row.team} {row.subValue ? `• ${row.subValue}` : ""}</p>
+                  </div>
+                </div>
+              </td>
+              <td className={`py-2.5 px-4 text-right font-bold ${accentColor}`}>{row.value || row.score || row.fifties}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
 // ─── Stats Tab ────────────────────────────────────────────────────────────────
 
-function StatsTab({ highestScores, mostFifties, logos }: { highestScores: HighestScoreRow[]; mostFifties: MostFiftiesRow[]; logos: Record<string, string> }) {
+function StatsTab({ data }: { data: any }) {
   const [viewAll, setViewAll] = useState(false);
-  const shownScores = viewAll ? highestScores : highestScores.slice(0, 4);
-  const shownFifties = viewAll ? mostFifties : mostFifties.slice(0, 4);
+  const logos = data.teamLogos;
+  const extra = data.extraStats;
+
+  const limit = (arr: any[]) => viewAll ? arr : arr.slice(0, 4);
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-white font-bold text-base">Stats</h3>
-        <button
-          onClick={() => setViewAll((v) => !v)}
-          className="text-xs font-semibold text-[#e91e8c] hover:text-pink-400 transition-colors"
-        >
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-white font-bold text-base">Season Leaders</h3>
+        <button onClick={() => setViewAll(!viewAll)} className="text-xs font-semibold text-[#e91e8c]">
           {viewAll ? "Show Less" : "View All"}
         </button>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {/* Highest Score */}
-        <div
-          className="rounded-xl overflow-hidden"
-          style={{ background: "#0d0e1c", border: "1px solid #1e1e30" }}
-        >
-          <div className="flex items-center gap-2.5 px-4 py-3 border-b border-[#1e1e30]">
-            <Trophy size={16} className="text-blue-400" />
-            <span className="text-white font-bold text-sm">Highest Score</span>
-          </div>
-          <table className="w-full border-collapse text-xs">
-            <thead>
-              <tr className="text-gray-600 text-[10px] uppercase tracking-wider border-b border-[#13131f]">
-                <th className="py-2 px-4 text-left w-6">#</th>
-                <th className="py-2 px-4 text-left">Player</th>
-                <th className="py-2 px-4 text-center">Team</th>
-                <th className="py-2 px-4 text-right">Score</th>
-              </tr>
-            </thead>
-            <tbody>
-              {shownScores.map((row) => (
-                <tr key={row.rank} className="border-b border-[#13131f] hover:bg-white/[0.02] transition-colors">
-                  <td className="py-2.5 px-4 text-yellow-500 font-bold">{row.rank}</td>
-                  <td className="py-2.5 px-4 text-white">{row.player}</td>
-                  <td className="py-2.5 px-4 text-center">
-                    <div className="flex items-center justify-center gap-1.5">
-                      <TeamLogo abbr={row.team} size="sm" logos={logos} />
-                      <span className="text-gray-400">{row.team}</span>
-                    </div>
-                  </td>
-                  <td className="py-2.5 px-4 text-right text-white font-bold">{row.score}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {/* Row 1: Traditional */}
+        <StatCard title="Highest Score" icon={Trophy} rows={limit(data.highestScores)} logos={logos} valueLabel="Runs" accentColor="text-blue-400" />
+        <StatCard title="Most Fifties" icon={Crown} rows={limit(data.mostFifties)} logos={logos} valueLabel="50s" accentColor="text-purple-400" />
 
-        {/* Most Fifties */}
-        <div
-          className="rounded-xl overflow-hidden"
-          style={{ background: "#0d0e1c", border: "1px solid #1e1e30" }}
-        >
-          <div className="flex items-center gap-2.5 px-4 py-3 border-b border-[#1e1e30]">
-            <Crown size={16} className="text-purple-400" />
-            <span className="text-white font-bold text-sm">Most Fifties</span>
-          </div>
-          <table className="w-full border-collapse text-xs">
-            <thead>
-              <tr className="text-gray-600 text-[10px] uppercase tracking-wider border-b border-[#13131f]">
-                <th className="py-2 px-4 text-left w-6">#</th>
-                <th className="py-2 px-4 text-left">Player</th>
-                <th className="py-2 px-4 text-center">Team</th>
-                <th className="py-2 px-4 text-right">Fifties</th>
-              </tr>
-            </thead>
-            <tbody>
-              {shownFifties.map((row) => (
-                <tr key={row.rank} className="border-b border-[#13131f] hover:bg-white/[0.02] transition-colors">
-                  <td className="py-2.5 px-4 text-yellow-500 font-bold">{row.rank}</td>
-                  <td className="py-2.5 px-4 text-white">{row.player}</td>
-                  <td className="py-2.5 px-4 text-center">
-                    <div className="flex items-center justify-center gap-1.5">
-                      <TeamLogo abbr={row.team} size="sm" logos={logos} />
-                      <span className="text-gray-400">{row.team}</span>
-                    </div>
-                  </td>
-                  <td className="py-2.5 px-4 text-right text-purple-400 font-bold">{row.fifties}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        {/* Row 2: Boundaries */}
+        <StatCard title="Maximum Sixes" icon={Swords} rows={limit(extra.maxSixes)} logos={logos} valueLabel="6s" accentColor="text-orange-400" />
+        <StatCard title="Maximum Fours" icon={Star} rows={limit(extra.maxFours)} logos={logos} valueLabel="4s" accentColor="text-yellow-400" />
+
+        {/* Row 3: Performance Averages */}
+        <StatCard title="Batting Average" icon={Users} rows={limit(extra.battingAvg)} logos={logos} valueLabel="Avg" accentColor="text-emerald-400" />
+        <StatCard title="Bowling Average" icon={RefreshCw} rows={limit(extra.bowlingAvg)} logos={logos} valueLabel="Avg" accentColor="text-rose-400" />
+
+        {/* Row 4: Bowling Efficiency */}
+        <StatCard title="Best Bowling Figures" icon={Trophy} rows={limit(extra.bestBowling)} logos={logos} valueLabel="BBI" accentColor="text-blue-300" />
+        <StatCard title="Most Economical" icon={Crown} rows={limit(extra.mostEcon)} logos={logos} valueLabel="Econ" accentColor="text-indigo-400" />
+
+        {/* Row 5: Milestones */}
+        <StatCard title="Most Hundreds" icon={Star} rows={limit(extra.mostHundreds)} logos={logos} valueLabel="100s" accentColor="text-amber-400" />
+        <StatCard title="Total Boundaries" icon={Swords} rows={limit(extra.boundaries)} logos={logos} valueLabel="Total" accentColor="text-pink-400" />
       </div>
     </div>
   );

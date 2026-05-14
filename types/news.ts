@@ -10,4 +10,5 @@ export interface NewsArticle {
   cdn_url: string;
   createdAt?: number; // Timestamp for sorting
   likes?: number;
+  id?: string; // Cricket article ID for sync
 }

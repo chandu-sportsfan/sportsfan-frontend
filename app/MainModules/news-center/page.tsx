@@ -23,6 +23,9 @@ type NewsApiArticle = NewsArticle & {
 };
 
 const NEWS_EXTERNAL_BYPASS_KEY = 'sportsfan_news_external_bypass';
+const NEWS_LIKES_KEY = 'sportsfan_news_likes';
+const NEWS_USER_LIKES_KEY = 'sportsfan_news_user_likes';
+const CRICKET_USER_LIKES_KEY = 'cricket_user_likes'; // Track which users liked which cricket articles
 
 // Strip HTML tags from text
 const stripHtmlTags = (html: string) => {
@@ -38,6 +41,44 @@ const formatDate = (timestamp?: number) => {
   return date.toLocaleDateString('en-US', options);
 };
 
+// Copy to clipboard utility
+const copyToClipboard = async (text: string) => {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    try {
+      const input = document.createElement('textarea');
+      input.value = text;
+      input.style.position = 'fixed';
+      input.style.opacity = '0';
+      document.body.appendChild(input);
+      input.focus();
+      input.select();
+      const ok = document.execCommand('copy');
+      document.body.removeChild(input);
+      return ok;
+    } catch {
+      return false;
+    }
+  }
+};
+
+// Build share URL for article
+const buildNewsShareUrl = (article: NewsArticle) => {
+  if (typeof window === 'undefined') return '';
+  return `${window.location.origin}/MainModules/news-center?rank=${encodeURIComponent(article.rank)}`;
+};
+
+// Build share text for article
+const buildNewsShareText = (article: NewsArticle) => {
+  const shareUrl = buildNewsShareUrl(article);
+  return [
+    stripHtmlTags(article.summary) || 'Latest news from Sportsfan',
+    shareUrl,
+  ].filter(Boolean).join('\n');
+};
+
 export default function DetailedNewsCenter() {
   const [articles, setArticles] = useState<NewsArticle[]>([]);
   const [sortOption, setSortOption] = useState<'latest' | 'oldest' | 'most-liked'>('latest');
@@ -51,6 +92,58 @@ export default function DetailedNewsCenter() {
     Record: false,
     Elimination: false,
   });
+  const [sharedArticle, setSharedArticle] = useState<NewsArticle | null>(null);
+  const [showShareDialog, setShowShareDialog] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [likeCounts, setLikeCounts] = useState<Record<number, number>>({});
+  const [userLikes, setUserLikes] = useState<Set<number>>(new Set());
+
+  const openShareDialog = (article: NewsArticle) => {
+    setSharedArticle(article);
+    setShowShareDialog(true);
+  };
+
+  const closeShareDialog = () => {
+    setShowShareDialog(false);
+    setSharedArticle(null);
+  };
+
+  const handleShareToWhatsApp = () => {
+    if (!sharedArticle) return;
+    window.open(`whatsapp://send?text=${encodeURIComponent(buildNewsShareText(sharedArticle))}`, '_blank');
+  };
+
+  const handleShareToThreads = () => {
+    if (!sharedArticle) return;
+    window.open(`https://www.threads.net/intent/post?text=${encodeURIComponent(buildNewsShareText(sharedArticle))}`, '_blank');
+  };
+
+  const handleShareToInstagram = async () => {
+    if (!sharedArticle) return;
+    await copyToClipboard(buildNewsShareText(sharedArticle));
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1600);
+    window.open('https://www.instagram.com/', '_blank');
+  };
+
+  const handleShareToLinkedIn = () => {
+    if (!sharedArticle) return;
+    window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(buildNewsShareUrl(sharedArticle))}`, '_blank');
+  };
+
+  const handleShareToX = () => {
+    if (!sharedArticle) return;
+    window.open(`https://x.com/intent/tweet?text=${encodeURIComponent(buildNewsShareText(sharedArticle))}`, '_blank');
+  };
+
+  const handleCopyLink = async () => {
+    if (!sharedArticle) return;
+    const ok = await copyToClipboard(buildNewsShareText(sharedArticle));
+    if (ok) {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1600);
+    }
+  };
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -58,6 +151,14 @@ export default function DetailedNewsCenter() {
     if (saved === 'true') {
       setBypassExternalPrompt(true);
       setRememberChoice(true);
+    }
+    const savedLikeCounts = window.localStorage.getItem(NEWS_LIKES_KEY);
+    if (savedLikeCounts) {
+      setLikeCounts(JSON.parse(savedLikeCounts));
+    }
+    const savedUserLikes = window.localStorage.getItem(NEWS_USER_LIKES_KEY);
+    if (savedUserLikes) {
+      setUserLikes(new Set(JSON.parse(savedUserLikes)));
     }
   }, []);
 
@@ -99,7 +200,8 @@ export default function DetailedNewsCenter() {
             tag: article.badge || 'Cricket',
             cdn_url: article.image || article.cdn_url || '',
             createdAt: typeof article.createdAt === 'number' ? article.createdAt : (article.createdAt ? Date.parse(String(article.createdAt)) : Date.now()),
-            likes: 0
+            likes: 0,
+            id: String(article.id) // Add cricket article ID for sync
           }));
 
         // Merge both arrays
@@ -192,6 +294,56 @@ export default function DetailedNewsCenter() {
     setPendingExternal(null);
   };
 
+  const toggleLike = (article: NewsArticle, currentLikes: number = 0) => {
+    const articleRank = article.rank;
+    const newUserLikes = new Set(userLikes);
+    let newCount = currentLikes;
+    
+    if (newUserLikes.has(articleRank)) {
+      newUserLikes.delete(articleRank);
+      newCount = Math.max(0, currentLikes - 1);
+    } else {
+      newUserLikes.add(articleRank);
+      newCount = currentLikes + 1;
+    }
+    
+    setUserLikes(newUserLikes);
+    const newLikeCounts = { ...likeCounts, [articleRank]: newCount };
+    setLikeCounts(newLikeCounts);
+    
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(NEWS_USER_LIKES_KEY, JSON.stringify(Array.from(newUserLikes)));
+      window.localStorage.setItem(NEWS_LIKES_KEY, JSON.stringify(newLikeCounts));
+      
+      // Sync cricket article likes if this is a cricket article
+      if (article.id && article.url.includes('/MainModules/CricketArticles/')) {
+        const cricketLikeKey = `cricket_article_likes_${article.id}`;
+        window.localStorage.setItem(cricketLikeKey, String(newCount));
+        
+        // Track that this user liked this cricket article
+        const cricketUserLikesData = window.localStorage.getItem(CRICKET_USER_LIKES_KEY);
+        let cricketUserLikes: Record<string, boolean> = {};
+        if (cricketUserLikesData) {
+          try {
+            cricketUserLikes = JSON.parse(cricketUserLikesData);
+          } catch (e) {
+            cricketUserLikes = {};
+          }
+        }
+        
+        if (newUserLikes.has(articleRank)) {
+          // User liked - track the article ID
+          cricketUserLikes[article.id] = true;
+        } else {
+          // User unliked - remove tracking
+          delete cricketUserLikes[article.id];
+        }
+        
+        window.localStorage.setItem(CRICKET_USER_LIKES_KEY, JSON.stringify(cricketUserLikes));
+      }
+    }
+  };
+
   return (
     <div className="flex flex-col gap-6 px-4 lg:px-6 py-4 w-full text-white font-sans">
       <Link href="/MainModules/HomePage" className="flex items-center gap-2 text-pink-500 hover:text-pink-400 w-fit self-start">
@@ -205,7 +357,7 @@ export default function DetailedNewsCenter() {
           <p className="text-sm mt-2 text-gray-500">By <span className="text-pink-500">SportsFan360</span></p>
         </div>
         <div className="flex gap-4">
-          <button className="flex items-center gap-2 px-4 py-2 border border-gray-700 rounded-lg text-sm hover:bg-gray-800">
+          <button onClick={() => openShareDialog({ rank: 0, title: 'News Center', summary: 'Your one-stop destination for top stories, match previews & records from around the cricket world.', source: 'SportsFan360', url: '/MainModules/news-center', tag: 'News', cdn_url: '', likes: 0 })} className="flex items-center gap-2 px-4 py-2 border border-gray-700 rounded-lg text-sm hover:bg-gray-800">
             <Share2 size={16} /> Share
           </button>
           <button className="flex items-center gap-2 px-4 py-2 bg-pink-500 hover:bg-pink-600 rounded-lg text-sm font-semibold">
@@ -244,10 +396,10 @@ export default function DetailedNewsCenter() {
 
                  <div className="flex items-center justify-between border-t border-gray-800 pt-4">
                   <div className="flex gap-6">
-                    <button className="flex items-center gap-1 text-pink-500 hover:text-pink-400 text-sm">
-                      <Heart size={16} fill="currentColor" /> {article.likes || 0}
+                    <button onClick={() => toggleLike(article, likeCounts[article.rank] || article.likes || 0)} className={`flex items-center gap-1 text-sm transition-colors ${userLikes.has(article.rank) ? 'text-pink-500' : 'text-gray-400 hover:text-pink-400'}`}>
+                      <Heart size={16} fill={userLikes.has(article.rank) ? 'currentColor' : 'none'} /> {(likeCounts[article.rank] ?? article.likes) || 0}
                     </button>
-                    <button className="flex items-center gap-1 text-gray-400 hover:text-white text-sm">
+                    <button onClick={() => openShareDialog(article)} className="flex items-center gap-1 text-gray-400 hover:text-white text-sm">
                       <Share2 size={16} /> Share
                     </button>
                   </div>
@@ -426,6 +578,65 @@ export default function DetailedNewsCenter() {
           </div>
         </div>
       ) : null}
+
+      {/* Share Dialog */}
+      {showShareDialog && sharedArticle && (
+        <>
+          <button type="button" className="fixed inset-0 z-40 bg-black/70 lg:hidden" onClick={closeShareDialog} />
+          <div className="fixed bottom-16 inset-x-4 z-50 mx-auto w-full max-w-[280px] rounded-2xl border border-white/10 bg-[#1a1a1e] p-3 shadow-2xl lg:hidden" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-white text-sm font-semibold">Share</p>
+              <button onClick={closeShareDialog} className="text-gray-400 hover:text-white">
+                <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M15 5L5 15M5 5L15 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>
+              </button>
+            </div>
+            <div className="flex flex-row flex-nowrap items-center gap-1.5 mb-2 overflow-x-auto">
+              {[
+                { handler: handleShareToWhatsApp, src: '/images/share_whatsapp.png', alt: 'WhatsApp' },
+                { handler: handleShareToThreads, src: '/images/share_thread.png', alt: 'Threads' },
+                { handler: handleShareToInstagram, src: '/images/share_insta.png', alt: 'Instagram' },
+                { handler: handleShareToLinkedIn, src: '/images/Share_linkedin.png', alt: 'LinkedIn' },
+                { handler: handleShareToX, src: '/images/Share_X.png', alt: 'X' },
+                { handler: handleCopyLink, src: '/images/share_copy_link.png', alt: 'Copy' },
+              ].map(({ handler, src, alt }) => (
+                <button key={alt} onClick={handler} className="w-8 h-8 shrink-0 rounded-full overflow-hidden bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center">
+                  <img src={src} alt={alt} className="w-full h-full object-cover rounded-full" />
+                </button>
+              ))}
+            </div>
+            {copied && <p className="text-xs text-emerald-400">Copied to clipboard</p>}
+          </div>
+          <div className="hidden lg:flex fixed inset-0 z-50 items-center justify-center bg-black/60" onClick={closeShareDialog}>
+            <div className="bg-[#1a1a1e] rounded-2xl border border-white/10 p-4 w-[300px] shadow-2xl" onClick={e => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-white text-sm font-semibold">Share Article</p>
+                <button onClick={closeShareDialog} className="text-gray-400 hover:text-white">
+                  <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M15 5L5 15M5 5L15 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>
+                </button>
+              </div>
+              <div className="rounded-xl border border-white/10 bg-[#111114] p-3 mb-3">
+                <p className="text-white text-sm font-semibold line-clamp-2">{sharedArticle.title}</p>
+                <p className="text-white/45 text-[11px] mt-2 line-clamp-2 break-all">{buildNewsShareUrl(sharedArticle)}</p>
+              </div>
+              <div className="flex flex-row flex-nowrap items-center gap-2 mb-2">
+                {[
+                  { handler: handleShareToWhatsApp, src: '/images/share_whatsapp.png', alt: 'WhatsApp' },
+                  { handler: handleShareToThreads, src: '/images/share_thread.png', alt: 'Threads' },
+                  { handler: handleShareToInstagram, src: '/images/share_insta.png', alt: 'Instagram' },
+                  { handler: handleShareToLinkedIn, src: '/images/Share_linkedin.png', alt: 'LinkedIn' },
+                  { handler: handleShareToX, src: '/images/Share_X.png', alt: 'X' },
+                  { handler: handleCopyLink, src: '/images/share_copy_link.png', alt: 'Copy' },
+                ].map(({ handler, src, alt }) => (
+                  <button key={alt} onClick={handler} className="w-9 h-9 shrink-0 rounded-full overflow-hidden bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center">
+                    <img src={src} alt={alt} className="w-full h-full object-cover rounded-full" />
+                  </button>
+                ))}
+              </div>
+              {copied && <p className="text-xs text-emerald-400">Copied to clipboard</p>}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

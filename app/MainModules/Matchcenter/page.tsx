@@ -6,8 +6,6 @@ import {
   ChevronRight,
   Trophy,
   Crown,
-  Users,
-  Swords,
   RefreshCw,
   MapPin, // New
   XCircle, // New
@@ -694,17 +692,25 @@ function StatCard({
 
 function StatsTab({ data }: { data: StatsData }) {
   const [viewAll, setViewAll] = useState(false);
-  const limit = viewAll ? undefined : 5; // Show top 5 by default, expand to 10
+  const limit = viewAll ? undefined : 5;
 
-  // Helper to normalize the different array formats into a standard one for the generic card
-  const mapData = (arr: any[], mainKey: string, subKey?: string) => 
-    (arr || []).map(item => ({
-      rank: item.rank,
-      player: item.player,
-      team: item.team,
-      mainValue: item[mainKey] || item.value, 
-      subValue: subKey ? (item[subKey] || item.subValue) : undefined
-    }));
+  // 1. Define a union type of all possible stat rows
+  type AnyStatRow = HighestScoreRow | MostFiftiesRow | ExtraStatRow;
+
+  // 2. Safely type the array and use Record to access dynamic keys without 'any'
+  const mapData = (arr: AnyStatRow[] | undefined, mainKey: string, subKey?: string) => 
+    (arr || []).map(item => {
+      // Safely treat the item as a dictionary to extract the dynamic values
+      const record = item as unknown as Record<string, string | number | undefined>;
+      
+      return {
+        rank: item.rank,
+        player: item.player,
+        team: item.team,
+        mainValue: record[mainKey] || record["value"] || "", 
+        subValue: subKey ? (record[subKey] || record["subValue"]) : undefined
+      };
+    });
 
   return (
     <div>

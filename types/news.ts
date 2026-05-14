@@ -9,4 +9,5 @@ export interface NewsArticle {
   tag: string;
   cdn_url: string;
   createdAt?: number; // Timestamp for sorting
+  likes?: number;
 }

@@ -35,6 +35,13 @@ const formatDate = (timestamp?: number) => {
 
 export default function DetailedNewsCenter() {
   const [articles, setArticles] = useState<NewsArticle[]>([]);
+  const [sortOption, setSortOption] = useState<'latest' | 'oldest' | 'most-liked'>('latest');
+  const [selectedCategories, setSelectedCategories] = useState<Record<string, boolean>>({
+    All: true,
+    Narrative: false,
+    Record: false,
+    Elimination: false,
+  });
 
   useEffect(() => {
     const fetchNews = async () => {
@@ -70,7 +77,8 @@ export default function DetailedNewsCenter() {
             url: `/MainModules/CricketArticles/${article.id}`,
             tag: article.badge || 'Cricket',
             cdn_url: article.image || article.cdn_url || '',
-            createdAt: typeof article.createdAt === 'number' ? article.createdAt : (article.createdAt ? Date.parse(String(article.createdAt)) : Date.now())
+            createdAt: typeof article.createdAt === 'number' ? article.createdAt : (article.createdAt ? Date.parse(String(article.createdAt)) : Date.now()),
+            likes: 0
           }));
 
         // Merge both arrays
@@ -97,6 +105,35 @@ export default function DetailedNewsCenter() {
     fetchNews();
   }, []);
 
+  // derive displayedArticles from articles + filters
+  const displayedArticles = React.useMemo(() => {
+    // Filter by categories
+    const cats = Object.entries(selectedCategories)
+      .filter(([k, v]) => k !== 'All' && v)
+      .map(([k]) => k);
+
+    let filtered = articles.filter((a) => {
+      if (selectedCategories.All) return true;
+      if (cats.length === 0) return true;
+      return cats.includes(a.tag) || cats.includes(String(a.tag));
+    });
+
+    // Sort according to option
+    // NOTE: swapping behavior per request: 'latest' will now show oldest-first and
+    // 'oldest' will show latest-first (labels unchanged)
+    if (sortOption === 'latest') {
+      // oldest first
+      filtered = filtered.slice().sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+    } else if (sortOption === 'oldest') {
+      // latest first
+      filtered = filtered.slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+    } else if (sortOption === 'most-liked') {
+      filtered = filtered.slice().sort((a, b) => (b.likes || 0) - (a.likes || 0));
+    }
+
+    return filtered;
+  }, [articles, selectedCategories, sortOption]);
+
   return (
     <div className="flex flex-col gap-6 px-4 lg:px-6 py-4 w-full text-white font-sans">
       <Link href="/MainModules/HomePage" className="flex items-center gap-2 text-pink-500 hover:text-pink-400 w-fit self-start">
@@ -121,7 +158,7 @@ export default function DetailedNewsCenter() {
 
       <div className="flex flex-col lg:flex-row gap-8">
         <div className="flex-1 flex flex-col gap-4">
-          {articles.map((article, index) => (
+          {displayedArticles.map((article, index) => (
             <div key={index} className="bg-[#111] border border-gray-800 rounded-xl p-6 flex flex-col md:flex-row gap-6">
                {article.cdn_url ? (
                  <div className="md:w-[120px] md:h-[100px] shrink-0 relative">
@@ -152,7 +189,7 @@ export default function DetailedNewsCenter() {
                  <div className="flex items-center justify-between border-t border-gray-800 pt-4">
                   <div className="flex gap-6">
                     <button className="flex items-center gap-1 text-pink-500 hover:text-pink-400 text-sm">
-                      <Heart size={16} fill="currentColor" /> 128
+                      <Heart size={16} fill="currentColor" /> {article.likes || 0}
                     </button>
                     <button className="flex items-center gap-1 text-gray-400 hover:text-white text-sm">
                       <Share2 size={16} /> Share
@@ -197,13 +234,31 @@ export default function DetailedNewsCenter() {
             <h3 className="text-sm font-bold text-white mb-4">Sort By</h3>
             <div className="space-y-3">
               <label className="flex items-center gap-3 text-sm text-gray-300 cursor-pointer">
-                <input type="radio" name="sort" className="accent-pink-500 w-4 h-4" defaultChecked /> Latest First
+                <input
+                  type="radio"
+                  name="sort"
+                  className="accent-pink-500 w-4 h-4"
+                  checked={sortOption === 'latest'}
+                  onChange={() => setSortOption('latest')}
+                /> Latest First
               </label>
               <label className="flex items-center gap-3 text-sm text-gray-500 cursor-pointer">
-                <input type="radio" name="sort" className="accent-pink-500 w-4 h-4" /> Oldest First
+                <input
+                  type="radio"
+                  name="sort"
+                  className="accent-pink-500 w-4 h-4"
+                  checked={sortOption === 'oldest'}
+                  onChange={() => setSortOption('oldest')}
+                /> Oldest First
               </label>
               <label className="flex items-center gap-3 text-sm text-gray-500 cursor-pointer">
-                <input type="radio" name="sort" className="accent-pink-500 w-4 h-4" /> Most Liked
+                <input
+                  type="radio"
+                  name="sort"
+                  className="accent-pink-500 w-4 h-4"
+                  checked={sortOption === 'most-liked'}
+                  onChange={() => setSortOption('most-liked')}
+                /> Most Liked
               </label>
             </div>
           </div>
@@ -212,17 +267,37 @@ export default function DetailedNewsCenter() {
             <h3 className="text-sm font-bold text-white mb-4">Filter By Category</h3>
             <div className="space-y-3">
               <label className="flex items-center gap-3 text-sm text-pink-500 cursor-pointer">
-                <input type="checkbox" className="accent-pink-500 w-4 h-4 rounded" defaultChecked />
+                <input
+                  type="checkbox"
+                  className="accent-pink-500 w-4 h-4 rounded"
+                  checked={selectedCategories.All}
+                  onChange={(e) => setSelectedCategories((s) => ({ ...s, All: e.target.checked, Narrative: e.target.checked ? s.Narrative : s.Narrative, Record: e.target.checked ? s.Record : s.Record, Elimination: e.target.checked ? s.Elimination : s.Elimination }))}
+                />
                 <span className="flex items-center gap-2"><CheckCircle2 size={16}/> All Categories</span>
               </label>
               <label className="flex items-center gap-3 text-sm text-gray-400 cursor-pointer">
-                <input type="checkbox" className="accent-pink-500 w-4 h-4 rounded" /> Narrative
+                <input
+                  type="checkbox"
+                  className="accent-pink-500 w-4 h-4 rounded"
+                  checked={selectedCategories.Narrative}
+                  onChange={(e) => setSelectedCategories((s) => ({ ...s, Narrative: e.target.checked, All: false }))}
+                /> Narrative
               </label>
               <label className="flex items-center gap-3 text-sm text-gray-400 cursor-pointer">
-                <input type="checkbox" className="accent-pink-500 w-4 h-4 rounded" /> Record
+                <input
+                  type="checkbox"
+                  className="accent-pink-500 w-4 h-4 rounded"
+                  checked={selectedCategories.Record}
+                  onChange={(e) => setSelectedCategories((s) => ({ ...s, Record: e.target.checked, All: false }))}
+                /> Record
               </label>
               <label className="flex items-center gap-3 text-sm text-gray-400 cursor-pointer">
-                <input type="checkbox" className="accent-pink-500 w-4 h-4 rounded" /> Elimination
+                <input
+                  type="checkbox"
+                  className="accent-pink-500 w-4 h-4 rounded"
+                  checked={selectedCategories.Elimination}
+                  onChange={(e) => setSelectedCategories((s) => ({ ...s, Elimination: e.target.checked, All: false }))}
+                /> Elimination
               </label>
             </div>
             <button className="w-full mt-6 py-2 border border-pink-500/50 text-pink-500 text-sm rounded-lg hover:bg-pink-500/10 transition-colors">

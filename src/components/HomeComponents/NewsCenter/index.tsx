@@ -6,6 +6,17 @@ import { Heart, Share2, ChevronLeft, ChevronRight, ArrowRight } from 'lucide-rea
 // FIX: Using relative path to reach the root types folder
 import { NewsArticle } from '../../../../types/news';
 
+type CricketApiArticle = {
+  id?: string | number;
+  title?: string;
+  description?: string[];
+  summary?: string;
+  badge?: string;
+  image?: string;
+  cdn_url?: string;
+  createdAt?: number | string;
+};
+
 // Strip HTML tags from text
 const stripHtmlTags = (html: string) => {
   if (!html) return '';
@@ -22,7 +33,6 @@ const formatDate = (timestamp?: number) => {
 
 export default function NewsCenter() {
   const [articles, setArticles] = useState<NewsArticle[]>([]);
-  const [date, setDate] = useState<string>("May 11, 2026");
 
   useEffect(() => {
     const fetchNews = async () => {
@@ -35,7 +45,7 @@ export default function NewsCenter() {
         const newsArticles = (newsData?.articles || []) as NewsArticle[];
 
         // Try to fetch Cricket Articles from local proxy
-        let cricketArticles: any[] = [];
+        let cricketArticles: CricketApiArticle[] = [];
         try {
           const cricketRes = await fetch('/api/cricket-articles');
           if (cricketRes.ok) {
@@ -50,7 +60,7 @@ export default function NewsCenter() {
 
         // Transform cricket articles to match NewsArticle structure
         const transformedCricket: NewsArticle[] = (Array.isArray(cricketArticles) ? cricketArticles : [])
-          .map((article: any) => ({
+          .map((article: CricketApiArticle) => ({
             rank: 0,
             title: article.title || '',
             summary: article.description?.[0] || article.summary || '',
@@ -58,14 +68,19 @@ export default function NewsCenter() {
             url: `/MainModules/CricketArticles/${article.id}`,
             tag: article.badge || 'Cricket',
             cdn_url: article.image || article.cdn_url || '',
-            createdAt: article.createdAt || Date.now()
+            createdAt:
+              typeof article.createdAt === 'number'
+                ? article.createdAt
+                : article.createdAt
+                  ? Date.parse(String(article.createdAt))
+                  : Date.now()
           }));
 
         // Merge both arrays
         const mergedArticles = [...newsArticles, ...transformedCricket];
 
         // Sort by date (latest first)
-        mergedArticles.sort((a: any, b: any) => {
+        mergedArticles.sort((a: NewsArticle, b: NewsArticle) => {
           const dateA = (a.createdAt || 0) as number;
           const dateB = (b.createdAt || 0) as number;
           return dateB - dateA;

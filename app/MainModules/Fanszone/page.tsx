@@ -4,8 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useLeaderboard } from "@/context/LeaderboardContext";
 import { 
-  Search, Sparkles, SlidersHorizontal, LogOut, ChevronDown,
-  Trophy, Share2, CheckCircle2, 
+  ChevronDown, Trophy, Share2, CheckCircle2, 
   Award, TrendingUp, Play, ThumbsUp, Radio, FileText, 
   Gamepad2, UserPlus, Bell, LayoutGrid, Calendar, Filter,
   Download, ChevronLeft, ChevronRight, MoreHorizontal
@@ -97,15 +96,32 @@ const trendData = [30, 45, 40, 60, 55, 75, 70, 90, 85, 100];
 // --- REUSABLE COMPONENTS ---
 
 function DonutChart({ data, totalPoints }: { data: typeof earningBreakdown, totalPoints?: string }) {
-  let cumulativePercent = 0;
-  
+  // Pre-calculate the offsets to keep the linter happy
+  let currentOffset = 0;
+  const slices = data.map((slice) => {
+    const dasharray = `${slice.percent} 100`;
+    const dashoffset = -currentOffset;
+    currentOffset += slice.percent;
+    return { ...slice, dasharray, dashoffset };
+  });
+
   return (
     <div className="relative w-40 h-40 md:w-48 md:h-48 shrink-0">
       <svg viewBox="0 0 100 100" className="w-full h-full transform -rotate-90">
-        {/* ... circles remain exactly the same ... */}
+        {slices.map((slice, i) => (
+          <circle
+            key={i}
+            cx="50" cy="50" r="15.91549430918954"
+            fill="transparent"
+            stroke={slice.color}
+            strokeWidth="6"
+            strokeDasharray={slice.dasharray}
+            strokeDashoffset={slice.dashoffset}
+            className="transition-all duration-1000 ease-out"
+          />
+        ))}
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-        {/* MAKE POINTS DYNAMIC HERE */}
         <span className="text-xl md:text-2xl font-black text-white">{totalPoints || "0"}</span>
         <span className="text-[10px] md:text-xs text-gray-400 font-bold uppercase tracking-wider">XP</span>
       </div>
@@ -1047,10 +1063,10 @@ function InfoIcon() {
 }
 
 // Simple star icon SVG with proper TypeScript types
-function StarIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
-      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-    </svg>
-  );
-}
+// function StarIcon(props: React.SVGProps<SVGSVGElement>) {
+//   return (
+//     <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
+//       <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+//     </svg>
+//   );
+// }

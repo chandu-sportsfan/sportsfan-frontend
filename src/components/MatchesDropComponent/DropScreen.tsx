@@ -780,6 +780,41 @@ interface DateGroup {
     videoDrops: Drop[];
 }
 
+function extractSpeakerFromTitle(title: string): string {
+    if (!title) return "Unknown";
+    
+    // Keywords after which the speaker name appears
+    const keywords = ["Pre Match", "Post Match", "Toss Report", "Dispatch"];
+    
+    // Regex to match the date format like "13 May 2026" or "14 May 2026"
+    const dateRegex = /\d{1,2}\s+[A-Z][a-z]+\s+\d{4}/;
+    
+    let speakerPart = "";
+    
+    // Try to find the part after the keywords
+    for (const keyword of keywords) {
+        if (title.includes(keyword)) {
+            const index = title.indexOf(keyword) + keyword.length;
+            speakerPart = title.substring(index).trim();
+            break;
+        }
+    }
+    
+    if (speakerPart) {
+        // Remove the date part from speakerPart to get just the name
+        const dateMatch = speakerPart.match(dateRegex);
+        if (dateMatch && dateMatch.index !== undefined) {
+            const name = speakerPart.substring(0, dateMatch.index).trim();
+            if (name) return name;
+        } else {
+            // If no date found, return the whole part after the keyword
+            return speakerPart;
+        }
+    }
+    
+    return "Unknown";
+}
+
 function audioFileToDrop(audio: AudioFile): Drop {
     return {
         id: audio.id,
@@ -787,7 +822,7 @@ function audioFileToDrop(audio: AudioFile): Drop {
         duration: audio.duration,
         durationSeconds: audio.durationSeconds || 0,
         plays: "0",
-        author: audio.matchInfo?.speaker || "Unknown",
+        author: audio.matchInfo?.speaker || extractSpeakerFromTitle(audio.title),
         badge: "Inner Room",
         type: "audio",
         url: audio.url,
@@ -802,7 +837,7 @@ function videoFileToDrop(video: VideoFile): Drop {
         duration: video.duration,
         durationSeconds: video.durationSeconds || 0,
         plays: "0",
-        author: "Arjun Mehta",
+        author: extractSpeakerFromTitle(video.title),
         badge: "Inner Room",
         type: "video",
         url: video.url,

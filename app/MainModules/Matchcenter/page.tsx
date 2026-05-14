@@ -684,7 +684,11 @@ function StatsTab({ data }: { data: StatsData }) {
   const extra = data.extraStats;
 
   // Helper to limit rows shown based on the View All toggle
-  const limit = (arr: ExtraStatRow[]) => viewAll ? arr : arr.slice(0, 4);
+  // const limit = (arr: ExtraStatRow[]) => viewAll ? arr : arr.slice(0, 4);
+  const limit = (arr: ExtraStatRow[]) => {
+  if (!arr) return []; // Return an empty array if the data is missing
+  return viewAll ? arr : arr.slice(0, 4);
+};
 
   return (
     <div className="space-y-4">

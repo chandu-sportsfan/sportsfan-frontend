@@ -33,6 +33,19 @@ const formatDate = (timestamp?: number) => {
 
 export default function NewsCenter() {
   const [articles, setArticles] = useState<NewsArticle[]>([]);
+  const [startIndex, setStartIndex] = useState(0);
+
+  const visibleCount = 2;
+
+  const nextSlide = () => {
+    if (articles.length <= visibleCount) return;
+    setStartIndex((current) => (current + 1) % articles.length);
+  };
+
+  const prevSlide = () => {
+    if (articles.length <= visibleCount) return;
+    setStartIndex((current) => (current - 1 + articles.length) % articles.length);
+  };
 
   useEffect(() => {
     const fetchNews = async () => {
@@ -102,6 +115,11 @@ export default function NewsCenter() {
 
   if (articles.length === 0) return null;
 
+  const visibleArticles = Array.from({ length: Math.min(visibleCount, articles.length) }, (_, offset) => {
+    const index = (startIndex + offset) % articles.length;
+    return articles[index];
+  });
+
   return (
     <div className="w-full flex flex-col gap-4 py-4 rounded-xl">
       {/* Header Area */}
@@ -117,27 +135,30 @@ export default function NewsCenter() {
 
       {/* Carousel Area */}
       <div className="relative flex items-center group w-full bg-[#111111] p-6 rounded-2xl border border-gray-800">
-        <button className="absolute left-2 z-10 p-2 bg-black/50 text-white rounded-full border border-gray-600 hover:bg-black transition-all">
+        <button
+          type="button"
+          onClick={prevSlide}
+          aria-label="Previous news articles"
+          className="absolute left-2 z-10 p-2 bg-black/50 text-white rounded-full border border-gray-600 hover:bg-black transition-all"
+        >
           <ChevronLeft size={20} />
         </button>
 
         {/* Cards Container - Shows 2 at a time on md+ screens */}
         <div className="flex gap-6 overflow-hidden w-full px-8">
-          {articles.slice(0, 2).map((article) => (
+          {visibleArticles.map((article) => (
             <div key={article.rank} className="flex-1 min-w-[300px] flex flex-col justify-between border-l-2 border-orange-500 pl-4 py-2">
               <div>
                 <div className="flex justify-between items-start mb-3 gap-2">
                   <div className="flex items-start gap-3">
-                    {article.cdn_url ? (
-                      <img 
-                        src={article.cdn_url} 
-                        alt={article.title}
-                        className="w-20 h-20 object-cover rounded-lg"
-                        onError={(e) => {
-                          e.currentTarget.style.display = 'none';
-                        }}
-                      />
-                    ) : null}
+                    <img 
+                      src={article.source === 'SportsFan360' && article.cdn_url ? article.cdn_url : '/images/News_center_Default.png'}
+                      alt={article.title}
+                      className="w-20 h-20 object-cover rounded-lg"
+                      onError={(e) => {
+                        e.currentTarget.src = '/images/News_center_Default.png';
+                      }}
+                    />
                     <span className="px-2 py-1 text-[10px] font-bold text-orange-500 border border-orange-500 rounded uppercase tracking-wider h-fit">
                       {article.tag}
                     </span>
@@ -178,16 +199,21 @@ export default function NewsCenter() {
           ))}
         </div>
 
-        <button className="absolute right-2 z-10 p-2 bg-black/50 text-white rounded-full border border-gray-600 hover:bg-black transition-all">
+        <button
+          type="button"
+          onClick={nextSlide}
+          aria-label="Next news articles"
+          className="absolute right-2 z-10 p-2 bg-black/50 text-white rounded-full border border-gray-600 hover:bg-black transition-all"
+        >
           <ChevronRight size={20} />
         </button>
         
         {/* Pagination Dots */}
         <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
-            <span className="w-4 h-1 bg-pink-500 rounded-full"></span>
-            <span className="w-4 h-1 bg-gray-600 rounded-full"></span>
-            <span className="w-4 h-1 bg-gray-600 rounded-full"></span>
-            <span className="w-4 h-1 bg-gray-600 rounded-full"></span>
+            <span className={`w-4 h-1 rounded-full ${startIndex === 0 ? 'bg-pink-500' : 'bg-gray-600'}`}></span>
+            <span className={`w-4 h-1 rounded-full ${startIndex === 1 ? 'bg-pink-500' : 'bg-gray-600'}`}></span>
+            <span className={`w-4 h-1 rounded-full ${startIndex === 2 ? 'bg-pink-500' : 'bg-gray-600'}`}></span>
+            <span className={`w-4 h-1 rounded-full ${startIndex >= 3 ? 'bg-pink-500' : 'bg-gray-600'}`}></span>
         </div>
       </div>
     </div>

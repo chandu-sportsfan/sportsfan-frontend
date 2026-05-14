@@ -3,10 +3,9 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowLeft, Bell, Heart, Share2, ArrowRight, Calendar, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Bell, Heart, Share2, ArrowRight, Calendar, CheckCircle2, ExternalLink } from 'lucide-react';
 // FIX: Using relative path from app/news-center/page.tsx to types/news.ts
 import { NewsArticle } from '../../../types/news';
-
 // Type for the external cricket API response (narrowed to avoid `any`)
 type CricketApiArticle = {
   id?: string | number;
@@ -18,6 +17,8 @@ type CricketApiArticle = {
   cdn_url?: string;
   createdAt?: number | string;
 };
+
+const NEWS_EXTERNAL_BYPASS_KEY = 'sportsfan_news_external_bypass';
 
 // Strip HTML tags from text
 const stripHtmlTags = (html: string) => {
@@ -36,12 +37,25 @@ const formatDate = (timestamp?: number) => {
 export default function DetailedNewsCenter() {
   const [articles, setArticles] = useState<NewsArticle[]>([]);
   const [sortOption, setSortOption] = useState<'latest' | 'oldest' | 'most-liked'>('latest');
+  const [showExternalPrompt, setShowExternalPrompt] = useState(false);
+  const [bypassExternalPrompt, setBypassExternalPrompt] = useState(false);
+  const [rememberChoice, setRememberChoice] = useState(false);
+  const [pendingExternal, setPendingExternal] = useState<{ url: string; source: string } | null>(null);
   const [selectedCategories, setSelectedCategories] = useState<Record<string, boolean>>({
     All: true,
     Narrative: false,
     Record: false,
     Elimination: false,
   });
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const saved = window.localStorage.getItem(NEWS_EXTERNAL_BYPASS_KEY);
+    if (saved === 'true') {
+      setBypassExternalPrompt(true);
+      setRememberChoice(true);
+    }
+  }, []);
 
   useEffect(() => {
     const fetchNews = async () => {
@@ -51,7 +65,10 @@ export default function DetailedNewsCenter() {
           `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/news-center`
         );
         const newsData = await newsRes.json();
-        const newsArticles = (newsData?.articles || []) as NewsArticle[];
+        const newsArticles = (newsData?.articles || []).map((article: any) => ({
+          ...article,
+          createdAt: typeof article.createdAt === 'number' ? article.createdAt : (article.createdAt ? Date.parse(String(article.createdAt)) : undefined)
+        })) as NewsArticle[];
 
         // Try to fetch Cricket Articles from local proxy
         let cricketArticles: CricketApiArticle[] = [];
@@ -134,6 +151,43 @@ export default function DetailedNewsCenter() {
     return filtered;
   }, [articles, selectedCategories, sortOption]);
 
+  const openExternalArticle = (url: string) => {
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
+  const handleExternalReadClick = (event: React.MouseEvent<HTMLAnchorElement>, article: NewsArticle) => {
+    event.preventDefault();
+
+    if (bypassExternalPrompt) {
+      openExternalArticle(article.url);
+      return;
+    }
+
+    setPendingExternal({
+      url: article.url,
+      source: article.source || 'External Source',
+    });
+    setShowExternalPrompt(true);
+  };
+
+  const handleConfirmExternalOpen = () => {
+    if (!pendingExternal) return;
+
+    if (rememberChoice && typeof window !== 'undefined') {
+      window.localStorage.setItem(NEWS_EXTERNAL_BYPASS_KEY, 'true');
+      setBypassExternalPrompt(true);
+    }
+
+    openExternalArticle(pendingExternal.url);
+    setShowExternalPrompt(false);
+    setPendingExternal(null);
+  };
+
+  const handleCancelExternalOpen = () => {
+    setShowExternalPrompt(false);
+    setPendingExternal(null);
+  };
+
   return (
     <div className="flex flex-col gap-6 px-4 lg:px-6 py-4 w-full text-white font-sans">
       <Link href="/MainModules/HomePage" className="flex items-center gap-2 text-pink-500 hover:text-pink-400 w-fit self-start">
@@ -160,20 +214,18 @@ export default function DetailedNewsCenter() {
         <div className="flex-1 flex flex-col gap-4">
           {displayedArticles.map((article, index) => (
             <div key={index} className="bg-[#111] border border-gray-800 rounded-xl p-6 flex flex-col md:flex-row gap-6">
-               {article.cdn_url ? (
-                 <div className="md:w-[120px] md:h-[100px] shrink-0 relative">
-                   <Image
-                     src={article.cdn_url}
-                     alt={article.title}
-                     width={120}
-                     height={100}
-                     className="w-full h-full object-cover rounded-lg"
-                     onError={(e) => {
-                       (e.currentTarget as HTMLImageElement).style.display = 'none';
-                     }}
-                   />
-                 </div>
-               ) : null}
+               <div className="md:w-[120px] md:h-[100px] shrink-0 relative">
+                 <Image
+                   src={article.source === 'SportsFan360' && article.cdn_url ? article.cdn_url : '/images/News_center_Default.png'}
+                   alt={article.title}
+                   width={120}
+                   height={100}
+                   className="w-full h-full object-cover rounded-lg"
+                   onError={(e) => {
+                     (e.currentTarget as HTMLImageElement).src = '/images/News_center_Default.png';
+                   }}
+                 />
+               </div>
 
                <div className="flex-1">
                  <div className="flex justify-between items-center mb-2">
@@ -200,7 +252,13 @@ export default function DetailedNewsCenter() {
                       Read More <ArrowRight size={16} />
                     </Link>
                   ) : (
-                    <a href={article.url} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-pink-500 hover:text-pink-400 text-sm font-semibold">
+                    <a
+                      href={article.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      onClick={(event) => handleExternalReadClick(event, article)}
+                      className="flex items-center gap-1 text-pink-500 hover:text-pink-400 text-sm font-semibold"
+                    >
                       Read More <ArrowRight size={16} />
                     </a>
                   )}
@@ -306,6 +364,64 @@ export default function DetailedNewsCenter() {
           </div>
         </div>
       </div>
+
+      {showExternalPrompt && pendingExternal ? (
+        <div className="fixed inset-0 z-[100] bg-black/75 backdrop-blur-[2px] flex items-center justify-center p-4">
+          <div className="w-full max-w-md rounded-2xl border border-orange-500/80 bg-[#0a0a12] shadow-[0_0_40px_rgba(255,84,0,0.2)] p-6">
+            <div className="flex items-center justify-center mb-4">
+              <div className="h-16 w-16 rounded-full border border-pink-500/50 bg-pink-500/10 flex items-center justify-center text-pink-500">
+                <ExternalLink size={26} />
+              </div>
+            </div>
+
+            <h3 className="text-center text-2xl font-bold">
+              Leaving <span className="text-pink-500">SportsFan360</span>
+            </h3>
+            <p className="text-center text-sm text-gray-300 mt-2 mb-5">
+              You're about to open an external news source.
+            </p>
+
+            <div className="rounded-xl border border-white/10 bg-white/5 p-4 mb-4">
+              <p className="text-xs text-gray-400">This article is published by</p>
+              <p className="text-lg font-semibold text-white mt-1">{pendingExternal.source}</p>
+              <p className="text-xs text-gray-400 mt-2">
+                You will leave the SportsFan360 experience and continue on a third-party website.
+              </p>
+            </div>
+
+            <label className="flex items-center gap-2 text-xs text-gray-300 mb-5 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={rememberChoice}
+                onChange={(event) => setRememberChoice(event.target.checked)}
+                className="h-4 w-4 rounded accent-pink-500"
+              />
+              Remember this choice for future news articles
+            </label>
+
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              <button
+                type="button"
+                onClick={handleCancelExternalOpen}
+                className="h-11 rounded-xl border border-gray-600 text-white hover:bg-white/5 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmExternalOpen}
+                className="h-11 rounded-xl bg-pink-500 text-white font-semibold hover:bg-pink-600 transition-colors"
+              >
+                Continue Reading
+              </button>
+            </div>
+
+            <p className="text-center text-[11px] text-gray-500">
+              SportsFan360 is not responsible for third-party content, privacy policies or external websites.
+            </p>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

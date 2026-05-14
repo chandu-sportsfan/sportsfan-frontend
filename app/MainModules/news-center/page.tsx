@@ -18,6 +18,10 @@ type CricketApiArticle = {
   createdAt?: number | string;
 };
 
+type NewsApiArticle = NewsArticle & {
+  createdAt?: number | string;
+};
+
 const NEWS_EXTERNAL_BYPASS_KEY = 'sportsfan_news_external_bypass';
 
 // Strip HTML tags from text
@@ -65,7 +69,7 @@ export default function DetailedNewsCenter() {
           `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/news-center`
         );
         const newsData = await newsRes.json();
-        const newsArticles = (newsData?.articles || []).map((article: any) => ({
+        const newsArticles = (newsData?.articles || []).map((article: NewsApiArticle) => ({
           ...article,
           createdAt: typeof article.createdAt === 'number' ? article.createdAt : (article.createdAt ? Date.parse(String(article.createdAt)) : undefined)
         })) as NewsArticle[];
@@ -378,7 +382,7 @@ export default function DetailedNewsCenter() {
               Leaving <span className="text-pink-500">SportsFan360</span>
             </h3>
             <p className="text-center text-sm text-gray-300 mt-2 mb-5">
-              You're about to open an external news source.
+              You&apos;re about to open an external news source.
             </p>
 
             <div className="rounded-xl border border-white/10 bg-white/5 p-4 mb-4">

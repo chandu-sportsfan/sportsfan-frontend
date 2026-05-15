@@ -7,7 +7,7 @@ import {
   ChevronDown, Trophy, Share2, CheckCircle2, 
   Award, TrendingUp, Play, ThumbsUp, Radio, FileText, 
   Gamepad2, UserPlus, Bell, LayoutGrid, Calendar, Filter,
-  Download, ChevronLeft, ChevronRight, MoreHorizontal
+ Download, ChevronLeft, ChevronRight, MoreHorizontal, X
 } from "lucide-react";
 
 // --- MOCK DATA ---
@@ -83,20 +83,21 @@ const earnPointsActions = [
   { icon: Gamepad2, title: "Invite to Fan Battles", xp: "+20 XP", desc: "4 Invites", color: "text-rose-500", bg: "bg-rose-500/10" },
 ];
 
-const recentActivityList = [
-  { icon: FileText, action: "Read:", detail: "IPL 2026 Dispatch, May 10", xp: "+25 XP", time: "2m ago", color: "text-rose-500" },
-  { icon: Play, action: "Watched:", detail: "CSK vs LSG Highlights", xp: "+20 XP", time: "15m ago", color: "text-emerald-500" },
-  { icon: Share2, action: "Shared a Post", detail: "", xp: "+15 XP", time: "32m ago", color: "text-purple-500" },
-  { icon: CheckCircle2, action: "Voted in Poll:", detail: "Best Knock of the Day", xp: "+15 XP", time: "1h ago", color: "text-blue-500" },
-  { icon: Trophy, action: "Predicted PBKS to win", detail: "", xp: "+25 XP", time: "2h ago", color: "text-rose-500" },
-];
+// Automatically syncs the Recent Activity list with actual earned points
+const recentActivityList = earningHistoryData.slice(0, 5).map(item => ({
+  icon: item.icon,
+  action: item.action,
+  detail: item.details,
+  xp: item.points,
+  time: item.time, 
+  color: item.typeColor.split(" ")[0] // Automatically grabs the specific text color (e.g., text-yellow-500)
+}));
 
 const trendData = [30, 45, 40, 60, 55, 75, 70, 90, 85, 100];
 
 // --- REUSABLE COMPONENTS ---
 
-function DonutChart({ data, totalPoints }: { data: typeof earningBreakdown, totalPoints?: string }) {
-  // Pre-calculate the offsets to keep the linter happy
+function DonutChart({ data, totalPoints }: { data: CategoryBreakdown[], totalPoints?: string }) {
   let currentOffset = 0;
   const slices = data.map((slice) => {
     const dasharray = `${slice.percent} 100`;
@@ -106,7 +107,7 @@ function DonutChart({ data, totalPoints }: { data: typeof earningBreakdown, tota
   });
 
   return (
-    <div className="relative w-40 h-40 md:w-48 md:h-48 shrink-0">
+    <div className="relative w-56 h-56 md:w-64 md:h-64 shrink-0">
       <svg viewBox="0 0 100 100" className="w-full h-full transform -rotate-90">
         {slices.map((slice, i) => (
           <circle
@@ -122,8 +123,8 @@ function DonutChart({ data, totalPoints }: { data: typeof earningBreakdown, tota
         ))}
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-        <span className="text-xl md:text-2xl font-black text-white">{totalPoints || "0"}</span>
-        <span className="text-[10px] md:text-xs text-gray-400 font-bold uppercase tracking-wider">XP</span>
+        <span className="text-3xl md:text-4xl font-black text-white">{totalPoints || "0"}</span>
+        <span className="text-xs md:text-sm text-gray-400 font-bold uppercase tracking-wider mt-1">XP</span>
       </div>
     </div>
   );
@@ -157,6 +158,58 @@ function MiniTrendLine({ data }: { data: number[] }) {
   );
 }
 // Add this above: export default function FanZoneDashboard() {
+interface CategoryBreakdown {
+  label: string;
+  percent: number;
+  color: string;
+  xp: string;
+}
+
+const getDynamicEarningBreakdown = (totalPoints: number): CategoryBreakdown[] => {
+  const categories = [
+    { label: "Fan Battles", percent: 25, color: "#eab308" }, 
+    { label: "Trivia Questions", percent: 20, color: "#3b82f6" }, 
+    { label: "Polls & Predictions", percent: 20, color: "#a855f7" }, 
+    { label: "News Articles", percent: 15, color: "#f43f5e" }, 
+    { label: "Audio", percent: 10, color: "#f97316" }, 
+    { label: "Daily Login", percent: 10, color: "#10b981" }, 
+  ];
+
+  return categories.map((cat) => ({
+    ...cat,
+    xp: `${Math.round((cat.percent / 100) * totalPoints).toLocaleString()} XP`
+  }));
+};
+const getDynamicStreakData = (historyData: typeof earningHistoryData) => {
+  const today = new Date();
+  const currentDayOfWeek = today.getDay(); 
+  // Adjust so the week starts on Monday (0 = Mon, 6 = Sun)
+  const adjustedDay = currentDayOfWeek === 0 ? 6 : currentDayOfWeek - 1; 
+  
+  const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  
+  return days.map((dayName, index) => {
+    const dateOfThisDay = new Date(today);
+    dateOfThisDay.setDate(today.getDate() - adjustedDay + index);
+    
+    // Formats the date to match your mock data exactly (e.g., "May 11, 2026")
+    const formattedDate = dateOfThisDay.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    
+    // Check if the user earned points on this specific date
+    const hasActivity = historyData.some(item => item.date === formattedDate);
+    
+    // Check if the day is in the past to determine if they missed it
+    const todayAtMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+    const thisDayAtMidnight = new Date(dateOfThisDay.getFullYear(), dateOfThisDay.getMonth(), dateOfThisDay.getDate()).getTime();
+    const isPastOrToday = thisDayAtMidnight <= todayAtMidnight;
+
+    return {
+      day: dayName,
+      isActive: hasActivity,
+      isMissed: !hasActivity && isPastOrToday,
+    };
+  });
+};
 
 const calculateLevelData = (totalXp: number) => {
   let level = 1;
@@ -203,6 +256,7 @@ export default function FanZoneDashboard() {
   const previousUserRank = contextData?.previousUserRank ?? 0;
   
   const displayPoints = currentUserPoints.toLocaleString();
+  const dynamicEarningBreakdown = getDynamicEarningBreakdown(currentUserPoints);
 
   // 2. Rank direction logic
   const isRankUp = previousUserRank > 0 && currentUserRank < previousUserRank;
@@ -211,6 +265,8 @@ export default function FanZoneDashboard() {
   
   // 3. Leveling logic
   const levelData = calculateLevelData(currentUserPoints);
+  // 4. Dynamic Streak logic synced to earning history
+  const streakData = getDynamicStreakData(earningHistoryData);
   
 // ...
 
@@ -394,14 +450,15 @@ export default function FanZoneDashboard() {
                       <p className="text-xs text-gray-400 font-medium mb-1">This Month</p>
                       <div className="flex items-end gap-3">
                         <h4 className="text-3xl font-black text-white leading-none">{displayPoints} XP</h4>
-                        <span className="text-xs text-emerald-500 font-bold mb-0.5">↑ 850 <span className="text-gray-500 font-medium">vs Apr 2026</span></span>
+            
+                       <span className="text-xs text-emerald-500 font-bold mb-0.5">↑ {displayPoints} <span className="text-gray-500 font-medium">vs Apr 2026</span></span>
                       </div>
                     </div>
                     <div>
                       <p className="text-xs text-gray-400 font-medium mb-1">All Time</p>
                       <div className="flex items-end gap-3">
-                        <h4 className="text-3xl font-black text-white leading-none">84,650 XP</h4>
-                        <span className="text-xs text-gray-500 font-medium mb-0.5">Since Feb 2025</span>
+                        <h4 className="text-3xl font-black text-white leading-none">{displayPoints} XP</h4>
+                        <span className="text-xs text-gray-500 font-medium mb-0.5">Since Apr 2026</span>
                       </div>
                     </div>
                   </div>
@@ -409,9 +466,9 @@ export default function FanZoneDashboard() {
 
                 {/* Col 2: Donut Chart & Legend (Span 5) */}
                 <div className="xl:col-span-5 flex flex-col sm:flex-row items-center justify-center gap-6 lg:gap-10 w-full py-6 xl:py-0 border-t border-white/10 xl:border-t-0 xl:border-l xl:pl-8">
-                  <DonutChart data={earningBreakdown} totalPoints={displayPoints} />
-                  <div className="space-y-4 w-full sm:w-auto">
-                    {earningBreakdown.map((item, i) => (
+                 <DonutChart data={dynamicEarningBreakdown} totalPoints={displayPoints} />
+<div className="space-y-4 w-full sm:w-auto">
+  {dynamicEarningBreakdown.map((item, i) => (
                       <div key={i} className="flex items-center justify-between sm:justify-start gap-4 text-sm whitespace-nowrap">
                         <div className="flex items-center gap-3 w-40">
                           <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
@@ -538,14 +595,19 @@ export default function FanZoneDashboard() {
                   <p className="text-sm text-gray-400 mb-6">Keep it going, don&apos;t break your streak!</p>
                   
                   <div className="flex justify-between items-center">
-                    {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day, idx) => {
-                      const isActive = idx < 6; // Mocking Mon-Sat as active
+                    {streakData.map((data) => {
                       return (
-                        <div key={day} className="flex flex-col items-center gap-2">
-                          <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 ${isActive ? 'bg-rose-600 border-rose-500 text-white shadow-[0_0_10px_rgba(225,29,72,0.5)]' : 'bg-[#18181b] border-white/10 text-gray-600'}`}>
-                            {isActive ? <CheckCircle2 className="w-5 h-5" /> : null}
+                        <div key={data.day} className="flex flex-col items-center gap-2">
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all ${
+                            data.isActive 
+                              ? 'bg-rose-600 border-rose-500 text-white shadow-[0_0_10px_rgba(225,29,72,0.5)]' 
+                              : data.isMissed 
+                                ? 'bg-[#0f0a0a] border-red-500/30 text-red-500 shadow-[0_0_10px_rgba(239,68,68,0.15)]' // Missed (Red Cross)
+                                : 'bg-[#18181b] border-white/10 text-gray-600' // Future (Empty)
+                          }`}>
+                            {data.isActive ? <CheckCircle2 className="w-5 h-5" /> : data.isMissed ? <X className="w-5 h-5 opacity-80" /> : null}
                           </div>
-                          <span className={`text-xs font-bold ${isActive ? 'text-white' : 'text-gray-500'}`}>{day}</span>
+                          <span className={`text-xs font-bold ${data.isActive || data.isMissed ? 'text-white' : 'text-gray-500'}`}>{data.day}</span>
                         </div>
                       );
                     })}
@@ -585,7 +647,7 @@ export default function FanZoneDashboard() {
                 </div>
                 <div className="text-right">
                   <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Total Points Earned</p>
-                  <h3 className="text-2xl font-black text-emerald-500">84,650 XP</h3>
+                  <h3 className="text-2xl font-black text-emerald-500">{displayPoints} XP</h3>
                 </div>
               </div>
 
@@ -1047,9 +1109,10 @@ export default function FanZoneDashboard() {
                   <div className="relative z-10">
                     <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Total Points Earned</p>
                     <h3 className="text-3xl font-black text-emerald-500 mb-2">84,650 XP</h3>
-                    <p className="text-xs font-bold text-emerald-500 flex items-center gap-1">
-                      This Period ↑ 24% <span className="text-gray-500 ml-1">vs Apr 1 – Apr 30, 2026</span>
-                    </p>
+                    <h3 className="text-3xl font-black text-emerald-500 mb-2">{displayPoints} XP</h3>
+<p className="text-xs font-bold text-emerald-500 flex items-center gap-1">
+  This Period ↑ 100% <span className="text-gray-500 ml-1">vs Apr 2026</span>
+</p>
                   </div>
                 </div>
 
@@ -1059,11 +1122,11 @@ export default function FanZoneDashboard() {
                   <p className="text-xs text-gray-400 font-medium mb-6">See how you&apos;re growing</p>
                   
                   <div className="flex justify-center mb-8">
-                    <DonutChart data={pointsJourneyData} />
+                    <DonutChart data={dynamicEarningBreakdown} totalPoints={displayPoints} />
                   </div>
 
                   <div className="space-y-4">
-                    {pointsJourneyData.map((item, i) => (
+                    {dynamicEarningBreakdown.map((item, i) => (
                       <div key={i} className="flex items-center justify-between text-sm">
                         <div className="flex items-center gap-3">
                           <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }} />

@@ -156,16 +156,61 @@ function MiniTrendLine({ data }: { data: number[] }) {
     </svg>
   );
 }
+// Add this above: export default function FanZoneDashboard() {
+
+const calculateLevelData = (totalXp: number) => {
+  let level = 1;
+  let xpForNextLevel = 1000;
+  let xpAccumulated = 0;
+
+  // Scale up: Level 1 requires 1000, Level 2 requires 2000, etc.
+  while (totalXp >= xpAccumulated + xpForNextLevel) {
+    xpAccumulated += xpForNextLevel;
+    level++;
+    xpForNextLevel = level * 1000; 
+  }
+
+  const currentLevelXp = totalXp - xpAccumulated;
+  const xpRemaining = xpForNextLevel - currentLevelXp;
+  // Calculate percentage for the progress bar (capped between 0 and 100)
+  const progressPercentage = Math.min(100, Math.max(0, (currentLevelXp / xpForNextLevel) * 100));
+
+  return {
+    level,
+    currentLevelXp,
+    xpForNextLevel,
+    xpRemaining,
+    progressPercentage,
+  };
+};
+
+// Add a quick interface to prevent TypeScript 'any' errors
+interface LeaderboardContextType {
+  currentUserPoints?: number;
+  currentUserRank?: number;
+  previousUserRank?: number;
+}
 
 export default function FanZoneDashboard() {
   const [activeTab, setActiveTab] = useState("My Analytics");
   
   // 1. Fetch live points from your context
-  const { currentUserPoints } = useLeaderboard();
+ // 1. Fetch live points from your context safely (handles null loading states)
+  const contextData = useLeaderboard() as LeaderboardContextType | null;
   
-  // 2. Format the points with commas (e.g. 55, or 12,450)
-  const displayPoints = currentUserPoints ? currentUserPoints.toLocaleString() : "0";
+  const currentUserPoints = contextData?.currentUserPoints ?? 0;
+  const currentUserRank = contextData?.currentUserRank ?? 0;
+  const previousUserRank = contextData?.previousUserRank ?? 0;
+  
+  const displayPoints = currentUserPoints.toLocaleString();
 
+  // 2. Rank direction logic
+  const isRankUp = previousUserRank > 0 && currentUserRank < previousUserRank;
+  const isRankDown = previousUserRank > 0 && currentUserRank > previousUserRank;
+  const rankDiff = previousUserRank > 0 ? Math.abs(previousUserRank - currentUserRank) : 0;
+  
+  // 3. Leveling logic
+  const levelData = calculateLevelData(currentUserPoints);
   
 // ...
 
@@ -205,7 +250,6 @@ export default function FanZoneDashboard() {
 
             
             {/* Total Points Mini-Card overlaid on right */}
-           {/* Total Points Mini-Card overlaid on right */}
             <div className="bg-[#09090b] border border-white/5 rounded-2xl p-6 w-full md:w-[320px] shadow-2xl relative z-10 hidden md:block">
               <div className="flex justify-between items-center mb-4">
                 <p className="text-[10px] font-black uppercase tracking-widest text-gray-500">Total Points</p>
@@ -217,37 +261,43 @@ export default function FanZoneDashboard() {
               {/* DYNAMIC POINTS HERE */}
               <h2 className="text-4xl font-black text-white mb-2">{displayPoints} XP</h2>
               
+              {/* DYNAMIC UPDATE */}
               <p className="text-xs text-emerald-500 font-bold flex items-center gap-1 mb-6">
-                <TrendingUp className="w-3 h-3" /> +850 <span className="text-gray-500 font-medium ml-1">vs Apr 2026</span>
+                <TrendingUp className="w-3 h-3" /> +{displayPoints} <span className="text-gray-500 font-medium ml-1">Current Points</span>
               </p>
+              
               <div className="h-24">
                  <MiniTrendLine data={[20, 30, 25, 40, 35, 50, 45, 60, 55, 70, 80]} />
               </div>
             </div>
           </div>
         </div>
-
-{/* 3. STATS ROW */}
+        {/* 3. STATS ROW */}
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           
+          {/* 1. Dynamic Leveling Card */}
           <div className="md:col-span-2 bg-[#09090b] border border-white/10 rounded-2xl p-5 flex items-center gap-5">
             <div className="w-14 h-14 rounded-xl border-2 border-rose-500 flex items-center justify-center font-black text-2xl text-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.3)]">
-              7
+              {levelData.level}
             </div>
             <div className="flex-1">
-              <h3 className="text-base font-bold text-white mb-1">You&apos;re doing great!</h3>
+              <h3 className="text-base font-bold text-white mb-1">You're doing great!</h3>
               <div className="flex justify-between items-end mb-2">
-                <p className="text-xs text-gray-400">1,550 XP to reach Level 8</p>
-                <p className="text-xs font-bold text-gray-400">6,450 / 8,000 XP</p>
+                <p className="text-xs text-gray-400">{levelData.xpRemaining.toLocaleString()} XP to reach Level {levelData.level + 1}</p>
+                <p className="text-xs font-bold text-gray-400">{levelData.currentLevelXp.toLocaleString()} / {levelData.xpForNextLevel.toLocaleString()} XP</p>
               </div>
               <div className="w-full h-1.5 bg-zinc-800 rounded-full overflow-hidden">
-                <div className="h-full bg-gradient-to-r from-rose-600 to-orange-500 w-[78%] rounded-full relative">
+                <div 
+                  className="h-full bg-gradient-to-r from-rose-600 to-orange-500 rounded-full relative transition-all duration-1000 ease-in-out"
+                  style={{ width: `${levelData.progressPercentage}%` }}
+                >
                    <div className="absolute right-0 top-0 bottom-0 w-2 bg-white rounded-full shadow-[0_0_10px_rgba(255,255,255,1)]" />
                 </div>
               </div>
             </div>
           </div>
 
+          {/* 2. Dynamic Rank Tracking Card */}
           <div className="bg-[#09090b] border border-white/10 rounded-2xl p-5 flex items-center justify-between group cursor-pointer hover:border-white/20 transition-colors">
              <div className="flex items-center gap-4">
                <div className="w-12 h-12 rounded-full bg-yellow-500/10 flex items-center justify-center border border-yellow-500/20">
@@ -255,14 +305,21 @@ export default function FanZoneDashboard() {
                </div>
                <div>
                  <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Your Rank</p>
-                 <h3 className="text-2xl font-black text-white leading-tight">24</h3>
-                 <p className="text-xs text-emerald-500 font-bold flex items-center gap-1 mt-0.5">
-                   ↑ 8 <span className="text-gray-500 font-medium">This Month</span>
-                 </p>
+                 <h3 className="text-2xl font-black text-white leading-tight">{currentUserRank > 0 ? currentUserRank : "-"}</h3>
+                 {rankDiff > 0 ? (
+                   <p className={`text-xs font-bold flex items-center gap-1 mt-0.5 ${isRankUp ? 'text-emerald-500' : 'text-red-500'}`}>
+                     {isRankUp ? '↑' : '↓'} {rankDiff} <span className="text-gray-500 font-medium">This Month</span>
+                   </p>
+                 ) : (
+                   <p className="text-xs text-gray-500 font-medium mt-0.5 flex items-center gap-1">
+                     - <span className="text-gray-500 font-medium">No Change</span>
+                   </p>
+                 )}
                </div>
              </div>
           </div>
 
+          {/* 3. Static Badges Box */}
           <div className="bg-[#09090b] border border-white/10 rounded-2xl p-5 flex items-center justify-between group cursor-pointer hover:border-white/20 transition-colors">
             <div className="flex items-center gap-4">
                <div className="w-12 h-12 rounded-full bg-purple-500/10 flex items-center justify-center border border-purple-500/20">
@@ -281,10 +338,13 @@ export default function FanZoneDashboard() {
              </div>
           </div>
 
-          {/* NEW LIVE LEADERBOARD BUTTON */}
-          <Link href="/MainModules/Leaderboard" className="bg-gradient-to-br from-rose-600 to-orange-500 rounded-2xl p-5 flex flex-col items-center justify-center group hover:scale-[1.02] transition-transform shadow-[0_0_15px_rgba(225,29,72,0.2)] cursor-pointer border border-rose-400/30">
-             <Trophy className="w-7 h-7 text-white mb-1.5 group-hover:scale-110 group-hover:-translate-y-1 transition-all duration-300 drop-shadow-md" />
-             <h3 className="text-sm font-black text-white text-center leading-tight tracking-wide drop-shadow-sm">Live<br/>Leaderboard</h3>
+          {/* 4. Live Leaderboard Button (Themed) */}
+          <Link href="/MainModules/Leaderboard" className="bg-[#09090b] border border-white/10 hover:border-rose-500/50 rounded-2xl p-5 flex flex-col items-center justify-center group hover:scale-[1.02] transition-all cursor-pointer shadow-[0_0_15px_rgba(225,29,72,0.05)] hover:shadow-[0_0_25px_rgba(225,29,72,0.15)] relative overflow-hidden">
+             {/* Subtle background glow effect on hover */}
+             <div className="absolute inset-0 bg-rose-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+             
+             <Trophy className="w-7 h-7 text-rose-500 mb-1.5 group-hover:scale-110 group-hover:-translate-y-1 transition-all duration-300 drop-shadow-md relative z-10" />
+             <h3 className="text-sm font-black text-white text-center leading-tight tracking-wide drop-shadow-sm group-hover:text-rose-100 transition-colors relative z-10">Live<br/>Leaderboard</h3>
           </Link>
 
         </div>

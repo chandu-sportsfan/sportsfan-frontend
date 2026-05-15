@@ -12,6 +12,19 @@ import {
 
 // --- MOCK DATA ---
 
+interface HistoryItem {
+  action: string;
+  details: string;
+  points: number;
+  type: string;
+  date: string;
+  time: string;
+  icon: React.ElementType;
+  color: string;
+  hexColor: string;
+  typeColor: string;
+}
+
 interface CategoryBreakdown {
   label: string;
   percent: number;
@@ -24,7 +37,7 @@ interface CategoryBreakdown {
 
 // 1. YOUR EXACT ACTIVITY LEDGER
 // (Right now this holds your real 15 XP Fan Battle. Later, fetch this array directly from your backend!)
-const exactUserHistory = [
+const exactUserHistory: HistoryItem[] =
   {
     action: "Fan Battles",
     details: "Played a Fan Battle",
@@ -63,7 +76,7 @@ const getExactEarningBreakdown = (history: typeof exactUserHistory): CategoryBre
 };
 
 // 2. Dynamic Feed synced perfectly to the breakdown
-const generateDynamicHistory = (breakdown: ReturnType<typeof getDynamicEarningBreakdown>) => {
+const generateDynamicHistory = (breakdown: ReturnType<typeof getExactEarningBreakdown>) => {
   const today = new Date();
   const formattedDate = today.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   
@@ -259,15 +272,15 @@ export default function FanZoneDashboard() {
   const levelData = calculateLevelData(currentUserPoints);
   const { streakMap, currentStreak } = getDynamicStreakData(earningHistoryData);
   
-  // 4. GENERATE RECENT ACTIVITY LIST (Fixes ReferenceError)
-  const recentActivityList = earningHistoryData.slice(0, 5).map(item => ({
-    icon: item.icon,
-    action: item.action,
-    detail: item.details,
-    xp: item.points,
-    time: item.time,
-    color: item.color
-  }));
+  // 4. GENERATE RECENT ACTIVITY LIST (Fixed Syntax)
+const recentActivityList = earningHistoryData.slice(0, 5).map(item => ({
+  icon: item.icon, // This stores the component reference
+  action: item.action,
+  detail: item.details,
+  xp: item.points,
+  time: item.time,
+  color: item.color
+}));
 
   return (
     <div className="min-h-screen bg-[#050505] text-white font-sans selection:bg-rose-500/30 pb-20">

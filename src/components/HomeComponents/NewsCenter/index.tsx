@@ -259,7 +259,7 @@ export default function NewsCenter() {
   if (articles.length === 0) return null;
 
   const safeAnimationId = `news-scroll-${animationId.replace(/:/g, '')}`;
-  const durationSeconds = Math.max(18, articles.length * 4);
+  const durationSeconds = Math.max(40, articles.length * 8);
   const rotatedArticles = [...articles.slice(startIndex), ...articles.slice(0, startIndex)];
   const duplicated = [...rotatedArticles, ...rotatedArticles];
 
@@ -310,14 +310,14 @@ export default function NewsCenter() {
             }}
           >
             {duplicated.map((article: NewsArticle, index: number) => (
-              <div key={`${article.rank}-${index}`} className="flex-none w-[calc(50vw-3rem)] max-w-[690px] flex flex-col justify-between border-l-2 border-orange-500 pl-3 py-2">
+              <div key={`${article.rank}-${index}`} className="flex-none w-[calc(90vw-3rem)] sm:w-[calc(50vw-3rem)] max-w-[690px] flex flex-col justify-between border-l-2 border-orange-500 pl-3 py-2">
                 <div>
                   <div className="flex justify-between items-start mb-3 gap-2">
                     <div className="flex items-start gap-3">
                       <img
                         src={article.source === 'SportsFan360' && article.cdn_url ? article.cdn_url : '/images/News_center_Default.png'}
                         alt={article.title}
-                        className="w-20 h-20 object-cover rounded-lg"
+                        className="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded-lg"
                         onError={(e) => {
                           e.currentTarget.src = '/images/News_center_Default.png';
                         }}

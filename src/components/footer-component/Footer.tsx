@@ -111,7 +111,7 @@ const SportsFan360Footer: React.FC = () => {
   ];
 
   return (
-    <footer className="w-full bg-[#111114] text-white pb-10 font-sans selection:bg-pink-700 selection:text-white">
+    <footer className="w-full bg-[#111114] text-white pb-2 font-sans selection:bg-pink-700 selection:text-white">
       {/* Top accent line */}
       <div className="h-px w-full bg-gradient-to-r from-transparent via-pink-600 to-transparent" />
 
@@ -180,10 +180,10 @@ const SportsFan360Footer: React.FC = () => {
           </div>
         </div>
 
-        <GlowDivider />
+        {/* <GlowDivider /> */}
 
         {/* ── Bottom Bar ──────────────────────────────────── */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-zinc-900/60 border border-zinc-800 rounded-2xl px-5 py-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-center gap-4 px-5 mb-2 mt-6">
           {/* Left: copyright */}
           <div className="flex items-center gap-2.5">
             <ShieldIcon />
@@ -202,7 +202,7 @@ const SportsFan360Footer: React.FC = () => {
       </div>
 
       {/* Bottom accent line */}
-      <div className="h-px w-full bg-gradient-to-r from-transparent via-pink-900 to-transparent" />
+      {/* <div className="h-px w-full bg-gradient-to-r from-transparent via-pink-900 to-transparent" /> */}
     </footer>
   );
 };

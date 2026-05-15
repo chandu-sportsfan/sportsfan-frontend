@@ -92,7 +92,9 @@ const getExactEarningBreakdown = (history: HistoryItem[]): CategoryBreakdown[] =
 };
 
 // 2. Dynamic Feed synced perfectly to the breakdown
-const generateDynamicHistory = (breakdown: ReturnType<typeof getExactEarningBreakdown>) => {
+// 2. Dynamic Feed synced perfectly to the breakdown
+// I removed the "..." and added "any" prevention by using the CategoryBreakdown type
+const _generateDynamicHistory = (breakdown: CategoryBreakdown[]) => {
   const today = new Date();
   const formattedDate = today.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   
@@ -103,7 +105,7 @@ const generateDynamicHistory = (breakdown: ReturnType<typeof getExactEarningBrea
     action: item.label,
     details: item.label === "Polls & Predictions" ? "Predicted PBKS to win" : `Participated in ${item.label}`,
     points: item.xp,
-    type: item.type,
+    type: item.type || "General", // Added a fallback so 'type' isn't undefined
     color: `text-[${item.color}]`,
     typeColor: `text-[${item.color}] border-white/10 bg-white/5`
   }));

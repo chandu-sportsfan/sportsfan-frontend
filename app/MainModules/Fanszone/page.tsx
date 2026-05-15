@@ -98,18 +98,7 @@ const getExactEarningBreakdown = (history: HistoryItem[]): CategoryBreakdown[] =
   const today = new Date();
   const formattedDate = today.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   
-  return breakdown.map((item, index) => ({
-    date: formattedDate,
-    time: `${10 - index}:00 AM`, 
-    icon: Trophy,
-    action: item.label,
-    details: item.label === "Polls & Predictions" ? "Predicted PBKS to win" : `Participated in ${item.label}`,
-    points: item.xp,
-    type: item.type || "General", // Added a fallback so 'type' isn't undefined
-    color: `text-[${item.color}]`,
-    typeColor: `text-[${item.color}] border-white/10 bg-white/5`
-  }));
-};
+ 
 
 const trendData = [30, 45, 40, 60, 55, 75, 70, 90, 85, 100];
 const topActivitiesData = [

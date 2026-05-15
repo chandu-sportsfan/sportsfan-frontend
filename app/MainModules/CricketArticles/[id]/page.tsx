@@ -509,6 +509,7 @@ const BADGE_COLORS: Record<BadgeType, string> = {
 const getLikeStorageKey = (articleId: string, actorId: string) => `cricket_article_like_${articleId}_${actorId}`;
 const getViewCountStorageKey = (articleId: string) => `cricket_article_views_${articleId}`;
 const getLikeCountStorageKey = (articleId: string) => `cricket_article_likes_${articleId}`;
+const CRICKET_USER_LIKES_KEY = 'cricket_user_likes'; // Track which articles user liked from news center
 
 const toViewCount = (viewsText: string | number | undefined) => {
     if (typeof viewsText === "number") return viewsText;
@@ -817,7 +818,11 @@ export default function CricketArticleDetail() {
                     return;
                 }
                 const persistedViews = Math.max(normalized.viewCount ?? 0, readStoredCount(getViewCountStorageKey(normalized.id)));
-                const persistedLikes = Math.max(normalized.likeCount ?? normalized.likes ?? 0, readStoredCount(getLikeCountStorageKey(normalized.id)));
+                // Sync cricket article likes: both detail page storage and any news center likes
+                const persistedLikes = Math.max(
+                  normalized.likeCount ?? normalized.likes ?? 0, 
+                  readStoredCount(getLikeCountStorageKey(normalized.id))
+                );
                 writeStoredCount(getViewCountStorageKey(normalized.id), persistedViews);
                 writeStoredCount(getLikeCountStorageKey(normalized.id), persistedLikes);
                 normalized.viewCount = persistedViews;
@@ -840,9 +845,23 @@ export default function CricketArticleDetail() {
         if (!article?.id) return;
         const actorId = getLikeActorId();
         const storageKey = getLikeStorageKey(article.id, actorId);
+        
+        // Check if user liked this article from news center
+        const cricketUserLikesData = window.localStorage?.getItem(CRICKET_USER_LIKES_KEY);
+        let userLikedFromNews = false;
+        if (cricketUserLikesData) {
+          try {
+            const cricketUserLikes = JSON.parse(cricketUserLikesData);
+            userLikedFromNews = cricketUserLikes[article.id] === true;
+          } catch (e) {
+            userLikedFromNews = false;
+          }
+        }
+        
         const alreadyLiked =
             (Array.isArray(article.likedBy) && article.likedBy.includes(actorId)) ||
-            localStorage.getItem(storageKey) === "1";
+            localStorage.getItem(storageKey) === "1" ||
+            userLikedFromNews;
 
         setLiked(alreadyLiked);
         const resolvedLikeCount =
@@ -934,6 +953,19 @@ export default function CricketArticleDetail() {
         }
 
         localStorage.setItem(storageKey, "1");
+
+        // Also track in cricket user likes so news center knows user liked this
+        const cricketUserLikesData = window.localStorage?.getItem(CRICKET_USER_LIKES_KEY);
+        let cricketUserLikes: Record<string, boolean> = {};
+        if (cricketUserLikesData) {
+          try {
+            cricketUserLikes = JSON.parse(cricketUserLikesData);
+          } catch (e) {
+            cricketUserLikes = {};
+          }
+        }
+        cricketUserLikes[article.id] = true;
+        window.localStorage?.setItem(CRICKET_USER_LIKES_KEY, JSON.stringify(cricketUserLikes));
 
         if (!backendUpdated) {
             // Keep optimistic count shown on UI when backend endpoint is unavailable.

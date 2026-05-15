@@ -5,98 +5,122 @@ import Link from "next/link";
 import { useLeaderboard } from "@/context/LeaderboardContext";
 import { 
   ChevronDown, Trophy, Share2, CheckCircle2, 
-  Award, TrendingUp, Play, ThumbsUp, Radio, FileText, 
-  Gamepad2, UserPlus, Bell, LayoutGrid, Calendar, Filter,
-  Download, ChevronLeft, ChevronRight, MoreHorizontal
+  Award, TrendingUp, Play, ThumbsUp, FileText, 
+  Gamepad2, UserPlus, LayoutGrid, Calendar, Filter,
+ Download, ChevronLeft, ChevronRight, MoreHorizontal, X
 } from "lucide-react";
 
 // --- MOCK DATA ---
-const earningBreakdown = [
-  { label: "Watch / Listen", percent: 35, xp: "4,350 XP", color: "#f43f5e" }, // rose-500
-  { label: "Social Engagement", percent: 20, xp: "2,500 XP", color: "#3b82f6" }, // blue-500
-  { label: "Activities", percent: 25, xp: "3,100 XP", color: "#eab308" }, // yellow-500
-  { label: "Fantasy & Predictions", percent: 15, xp: "1,900 XP", color: "#f97316" }, // orange-500
-  { label: "Community", percent: 5, xp: "600 XP", color: "#a855f7" }, // purple-500
+
+interface HistoryItem {
+  action: string;
+  details: string;
+  points: number;
+  type: string;
+  date: string;
+  time: string;
+  icon: React.ElementType;
+  color: string;
+  hexColor: string;
+  typeColor: string;
+}
+
+interface CategoryBreakdown {
+  label: string;
+  percent: number;
+  color: string;
+  xp: string;
+  icon?: React.ElementType;
+  type?: string;
+  xpValue?: number;
+}
+
+// 1. YOUR EXACT ACTIVITY LEDGER
+// (Right now this holds your real 15 XP Fan Battle. Later, fetch this array directly from your backend!)
+const exactUserHistory: HistoryItem[] = [
+  {
+    action: "Fan Battles",
+    details: "Played a Fan Battle",
+    points: 15, 
+    type: "Fantasy",
+    date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+    time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+    icon: Gamepad2,
+    color: "text-yellow-500",
+    hexColor: "#eab308",      
+    typeColor: "text-yellow-500 border-white/10 bg-white/5"
+  }
 ];
 
-const pointsJourneyData = [
-  { label: "Content", percent: 40, xp: "33,860 XP", color: "#f43f5e" }, // rose
-  { label: "Engagement", percent: 25, xp: "21,150 XP", color: "#3b82f6" }, // blue
-  { label: "Fantasy", percent: 20, xp: "16,930 XP", color: "#eab308" }, // yellow
-  { label: "Community", percent: 10, xp: "8,460 XP", color: "#a855f7" }, // purple
-  { label: "Bonus", percent: 5, xp: "4,250 XP", color: "#ec4899" }, // pink
-];
+// 2. PERFECT BREAKDOWN CALCULATOR
+// This calculates the Donut Chart and percentages perfectly based ONLY on your exact ledger.
+// This tells TypeScript exactly what each category looks like
+interface GroupedCategory {
+  label: string;
+  xpValue: number;
+  color: string;
+  icon: React.ElementType;
+}
 
+const getExactEarningBreakdown = (history: HistoryItem[]): CategoryBreakdown[] => {
+  if (history.length === 0) return [];
+
+  const historyTotal = history.reduce((sum, item) => sum + item.points, 0);
+
+  // We changed 'any' to 'GroupedCategory' here
+  const grouped = history.reduce((acc, curr) => {
+    if (!acc[curr.action]) {
+      acc[curr.action] = { 
+        label: curr.action, 
+        xpValue: 0, 
+        color: curr.hexColor, 
+        icon: curr.icon 
+      };
+    }
+    acc[curr.action].xpValue += curr.points;
+    return acc;
+  }, {} as Record<string, GroupedCategory>); // <--- This explicitly defines the type
+
+  return Object.values(grouped).map(cat => ({
+    label: cat.label,
+    color: cat.color,
+    icon: cat.icon,
+    xpValue: cat.xpValue,
+    percent: Math.round((cat.xpValue / historyTotal) * 100),
+    xp: `+${cat.xpValue.toLocaleString()} XP`,
+  }));
+};
+
+// 2. Dynamic Feed synced perfectly to the breakdown
+// 2. Dynamic Feed synced perfectly to the breakdown
+// I removed the "..." and added "any" prevention by using the CategoryBreakdown type
+// const getDynamicStreakData = (historyData: HistoryItem[]) => {
+  const today = new Date();
+  const formattedDate = today.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  
+ 
+
+const trendData = [30, 45, 40, 60, 55, 75, 70, 90, 85, 100];
 const topActivitiesData = [
   { icon: UserPlus, title: "Register on SportsFan360", xp: "+100 XP", desc: "1 time", color: "text-emerald-500", bg: "bg-emerald-500/10 border-emerald-500/20" },
   { icon: UserPlus, title: "Invite Friends", xp: "+100 XP", desc: "3 invites", color: "text-emerald-500", bg: "bg-emerald-500/10 border-emerald-500/20" },
   { icon: Gamepad2, title: "Fantasy - Fan Battle", xp: "+50 XP", desc: "7 battles", color: "text-yellow-500", bg: "bg-yellow-500/10 border-yellow-500/20" },
-  { icon: Play, title: "Play Fantasy Games", xp: "+50 XP", desc: "5 games", color: "text-purple-500", bg: "bg-purple-500/10 border-purple-500/20" },
-  { icon: FileText, title: "Read News Article", xp: "+25 XP", desc: "14 articles", color: "text-rose-500", bg: "bg-rose-500/10 border-rose-500/20" },
 ];
-
-// We will reuse `earningHistoryData` for the main table to save space, 
-// as it has the exact structure needed for the All Activities table!
 
 const activityFeedData = [
-  { category: "CONTENT", action: "Read: IPL 2026 Dispatch, May 10", points: "+25 XP", time: "2m ago", icon: FileText, color: "text-yellow-500", bg: "bg-yellow-500/10 border-yellow-500/20" },
-  { category: "ENGAGEMENT", action: "Voted in Poll: Best Knock of the Day", points: "+15 XP", time: "15m ago", icon: CheckCircle2, color: "text-indigo-400", bg: "bg-indigo-500/10 border-indigo-500/20" },
-  { category: "CONTENT", action: "Watched Video Drop: CSK vs LSG Highlights", points: "+20 XP", time: "20m ago", icon: Play, color: "text-emerald-500", bg: "bg-emerald-500/10 border-emerald-500/20" },
-  { category: "ENGAGEMENT", action: "Liked a Post", points: "+10 XP", time: "35m ago", icon: ThumbsUp, color: "text-rose-500", bg: "bg-rose-500/10 border-rose-500/20" },
-  { category: "ENGAGEMENT", action: "Shared a Post", points: "+15 XP", time: "45m ago", icon: Share2, color: "text-purple-500", bg: "bg-purple-500/10 border-purple-500/20" },
-  { category: "COMMUNITY", action: "Sent 2 Signals to friends", points: "+10 XP", time: "1h ago", icon: Radio, color: "text-blue-400", bg: "bg-blue-500/10 border-blue-500/20" },
-  { category: "FANTASY", action: "Joined IPL Fan Battle", points: "+50 XP", time: "1h ago", icon: Gamepad2, color: "text-yellow-500", bg: "bg-yellow-500/10 border-yellow-500/20" },
-  { category: "CONTENT", action: "Read News Article: PBKS vs DC Preview", points: "+25 XP", time: "2h ago", icon: FileText, color: "text-emerald-500", bg: "bg-emerald-500/10 border-emerald-500/20" },
-  { category: "FANTASY", action: "Invited 2 friends to Fan Battle", points: "+20 XP", time: "3h ago", icon: Gamepad2, color: "text-rose-500", bg: "bg-rose-500/10 border-rose-500/20" },
-  { category: "PREDICTIONS", action: "Predicted PBKS to win", points: "+25 XP", time: "3h ago", icon: Trophy, color: "text-rose-500", bg: "bg-rose-500/10 border-rose-500/20" },
-];
-
-const earningHistoryData = [
-  { date: "May 11, 2026", time: "10:24 PM", icon: FileText, action: "Read News Article", details: "Read: IPL 2026 Dispatch, May 10", points: "+25 XP", type: "Content", typeColor: "text-yellow-500 border-yellow-500/20 bg-yellow-500/10" },
-  { date: "May 11, 2026", time: "09:45 PM", icon: CheckCircle2, action: "Voted in Poll", details: "Poll: Best Knock of the Day", points: "+15 XP", type: "Engagement", typeColor: "text-indigo-400 border-indigo-500/20 bg-indigo-500/10" },
-  { date: "May 11, 2026", time: "09:30 PM", icon: Play, action: "Watched Video Drop", details: "CSK vs LSG Highlights", points: "+20 XP", type: "Content", typeColor: "text-emerald-500 border-emerald-500/20 bg-emerald-500/10" },
-  { date: "May 11, 2026", time: "08:15 PM", icon: Share2, action: "Shared a Post", details: "Shared match highlights", points: "+15 XP", type: "Engagement", typeColor: "text-purple-500 border-purple-500/20 bg-purple-500/10" },
-  { date: "May 11, 2026", time: "07:40 PM", icon: ThumbsUp, action: "Liked a Post", details: "Liked a fan post", points: "+10 XP", type: "Engagement", typeColor: "text-rose-500 border-rose-500/20 bg-rose-500/10" },
-  { date: "May 11, 2026", time: "07:20 PM", icon: Radio, action: "Send Signals", details: "Sent 2 signals to friends", points: "+10 XP", type: "Community", typeColor: "text-blue-400 border-blue-500/20 bg-blue-500/10" },
-  { date: "May 11, 2026", time: "06:55 PM", icon: Gamepad2, action: "Fantasy - Fan Battle", details: "Joined IPL Fan Battle", points: "+50 XP", type: "Fantasy", typeColor: "text-yellow-500 border-yellow-500/20 bg-yellow-500/10" },
-  { date: "May 11, 2026", time: "06:40 PM", icon: Gamepad2, action: "Invite to Fan Battle", details: "Invited 2 friends", points: "+20 XP", type: "Fantasy", typeColor: "text-rose-500 border-rose-500/20 bg-rose-500/10" },
-  { date: "May 11, 2026", time: "05:30 PM", icon: Award, action: "Made Prediction", details: "Predicted PBKS to win", points: "+25 XP", type: "Engagement", typeColor: "text-purple-500 border-purple-500/20 bg-purple-500/10" },
-  { date: "May 11, 2026", time: "04:15 PM", icon: CheckCircle2, action: "Participated in Poll", details: "Poll: Player of the Match", points: "+15 XP", type: "Engagement", typeColor: "text-indigo-400 border-indigo-500/20 bg-indigo-500/10" },
-  { date: "May 11, 2026", time: "03:05 PM", icon: Bell, action: "Requested Drops", details: "Requested CSK Highlights", points: "+15 XP", type: "Content", typeColor: "text-pink-500 border-pink-500/20 bg-pink-500/10" },
-  { date: "May 11, 2026", time: "02:20 PM", icon: UserPlus, action: "Registered on SportsFan360", details: "Welcome to SportsFan360!", points: "+100 XP", type: "Account", typeColor: "text-blue-500 border-blue-500/20 bg-blue-500/10" },
-  { date: "May 10, 2026", time: "11:10 PM", icon: UserPlus, action: "Invite Friends", details: "Invited 3 friends", points: "+100 XP", type: "Referral", typeColor: "text-emerald-500 border-emerald-500/20 bg-emerald-500/10" },
+  { category: "CONTENT", action: "Read: IPL 2026 Dispatch", points: "+25 XP", time: "2m ago", icon: FileText, color: "text-yellow-500", bg: "bg-yellow-500/10" },
+  { category: "ENGAGEMENT", action: "Voted in Poll", points: "+15 XP", time: "15m ago", icon: CheckCircle2, color: "text-indigo-400", bg: "bg-indigo-500/10" },
 ];
 
 const earnPointsActions = [
   { icon: Play, title: "Watch / Listen to Drops", xp: "+20 XP", desc: "12 Actions", color: "text-yellow-500", bg: "bg-yellow-500/10" },
   { icon: ThumbsUp, title: "Like a Post", xp: "+10 XP", desc: "28 Actions", color: "text-rose-500", bg: "bg-rose-500/10" },
   { icon: Share2, title: "Share a Post", xp: "+15 XP", desc: "18 Actions", color: "text-purple-500", bg: "bg-purple-500/10" },
-  { icon: Radio, title: "Send Signals", xp: "+10 XP", desc: "9 Actions", color: "text-blue-500", bg: "bg-blue-500/10" },
-  { icon: Bell, title: "Request Drops", xp: "+15 XP", desc: "6 Actions", color: "text-pink-500", bg: "bg-pink-500/10" },
-  { icon: FileText, title: "Read News Article", xp: "+25 XP", desc: "14 Articles", color: "text-yellow-500", bg: "bg-yellow-500/10" },
-  { icon: CheckCircle2, title: "Take Part in Polls", xp: "+15 XP", desc: "8 Polls", color: "text-yellow-500", bg: "bg-yellow-500/10" },
-  { icon: Gamepad2, title: "Fantasy - Fan Battles", xp: "+50 XP", desc: "7 Battles", color: "text-orange-500", bg: "bg-orange-500/10" },
-  { icon: Award, title: "Make Predictions", xp: "+25 XP", desc: "10 Predictions", color: "text-yellow-500", bg: "bg-yellow-500/10" },
-  { icon: Play, title: "Play Fantasy Games", xp: "+50 XP", desc: "5 Games", color: "text-rose-500", bg: "bg-rose-500/10" },
-  { icon: UserPlus, title: "Register on SportsFan360", xp: "+100 XP", desc: "1 Time", color: "text-purple-500", bg: "bg-purple-500/10" },
-  { icon: UserPlus, title: "Invite Friends", xp: "+100 XP", desc: "3 Invites", color: "text-emerald-500", bg: "bg-emerald-500/10" },
-  { icon: Gamepad2, title: "Invite to Fan Battles", xp: "+20 XP", desc: "4 Invites", color: "text-rose-500", bg: "bg-rose-500/10" },
 ];
-
-const recentActivityList = [
-  { icon: FileText, action: "Read:", detail: "IPL 2026 Dispatch, May 10", xp: "+25 XP", time: "2m ago", color: "text-rose-500" },
-  { icon: Play, action: "Watched:", detail: "CSK vs LSG Highlights", xp: "+20 XP", time: "15m ago", color: "text-emerald-500" },
-  { icon: Share2, action: "Shared a Post", detail: "", xp: "+15 XP", time: "32m ago", color: "text-purple-500" },
-  { icon: CheckCircle2, action: "Voted in Poll:", detail: "Best Knock of the Day", xp: "+15 XP", time: "1h ago", color: "text-blue-500" },
-  { icon: Trophy, action: "Predicted PBKS to win", detail: "", xp: "+25 XP", time: "2h ago", color: "text-rose-500" },
-];
-
-const trendData = [30, 45, 40, 60, 55, 75, 70, 90, 85, 100];
 
 // --- REUSABLE COMPONENTS ---
 
-function DonutChart({ data, totalPoints }: { data: typeof earningBreakdown, totalPoints?: string }) {
-  // Pre-calculate the offsets to keep the linter happy
+function DonutChart({ data, totalPoints }: { data: CategoryBreakdown[], totalPoints?: string }) {
   let currentOffset = 0;
   const slices = data.map((slice) => {
     const dasharray = `${slice.percent} 100`;
@@ -106,7 +130,7 @@ function DonutChart({ data, totalPoints }: { data: typeof earningBreakdown, tota
   });
 
   return (
-    <div className="relative w-40 h-40 md:w-48 md:h-48 shrink-0">
+    <div className="relative w-56 h-56 md:w-64 md:h-64 shrink-0">
       <svg viewBox="0 0 100 100" className="w-full h-full transform -rotate-90">
         {slices.map((slice, i) => (
           <circle
@@ -122,8 +146,8 @@ function DonutChart({ data, totalPoints }: { data: typeof earningBreakdown, tota
         ))}
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-        <span className="text-xl md:text-2xl font-black text-white">{totalPoints || "0"}</span>
-        <span className="text-[10px] md:text-xs text-gray-400 font-bold uppercase tracking-wider">XP</span>
+        <span className="text-3xl md:text-4xl font-black text-white">{totalPoints || "0"}</span>
+        <span className="text-xs md:text-sm text-gray-400 font-bold uppercase tracking-wider mt-1">XP</span>
       </div>
     </div>
   );
@@ -157,18 +181,114 @@ function MiniTrendLine({ data }: { data: number[] }) {
   );
 }
 
+
+
+
+const getDynamicStreakData = (historyData: HistoryItem[]) => {
+  const today = new Date();
+  const currentDayOfWeek = today.getDay(); 
+  const adjustedDay = currentDayOfWeek === 0 ? 6 : currentDayOfWeek - 1; 
+  const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  
+  let currentStreak = 0;
+  
+  const streakMap = days.map((dayName, index) => {
+    const dateOfThisDay = new Date(today);
+    dateOfThisDay.setDate(today.getDate() - adjustedDay + index);
+    const formattedDate = dateOfThisDay.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    
+    const hasActivity = historyData.some(item => item.date === formattedDate);
+    const todayAtMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+    const thisDayAtMidnight = new Date(dateOfThisDay.getFullYear(), dateOfThisDay.getMonth(), dateOfThisDay.getDate()).getTime();
+    
+    const isPast = thisDayAtMidnight < todayAtMidnight;
+    const isToday = thisDayAtMidnight === todayAtMidnight;
+    
+    if (hasActivity) currentStreak++;
+
+    return {
+      day: dayName,
+      isActive: hasActivity, // Tick
+      isMissed: !hasActivity && isPast, // Cross (only if in the past)
+      isFutureOrEmptyToday: (!hasActivity && isToday) || thisDayAtMidnight > todayAtMidnight // Blank
+    };
+  });
+
+  return { streakMap, currentStreak };
+};
+
+const calculateLevelData = (totalXp: number) => {
+  let level = 1;
+  let xpForNextLevel = 1000;
+  let xpAccumulated = 0;
+
+  // Scale up: Level 1 requires 1000, Level 2 requires 2000, etc.
+  while (totalXp >= xpAccumulated + xpForNextLevel) {
+    xpAccumulated += xpForNextLevel;
+    level++;
+    xpForNextLevel = level * 1000; 
+  }
+
+  const currentLevelXp = totalXp - xpAccumulated;
+  const xpRemaining = xpForNextLevel - currentLevelXp;
+  // Calculate percentage for the progress bar (capped between 0 and 100)
+  const progressPercentage = Math.min(100, Math.max(0, (currentLevelXp / xpForNextLevel) * 100));
+
+  return {
+    level,
+    currentLevelXp,
+    xpForNextLevel,
+    xpRemaining,
+    progressPercentage,
+  };
+};
+
+// Add a quick interface to prevent TypeScript 'any' errors
+interface LeaderboardContextType {
+  currentUserPoints: number; // Remove the '?' to ensure it's treated as a number
+  currentUserRank: number;
+  previousUserRank: number;
+}
+
 export default function FanZoneDashboard() {
   const [activeTab, setActiveTab] = useState("My Analytics");
+  const [selectedMonth, setSelectedMonth] = useState("May 2026");
   
-  // 1. Fetch live points from your context
-  const { currentUserPoints } = useLeaderboard();
+  const contextData = useLeaderboard() as LeaderboardContextType | null;
+  const currentUserPoints = contextData?.currentUserPoints ?? 0;
+  const currentUserRank = contextData?.currentUserRank ?? 0;
+  const previousUserRank = contextData?.previousUserRank ?? 0;
   
-  // 2. Format the points with commas (e.g. 55, or 12,450)
-  const displayPoints = currentUserPoints ? currentUserPoints.toLocaleString() : "0";
+  // 1. Math and Feeds
+ // 1. Math and Exact Feeds
+  const displayPoints = currentUserPoints.toLocaleString();
+  
+  // Use the exact ledger for 100% accurate Recent Activity
+  const earningHistoryData = exactUserHistory; 
+  
+  // Calculate perfect percentages based ONLY on the exact ledger
+  const dynamicEarningBreakdown = getExactEarningBreakdown(earningHistoryData);
+  
+  // 2. Dropdown Logic
+  const monthDisplayPoints = selectedMonth === "May 2026" ? displayPoints : "0";
+  const vsMonthText = selectedMonth === "May 2026" ? "vs Apr 2026" : "vs Mar 2026";
 
+  // 3. Rank & Streak Logic
+ const rankDiff = previousUserRank > 0 ? Math.abs(previousUserRank - currentUserRank) : 0;
+  const isRankUp = previousUserRank > 0 && currentUserRank < previousUserRank;
+  const isRankDown = previousUserRank > 0 && currentUserRank > previousUserRank;
+  const levelData = calculateLevelData(currentUserPoints);
+  const { streakMap, currentStreak } = getDynamicStreakData(earningHistoryData);
   
-// ...
-
+  // 4. GENERATE RECENT ACTIVITY LIST (Fixed Syntax)
+const recentActivityList = earningHistoryData.slice(0, 5).map(item => ({
+  icon: item.icon, 
+  action: item.action,
+  detail: item.details,
+  xp: item.points,
+  time: item.time,
+  color: item.color
+}));
   return (
     <div className="min-h-screen bg-[#050505] text-white font-sans selection:bg-rose-500/30 pb-20">
       
@@ -205,7 +325,6 @@ export default function FanZoneDashboard() {
 
             
             {/* Total Points Mini-Card overlaid on right */}
-           {/* Total Points Mini-Card overlaid on right */}
             <div className="bg-[#09090b] border border-white/5 rounded-2xl p-6 w-full md:w-[320px] shadow-2xl relative z-10 hidden md:block">
               <div className="flex justify-between items-center mb-4">
                 <p className="text-[10px] font-black uppercase tracking-widest text-gray-500">Total Points</p>
@@ -217,37 +336,43 @@ export default function FanZoneDashboard() {
               {/* DYNAMIC POINTS HERE */}
               <h2 className="text-4xl font-black text-white mb-2">{displayPoints} XP</h2>
               
+              {/* DYNAMIC UPDATE */}
               <p className="text-xs text-emerald-500 font-bold flex items-center gap-1 mb-6">
-                <TrendingUp className="w-3 h-3" /> +850 <span className="text-gray-500 font-medium ml-1">vs Apr 2026</span>
+                <TrendingUp className="w-3 h-3" /> +{displayPoints} <span className="text-gray-500 font-medium ml-1">Current Points</span>
               </p>
+              
               <div className="h-24">
                  <MiniTrendLine data={[20, 30, 25, 40, 35, 50, 45, 60, 55, 70, 80]} />
               </div>
             </div>
           </div>
         </div>
-
-{/* 3. STATS ROW */}
+        {/* 3. STATS ROW */}
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           
+          {/* 1. Dynamic Leveling Card */}
           <div className="md:col-span-2 bg-[#09090b] border border-white/10 rounded-2xl p-5 flex items-center gap-5">
             <div className="w-14 h-14 rounded-xl border-2 border-rose-500 flex items-center justify-center font-black text-2xl text-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.3)]">
-              7
+              {levelData.level}
             </div>
             <div className="flex-1">
-              <h3 className="text-base font-bold text-white mb-1">You&apos;re doing great!</h3>
+              <h3 className="text-base font-bold text-white mb-1">You're doing great!</h3>
               <div className="flex justify-between items-end mb-2">
-                <p className="text-xs text-gray-400">1,550 XP to reach Level 8</p>
-                <p className="text-xs font-bold text-gray-400">6,450 / 8,000 XP</p>
+                <p className="text-xs text-gray-400">{levelData.xpRemaining.toLocaleString()} XP to reach Level {levelData.level + 1}</p>
+                <p className="text-xs font-bold text-gray-400">{levelData.currentLevelXp.toLocaleString()} / {levelData.xpForNextLevel.toLocaleString()} XP</p>
               </div>
               <div className="w-full h-1.5 bg-zinc-800 rounded-full overflow-hidden">
-                <div className="h-full bg-gradient-to-r from-rose-600 to-orange-500 w-[78%] rounded-full relative">
+                <div 
+                  className="h-full bg-gradient-to-r from-rose-600 to-orange-500 rounded-full relative transition-all duration-1000 ease-in-out"
+                  style={{ width: `${levelData.progressPercentage}%` }}
+                >
                    <div className="absolute right-0 top-0 bottom-0 w-2 bg-white rounded-full shadow-[0_0_10px_rgba(255,255,255,1)]" />
                 </div>
               </div>
             </div>
           </div>
 
+          {/* 2. Dynamic Rank Tracking Card */}
           <div className="bg-[#09090b] border border-white/10 rounded-2xl p-5 flex items-center justify-between group cursor-pointer hover:border-white/20 transition-colors">
              <div className="flex items-center gap-4">
                <div className="w-12 h-12 rounded-full bg-yellow-500/10 flex items-center justify-center border border-yellow-500/20">
@@ -255,14 +380,21 @@ export default function FanZoneDashboard() {
                </div>
                <div>
                  <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Your Rank</p>
-                 <h3 className="text-2xl font-black text-white leading-tight">24</h3>
-                 <p className="text-xs text-emerald-500 font-bold flex items-center gap-1 mt-0.5">
-                   ↑ 8 <span className="text-gray-500 font-medium">This Month</span>
-                 </p>
+                 <h3 className="text-2xl font-black text-white leading-tight">{currentUserRank > 0 ? currentUserRank : "-"}</h3>
+                 {rankDiff > 0 ? (
+                   <p className={`text-xs font-bold flex items-center gap-1 mt-0.5 ${isRankUp ? 'text-emerald-500' : 'text-red-500'}`}>
+                     {isRankUp ? '↑' : '↓'} {rankDiff} <span className="text-gray-500 font-medium">This Month</span>
+                   </p>
+                 ) : (
+                   <p className="text-xs text-gray-500 font-medium mt-0.5 flex items-center gap-1">
+                     - <span className="text-gray-500 font-medium">No Change</span>
+                   </p>
+                 )}
                </div>
              </div>
           </div>
 
+          {/* 3. Static Badges Box */}
           <div className="bg-[#09090b] border border-white/10 rounded-2xl p-5 flex items-center justify-between group cursor-pointer hover:border-white/20 transition-colors">
             <div className="flex items-center gap-4">
                <div className="w-12 h-12 rounded-full bg-purple-500/10 flex items-center justify-center border border-purple-500/20">
@@ -281,10 +413,13 @@ export default function FanZoneDashboard() {
              </div>
           </div>
 
-          {/* NEW LIVE LEADERBOARD BUTTON */}
-          <Link href="/MainModules/Leaderboard" className="bg-gradient-to-br from-rose-600 to-orange-500 rounded-2xl p-5 flex flex-col items-center justify-center group hover:scale-[1.02] transition-transform shadow-[0_0_15px_rgba(225,29,72,0.2)] cursor-pointer border border-rose-400/30">
-             <Trophy className="w-7 h-7 text-white mb-1.5 group-hover:scale-110 group-hover:-translate-y-1 transition-all duration-300 drop-shadow-md" />
-             <h3 className="text-sm font-black text-white text-center leading-tight tracking-wide drop-shadow-sm">Live<br/>Leaderboard</h3>
+          {/* 4. Live Leaderboard Button (Themed) */}
+          <Link href="/MainModules/Leaderboard" className="bg-[#09090b] border border-white/10 hover:border-rose-500/50 rounded-2xl p-5 flex flex-col items-center justify-center group hover:scale-[1.02] transition-all cursor-pointer shadow-[0_0_15px_rgba(225,29,72,0.05)] hover:shadow-[0_0_25px_rgba(225,29,72,0.15)] relative overflow-hidden">
+             {/* Subtle background glow effect on hover */}
+             <div className="absolute inset-0 bg-rose-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+             
+             <Trophy className="w-7 h-7 text-rose-500 mb-1.5 group-hover:scale-110 group-hover:-translate-y-1 transition-all duration-300 drop-shadow-md relative z-10" />
+             <h3 className="text-sm font-black text-white text-center leading-tight tracking-wide drop-shadow-sm group-hover:text-rose-100 transition-colors relative z-10">Live<br/>Leaderboard</h3>
           </Link>
 
         </div>
@@ -323,25 +458,30 @@ export default function FanZoneDashboard() {
                 {/* Col 1: Left Stats (Span 3) */}
                 <div className="xl:col-span-3 w-full">
                   <div className="relative w-40 mb-8 hidden sm:block">
-                    <select className="w-full bg-[#18181b] border border-white/10 text-sm font-bold rounded-xl pl-4 pr-8 py-2.5 text-white focus:outline-none focus:border-rose-500 appearance-none cursor-pointer">
-                      <option>May 2026</option>
-                      <option>Apr 2026</option>
+                    <select 
+                      value={selectedMonth}
+                      onChange={(e) => setSelectedMonth(e.target.value)}
+                      className="w-full bg-[#18181b] border border-white/10 text-sm font-bold rounded-xl pl-4 pr-8 py-2.5 text-white focus:outline-none focus:border-rose-500 appearance-none cursor-pointer"
+                    >
+                      <option value="May 2026">May 2026</option>
+                      <option value="Apr 2026">Apr 2026</option>
                     </select>
                     <ChevronDown className="w-4 h-4 text-gray-500 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                   </div>
+                  
                   <div className="space-y-8">
                     <div>
                       <p className="text-xs text-gray-400 font-medium mb-1">This Month</p>
                       <div className="flex items-end gap-3">
-                        <h4 className="text-3xl font-black text-white leading-none">{displayPoints} XP</h4>
-                        <span className="text-xs text-emerald-500 font-bold mb-0.5">↑ 850 <span className="text-gray-500 font-medium">vs Apr 2026</span></span>
+                        <h4 className="text-3xl font-black text-white leading-none">{monthDisplayPoints} XP</h4>
+                       <span className="text-xs text-emerald-500 font-bold mb-0.5">↑ {monthDisplayPoints} <span className="text-gray-500 font-medium">{vsMonthText}</span></span>
                       </div>
                     </div>
                     <div>
                       <p className="text-xs text-gray-400 font-medium mb-1">All Time</p>
                       <div className="flex items-end gap-3">
-                        <h4 className="text-3xl font-black text-white leading-none">84,650 XP</h4>
-                        <span className="text-xs text-gray-500 font-medium mb-0.5">Since Feb 2025</span>
+                        <h4 className="text-3xl font-black text-white leading-none">{displayPoints} XP</h4>
+                        <span className="text-xs text-gray-500 font-medium mb-0.5">Since Apr 2026</span>
                       </div>
                     </div>
                   </div>
@@ -349,9 +489,9 @@ export default function FanZoneDashboard() {
 
                 {/* Col 2: Donut Chart & Legend (Span 5) */}
                 <div className="xl:col-span-5 flex flex-col sm:flex-row items-center justify-center gap-6 lg:gap-10 w-full py-6 xl:py-0 border-t border-white/10 xl:border-t-0 xl:border-l xl:pl-8">
-                  <DonutChart data={earningBreakdown} totalPoints={displayPoints} />
-                  <div className="space-y-4 w-full sm:w-auto">
-                    {earningBreakdown.map((item, i) => (
+                 <DonutChart data={dynamicEarningBreakdown} totalPoints={displayPoints} />
+<div className="space-y-4 w-full sm:w-auto">
+  {dynamicEarningBreakdown.map((item, i) => (
                       <div key={i} className="flex items-center justify-between sm:justify-start gap-4 text-sm whitespace-nowrap">
                         <div className="flex items-center gap-3 w-40">
                           <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
@@ -471,24 +611,29 @@ export default function FanZoneDashboard() {
                   <h3 className="text-xs font-black tracking-widest text-gray-400 uppercase mb-4 flex items-center gap-1.5">
                     Your Streak <InfoIcon />
                   </h3>
-                  <div className="flex items-baseline gap-2 mb-1">
-                    <h2 className="text-4xl font-black text-white">12</h2>
+                <div className="flex items-baseline gap-2 mb-1">
+                    <h2 className="text-4xl font-black text-white">{currentStreak}</h2>
                     <span className="text-xl font-medium text-gray-400">Days</span>
                   </div>
-                  <p className="text-sm text-gray-400 mb-6">Keep it going, don&apos;t break your streak!</p>
+                  <p className="text-sm text-gray-400 mb-6">Keep it going, don't break your streak!</p>
                   
                   <div className="flex justify-between items-center">
-                    {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day, idx) => {
-                      const isActive = idx < 6; // Mocking Mon-Sat as active
-                      return (
-                        <div key={day} className="flex flex-col items-center gap-2">
-                          <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 ${isActive ? 'bg-rose-600 border-rose-500 text-white shadow-[0_0_10px_rgba(225,29,72,0.5)]' : 'bg-[#18181b] border-white/10 text-gray-600'}`}>
-                            {isActive ? <CheckCircle2 className="w-5 h-5" /> : null}
-                          </div>
-                          <span className={`text-xs font-bold ${isActive ? 'text-white' : 'text-gray-500'}`}>{day}</span>
+                    {streakMap.map((data) => {
+                    return (
+                      <div key={data.day} className="flex flex-col items-center gap-2">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all ${
+                          data.isActive 
+                            ? 'bg-rose-600 border-rose-500 text-white shadow-[0_0_10px_rgba(225,29,72,0.5)]' 
+                            : data.isMissed 
+                              ? 'bg-[#0f0a0a] border-red-500/30 text-red-500 shadow-[0_0_10px_rgba(239,68,68,0.15)]'
+                              : 'bg-[#18181b] border-white/10 text-gray-600'
+                        }`}>
+                          {data.isActive ? <CheckCircle2 className="w-5 h-5" /> : data.isMissed ? <X className="w-5 h-5 opacity-80" /> : null}
                         </div>
-                      );
-                    })}
+                        <span className={`text-xs font-bold ${data.isActive || data.isMissed ? 'text-white' : 'text-gray-500'}`}>{data.day}</span>
+                      </div>
+                    );
+                  })}
                   </div>
                 </div>
 
@@ -525,7 +670,7 @@ export default function FanZoneDashboard() {
                 </div>
                 <div className="text-right">
                   <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Total Points Earned</p>
-                  <h3 className="text-2xl font-black text-emerald-500">84,650 XP</h3>
+                  <h3 className="text-2xl font-black text-emerald-500">{displayPoints} XP</h3>
                 </div>
               </div>
 
@@ -639,23 +784,28 @@ export default function FanZoneDashboard() {
                     Your Streak <InfoIcon />
                   </h3>
                   <div className="flex items-baseline gap-2 mb-1">
-                    <h2 className="text-4xl font-black text-white">12</h2>
+                    <h2 className="text-4xl font-black text-white">{currentStreak}</h2>
                     <span className="text-xl font-medium text-gray-400">Days</span>
                   </div>
-                  <p className="text-sm text-gray-400 mb-6">Keep it going, don&apos;t break your streak!</p>
+                  <p className="text-sm text-gray-400 mb-6">Keep it going, don't break your streak!</p>
                   
                   <div className="flex justify-between items-center">
-                    {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day, idx) => {
-                      const isActive = idx < 6;
-                      return (
-                        <div key={day} className="flex flex-col items-center gap-2">
-                          <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 ${isActive ? 'bg-rose-600 border-rose-500 text-white shadow-[0_0_10px_rgba(225,29,72,0.5)]' : 'bg-[#18181b] border-white/10 text-gray-600'}`}>
-                            {isActive ? <CheckCircle2 className="w-5 h-5" /> : null}
-                          </div>
-                          <span className={`text-xs font-bold ${isActive ? 'text-white' : 'text-gray-500'}`}>{day}</span>
+                   {streakMap.map((data) => {
+                    return (
+                      <div key={data.day} className="flex flex-col items-center gap-2">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all ${
+                          data.isActive 
+                            ? 'bg-rose-600 border-rose-500 text-white shadow-[0_0_10px_rgba(225,29,72,0.5)]' 
+                            : data.isMissed 
+                              ? 'bg-[#0f0a0a] border-red-500/30 text-red-500 shadow-[0_0_10px_rgba(239,68,68,0.15)]'
+                              : 'bg-[#18181b] border-white/10 text-gray-600'
+                        }`}>
+                          {data.isActive ? <CheckCircle2 className="w-5 h-5" /> : data.isMissed ? <X className="w-5 h-5 opacity-80" /> : null}
                         </div>
-                      );
-                    })}
+                        <span className={`text-xs font-bold ${data.isActive || data.isMissed ? 'text-white' : 'text-gray-500'}`}>{data.day}</span>
+                      </div>
+                    );
+                  })}
                   </div>
                 </div>
 
@@ -793,24 +943,29 @@ export default function FanZoneDashboard() {
                   <h3 className="text-xs font-black tracking-widest text-gray-400 uppercase mb-4 flex items-center gap-1.5">
                     Your Streak <InfoIcon />
                   </h3>
-                  <div className="flex items-baseline gap-2 mb-1">
-                    <h2 className="text-4xl font-black text-white">12</h2>
+                 <div className="flex items-baseline gap-2 mb-1">
+                    <h2 className="text-4xl font-black text-white">{currentStreak}</h2>
                     <span className="text-xl font-medium text-gray-400">Days</span>
                   </div>
-                  <p className="text-sm text-gray-400 mb-6">Keep it going, don&apos;t break your streak!</p>
+                 <p className="text-sm text-gray-400 mb-6">Keep it going, don't break your streak!</p>
                   
                   <div className="flex justify-between items-center">
-                    {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day, idx) => {
-                      const isActive = idx < 6;
-                      return (
-                        <div key={day} className="flex flex-col items-center gap-2">
-                          <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 ${isActive ? 'bg-rose-600 border-rose-500 text-white shadow-[0_0_10px_rgba(225,29,72,0.5)]' : 'bg-[#18181b] border-white/10 text-gray-600'}`}>
-                            {isActive ? <CheckCircle2 className="w-5 h-5" /> : null}
-                          </div>
-                          <span className={`text-xs font-bold ${isActive ? 'text-white' : 'text-gray-500'}`}>{day}</span>
+                    {streakMap.map((data) => {
+                    return (
+                      <div key={data.day} className="flex flex-col items-center gap-2">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all ${
+                          data.isActive 
+                            ? 'bg-rose-600 border-rose-500 text-white shadow-[0_0_10px_rgba(225,29,72,0.5)]' 
+                            : data.isMissed 
+                              ? 'bg-[#0f0a0a] border-red-500/30 text-red-500 shadow-[0_0_10px_rgba(239,68,68,0.15)]'
+                              : 'bg-[#18181b] border-white/10 text-gray-600'
+                        }`}>
+                          {data.isActive ? <CheckCircle2 className="w-5 h-5" /> : data.isMissed ? <X className="w-5 h-5 opacity-80" /> : null}
                         </div>
-                      );
-                    })}
+                        <span className={`text-xs font-bold ${data.isActive || data.isMissed ? 'text-white' : 'text-gray-500'}`}>{data.day}</span>
+                      </div>
+                    );
+                  })}
                   </div>
                 </div>
 
@@ -845,7 +1000,7 @@ export default function FanZoneDashboard() {
                 <div className="flex flex-col gap-4 mb-2">
                   <div>
                     <h3 className="text-xl font-black text-white mb-1">All Activities</h3>
-                    <p className="text-sm text-gray-400 font-medium">A complete log of everything you&apos;ve done to earn points.</p>
+                    <p className="text-sm text-gray-400 font-medium">A complete log of everything you've done to earn points.</p>
                   </div>
                   
                   <div className="flex flex-wrap items-center justify-between gap-4">
@@ -966,8 +1121,8 @@ export default function FanZoneDashboard() {
                    <div className="flex items-center gap-6 relative z-10">
                      <Trophy className="w-16 h-16 text-yellow-500 drop-shadow-[0_0_15px_rgba(234,179,8,0.5)]" />
                      <div>
-                       <h3 className="text-xl font-black text-white mb-1">Keep Going, You&apos;re on Fire!</h3>
-                       <p className="text-sm text-gray-300 font-medium">You&apos;ve earned 24% more points this month.</p>
+                       <h3 className="text-xl font-black text-white mb-1">Keep Going, You're on Fire!</h3>
+                       <p className="text-sm text-gray-300 font-medium">You've earned 24% more points this month.</p>
                      </div>
                    </div>
                    <button className="relative z-10 bg-gradient-to-r from-rose-600 to-orange-500 text-white text-sm font-bold py-3 px-6 rounded-full shadow-[0_0_15px_rgba(225,29,72,0.4)] hover:scale-105 transition-transform">
@@ -986,24 +1141,24 @@ export default function FanZoneDashboard() {
                   </div>
                   <div className="relative z-10">
                     <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Total Points Earned</p>
-                    <h3 className="text-3xl font-black text-emerald-500 mb-2">84,650 XP</h3>
-                    <p className="text-xs font-bold text-emerald-500 flex items-center gap-1">
-                      This Period ↑ 24% <span className="text-gray-500 ml-1">vs Apr 1 – Apr 30, 2026</span>
-                    </p>
+                    <h3 className="text-3xl font-black text-emerald-500 mb-2">{displayPoints} XP</h3>
+<p className="text-xs font-bold text-emerald-500 flex items-center gap-1">
+  This Period ↑ 100% <span className="text-gray-500 ml-1">vs Apr 2026</span>
+</p>
                   </div>
                 </div>
 
                 {/* Points Journey */}
                 <div className="bg-[#09090b] border border-white/10 rounded-2xl p-6">
                   <h3 className="text-base font-black text-white mb-1">Your Points Journey</h3>
-                  <p className="text-xs text-gray-400 font-medium mb-6">See how you&apos;re growing</p>
+                  <p className="text-xs text-gray-400 font-medium mb-6">See how you're growing</p>
                   
                   <div className="flex justify-center mb-8">
-                    <DonutChart data={pointsJourneyData} />
+                    <DonutChart data={dynamicEarningBreakdown} totalPoints={displayPoints} />
                   </div>
 
                   <div className="space-y-4">
-                    {pointsJourneyData.map((item, i) => (
+                    {dynamicEarningBreakdown.map((item, i) => (
                       <div key={i} className="flex items-center justify-between text-sm">
                         <div className="flex items-center gap-3">
                           <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }} />

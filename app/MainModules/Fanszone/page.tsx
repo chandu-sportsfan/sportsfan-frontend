@@ -276,6 +276,7 @@ export default function FanZoneDashboard() {
   // 3. Rank & Streak Logic
  const rankDiff = previousUserRank > 0 ? Math.abs(previousUserRank - currentUserRank) : 0;
   const isRankUp = previousUserRank > 0 && currentUserRank < previousUserRank;
+  const isRankDown = previousUserRank > 0 && currentUserRank > previousUserRank;
   const levelData = calculateLevelData(currentUserPoints);
   const { streakMap, currentStreak } = getDynamicStreakData(earningHistoryData);
   
@@ -355,7 +356,7 @@ const recentActivityList = earningHistoryData.slice(0, 5).map(item => ({
               {levelData.level}
             </div>
             <div className="flex-1">
-              <h3 className="text-base font-bold text-white mb-1">You&apos;re doing great!</h3>
+              <h3 className="text-base font-bold text-white mb-1">You're doing great!</h3>
               <div className="flex justify-between items-end mb-2">
                 <p className="text-xs text-gray-400">{levelData.xpRemaining.toLocaleString()} XP to reach Level {levelData.level + 1}</p>
                 <p className="text-xs font-bold text-gray-400">{levelData.currentLevelXp.toLocaleString()} / {levelData.xpForNextLevel.toLocaleString()} XP</p>
@@ -614,7 +615,7 @@ const recentActivityList = earningHistoryData.slice(0, 5).map(item => ({
                     <h2 className="text-4xl font-black text-white">{currentStreak}</h2>
                     <span className="text-xl font-medium text-gray-400">Days</span>
                   </div>
-                  <p className="text-sm text-gray-400 mb-6">Keep it going, don&apos;t break your streak!</p>
+                  <p className="text-sm text-gray-400 mb-6">Keep it going, don't break your streak!</p>
                   
                   <div className="flex justify-between items-center">
                     {streakMap.map((data) => {
@@ -786,7 +787,7 @@ const recentActivityList = earningHistoryData.slice(0, 5).map(item => ({
                     <h2 className="text-4xl font-black text-white">{currentStreak}</h2>
                     <span className="text-xl font-medium text-gray-400">Days</span>
                   </div>
-                  <p className="text-sm text-gray-400 mb-6">Keep it going, don&apos;t break your streak!</p>
+                  <p className="text-sm text-gray-400 mb-6">Keep it going, don't break your streak!</p>
                   
                   <div className="flex justify-between items-center">
                    {streakMap.map((data) => {
@@ -946,7 +947,7 @@ const recentActivityList = earningHistoryData.slice(0, 5).map(item => ({
                     <h2 className="text-4xl font-black text-white">{currentStreak}</h2>
                     <span className="text-xl font-medium text-gray-400">Days</span>
                   </div>
-                 <p className="text-sm text-gray-400 mb-6">Keep it going, don&apos;t break your streak!</p>
+                 <p className="text-sm text-gray-400 mb-6">Keep it going, don't break your streak!</p>
                   
                   <div className="flex justify-between items-center">
                     {streakMap.map((data) => {
@@ -999,7 +1000,7 @@ const recentActivityList = earningHistoryData.slice(0, 5).map(item => ({
                 <div className="flex flex-col gap-4 mb-2">
                   <div>
                     <h3 className="text-xl font-black text-white mb-1">All Activities</h3>
-                    <p className="text-sm text-gray-400 font-medium">A complete log of everything you&apos;ve done to earn points.</p>
+                    <p className="text-sm text-gray-400 font-medium">A complete log of everything you've done to earn points.</p>
                   </div>
                   
                   <div className="flex flex-wrap items-center justify-between gap-4">
@@ -1120,8 +1121,8 @@ const recentActivityList = earningHistoryData.slice(0, 5).map(item => ({
                    <div className="flex items-center gap-6 relative z-10">
                      <Trophy className="w-16 h-16 text-yellow-500 drop-shadow-[0_0_15px_rgba(234,179,8,0.5)]" />
                      <div>
-                       <h3 className="text-xl font-black text-white mb-1">Keep Going, You&apos;re on Fire!</h3>
-                       <p className="text-sm text-gray-300 font-medium">You&apos;ve earned 24% more points this month.</p>
+                       <h3 className="text-xl font-black text-white mb-1">Keep Going, You're on Fire!</h3>
+                       <p className="text-sm text-gray-300 font-medium">You've earned 24% more points this month.</p>
                      </div>
                    </div>
                    <button className="relative z-10 bg-gradient-to-r from-rose-600 to-orange-500 text-white text-sm font-bold py-3 px-6 rounded-full shadow-[0_0_15px_rgba(225,29,72,0.4)] hover:scale-105 transition-transform">
@@ -1150,7 +1151,7 @@ const recentActivityList = earningHistoryData.slice(0, 5).map(item => ({
                 {/* Points Journey */}
                 <div className="bg-[#09090b] border border-white/10 rounded-2xl p-6">
                   <h3 className="text-base font-black text-white mb-1">Your Points Journey</h3>
-                  <p className="text-xs text-gray-400 font-medium mb-6">See how you&apos;re growing</p>
+                  <p className="text-xs text-gray-400 font-medium mb-6">See how you're growing</p>
                   
                   <div className="flex justify-center mb-8">
                     <DonutChart data={dynamicEarningBreakdown} totalPoints={displayPoints} />

@@ -79,7 +79,7 @@ const getExactEarningBreakdown = (history: HistoryItem[]): CategoryBreakdown[] =
     }
     acc[curr.action].xpValue += curr.points;
     return acc;
-  }, {} as Record<string, GroupedCategory>);
+  }, {} as Record<string, GroupedCategory>); // <--- This explicitly defines the type
 
   return Object.values(grouped).map(cat => ({
     label: cat.label,
@@ -94,7 +94,7 @@ const getExactEarningBreakdown = (history: HistoryItem[]): CategoryBreakdown[] =
 // 2. Dynamic Feed synced perfectly to the breakdown
 // 2. Dynamic Feed synced perfectly to the breakdown
 // I removed the "..." and added "any" prevention by using the CategoryBreakdown type
-const _generateDynamicHistory = (breakdown: CategoryBreakdown[]) => {
+// const getDynamicStreakData = (historyData: HistoryItem[]) => {
   const today = new Date();
   const formattedDate = today.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   
@@ -195,7 +195,7 @@ function MiniTrendLine({ data }: { data: number[] }) {
 
 
 
-const getDynamicStreakData = (historyData: ReturnType<typeof generateDynamicHistory>) => {
+const getDynamicStreakData = (historyData: HistoryItem[]) => {
   const today = new Date();
   const currentDayOfWeek = today.getDay(); 
   const adjustedDay = currentDayOfWeek === 0 ? 6 : currentDayOfWeek - 1; 
@@ -256,9 +256,9 @@ const calculateLevelData = (totalXp: number) => {
 
 // Add a quick interface to prevent TypeScript 'any' errors
 interface LeaderboardContextType {
-  currentUserPoints?: number;
-  currentUserRank?: number;
-  previousUserRank?: number;
+  currentUserPoints: number; // Remove the '?' to ensure it's treated as a number
+  currentUserRank: number;
+  previousUserRank: number;
 }
 
 export default function FanZoneDashboard() {

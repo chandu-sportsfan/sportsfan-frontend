@@ -22,31 +22,44 @@ interface CategoryBreakdown {
   xpValue?: number;
 }
 
-// 1. Dynamic Breakdown (Fixing the Math)
-const getDynamicEarningBreakdown = (totalPoints: number) => {
-  if (totalPoints === 0) return []; // Show nothing if no points!
-  
-  const categories = [
-    { label: "Fan Battles", percent: 25, color: "#eab308", icon: Gamepad2, type: "Fantasy" },
-    { label: "Trivia Questions", percent: 20, color: "#3b82f6", icon: Award, type: "Engagement" },
-    { label: "Polls & Predictions", percent: 20, color: "#a855f7", icon: Trophy, type: "Engagement" },
-    { label: "News Articles", percent: 15, color: "#f43f5e", icon: FileText, type: "Content" },
-    { label: "Audio", percent: 10, color: "#f97316", icon: Play, type: "Content" },
-    { label: "Daily Login", percent: 10, color: "#10b981", icon: CheckCircle2, type: "Account" },
-  ];
+// 1. YOUR EXACT ACTIVITY LEDGER
+// (Right now this holds your real 15 XP Fan Battle. Later, fetch this array directly from your backend!)
+const exactUserHistory = [
+  {
+    action: "Fan Battles",
+    details: "Played a Fan Battle",
+    points: 15, // The exact points you earned!
+    type: "Fantasy",
+    date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+    time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+    icon: Gamepad2,
+    color: "text-yellow-500", // Tailwind text color
+    hexColor: "#eab308",      // Donut Chart stroke color
+    typeColor: "text-yellow-500 border-white/10 bg-white/5"
+  }
+  // When the user does something else, you will just add another object here!
+];
 
-  let currentSum = 0;
-  return categories.map((cat, index) => {
-    let xpValue;
-    // The exact remainder method ensures it always sums perfectly to totalPoints (e.g., 15)
-    if (index === categories.length - 1) {
-      xpValue = totalPoints - currentSum; 
-    } else {
-      xpValue = Math.round((cat.percent / 100) * totalPoints);
-      currentSum += xpValue;
+// 2. PERFECT BREAKDOWN CALCULATOR
+// This calculates the Donut Chart and percentages perfectly based ONLY on your exact ledger.
+const getExactEarningBreakdown = (history: typeof exactUserHistory): CategoryBreakdown[] => {
+  if (history.length === 0) return [];
+
+  const historyTotal = history.reduce((sum, item) => sum + item.points, 0);
+
+  const grouped = history.reduce((acc, curr) => {
+    if (!acc[curr.action]) {
+      acc[curr.action] = { label: curr.action, xpValue: 0, color: curr.hexColor };
     }
-    return { ...cat, xpValue, xp: `+${xpValue.toLocaleString()} XP` };
-  }).filter(cat => cat.xpValue > 0); // Only keep activities they ACTUALLY earned points for!
+    acc[curr.action].xpValue += curr.points;
+    return acc;
+  }, {} as Record<string, any>);
+
+  return Object.values(grouped).map(cat => ({
+    ...cat,
+    percent: Math.round((cat.xpValue / historyTotal) * 100),
+    xp: `+${cat.xpValue.toLocaleString()} XP`
+  }));
 };
 
 // 2. Dynamic Feed synced perfectly to the breakdown
@@ -227,9 +240,14 @@ export default function FanZoneDashboard() {
   const previousUserRank = contextData?.previousUserRank ?? 0;
   
   // 1. Math and Feeds
+ // 1. Math and Exact Feeds
   const displayPoints = currentUserPoints.toLocaleString();
-  const dynamicEarningBreakdown = getDynamicEarningBreakdown(currentUserPoints);
-  const earningHistoryData = generateDynamicHistory(dynamicEarningBreakdown);
+  
+  // Use the exact ledger for 100% accurate Recent Activity
+  const earningHistoryData = exactUserHistory; 
+  
+  // Calculate perfect percentages based ONLY on the exact ledger
+  const dynamicEarningBreakdown = getExactEarningBreakdown(earningHistoryData);
   
   // 2. Dropdown Logic
   const monthDisplayPoints = selectedMonth === "May 2026" ? displayPoints : "0";

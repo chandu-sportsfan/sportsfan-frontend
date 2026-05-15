@@ -224,10 +224,10 @@
 //                 </div>
 
 //                 <div className="flex items-center gap-3 ml-auto">
-//                     <button className="flex items-center gap-2 bg-transparent hover:bg-pink-500/10 border border-pink-500 text-pink-400 text-sm font-medium px-5 py-2.5 rounded-full transition-colors">
+//                     <Link href="/MainModules/Preferences" className="flex items-center gap-2 bg-transparent hover:bg-pink-500/10 border border-pink-500 text-pink-400 text-sm font-medium px-5 py-2.5 rounded-full transition-colors">
 //                         <SlidersHorizontal size={15} />
 //                         Preferences
-//                     </button>
+//                     </Link>
 
 //                     <div className="flex items-center gap-2 bg-[#111] border border-white/10 rounded-full px-4 py-2.5">
 //                         <Star size={16} className="text-pink-500 fill-pink-500" />
@@ -305,10 +305,10 @@
 //                     )}
 //                 </div>
 
-//                 <button className="flex items-center gap-2 border border-pink-500 text-pink-400 text-xs font-medium px-4 py-2 rounded-full hover:bg-pink-500/10 transition-colors whitespace-nowrap">
+//                 <Link href="/MainModules/Preferences" className="flex items-center gap-2 border border-pink-500 text-pink-400 text-xs font-medium px-4 py-2 rounded-full hover:bg-pink-500/10 transition-colors whitespace-nowrap">
 //                     <SlidersHorizontal size={13} />
 //                     Preferences
-//                 </button>
+//                 </Link>
 
 //                 <div className="flex items-center gap-2 bg-[#111] border border-white/10 rounded-full px-3 py-2">
 //                     <Star size={14} className="text-pink-500 fill-pink-500" />
@@ -391,11 +391,11 @@
 //                 {/* Row 2: Icon strip */}
 //                 <div className="flex items-center justify-around pb-2.5 px-2 w-full">
 //                     {/* Preferences */}
-//                     <button className="flex flex-col items-center group">
+//                     <Link href="/MainModules/Preferences" className="flex flex-col items-center group">
 //                         <div className="w-9 h-9 flex items-center justify-center border border-pink-500 bg-pink-500/10 rounded-full group-hover:bg-pink-500/20 transition-colors">
 //                             <SlidersHorizontal size={15} className="text-pink-400" />
 //                         </div>
-//                     </button>
+//                     </Link>
 
 //                     {/* Points */}
 //                     <button className="flex flex-col items-center group">
@@ -469,6 +469,7 @@ import { User, Settings, LogOut } from "lucide-react";
 import { useGlobalSearch } from "@/context/GlobalSearchContext";
 import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
+import { useRouter } from 'next/navigation';
 import Image from "next/image";
 import { useLeaderboard } from "@/context/LeaderboardContext";
 import { useAuth } from "@/context/AuthContext";
@@ -513,6 +514,7 @@ export default function Header() {
   } = useGlobalSearch();
   const { currentUserPoints } = useLeaderboard();
   const { user, getUserDisplayName, loading: authLoading } = useAuth();
+  const router = useRouter();
 
   // ── Unread notification count ──────────────────────────────────────────────
   const [unreadCount, setUnreadCount] = useState(0);
@@ -742,10 +744,10 @@ export default function Header() {
         </div>
 
         <div className="flex items-center gap-3 ml-auto">
-          <button className="flex items-center gap-2 bg-transparent hover:bg-pink-500/10 border border-pink-500 text-pink-400 text-sm font-medium px-5 py-2.5 rounded-full transition-colors">
+          <Link href="/MainModules/Preferences" onClick={() => router.push('/MainModules/Preferences')} className="flex items-center gap-2 bg-transparent hover:bg-pink-500/10 border border-pink-500 text-pink-400 text-sm font-medium px-5 py-2.5 rounded-full transition-colors">
             <SlidersHorizontal size={15} />
             Preferences
-          </button>
+          </Link>
 
           <div className="flex items-center gap-2 bg-[#111] border border-white/10 rounded-full px-4 py-2.5">
             <Star size={16} className="text-pink-500 fill-pink-500" />
@@ -818,10 +820,10 @@ export default function Header() {
           )}
         </div>
 
-        <button className="flex items-center gap-2 border border-pink-500 text-pink-400 text-xs font-medium px-4 py-2 rounded-full hover:bg-pink-500/10 transition-colors whitespace-nowrap">
+        <Link href="/MainModules/Preferences" onClick={() => router.push('/MainModules/Preferences')} className="flex items-center gap-2 border border-pink-500 text-pink-400 text-xs font-medium px-4 py-2 rounded-full hover:bg-pink-500/10 transition-colors whitespace-nowrap">
           <SlidersHorizontal size={13} />
           Preferences
-        </button>
+        </Link>
 
         <div className="flex items-center gap-2 bg-[#111] border border-white/10 rounded-full px-3 py-2">
           <Star size={14} className="text-pink-500 fill-pink-500" />
@@ -892,11 +894,11 @@ export default function Header() {
         {/* Row 2: Icon strip */}
         <div className="flex items-center justify-around pb-2.5 px-2 w-full">
           {/* Preferences */}
-          <button className="flex flex-col items-center group">
+          <Link href="/MainModules/Preferences" onClick={() => router.push('/MainModules/Preferences')} className="flex flex-col items-center group">
             <div className="w-9 h-9 flex items-center justify-center border border-pink-500 bg-pink-500/10 rounded-full group-hover:bg-pink-500/20 transition-colors">
               <SlidersHorizontal size={15} className="text-pink-400" />
             </div>
-          </button>
+          </Link>
 
           {/* Points */}
           <button className="flex flex-col items-center group">

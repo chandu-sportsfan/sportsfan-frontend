@@ -54,25 +54,40 @@ const exactUserHistory: HistoryItem[] = [
 
 // 2. PERFECT BREAKDOWN CALCULATOR
 // This calculates the Donut Chart and percentages perfectly based ONLY on your exact ledger.
-const getExactEarningBreakdown = (history: typeof exactUserHistory): CategoryBreakdown[] => {
+// This tells TypeScript exactly what each category looks like
+interface GroupedCategory {
+  label: string;
+  xpValue: number;
+  color: string;
+  icon: React.ElementType;
+}
+
+const getExactEarningBreakdown = (history: HistoryItem[]): CategoryBreakdown[] => {
   if (history.length === 0) return [];
 
   const historyTotal = history.reduce((sum, item) => sum + item.points, 0);
 
+  // We changed 'any' to 'GroupedCategory' here
   const grouped = history.reduce((acc, curr) => {
     if (!acc[curr.action]) {
-      // Store the icon here so it's available later
-      acc[curr.action] = { label: curr.action, xpValue: 0, color: curr.hexColor, icon: curr.icon };
+      acc[curr.action] = { 
+        label: curr.action, 
+        xpValue: 0, 
+        color: curr.hexColor, 
+        icon: curr.icon 
+      };
     }
     acc[curr.action].xpValue += curr.points;
     return acc;
-  }, {} as Record<string, any>);
+  }, {} as Record<string, GroupedCategory>);
 
   return Object.values(grouped).map(cat => ({
-    ...cat,
+    label: cat.label,
+    color: cat.color,
+    icon: cat.icon,
+    xpValue: cat.xpValue,
     percent: Math.round((cat.xpValue / historyTotal) * 100),
     xp: `+${cat.xpValue.toLocaleString()} XP`,
-    icon: cat.icon // <--- Pass the icon through
   }));
 };
 

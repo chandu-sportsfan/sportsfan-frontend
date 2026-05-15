@@ -206,7 +206,7 @@ export default function FanZoneDashboard() {
 
   // 2. Rank direction logic
   const isRankUp = previousUserRank > 0 && currentUserRank < previousUserRank;
-  const isRankDown = previousUserRank > 0 && currentUserRank > previousUserRank;
+  // const isRankDown = previousUserRank > 0 && currentUserRank > previousUserRank;
   const rankDiff = previousUserRank > 0 ? Math.abs(previousUserRank - currentUserRank) : 0;
   
   // 3. Leveling logic
@@ -281,7 +281,7 @@ export default function FanZoneDashboard() {
               {levelData.level}
             </div>
             <div className="flex-1">
-              <h3 className="text-base font-bold text-white mb-1">You're doing great!</h3>
+              <h3 className="text-base font-bold text-white mb-1">You&apos;re doing great!</h3>
               <div className="flex justify-between items-end mb-2">
                 <p className="text-xs text-gray-400">{levelData.xpRemaining.toLocaleString()} XP to reach Level {levelData.level + 1}</p>
                 <p className="text-xs font-bold text-gray-400">{levelData.currentLevelXp.toLocaleString()} / {levelData.xpForNextLevel.toLocaleString()} XP</p>

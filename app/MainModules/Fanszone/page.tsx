@@ -5,8 +5,8 @@ import Link from "next/link";
 import { useLeaderboard } from "@/context/LeaderboardContext";
 import { 
   ChevronDown, Trophy, Share2, CheckCircle2, 
-  Award, TrendingUp, Play, ThumbsUp, Radio, FileText, 
-  Gamepad2, UserPlus, Bell, LayoutGrid, Calendar, Filter,
+  Award, TrendingUp, Play, ThumbsUp, FileText, 
+  Gamepad2, UserPlus, LayoutGrid, Calendar, Filter,
  Download, ChevronLeft, ChevronRight, MoreHorizontal, X
 } from "lucide-react";
 
@@ -17,7 +17,7 @@ interface CategoryBreakdown {
   percent: number;
   color: string;
   xp: string;
-  icon?: any;
+  icon?: React.ElementType;
   type?: string;
   xpValue?: number;
 }
@@ -151,7 +151,7 @@ function MiniTrendLine({ data }: { data: number[] }) {
 
 
 
-const getDynamicStreakData = (historyData: any[]) => {
+const getDynamicStreakData = (historyData: ReturnType<typeof generateDynamicHistory>) => {
   const today = new Date();
   const currentDayOfWeek = today.getDay(); 
   const adjustedDay = currentDayOfWeek === 0 ? 6 : currentDayOfWeek - 1; 

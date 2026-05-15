@@ -12,6 +12,19 @@ import {
 
 // --- MOCK DATA ---
 
+interface HistoryItem {
+  action: string;
+  details: string;
+  points: number;
+  type: string;
+  date: string;
+  time: string;
+  icon: React.ElementType;
+  color: string;
+  hexColor: string;
+  typeColor: string;
+}
+
 interface CategoryBreakdown {
   label: string;
   percent: number;
@@ -22,50 +35,70 @@ interface CategoryBreakdown {
   xpValue?: number;
 }
 
-// 1. Dynamic Breakdown (Fixing the Math)
-const getDynamicEarningBreakdown = (totalPoints: number) => {
-  if (totalPoints === 0) return []; // Show nothing if no points!
-  
-  const categories = [
-    { label: "Fan Battles", percent: 25, color: "#eab308", icon: Gamepad2, type: "Fantasy" },
-    { label: "Trivia Questions", percent: 20, color: "#3b82f6", icon: Award, type: "Engagement" },
-    { label: "Polls & Predictions", percent: 20, color: "#a855f7", icon: Trophy, type: "Engagement" },
-    { label: "News Articles", percent: 15, color: "#f43f5e", icon: FileText, type: "Content" },
-    { label: "Audio", percent: 10, color: "#f97316", icon: Play, type: "Content" },
-    { label: "Daily Login", percent: 10, color: "#10b981", icon: CheckCircle2, type: "Account" },
-  ];
+// 1. YOUR EXACT ACTIVITY LEDGER
+// (Right now this holds your real 15 XP Fan Battle. Later, fetch this array directly from your backend!)
+const exactUserHistory: HistoryItem[] = [
+  {
+    action: "Fan Battles",
+    details: "Played a Fan Battle",
+    points: 15, 
+    type: "Fantasy",
+    date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+    time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+    icon: Gamepad2,
+    color: "text-yellow-500",
+    hexColor: "#eab308",      
+    typeColor: "text-yellow-500 border-white/10 bg-white/5"
+  }
+];
 
-  let currentSum = 0;
-  return categories.map((cat, index) => {
-    let xpValue;
-    // The exact remainder method ensures it always sums perfectly to totalPoints (e.g., 15)
-    if (index === categories.length - 1) {
-      xpValue = totalPoints - currentSum; 
-    } else {
-      xpValue = Math.round((cat.percent / 100) * totalPoints);
-      currentSum += xpValue;
+// 2. PERFECT BREAKDOWN CALCULATOR
+// This calculates the Donut Chart and percentages perfectly based ONLY on your exact ledger.
+// This tells TypeScript exactly what each category looks like
+interface GroupedCategory {
+  label: string;
+  xpValue: number;
+  color: string;
+  icon: React.ElementType;
+}
+
+const getExactEarningBreakdown = (history: HistoryItem[]): CategoryBreakdown[] => {
+  if (history.length === 0) return [];
+
+  const historyTotal = history.reduce((sum, item) => sum + item.points, 0);
+
+  // We changed 'any' to 'GroupedCategory' here
+  const grouped = history.reduce((acc, curr) => {
+    if (!acc[curr.action]) {
+      acc[curr.action] = { 
+        label: curr.action, 
+        xpValue: 0, 
+        color: curr.hexColor, 
+        icon: curr.icon 
+      };
     }
-    return { ...cat, xpValue, xp: `+${xpValue.toLocaleString()} XP` };
-  }).filter(cat => cat.xpValue > 0); // Only keep activities they ACTUALLY earned points for!
+    acc[curr.action].xpValue += curr.points;
+    return acc;
+  }, {} as Record<string, GroupedCategory>); // <--- This explicitly defines the type
+
+  return Object.values(grouped).map(cat => ({
+    label: cat.label,
+    color: cat.color,
+    icon: cat.icon,
+    xpValue: cat.xpValue,
+    percent: Math.round((cat.xpValue / historyTotal) * 100),
+    xp: `+${cat.xpValue.toLocaleString()} XP`,
+  }));
 };
 
 // 2. Dynamic Feed synced perfectly to the breakdown
-const generateDynamicHistory = (breakdown: ReturnType<typeof getDynamicEarningBreakdown>) => {
+// 2. Dynamic Feed synced perfectly to the breakdown
+// I removed the "..." and added "any" prevention by using the CategoryBreakdown type
+// const getDynamicStreakData = (historyData: HistoryItem[]) => {
   const today = new Date();
   const formattedDate = today.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   
-  return breakdown.map((item, index) => ({
-    date: formattedDate,
-    time: `${10 - index}:00 AM`, 
-    icon: item.icon,
-    action: item.label,
-    details: item.label === "Polls & Predictions" ? "Predicted PBKS to win" : `Participated in ${item.label}`,
-    points: item.xp,
-    type: item.type,
-    color: `text-[${item.color}]`,
-    typeColor: `text-[${item.color}] border-white/10 bg-white/5`
-  }));
-};
+ 
 
 const trendData = [30, 45, 40, 60, 55, 75, 70, 90, 85, 100];
 const topActivitiesData = [
@@ -151,7 +184,7 @@ function MiniTrendLine({ data }: { data: number[] }) {
 
 
 
-const getDynamicStreakData = (historyData: ReturnType<typeof generateDynamicHistory>) => {
+const getDynamicStreakData = (historyData: HistoryItem[]) => {
   const today = new Date();
   const currentDayOfWeek = today.getDay(); 
   const adjustedDay = currentDayOfWeek === 0 ? 6 : currentDayOfWeek - 1; 
@@ -212,9 +245,9 @@ const calculateLevelData = (totalXp: number) => {
 
 // Add a quick interface to prevent TypeScript 'any' errors
 interface LeaderboardContextType {
-  currentUserPoints?: number;
-  currentUserRank?: number;
-  previousUserRank?: number;
+  currentUserPoints: number; // Remove the '?' to ensure it's treated as a number
+  currentUserRank: number;
+  previousUserRank: number;
 }
 
 export default function FanZoneDashboard() {
@@ -227,9 +260,14 @@ export default function FanZoneDashboard() {
   const previousUserRank = contextData?.previousUserRank ?? 0;
   
   // 1. Math and Feeds
+ // 1. Math and Exact Feeds
   const displayPoints = currentUserPoints.toLocaleString();
-  const dynamicEarningBreakdown = getDynamicEarningBreakdown(currentUserPoints);
-  const earningHistoryData = generateDynamicHistory(dynamicEarningBreakdown);
+  
+  // Use the exact ledger for 100% accurate Recent Activity
+  const earningHistoryData = exactUserHistory; 
+  
+  // Calculate perfect percentages based ONLY on the exact ledger
+  const dynamicEarningBreakdown = getExactEarningBreakdown(earningHistoryData);
   
   // 2. Dropdown Logic
   const monthDisplayPoints = selectedMonth === "May 2026" ? displayPoints : "0";
@@ -241,16 +279,15 @@ export default function FanZoneDashboard() {
   const levelData = calculateLevelData(currentUserPoints);
   const { streakMap, currentStreak } = getDynamicStreakData(earningHistoryData);
   
-  // 4. GENERATE RECENT ACTIVITY LIST (Fixes ReferenceError)
-  const recentActivityList = earningHistoryData.slice(0, 5).map(item => ({
-    icon: item.icon,
-    action: item.action,
-    detail: item.details,
-    xp: item.points,
-    time: item.time,
-    color: item.color
-  }));
-
+  // 4. GENERATE RECENT ACTIVITY LIST (Fixed Syntax)
+const recentActivityList = earningHistoryData.slice(0, 5).map(item => ({
+  icon: item.icon, 
+  action: item.action,
+  detail: item.details,
+  xp: item.points,
+  time: item.time,
+  color: item.color
+}));
   return (
     <div className="min-h-screen bg-[#050505] text-white font-sans selection:bg-rose-500/30 pb-20">
       

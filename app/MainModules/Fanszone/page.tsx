@@ -11,89 +11,79 @@ import {
 } from "lucide-react";
 
 // --- MOCK DATA ---
-const earningBreakdown = [
-  { label: "Watch / Listen", percent: 35, xp: "4,350 XP", color: "#f43f5e" }, // rose-500
-  { label: "Social Engagement", percent: 20, xp: "2,500 XP", color: "#3b82f6" }, // blue-500
-  { label: "Activities", percent: 25, xp: "3,100 XP", color: "#eab308" }, // yellow-500
-  { label: "Fantasy & Predictions", percent: 15, xp: "1,900 XP", color: "#f97316" }, // orange-500
-  { label: "Community", percent: 5, xp: "600 XP", color: "#a855f7" }, // purple-500
-];
 
-const pointsJourneyData = [
-  { label: "Content", percent: 40, xp: "33,860 XP", color: "#f43f5e" }, // rose
-  { label: "Engagement", percent: 25, xp: "21,150 XP", color: "#3b82f6" }, // blue
-  { label: "Fantasy", percent: 20, xp: "16,930 XP", color: "#eab308" }, // yellow
-  { label: "Community", percent: 10, xp: "8,460 XP", color: "#a855f7" }, // purple
-  { label: "Bonus", percent: 5, xp: "4,250 XP", color: "#ec4899" }, // pink
-];
+interface CategoryBreakdown {
+  label: string;
+  percent: number;
+  color: string;
+  xp: string;
+  icon?: any;
+  type?: string;
+  xpValue?: number;
+}
 
+// 1. Dynamic Breakdown (Fixing the Math)
+const getDynamicEarningBreakdown = (totalPoints: number) => {
+  if (totalPoints === 0) return []; // Show nothing if no points!
+  
+  const categories = [
+    { label: "Fan Battles", percent: 25, color: "#eab308", icon: Gamepad2, type: "Fantasy" },
+    { label: "Trivia Questions", percent: 20, color: "#3b82f6", icon: Award, type: "Engagement" },
+    { label: "Polls & Predictions", percent: 20, color: "#a855f7", icon: Trophy, type: "Engagement" },
+    { label: "News Articles", percent: 15, color: "#f43f5e", icon: FileText, type: "Content" },
+    { label: "Audio", percent: 10, color: "#f97316", icon: Play, type: "Content" },
+    { label: "Daily Login", percent: 10, color: "#10b981", icon: CheckCircle2, type: "Account" },
+  ];
+
+  let currentSum = 0;
+  return categories.map((cat, index) => {
+    let xpValue;
+    // The exact remainder method ensures it always sums perfectly to totalPoints (e.g., 15)
+    if (index === categories.length - 1) {
+      xpValue = totalPoints - currentSum; 
+    } else {
+      xpValue = Math.round((cat.percent / 100) * totalPoints);
+      currentSum += xpValue;
+    }
+    return { ...cat, xpValue, xp: `+${xpValue.toLocaleString()} XP` };
+  }).filter(cat => cat.xpValue > 0); // Only keep activities they ACTUALLY earned points for!
+};
+
+// 2. Dynamic Feed synced perfectly to the breakdown
+const generateDynamicHistory = (breakdown: ReturnType<typeof getDynamicEarningBreakdown>) => {
+  const today = new Date();
+  const formattedDate = today.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  
+  return breakdown.map((item, index) => ({
+    date: formattedDate,
+    time: `${10 - index}:00 AM`, 
+    icon: item.icon,
+    action: item.label,
+    details: item.label === "Polls & Predictions" ? "Predicted PBKS to win" : `Participated in ${item.label}`,
+    points: item.xp,
+    type: item.type,
+    color: `text-[${item.color}]`,
+    typeColor: `text-[${item.color}] border-white/10 bg-white/5`
+  }));
+};
+
+const trendData = [30, 45, 40, 60, 55, 75, 70, 90, 85, 100];
 const topActivitiesData = [
   { icon: UserPlus, title: "Register on SportsFan360", xp: "+100 XP", desc: "1 time", color: "text-emerald-500", bg: "bg-emerald-500/10 border-emerald-500/20" },
   { icon: UserPlus, title: "Invite Friends", xp: "+100 XP", desc: "3 invites", color: "text-emerald-500", bg: "bg-emerald-500/10 border-emerald-500/20" },
   { icon: Gamepad2, title: "Fantasy - Fan Battle", xp: "+50 XP", desc: "7 battles", color: "text-yellow-500", bg: "bg-yellow-500/10 border-yellow-500/20" },
-  { icon: Play, title: "Play Fantasy Games", xp: "+50 XP", desc: "5 games", color: "text-purple-500", bg: "bg-purple-500/10 border-purple-500/20" },
-  { icon: FileText, title: "Read News Article", xp: "+25 XP", desc: "14 articles", color: "text-rose-500", bg: "bg-rose-500/10 border-rose-500/20" },
 ];
-
-// We will reuse `earningHistoryData` for the main table to save space, 
-// as it has the exact structure needed for the All Activities table!
 
 const activityFeedData = [
-  { category: "CONTENT", action: "Read: IPL 2026 Dispatch, May 10", points: "+25 XP", time: "2m ago", icon: FileText, color: "text-yellow-500", bg: "bg-yellow-500/10 border-yellow-500/20" },
-  { category: "ENGAGEMENT", action: "Voted in Poll: Best Knock of the Day", points: "+15 XP", time: "15m ago", icon: CheckCircle2, color: "text-indigo-400", bg: "bg-indigo-500/10 border-indigo-500/20" },
-  { category: "CONTENT", action: "Watched Video Drop: CSK vs LSG Highlights", points: "+20 XP", time: "20m ago", icon: Play, color: "text-emerald-500", bg: "bg-emerald-500/10 border-emerald-500/20" },
-  { category: "ENGAGEMENT", action: "Liked a Post", points: "+10 XP", time: "35m ago", icon: ThumbsUp, color: "text-rose-500", bg: "bg-rose-500/10 border-rose-500/20" },
-  { category: "ENGAGEMENT", action: "Shared a Post", points: "+15 XP", time: "45m ago", icon: Share2, color: "text-purple-500", bg: "bg-purple-500/10 border-purple-500/20" },
-  { category: "COMMUNITY", action: "Sent 2 Signals to friends", points: "+10 XP", time: "1h ago", icon: Radio, color: "text-blue-400", bg: "bg-blue-500/10 border-blue-500/20" },
-  { category: "FANTASY", action: "Joined IPL Fan Battle", points: "+50 XP", time: "1h ago", icon: Gamepad2, color: "text-yellow-500", bg: "bg-yellow-500/10 border-yellow-500/20" },
-  { category: "CONTENT", action: "Read News Article: PBKS vs DC Preview", points: "+25 XP", time: "2h ago", icon: FileText, color: "text-emerald-500", bg: "bg-emerald-500/10 border-emerald-500/20" },
-  { category: "FANTASY", action: "Invited 2 friends to Fan Battle", points: "+20 XP", time: "3h ago", icon: Gamepad2, color: "text-rose-500", bg: "bg-rose-500/10 border-rose-500/20" },
-  { category: "PREDICTIONS", action: "Predicted PBKS to win", points: "+25 XP", time: "3h ago", icon: Trophy, color: "text-rose-500", bg: "bg-rose-500/10 border-rose-500/20" },
-];
-
-const earningHistoryData = [
-  { date: "May 11, 2026", time: "10:24 PM", icon: FileText, action: "Read News Article", details: "Read: IPL 2026 Dispatch, May 10", points: "+25 XP", type: "Content", typeColor: "text-yellow-500 border-yellow-500/20 bg-yellow-500/10" },
-  { date: "May 11, 2026", time: "09:45 PM", icon: CheckCircle2, action: "Voted in Poll", details: "Poll: Best Knock of the Day", points: "+15 XP", type: "Engagement", typeColor: "text-indigo-400 border-indigo-500/20 bg-indigo-500/10" },
-  { date: "May 11, 2026", time: "09:30 PM", icon: Play, action: "Watched Video Drop", details: "CSK vs LSG Highlights", points: "+20 XP", type: "Content", typeColor: "text-emerald-500 border-emerald-500/20 bg-emerald-500/10" },
-  { date: "May 11, 2026", time: "08:15 PM", icon: Share2, action: "Shared a Post", details: "Shared match highlights", points: "+15 XP", type: "Engagement", typeColor: "text-purple-500 border-purple-500/20 bg-purple-500/10" },
-  { date: "May 11, 2026", time: "07:40 PM", icon: ThumbsUp, action: "Liked a Post", details: "Liked a fan post", points: "+10 XP", type: "Engagement", typeColor: "text-rose-500 border-rose-500/20 bg-rose-500/10" },
-  { date: "May 11, 2026", time: "07:20 PM", icon: Radio, action: "Send Signals", details: "Sent 2 signals to friends", points: "+10 XP", type: "Community", typeColor: "text-blue-400 border-blue-500/20 bg-blue-500/10" },
-  { date: "May 11, 2026", time: "06:55 PM", icon: Gamepad2, action: "Fantasy - Fan Battle", details: "Joined IPL Fan Battle", points: "+50 XP", type: "Fantasy", typeColor: "text-yellow-500 border-yellow-500/20 bg-yellow-500/10" },
-  { date: "May 11, 2026", time: "06:40 PM", icon: Gamepad2, action: "Invite to Fan Battle", details: "Invited 2 friends", points: "+20 XP", type: "Fantasy", typeColor: "text-rose-500 border-rose-500/20 bg-rose-500/10" },
-  { date: "May 11, 2026", time: "05:30 PM", icon: Award, action: "Made Prediction", details: "Predicted PBKS to win", points: "+25 XP", type: "Engagement", typeColor: "text-purple-500 border-purple-500/20 bg-purple-500/10" },
-  { date: "May 11, 2026", time: "04:15 PM", icon: CheckCircle2, action: "Participated in Poll", details: "Poll: Player of the Match", points: "+15 XP", type: "Engagement", typeColor: "text-indigo-400 border-indigo-500/20 bg-indigo-500/10" },
-  { date: "May 11, 2026", time: "03:05 PM", icon: Bell, action: "Requested Drops", details: "Requested CSK Highlights", points: "+15 XP", type: "Content", typeColor: "text-pink-500 border-pink-500/20 bg-pink-500/10" },
-  { date: "May 11, 2026", time: "02:20 PM", icon: UserPlus, action: "Registered on SportsFan360", details: "Welcome to SportsFan360!", points: "+100 XP", type: "Account", typeColor: "text-blue-500 border-blue-500/20 bg-blue-500/10" },
-  { date: "May 10, 2026", time: "11:10 PM", icon: UserPlus, action: "Invite Friends", details: "Invited 3 friends", points: "+100 XP", type: "Referral", typeColor: "text-emerald-500 border-emerald-500/20 bg-emerald-500/10" },
+  { category: "CONTENT", action: "Read: IPL 2026 Dispatch", points: "+25 XP", time: "2m ago", icon: FileText, color: "text-yellow-500", bg: "bg-yellow-500/10" },
+  { category: "ENGAGEMENT", action: "Voted in Poll", points: "+15 XP", time: "15m ago", icon: CheckCircle2, color: "text-indigo-400", bg: "bg-indigo-500/10" },
 ];
 
 const earnPointsActions = [
   { icon: Play, title: "Watch / Listen to Drops", xp: "+20 XP", desc: "12 Actions", color: "text-yellow-500", bg: "bg-yellow-500/10" },
   { icon: ThumbsUp, title: "Like a Post", xp: "+10 XP", desc: "28 Actions", color: "text-rose-500", bg: "bg-rose-500/10" },
   { icon: Share2, title: "Share a Post", xp: "+15 XP", desc: "18 Actions", color: "text-purple-500", bg: "bg-purple-500/10" },
-  { icon: Radio, title: "Send Signals", xp: "+10 XP", desc: "9 Actions", color: "text-blue-500", bg: "bg-blue-500/10" },
-  { icon: Bell, title: "Request Drops", xp: "+15 XP", desc: "6 Actions", color: "text-pink-500", bg: "bg-pink-500/10" },
-  { icon: FileText, title: "Read News Article", xp: "+25 XP", desc: "14 Articles", color: "text-yellow-500", bg: "bg-yellow-500/10" },
-  { icon: CheckCircle2, title: "Take Part in Polls", xp: "+15 XP", desc: "8 Polls", color: "text-yellow-500", bg: "bg-yellow-500/10" },
-  { icon: Gamepad2, title: "Fantasy - Fan Battles", xp: "+50 XP", desc: "7 Battles", color: "text-orange-500", bg: "bg-orange-500/10" },
-  { icon: Award, title: "Make Predictions", xp: "+25 XP", desc: "10 Predictions", color: "text-yellow-500", bg: "bg-yellow-500/10" },
-  { icon: Play, title: "Play Fantasy Games", xp: "+50 XP", desc: "5 Games", color: "text-rose-500", bg: "bg-rose-500/10" },
-  { icon: UserPlus, title: "Register on SportsFan360", xp: "+100 XP", desc: "1 Time", color: "text-purple-500", bg: "bg-purple-500/10" },
-  { icon: UserPlus, title: "Invite Friends", xp: "+100 XP", desc: "3 Invites", color: "text-emerald-500", bg: "bg-emerald-500/10" },
-  { icon: Gamepad2, title: "Invite to Fan Battles", xp: "+20 XP", desc: "4 Invites", color: "text-rose-500", bg: "bg-rose-500/10" },
 ];
-
-// Automatically syncs the Recent Activity list with actual earned points
-const recentActivityList = earningHistoryData.slice(0, 5).map(item => ({
-  icon: item.icon,
-  action: item.action,
-  detail: item.details,
-  xp: item.points,
-  time: item.time, 
-  color: item.typeColor.split(" ")[0] // Automatically grabs the specific text color (e.g., text-yellow-500)
-}));
-
-const trendData = [30, 45, 40, 60, 55, 75, 70, 90, 85, 100];
 
 // --- REUSABLE COMPONENTS ---
 
@@ -157,58 +147,41 @@ function MiniTrendLine({ data }: { data: number[] }) {
     </svg>
   );
 }
-// Add this above: export default function FanZoneDashboard() {
-interface CategoryBreakdown {
-  label: string;
-  percent: number;
-  color: string;
-  xp: string;
-}
 
-const getDynamicEarningBreakdown = (totalPoints: number): CategoryBreakdown[] => {
-  const categories = [
-    { label: "Fan Battles", percent: 25, color: "#eab308" }, 
-    { label: "Trivia Questions", percent: 20, color: "#3b82f6" }, 
-    { label: "Polls & Predictions", percent: 20, color: "#a855f7" }, 
-    { label: "News Articles", percent: 15, color: "#f43f5e" }, 
-    { label: "Audio", percent: 10, color: "#f97316" }, 
-    { label: "Daily Login", percent: 10, color: "#10b981" }, 
-  ];
 
-  return categories.map((cat) => ({
-    ...cat,
-    xp: `${Math.round((cat.percent / 100) * totalPoints).toLocaleString()} XP`
-  }));
-};
-const getDynamicStreakData = (historyData: typeof earningHistoryData) => {
+
+
+const getDynamicStreakData = (historyData: any[]) => {
   const today = new Date();
   const currentDayOfWeek = today.getDay(); 
-  // Adjust so the week starts on Monday (0 = Mon, 6 = Sun)
   const adjustedDay = currentDayOfWeek === 0 ? 6 : currentDayOfWeek - 1; 
-  
   const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
   
-  return days.map((dayName, index) => {
+  let currentStreak = 0;
+  
+  const streakMap = days.map((dayName, index) => {
     const dateOfThisDay = new Date(today);
     dateOfThisDay.setDate(today.getDate() - adjustedDay + index);
-    
-    // Formats the date to match your mock data exactly (e.g., "May 11, 2026")
     const formattedDate = dateOfThisDay.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
     
-    // Check if the user earned points on this specific date
     const hasActivity = historyData.some(item => item.date === formattedDate);
-    
-    // Check if the day is in the past to determine if they missed it
     const todayAtMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
     const thisDayAtMidnight = new Date(dateOfThisDay.getFullYear(), dateOfThisDay.getMonth(), dateOfThisDay.getDate()).getTime();
-    const isPastOrToday = thisDayAtMidnight <= todayAtMidnight;
+    
+    const isPast = thisDayAtMidnight < todayAtMidnight;
+    const isToday = thisDayAtMidnight === todayAtMidnight;
+    
+    if (hasActivity) currentStreak++;
 
     return {
       day: dayName,
-      isActive: hasActivity,
-      isMissed: !hasActivity && isPastOrToday,
+      isActive: hasActivity, // Tick
+      isMissed: !hasActivity && isPast, // Cross (only if in the past)
+      isFutureOrEmptyToday: (!hasActivity && isToday) || thisDayAtMidnight > todayAtMidnight // Blank
     };
   });
+
+  return { streakMap, currentStreak };
 };
 
 const calculateLevelData = (totalXp: number) => {
@@ -246,29 +219,37 @@ interface LeaderboardContextType {
 
 export default function FanZoneDashboard() {
   const [activeTab, setActiveTab] = useState("My Analytics");
+  const [selectedMonth, setSelectedMonth] = useState("May 2026");
   
-  // 1. Fetch live points from your context
- // 1. Fetch live points from your context safely (handles null loading states)
   const contextData = useLeaderboard() as LeaderboardContextType | null;
-  
   const currentUserPoints = contextData?.currentUserPoints ?? 0;
   const currentUserRank = contextData?.currentUserRank ?? 0;
   const previousUserRank = contextData?.previousUserRank ?? 0;
   
+  // 1. Math and Feeds
   const displayPoints = currentUserPoints.toLocaleString();
   const dynamicEarningBreakdown = getDynamicEarningBreakdown(currentUserPoints);
+  const earningHistoryData = generateDynamicHistory(dynamicEarningBreakdown);
+  
+  // 2. Dropdown Logic
+  const monthDisplayPoints = selectedMonth === "May 2026" ? displayPoints : "0";
+  const vsMonthText = selectedMonth === "May 2026" ? "vs Apr 2026" : "vs Mar 2026";
 
-  // 2. Rank direction logic
+  // 3. Rank & Streak Logic
+ const rankDiff = previousUserRank > 0 ? Math.abs(previousUserRank - currentUserRank) : 0;
   const isRankUp = previousUserRank > 0 && currentUserRank < previousUserRank;
-  // const isRankDown = previousUserRank > 0 && currentUserRank > previousUserRank;
-  const rankDiff = previousUserRank > 0 ? Math.abs(previousUserRank - currentUserRank) : 0;
-  
-  // 3. Leveling logic
   const levelData = calculateLevelData(currentUserPoints);
-  // 4. Dynamic Streak logic synced to earning history
-  const streakData = getDynamicStreakData(earningHistoryData);
+  const { streakMap, currentStreak } = getDynamicStreakData(earningHistoryData);
   
-// ...
+  // 4. GENERATE RECENT ACTIVITY LIST (Fixes ReferenceError)
+  const recentActivityList = earningHistoryData.slice(0, 5).map(item => ({
+    icon: item.icon,
+    action: item.action,
+    detail: item.details,
+    xp: item.points,
+    time: item.time,
+    color: item.color
+  }));
 
   return (
     <div className="min-h-screen bg-[#050505] text-white font-sans selection:bg-rose-500/30 pb-20">
@@ -439,19 +420,23 @@ export default function FanZoneDashboard() {
                 {/* Col 1: Left Stats (Span 3) */}
                 <div className="xl:col-span-3 w-full">
                   <div className="relative w-40 mb-8 hidden sm:block">
-                    <select className="w-full bg-[#18181b] border border-white/10 text-sm font-bold rounded-xl pl-4 pr-8 py-2.5 text-white focus:outline-none focus:border-rose-500 appearance-none cursor-pointer">
-                      <option>May 2026</option>
-                      <option>Apr 2026</option>
+                    <select 
+                      value={selectedMonth}
+                      onChange={(e) => setSelectedMonth(e.target.value)}
+                      className="w-full bg-[#18181b] border border-white/10 text-sm font-bold rounded-xl pl-4 pr-8 py-2.5 text-white focus:outline-none focus:border-rose-500 appearance-none cursor-pointer"
+                    >
+                      <option value="May 2026">May 2026</option>
+                      <option value="Apr 2026">Apr 2026</option>
                     </select>
                     <ChevronDown className="w-4 h-4 text-gray-500 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                   </div>
+                  
                   <div className="space-y-8">
                     <div>
                       <p className="text-xs text-gray-400 font-medium mb-1">This Month</p>
                       <div className="flex items-end gap-3">
-                        <h4 className="text-3xl font-black text-white leading-none">{displayPoints} XP</h4>
-            
-                       <span className="text-xs text-emerald-500 font-bold mb-0.5">↑ {displayPoints} <span className="text-gray-500 font-medium">vs Apr 2026</span></span>
+                        <h4 className="text-3xl font-black text-white leading-none">{monthDisplayPoints} XP</h4>
+                       <span className="text-xs text-emerald-500 font-bold mb-0.5">↑ {monthDisplayPoints} <span className="text-gray-500 font-medium">{vsMonthText}</span></span>
                       </div>
                     </div>
                     <div>
@@ -588,29 +573,29 @@ export default function FanZoneDashboard() {
                   <h3 className="text-xs font-black tracking-widest text-gray-400 uppercase mb-4 flex items-center gap-1.5">
                     Your Streak <InfoIcon />
                   </h3>
-                  <div className="flex items-baseline gap-2 mb-1">
-                    <h2 className="text-4xl font-black text-white">12</h2>
+                <div className="flex items-baseline gap-2 mb-1">
+                    <h2 className="text-4xl font-black text-white">{currentStreak}</h2>
                     <span className="text-xl font-medium text-gray-400">Days</span>
                   </div>
                   <p className="text-sm text-gray-400 mb-6">Keep it going, don&apos;t break your streak!</p>
                   
                   <div className="flex justify-between items-center">
-                    {streakData.map((data) => {
-                      return (
-                        <div key={data.day} className="flex flex-col items-center gap-2">
-                          <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all ${
-                            data.isActive 
-                              ? 'bg-rose-600 border-rose-500 text-white shadow-[0_0_10px_rgba(225,29,72,0.5)]' 
-                              : data.isMissed 
-                                ? 'bg-[#0f0a0a] border-red-500/30 text-red-500 shadow-[0_0_10px_rgba(239,68,68,0.15)]' // Missed (Red Cross)
-                                : 'bg-[#18181b] border-white/10 text-gray-600' // Future (Empty)
-                          }`}>
-                            {data.isActive ? <CheckCircle2 className="w-5 h-5" /> : data.isMissed ? <X className="w-5 h-5 opacity-80" /> : null}
-                          </div>
-                          <span className={`text-xs font-bold ${data.isActive || data.isMissed ? 'text-white' : 'text-gray-500'}`}>{data.day}</span>
+                    {streakMap.map((data) => {
+                    return (
+                      <div key={data.day} className="flex flex-col items-center gap-2">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all ${
+                          data.isActive 
+                            ? 'bg-rose-600 border-rose-500 text-white shadow-[0_0_10px_rgba(225,29,72,0.5)]' 
+                            : data.isMissed 
+                              ? 'bg-[#0f0a0a] border-red-500/30 text-red-500 shadow-[0_0_10px_rgba(239,68,68,0.15)]'
+                              : 'bg-[#18181b] border-white/10 text-gray-600'
+                        }`}>
+                          {data.isActive ? <CheckCircle2 className="w-5 h-5" /> : data.isMissed ? <X className="w-5 h-5 opacity-80" /> : null}
                         </div>
-                      );
-                    })}
+                        <span className={`text-xs font-bold ${data.isActive || data.isMissed ? 'text-white' : 'text-gray-500'}`}>{data.day}</span>
+                      </div>
+                    );
+                  })}
                   </div>
                 </div>
 
@@ -761,23 +746,28 @@ export default function FanZoneDashboard() {
                     Your Streak <InfoIcon />
                   </h3>
                   <div className="flex items-baseline gap-2 mb-1">
-                    <h2 className="text-4xl font-black text-white">12</h2>
+                    <h2 className="text-4xl font-black text-white">{currentStreak}</h2>
                     <span className="text-xl font-medium text-gray-400">Days</span>
                   </div>
                   <p className="text-sm text-gray-400 mb-6">Keep it going, don&apos;t break your streak!</p>
                   
                   <div className="flex justify-between items-center">
-                    {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day, idx) => {
-                      const isActive = idx < 6;
-                      return (
-                        <div key={day} className="flex flex-col items-center gap-2">
-                          <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 ${isActive ? 'bg-rose-600 border-rose-500 text-white shadow-[0_0_10px_rgba(225,29,72,0.5)]' : 'bg-[#18181b] border-white/10 text-gray-600'}`}>
-                            {isActive ? <CheckCircle2 className="w-5 h-5" /> : null}
-                          </div>
-                          <span className={`text-xs font-bold ${isActive ? 'text-white' : 'text-gray-500'}`}>{day}</span>
+                   {streakMap.map((data) => {
+                    return (
+                      <div key={data.day} className="flex flex-col items-center gap-2">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all ${
+                          data.isActive 
+                            ? 'bg-rose-600 border-rose-500 text-white shadow-[0_0_10px_rgba(225,29,72,0.5)]' 
+                            : data.isMissed 
+                              ? 'bg-[#0f0a0a] border-red-500/30 text-red-500 shadow-[0_0_10px_rgba(239,68,68,0.15)]'
+                              : 'bg-[#18181b] border-white/10 text-gray-600'
+                        }`}>
+                          {data.isActive ? <CheckCircle2 className="w-5 h-5" /> : data.isMissed ? <X className="w-5 h-5 opacity-80" /> : null}
                         </div>
-                      );
-                    })}
+                        <span className={`text-xs font-bold ${data.isActive || data.isMissed ? 'text-white' : 'text-gray-500'}`}>{data.day}</span>
+                      </div>
+                    );
+                  })}
                   </div>
                 </div>
 
@@ -915,24 +905,29 @@ export default function FanZoneDashboard() {
                   <h3 className="text-xs font-black tracking-widest text-gray-400 uppercase mb-4 flex items-center gap-1.5">
                     Your Streak <InfoIcon />
                   </h3>
-                  <div className="flex items-baseline gap-2 mb-1">
-                    <h2 className="text-4xl font-black text-white">12</h2>
+                 <div className="flex items-baseline gap-2 mb-1">
+                    <h2 className="text-4xl font-black text-white">{currentStreak}</h2>
                     <span className="text-xl font-medium text-gray-400">Days</span>
                   </div>
-                  <p className="text-sm text-gray-400 mb-6">Keep it going, don&apos;t break your streak!</p>
+                 <p className="text-sm text-gray-400 mb-6">Keep it going, don&apos;t break your streak!</p>
                   
                   <div className="flex justify-between items-center">
-                    {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day, idx) => {
-                      const isActive = idx < 6;
-                      return (
-                        <div key={day} className="flex flex-col items-center gap-2">
-                          <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 ${isActive ? 'bg-rose-600 border-rose-500 text-white shadow-[0_0_10px_rgba(225,29,72,0.5)]' : 'bg-[#18181b] border-white/10 text-gray-600'}`}>
-                            {isActive ? <CheckCircle2 className="w-5 h-5" /> : null}
-                          </div>
-                          <span className={`text-xs font-bold ${isActive ? 'text-white' : 'text-gray-500'}`}>{day}</span>
+                    {streakMap.map((data) => {
+                    return (
+                      <div key={data.day} className="flex flex-col items-center gap-2">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all ${
+                          data.isActive 
+                            ? 'bg-rose-600 border-rose-500 text-white shadow-[0_0_10px_rgba(225,29,72,0.5)]' 
+                            : data.isMissed 
+                              ? 'bg-[#0f0a0a] border-red-500/30 text-red-500 shadow-[0_0_10px_rgba(239,68,68,0.15)]'
+                              : 'bg-[#18181b] border-white/10 text-gray-600'
+                        }`}>
+                          {data.isActive ? <CheckCircle2 className="w-5 h-5" /> : data.isMissed ? <X className="w-5 h-5 opacity-80" /> : null}
                         </div>
-                      );
-                    })}
+                        <span className={`text-xs font-bold ${data.isActive || data.isMissed ? 'text-white' : 'text-gray-500'}`}>{data.day}</span>
+                      </div>
+                    );
+                  })}
                   </div>
                 </div>
 
@@ -1108,7 +1103,6 @@ export default function FanZoneDashboard() {
                   </div>
                   <div className="relative z-10">
                     <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Total Points Earned</p>
-                    <h3 className="text-3xl font-black text-emerald-500 mb-2">84,650 XP</h3>
                     <h3 className="text-3xl font-black text-emerald-500 mb-2">{displayPoints} XP</h3>
 <p className="text-xs font-bold text-emerald-500 flex items-center gap-1">
   This Period ↑ 100% <span className="text-gray-500 ml-1">vs Apr 2026</span>

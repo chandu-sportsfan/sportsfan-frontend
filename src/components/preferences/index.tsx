@@ -76,7 +76,7 @@ export default function PreferencesOnboarding() {
             <Image src={'/images/dolly%201.png'} alt="dolly" width={80} height={80} className="object-cover" />
           </div>
           <div className="flex-1">
-            <p className="text-sm text-gray-300 mb-2">Don't leave me hanging...</p>
+            <p className="text-sm text-gray-300 mb-2">Don&apos;t leave me hanging...</p>
             <p className="text-base font-semibold mb-4">Complete your profile setup to get the full experience.</p>
             <div className="flex gap-3">
               <button onClick={() => setStarted(true)} className="flex-1 rounded-full py-3 bg-gradient-to-r from-pink-500 to-orange-500 text-white font-semibold">Complete Now</button>
@@ -111,7 +111,7 @@ export default function PreferencesOnboarding() {
                   <div className="flex-1 text-left">
                     <div className="font-semibold">Virat Kohli</div>
                     <div className="text-xs text-gray-400">12m ago</div>
-                    <div className="mt-2 text-sm text-gray-300">Let's go!!</div>
+                    <div className="mt-2 text-sm text-gray-300">Let&apos;s go!!</div>
                   </div>
                   <button className="ml-2 px-3 py-1 rounded-full bg-white text-black text-sm">Follow</button>
                 </div>
@@ -312,7 +312,7 @@ export default function PreferencesOnboarding() {
               <Image src={finalHero} alt="celebrate" width={520} height={520} className="object-contain" />
             </div>
             <div className="pt-6 w-full">
-              <h2 className="text-2xl font-bold mb-2">Let's go.</h2>
+              <h2 className="text-2xl font-bold mb-2">Let&apos;s go.</h2>
               <p className="text-sm text-gray-400 max-w-lg mx-auto mb-6">Your feed is alive. Built for you, by you.</p>
               <button
                 onClick={() => window.location.assign('/MainModules/HomePage')}

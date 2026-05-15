@@ -37,20 +37,19 @@ interface CategoryBreakdown {
 
 // 1. YOUR EXACT ACTIVITY LEDGER
 // (Right now this holds your real 15 XP Fan Battle. Later, fetch this array directly from your backend!)
-const exactUserHistory: HistoryItem[] =
+const exactUserHistory: HistoryItem[] = [
   {
     action: "Fan Battles",
     details: "Played a Fan Battle",
-    points: 15, // The exact points you earned!
+    points: 15, 
     type: "Fantasy",
     date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
     time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
     icon: Gamepad2,
-    color: "text-yellow-500", // Tailwind text color
-    hexColor: "#eab308",      // Donut Chart stroke color
+    color: "text-yellow-500",
+    hexColor: "#eab308",      
     typeColor: "text-yellow-500 border-white/10 bg-white/5"
   }
-  // When the user does something else, you will just add another object here!
 ];
 
 // 2. PERFECT BREAKDOWN CALCULATOR
@@ -62,7 +61,8 @@ const getExactEarningBreakdown = (history: typeof exactUserHistory): CategoryBre
 
   const grouped = history.reduce((acc, curr) => {
     if (!acc[curr.action]) {
-      acc[curr.action] = { label: curr.action, xpValue: 0, color: curr.hexColor };
+      // Store the icon here so it's available later
+      acc[curr.action] = { label: curr.action, xpValue: 0, color: curr.hexColor, icon: curr.icon };
     }
     acc[curr.action].xpValue += curr.points;
     return acc;
@@ -71,7 +71,8 @@ const getExactEarningBreakdown = (history: typeof exactUserHistory): CategoryBre
   return Object.values(grouped).map(cat => ({
     ...cat,
     percent: Math.round((cat.xpValue / historyTotal) * 100),
-    xp: `+${cat.xpValue.toLocaleString()} XP`
+    xp: `+${cat.xpValue.toLocaleString()} XP`,
+    icon: cat.icon // <--- Pass the icon through
   }));
 };
 
@@ -83,7 +84,7 @@ const generateDynamicHistory = (breakdown: ReturnType<typeof getExactEarningBrea
   return breakdown.map((item, index) => ({
     date: formattedDate,
     time: `${10 - index}:00 AM`, 
-    icon: item.icon,
+    icon: Trophy,
     action: item.label,
     details: item.label === "Polls & Predictions" ? "Predicted PBKS to win" : `Participated in ${item.label}`,
     points: item.xp,
@@ -274,14 +275,13 @@ export default function FanZoneDashboard() {
   
   // 4. GENERATE RECENT ACTIVITY LIST (Fixed Syntax)
 const recentActivityList = earningHistoryData.slice(0, 5).map(item => ({
-  icon: item.icon, // This stores the component reference
+  icon: item.icon, 
   action: item.action,
   detail: item.details,
   xp: item.points,
   time: item.time,
   color: item.color
 }));
-
   return (
     <div className="min-h-screen bg-[#050505] text-white font-sans selection:bg-rose-500/30 pb-20">
       

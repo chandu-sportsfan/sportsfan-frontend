@@ -1509,7 +1509,7 @@ export default function FanZoneDashboard() {
 
     // Make chart data cumulative so the line goes up naturally
     let cumulative = 0;
-    let chartData = buckets.map((val) => {
+    const chartData = buckets.map((val) => {
       cumulative += val;
       return cumulative;
     });

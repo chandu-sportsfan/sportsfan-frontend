@@ -6,13 +6,27 @@ import { useLeaderboard } from '@/context/LeaderboardContext';
 import { ChevronLeft, Trophy, Star, Crown } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
+// 1. Explicitly define the expected shape of your leaderboard items.
+// This prevents Vercel from throwing "implicit any" or "property does not exist" errors.
+interface LeaderboardUser {
+  userId: string | number;
+  rank: number;
+  userName: string;
+  totalPoints: number;
+}
+
 const GlobalLeaderboard: React.FC = () => {
   const { user } = useAuth();
   const { leaderboard, currentUserRank, currentUserPoints, loading } = useLeaderboard();
   const router = useRouter();
 
+  // 2. Defensive fallbacks to guarantee valid types (Vercel requires this strictness)
+  const safeLeaderboard: LeaderboardUser[] = leaderboard ?? [];
+  const safeRank = currentUserRank ?? 0;
+  const safePoints = currentUserPoints ?? 0;
+
   // Premium Loading State
-  if (loading && leaderboard.length === 0) {
+  if (loading && safeLeaderboard.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
         <div className="w-10 h-10 border-4 border-rose-500/20 border-t-rose-500 rounded-full animate-spin" />
@@ -60,7 +74,7 @@ const GlobalLeaderboard: React.FC = () => {
              <p className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-1">Your Rank</p>
              <div className="flex items-end gap-2">
                <h3 className="text-3xl font-black text-white leading-none">
-                 {currentUserRank && currentUserRank > 0 ? `#${currentUserRank}` : "-"}
+                 {safeRank > 0 ? `#${safeRank}` : "-"}
                </h3>
              </div>
            </div>
@@ -71,7 +85,7 @@ const GlobalLeaderboard: React.FC = () => {
              <p className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-1">Total Points</p>
              <div className="flex items-end gap-2">
                <h3 className="text-xl font-black text-emerald-500 leading-none">
-                 {currentUserPoints ? currentUserPoints.toLocaleString() : "0"} <span className="text-sm text-emerald-500/70">SXP</span>
+                 {safePoints > 0 ? safePoints.toLocaleString() : "0"} <span className="text-sm text-emerald-500/70">SXP</span>
                </h3>
              </div>
            </div>
@@ -90,9 +104,10 @@ const GlobalLeaderboard: React.FC = () => {
 
         {/* List Items */}
         <div className="space-y-2">
-          {leaderboard.length > 0 ? (
-            leaderboard.map((leaderboardUser, index) => {
-              const isCurrentUser = leaderboardUser.userId === user?.userId;
+          {safeLeaderboard.length > 0 ? (
+            safeLeaderboard.map((leaderboardUser, index) => {
+              // Safe check for user ID matches
+              const isCurrentUser = Boolean(user?.userId && leaderboardUser.userId === user.userId);
               const isTop3 = index < 3;
               
               // Dynamic Styles based on rank
@@ -118,6 +133,9 @@ const GlobalLeaderboard: React.FC = () => {
                  bgStyle = "bg-gradient-to-r from-rose-500/10 via-rose-500/5 to-[#18181b] border-rose-500/50 shadow-[0_0_15px_rgba(225,29,72,0.15)]";
               }
 
+              // Safely grab the first letter of the username
+              const userInitial = (leaderboardUser.userName || '?').charAt(0).toUpperCase();
+
               return (
                 <div
                   key={leaderboardUser.userId}
@@ -134,11 +152,11 @@ const GlobalLeaderboard: React.FC = () => {
                   {/* User Avatar & Name Column */}
                   <div className="flex-1 flex items-center gap-4">
                     <div className={`w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center font-bold text-lg flex-shrink-0 ${isCurrentUser ? 'bg-gradient-to-br from-rose-500 to-orange-500 text-white shadow-lg' : 'bg-[#27272a] text-gray-300 group-hover:bg-[#3f3f46] transition-colors border border-white/5'}`}>
-                       {leaderboardUser.userName.charAt(0).toUpperCase()}
+                       {userInitial}
                     </div>
                     <div>
                       <p className={`font-bold md:text-lg tracking-wide ${isCurrentUser ? 'text-white' : 'text-gray-200 group-hover:text-white transition-colors'}`}>
-                        {leaderboardUser.userName}
+                        {leaderboardUser.userName || 'Unknown Fan'}
                         {isCurrentUser && (
                           <span className="ml-3 text-[9px] bg-rose-500 text-white px-2 py-0.5 rounded-full uppercase tracking-widest align-middle shadow-sm">
                             You
@@ -153,7 +171,7 @@ const GlobalLeaderboard: React.FC = () => {
                     <div className="flex items-center gap-1.5 justify-end">
                       {isTop3 && <Star className={`w-4 h-4 fill-current ${rankColor}`} />}
                       <span className={`text-lg md:text-xl font-black ${isCurrentUser ? 'text-emerald-400' : 'text-emerald-500'} tabular-nums`}>
-                        {leaderboardUser.totalPoints.toLocaleString()}
+                        {(leaderboardUser.totalPoints || 0).toLocaleString()}
                       </span>
                     </div>
                     <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">SXP</span>

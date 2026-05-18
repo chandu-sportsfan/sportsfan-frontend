@@ -1,3 +1,5 @@
+// components/preferences/PreferenceToggle.tsx
+
 interface PreferenceToggleProps {
   label: string;
   description?: string;

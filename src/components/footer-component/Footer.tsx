@@ -121,13 +121,13 @@ const SportsFan360Footer: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-10 md:gap-6 lg:gap-12">
 
           {/* ── Col 1: App Info ──────────────────────────── */}
-          <div className="flex flex-col gap-4">
+          {/* <div className="flex flex-col gap-4">
             <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-pink-500 mb-1">
               App Info
             </p>
 
             <div className="flex items-center gap-4 bg-zinc-900 border border-zinc-800 rounded-2xl px-4 py-4 hover:border-pink-800 transition-colors duration-300">
-              {/* Icon box */}
+              
               <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-zinc-800 border border-zinc-700 flex items-center justify-center">
                 <RocketIcon />
               </div>
@@ -138,7 +138,7 @@ const SportsFan360Footer: React.FC = () => {
                 <p className="text-xs text-zinc-500 mt-0.5">We&apos;re improving every day.</p>
               </div>
             </div>
-          </div>
+          </div> */}
 
           {/* ── Col 2: Quick Links ───────────────────────── */}
           <div className="flex flex-col gap-4">
@@ -184,6 +184,17 @@ const SportsFan360Footer: React.FC = () => {
 
         {/* ── Bottom Bar ──────────────────────────────────── */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-center gap-4 px-5 mb-2 mt-6">
+
+           <div className="flex items-center gap-2.5">
+            <RocketIcon />
+            <div>
+              <p className="text-xs font-medium text-zinc-300 leading-snug">
+                Beta Build v0.0.02
+              </p>
+              <p className="text-[11px] text-zinc-600">We&apos;re improving every day.</p>
+            </div>
+          </div>
+
           {/* Left: copyright */}
           <div className="flex items-center gap-2.5">
             <ShieldIcon />

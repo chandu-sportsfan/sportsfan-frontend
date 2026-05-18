@@ -1,7 +1,8 @@
-// Chandu's code
+
 // "use client";
 // import { useState, useEffect, useRef } from "react";
 // import { useSearchParams } from "next/navigation";
+// import { useRouter } from "next/navigation";
 // import axios from "axios";
 // import { useAuth } from "@/context/AuthContext";
 // import { useScripts } from "@/context/ScriptsContext";
@@ -72,30 +73,49 @@
 // };
 
 // function audioFileToAudioDrop(audio: AudioFile): AudioDrop {
+    
+//     // 🚨 FIX: Extract matchInfo from the title if the backend failed to send it!
+//     let fallbackMatchInfo = audio.matchInfo;
+    
+//     if (!fallbackMatchInfo && audio.title && audio.title.toLowerCase().includes("vs")) {
+//         const parts = audio.title.split(" ");
+//         const vsIndex = parts.findIndex(p => p.toLowerCase() === "vs");
+        
+//         if (vsIndex > 0 && vsIndex < parts.length - 1) {
+//             fallbackMatchInfo = {
+//                 team1: parts[vsIndex - 1], // e.g., "RCB"
+//                 team2: parts[vsIndex + 1], // e.g., "MI"
+//                 type: audio.title.toLowerCase().includes("post match") ? "Post Match" 
+//                     : audio.title.toLowerCase().includes("pre match") ? "Pre Match" 
+//                     : "Audio Script"
+//             };
+//         }
+//     }
+
 //     return {
 //         id: audio.id,
 //         title: audio.title,
-//         subtitle: audio.matchInfo?.type
-//             ? `${audio.matchInfo.type.replace(/_/g, " ")} — ${audio.matchInfo.team1 ?? ""} vs ${audio.matchInfo.team2 ?? ""}`
+//         subtitle: fallbackMatchInfo?.type
+//             ? `${fallbackMatchInfo.type.replace(/_/g, " ")} — ${fallbackMatchInfo.team1 ?? ""} vs ${fallbackMatchInfo.team2 ?? ""}`
 //             : "Audio Drop",
-//         description: audio.matchInfo
-//             ? `${audio.matchInfo.team1 ?? ""} vs ${audio.matchInfo.team2 ?? ""} — ${audio.matchInfo.type?.replace(/_/g, " ") ?? ""}`
+//         description: fallbackMatchInfo
+//             ? `${fallbackMatchInfo.team1 ?? ""} vs ${fallbackMatchInfo.team2 ?? ""} — ${fallbackMatchInfo.type?.replace(/_/g, " ") ?? ""}`
 //             : audio.title,
 //         listens: 0,
 //         signals: 0,
 //         duration: audio.duration,
 //         date: audio.createdAtFormatted,
-//         room: audio.matchInfo?.team1
-//             ? `${audio.matchInfo.team1} vs ${audio.matchInfo.team2}`
+//         room: fallbackMatchInfo?.team1
+//             ? `${fallbackMatchInfo.team1} vs ${fallbackMatchInfo.team2}`
 //             : "Audio Room",
 //         engagement: 0,
 //         audioUrl: audio.url,
 //         sizeFormatted: audio.sizeFormatted,
-//         speaker: audio.matchInfo?.speaker,
-//         team1: audio.matchInfo?.team1,
-//         team2: audio.matchInfo?.team2,
+//         speaker: fallbackMatchInfo?.speaker || audio.matchInfo?.speaker,
+//         team1: fallbackMatchInfo?.team1,
+//         team2: fallbackMatchInfo?.team2,
 //         durationSeconds: audio.durationSeconds,
-//         matchInfo: audio.matchInfo,
+//         matchInfo: fallbackMatchInfo, // 👈 Now passing the recovered data!
 //     };
 // }
 
@@ -281,9 +301,12 @@
 
 // export default function AudioDropCard() {
 //     const { user, getUserName } = useAuth();
+//     const router = useRouter();
 //     const searchParams = useSearchParams();
 //     const idParam = searchParams.get("id");
 //     const urlParam = searchParams.get("url");
+//     const fromPlaylist = searchParams.get("from") === "playlist";
+//     const playlistId = searchParams.get("playlistId");
 //     const resumeAt = parseFloat(searchParams.get("resume") || "0");
 
 //     const [playing, setPlaying] = useState(false);
@@ -330,6 +353,14 @@
 //     useEffect(() => { allAudioFilesRef.current = allAudioFiles; }, [allAudioFiles]);
 
 //     const getUserId = () => user?.userId || null;
+
+//     const handleBack = () => {
+//         if (fromPlaylist && playlistId) {
+//             router.push(`/MainModules/Playlists?playlistId=${encodeURIComponent(playlistId)}`);
+//             return;
+//         }
+//         router.back();
+//     };
 
 //     const saveProgressToApi = async (elapsedSecs: number, drop: AudioDrop) => {
 //         const userId = getUserId();
@@ -562,7 +593,8 @@
 //             <div className="flex justify-center items-center bg-[#0d0d10] min-h-screen">
 //                 <div className="text-center">
 //                     <p className="text-red-400 mb-4">{error || "Audio not found"}</p>
-//                     <button onClick={() => window.history.back()} className="bg-pink-500 px-4 py-2 rounded text-white hover:bg-pink-600">Go Back</button>
+//                     <button onClick={handleBack} className="bg-pink-500 px-4 py-2 rounded text-white hover:bg-pink-600">Go Back</button>
+//                                     <button onClick={handleBack} className="bg-pink-500 px-4 py-2 rounded text-white hover:bg-pink-600">Go Back</button>
 //                 </div>
 //             </div>
 //         );
@@ -615,16 +647,14 @@
 //                     <div className="flex items-center gap-2">
 //                         {/* Playlist button — opens the extracted component */}
 //                         <button
-//                             onClick={() => setShowPlaylistDialog(true)}
-//                             className="w-8 h-8 rounded-full bg-[#1e1e22] flex items-center justify-center cursor-pointer hover:bg-[#2a2a2e] transition"
-//                             title="Add to Playlist"
-//                         >
-//                             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-//                                 <path d="M2 4h9M2 8h7M2 12h5" stroke="#aaa" strokeWidth="1.4" strokeLinecap="round" />
-//                                 <circle cx="13" cy="11" r="2.5" stroke="#aaa" strokeWidth="1.3" />
-//                                 <path d="M13 9.5V7l2.5-.5" stroke="#aaa" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-//                             </svg>
-//                         </button>
+//                              onClick={() => setShowPlaylistDialog(true)}
+//                              className="px-4 py-2 bg-[#111111] rounded-xl border border-white/5 shadow-[0_4px_15px_rgb(0,0,0,0.5)] hover:bg-[#1a1a1a] transition-all duration-300 group active:scale-95 flex items-center justify-center"
+//                              title="Add to Playlist"
+//                          >
+//                              <span className="text-gray-300 text-[10px] sm:text-xs font-semibold tracking-[0.15em] uppercase group-hover:text-white transition-colors">
+//                                  Add to Playlist
+//                              </span>
+//                          </button>
 //                         <button onClick={openShareDialog} className="w-8 h-8 rounded-full bg-[#1e1e22] flex items-center justify-center cursor-pointer hover:bg-[#2a2a2e] transition">
 //                             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
 //                                 <circle cx="12" cy="3" r="1.8" stroke="#aaa" strokeWidth="1.4" />
@@ -877,14 +907,6 @@
 
 
 
-
-
-
-
-
-
-
-
 "use client";
 import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
@@ -959,20 +981,18 @@ const parseDurationToSeconds = (duration: string): number => {
 };
 
 function audioFileToAudioDrop(audio: AudioFile): AudioDrop {
-    
-    // 🚨 FIX: Extract matchInfo from the title if the backend failed to send it!
     let fallbackMatchInfo = audio.matchInfo;
-    
+
     if (!fallbackMatchInfo && audio.title && audio.title.toLowerCase().includes("vs")) {
         const parts = audio.title.split(" ");
         const vsIndex = parts.findIndex(p => p.toLowerCase() === "vs");
-        
+
         if (vsIndex > 0 && vsIndex < parts.length - 1) {
             fallbackMatchInfo = {
-                team1: parts[vsIndex - 1], // e.g., "RCB"
-                team2: parts[vsIndex + 1], // e.g., "MI"
-                type: audio.title.toLowerCase().includes("post match") ? "Post Match" 
-                    : audio.title.toLowerCase().includes("pre match") ? "Pre Match" 
+                team1: parts[vsIndex - 1],
+                team2: parts[vsIndex + 1],
+                type: audio.title.toLowerCase().includes("post match") ? "Post Match"
+                    : audio.title.toLowerCase().includes("pre match") ? "Pre Match"
                     : "Audio Script"
             };
         }
@@ -1001,7 +1021,7 @@ function audioFileToAudioDrop(audio: AudioFile): AudioDrop {
         team1: fallbackMatchInfo?.team1,
         team2: fallbackMatchInfo?.team2,
         durationSeconds: audio.durationSeconds,
-        matchInfo: fallbackMatchInfo, // 👈 Now passing the recovered data!
+        matchInfo: fallbackMatchInfo,
     };
 }
 
@@ -1051,9 +1071,38 @@ const copyToClipboard = async (text: string) => {
     }
 };
 
+// ─── Points Toast ─────────────────────────────────────────────────────────────
+function PointsToast({ onDone }: { onDone: () => void }) {
+    useEffect(() => {
+        const t = setTimeout(onDone, 3000);
+        return () => clearTimeout(t);
+    }, [onDone]);
 
+    return (
+        <div
+            className="fixed top-6 left-1/2 z-50 flex items-center gap-2 px-5 py-3 rounded-2xl text-sm font-bold tracking-wide shadow-2xl"
+            style={{
+                transform: "translateX(-50%)",
+                background: "rgba(74,222,128,0.15)",
+                border: "1px solid #4ade80",
+                color: "#4ade80",
+                backdropFilter: "blur(12px)",
+                animation: "pointsToastIn 0.4s cubic-bezier(0.34,1.56,0.64,1)",
+                whiteSpace: "nowrap",
+            }}
+        >
+            🎧 +2 pts — thanks for listening!
+            <style>{`
+                @keyframes pointsToastIn {
+                    from { opacity: 0; transform: translateX(-50%) translateY(-14px) scale(0.9); }
+                    to   { opacity: 1; transform: translateX(-50%) translateY(0)    scale(1);   }
+                }
+            `}</style>
+        </div>
+    );
+}
 
-// ─── Script Panel 
+// ─── Script Panel ─────────────────────────────────────────────────────────────
 function ScriptPanel({ matchInfo }: { matchInfo?: MatchInfo }) {
     const { findScript, fetchScriptContent } = useScripts();
     const [scriptHtml, setScriptHtml] = useState<string | null>(null);
@@ -1078,7 +1127,6 @@ function ScriptPanel({ matchInfo }: { matchInfo?: MatchInfo }) {
             .finally(() => setScriptLoading(false));
     }, [matchInfo, findScript, fetchScriptContent]);
 
-    // No matchInfo or no script found - Coming Soon
     if (!matchInfo || (!scriptLoading && !scriptHtml && !scriptError)) {
         return (
             <div className="bg-[#1a1a1e] border border-white/5 rounded-2xl p-4 h-[200px] flex-shrink-0 overflow-hidden">
@@ -1099,7 +1147,6 @@ function ScriptPanel({ matchInfo }: { matchInfo?: MatchInfo }) {
         );
     }
 
-    // Loading state
     if (scriptLoading) {
         return (
             <div className="bg-[#1a1a1e] border border-white/5 rounded-2xl p-4 h-[200px] flex-shrink-0 overflow-hidden">
@@ -1116,7 +1163,6 @@ function ScriptPanel({ matchInfo }: { matchInfo?: MatchInfo }) {
         );
     }
 
-    // Error state
     if (scriptError) {
         return (
             <div className="bg-[#1a1a1e] border border-white/5 rounded-2xl p-4 h-[200px] flex-shrink-0 overflow-hidden">
@@ -1128,50 +1174,48 @@ function ScriptPanel({ matchInfo }: { matchInfo?: MatchInfo }) {
             </div>
         );
     }
-return (
-    <div className="flex-shrink-0 min-w-0">
-        <div
-            className={`bg-[#1a1a1e] border border-white/5 rounded-2xl p-4
-                ${expanded ? "" : "h-[200px] overflow-y-auto"}`}
-            style={!expanded ? { scrollbarWidth: "thin", scrollbarColor: "#3a3a3e #1a1a1e" } : undefined}
-        >
-            <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                    <ScriptIcon />
-                    <p className="text-white text-[13px] font-medium">Audio Script</p>
-                </div>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-medium tracking-wide">Available</span>
-            </div>
-            {/* <div className="text-[#ccc] text-[12px] leading-relaxed script-content" dangerouslySetInnerHTML={{ __html: scriptHtml! }} /> */}
-            <div 
-    className="text-[#ccc] text-[12px] leading-relaxed script-content overflow-hidden w-full min-w-0" 
-    style={{ overflowWrap: "break-word", wordBreak: "break-word" }}
-    dangerouslySetInnerHTML={{ __html: scriptHtml! }} 
-/>
-            <button
-                onClick={() => setExpanded((v) => !v)}
-                className="mt-3 flex items-center gap-1.5 text-[#C9115F] text-[12px] font-medium hover:text-[#e0185a] transition sticky bottom-0 bg-[#1a1a1e] py-1"
+
+    return (
+        <div className="flex-shrink-0 min-w-0">
+            <div
+                className={`bg-[#1a1a1e] border border-white/5 rounded-2xl p-4 ${expanded ? "" : "h-[200px] overflow-y-auto"}`}
+                style={!expanded ? { scrollbarWidth: "thin", scrollbarColor: "#3a3a3e #1a1a1e" } : undefined}
             >
-                {expanded ? (
-                    <>
-                        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                            <path d="M2 8L6 4L10 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                        Show less
-                    </>
-                ) : (
-                    <>
-                        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                            <path d="M2 4L6 8L10 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                        Read full script
-                    </>
-                )}
-            </button>
+                <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                        <ScriptIcon />
+                        <p className="text-white text-[13px] font-medium">Audio Script</p>
+                    </div>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-medium tracking-wide">Available</span>
+                </div>
+                <div
+                    className="text-[#ccc] text-[12px] leading-relaxed script-content overflow-hidden w-full min-w-0"
+                    style={{ overflowWrap: "break-word", wordBreak: "break-word" }}
+                    dangerouslySetInnerHTML={{ __html: scriptHtml! }}
+                />
+                <button
+                    onClick={() => setExpanded((v) => !v)}
+                    className="mt-3 flex items-center gap-1.5 text-[#C9115F] text-[12px] font-medium hover:text-[#e0185a] transition sticky bottom-0 bg-[#1a1a1e] py-1"
+                >
+                    {expanded ? (
+                        <>
+                            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                                <path d="M2 8L6 4L10 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                            Show less
+                        </>
+                    ) : (
+                        <>
+                            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                                <path d="M2 4L6 8L10 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                            Read full script
+                        </>
+                    )}
+                </button>
+            </div>
         </div>
-    </div>
-);
-   
+    );
 }
 
 function ScriptIcon() {
@@ -1183,8 +1227,7 @@ function ScriptIcon() {
     );
 }
 
-// ─── Main Component 
-
+// ─── Main Component ───────────────────────────────────────────────────────────
 export default function AudioDropCard() {
     const { user, getUserName } = useAuth();
     const router = useRouter();
@@ -1215,8 +1258,14 @@ export default function AudioDropCard() {
     const [showShareDialog, setShowShareDialog] = useState(false);
     const [copied, setCopied] = useState(false);
 
-    // ── Playlist dialog — just a boolean now 
     const [showPlaylistDialog, setShowPlaylistDialog] = useState(false);
+
+    // ── Points toast state ────────────────────────────────────────────────────
+    const [showPointsToast, setShowPointsToast] = useState(false);
+    // Tracks whether +2 pts have already been awarded for the current track
+    // in this browser session (server is the source of truth via transactionId,
+    // but this prevents firing the toast more than once per track load).
+    const hasAwardedPointsRef = useRef(false);
 
     const audioRef = useRef<HTMLAudioElement | null>(null);
     const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -1248,23 +1297,54 @@ export default function AudioDropCard() {
         router.back();
     };
 
+    // ── Save progress + trigger points award at 90% ───────────────────────────
     const saveProgressToApi = async (elapsedSecs: number, drop: AudioDrop) => {
         const userId = getUserId();
         if (!userId || !drop.id) return;
+
         const totalSecs = drop.durationSeconds || parseDurationToSeconds(duration);
         const pct = totalSecs > 0 ? Math.round((elapsedSecs / totalSecs) * 100) : 0;
+
         try {
-            await axios.post("/api/audio-progress", { userId, audioId: drop.id, title: drop.title, subtitle: drop.subtitle || "Audio Drop", elapsed: elapsedSecs, durationSeconds: totalSecs, pct, url: drop.audioUrl });
-        } catch (err) { console.error("[audio-progress] save error:", err); }
+            const res = await axios.post("/api/audio-progress", {
+                userId,
+                audioId: drop.id,
+                title: drop.title,
+                subtitle: drop.subtitle || "Audio Drop",
+                elapsed: elapsedSecs,
+                durationSeconds: totalSecs,
+                pct,
+                url: drop.audioUrl,
+                // Pass user info so the backend can resolve the correct name/email
+                userName: getUserName() || user?.name || user?.email || "User",
+                userEmail: user?.email || "",
+            });
+
+            // Show the toast exactly once per track when the backend awards points
+            if (
+                res.data.pointsAwarded > 0 &&
+                !hasAwardedPointsRef.current
+            ) {
+                hasAwardedPointsRef.current = true;
+                setShowPointsToast(true);
+            }
+        } catch (err) {
+            console.error("[audio-progress] save error:", err);
+        }
     };
 
     const startProgressSaving = (drop: AudioDrop) => {
         if (progressSaveRef.current) clearInterval(progressSaveRef.current);
-        progressSaveRef.current = setInterval(() => { saveProgressToApi(elapsedRef.current, drop); }, 5000);
+        progressSaveRef.current = setInterval(() => {
+            saveProgressToApi(elapsedRef.current, drop);
+        }, 5000);
     };
 
     const stopProgressSaving = (drop: AudioDrop) => {
-        if (progressSaveRef.current) { clearInterval(progressSaveRef.current); progressSaveRef.current = null; }
+        if (progressSaveRef.current) {
+            clearInterval(progressSaveRef.current);
+            progressSaveRef.current = null;
+        }
         saveProgressToApi(elapsedRef.current, drop);
     };
 
@@ -1287,6 +1367,7 @@ export default function AudioDropCard() {
         const files = allAudioFilesRef.current;
         if (index < 0 || index >= files.length) return;
         if (audioDropRef.current) stopProgressSaving(audioDropRef.current);
+
         const target = files[index];
         setCurrentIndex(index);
         setPlaying(false);
@@ -1294,11 +1375,16 @@ export default function AudioDropCard() {
         elapsedRef.current = 0;
         setDuration("0:00");
         hasCountedListen.current = false;
+
+        // Reset the points-awarded guard for the new track
+        hasAwardedPointsRef.current = false;
+
         audioIdRef.current = target.id;
         const drop = audioFileToAudioDrop(target);
         setAudioDrop(drop);
         fetchSignalsCount(target.id);
         fetchRecentSignals(target.id);
+
         const url = new URL(window.location.href);
         url.searchParams.set("id", target.id);
         url.searchParams.delete("resume");
@@ -1311,7 +1397,13 @@ export default function AudioDropCard() {
         if (!signalMessage.trim() || !audioDrop?.id) return;
         setSendingSignal(true);
         try {
-            const response = await axios.post("/api/audio-messages", { audioId: audioDrop.id, audioTitle: audioDrop.title, userId: getUserId() || "anonymous", userName: getUserName(), message: signalMessage.trim() });
+            const response = await axios.post("/api/audio-messages", {
+                audioId: audioDrop.id,
+                audioTitle: audioDrop.title,
+                userId: getUserId() || "anonymous",
+                userName: getUserName(),
+                message: signalMessage.trim(),
+            });
             if (response.data.success) {
                 setSignalsCount((prev) => prev + 1);
                 setRecentSignals((prev) => [response.data.signal, ...prev].slice(0, 5));
@@ -1319,8 +1411,12 @@ export default function AudioDropCard() {
                 setSignalMessage("");
                 alert("Signal sent successfully!");
             }
-        } catch (error) { console.error("Error sending signal:", error); alert("Failed to send signal. Please try again."); }
-        finally { setSendingSignal(false); }
+        } catch (error) {
+            console.error("Error sending signal:", error);
+            alert("Failed to send signal. Please try again.");
+        } finally {
+            setSendingSignal(false);
+        }
     };
 
     useEffect(() => {
@@ -1340,17 +1436,34 @@ export default function AudioDropCard() {
             setSignalsCount(0);
             setRecentSignals([]);
             hasCountedListen.current = false;
+            // Reset points guard on new fetch
+            hasAwardedPointsRef.current = false;
 
             if (urlParam && !idParam) {
                 const decodedUrl = decodeURIComponent(urlParam);
                 audioIdRef.current = null;
-                setAudioDrop({ title: "Audio Track", subtitle: "Audio Drop", description: "", listens: 0, signals: 0, duration: "0:00", engagement: 0, audioUrl: decodedUrl });
+                setAudioDrop({
+                    title: "Audio Track",
+                    subtitle: "Audio Drop",
+                    description: "",
+                    listens: 0,
+                    signals: 0,
+                    duration: "0:00",
+                    engagement: 0,
+                    audioUrl: decodedUrl,
+                });
                 setLoading(false);
                 return;
             }
 
-            const response = await axios.get<{ success: boolean; audioFiles: AudioFile[] }>("/api/cloudinary/audio?limit=100");
-            if (!response.data.success || !response.data.audioFiles.length) { setError("No audio files available."); setLoading(false); return; }
+            const response = await axios.get<{ success: boolean; audioFiles: AudioFile[] }>(
+                "/api/cloudinary/audio?limit=100"
+            );
+            if (!response.data.success || !response.data.audioFiles.length) {
+                setError("No audio files available.");
+                setLoading(false);
+                return;
+            }
 
             const audioFiles = response.data.audioFiles;
             setAllAudioFiles(audioFiles);
@@ -1380,6 +1493,7 @@ export default function AudioDropCard() {
                 const drop = audioFileToAudioDrop(target);
                 audioIdRef.current = drop.id ?? null;
                 setAudioDrop(drop);
+
                 const [, playsRes] = await Promise.all([
                     Promise.all([fetchSignalsCount(drop.id!), fetchRecentSignals(drop.id!)]),
                     axios.get("/api/cloudinary/plays"),
@@ -1389,8 +1503,13 @@ export default function AudioDropCard() {
             } else {
                 setError("Audio drop not found.");
             }
-        } catch (err) { console.error("Error fetching audio:", err); setError("Failed to load audio."); }
-        finally { audioReadyToPlayRef.current = true; setLoading(false); }
+        } catch (err) {
+            console.error("Error fetching audio:", err);
+            setError("Failed to load audio.");
+        } finally {
+            audioReadyToPlayRef.current = true;
+            setLoading(false);
+        }
     };
 
     const fetchSignalsCount = async (audioId: string) => {
@@ -1435,17 +1554,29 @@ export default function AudioDropCard() {
                 setDuration(`${m}:${s.toString().padStart(2, "0")}`);
                 if (resumeAt > 0) { audio.currentTime = resumeAt; setElapsed(resumeAt); elapsedRef.current = resumeAt; }
                 if (audioReadyToPlayRef.current) { setPlaying(true); }
-                else { const pollReady = setInterval(() => { if (audioReadyToPlayRef.current) { clearInterval(pollReady); setPlaying(true); } }, 100); }
+                else {
+                    const pollReady = setInterval(() => {
+                        if (audioReadyToPlayRef.current) { clearInterval(pollReady); setPlaying(true); }
+                    }, 100);
+                }
             }
         });
         audio.addEventListener("ended", () => {
-            setPlaying(false); setElapsed(0); elapsedRef.current = 0;
+            setPlaying(false);
+            setElapsed(0);
+            elapsedRef.current = 0;
             incrementListensRef.current();
             const userId = getUserId();
             const drop = audioDropRef.current;
-            if (userId && drop?.id) axios.delete(`/api/audio-progress?userId=${userId}&audioId=${encodeURIComponent(drop.id)}`).catch(err => console.error("[audio-progress] clear error:", err));
+            if (userId && drop?.id) {
+                axios.delete(`/api/audio-progress?userId=${userId}&audioId=${encodeURIComponent(drop.id)}`)
+                    .catch(err => console.error("[audio-progress] clear error:", err));
+            }
             if (progressSaveRef.current) clearInterval(progressSaveRef.current);
-            setTimeout(() => { const nextIndex = currentIndexRef.current + 1; if (nextIndex < allAudioFilesRef.current.length) navigateToAudioRef.current(nextIndex); }, 1000);
+            setTimeout(() => {
+                const nextIndex = currentIndexRef.current + 1;
+                if (nextIndex < allAudioFilesRef.current.length) navigateToAudioRef.current(nextIndex);
+            }, 1000);
         });
         audio.load();
         return () => { audio.pause(); audio.src = ""; };
@@ -1454,13 +1585,23 @@ export default function AudioDropCard() {
     useEffect(() => {
         const audio = audioRef.current;
         if (!audio || !audioDrop) return;
-        if (playing) { audio.play().catch(console.error); timerRef.current = setInterval(() => setElapsed(audio.currentTime), 1000); startProgressSaving(audioDrop); }
-        else { audio.pause(); if (timerRef.current) clearInterval(timerRef.current); if (audioDropRef.current) stopProgressSaving(audioDropRef.current); }
+        if (playing) {
+            audio.play().catch(console.error);
+            timerRef.current = setInterval(() => setElapsed(audio.currentTime), 1000);
+            startProgressSaving(audioDrop);
+        } else {
+            audio.pause();
+            if (timerRef.current) clearInterval(timerRef.current);
+            if (audioDropRef.current) stopProgressSaving(audioDropRef.current);
+        }
         return () => { if (timerRef.current) clearInterval(timerRef.current); };
     }, [playing]);
 
     useEffect(() => {
-        return () => { if (timerRef.current) clearInterval(timerRef.current); if (progressSaveRef.current) clearInterval(progressSaveRef.current); };
+        return () => {
+            if (timerRef.current) clearInterval(timerRef.current);
+            if (progressSaveRef.current) clearInterval(progressSaveRef.current);
+        };
     }, []);
 
     if (loading) {
@@ -1480,7 +1621,6 @@ export default function AudioDropCard() {
                 <div className="text-center">
                     <p className="text-red-400 mb-4">{error || "Audio not found"}</p>
                     <button onClick={handleBack} className="bg-pink-500 px-4 py-2 rounded text-white hover:bg-pink-600">Go Back</button>
-                                    <button onClick={handleBack} className="bg-pink-500 px-4 py-2 rounded text-white hover:bg-pink-600">Go Back</button>
                 </div>
             </div>
         );
@@ -1504,7 +1644,8 @@ export default function AudioDropCard() {
                 { handler: handleShareToX, src: "/images/Share_X.png", alt: "X" },
                 { handler: handleCopyLink, src: "/images/share_copy_link.png", alt: "Copy" },
             ].map(({ handler, src, alt }) => (
-                <button key={alt} onClick={handler} className={`${size} shrink-0 rounded-full overflow-hidden bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center`}>
+                <button key={alt} onClick={handler}
+                    className={`${size} shrink-0 rounded-full overflow-hidden bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center`}>
                     <img src={src} alt={alt} className="w-full h-full object-cover rounded-full" />
                 </button>
             ))}
@@ -1513,6 +1654,9 @@ export default function AudioDropCard() {
 
     return (
         <div className="min-h-screen bg-[#0d0d10] w-full">
+            {/* Points toast */}
+            {showPointsToast && <PointsToast onDone={() => setShowPointsToast(false)} />}
+
             <div className="max-w-6xl mx-auto p-4 lg:p-10 pb-20">
 
                 <Link href="/MainModules/MatchesDropContent" className="inline-flex items-center gap-2 text-gray-400 hover:text-white mb-6 transition">
@@ -1531,16 +1675,15 @@ export default function AudioDropCard() {
                         </div>
                     </div>
                     <div className="flex items-center gap-2">
-                        {/* Playlist button — opens the extracted component */}
                         <button
-                             onClick={() => setShowPlaylistDialog(true)}
-                             className="px-4 py-2 bg-[#111111] rounded-xl border border-white/5 shadow-[0_4px_15px_rgb(0,0,0,0.5)] hover:bg-[#1a1a1a] transition-all duration-300 group active:scale-95 flex items-center justify-center"
-                             title="Add to Playlist"
-                         >
-                             <span className="text-gray-300 text-[10px] sm:text-xs font-semibold tracking-[0.15em] uppercase group-hover:text-white transition-colors">
-                                 Add to Playlist
-                             </span>
-                         </button>
+                            onClick={() => setShowPlaylistDialog(true)}
+                            className="px-4 py-2 bg-[#111111] rounded-xl border border-white/5 shadow-[0_4px_15px_rgb(0,0,0,0.5)] hover:bg-[#1a1a1a] transition-all duration-300 group active:scale-95 flex items-center justify-center"
+                            title="Add to Playlist"
+                        >
+                            <span className="text-gray-300 text-[10px] sm:text-xs font-semibold tracking-[0.15em] uppercase group-hover:text-white transition-colors">
+                                Add to Playlist
+                            </span>
+                        </button>
                         <button onClick={openShareDialog} className="w-8 h-8 rounded-full bg-[#1e1e22] flex items-center justify-center cursor-pointer hover:bg-[#2a2a2e] transition">
                             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                                 <circle cx="12" cy="3" r="1.8" stroke="#aaa" strokeWidth="1.4" />
@@ -1564,10 +1707,6 @@ export default function AudioDropCard() {
                 <div className="flex flex-col lg:flex-row lg:items-stretch gap-6 w-full min-w-0">
 
                     {/* Audio Player */}
-                    {/* <div className="w-full lg:w-[400px] lg:max-w-[400px] flex-shrink-0 lg:self-start">
-                        <div className="bg-[#111114] rounded-2xl border border-[#2a2a2e]">
-                            <div className="bg-[#1a0a10] p-6 flex flex-col items-center gap-4"> */}
-
                     <div className="w-full lg:w-[400px] lg:max-w-[400px] flex-shrink-0">
                         <div className="bg-[#111114] rounded-2xl border border-[#2a2a2e]">
                             <div className="bg-[#1a0a10] p-6 flex flex-col items-center gap-4">
@@ -1597,7 +1736,10 @@ export default function AudioDropCard() {
 
                                 <div className="w-full">
                                     <div className="h-1 bg-[#2a2a2e] rounded-full overflow-hidden mb-1.5">
-                                        <div className="h-full bg-[#e0185a] rounded-full transition-all duration-300" style={{ width: `${pct}%` }} />
+                                        <div
+                                            className="h-full bg-[#e0185a] rounded-full transition-all duration-300"
+                                            style={{ width: `${pct}%` }}
+                                        />
                                     </div>
                                     <div className="flex justify-between text-[11px] text-[#666] font-mono">
                                         <span>{timeStr}</span>
@@ -1607,12 +1749,20 @@ export default function AudioDropCard() {
 
                                 {allAudioFiles.length > 1 && (
                                     <div className="flex items-center justify-between w-full gap-2">
-                                        <button onClick={() => navigateToAudio(currentIndex - 1)} disabled={currentIndex === 0} className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#2a0f1c] border border-[#e0185a]/30 text-[#e0185a] text-[12px] font-medium disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#3a1525] transition">
+                                        <button
+                                            onClick={() => navigateToAudio(currentIndex - 1)}
+                                            disabled={currentIndex === 0}
+                                            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#2a0f1c] border border-[#e0185a]/30 text-[#e0185a] text-[12px] font-medium disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#3a1525] transition"
+                                        >
                                             <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 2L4 7L9 12" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
                                             Prev
                                         </button>
                                         <span className="text-[#666] text-[11px]">{currentIndex + 1} / {allAudioFiles.length}</span>
-                                        <button onClick={() => navigateToAudio(currentIndex + 1)} disabled={currentIndex === allAudioFiles.length - 1} className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#2a0f1c] border border-[#e0185a]/30 text-[#e0185a] text-[12px] font-medium disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#3a1525] transition">
+                                        <button
+                                            onClick={() => navigateToAudio(currentIndex + 1)}
+                                            disabled={currentIndex === allAudioFiles.length - 1}
+                                            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#2a0f1c] border border-[#e0185a]/30 text-[#e0185a] text-[12px] font-medium disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#3a1525] transition"
+                                        >
                                             Next
                                             <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M5 2L10 7L5 12" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
                                         </button>
@@ -1620,27 +1770,37 @@ export default function AudioDropCard() {
                                 )}
 
                                 {nextAudio && (
-                                    <div onClick={() => navigateToAudio(currentIndex + 1)} className="w-full flex items-center gap-2 bg-[#2a0f1c]/60 border border-[#e0185a]/20 rounded-xl px-3 py-2 cursor-pointer hover:bg-[#2a0f1c] transition">
+                                    <div
+                                        onClick={() => navigateToAudio(currentIndex + 1)}
+                                        className="w-full flex items-center gap-2 bg-[#2a0f1c]/60 border border-[#e0185a]/20 rounded-xl px-3 py-2 cursor-pointer hover:bg-[#2a0f1c] transition"
+                                    >
                                         <div className="w-7 h-7 rounded-full bg-[#e0185a]/20 flex items-center justify-center flex-shrink-0">
                                             <svg width="12" height="12" viewBox="0 0 20 20" fill="none"><path d="M7 4.5L16 10L7 15.5V4.5Z" fill="#e0185a" /></svg>
                                         </div>
                                         <div className="min-w-0 flex-1">
                                             <p className="text-[#888] text-[10px] uppercase tracking-wider">Up Next</p>
                                             <p className="text-white text-[12px] font-medium truncate">{audioFileToAudioDrop(nextAudio).title}</p>
-                                            <p className="text-[#666] text-[10px] truncate">{nextAudio.matchInfo?.speaker?.replace(/^toss report\s*/i, "").replace(/^script\s*/i, "").replace(/^story\s*/i, "").trim() || "Audio Drop"}</p>
+                                            <p className="text-[#666] text-[10px] truncate">
+                                                {nextAudio.matchInfo?.speaker?.replace(/^toss report\s*/i, "").replace(/^script\s*/i, "").replace(/^story\s*/i, "").trim() || "Audio Drop"}
+                                            </p>
                                         </div>
                                     </div>
                                 )}
 
                                 {prevAudio && (
-                                    <div onClick={() => navigateToAudio(currentIndex - 1)} className="w-full flex items-center gap-2 bg-[#1a1a2e]/60 border border-white/10 rounded-xl px-3 py-2 cursor-pointer hover:bg-[#1a1a2e] transition">
+                                    <div
+                                        onClick={() => navigateToAudio(currentIndex - 1)}
+                                        className="w-full flex items-center gap-2 bg-[#1a1a2e]/60 border border-white/10 rounded-xl px-3 py-2 cursor-pointer hover:bg-[#1a1a2e] transition"
+                                    >
                                         <div className="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center flex-shrink-0">
                                             <svg width="12" height="12" viewBox="0 0 20 20" fill="none"><path d="M13 4.5L4 10L13 15.5V4.5Z" fill="#aaa" /></svg>
                                         </div>
                                         <div className="min-w-0 flex-1">
                                             <p className="text-[#666] text-[10px] uppercase tracking-wider">Previous</p>
                                             <p className="text-[#aaa] text-[12px] font-medium truncate">{audioFileToAudioDrop(prevAudio).title}</p>
-                                            <p className="text-[#555] text-[10px] truncate">{prevAudio.matchInfo?.speaker?.replace(/^toss report\s*/i, "").replace(/^script\s*/i, "").replace(/^story\s*/i, "").trim() || "Audio Drop"}</p>
+                                            <p className="text-[#555] text-[10px] truncate">
+                                                {prevAudio.matchInfo?.speaker?.replace(/^toss report\s*/i, "").replace(/^script\s*/i, "").replace(/^story\s*/i, "").trim() || "Audio Drop"}
+                                            </p>
                                         </div>
                                     </div>
                                 )}
@@ -1669,10 +1829,9 @@ export default function AudioDropCard() {
                             ))}
                         </div>
 
-                       {/* Where ScriptPanel is used in the Info Panel */}
-<div className="min-w-0 w-full overflow-hidden">
-    <ScriptPanel matchInfo={audioDrop.matchInfo} />
-</div>
+                        <div className="min-w-0 w-full overflow-hidden">
+                            <ScriptPanel matchInfo={audioDrop.matchInfo} />
+                        </div>
 
                         <div className="flex flex-row flex-wrap items-center gap-4 text-[12px] text-[#666]">
                             <div className="flex items-center gap-1.5">
@@ -1687,9 +1846,20 @@ export default function AudioDropCard() {
 
                         <div>
                             <div className="h-1 bg-[#2a2a2e] rounded-full overflow-hidden mb-1.5">
-                                <div className="h-full bg-[#e0185a] rounded-full transition-all duration-300" style={{ width: `${pct}%` }} />
+                                <div
+                                    className="h-full bg-[#e0185a] rounded-full transition-all duration-300"
+                                    style={{ width: `${pct}%` }}
+                                />
                             </div>
-                            <p className="text-right text-[11px] text-[#666]">{pct}% listened</p>
+                            <div className="flex items-center justify-between">
+                                <p className="text-right text-[11px] text-[#666] flex-1">{pct}% listened</p>
+                                {/* Inline reward hint — only shown before the threshold */}
+                                {pct < 90 && user?.userId && (
+                                    <p className="text-[10px] text-[#555] ml-3 shrink-0">
+                                        +2 pts at 90%
+                                    </p>
+                                )}
+                            </div>
                         </div>
 
                         <button
@@ -1708,7 +1878,7 @@ export default function AudioDropCard() {
                 </div>
             </div>
 
-            {/* ── PlaylistDialog component ── */}
+            {/* Playlist Dialog */}
             <PlaylistDialog
                 open={showPlaylistDialog}
                 onClose={() => setShowPlaylistDialog(false)}
@@ -1761,11 +1931,25 @@ export default function AudioDropCard() {
                             </button>
                         </div>
                         <p className="text-gray-400 text-sm mb-4">Share your thoughts about &apos;{audioDrop.title}&apos;</p>
-                        <textarea value={signalMessage} onChange={e => setSignalMessage(e.target.value)} placeholder="Type your message here..." className="w-full bg-[#111114] text-white text-sm rounded-xl px-4 py-3 border border-[#2a2a2e] focus:outline-none focus:border-[#e0185a] resize-none" rows={4} maxLength={500} autoFocus />
+                        <textarea
+                            value={signalMessage}
+                            onChange={e => setSignalMessage(e.target.value)}
+                            placeholder="Type your message here..."
+                            className="w-full bg-[#111114] text-white text-sm rounded-xl px-4 py-3 border border-[#2a2a2e] focus:outline-none focus:border-[#e0185a] resize-none"
+                            rows={4}
+                            maxLength={500}
+                            autoFocus
+                        />
                         <div className="flex justify-end gap-3 mt-4">
                             <button onClick={() => setShowSignalDialog(false)} className="px-4 py-2 rounded-lg bg-[#2a2a2e] text-gray-300 text-sm font-medium hover:bg-[#3a3a3e] transition">Cancel</button>
-                            <button onClick={handleSendSignal} disabled={!signalMessage.trim() || sendingSignal} className="px-4 py-2 rounded-lg bg-[#e0185a] text-white text-sm font-medium hover:bg-[#f01e66] transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
-                                {sendingSignal ? <><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />Sending...</> : "Send Signal"}
+                            <button
+                                onClick={handleSendSignal}
+                                disabled={!signalMessage.trim() || sendingSignal}
+                                className="px-4 py-2 rounded-lg bg-[#e0185a] text-white text-sm font-medium hover:bg-[#f01e66] transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                            >
+                                {sendingSignal ? (
+                                    <><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />Sending...</>
+                                ) : "Send Signal"}
                             </button>
                         </div>
                         <p className="text-gray-600 text-xs mt-3 text-center">{500 - signalMessage.length} characters remaining</p>

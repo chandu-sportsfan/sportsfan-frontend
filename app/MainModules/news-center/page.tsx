@@ -328,7 +328,7 @@ export default function DetailedNewsCenter() {
         if (cricketUserLikesData) {
           try {
             cricketUserLikes = JSON.parse(cricketUserLikesData);
-          } catch (e) {
+          } catch {
             cricketUserLikes = {};
           }
         }

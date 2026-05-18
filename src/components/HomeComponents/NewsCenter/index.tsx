@@ -171,7 +171,7 @@ export default function NewsCenter() {
         if (cricketUserLikesData) {
           try {
             cricketUserLikes = JSON.parse(cricketUserLikesData);
-          } catch (e) {
+          } catch  {
             cricketUserLikes = {};
           }
         }
@@ -192,7 +192,9 @@ export default function NewsCenter() {
   useEffect(() => {
     const fetchNews = async () => {
       try {
-        const newsRes = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/news-center`);
+        // Append the ?date parameter with your absolute latest date
+        const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '';
+        const newsRes = await fetch(`${baseUrl}/api/news-center?date=2026-05-18`);
         const newsData = await newsRes.json();
         const newsArticles = (newsData?.articles || []) as NewsArticle[];
 
@@ -347,7 +349,7 @@ export default function NewsCenter() {
                         <Share2 size={16} /> Share
                       </button>
                     </div>
-                    {article.source === 'SportsFan360' || article.url.includes('/MainModules/CricketArticles/') ? (
+                    {article.source === 'SportsFan360' || article.url?.includes('/MainModules/CricketArticles/') ? (
                       <Link href={article.url} className="flex items-center gap-1 text-pink-500 hover:text-pink-400 text-sm font-semibold">
                         Read More <ArrowRight size={14} />
                       </Link>

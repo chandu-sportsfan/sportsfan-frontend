@@ -78,7 +78,7 @@ const buildNewsShareText = (article: NewsArticle) => {
     shareUrl,
   ].filter(Boolean).join('\n');
 };
-
+const ARCHIVE_DATES = ['2026-05-18', '2026-05-17', '2026-05-16'];
 export default function DetailedNewsCenter() {
   const [articles, setArticles] = useState<NewsArticle[]>([]);
   const [sortOption, setSortOption] = useState<'latest' | 'oldest' | 'most-liked'>('latest');
@@ -97,6 +97,7 @@ export default function DetailedNewsCenter() {
   const [copied, setCopied] = useState(false);
   const [likeCounts, setLikeCounts] = useState<Record<number, number>>({});
   const [userLikes, setUserLikes] = useState<Set<number>>(new Set());
+  const [selectedArchiveDate, setSelectedArchiveDate] = useState(ARCHIVE_DATES[0]);
 
   const openShareDialog = (article: NewsArticle) => {
     setSharedArticle(article);
@@ -165,9 +166,10 @@ export default function DetailedNewsCenter() {
   useEffect(() => {
     const fetchNews = async () => {
       try {
-        // Fetch News Center
+        // Pass the selected date to your API
+        const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '';
         const newsRes = await fetch(
-          `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/news-center`
+          `${baseUrl}/api/news-center?date=${selectedArchiveDate}`
         );
         const newsData = await newsRes.json();
         const newsArticles = (newsData?.articles || []).map((article: NewsApiArticle) => ({
@@ -226,7 +228,7 @@ export default function DetailedNewsCenter() {
       }
     };
     fetchNews();
-  }, []);
+  }, [selectedArchiveDate]);
 
   // derive displayedArticles from articles + filters
   const displayedArticles = React.useMemo(() => {
@@ -403,7 +405,7 @@ export default function DetailedNewsCenter() {
                       <Share2 size={16} /> Share
                     </button>
                   </div>
-                  {article.source === 'SportsFan360' || article.url.includes('/MainModules/CricketArticles/') ? (
+                  {article.source === 'SportsFan360' || article.url?.includes('/MainModules/CricketArticles/') ? (
                     <Link href={article.url} className="flex items-center gap-1 text-pink-500 hover:text-pink-400 text-sm font-semibold">
                       Read More <ArrowRight size={16} />
                     </Link>
@@ -417,8 +419,8 @@ export default function DetailedNewsCenter() {
                     >
                       Read More <ArrowRight size={16} />
                     </a>
-                  )}
-                 </div>
+                    )}
+                </div>    
                </div>
             </div>
           ))}
@@ -429,15 +431,24 @@ export default function DetailedNewsCenter() {
              <h3 className="text-sm font-bold text-gray-400 mb-4 flex items-center gap-2">
                <Calendar size={16} /> Archive (Date Wise)
              </h3>
-             <ul className="space-y-3">
-               <li className="flex justify-between text-sm items-center bg-pink-500/10 text-pink-500 p-2 rounded">
-                 <span className="flex items-center gap-2"><Calendar size={14}/> May 11, 2026</span>
-                 <span className="bg-pink-500 text-white text-xs px-2 py-0.5 rounded-full">5</span>
-               </li>
-               <li className="flex justify-between text-sm items-center text-gray-400 p-2 hover:bg-gray-800 rounded cursor-pointer">
-                 <span className="flex items-center gap-2"><Calendar size={14}/> May 10, 2026</span>
-                 <span className="bg-gray-800 text-gray-400 text-xs px-2 py-0.5 rounded-full">12</span>
-               </li>
+            <ul className="space-y-3">
+               {['2026-05-18', '2026-05-17', '2026-05-16'].map((dateString) => {
+                 const isSelected = selectedArchiveDate === dateString;
+                 const displayDate = new Date(dateString).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                 
+                 return (
+                   <li 
+                     key={dateString}
+                     onClick={() => setSelectedArchiveDate(dateString)}
+                     className={`flex justify-between text-sm items-center p-2 rounded cursor-pointer transition-colors ${
+                       isSelected ? 'bg-pink-500/10 text-pink-500' : 'text-gray-400 hover:bg-gray-800'
+                     }`}
+                   >
+                     <span className="flex items-center gap-2"><Calendar size={14}/> {displayDate}</span>
+                     {isSelected && <span className="bg-pink-500 text-white text-[10px] px-2 py-0.5 rounded-full font-bold">Active</span>}
+                   </li>
+                 );
+               })}
              </ul>
              <button className="w-full mt-4 py-2 border border-gray-700 text-sm text-gray-400 rounded-lg hover:bg-gray-800">
                View Older Archives ↓

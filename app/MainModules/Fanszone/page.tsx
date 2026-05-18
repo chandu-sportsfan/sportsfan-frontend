@@ -36,7 +36,7 @@
 // }
 
 // // 1. YOUR EXACT ACTIVITY LEDGER
-// // (Right now this holds your real 15 XP Fan Battle. Later, fetch this array directly from your backend!)
+// // (Right now this holds your real 15 SXP Fan Battle. Later, fetch this array directly from your backend!)
 // const exactUserHistory: HistoryItem[] = [
 //   {
 //     action: "Fan Battles",
@@ -87,7 +87,7 @@
 //     icon: cat.icon,
 //     xpValue: cat.xpValue,
 //     percent: Math.round((cat.xpValue / historyTotal) * 100),
-//     xp: `+${cat.xpValue.toLocaleString()} XP`,
+//     xp: `+${cat.xpValue.toLocaleString()} SXP`,
 //   }));
 // };
 
@@ -102,20 +102,20 @@
 
 // const trendData = [30, 45, 40, 60, 55, 75, 70, 90, 85, 100];
 // const topActivitiesData = [
-//   { icon: UserPlus, title: "Register on SportsFan360", xp: "+100 XP", desc: "1 time", color: "text-emerald-500", bg: "bg-emerald-500/10 border-emerald-500/20" },
-//   { icon: UserPlus, title: "Invite Friends", xp: "+100 XP", desc: "3 invites", color: "text-emerald-500", bg: "bg-emerald-500/10 border-emerald-500/20" },
-//   { icon: Gamepad2, title: "Fantasy - Fan Battle", xp: "+50 XP", desc: "7 battles", color: "text-yellow-500", bg: "bg-yellow-500/10 border-yellow-500/20" },
+//   { icon: UserPlus, title: "Register on SportsFan360", xp: "+100 SXP", desc: "1 time", color: "text-emerald-500", bg: "bg-emerald-500/10 border-emerald-500/20" },
+//   { icon: UserPlus, title: "Invite Friends", xp: "+100 SXP", desc: "3 invites", color: "text-emerald-500", bg: "bg-emerald-500/10 border-emerald-500/20" },
+//   { icon: Gamepad2, title: "Fantasy - Fan Battle", xp: "+50 SXP", desc: "7 battles", color: "text-yellow-500", bg: "bg-yellow-500/10 border-yellow-500/20" },
 // ];
 
 // const activityFeedData = [
-//   { category: "CONTENT", action: "Read: IPL 2026 Dispatch", points: "+25 XP", time: "2m ago", icon: FileText, color: "text-yellow-500", bg: "bg-yellow-500/10" },
-//   { category: "ENGAGEMENT", action: "Voted in Poll", points: "+15 XP", time: "15m ago", icon: CheckCircle2, color: "text-indigo-400", bg: "bg-indigo-500/10" },
+//   { category: "CONTENT", action: "Read: IPL 2026 Dispatch", points: "+25 SXP", time: "2m ago", icon: FileText, color: "text-yellow-500", bg: "bg-yellow-500/10" },
+//   { category: "ENGAGEMENT", action: "Voted in Poll", points: "+15 SXP", time: "15m ago", icon: CheckCircle2, color: "text-indigo-400", bg: "bg-indigo-500/10" },
 // ];
 
 // const earnPointsActions = [
-//   { icon: Play, title: "Watch / Listen to Drops", xp: "+20 XP", desc: "12 Actions", color: "text-yellow-500", bg: "bg-yellow-500/10" },
-//   { icon: ThumbsUp, title: "Like a Post", xp: "+10 XP", desc: "28 Actions", color: "text-rose-500", bg: "bg-rose-500/10" },
-//   { icon: Share2, title: "Share a Post", xp: "+15 XP", desc: "18 Actions", color: "text-purple-500", bg: "bg-purple-500/10" },
+//   { icon: Play, title: "Watch / Listen to Drops", xp: "+20 SXP", desc: "12 Actions", color: "text-yellow-500", bg: "bg-yellow-500/10" },
+//   { icon: ThumbsUp, title: "Like a Post", xp: "+10 SXP", desc: "28 Actions", color: "text-rose-500", bg: "bg-rose-500/10" },
+//   { icon: Share2, title: "Share a Post", xp: "+15 SXP", desc: "18 Actions", color: "text-purple-500", bg: "bg-purple-500/10" },
 // ];
 
 // // --- REUSABLE COMPONENTS ---
@@ -147,7 +147,7 @@
 //       </svg>
 //       <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
 //         <span className="text-3xl md:text-4xl font-black text-white">{totalPoints || "0"}</span>
-//         <span className="text-xs md:text-sm text-gray-400 font-bold uppercase tracking-wider mt-1">XP</span>
+//         <span className="text-xs md:text-sm text-gray-400 font-bold uppercase tracking-wider mt-1">SXP</span>
 //       </div>
 //     </div>
 //   );
@@ -334,7 +334,7 @@
 //               </div>
               
 //               {/* DYNAMIC POINTS HERE */}
-//               <h2 className="text-4xl font-black text-white mb-2">{displayPoints} XP</h2>
+//               <h2 className="text-4xl font-black text-white mb-2">{displayPoints} SXP</h2>
               
 //               {/* DYNAMIC UPDATE */}
 //               <p className="text-xs text-emerald-500 font-bold flex items-center gap-1 mb-6">
@@ -358,8 +358,8 @@
 //             <div className="flex-1">
 //               <h3 className="text-base font-bold text-white mb-1">You&apos;re doing great!</h3>
 //               <div className="flex justify-between items-end mb-2">
-//                 <p className="text-xs text-gray-400">{levelData.xpRemaining.toLocaleString()} XP to reach Level {levelData.level + 1}</p>
-//                 <p className="text-xs font-bold text-gray-400">{levelData.currentLevelXp.toLocaleString()} / {levelData.xpForNextLevel.toLocaleString()} XP</p>
+//                 <p className="text-xs text-gray-400">{levelData.xpRemaining.toLocaleString()} SXP to reach Level {levelData.level + 1}</p>
+//                 <p className="text-xs font-bold text-gray-400">{levelData.currentLevelXp.toLocaleString()} / {levelData.xpForNextLevel.toLocaleString()} SXP</p>
 //               </div>
 //               <div className="w-full h-1.5 bg-zinc-800 rounded-full overflow-hidden">
 //                 <div 
@@ -473,14 +473,14 @@
 //                     <div>
 //                       <p className="text-xs text-gray-400 font-medium mb-1">This Month</p>
 //                       <div className="flex items-end gap-3">
-//                         <h4 className="text-3xl font-black text-white leading-none">{monthDisplayPoints} XP</h4>
+//                         <h4 className="text-3xl font-black text-white leading-none">{monthDisplayPoints} SXP</h4>
 //                        <span className="text-xs text-emerald-500 font-bold mb-0.5">↑ {monthDisplayPoints} <span className="text-gray-500 font-medium">{vsMonthText}</span></span>
 //                       </div>
 //                     </div>
 //                     <div>
 //                       <p className="text-xs text-gray-400 font-medium mb-1">All Time</p>
 //                       <div className="flex items-end gap-3">
-//                         <h4 className="text-3xl font-black text-white leading-none">{displayPoints} XP</h4>
+//                         <h4 className="text-3xl font-black text-white leading-none">{displayPoints} SXP</h4>
 //                         <span className="text-xs text-gray-500 font-medium mb-0.5">Since Apr 2026</span>
 //                       </div>
 //                     </div>
@@ -520,7 +520,7 @@
 //                        ))}
 //                      </div>
 //                   </div>
-//                   <h4 className="text-4xl font-black text-emerald-500 mb-2">+2,450 XP</h4>
+//                   <h4 className="text-4xl font-black text-emerald-500 mb-2">+2,450 SXP</h4>
 //                   <p className="text-xs text-emerald-500 font-bold mb-6">
 //                     ↑ 24% <span className="text-gray-500 font-medium">vs Apr 2026</span>
 //                   </p>
@@ -644,7 +644,7 @@
 //                   </div>
 //                   <div className="relative z-10">
 //                     <h3 className="text-lg font-black text-white mb-1">Invite Friends & Earn</h3>
-//                     <p className="text-sm text-gray-400 mb-4">Earn 100 XP for each friend who joins!</p>
+//                     <p className="text-sm text-gray-400 mb-4">Earn 100 SXP for each friend who joins!</p>
 //                     <button className="bg-gradient-to-r from-rose-600 to-orange-500 text-white text-sm font-bold py-2.5 px-6 rounded-full hover:shadow-[0_0_15px_rgba(225,29,72,0.4)] transition-all">
 //                       Invite Now
 //                     </button>
@@ -670,7 +670,7 @@
 //                 </div>
 //                 <div className="text-right">
 //                   <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Total Points Earned</p>
-//                   <h3 className="text-2xl font-black text-emerald-500">{displayPoints} XP</h3>
+//                   <h3 className="text-2xl font-black text-emerald-500">{displayPoints} SXP</h3>
 //                 </div>
 //               </div>
 
@@ -815,7 +815,7 @@
 //                   </div>
 //                   <div className="relative z-10">
 //                     <h3 className="text-lg font-black text-white mb-1">Invite Friends & Earn</h3>
-//                     <p className="text-sm text-gray-400 mb-4">Earn 100 XP for each friend who joins!</p>
+//                     <p className="text-sm text-gray-400 mb-4">Earn 100 SXP for each friend who joins!</p>
 //                     <button className="bg-gradient-to-r from-rose-600 to-orange-500 text-white text-sm font-bold py-2.5 px-6 rounded-full hover:shadow-[0_0_15px_rgba(225,29,72,0.4)] transition-all">
 //                       Invite Now
 //                     </button>
@@ -975,7 +975,7 @@
 //                   </div>
 //                   <div className="relative z-10">
 //                     <h3 className="text-lg font-black text-white mb-1">Invite Friends & Earn</h3>
-//                     <p className="text-sm text-gray-400 mb-4">Earn 100 XP for each friend who joins!</p>
+//                     <p className="text-sm text-gray-400 mb-4">Earn 100 SXP for each friend who joins!</p>
 //                     <button className="bg-gradient-to-r from-rose-600 to-orange-500 text-white text-sm font-bold py-2.5 px-6 rounded-full hover:shadow-[0_0_15px_rgba(225,29,72,0.4)] transition-all">
 //                       Invite Now
 //                     </button>
@@ -1141,7 +1141,7 @@
 //                   </div>
 //                   <div className="relative z-10">
 //                     <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Total Points Earned</p>
-//                     <h3 className="text-3xl font-black text-emerald-500 mb-2">{displayPoints} XP</h3>
+//                     <h3 className="text-3xl font-black text-emerald-500 mb-2">{displayPoints} SXP</h3>
 // <p className="text-xs font-bold text-emerald-500 flex items-center gap-1">
 //   This Period ↑ 100% <span className="text-gray-500 ml-1">vs Apr 2026</span>
 // </p>
@@ -1235,7 +1235,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import { useLeaderboard } from "@/context/LeaderboardContext";
 import { 
@@ -1317,26 +1317,26 @@ const getExactEarningBreakdown = (history: HistoryItem[]): CategoryBreakdown[] =
     icon: cat.icon,
     xpValue: cat.xpValue,
     percent: Math.round((cat.xpValue / historyTotal) * 100),
-    xp: `+${cat.xpValue.toLocaleString()} XP`,
+    xp: `+${cat.xpValue.toLocaleString()} SXP`,
   }));
 };
 
 const trendData = [30, 45, 40, 60, 55, 75, 70, 90, 85, 100];
 const topActivitiesData = [
-  { icon: UserPlus, title: "Register on SportsFan360", xp: "+100 XP", desc: "1 time", color: "text-emerald-500", bg: "bg-emerald-500/10 border-emerald-500/20" },
-  { icon: UserPlus, title: "Invite Friends", xp: "+100 XP", desc: "3 invites", color: "text-emerald-500", bg: "bg-emerald-500/10 border-emerald-500/20" },
-  { icon: Gamepad2, title: "Fantasy - Fan Battle", xp: "+50 XP", desc: "7 battles", color: "text-yellow-500", bg: "bg-yellow-500/10 border-yellow-500/20" },
+  { icon: UserPlus, title: "Register on SportsFan360", xp: "+100 SXP", desc: "1 time", color: "text-emerald-500", bg: "bg-emerald-500/10 border-emerald-500/20" },
+  { icon: UserPlus, title: "Invite Friends", xp: "+100 SXP", desc: "3 invites", color: "text-emerald-500", bg: "bg-emerald-500/10 border-emerald-500/20" },
+  { icon: Gamepad2, title: "Fantasy - Fan Battle", xp: "+50 SXP", desc: "7 battles", color: "text-yellow-500", bg: "bg-yellow-500/10 border-yellow-500/20" },
 ];
 
 const activityFeedData = [
-  { category: "CONTENT", action: "Read: IPL 2026 Dispatch", points: "+25 XP", time: "2m ago", icon: FileText, color: "text-yellow-500", bg: "bg-yellow-500/10" },
-  { category: "ENGAGEMENT", action: "Voted in Poll", points: "+15 XP", time: "15m ago", icon: CheckCircle2, color: "text-indigo-400", bg: "bg-indigo-500/10" },
+  { category: "CONTENT", action: "Read: IPL 2026 Dispatch", points: "+25 SXP", time: "2m ago", icon: FileText, color: "text-yellow-500", bg: "bg-yellow-500/10" },
+  { category: "ENGAGEMENT", action: "Voted in Poll", points: "+15 SXP", time: "15m ago", icon: CheckCircle2, color: "text-indigo-400", bg: "bg-indigo-500/10" },
 ];
 
 const earnPointsActions = [
-  { icon: Play, title: "Watch / Listen to Drops", xp: "+20 XP", desc: "12 Actions", color: "text-yellow-500", bg: "bg-yellow-500/10" },
-  { icon: ThumbsUp, title: "Like a Post", xp: "+10 XP", desc: "28 Actions", color: "text-rose-500", bg: "bg-rose-500/10" },
-  { icon: Share2, title: "Share a Post", xp: "+15 XP", desc: "18 Actions", color: "text-purple-500", bg: "bg-purple-500/10" },
+  { icon: Play, title: "Watch / Listen to Drops", xp: "+20 SXP", desc: "12 Actions", color: "text-yellow-500", bg: "bg-yellow-500/10" },
+  { icon: ThumbsUp, title: "Like a Post", xp: "+10 SXP", desc: "28 Actions", color: "text-rose-500", bg: "bg-rose-500/10" },
+  { icon: Share2, title: "Share a Post", xp: "+15 SXP", desc: "18 Actions", color: "text-purple-500", bg: "bg-purple-500/10" },
 ];
 
 // --- REUSABLE COMPONENTS ---
@@ -1368,7 +1368,7 @@ function DonutChart({ data, totalPoints }: { data: CategoryBreakdown[], totalPoi
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
         <span className="text-3xl md:text-4xl font-black text-white">{totalPoints || "0"}</span>
-        <span className="text-xs md:text-sm text-gray-400 font-bold uppercase tracking-wider mt-1">XP</span>
+        <span className="text-xs md:text-sm text-gray-400 font-bold uppercase tracking-wider mt-1">SXP</span>
       </div>
     </div>
   );
@@ -1472,8 +1472,93 @@ export default function FanZoneDashboard() {
   
   const displayPoints = currentUserPoints.toLocaleString();
   
+  // Keep your existing variables...
   const earningHistoryData = exactUserHistory; 
   const dynamicEarningBreakdown = getExactEarningBreakdown(earningHistoryData);
+  
+  // 1. Add state for the active tab (7D, 30D, 90D)
+  const [trendPeriod, setTrendPeriod] = useState("30D");
+
+  // 2. Add the dynamic trend calculator
+  const trendAnalytics = useMemo(() => {
+    const today = new Date();
+    let days = 30;
+    if (trendPeriod === "7D") days = 7;
+    if (trendPeriod === "90D") days = 90;
+
+    const currentPeriodStart = new Date(today.getTime() - days * 24 * 60 * 60 * 1000);
+    const previousPeriodStart = new Date(currentPeriodStart.getTime() - days * 24 * 60 * 60 * 1000);
+
+    let currentPeriodPoints = 0;
+    let previousPeriodPoints = 0;
+
+    // Create 10 data points for the MiniTrendLine graph
+    const buckets = new Array(10).fill(0);
+    const bucketSize = (today.getTime() - currentPeriodStart.getTime()) / 10;
+
+    earningHistoryData.forEach((item) => {
+      const itemDate = new Date(item.date);
+      if (itemDate >= currentPeriodStart && itemDate <= today) {
+        currentPeriodPoints += item.points;
+        const bucketIndex = Math.floor((itemDate.getTime() - currentPeriodStart.getTime()) / bucketSize);
+        if (bucketIndex >= 0 && bucketIndex < 10) buckets[bucketIndex] += item.points;
+      } else if (itemDate >= previousPeriodStart && itemDate < currentPeriodStart) {
+        previousPeriodPoints += item.points;
+      }
+    });
+
+    // Make chart data cumulative so the line goes up naturally
+    let cumulative = 0;
+    let chartData = buckets.map((val) => {
+      cumulative += val;
+      return cumulative;
+    });
+
+    // if (currentPeriodPoints === 0) chartData =;
+
+    // Calculate percentage change
+    let percentChange = 0;
+    if (previousPeriodPoints > 0) {
+      percentChange = Math.round(((currentPeriodPoints - previousPeriodPoints) / previousPeriodPoints) * 100);
+    } else if (currentPeriodPoints > 0) {
+      percentChange = 100; // 100% growth if they had 0 before and gained some now
+    }
+
+    // Generate dynamic X-axis labels based on the period
+    let labels: string[] = [];
+    const formatLabel = (date: Date, options: Intl.DateTimeFormatOptions) => date.toLocaleDateString('en-US', options);
+    
+    if (trendPeriod === "7D") {
+      labels = [
+        formatLabel(new Date(today.getTime() - 6 * 86400000), { weekday: 'short' }),
+        formatLabel(new Date(today.getTime() - 4 * 86400000), { weekday: 'short' }),
+        formatLabel(new Date(today.getTime() - 2 * 86400000), { weekday: 'short' }),
+        'Today'
+      ];
+    } else if (trendPeriod === "30D") {
+      labels = [
+        formatLabel(new Date(today.getTime() - 30 * 86400000), { month: 'short', day: 'numeric' }),
+        formatLabel(new Date(today.getTime() - 20 * 86400000), { month: 'short', day: 'numeric' }),
+        formatLabel(new Date(today.getTime() - 10 * 86400000), { month: 'short', day: 'numeric' }),
+        'Today'
+      ];
+    } else if (trendPeriod === "90D") {
+      labels = [
+        formatLabel(new Date(today.getTime() - 90 * 86400000), { month: 'short' }),
+        formatLabel(new Date(today.getTime() - 60 * 86400000), { month: 'short' }),
+        formatLabel(new Date(today.getTime() - 30 * 86400000), { month: 'short' }),
+        'This Month'
+      ];
+    }
+
+    return {
+      percentChange,
+      isPositive: percentChange >= 0,
+      chartData,
+      labels,
+      vsText: trendPeriod === "7D" ? "vs last week" : trendPeriod === "30D" ? "vs last month" : "vs last 90 days"
+    };
+  }, [earningHistoryData, trendPeriod]);
   
   const monthDisplayPoints = selectedMonth === "May 2026" ? displayPoints : "0";
   const vsMonthText = selectedMonth === "May 2026" ? "vs Apr 2026" : "vs Mar 2026";
@@ -1532,7 +1617,7 @@ export default function FanZoneDashboard() {
                 </button>
               </div>
               
-              <h2 className="text-4xl font-black text-white mb-2">{displayPoints} XP</h2>
+              <h2 className="text-4xl font-black text-white mb-2">{displayPoints} SXP</h2>
               
               <p className="text-xs text-emerald-500 font-bold flex items-center gap-1 mb-6">
                 <TrendingUp className="w-3 h-3" /> +{displayPoints} <span className="text-gray-500 font-medium ml-1">Current Points</span>
@@ -1555,8 +1640,8 @@ export default function FanZoneDashboard() {
             <div className="flex-1">
               <h3 className="text-base font-bold text-white mb-1">You&apos;re doing great!</h3>
               <div className="flex justify-between items-end mb-2">
-                <p className="text-xs text-gray-400">{levelData.xpRemaining.toLocaleString()} XP to reach Level {levelData.level + 1}</p>
-                <p className="text-xs font-bold text-gray-400">{levelData.currentLevelXp.toLocaleString()} / {levelData.xpForNextLevel.toLocaleString()} XP</p>
+                <p className="text-xs text-gray-400">{levelData.xpRemaining.toLocaleString()} SXP to reach Level {levelData.level + 1}</p>
+                <p className="text-xs font-bold text-gray-400">{levelData.currentLevelXp.toLocaleString()} / {levelData.xpForNextLevel.toLocaleString()} SXP</p>
               </div>
               <div className="w-full h-1.5 bg-zinc-800 rounded-full overflow-hidden">
                 <div 
@@ -1663,14 +1748,14 @@ export default function FanZoneDashboard() {
                     <div>
                       <p className="text-xs text-gray-400 font-medium mb-1">This Month</p>
                       <div className="flex items-end gap-3">
-                        <h4 className="text-3xl font-black text-white leading-none">{monthDisplayPoints} XP</h4>
+                        <h4 className="text-3xl font-black text-white leading-none">{monthDisplayPoints} SXP</h4>
                        <span className="text-xs text-emerald-500 font-bold mb-0.5">↑ {monthDisplayPoints} <span className="text-gray-500 font-medium">{vsMonthText}</span></span>
                       </div>
                     </div>
                     <div>
                       <p className="text-xs text-gray-400 font-medium mb-1">All Time</p>
                       <div className="flex items-end gap-3">
-                        <h4 className="text-3xl font-black text-white leading-none">{displayPoints} XP</h4>
+                        <h4 className="text-3xl font-black text-white leading-none">{displayPoints} SXP</h4>
                         <span className="text-xs text-gray-500 font-medium mb-0.5">Since Apr 2026</span>
                       </div>
                     </div>
@@ -1695,33 +1780,48 @@ export default function FanZoneDashboard() {
                   </div>
                 </div>
 
-                <div className="xl:col-span-4 border-t xl:border-t-0 xl:border-l border-white/10 pt-8 xl:pt-0 xl:pl-8 h-full flex flex-col justify-center w-full">
-                  <div className="flex justify-between items-start mb-6">
-                     <h3 className="text-[10px] font-black tracking-widest text-gray-500 uppercase flex items-center gap-1.5">
-                       Recent Trend <InfoIcon />
-                     </h3>
-                     <div className="flex gap-1 bg-[#18181b] p-1 rounded-lg border border-white/5">
-                       {["7D", "30D", "90D"].map((range) => (
-                         <button key={range} className={`px-3 py-1 rounded-md text-xs font-bold transition-colors ${range === "30D" ? "bg-[#27272a] text-white shadow-sm" : "text-gray-500 hover:text-white"}`}>
-                           {range}
-                         </button>
-                       ))}
-                     </div>
-                  </div>
-                  <h4 className="text-4xl font-black text-emerald-500 mb-2">+2,450 XP</h4>
-                  <p className="text-xs text-emerald-500 font-bold mb-6">
-                    ↑ 24% <span className="text-gray-500 font-medium">vs Apr 2026</span>
-                  </p>
-                  <div className="w-full h-24 mt-auto">
-                     <MiniTrendLine data={trendData} />
-                  </div>
-                  <div className="flex justify-between text-[10px] text-gray-500 font-bold mt-3 px-2">
-                    <span>May 1</span>
-                    <span>May 11</span>
-                    <span>May 21</span>
-                    <span>May 31</span>
-                  </div>
-                </div>
+                {/* Col 3: Recent Trend (Span 4) */}
+<div className="xl:col-span-4 border-t xl:border-t-0 xl:border-l border-white/10 pt-8 xl:pt-0 xl:pl-8 h-full flex flex-col justify-center w-full">
+  <div className="flex justify-between items-start mb-6">
+     <h3 className="text-[10px] font-black tracking-widest text-gray-500 uppercase flex items-center gap-1.5">
+       Recent Trend <InfoIcon />
+     </h3>
+     <div className="flex gap-1 bg-[#18181b] p-1 rounded-lg border border-white/5">
+       {["7D", "30D", "90D"].map((range) => (
+         <button 
+           key={range} 
+           onClick={() => setTrendPeriod(range)}
+           className={`px-3 py-1 rounded-md text-xs font-bold transition-colors ${trendPeriod === range ? "bg-[#27272a] text-white shadow-sm" : "text-gray-500 hover:text-white"}`}
+         >
+           {range}
+         </button>
+       ))}
+     </div>
+  </div>
+  
+  {/* Dynamic Points and SSXP Label */}
+  <h4 className="text-4xl font-black text-emerald-500 mb-2">
+    +{currentUserPoints.toLocaleString()} SXP
+  </h4>
+  
+  {/* Dynamic Percentage Change */}
+  <p className={`text-xs font-bold mb-6 ${trendAnalytics.isPositive ? 'text-emerald-500' : 'text-red-500'}`}>
+    {trendAnalytics.isPositive ? '↑' : '↓'} {Math.abs(trendAnalytics.percentChange)}% 
+    <span className="text-gray-500 font-medium ml-1">{trendAnalytics.vsText}</span>
+  </p>
+  
+  {/* Dynamic Trend Line */}
+  <div className="w-full h-24 mt-auto">
+     <MiniTrendLine data={trendAnalytics.chartData} />
+  </div>
+  
+  {/* Dynamic Labels */}
+  <div className="flex justify-between text-[10px] text-gray-500 font-bold mt-3 px-2">
+    {trendAnalytics.labels.map((label, index) => (
+      <span key={index}>{label}</span>
+    ))}
+  </div>
+</div>
               </div>
             </div>
 
@@ -1825,7 +1925,7 @@ export default function FanZoneDashboard() {
                   </div>
                   <div className="relative z-10">
                     <h3 className="text-lg font-black text-white mb-1">Invite Friends & Earn</h3>
-                    <p className="text-sm text-gray-400 mb-4">Earn 100 XP for each friend who joins!</p>
+                    <p className="text-sm text-gray-400 mb-4">Earn 100 SXP for each friend who joins!</p>
                     <button className="bg-gradient-to-r from-rose-600 to-orange-500 text-white text-sm font-bold py-2.5 px-6 rounded-full hover:shadow-[0_0_15px_rgba(225,29,72,0.4)] transition-all">
                       Invite Now
                     </button>
@@ -1850,7 +1950,7 @@ export default function FanZoneDashboard() {
                 </div>
                 <div className="text-right">
                   <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Total Points Earned</p>
-                  <h3 className="text-2xl font-black text-emerald-500">{displayPoints} XP</h3>
+                  <h3 className="text-2xl font-black text-emerald-500">{displayPoints} SXP</h3>
                 </div>
               </div>
 
@@ -1991,7 +2091,7 @@ export default function FanZoneDashboard() {
                   </div>
                   <div className="relative z-10">
                     <h3 className="text-lg font-black text-white mb-1">Invite Friends & Earn</h3>
-                    <p className="text-sm text-gray-400 mb-4">Earn 100 XP for each friend who joins!</p>
+                    <p className="text-sm text-gray-400 mb-4">Earn 100 SXP for each friend who joins!</p>
                     <button className="bg-gradient-to-r from-rose-600 to-orange-500 text-white text-sm font-bold py-2.5 px-6 rounded-full hover:shadow-[0_0_15px_rgba(225,29,72,0.4)] transition-all">
                       Invite Now
                     </button>
@@ -2145,7 +2245,7 @@ export default function FanZoneDashboard() {
                   </div>
                   <div className="relative z-10">
                     <h3 className="text-lg font-black text-white mb-1">Invite Friends & Earn</h3>
-                    <p className="text-sm text-gray-400 mb-4">Earn 100 XP for each friend who joins!</p>
+                    <p className="text-sm text-gray-400 mb-4">Earn 100 SXP for each friend who joins!</p>
                     <button className="bg-gradient-to-r from-rose-600 to-orange-500 text-white text-sm font-bold py-2.5 px-6 rounded-full hover:shadow-[0_0_15px_rgba(225,29,72,0.4)] transition-all">
                       Invite Now
                     </button>
@@ -2303,7 +2403,7 @@ export default function FanZoneDashboard() {
                   </div>
                   <div className="relative z-10">
                     <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Total Points Earned</p>
-                    <h3 className="text-3xl font-black text-emerald-500 mb-2">{displayPoints} XP</h3>
+                    <h3 className="text-3xl font-black text-emerald-500 mb-2">{displayPoints} SXP</h3>
                     <p className="text-xs font-bold text-emerald-500 flex items-center gap-1">
                       This Period ↑ 100% <span className="text-gray-500 ml-1">vs Apr 2026</span>
                     </p>

@@ -1472,8 +1472,13 @@ export default function FanZoneDashboard() {
   
   const displayPoints = currentUserPoints.toLocaleString();
   
-  // Keep your existing variables...
-  const earningHistoryData = exactUserHistory; 
+  // Sync the ledger dynamically with the live user points!
+  const earningHistoryData = useMemo(() => {
+    return exactUserHistory.map(item => ({
+      ...item,
+      points: currentUserPoints > 0 ? currentUserPoints : 0
+    }));
+  }, [currentUserPoints]); 
   const dynamicEarningBreakdown = getExactEarningBreakdown(earningHistoryData);
   
   // 1. Add state for the active tab (7D, 30D, 90D)
@@ -1508,11 +1513,17 @@ export default function FanZoneDashboard() {
     });
 
     // Make chart data cumulative so the line goes up naturally
+    // Make chart data cumulative so the line goes up naturally
     let cumulative = 0;
-    const chartData = buckets.map((val) => {
+    let chartData = buckets.map((val) => {
       cumulative += val;
       return cumulative;
     });
+
+    // Valid fallback so the graph doesn't flatline if points are 0
+    // if (currentPeriodPoints === 0) {
+      // chartData =;
+    // }
 
 //     // if (currentPeriodPoints === 0) chartData =;
 //     if (currentPeriodPoints === 0) {
@@ -1774,9 +1785,9 @@ export default function FanZoneDashboard() {
                           <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
                           <span className="text-gray-300">{item.label}</span>
                         </div>
-                        <div className="flex items-center justify-end gap-4">
-                          <span className="font-bold text-white w-10 text-right">{item.percent}%</span>
-                          <span className="text-gray-400 w-20 text-right">{item.xp}</span>
+                       <div className="flex items-center justify-end gap-3 pr-4">
+                          <span className="font-bold text-white text-right">{item.percent}%</span>
+                          <span className="text-gray-400 text-right">{item.xp}</span>
                         </div>
                       </div>
                     ))}
@@ -2428,9 +2439,9 @@ export default function FanZoneDashboard() {
                           <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }} />
                           <span className="text-gray-300">{item.label}</span>
                         </div>
-                        <div className="flex gap-4">
-                          <span className="font-bold text-white text-right w-10">{item.percent}%</span>
-                          <span className="text-gray-400 text-right w-20">({item.xp})</span>
+                       <div className="flex justify-end gap-3 pr-2">
+                          <span className="font-bold text-white text-right">{item.percent}%</span>
+                          <span className="text-gray-400 text-right">({item.xp})</span>
                         </div>
                       </div>
                     ))}

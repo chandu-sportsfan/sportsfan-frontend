@@ -171,7 +171,7 @@ export default function NewsCenter() {
         if (cricketUserLikesData) {
           try {
             cricketUserLikes = JSON.parse(cricketUserLikesData);
-          } catch {
+          } catch  {
             cricketUserLikes = {};
           }
         }
@@ -403,7 +403,7 @@ export default function NewsCenter() {
                 { handler: handleCopyLink, src: '/images/share_copy_link.png', alt: 'Copy' },
               ].map(({ handler, src, alt }) => (
                 <button key={alt} onClick={handler} className="w-8 h-8 shrink-0 rounded-full overflow-hidden bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center">
-                  <Image src={src} alt={alt} width={36} height={36} className="w-full h-full object-cover rounded-full" />
+                  <img src={src} alt={alt} className="w-full h-full object-cover rounded-full" />
                 </button>
               ))}
             </div>
@@ -431,7 +431,7 @@ export default function NewsCenter() {
                   { handler: handleCopyLink, src: '/images/share_copy_link.png', alt: 'Copy' },
                 ].map(({ handler, src, alt }) => (
                   <button key={alt} onClick={handler} className="w-9 h-9 shrink-0 rounded-full overflow-hidden bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center">
-                    <Image src={src} alt={alt} width={36} height={36} className="w-full h-full object-cover rounded-full" />
+                    <img src={src} alt={alt} className="w-full h-full object-cover rounded-full" />
                   </button>
                 ))}
               </div>

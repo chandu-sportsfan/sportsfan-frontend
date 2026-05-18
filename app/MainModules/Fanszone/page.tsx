@@ -1514,7 +1514,10 @@ export default function FanZoneDashboard() {
       return cumulative;
     });
 
-    // if (currentPeriodPoints === 0) chartData =;
+//     // if (currentPeriodPoints === 0) chartData =;
+//     if (currentPeriodPoints === 0) {
+//   chartData =;
+// }
 
     // Calculate percentage change
     let percentChange = 0;
@@ -1565,7 +1568,7 @@ export default function FanZoneDashboard() {
 
   const rankDiff = previousUserRank > 0 ? Math.abs(previousUserRank - currentUserRank) : 0;
   const isRankUp = previousUserRank > 0 && currentUserRank < previousUserRank;
-  const isRankDown = previousUserRank > 0 && currentUserRank > previousUserRank;
+  // const isRankDown = previousUserRank > 0 && currentUserRank > previousUserRank;
   const levelData = calculateLevelData(currentUserPoints);
   const { streakMap, currentStreak } = getDynamicStreakData(earningHistoryData);
   

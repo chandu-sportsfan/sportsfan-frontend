@@ -24,7 +24,7 @@ export default function PreferencesOnboarding() {
   const [notif, setNotif] = useState({ live: true, final: true, breaking: true, highlights: true });
 
   const total = 5;
-
+//done
   const finalHero = '/images/dolly3.png';
   const heroSrc = '/images/Dolly%202.png';
   const QUESTION_CLASS = "flex flex-col justify-between min-h-[260px]";

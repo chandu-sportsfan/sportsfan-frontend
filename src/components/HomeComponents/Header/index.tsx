@@ -749,12 +749,14 @@ export default function Header() {
             Preferences
           </Link>
 
+         <Link href="/MainModules/Fanszone">
           <div className="flex items-center gap-2 bg-[#111] border border-white/10 rounded-full px-4 py-2.5">
             <Star size={16} className="text-pink-500 fill-pink-500" />
             <div className="flex flex-col leading-tight">
               <span className="text-white font-semibold text-sm">{formatPoints(currentUserPoints)}</span>
             </div>
           </div>
+          </Link>
 
           <BellButton unreadCount={unreadCount} />
 
@@ -824,11 +826,13 @@ export default function Header() {
           <SlidersHorizontal size={13} />
           Preferences
         </Link>
-
+        
+        <Link href="/MainModules/Fanszone">
         <div className="flex items-center gap-2 bg-[#111] border border-white/10 rounded-full px-3 py-2">
           <Star size={14} className="text-pink-500 fill-pink-500" />
           <span className="text-white font-semibold text-xs">{formatPoints(currentUserPoints)}</span>
         </div>
+        </Link>
 
         <BellButton unreadCount={unreadCount} />
 
@@ -901,6 +905,7 @@ export default function Header() {
           </Link>
 
           {/* Points */}
+          <Link href="/MainModules/Fanszone">
           <button className="flex flex-col items-center group">
             <div className="w-9 h-9 flex flex-col items-center justify-center bg-[#111] border border-white/10 rounded-full group-hover:bg-white/5 transition-colors gap-0.5">
               <Star size={10} className="text-pink-500 fill-pink-500" />
@@ -909,6 +914,7 @@ export default function Header() {
               </span>
             </div>
           </button>
+          </Link>
 
           {/* Bell with badge */}
           <BellButton unreadCount={unreadCount} />

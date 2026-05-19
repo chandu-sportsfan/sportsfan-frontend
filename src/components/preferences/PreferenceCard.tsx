@@ -1,3 +1,5 @@
+// components/preferences/PreferenceCard.tsx
+
 import { ReactNode } from 'react';
 
 interface PreferenceCardProps {

@@ -736,10 +736,13 @@ export default function Team360CardsSection() {
             <div
               key={post.id}
               className="relative min-w-[280px] sm:min-w-[320px] max-w-[320px] h-full bg-black rounded-xl shadow-sm border border-gray-800 overflow-hidden snap-start"
-            >
+             >
               {/* Header */}
               <div className="p-3 flex items-center justify-between">
-                <div className="flex items-center gap-2">
+                <Link 
+                  href={`/MainModules/ClubsProfile?teamProfile=${encodeURIComponent(post.teamName)}`}
+                  className="flex items-center gap-2"
+                >    
                   <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-800 flex items-center justify-center">
                     {!imageErrors[`${post.id}-logo`] ? (
                       <img
@@ -758,7 +761,8 @@ export default function Team360CardsSection() {
                     <h3 className="font-semibold text-white text-sm leading-tight">{post.teamName}</h3>
                     <p className="text-[10px] text-gray-400">{getISTTimeAgo(post.createdAt)}</p>
                   </div>
-                </div>
+                </Link>
+                
                 {/* NEW ACTION ICONS CONTAINER */}
                 <div className="flex items-center gap-3">
                   <button

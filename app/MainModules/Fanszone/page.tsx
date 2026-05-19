@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import { useLeaderboard } from "@/context/LeaderboardContext";
 import { 
   ChevronDown, Trophy, Share2, CheckCircle2, 
   Award, TrendingUp, Play, ThumbsUp, FileText, 
   Gamepad2, UserPlus, LayoutGrid, Calendar, Filter,
- Download, ChevronLeft, ChevronRight, MoreHorizontal, X
+  Download, ChevronLeft, ChevronRight, MoreHorizontal, X
 } from "lucide-react";
 
 // --- MOCK DATA ---
@@ -36,7 +36,6 @@ interface CategoryBreakdown {
 }
 
 // 1. YOUR EXACT ACTIVITY LEDGER
-// (Right now this holds your real 15 XP Fan Battle. Later, fetch this array directly from your backend!)
 const exactUserHistory: HistoryItem[] = [
   {
     action: "Fan Battles",
@@ -52,9 +51,6 @@ const exactUserHistory: HistoryItem[] = [
   }
 ];
 
-// 2. PERFECT BREAKDOWN CALCULATOR
-// This calculates the Donut Chart and percentages perfectly based ONLY on your exact ledger.
-// This tells TypeScript exactly what each category looks like
 interface GroupedCategory {
   label: string;
   xpValue: number;
@@ -67,7 +63,6 @@ const getExactEarningBreakdown = (history: HistoryItem[]): CategoryBreakdown[] =
 
   const historyTotal = history.reduce((sum, item) => sum + item.points, 0);
 
-  // We changed 'any' to 'GroupedCategory' here
   const grouped = history.reduce((acc, curr) => {
     if (!acc[curr.action]) {
       acc[curr.action] = { 
@@ -79,7 +74,7 @@ const getExactEarningBreakdown = (history: HistoryItem[]): CategoryBreakdown[] =
     }
     acc[curr.action].xpValue += curr.points;
     return acc;
-  }, {} as Record<string, GroupedCategory>); // <--- This explicitly defines the type
+  }, {} as Record<string, GroupedCategory>);
 
   return Object.values(grouped).map(cat => ({
     label: cat.label,
@@ -87,35 +82,26 @@ const getExactEarningBreakdown = (history: HistoryItem[]): CategoryBreakdown[] =
     icon: cat.icon,
     xpValue: cat.xpValue,
     percent: Math.round((cat.xpValue / historyTotal) * 100),
-    xp: `+${cat.xpValue.toLocaleString()} XP`,
+    xp: `+${cat.xpValue.toLocaleString()} SXP`,
   }));
 };
 
-// 2. Dynamic Feed synced perfectly to the breakdown
-// 2. Dynamic Feed synced perfectly to the breakdown
-// I removed the "..." and added "any" prevention by using the CategoryBreakdown type
-// const getDynamicStreakData = (historyData: HistoryItem[]) => {
-  const today = new Date();
-  const formattedDate = today.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-  
- 
-
 const trendData = [30, 45, 40, 60, 55, 75, 70, 90, 85, 100];
 const topActivitiesData = [
-  { icon: UserPlus, title: "Register on SportsFan360", xp: "+100 XP", desc: "1 time", color: "text-emerald-500", bg: "bg-emerald-500/10 border-emerald-500/20" },
-  { icon: UserPlus, title: "Invite Friends", xp: "+100 XP", desc: "3 invites", color: "text-emerald-500", bg: "bg-emerald-500/10 border-emerald-500/20" },
-  { icon: Gamepad2, title: "Fantasy - Fan Battle", xp: "+50 XP", desc: "7 battles", color: "text-yellow-500", bg: "bg-yellow-500/10 border-yellow-500/20" },
+  { icon: UserPlus, title: "Register on SportsFan360", xp: "+100 SXP", desc: "1 time", color: "text-emerald-500", bg: "bg-emerald-500/10 border-emerald-500/20" },
+  { icon: UserPlus, title: "Invite Friends", xp: "+100 SXP", desc: "3 invites", color: "text-emerald-500", bg: "bg-emerald-500/10 border-emerald-500/20" },
+  { icon: Gamepad2, title: "Fantasy - Fan Battle", xp: "+50 SXP", desc: "7 battles", color: "text-yellow-500", bg: "bg-yellow-500/10 border-yellow-500/20" },
 ];
 
 const activityFeedData = [
-  { category: "CONTENT", action: "Read: IPL 2026 Dispatch", points: "+25 XP", time: "2m ago", icon: FileText, color: "text-yellow-500", bg: "bg-yellow-500/10" },
-  { category: "ENGAGEMENT", action: "Voted in Poll", points: "+15 XP", time: "15m ago", icon: CheckCircle2, color: "text-indigo-400", bg: "bg-indigo-500/10" },
+  { category: "CONTENT", action: "Read: IPL 2026 Dispatch", points: "+25 SXP", time: "2m ago", icon: FileText, color: "text-yellow-500", bg: "bg-yellow-500/10" },
+  { category: "ENGAGEMENT", action: "Voted in Poll", points: "+15 SXP", time: "15m ago", icon: CheckCircle2, color: "text-indigo-400", bg: "bg-indigo-500/10" },
 ];
 
 const earnPointsActions = [
-  { icon: Play, title: "Watch / Listen to Drops", xp: "+20 XP", desc: "12 Actions", color: "text-yellow-500", bg: "bg-yellow-500/10" },
-  { icon: ThumbsUp, title: "Like a Post", xp: "+10 XP", desc: "28 Actions", color: "text-rose-500", bg: "bg-rose-500/10" },
-  { icon: Share2, title: "Share a Post", xp: "+15 XP", desc: "18 Actions", color: "text-purple-500", bg: "bg-purple-500/10" },
+  { icon: Play, title: "Watch / Listen to Drops", xp: "+20 SXP", desc: "12 Actions", color: "text-yellow-500", bg: "bg-yellow-500/10" },
+  { icon: ThumbsUp, title: "Like a Post", xp: "+10 SXP", desc: "28 Actions", color: "text-rose-500", bg: "bg-rose-500/10" },
+  { icon: Share2, title: "Share a Post", xp: "+15 SXP", desc: "18 Actions", color: "text-purple-500", bg: "bg-purple-500/10" },
 ];
 
 // --- REUSABLE COMPONENTS ---
@@ -147,7 +133,7 @@ function DonutChart({ data, totalPoints }: { data: CategoryBreakdown[], totalPoi
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
         <span className="text-3xl md:text-4xl font-black text-white">{totalPoints || "0"}</span>
-        <span className="text-xs md:text-sm text-gray-400 font-bold uppercase tracking-wider mt-1">XP</span>
+        <span className="text-xs md:text-sm text-gray-400 font-bold uppercase tracking-wider mt-1">SXP</span>
       </div>
     </div>
   );
@@ -155,15 +141,11 @@ function DonutChart({ data, totalPoints }: { data: CategoryBreakdown[], totalPoi
 
 function MiniTrendLine({ data }: { data: number[] }) {
   const maxVal = Math.max(...data);
-  // Add a little padding to the bottom so the line doesn't hit the absolute edge
   const minVal = Math.min(...data) - 10; 
   const range = maxVal - minVal;
 
   return (
-    // Removed preserveAspectRatio="none" and used a wider viewBox (240x120) 
-    // so it naturally matches the aspect ratio of the card without stretching dots.
     <svg viewBox="0 -10 240 120" className="w-full h-24 overflow-visible">
-      {/* The Glow Effect */}
       <path 
         d={`M ${data.map((val, idx) => `${(idx / (data.length - 1)) * 240},${100 - ((val - minVal) / range) * 100}`).join(" L ")}`} 
         fill="none" 
@@ -171,7 +153,6 @@ function MiniTrendLine({ data }: { data: number[] }) {
         strokeWidth="4" 
         className="drop-shadow-[0_4px_12px_rgba(244,63,94,0.8)]"
       />
-      {/* The White Dots */}
       {data.map((val, idx) => {
         const x = (idx / (data.length - 1)) * 240;
         const y = 100 - ((val - minVal) / range) * 100;
@@ -180,9 +161,6 @@ function MiniTrendLine({ data }: { data: number[] }) {
     </svg>
   );
 }
-
-
-
 
 const getDynamicStreakData = (historyData: HistoryItem[]) => {
   const today = new Date();
@@ -208,9 +186,9 @@ const getDynamicStreakData = (historyData: HistoryItem[]) => {
 
     return {
       day: dayName,
-      isActive: hasActivity, // Tick
-      isMissed: !hasActivity && isPast, // Cross (only if in the past)
-      isFutureOrEmptyToday: (!hasActivity && isToday) || thisDayAtMidnight > todayAtMidnight // Blank
+      isActive: hasActivity,
+      isMissed: !hasActivity && isPast,
+      isFutureOrEmptyToday: (!hasActivity && isToday) || thisDayAtMidnight > todayAtMidnight
     };
   });
 
@@ -222,7 +200,6 @@ const calculateLevelData = (totalXp: number) => {
   let xpForNextLevel = 1000;
   let xpAccumulated = 0;
 
-  // Scale up: Level 1 requires 1000, Level 2 requires 2000, etc.
   while (totalXp >= xpAccumulated + xpForNextLevel) {
     xpAccumulated += xpForNextLevel;
     level++;
@@ -231,7 +208,6 @@ const calculateLevelData = (totalXp: number) => {
 
   const currentLevelXp = totalXp - xpAccumulated;
   const xpRemaining = xpForNextLevel - currentLevelXp;
-  // Calculate percentage for the progress bar (capped between 0 and 100)
   const progressPercentage = Math.min(100, Math.max(0, (currentLevelXp / xpForNextLevel) * 100));
 
   return {
@@ -243,11 +219,11 @@ const calculateLevelData = (totalXp: number) => {
   };
 };
 
-// Add a quick interface to prevent TypeScript 'any' errors
+// Define the expected context type
 interface LeaderboardContextType {
-  currentUserPoints: number; // Remove the '?' to ensure it's treated as a number
+  currentUserPoints: number;
   currentUserRank: number;
-  previousUserRank: number;
+  previousUserRank?: number; // Make it optional
 }
 
 export default function FanZoneDashboard() {
@@ -259,46 +235,135 @@ export default function FanZoneDashboard() {
   const currentUserRank = contextData?.currentUserRank ?? 0;
   const previousUserRank = contextData?.previousUserRank ?? 0;
   
-  // 1. Math and Feeds
- // 1. Math and Exact Feeds
   const displayPoints = currentUserPoints.toLocaleString();
   
-  // Use the exact ledger for 100% accurate Recent Activity
-  const earningHistoryData = exactUserHistory; 
-  
-  // Calculate perfect percentages based ONLY on the exact ledger
+  // Sync the ledger dynamically with the live user points!
+  const earningHistoryData = useMemo(() => {
+    return exactUserHistory.map(item => ({
+      ...item,
+      points: currentUserPoints > 0 ? currentUserPoints : 0
+    }));
+  }, [currentUserPoints]); 
   const dynamicEarningBreakdown = getExactEarningBreakdown(earningHistoryData);
   
-  // 2. Dropdown Logic
+  // 1. Add state for the active tab (7D, 30D, 90D)
+  const [trendPeriod, setTrendPeriod] = useState("30D");
+
+  // 2. Add the dynamic trend calculator
+  const trendAnalytics = useMemo(() => {
+    const today = new Date();
+    let days = 30;
+    if (trendPeriod === "7D") days = 7;
+    if (trendPeriod === "90D") days = 90;
+
+    const currentPeriodStart = new Date(today.getTime() - days * 24 * 60 * 60 * 1000);
+    const previousPeriodStart = new Date(currentPeriodStart.getTime() - days * 24 * 60 * 60 * 1000);
+
+    let currentPeriodPoints = 0;
+    let previousPeriodPoints = 0;
+
+    // Create 10 data points for the MiniTrendLine graph
+    const buckets = new Array(10).fill(0);
+    const bucketSize = (today.getTime() - currentPeriodStart.getTime()) / 10;
+
+    earningHistoryData.forEach((item) => {
+      const itemDate = new Date(item.date);
+      if (itemDate >= currentPeriodStart && itemDate <= today) {
+        currentPeriodPoints += item.points;
+        const bucketIndex = Math.floor((itemDate.getTime() - currentPeriodStart.getTime()) / bucketSize);
+        if (bucketIndex >= 0 && bucketIndex < 10) buckets[bucketIndex] += item.points;
+      } else if (itemDate >= previousPeriodStart && itemDate < currentPeriodStart) {
+        previousPeriodPoints += item.points;
+      }
+    });
+
+    // Make chart data cumulative so the line goes up naturally
+    // Make chart data cumulative so the line goes up naturally
+    let cumulative = 0;
+    const chartData = buckets.map((val) => {
+      cumulative += val;
+      return cumulative;
+    });
+
+    // Valid fallback so the graph doesn't flatline if points are 0
+    // if (currentPeriodPoints === 0) {
+      // chartData =;
+    // }
+
+//     // if (currentPeriodPoints === 0) chartData =;
+//     if (currentPeriodPoints === 0) {
+//   chartData =;
+// }
+
+    // Calculate percentage change
+    let percentChange = 0;
+    if (previousPeriodPoints > 0) {
+      percentChange = Math.round(((currentPeriodPoints - previousPeriodPoints) / previousPeriodPoints) * 100);
+    } else if (currentPeriodPoints > 0) {
+      percentChange = 100; // 100% growth if they had 0 before and gained some now
+    }
+
+    // Generate dynamic X-axis labels based on the period
+    let labels: string[] = [];
+    const formatLabel = (date: Date, options: Intl.DateTimeFormatOptions) => date.toLocaleDateString('en-US', options);
+    
+    if (trendPeriod === "7D") {
+      labels = [
+        formatLabel(new Date(today.getTime() - 6 * 86400000), { weekday: 'short' }),
+        formatLabel(new Date(today.getTime() - 4 * 86400000), { weekday: 'short' }),
+        formatLabel(new Date(today.getTime() - 2 * 86400000), { weekday: 'short' }),
+        'Today'
+      ];
+    } else if (trendPeriod === "30D") {
+      labels = [
+        formatLabel(new Date(today.getTime() - 30 * 86400000), { month: 'short', day: 'numeric' }),
+        formatLabel(new Date(today.getTime() - 20 * 86400000), { month: 'short', day: 'numeric' }),
+        formatLabel(new Date(today.getTime() - 10 * 86400000), { month: 'short', day: 'numeric' }),
+        'Today'
+      ];
+    } else if (trendPeriod === "90D") {
+      labels = [
+        formatLabel(new Date(today.getTime() - 90 * 86400000), { month: 'short' }),
+        formatLabel(new Date(today.getTime() - 60 * 86400000), { month: 'short' }),
+        formatLabel(new Date(today.getTime() - 30 * 86400000), { month: 'short' }),
+        'This Month'
+      ];
+    }
+
+    return {
+      percentChange,
+      isPositive: percentChange >= 0,
+      chartData,
+      labels,
+      vsText: trendPeriod === "7D" ? "vs last week" : trendPeriod === "30D" ? "vs last month" : "vs last 90 days"
+    };
+  }, [earningHistoryData, trendPeriod]);
+  
   const monthDisplayPoints = selectedMonth === "May 2026" ? displayPoints : "0";
   const vsMonthText = selectedMonth === "May 2026" ? "vs Apr 2026" : "vs Mar 2026";
 
-  // 3. Rank & Streak Logic
- const rankDiff = previousUserRank > 0 ? Math.abs(previousUserRank - currentUserRank) : 0;
+  const rankDiff = previousUserRank > 0 ? Math.abs(previousUserRank - currentUserRank) : 0;
   const isRankUp = previousUserRank > 0 && currentUserRank < previousUserRank;
-  const isRankDown = previousUserRank > 0 && currentUserRank > previousUserRank;
+  // const isRankDown = previousUserRank > 0 && currentUserRank > previousUserRank;
   const levelData = calculateLevelData(currentUserPoints);
   const { streakMap, currentStreak } = getDynamicStreakData(earningHistoryData);
   
-  // 4. GENERATE RECENT ACTIVITY LIST (Fixed Syntax)
-const recentActivityList = earningHistoryData.slice(0, 5).map(item => ({
-  icon: item.icon, 
-  action: item.action,
-  detail: item.details,
-  xp: item.points,
-  time: item.time,
-  color: item.color
-}));
+  const recentActivityList = earningHistoryData.slice(0, 5).map(item => ({
+    icon: item.icon, 
+    action: item.action,
+    detail: item.details,
+    xp: item.points,
+    time: item.time,
+    color: item.color
+  }));
+  
   return (
     <div className="min-h-screen bg-[#050505] text-white font-sans selection:bg-rose-500/30 pb-20">
       
-      {/* 1. TOP NAVIGATION BAR */}
-
       <main className="max-w-[1400px] mx-auto p-6 space-y-6">
         
-        {/* 2. HERO SECTION */}
+        {/* HERO SECTION */}
         <div className="relative rounded-2xl overflow-hidden border border-white/10 bg-[#09090b] flex items-center min-h-[220px]">
-          {/* Background Image & Gradients */}
           <div 
             className="absolute inset-0 bg-cover bg-center opacity-40 mix-blend-screen"
             style={{ backgroundImage: "url('https://images.unsplash.com/photo-1504450758481-7338eba7524a?q=80&w=1200&auto=format&fit=crop')" }}
@@ -323,8 +388,6 @@ const recentActivityList = earningHistoryData.slice(0, 5).map(item => ({
               </div>
             </div>
 
-            
-            {/* Total Points Mini-Card overlaid on right */}
             <div className="bg-[#09090b] border border-white/5 rounded-2xl p-6 w-full md:w-[320px] shadow-2xl relative z-10 hidden md:block">
               <div className="flex justify-between items-center mb-4">
                 <p className="text-[10px] font-black uppercase tracking-widest text-gray-500">Total Points</p>
@@ -333,10 +396,8 @@ const recentActivityList = earningHistoryData.slice(0, 5).map(item => ({
                 </button>
               </div>
               
-              {/* DYNAMIC POINTS HERE */}
-              <h2 className="text-4xl font-black text-white mb-2">{displayPoints} XP</h2>
+              <h2 className="text-4xl font-black text-white mb-2">{displayPoints} SXP</h2>
               
-              {/* DYNAMIC UPDATE */}
               <p className="text-xs text-emerald-500 font-bold flex items-center gap-1 mb-6">
                 <TrendingUp className="w-3 h-3" /> +{displayPoints} <span className="text-gray-500 font-medium ml-1">Current Points</span>
               </p>
@@ -347,19 +408,19 @@ const recentActivityList = earningHistoryData.slice(0, 5).map(item => ({
             </div>
           </div>
         </div>
-        {/* 3. STATS ROW */}
+        
+        {/* STATS ROW */}
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           
-          {/* 1. Dynamic Leveling Card */}
           <div className="md:col-span-2 bg-[#09090b] border border-white/10 rounded-2xl p-5 flex items-center gap-5">
             <div className="w-14 h-14 rounded-xl border-2 border-rose-500 flex items-center justify-center font-black text-2xl text-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.3)]">
               {levelData.level}
             </div>
             <div className="flex-1">
-              <h3 className="text-base font-bold text-white mb-1">You're doing great!</h3>
+              <h3 className="text-base font-bold text-white mb-1">You&apos;re doing great!</h3>
               <div className="flex justify-between items-end mb-2">
-                <p className="text-xs text-gray-400">{levelData.xpRemaining.toLocaleString()} XP to reach Level {levelData.level + 1}</p>
-                <p className="text-xs font-bold text-gray-400">{levelData.currentLevelXp.toLocaleString()} / {levelData.xpForNextLevel.toLocaleString()} XP</p>
+                <p className="text-xs text-gray-400">{levelData.xpRemaining.toLocaleString()} SXP to reach Level {levelData.level + 1}</p>
+                <p className="text-xs font-bold text-gray-400">{levelData.currentLevelXp.toLocaleString()} / {levelData.xpForNextLevel.toLocaleString()} SXP</p>
               </div>
               <div className="w-full h-1.5 bg-zinc-800 rounded-full overflow-hidden">
                 <div 
@@ -372,7 +433,6 @@ const recentActivityList = earningHistoryData.slice(0, 5).map(item => ({
             </div>
           </div>
 
-          {/* 2. Dynamic Rank Tracking Card */}
           <div className="bg-[#09090b] border border-white/10 rounded-2xl p-5 flex items-center justify-between group cursor-pointer hover:border-white/20 transition-colors">
              <div className="flex items-center gap-4">
                <div className="w-12 h-12 rounded-full bg-yellow-500/10 flex items-center justify-center border border-yellow-500/20">
@@ -394,7 +454,6 @@ const recentActivityList = earningHistoryData.slice(0, 5).map(item => ({
              </div>
           </div>
 
-          {/* 3. Static Badges Box */}
           <div className="bg-[#09090b] border border-white/10 rounded-2xl p-5 flex items-center justify-between group cursor-pointer hover:border-white/20 transition-colors">
             <div className="flex items-center gap-4">
                <div className="w-12 h-12 rounded-full bg-purple-500/10 flex items-center justify-center border border-purple-500/20">
@@ -413,9 +472,7 @@ const recentActivityList = earningHistoryData.slice(0, 5).map(item => ({
              </div>
           </div>
 
-          {/* 4. Live Leaderboard Button (Themed) */}
           <Link href="/MainModules/Leaderboard" className="bg-[#09090b] border border-white/10 hover:border-rose-500/50 rounded-2xl p-5 flex flex-col items-center justify-center group hover:scale-[1.02] transition-all cursor-pointer shadow-[0_0_15px_rgba(225,29,72,0.05)] hover:shadow-[0_0_25px_rgba(225,29,72,0.15)] relative overflow-hidden">
-             {/* Subtle background glow effect on hover */}
              <div className="absolute inset-0 bg-rose-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
              
              <Trophy className="w-7 h-7 text-rose-500 mb-1.5 group-hover:scale-110 group-hover:-translate-y-1 transition-all duration-300 drop-shadow-md relative z-10" />
@@ -424,9 +481,8 @@ const recentActivityList = earningHistoryData.slice(0, 5).map(item => ({
 
         </div>
 
-        {/* 4. TABS NAVIGATION */}
+        {/* TABS NAVIGATION */}
         <div className="border-b border-white/10 flex gap-8 px-2 overflow-x-auto custom-scrollbar">
-          {/* ---> Update this array below <--- */}
           {["My Analytics", "Earning History", "Activity Feed", "All Activities"].map((tab) => (
             <button
               key={tab}
@@ -443,11 +499,10 @@ const recentActivityList = earningHistoryData.slice(0, 5).map(item => ({
           ))}
         </div>
 
-        {/* 5. TAB CONTENT - MY ANALYTICS */}
+        {/* TAB CONTENT - MY ANALYTICS */}
         {activeTab === "My Analytics" && (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             
-          {/* Overview Card */}
             <div className="bg-[#09090b] border border-white/10 rounded-2xl p-6 md:p-8">
               <h3 className="text-[10px] font-black tracking-widest text-gray-500 uppercase mb-8 flex items-center gap-1.5">
                 Overview <InfoIcon />
@@ -455,7 +510,6 @@ const recentActivityList = earningHistoryData.slice(0, 5).map(item => ({
               
               <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 lg:gap-12 items-center">
                 
-                {/* Col 1: Left Stats (Span 3) */}
                 <div className="xl:col-span-3 w-full">
                   <div className="relative w-40 mb-8 hidden sm:block">
                     <select 
@@ -473,33 +527,32 @@ const recentActivityList = earningHistoryData.slice(0, 5).map(item => ({
                     <div>
                       <p className="text-xs text-gray-400 font-medium mb-1">This Month</p>
                       <div className="flex items-end gap-3">
-                        <h4 className="text-3xl font-black text-white leading-none">{monthDisplayPoints} XP</h4>
+                        <h4 className="text-3xl font-black text-white leading-none">{monthDisplayPoints} SXP</h4>
                        <span className="text-xs text-emerald-500 font-bold mb-0.5">↑ {monthDisplayPoints} <span className="text-gray-500 font-medium">{vsMonthText}</span></span>
                       </div>
                     </div>
                     <div>
                       <p className="text-xs text-gray-400 font-medium mb-1">All Time</p>
                       <div className="flex items-end gap-3">
-                        <h4 className="text-3xl font-black text-white leading-none">{displayPoints} XP</h4>
+                        <h4 className="text-3xl font-black text-white leading-none">{displayPoints} SXP</h4>
                         <span className="text-xs text-gray-500 font-medium mb-0.5">Since Apr 2026</span>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Col 2: Donut Chart & Legend (Span 5) */}
                 <div className="xl:col-span-5 flex flex-col sm:flex-row items-center justify-center gap-6 lg:gap-10 w-full py-6 xl:py-0 border-t border-white/10 xl:border-t-0 xl:border-l xl:pl-8">
-                 <DonutChart data={dynamicEarningBreakdown} totalPoints={displayPoints} />
-<div className="space-y-4 w-full sm:w-auto">
-  {dynamicEarningBreakdown.map((item, i) => (
+                  <DonutChart data={dynamicEarningBreakdown} totalPoints={displayPoints} />
+                  <div className="space-y-4 w-full sm:w-auto">
+                    {dynamicEarningBreakdown.map((item, i) => (
                       <div key={i} className="flex items-center justify-between sm:justify-start gap-4 text-sm whitespace-nowrap">
                         <div className="flex items-center gap-3 w-40">
                           <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
                           <span className="text-gray-300">{item.label}</span>
                         </div>
-                        <div className="flex items-center justify-end gap-4">
-                          <span className="font-bold text-white w-10 text-right">{item.percent}%</span>
-                          <span className="text-gray-400 w-20 text-right">{item.xp}</span>
+                       <div className="flex items-center justify-end gap-3 pr-4">
+                          <span className="font-bold text-white text-right">{item.percent}%</span>
+                          <span className="text-gray-400 text-right">{item.xp}</span>
                         </div>
                       </div>
                     ))}
@@ -507,37 +560,50 @@ const recentActivityList = earningHistoryData.slice(0, 5).map(item => ({
                 </div>
 
                 {/* Col 3: Recent Trend (Span 4) */}
-                <div className="xl:col-span-4 border-t xl:border-t-0 xl:border-l border-white/10 pt-8 xl:pt-0 xl:pl-8 h-full flex flex-col justify-center w-full">
-                  <div className="flex justify-between items-start mb-6">
-                     <h3 className="text-[10px] font-black tracking-widest text-gray-500 uppercase flex items-center gap-1.5">
-                       Recent Trend <InfoIcon />
-                     </h3>
-                     <div className="flex gap-1 bg-[#18181b] p-1 rounded-lg border border-white/5">
-                       {["7D", "30D", "90D"].map((range) => (
-                         <button key={range} className={`px-3 py-1 rounded-md text-xs font-bold transition-colors ${range === "30D" ? "bg-[#27272a] text-white shadow-sm" : "text-gray-500 hover:text-white"}`}>
-                           {range}
-                         </button>
-                       ))}
-                     </div>
-                  </div>
-                  <h4 className="text-4xl font-black text-emerald-500 mb-2">+2,450 XP</h4>
-                  <p className="text-xs text-emerald-500 font-bold mb-6">
-                    ↑ 24% <span className="text-gray-500 font-medium">vs Apr 2026</span>
-                  </p>
-                  <div className="w-full h-24 mt-auto">
-                     <MiniTrendLine data={trendData} />
-                  </div>
-                  <div className="flex justify-between text-[10px] text-gray-500 font-bold mt-3 px-2">
-                    <span>May 1</span>
-                    <span>May 11</span>
-                    <span>May 21</span>
-                    <span>May 31</span>
-                  </div>
-                </div>
+<div className="xl:col-span-4 border-t xl:border-t-0 xl:border-l border-white/10 pt-8 xl:pt-0 xl:pl-8 h-full flex flex-col justify-center w-full">
+  <div className="flex justify-between items-start mb-6">
+     <h3 className="text-[10px] font-black tracking-widest text-gray-500 uppercase flex items-center gap-1.5">
+       Recent Trend <InfoIcon />
+     </h3>
+     <div className="flex gap-1 bg-[#18181b] p-1 rounded-lg border border-white/5">
+       {["7D", "30D", "90D"].map((range) => (
+         <button 
+           key={range} 
+           onClick={() => setTrendPeriod(range)}
+           className={`px-3 py-1 rounded-md text-xs font-bold transition-colors ${trendPeriod === range ? "bg-[#27272a] text-white shadow-sm" : "text-gray-500 hover:text-white"}`}
+         >
+           {range}
+         </button>
+       ))}
+     </div>
+  </div>
+  
+  {/* Dynamic Points and SSXP Label */}
+  <h4 className="text-4xl font-black text-emerald-500 mb-2">
+    +{currentUserPoints.toLocaleString()} SXP
+  </h4>
+  
+  {/* Dynamic Percentage Change */}
+  <p className={`text-xs font-bold mb-6 ${trendAnalytics.isPositive ? 'text-emerald-500' : 'text-red-500'}`}>
+    {trendAnalytics.isPositive ? '↑' : '↓'} {Math.abs(trendAnalytics.percentChange)}% 
+    <span className="text-gray-500 font-medium ml-1">{trendAnalytics.vsText}</span>
+  </p>
+  
+  {/* Dynamic Trend Line */}
+  <div className="w-full h-24 mt-auto">
+     <MiniTrendLine data={trendAnalytics.chartData} />
+  </div>
+  
+  {/* Dynamic Labels */}
+  <div className="flex justify-between text-[10px] text-gray-500 font-bold mt-3 px-2">
+    {trendAnalytics.labels.map((label, index) => (
+      <span key={index}>{label}</span>
+    ))}
+  </div>
+</div>
               </div>
             </div>
 
-            {/* How You Earn Points Grid */}
             <div className="bg-[#09090b] border border-white/10 rounded-2xl p-6">
               <h3 className="text-xs font-black tracking-widest text-gray-400 uppercase mb-6 flex items-center gap-1.5">
                 How You Earn Points <InfoIcon />
@@ -557,7 +623,6 @@ const recentActivityList = earningHistoryData.slice(0, 5).map(item => ({
                   ))}
                 </div>
 
-                {/* Promo Card */}
                 <div className="w-full lg:w-72 rounded-xl bg-gradient-to-br from-rose-900 to-black border border-rose-500/30 p-6 flex flex-col justify-center relative overflow-hidden group cursor-pointer">
                   <div className="absolute -right-6 -bottom-6 opacity-20 group-hover:scale-110 transition-transform duration-500">
                     <Trophy className="w-40 h-40 text-rose-500" />
@@ -573,10 +638,8 @@ const recentActivityList = earningHistoryData.slice(0, 5).map(item => ({
               </div>
             </div>
 
-            {/* Bottom Row: Recent Activity & Streak */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               
-              {/* Recent Activity List */}
               <div className="bg-[#09090b] border border-white/10 rounded-2xl p-6 flex flex-col">
                 <h3 className="text-xs font-black tracking-widest text-gray-400 uppercase mb-6">Recent Activity</h3>
                 <div className="flex-1 space-y-5">
@@ -603,48 +666,45 @@ const recentActivityList = earningHistoryData.slice(0, 5).map(item => ({
                 </button>
               </div>
 
-              {/* Streak & Invite */}
               <div className="space-y-6">
                 
-                {/* Streak Card */}
                 <div className="bg-[#09090b] border border-white/10 rounded-2xl p-6">
                   <h3 className="text-xs font-black tracking-widest text-gray-400 uppercase mb-4 flex items-center gap-1.5">
                     Your Streak <InfoIcon />
                   </h3>
-                <div className="flex items-baseline gap-2 mb-1">
+                  <div className="flex items-baseline gap-2 mb-1">
                     <h2 className="text-4xl font-black text-white">{currentStreak}</h2>
                     <span className="text-xl font-medium text-gray-400">Days</span>
                   </div>
-                  <p className="text-sm text-gray-400 mb-6">Keep it going, don't break your streak!</p>
+                  <p className="text-sm text-gray-400 mb-6">Keep it going, don&apos;t break your streak!</p>
                   
                   <div className="flex justify-between items-center">
                     {streakMap.map((data) => {
-                    return (
-                      <div key={data.day} className="flex flex-col items-center gap-2">
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all ${
-                          data.isActive 
-                            ? 'bg-rose-600 border-rose-500 text-white shadow-[0_0_10px_rgba(225,29,72,0.5)]' 
-                            : data.isMissed 
-                              ? 'bg-[#0f0a0a] border-red-500/30 text-red-500 shadow-[0_0_10px_rgba(239,68,68,0.15)]'
-                              : 'bg-[#18181b] border-white/10 text-gray-600'
-                        }`}>
-                          {data.isActive ? <CheckCircle2 className="w-5 h-5" /> : data.isMissed ? <X className="w-5 h-5 opacity-80" /> : null}
+                      return (
+                        <div key={data.day} className="flex flex-col items-center gap-2">
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all ${
+                            data.isActive 
+                              ? 'bg-rose-600 border-rose-500 text-white shadow-[0_0_10px_rgba(225,29,72,0.5)]' 
+                              : data.isMissed 
+                                ? 'bg-[#0f0a0a] border-red-500/30 text-red-500 shadow-[0_0_10px_rgba(239,68,68,0.15)]'
+                                : 'bg-[#18181b] border-white/10 text-gray-600'
+                          }`}>
+                            {data.isActive ? <CheckCircle2 className="w-5 h-5" /> : data.isMissed ? <X className="w-5 h-5 opacity-80" /> : null}
+                          </div>
+                          <span className={`text-xs font-bold ${data.isActive || data.isMissed ? 'text-white' : 'text-gray-500'}`}>{data.day}</span>
                         </div>
-                        <span className={`text-xs font-bold ${data.isActive || data.isMissed ? 'text-white' : 'text-gray-500'}`}>{data.day}</span>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
                   </div>
                 </div>
 
-                {/* Invite Promo */}
                 <div className="bg-[#09090b] border border-rose-500/20 rounded-2xl p-6 flex items-center justify-between overflow-hidden relative group cursor-pointer hover:border-rose-500/50 transition-colors">
                   <div className="absolute right-0 top-1/2 -translate-y-1/2 opacity-30 group-hover:scale-110 transition-transform duration-500 translate-x-4">
                     <UserPlus className="w-32 h-32 text-rose-500" />
                   </div>
                   <div className="relative z-10">
                     <h3 className="text-lg font-black text-white mb-1">Invite Friends & Earn</h3>
-                    <p className="text-sm text-gray-400 mb-4">Earn 100 XP for each friend who joins!</p>
+                    <p className="text-sm text-gray-400 mb-4">Earn 100 SXP for each friend who joins!</p>
                     <button className="bg-gradient-to-r from-rose-600 to-orange-500 text-white text-sm font-bold py-2.5 px-6 rounded-full hover:shadow-[0_0_15px_rgba(225,29,72,0.4)] transition-all">
                       Invite Now
                     </button>
@@ -657,12 +717,11 @@ const recentActivityList = earningHistoryData.slice(0, 5).map(item => ({
           </div>
         )}
 
-        {/* 6. TAB CONTENT - EARNING HISTORY */}
+        {/* TAB CONTENT - EARNING HISTORY */}
         {activeTab === "Earning History" && (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             
             <div className="bg-[#09090b] border border-white/10 rounded-2xl p-6">
-              {/* Header */}
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                 <div>
                   <h3 className="text-lg font-black text-white mb-1">Earning History</h3>
@@ -670,11 +729,10 @@ const recentActivityList = earningHistoryData.slice(0, 5).map(item => ({
                 </div>
                 <div className="text-right">
                   <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Total Points Earned</p>
-                  <h3 className="text-2xl font-black text-emerald-500">{displayPoints} XP</h3>
+                  <h3 className="text-2xl font-black text-emerald-500">{displayPoints} SXP</h3>
                 </div>
               </div>
 
-              {/* Filters */}
               <div className="flex flex-wrap gap-4 mb-6">
                 <div className="relative w-48">
                   <LayoutGrid className="w-4 h-4 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2 z-10 pointer-events-none" />
@@ -698,7 +756,6 @@ const recentActivityList = earningHistoryData.slice(0, 5).map(item => ({
                 </div>
               </div>
 
-              {/* Data Table */}
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
@@ -742,7 +799,6 @@ const recentActivityList = earningHistoryData.slice(0, 5).map(item => ({
                 </table>
               </div>
 
-              {/* Load More Button */}
               <div className="mt-6 text-center">
                 <button className="bg-[#18181b] border border-white/10 text-xs font-bold text-white px-6 py-2.5 rounded-full hover:bg-white/10 transition-colors inline-flex items-center gap-2">
                   Load More <ChevronDown className="w-4 h-4" />
@@ -750,7 +806,6 @@ const recentActivityList = earningHistoryData.slice(0, 5).map(item => ({
               </div>
             </div>
 
-            {/* Bottom Row: Recent Activity & Streak (Duplicated for consistency as seen in screenshot) */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="bg-[#09090b] border border-white/10 rounded-2xl p-6 flex flex-col">
                 <h3 className="text-xs font-black tracking-widest text-gray-400 uppercase mb-6">Recent Activity</h3>
@@ -787,25 +842,25 @@ const recentActivityList = earningHistoryData.slice(0, 5).map(item => ({
                     <h2 className="text-4xl font-black text-white">{currentStreak}</h2>
                     <span className="text-xl font-medium text-gray-400">Days</span>
                   </div>
-                  <p className="text-sm text-gray-400 mb-6">Keep it going, don't break your streak!</p>
+                  <p className="text-sm text-gray-400 mb-6">Keep it going, don&apos;t break your streak!</p>
                   
                   <div className="flex justify-between items-center">
-                   {streakMap.map((data) => {
-                    return (
-                      <div key={data.day} className="flex flex-col items-center gap-2">
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all ${
-                          data.isActive 
-                            ? 'bg-rose-600 border-rose-500 text-white shadow-[0_0_10px_rgba(225,29,72,0.5)]' 
-                            : data.isMissed 
-                              ? 'bg-[#0f0a0a] border-red-500/30 text-red-500 shadow-[0_0_10px_rgba(239,68,68,0.15)]'
-                              : 'bg-[#18181b] border-white/10 text-gray-600'
-                        }`}>
-                          {data.isActive ? <CheckCircle2 className="w-5 h-5" /> : data.isMissed ? <X className="w-5 h-5 opacity-80" /> : null}
+                    {streakMap.map((data) => {
+                      return (
+                        <div key={data.day} className="flex flex-col items-center gap-2">
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all ${
+                            data.isActive 
+                              ? 'bg-rose-600 border-rose-500 text-white shadow-[0_0_10px_rgba(225,29,72,0.5)]' 
+                              : data.isMissed 
+                                ? 'bg-[#0f0a0a] border-red-500/30 text-red-500 shadow-[0_0_10px_rgba(239,68,68,0.15)]'
+                                : 'bg-[#18181b] border-white/10 text-gray-600'
+                          }`}>
+                            {data.isActive ? <CheckCircle2 className="w-5 h-5" /> : data.isMissed ? <X className="w-5 h-5 opacity-80" /> : null}
+                          </div>
+                          <span className={`text-xs font-bold ${data.isActive || data.isMissed ? 'text-white' : 'text-gray-500'}`}>{data.day}</span>
                         </div>
-                        <span className={`text-xs font-bold ${data.isActive || data.isMissed ? 'text-white' : 'text-gray-500'}`}>{data.day}</span>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
                   </div>
                 </div>
 
@@ -815,7 +870,7 @@ const recentActivityList = earningHistoryData.slice(0, 5).map(item => ({
                   </div>
                   <div className="relative z-10">
                     <h3 className="text-lg font-black text-white mb-1">Invite Friends & Earn</h3>
-                    <p className="text-sm text-gray-400 mb-4">Earn 100 XP for each friend who joins!</p>
+                    <p className="text-sm text-gray-400 mb-4">Earn 100 SXP for each friend who joins!</p>
                     <button className="bg-gradient-to-r from-rose-600 to-orange-500 text-white text-sm font-bold py-2.5 px-6 rounded-full hover:shadow-[0_0_15px_rgba(225,29,72,0.4)] transition-all">
                       Invite Now
                     </button>
@@ -827,15 +882,13 @@ const recentActivityList = earningHistoryData.slice(0, 5).map(item => ({
           </div>
         )}
 
-        {/* 7. TAB CONTENT - ACTIVITY FEED */}
+        {/* TAB CONTENT - ACTIVITY FEED */}
         {activeTab === "Activity Feed" && (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Left Column: Activity Feed List */}
               <div className="lg:col-span-2 bg-[#09090b] border border-white/10 rounded-2xl p-6">
                 
-                {/* Header & Filters */}
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
                   <div>
                     <h3 className="text-lg font-black text-white mb-1">Activity Feed</h3>
@@ -856,7 +909,6 @@ const recentActivityList = earningHistoryData.slice(0, 5).map(item => ({
                   </div>
                 </div>
 
-                {/* Feed Items */}
                 <div className="space-y-1">
                   {activityFeedData.map((item, idx) => (
                     <div key={idx} className="flex items-center justify-between p-3 rounded-xl hover:bg-white/5 transition-colors group">
@@ -877,7 +929,6 @@ const recentActivityList = earningHistoryData.slice(0, 5).map(item => ({
                   ))}
                 </div>
 
-                {/* Load More */}
                 <div className="mt-6 pt-4 border-t border-white/5 text-center">
                   <button className="bg-[#18181b] border border-white/10 text-xs font-bold text-white px-6 py-2.5 rounded-full hover:bg-white/10 transition-colors inline-flex items-center gap-2">
                     Load More <ChevronDown className="w-4 h-4" />
@@ -885,7 +936,6 @@ const recentActivityList = earningHistoryData.slice(0, 5).map(item => ({
                 </div>
               </div>
 
-              {/* Right Column: How to Earn Points Sidebar */}
               <div className="bg-[#09090b] border border-white/10 rounded-2xl p-6 h-max sticky top-24">
                 <h3 className="text-base font-black text-white mb-1">How to Earn Points</h3>
                 <p className="text-xs text-gray-400 font-medium mb-6">More actions, more points!</p>
@@ -910,7 +960,6 @@ const recentActivityList = earningHistoryData.slice(0, 5).map(item => ({
               </div>
             </div>
 
-            {/* Bottom Row: Recent Activity & Streak (Duplicated for consistency) */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="bg-[#09090b] border border-white/10 rounded-2xl p-6 flex flex-col">
                 <h3 className="text-xs font-black tracking-widest text-gray-400 uppercase mb-6">Recent Activity</h3>
@@ -943,29 +992,29 @@ const recentActivityList = earningHistoryData.slice(0, 5).map(item => ({
                   <h3 className="text-xs font-black tracking-widest text-gray-400 uppercase mb-4 flex items-center gap-1.5">
                     Your Streak <InfoIcon />
                   </h3>
-                 <div className="flex items-baseline gap-2 mb-1">
+                  <div className="flex items-baseline gap-2 mb-1">
                     <h2 className="text-4xl font-black text-white">{currentStreak}</h2>
                     <span className="text-xl font-medium text-gray-400">Days</span>
                   </div>
-                 <p className="text-sm text-gray-400 mb-6">Keep it going, don't break your streak!</p>
+                  <p className="text-sm text-gray-400 mb-6">Keep it going, don&apos;t break your streak!</p>
                   
                   <div className="flex justify-between items-center">
                     {streakMap.map((data) => {
-                    return (
-                      <div key={data.day} className="flex flex-col items-center gap-2">
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all ${
-                          data.isActive 
-                            ? 'bg-rose-600 border-rose-500 text-white shadow-[0_0_10px_rgba(225,29,72,0.5)]' 
-                            : data.isMissed 
-                              ? 'bg-[#0f0a0a] border-red-500/30 text-red-500 shadow-[0_0_10px_rgba(239,68,68,0.15)]'
-                              : 'bg-[#18181b] border-white/10 text-gray-600'
-                        }`}>
-                          {data.isActive ? <CheckCircle2 className="w-5 h-5" /> : data.isMissed ? <X className="w-5 h-5 opacity-80" /> : null}
+                      return (
+                        <div key={data.day} className="flex flex-col items-center gap-2">
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all ${
+                            data.isActive 
+                              ? 'bg-rose-600 border-rose-500 text-white shadow-[0_0_10px_rgba(225,29,72,0.5)]' 
+                              : data.isMissed 
+                                ? 'bg-[#0f0a0a] border-red-500/30 text-red-500 shadow-[0_0_10px_rgba(239,68,68,0.15)]'
+                                : 'bg-[#18181b] border-white/10 text-gray-600'
+                          }`}>
+                            {data.isActive ? <CheckCircle2 className="w-5 h-5" /> : data.isMissed ? <X className="w-5 h-5 opacity-80" /> : null}
+                          </div>
+                          <span className={`text-xs font-bold ${data.isActive || data.isMissed ? 'text-white' : 'text-gray-500'}`}>{data.day}</span>
                         </div>
-                        <span className={`text-xs font-bold ${data.isActive || data.isMissed ? 'text-white' : 'text-gray-500'}`}>{data.day}</span>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
                   </div>
                 </div>
 
@@ -975,7 +1024,7 @@ const recentActivityList = earningHistoryData.slice(0, 5).map(item => ({
                   </div>
                   <div className="relative z-10">
                     <h3 className="text-lg font-black text-white mb-1">Invite Friends & Earn</h3>
-                    <p className="text-sm text-gray-400 mb-4">Earn 100 XP for each friend who joins!</p>
+                    <p className="text-sm text-gray-400 mb-4">Earn 100 SXP for each friend who joins!</p>
                     <button className="bg-gradient-to-r from-rose-600 to-orange-500 text-white text-sm font-bold py-2.5 px-6 rounded-full hover:shadow-[0_0_15px_rgba(225,29,72,0.4)] transition-all">
                       Invite Now
                     </button>
@@ -987,20 +1036,18 @@ const recentActivityList = earningHistoryData.slice(0, 5).map(item => ({
           </div>
         )}
 
-        {/* 8. TAB CONTENT - ALL ACTIVITIES */}
+        {/* TAB CONTENT - ALL ACTIVITIES */}
         {activeTab === "All Activities" && (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
               
-              {/* Left Column: Full Table */}
               <div className="xl:col-span-2 space-y-6">
                 
-                {/* Header & Filters */}
                 <div className="flex flex-col gap-4 mb-2">
                   <div>
                     <h3 className="text-xl font-black text-white mb-1">All Activities</h3>
-                    <p className="text-sm text-gray-400 font-medium">A complete log of everything you've done to earn points.</p>
+                    <p className="text-sm text-gray-400 font-medium">A complete log of everything you&apos;ve done to earn points.</p>
                   </div>
                   
                   <div className="flex flex-wrap items-center justify-between gap-4">
@@ -1041,7 +1088,6 @@ const recentActivityList = earningHistoryData.slice(0, 5).map(item => ({
                   </div>
                 </div>
 
-                {/* The Table */}
                 <div className="bg-[#09090b] border border-white/10 rounded-2xl p-6 overflow-x-auto">
                   <table className="w-full text-left border-collapse">
                     <thead>
@@ -1054,7 +1100,6 @@ const recentActivityList = earningHistoryData.slice(0, 5).map(item => ({
                       </tr>
                     </thead>
                     <tbody>
-                      {/* We slice earningHistoryData to show how pagination would look */}
                       {earningHistoryData.slice(0, 10).map((row, idx) => (
                         <tr key={idx} className="border-b border-white/5 hover:bg-white/5 transition-colors group">
                           <td className="py-3 px-2">
@@ -1085,7 +1130,6 @@ const recentActivityList = earningHistoryData.slice(0, 5).map(item => ({
                     </tbody>
                   </table>
 
-                  {/* Pagination */}
                   <div className="mt-6 pt-6 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4">
                     <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">
                       Showing 1 – 10 of 142 activities
@@ -1116,13 +1160,12 @@ const recentActivityList = earningHistoryData.slice(0, 5).map(item => ({
                   </div>
                 </div>
 
-                {/* Keep Going Promo */}
                 <div className="bg-gradient-to-r from-rose-950 via-rose-900 to-orange-950 border border-rose-500/30 rounded-2xl p-6 flex items-center justify-between overflow-hidden relative">
                    <div className="flex items-center gap-6 relative z-10">
                      <Trophy className="w-16 h-16 text-yellow-500 drop-shadow-[0_0_15px_rgba(234,179,8,0.5)]" />
                      <div>
-                       <h3 className="text-xl font-black text-white mb-1">Keep Going, You're on Fire!</h3>
-                       <p className="text-sm text-gray-300 font-medium">You've earned 24% more points this month.</p>
+                       <h3 className="text-xl font-black text-white mb-1">Keep Going, You&apos;re on Fire!</h3>
+                       <p className="text-sm text-gray-300 font-medium">You&apos;ve earned 24% more points this month.</p>
                      </div>
                    </div>
                    <button className="relative z-10 bg-gradient-to-r from-rose-600 to-orange-500 text-white text-sm font-bold py-3 px-6 rounded-full shadow-[0_0_15px_rgba(225,29,72,0.4)] hover:scale-105 transition-transform">
@@ -1131,27 +1174,24 @@ const recentActivityList = earningHistoryData.slice(0, 5).map(item => ({
                 </div>
               </div>
 
-              {/* Right Column: Sidebar */}
               <div className="space-y-6">
                 
-                {/* Total Points Header */}
                 <div className="bg-[#09090b] border border-white/10 rounded-2xl p-6 relative overflow-hidden group">
                   <div className="absolute right-[-20%] top-[-20%] opacity-10 group-hover:scale-110 transition-transform duration-700">
                     <Trophy className="w-48 h-48 text-rose-500" />
                   </div>
                   <div className="relative z-10">
                     <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Total Points Earned</p>
-                    <h3 className="text-3xl font-black text-emerald-500 mb-2">{displayPoints} XP</h3>
-<p className="text-xs font-bold text-emerald-500 flex items-center gap-1">
-  This Period ↑ 100% <span className="text-gray-500 ml-1">vs Apr 2026</span>
-</p>
+                    <h3 className="text-3xl font-black text-emerald-500 mb-2">{displayPoints} SXP</h3>
+                    <p className="text-xs font-bold text-emerald-500 flex items-center gap-1">
+                      This Period ↑ 100% <span className="text-gray-500 ml-1">vs Apr 2026</span>
+                    </p>
                   </div>
                 </div>
 
-                {/* Points Journey */}
                 <div className="bg-[#09090b] border border-white/10 rounded-2xl p-6">
                   <h3 className="text-base font-black text-white mb-1">Your Points Journey</h3>
-                  <p className="text-xs text-gray-400 font-medium mb-6">See how you're growing</p>
+                  <p className="text-xs text-gray-400 font-medium mb-6">See how you&apos;re growing</p>
                   
                   <div className="flex justify-center mb-8">
                     <DonutChart data={dynamicEarningBreakdown} totalPoints={displayPoints} />
@@ -1164,16 +1204,15 @@ const recentActivityList = earningHistoryData.slice(0, 5).map(item => ({
                           <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }} />
                           <span className="text-gray-300">{item.label}</span>
                         </div>
-                        <div className="flex gap-4">
-                          <span className="font-bold text-white text-right w-10">{item.percent}%</span>
-                          <span className="text-gray-400 text-right w-20">({item.xp})</span>
+                       <div className="flex justify-end gap-3 pr-2">
+                          <span className="font-bold text-white text-right">{item.percent}%</span>
+                          <span className="text-gray-400 text-right">({item.xp})</span>
                         </div>
                       </div>
                     ))}
                   </div>
                 </div>
 
-                {/* Top Activities */}
                 <div className="bg-[#09090b] border border-white/10 rounded-2xl p-6">
                   <h3 className="text-base font-black text-white mb-1">Top Activities</h3>
                   <p className="text-xs text-gray-400 font-medium mb-6">By points earned</p>
@@ -1208,7 +1247,6 @@ const recentActivityList = earningHistoryData.slice(0, 5).map(item => ({
   );
 }
 
-// Small helper icon component
 function InfoIcon() {
   return (
     <span className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full border border-gray-600 text-[9px] text-gray-500 cursor-help hover:text-gray-300 hover:border-gray-400 transition-colors">
@@ -1216,12 +1254,3 @@ function InfoIcon() {
     </span>
   );
 }
-
-// Simple star icon SVG with proper TypeScript types
-// function StarIcon(props: React.SVGProps<SVGSVGElement>) {
-//   return (
-//     <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
-//       <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-//     </svg>
-//   );
-// }

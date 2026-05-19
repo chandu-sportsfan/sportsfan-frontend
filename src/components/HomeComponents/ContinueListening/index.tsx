@@ -358,7 +358,7 @@ export default function ContinueListening() {
                         ? (item as AudioProgress).audioId
                         : (item as VideoProgress).videoId;
                     const href = isAudio
-                        ? `/MainModules/AudioDrop/AudioDropCard?id=${encodeURIComponent(id)}&resume=${item.elapsed}`
+                        ? `/MainModules/MatchesDropContent/AudioDropScreen?id=${encodeURIComponent(id)}&resume=${item.elapsed}`
                         : `/MainModules/MatchesDropContent/VideoDropScreen?id=${encodeURIComponent(id)}&resume=${item.elapsed}`;
                     const label = isAudio ? "listened" : "watched";
 

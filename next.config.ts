@@ -95,6 +95,10 @@ const nextConfig = {
         // Static content
         { source: '/Content/:path*', destination: `${apiTarget}/Content/:path*` },
 
+         // Preferences
+         { source: '/api/preferences', destination: `${apiTarget}/api/preferences` },
+         { source: '/api/preferences/:path*', destination: `${apiTarget}/api/preferences/:path*` },
+
         // Host Rooms
         { source: '/api/hostrooms', destination: `${apiTarget}/api/hostrooms` },
         { source: '/api/hostrooms/:path*', destination: `${apiTarget}/api/hostrooms/:path*` },

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import axios from "axios";
+import Link from "next/link";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -124,16 +125,15 @@ function PlayerCard({ player, accentColor, index }: { player: Player; accentColo
   const displayImg = fetchedImg || player.avatar;
 
   return (
-    <div
-      className="flex flex-col items-center gap-2 group"
+    <Link
+      href={`/MainModules/PlayersProfile?id=${player.id}&tab=highlights`}
+      className="flex flex-col items-center gap-2 group cursor-pointer"
       style={{ animationDelay: `${index * 80}ms` }}
     >
       {/* Arch-shaped player image */}
       <div
-        className="relative overflow-hidden transition-transform duration-300 group-hover:-translate-y-1"
+        className="relative overflow-hidden transition-transform duration-300 group-hover:-translate-y-1 w-[70px] lg:w-[86px] h-[88px] lg:h-[108px]"
         style={{
-          width: 70,
-          height: 88,
           borderRadius: "50% 50% 8px 8px",
           background: `linear-gradient(160deg, ${cardBg}cc, ${cardBg})`,
           boxShadow: `0 8px 32px ${cardBg}66, 0 2px 8px rgba(0,0,0,0.4)`,
@@ -178,7 +178,7 @@ function PlayerCard({ player, accentColor, index }: { player: Player; accentColo
       {/* Name */}
       <div className="text-center">
         <div
-          className="text-[9px] font-bold text-white leading-tight tracking-wide truncate max-w-[76px]"
+          className="text-[9px] lg:text-[11px] font-bold text-white leading-tight tracking-wide line-clamp-2 h-[32px] max-w-[76px] lg:max-w-[90px]"
           title={player.name}
         >
           {player.name}
@@ -193,7 +193,7 @@ function PlayerCard({ player, accentColor, index }: { player: Player; accentColo
           </div>
         )}
       </div>
-    </div>
+    </Link>
   );
 }
 
@@ -235,14 +235,14 @@ function SectionCard({
         >
           {icon}
         </div>
-        <div>
+        <div className="flex-1">
           <h3
-            className="text-base font-black leading-tight tracking-tight"
-            style={{ fontFamily: "'Bebas Neue', 'Anton', sans-serif", fontSize: "1.15rem", letterSpacing: "0.03em", color: "#f0eff4" }}
+            className="text-base font-black leading-tight tracking-tight text-[15px] whitespace-nowrap"
+            style={{ fontFamily: "'Bebas Neue', 'Anton', sans-serif", letterSpacing: "0.03em", color: "#f0eff4" }}
           >
             {label}
           </h3>
-          <p className="text-[11px] text-gray-500 mt-0.5 leading-snug">{sub}</p>
+          <p className="text-[11px] text-gray-500 mt-1 leading-snug line-clamp-2 lg:line-clamp-none h-[32px] lg:h-auto">{sub}</p>
         </div>
       </div>
 
@@ -308,8 +308,25 @@ export default function IPLSpotlight() {
   const handleScroll = () => {
     if (scrollRef.current) {
       const { scrollLeft, clientWidth } = scrollRef.current;
-      const index = Math.round(scrollLeft / clientWidth);
-      setActiveIndex(index);
+      // Calculate index based on scroll position and card width
+      // Since cards are 95% wide and snap-center, we can use a simpler approach
+      // or check the children offsets.
+      const children = scrollRef.current.children;
+      if (children.length > 0) {
+        let closestIndex = 0;
+        let minDiff = Infinity;
+        for (let i = 0; i < children.length; i++) {
+          const child = children[i] as HTMLElement;
+          const childCenter = child.offsetLeft + child.offsetWidth / 2;
+          const scrollCenter = scrollLeft + clientWidth / 2;
+          const diff = Math.abs(childCenter - scrollCenter);
+          if (diff < minDiff) {
+            minDiff = diff;
+            closestIndex = i;
+          }
+        }
+        setActiveIndex(closestIndex);
+      }
     }
   };
 
@@ -330,7 +347,7 @@ export default function IPLSpotlight() {
       el.addEventListener("scroll", handleScroll);
       return () => el.removeEventListener("scroll", handleScroll);
     }
-  }, []);
+  }, [loading]);
 
   if (loading) return <SpotlightSkeleton />;
 
@@ -352,12 +369,7 @@ export default function IPLSpotlight() {
     <section className="w-full">
       {/* Section title */}
       <div className="flex items-center gap-3 mb-4">
-        {/* <h2
-          className="text-xl text-white tracking-wide"
-          style={{ fontFamily: "'Bebas Neue', 'Anton', sans-serif", letterSpacing: "0.06em" }}
-        >
-          IPL SPOTLIGHT
-        </h2> */}
+
           <h1 className="text-[20px] text-white font-bold">IPL Spotlight</h1>
         <div className="flex-1 h-px bg-white/8" />
         {spotlight.updatedAt && (
@@ -373,7 +385,7 @@ export default function IPLSpotlight() {
         className="flex overflow-x-auto lg:overflow-x-visible snap-x snap-mandatory lg:snap-none scrollbar-hide gap-4 pb-2"
       >
         {SECTIONS.map((sec) => (
-          <div key={sec.key} className="flex-shrink-0 w-[88%] lg:w-auto lg:flex-1 snap-center">
+          <div key={sec.key} className="flex-shrink-0 w-[95%] lg:w-auto lg:flex-1 snap-center">
             <SectionCard
               label={sec.label}
               sub={sec.sub}

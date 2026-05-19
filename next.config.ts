@@ -103,6 +103,12 @@ const nextConfig = {
         { source: '/api/hostrooms', destination: `${apiTarget}/api/hostrooms` },
         { source: '/api/hostrooms/:path*', destination: `${apiTarget}/api/hostrooms/:path*` },
 
+        // create post and polls
+        { source: '/api/createpost', destination: `${apiTarget}/api/createpost` },
+        { source: '/api/createpost/:path*', destination: `${apiTarget}/api/createpost/:path*` },
+        { source: '/api/createpost/polls', destination: `${apiTarget}/api/createpost/polls` },
+        { source: '/api/createpost/polls/:path*', destination: `${apiTarget}/api/createpost/polls/:path*` },
+
         // Audio Signals
         { source: '/api/audio-messages', destination: `${apiTarget}/api/audio-messages` },
         { source: '/api/audio-messages/:path*', destination: `${apiTarget}/api/audio-messages/:path*` },

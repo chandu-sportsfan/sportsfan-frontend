@@ -41,6 +41,7 @@ import Team360CardsSection from "@/src/components/HomeComponents/Team360Cards";
 import PollCardsPage from "../PollCards/page";
 import NewsCenter from "@/src/components/HomeComponents/NewsCenter"; // NEW IMPORT
 import IPLSpotlight from "../IPLSpotlight/page";
+import SocialFeedSection from "@/src/components/CreatePost-Component/SocialFeedSection";
 
 export default function HomePage() {
   return (
@@ -53,7 +54,7 @@ export default function HomePage() {
         <PollCardsPage />
         <Team360CardsSection />
         {/* <Player360CardsSection /> */}
-        
+        <SocialFeedSection />
         {/* Added News Center Here */}
         <NewsCenter />
       </div>

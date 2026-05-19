@@ -428,7 +428,7 @@ if (view === "chat_room" && activeChat) {
                         return (
                             <div key={msg.id} className={`flex items-end gap-2 relative ${isMe ? "justify-end" : "justify-start"}`}>
                                 {!isMe && activeChat.isGroup && activeChat.memberList && (
-                                    <ChatAvatar src={activeChat.memberList?.avatar || null} name="User" size="w-8 h-8" className="mb-1" />
+                                    <ChatAvatar src={null} name="User" size="w-8 h-8" className="mb-1" />
                                 )}
                                 
                                 <div className={`flex flex-col ${isMe ? "items-end" : "items-start"} max-w-[75%] relative`}>

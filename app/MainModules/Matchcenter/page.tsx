@@ -64,12 +64,6 @@ interface HighestScoreRow {
   score: string;
 }
 
-interface MostFiftiesRow {
-  rank: number;
-  player: string;
-  team: string;
-  fifties: number;
-}
 
 interface TodayMatch {
   teamA: string;
@@ -110,7 +104,6 @@ interface StatsData {
   upcomingMatches: MatchCard[];
   recentMatches: MatchCard[];
   highestScores: HighestScoreRow[];
-  mostFifties: MostFiftiesRow[];
   playoffs: {
     q1: MatchCard;
     eliminator: MatchCard;
@@ -121,7 +114,6 @@ interface StatsData {
     bestBowling: ExtraStatRow[];
     battingAvg: ExtraStatRow[];
     bowlingAvg: ExtraStatRow[];
-    mostHundreds: ExtraStatRow[];
     mostEcon: ExtraStatRow[];
     maxSixes: ExtraStatRow[];
     maxFours: ExtraStatRow[];
@@ -695,7 +687,7 @@ function StatsTab({ data }: { data: StatsData }) {
   const limit = viewAll ? undefined : 5;
 
   // 1. Define a union type of all possible stat rows
-  type AnyStatRow = HighestScoreRow | MostFiftiesRow | ExtraStatRow;
+  type AnyStatRow = HighestScoreRow | ExtraStatRow;
 
   // 2. Safely type the array and use Record to access dynamic keys without 'any'
   const mapData = (arr: AnyStatRow[] | undefined, mainKey: string, subKey?: string) => 
@@ -810,15 +802,6 @@ function StatsTab({ data }: { data: StatsData }) {
           limit={limit}
         />
 
-        <StatCard
-          title="Most Fifties"
-          subtitle="IPL 2026 • Top 10"
-          icon={<Crown size={16} className="text-indigo-400" />}
-          data={mapData(data.mostFifties, "fifties")}
-          logos={data.teamLogos}
-          valueLabel="50s"
-          limit={limit}
-        />
       </div>
     </div>
   );

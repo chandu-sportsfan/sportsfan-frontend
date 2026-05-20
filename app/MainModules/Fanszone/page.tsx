@@ -41,6 +41,18 @@ const AUDIO_DROP_POINTS = 2;
 // 1. YOUR EXACT ACTIVITY LEDGER
 const exactUserHistory: HistoryItem[] = [
   {
+    action: "Audio Drops",
+    details: "Listened: Daily Sports Update",
+    points: AUDIO_DROP_POINTS,
+    type: "Content",
+    date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+    time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+    icon: Headphones,
+    color: "text-sky-400",
+    hexColor: "#38bdf8",
+    typeColor: "text-sky-400 border-white/10 bg-white/5"
+  },
+  {
     action: "Fan Battles",
     details: "Played a Fan Battle",
     points: 15, 
@@ -135,7 +147,7 @@ function DonutChart({ data, totalPoints }: { data: CategoryBreakdown[], totalPoi
   });
 
   return (
-    <div className="relative w-56 h-56 md:w-64 md:h-64 shrink-0">
+    <div className="relative w-72 h-72 md:w-80 md:h-80 shrink-0">
       <svg viewBox="0 0 100 100" className="w-full h-full transform -rotate-90">
         {slices.map((slice, i) => (
           <circle
@@ -297,9 +309,10 @@ export default function FanZoneDashboard() {
   // 2. Add the dynamic trend calculator
   const trendAnalytics = useMemo(() => {
     const today = new Date();
-    let days = 30;
-    if (trendPeriod === "7D") days = 7;
-    if (trendPeriod === "90D") days = 90;
+    
+    // Map periods to days without if/else
+    const daysMap: Record<string, number> = { "7D": 7, "30D": 30, "90D": 90 };
+    const days = daysMap[trendPeriod] || 30;
 
     const currentPeriodStart = new Date(today.getTime() - days * 24 * 60 * 60 * 1000);
     const previousPeriodStart = new Date(currentPeriodStart.getTime() - days * 24 * 60 * 60 * 1000);
@@ -307,80 +320,79 @@ export default function FanZoneDashboard() {
     let currentPeriodPoints = 0;
     let previousPeriodPoints = 0;
 
-    // Create 10 data points for the MiniTrendLine graph
     const buckets = new Array(10).fill(0);
     const bucketSize = (today.getTime() - currentPeriodStart.getTime()) / 10;
 
     earningHistoryData.forEach((item) => {
       const itemDate = new Date(item.date);
-      if (itemDate >= currentPeriodStart && itemDate <= today) {
-        currentPeriodPoints += item.points;
-        const bucketIndex = Math.floor((itemDate.getTime() - currentPeriodStart.getTime()) / bucketSize);
-        if (bucketIndex >= 0 && bucketIndex < 10) buckets[bucketIndex] += item.points;
-      } else if (itemDate >= previousPeriodStart && itemDate < currentPeriodStart) {
-        previousPeriodPoints += item.points;
-      }
+      const isCurrent = itemDate >= currentPeriodStart && itemDate <= today;
+      const isPrevious = itemDate >= previousPeriodStart && itemDate < currentPeriodStart;
+
+      // Ternary accumulation to avoid if/else
+      currentPeriodPoints += isCurrent ? item.points : 0;
+      previousPeriodPoints += isPrevious ? item.points : 0;
+
+      const bucketIndex = Math.floor((itemDate.getTime() - currentPeriodStart.getTime()) / bucketSize);
+      const isValidBucket = isCurrent && bucketIndex >= 0 && bucketIndex < 10;
+      
+      // Logical AND evaluation to avoid if statements
+      isValidBucket && (buckets[bucketIndex] += item.points);
     });
 
-    // Make chart data cumulative so the line goes up naturally
-    // Make chart data cumulative so the line goes up naturally
     let cumulative = 0;
-    const chartData = buckets.map((val) => {
+    const calculatedChartData = buckets.map((val) => {
       cumulative += val;
       return cumulative;
     });
 
-    // Valid fallback so the graph doesn't flatline if points are 0
-    // if (currentPeriodPoints === 0) {
-      // chartData =;
-    // }
+    // Fallback data so it doesn't flatline gracefully
+    // Fallback data so it doesn't flatline gracefully
+const defaultChartData = [0, 0, 0, 0, 0, 0, 0];
 
-//     // if (currentPeriodPoints === 0) chartData =;
-//     if (currentPeriodPoints === 0) {
-//   chartData =;
-// }
+const chartData = currentPeriodPoints > 0
+  ? calculatedChartData
+  : defaultChartData;
 
-    // Calculate percentage change
-    let percentChange = 0;
-    if (previousPeriodPoints > 0) {
-      percentChange = Math.round(((currentPeriodPoints - previousPeriodPoints) / previousPeriodPoints) * 100);
-    } else if (currentPeriodPoints > 0) {
-      percentChange = 100; // 100% growth if they had 0 before and gained some now
-    }
+    const percentChange = previousPeriodPoints > 0
+      ? Math.round(((currentPeriodPoints - previousPeriodPoints) / previousPeriodPoints) * 100)
+      : (currentPeriodPoints > 0 ? 100 : 0);
 
-    // Generate dynamic X-axis labels based on the period
-    let labels: string[] = [];
     const formatLabel = (date: Date, options: Intl.DateTimeFormatOptions) => date.toLocaleDateString('en-US', options);
-    
-    if (trendPeriod === "7D") {
-      labels = [
+
+    // Object mapping for dynamic labels without if/else
+    const labelGenerators: Record<string, () => string[]> = {
+      "7D": () => [
         formatLabel(new Date(today.getTime() - 6 * 86400000), { weekday: 'short' }),
         formatLabel(new Date(today.getTime() - 4 * 86400000), { weekday: 'short' }),
         formatLabel(new Date(today.getTime() - 2 * 86400000), { weekday: 'short' }),
         'Today'
-      ];
-    } else if (trendPeriod === "30D") {
-      labels = [
+      ],
+      "30D": () => [
         formatLabel(new Date(today.getTime() - 30 * 86400000), { month: 'short', day: 'numeric' }),
         formatLabel(new Date(today.getTime() - 20 * 86400000), { month: 'short', day: 'numeric' }),
         formatLabel(new Date(today.getTime() - 10 * 86400000), { month: 'short', day: 'numeric' }),
         'Today'
-      ];
-    } else if (trendPeriod === "90D") {
-      labels = [
+      ],
+      "90D": () => [
         formatLabel(new Date(today.getTime() - 90 * 86400000), { month: 'short' }),
         formatLabel(new Date(today.getTime() - 60 * 86400000), { month: 'short' }),
         formatLabel(new Date(today.getTime() - 30 * 86400000), { month: 'short' }),
         'This Month'
-      ];
-    }
+      ]
+    };
+
+    const vsTexts: Record<string, string> = {
+      "7D": "vs last week",
+      "30D": "vs last month",
+      "90D": "vs last 90 days"
+    };
 
     return {
       percentChange,
       isPositive: percentChange >= 0,
       chartData,
-      labels,
-      vsText: trendPeriod === "7D" ? "vs last week" : trendPeriod === "30D" ? "vs last month" : "vs last 90 days"
+      labels: (labelGenerators[trendPeriod] || labelGenerators["30D"])(),
+      vsText: vsTexts[trendPeriod] || vsTexts["30D"]
     };
   }, [earningHistoryData, trendPeriod]);
   

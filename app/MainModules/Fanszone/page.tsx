@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useLeaderboard } from "@/context/LeaderboardContext";
 import { 
   ChevronDown, Trophy, Share2, CheckCircle2, 
   Award, TrendingUp, Play, ThumbsUp, FileText, 
   Gamepad2, UserPlus, LayoutGrid, Calendar, Filter,
-  Download, ChevronLeft, ChevronRight, MoreHorizontal, X
+  Download, ChevronLeft, ChevronRight, MoreHorizontal, X, Headphones
 } from "lucide-react";
 
 // --- MOCK DATA ---
@@ -35,6 +35,9 @@ interface CategoryBreakdown {
   xpValue?: number;
 }
 
+// Points awarded per audio drop listen (must match AudioDrop.tsx backend value)
+const AUDIO_DROP_POINTS = 2;
+
 // 1. YOUR EXACT ACTIVITY LEDGER
 const exactUserHistory: HistoryItem[] = [
   {
@@ -50,6 +53,20 @@ const exactUserHistory: HistoryItem[] = [
     typeColor: "text-yellow-500 border-white/10 bg-white/5"
   }
 ];
+
+// Factory for creating an Audio Drop history entry when points are awarded
+const createAudioDropHistoryItem = (title: string): HistoryItem => ({
+  action: "Audio Drops",
+  details: `Listened: ${title || "Audio Drop"}`,
+  points: AUDIO_DROP_POINTS,
+  type: "Content",
+  date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+  time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+  icon: Headphones,
+  color: "text-sky-400",
+  hexColor: "#38bdf8",
+  typeColor: "text-sky-400 border-white/10 bg-white/5"
+});
 
 interface GroupedCategory {
   label: string;
@@ -87,10 +104,11 @@ const getExactEarningBreakdown = (history: HistoryItem[]): CategoryBreakdown[] =
 };
 
 const trendData = [30, 45, 40, 60, 55, 75, 70, 90, 85, 100];
-const topActivitiesData = [
+const staticTopActivitiesData = [
   { icon: UserPlus, title: "Register on SportsFan360", xp: "+100 SXP", desc: "1 time", color: "text-emerald-500", bg: "bg-emerald-500/10 border-emerald-500/20" },
   { icon: UserPlus, title: "Invite Friends", xp: "+100 SXP", desc: "3 invites", color: "text-emerald-500", bg: "bg-emerald-500/10 border-emerald-500/20" },
   { icon: Gamepad2, title: "Fantasy - Fan Battle", xp: "+50 SXP", desc: "7 battles", color: "text-yellow-500", bg: "bg-yellow-500/10 border-yellow-500/20" },
+  { icon: Headphones, title: "Listen Audio Drops", xp: "+2 SXP", desc: "Per drop (90% listened)", color: "text-sky-400", bg: "bg-sky-400/10 border-sky-400/20" },
 ];
 
 const activityFeedData = [
@@ -99,6 +117,7 @@ const activityFeedData = [
 ];
 
 const earnPointsActions = [
+  { icon: Headphones, title: "Listen Audio Drops", xp: "+2 SXP", desc: "Per drop (90% listened)", color: "text-sky-400", bg: "bg-sky-400/10" },
   { icon: Play, title: "Watch / Listen to Drops", xp: "+20 SXP", desc: "12 Actions", color: "text-yellow-500", bg: "bg-yellow-500/10" },
   { icon: ThumbsUp, title: "Like a Post", xp: "+10 SXP", desc: "28 Actions", color: "text-rose-500", bg: "bg-rose-500/10" },
   { icon: Share2, title: "Share a Post", xp: "+15 SXP", desc: "18 Actions", color: "text-purple-500", bg: "bg-purple-500/10" },
@@ -236,14 +255,40 @@ export default function FanZoneDashboard() {
   const previousUserRank = contextData?.previousUserRank ?? 0;
   
   const displayPoints = currentUserPoints.toLocaleString();
+
+  // ── Audio Drop points integration ──────────────────────────────────────────
+  // Holds history entries for every audio drop that awarded points this session.
+  // AudioDrop.tsx dispatches a custom window event "audioDropPointsAwarded"
+  // with detail: { title: string, points: number } when /api/audio-progress
+  // returns pointsAwarded > 0.
+  const [audioDropHistory, setAudioDropHistory] = useState<HistoryItem[]>([]);
+
+  const handleAudioDropPoints = useCallback((e: Event) => {
+    const detail = (e as CustomEvent<{ title?: string; points?: number }>).detail;
+    const title = detail?.title || "Audio Drop";
+    setAudioDropHistory(prev => [createAudioDropHistoryItem(title), ...prev]);
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener("audioDropPointsAwarded", handleAudioDropPoints);
+    return () => window.removeEventListener("audioDropPointsAwarded", handleAudioDropPoints);
+  }, [handleAudioDropPoints]);
   
   // Sync the ledger dynamically with the live user points!
-  const earningHistoryData = useMemo(() => {
+  // Fan Battle points come from LeaderboardContext; Audio Drop points are tracked locally.
+  const fanBattleHistory = useMemo(() => {
     return exactUserHistory.map(item => ({
       ...item,
-      points: currentUserPoints > 0 ? currentUserPoints : 0
+      points: currentUserPoints > 0
+        // Subtract audio drop points so Fan Battle entry shows only battle points
+        ? Math.max(0, currentUserPoints - audioDropHistory.reduce((s, a) => s + a.points, 0))
+        : 0
     }));
-  }, [currentUserPoints]); 
+  }, [currentUserPoints, audioDropHistory]);
+
+  const earningHistoryData = useMemo(() => {
+    return [...audioDropHistory, ...fanBattleHistory];
+  }, [audioDropHistory, fanBattleHistory]);
   const dynamicEarningBreakdown = getExactEarningBreakdown(earningHistoryData);
   
   // 1. Add state for the active tab (7D, 30D, 90D)
@@ -1218,7 +1263,7 @@ export default function FanZoneDashboard() {
                   <p className="text-xs text-gray-400 font-medium mb-6">By points earned</p>
                   
                   <div className="flex flex-col gap-5 mb-6">
-                    {topActivitiesData.map((action, i) => (
+                    {staticTopActivitiesData.map((action, i) => (
                       <div key={i} className="flex items-start gap-4">
                         <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 border ${action.bg}`}>
                           <action.icon className={`w-5 h-5 ${action.color}`} />

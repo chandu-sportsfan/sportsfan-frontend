@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useLeaderboard } from '@/context/LeaderboardContext';
-import { ChevronLeft, Trophy, Star, Crown, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { ChevronLeft, Trophy, Star, Crown, ArrowUp, ArrowDown, Minus } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 interface LeaderboardUser {
@@ -16,7 +16,6 @@ interface LeaderboardUser {
 interface AnimatedUser extends LeaderboardUser {
   previousRank: number;
   rankDelta: number;
-  isNew: boolean;
   animatingUp: boolean;
   animatingDown: boolean;
   flashGreen: boolean;
@@ -55,25 +54,20 @@ const RankBadge: React.FC<{ rank: number }> = ({ rank }) => {
 };
 
 // ─── Delta Indicator ──────────────────────────────────────────────────────────
-const DeltaIndicator: React.FC<{ delta: number; isNew: boolean }> = ({ delta, isNew }) => {
-  if (isNew) {
-    return (
-      <span className="gl-delta gl-delta-new">NEW</span>
-    );
-  }
+const DeltaIndicator: React.FC<{ delta: number }> = ({ delta }) => {
   if (delta > 0) {
     return (
       <span className="gl-delta gl-delta-up">
-        <TrendingUp size={10} />
-        +{delta}
+        <ArrowUp size={10} />
+        {delta}
       </span>
     );
   }
   if (delta < 0) {
     return (
       <span className="gl-delta gl-delta-down">
-        <TrendingDown size={10} />
-        {delta}
+        <ArrowDown size={10} />
+        {Math.abs(delta)}
       </span>
     );
   }
@@ -131,6 +125,8 @@ const GlobalLeaderboard: React.FC = () => {
   const [animatedList, setAnimatedList] = useState<AnimatedUser[]>([]);
   const [movingIds, setMovingIds] = useState<Set<string | number>>(new Set());
   const prevRanksRef = useRef<Map<string | number, number>>(new Map());
+  const mountSnapshotRef = useRef<Map<string | number, number> | null>(null);
+  const hasInitializedRef = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<Map<string | number, HTMLDivElement>>(new Map());
 
@@ -138,24 +134,61 @@ const GlobalLeaderboard: React.FC = () => {
   const safeRank = currentUserRank ?? 0;
   const safePoints = currentUserPoints ?? 0;
 
+  const RANK_SNAPSHOT_KEY = 'gl_rank_snapshot';
+
+  // Helper: look up a userId in a Map that may have string or number keys
+  const getPrevRank = useCallback(
+    (userId: string | number, map: Map<string | number, number>): number | null => {
+      if (map.has(userId)) return map.get(userId)!;
+      if (map.has(String(userId))) return map.get(String(userId))!;
+      const asNum = Number(userId);
+      if (!isNaN(asNum) && map.has(asNum)) return map.get(asNum)!;
+      return null;
+    },
+    []
+  );
+
   // Build animated list when leaderboard changes
   useEffect(() => {
     if (safeLeaderboard.length === 0) return;
 
-    const prev = prevRanksRef.current;
+    // On the very first data arrival, load the persisted snapshot from localStorage
+    // so we can diff against ranks from before the user played their last battle.
+    if (!hasInitializedRef.current) {
+      hasInitializedRef.current = true;
+      try {
+        const raw = localStorage.getItem(RANK_SNAPSHOT_KEY);
+        if (raw) {
+          const parsed: Record<string, number> = JSON.parse(raw);
+          mountSnapshotRef.current = new Map(
+            Object.entries(parsed).map(([k, v]) => [k, Number(v)])
+          );
+        }
+      } catch {
+        // localStorage unavailable or corrupt — skip snapshot
+      }
+    }
+
+    // Pick the right "previous" source:
+    // - live updates use prevRanksRef (set after first render)
+    // - first render uses the localStorage snapshot (ranks from before the battle)
+    const prev: Map<string | number, number> =
+      prevRanksRef.current.size > 0
+        ? prevRanksRef.current
+        : (mountSnapshotRef.current ?? new Map());
+
     const newMoving = new Set<string | number>();
 
     const next: AnimatedUser[] = safeLeaderboard.map((u) => {
-      const prevRank = prev.get(u.userId) ?? u.rank;
-      const delta = prevRank - u.rank; // positive = moved up
-      const isNew = !prev.has(u.userId);
-      const changed = !isNew && delta !== 0;
+      const storedPrevRank = getPrevRank(u.userId, prev);
+      const prevRank = storedPrevRank ?? u.rank; // unknown → no delta
+      const delta = prevRank - u.rank;           // positive = climbed
+      const changed = storedPrevRank !== null && delta !== 0;
       if (changed) newMoving.add(u.userId);
       return {
         ...u,
         previousRank: prevRank,
         rankDelta: delta,
-        isNew,
         animatingUp: delta > 0,
         animatingDown: delta < 0,
         flashGreen: delta > 0,
@@ -166,21 +199,35 @@ const GlobalLeaderboard: React.FC = () => {
     setAnimatedList(next);
     setMovingIds(newMoving);
 
-    // Update ref for next diff
+    // Update live-update ref immediately
     const nextMap = new Map<string | number, number>();
     safeLeaderboard.forEach((u) => nextMap.set(u.userId, u.rank));
     prevRanksRef.current = nextMap;
 
-    // Clear movement flags after animation completes
-    if (newMoving.size > 0) {
-      const t = setTimeout(() => {
-        setMovingIds(new Set());
-        setAnimatedList((cur) =>
-          cur.map((u) => ({ ...u, animatingUp: false, animatingDown: false, flashGreen: false, flashRed: false }))
-        );
-      }, 1200);
-      return () => clearTimeout(t);
-    }
+    // Persist the snapshot to localStorage *after* the animation completes
+    // so the *next* leaderboard open sees these as the "before" ranks.
+    const saveTimer = setTimeout(() => {
+      try {
+        const snapshot: Record<string, number> = {};
+        safeLeaderboard.forEach((u) => { snapshot[String(u.userId)] = u.rank; });
+        localStorage.setItem(RANK_SNAPSHOT_KEY, JSON.stringify(snapshot));
+      } catch {
+        // ignore write errors
+      }
+
+      setMovingIds(new Set());
+      setAnimatedList((cur) =>
+        cur.map((u) => ({
+          ...u,
+          animatingUp: false,
+          animatingDown: false,
+          flashGreen: false,
+          flashRed: false,
+        }))
+      );
+    }, 1300);
+
+    return () => clearTimeout(saveTimer);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [safeLeaderboard]);
 
@@ -208,7 +255,6 @@ const GlobalLeaderboard: React.FC = () => {
     ...u,
     previousRank: u.rank,
     rankDelta: 0,
-    isNew: false,
     animatingUp: false,
     animatingDown: false,
     flashGreen: false,
@@ -610,18 +656,28 @@ const GlobalLeaderboard: React.FC = () => {
         .gl-delta {
           display: inline-flex;
           align-items: center;
-          gap: 2px;
-          font-size: 9px;
+          gap: 3px;
+          font-size: 11px;
           font-weight: 800;
-          letter-spacing: 0.06em;
-          padding: 3px 6px;
+          letter-spacing: 0.04em;
+          padding: 4px 7px;
           border-radius: 6px;
           font-family: var(--gl-font-display);
+          line-height: 1;
         }
-        .gl-delta-up   { color: var(--gl-emerald); background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.2); }
-        .gl-delta-down { color: #f87171; background: rgba(248,113,113,0.1); border: 1px solid rgba(248,113,113,0.18); }
-        .gl-delta-same { color: rgba(255,255,255,0.2); background: transparent; border: 1px solid rgba(255,255,255,0.06); }
-        .gl-delta-new  { color: #a78bfa; background: rgba(167,139,250,0.12); border: 1px solid rgba(167,139,250,0.2); font-size: 8px; }
+        .gl-delta-up   {
+          color: var(--gl-emerald);
+          background: rgba(16,185,129,0.13);
+          border: 1px solid rgba(16,185,129,0.25);
+          animation: glDeltaPopIn 0.4s cubic-bezier(0.34,1.56,0.64,1) both;
+        }
+        .gl-delta-down {
+          color: #f87171;
+          background: rgba(248,113,113,0.1);
+          border: 1px solid rgba(248,113,113,0.2);
+          animation: glDeltaPopIn 0.4s cubic-bezier(0.34,1.56,0.64,1) both;
+        }
+        .gl-delta-same { color: rgba(255,255,255,0.18); background: transparent; border: 1px solid rgba(255,255,255,0.06); }
 
         /* ── Points ── */
         .gl-pts-col { width: 100px; text-align: right; }
@@ -727,6 +783,10 @@ const GlobalLeaderboard: React.FC = () => {
         }
 
         /* ── Keyframes ── */
+        @keyframes glDeltaPopIn {
+          from { opacity: 0; transform: scale(0.6); }
+          to   { opacity: 1; transform: scale(1); }
+        }
         @keyframes glFadeUp {
           from { opacity: 0; transform: translateY(16px); }
           to   { opacity: 1; transform: translateY(0); }
@@ -887,7 +947,7 @@ const GlobalLeaderboard: React.FC = () => {
 
                     {/* Delta */}
                     <div className="gl-delta-col">
-                      <DeltaIndicator delta={u.rankDelta} isNew={u.isNew} />
+                      <DeltaIndicator delta={u.rankDelta} />
                     </div>
 
                     {/* Points */}

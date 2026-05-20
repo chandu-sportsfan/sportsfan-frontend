@@ -317,7 +317,7 @@ const SettingsPage: React.FC = () => {
         {/* Header — clicking the arrow goes home */}
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
           <button
-            onClick={() => router.push("/")}
+            onClick={() => router.push("/MainModules/HomePage")}
             aria-label="Back to Home"
             style={{
               display: "flex",

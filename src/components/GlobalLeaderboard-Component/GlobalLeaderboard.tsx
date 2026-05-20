@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useLeaderboard } from '@/context/LeaderboardContext';
 import { ChevronLeft, Trophy, Star, Crown, ArrowUp, ArrowDown, Minus } from 'lucide-react';
@@ -21,6 +21,79 @@ interface AnimatedUser extends LeaderboardUser {
   flashGreen: boolean;
   flashRed: boolean;
 }
+
+// ─── Confetti ─────────────────────────────────────────────────────────────────
+interface ConfettiPiece {
+  id: number;
+  left: number;
+  color: string;
+  w: number;
+  h: number;
+  borderRadius: string;
+  duration: number;
+  delay: number;
+  drift: number;
+  rotation: number;
+}
+
+const CONFETTI_COLORS = [
+  '#FFD700', '#e11d48', '#10b981', '#f97316',
+  '#a78bfa', '#38bdf8', '#fb7185', '#facc15', '#ffffff',
+];
+
+const Confetti: React.FC<{ active: boolean }> = ({ active }) => {
+  const [pieces, setPieces] = useState<ConfettiPiece[]>([]);
+
+  useEffect(() => {
+    if (!active) { setPieces([]); return; }
+    const generated: ConfettiPiece[] = Array.from({ length: 110 }, (_, i) => {
+      const isRect = Math.random() > 0.38;
+      const baseSize = 5 + Math.random() * 9;
+      return {
+        id: i,
+        left: Math.random() * 100,
+        color: CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)],
+        w: isRect ? baseSize * 0.45 : baseSize,
+        h: isRect ? baseSize * 2 : baseSize,
+        borderRadius: isRect ? '2px' : '50%',
+        duration: 1.8 + Math.random() * 2.2,
+        delay: Math.random() * 0.9,
+        drift: (Math.random() - 0.5) * 260,
+        rotation: 120 + Math.random() * 600,
+      };
+    });
+    setPieces(generated);
+  }, [active]);
+
+  if (!active || pieces.length === 0) return null;
+
+  return (
+    <div
+      style={{
+        position: 'fixed', inset: 0, pointerEvents: 'none',
+        zIndex: 9999, overflow: 'hidden',
+      }}
+    >
+      {pieces.map((p) => (
+        <div
+          key={p.id}
+          className="gl-confetti-piece"
+          style={{
+            left: `${p.left}%`,
+            width: `${p.w}px`,
+            height: `${p.h}px`,
+            background: p.color,
+            borderRadius: p.borderRadius,
+            animationDuration: `${p.duration}s`,
+            animationDelay: `${p.delay}s`,
+            ['--drift' as string]: `${p.drift}px`,
+            ['--rot' as string]: `${p.rotation}deg`,
+          }}
+        />
+      ))}
+    </div>
+  );
+};
 
 // ─── Rank Badge ───────────────────────────────────────────────────────────────
 const RankBadge: React.FC<{ rank: number }> = ({ rank }) => {
@@ -124,6 +197,7 @@ const GlobalLeaderboard: React.FC = () => {
 
   const [animatedList, setAnimatedList] = useState<AnimatedUser[]>([]);
   const [movingIds, setMovingIds] = useState<Set<string | number>>(new Set());
+  const [showConfetti, setShowConfetti] = useState(false);
   const prevRanksRef = useRef<Map<string | number, number>>(new Map());
   const mountSnapshotRef = useRef<Map<string | number, number> | null>(null);
   const hasInitializedRef = useRef(false);
@@ -135,6 +209,13 @@ const GlobalLeaderboard: React.FC = () => {
   const safePoints = currentUserPoints ?? 0;
 
   const RANK_SNAPSHOT_KEY = 'gl_rank_snapshot';
+
+  // Trigger confetti on every leaderboard open
+  useEffect(() => {
+    setShowConfetti(true);
+    const t = setTimeout(() => setShowConfetti(false), 3800);
+    return () => clearTimeout(t);
+  }, []);
 
   // Helper: look up a userId in a Map that may have string or number keys
   const getPrevRank = useCallback(
@@ -263,6 +344,9 @@ const GlobalLeaderboard: React.FC = () => {
 
   return (
     <>
+      {/* ── Party Confetti on open ── */}
+      <Confetti active={showConfetti} />
+
       {/* ── Injected Styles ── */}
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=DM+Sans:wght@400;500;600;700&display=swap');
@@ -285,7 +369,7 @@ const GlobalLeaderboard: React.FC = () => {
         .gl-wrap {
           max-width: 860px;
           margin: 0 auto;
-          padding: 24px 16px 48px;
+          padding: 10px 16px 48px;
           font-family: var(--gl-font-body);
           position: relative;
         }
@@ -330,7 +414,7 @@ const GlobalLeaderboard: React.FC = () => {
           letter-spacing: 0.05em;
           cursor: pointer;
           transition: all 0.2s;
-          margin-bottom: 20px;
+          margin-bottom: 14px;
           font-family: var(--gl-font-body);
         }
         .gl-back-btn:hover {
@@ -457,7 +541,7 @@ const GlobalLeaderboard: React.FC = () => {
           border: 1px solid rgba(16,185,129,0.2);
           border-radius: 999px;
           padding: 4px 10px;
-          margin-bottom: 14px;
+          margin-top: 10px;
           font-family: var(--gl-font-display);
         }
         .gl-live-dot {
@@ -782,6 +866,20 @@ const GlobalLeaderboard: React.FC = () => {
           animation: glBarPulse 0.9s ease-in-out infinite alternate;
         }
 
+        /* ── Confetti ── */
+        .gl-confetti-piece {
+          position: absolute;
+          top: -12px;
+          animation: glConfettiFall linear both;
+          will-change: transform, opacity;
+        }
+        @keyframes glConfettiFall {
+          0%   { transform: translateY(0)     translateX(0)              rotate(0deg);         opacity: 1; }
+          15%  { opacity: 1; }
+          85%  { opacity: 0.85; }
+          100% { transform: translateY(105vh) translateX(var(--drift))   rotate(var(--rot));   opacity: 0; }
+        }
+
         /* ── Keyframes ── */
         @keyframes glDeltaPopIn {
           from { opacity: 0; transform: scale(0.6); }
@@ -845,11 +943,6 @@ const GlobalLeaderboard: React.FC = () => {
               Back to Fantasy
             </button>
 
-            <div className="gl-live-pill">
-              <span className="gl-live-dot" />
-              Live Rankings
-            </div>
-
             <div className="gl-title-row">
               <div className="gl-title-icon">
                 <Trophy size={26} color="#e11d48" />
@@ -857,6 +950,10 @@ const GlobalLeaderboard: React.FC = () => {
               <div>
                 <h1 className="gl-title">Global Leaderboard</h1>
                 <p className="gl-subtitle">Compete in battles, earn SXP, and climb the ranks.</p>
+                <div className="gl-live-pill">
+                  <span className="gl-live-dot" />
+                  Live Rankings
+                </div>
               </div>
             </div>
           </div>
@@ -898,19 +995,23 @@ const GlobalLeaderboard: React.FC = () => {
                 const isMovingDown = u.animatingDown;
                 const flashGreen   = u.flashGreen;
                 const flashRed     = u.flashRed;
+                const isAnimating  = isMovingUp || isMovingDown || flashGreen || flashRed;
 
-                // Row class
-                let rowClass = 'gl-row gl-row-stagger ';
-                if (isCurrentUser)  rowClass += 'gl-row-current ';
+                // Row class — never mix gl-row-stagger with movement classes:
+                // gl-row-stagger is defined later in the stylesheet and would win
+                // the CSS cascade, silently cancelling the slide/flash animations.
+                let rowClass = 'gl-row ';
+                if (!isAnimating) rowClass += 'gl-row-stagger ';
+                if (isCurrentUser)   rowClass += 'gl-row-current ';
                 else if (rank === 1) rowClass += 'gl-row-rank-1 ';
                 else if (rank === 2) rowClass += 'gl-row-rank-2 ';
                 else if (rank === 3) rowClass += 'gl-row-rank-3 ';
-                else                rowClass += 'gl-row-normal ';
+                else                 rowClass += 'gl-row-normal ';
 
-                if (isMovingUp)   rowClass += 'gl-row-moving-up ';
-                if (isMovingDown) rowClass += 'gl-row-moving-down ';
-                if (flashGreen && !isMovingUp)   rowClass += 'gl-row-flash-green ';
-                if (flashRed   && !isMovingDown) rowClass += 'gl-row-flash-red ';
+                if (isMovingUp)                       rowClass += 'gl-row-moving-up ';
+                if (isMovingDown)                     rowClass += 'gl-row-moving-down ';
+                if (flashGreen && !isMovingUp)        rowClass += 'gl-row-flash-green ';
+                if (flashRed   && !isMovingDown)      rowClass += 'gl-row-flash-red ';
 
                 const initial = (u.userName || '?').charAt(0).toUpperCase();
 

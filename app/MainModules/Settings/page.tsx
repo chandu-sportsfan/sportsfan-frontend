@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import Link from "next/link"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -297,8 +297,9 @@ const SettingRowItem: React.FC<RowProps> = ({ row, isLast, toggles, selects, onT
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
+// ─── Main Component ───────────────────────────────────────────────────────────
+
 const SettingsPage: React.FC = () => {
-  const router = useRouter();
   const [toggles, setToggles] = useState<Record<string, boolean>>({
     pushNotifications: true,
   });
@@ -316,8 +317,8 @@ const SettingsPage: React.FC = () => {
 
         {/* Header — clicking the arrow goes home */}
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
-          <button
-            onClick={() => router.push("/MainModules/HomePage")}
+          <Link
+            href="/MainModules/HomePage"
             aria-label="Back to Home"
             style={{
               display: "flex",
@@ -330,12 +331,13 @@ const SettingsPage: React.FC = () => {
               color: "#aaa",
               flexShrink: 0,
               transition: "color 0.15s",
+              textDecoration: "none"
             }}
-            onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#f0f0f0"; }}
-            onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#aaa"; }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = "#f0f0f0"; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = "#aaa"; }}
           >
             <IconChevronLeft />
-          </button>
+          </Link>
           <div style={{ width: 4, height: 22, background: "#e5003d", borderRadius: 2, flexShrink: 0 }} />
           <h1 style={{ fontSize: 20, fontWeight: 700, color: "#f0f0f0", letterSpacing: 0.2, margin: 0 }}>Settings</h1>
         </div>
@@ -371,3 +373,4 @@ const SettingsPage: React.FC = () => {
 };
 
 export default SettingsPage;
+

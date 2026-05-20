@@ -105,13 +105,15 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased !p-0`}
       >
+
         <SessionProvider>
-          <ClubProfileProvider>
-            <WatchAlongProvider>
-              <PlayerProfile360Provider>
-                <GlobalSearchProvider>
-                  <AudioProvider>
-                    <AuthProvider>
+          <AuthProvider>
+            <ClubProfileProvider>
+              <WatchAlongProvider>
+                <PlayerProfile360Provider>
+                  <GlobalSearchProvider>
+                    <AudioProvider>
+
                       <LeaderboardProvider>
                         <VideoProvider>
                           <PlaysProvider>
@@ -121,14 +123,16 @@ export default function RootLayout({
                           </PlaysProvider>
                         </VideoProvider>
                       </LeaderboardProvider>
-                    </AuthProvider>
-                  </AudioProvider>
-                </GlobalSearchProvider>
-              </PlayerProfile360Provider>
-            </WatchAlongProvider>
-          </ClubProfileProvider>
+                    </AudioProvider>
+                  </GlobalSearchProvider>
+                </PlayerProfile360Provider>
+              </WatchAlongProvider>
+            </ClubProfileProvider>
+            <GlobalActionBar />
+          </AuthProvider>
         </SessionProvider>
-        <GlobalActionBar />
+
+
       </body>
     </html>
   );

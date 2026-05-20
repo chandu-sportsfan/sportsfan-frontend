@@ -116,9 +116,9 @@ export default function PollsSection() {
         ) : (
           <>
             {/* 1. Upcoming Poll Card moved to the Left (Start of the list) */}
-            {/* <div className="flex-shrink-0">
+            <div className="flex-shrink-0">
               <UpcomingPollCard />
-            </div> */}
+            </div>
 
             {/* 2. Filter out inactive and expired polls, then map through the rest */}
             {polls

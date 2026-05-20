@@ -78,7 +78,7 @@ const buildNewsShareText = (article: NewsArticle) => {
     shareUrl,
   ].filter(Boolean).join('\n');
 };
-const ARCHIVE_DATES = ['2026-05-18', '2026-05-17', '2026-05-16'];
+const ARCHIVE_DATES = ['2026-05-19', '2026-05-18', '2026-05-17', '2026-05-16'];
 export default function DetailedNewsCenter() {
   const [articles, setArticles] = useState<NewsArticle[]>([]);
   const [sortOption, setSortOption] = useState<'latest' | 'oldest' | 'most-liked'>('latest');
@@ -432,7 +432,7 @@ export default function DetailedNewsCenter() {
                <Calendar size={16} /> Archive (Date Wise)
              </h3>
             <ul className="space-y-3">
-               {['2026-05-18', '2026-05-17', '2026-05-16'].map((dateString) => {
+               {['2026-05-19' , '2026-05-18', '2026-05-17', '2026-05-16'].map((dateString) => {
                  const isSelected = selectedArchiveDate === dateString;
                  const displayDate = new Date(dateString).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
                  

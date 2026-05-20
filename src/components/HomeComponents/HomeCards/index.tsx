@@ -1195,7 +1195,7 @@ function LatestDropsList() {
   );
 }
 
-// ── Trending Drops List ───────────────────────────────────────────────────────//
+// ── Trending Drops List ───────────────────────────────────────────────────────////
 function TrendingDropsList() {
   const [drops, setDrops] = useState<TrendingDrop[]>([]);
   const [loading, setLoading] = useState(true);

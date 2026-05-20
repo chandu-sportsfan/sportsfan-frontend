@@ -76,7 +76,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 email: session.user.email,
                 name: session.user.name || session.user.email.split("@")[0],
                 role: (session.user as { role?: string }).role || "user",
-                userId: (session.user as { userId?: string }).userId,
+                // userId: (session.user as { userId?: string }).userId,
+                userId: (session.user as { userId?: string }).userId ?? session.user.email,
             };
             setUser(googleUser);
             localStorage.setItem("auth_user", JSON.stringify(googleUser));

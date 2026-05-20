@@ -1,7 +1,8 @@
 // SportsFan360Footer.tsx
 // Next.js + TypeScript + Tailwind CSS (inline classes only, no style tags)
 
-import { Globe } from "lucide-react";
+import { Globe, Pencil } from "lucide-react";
+import Link from "next/link";
 import React from "react";
 
 // ─── SVG Icon Components ────────────────────────────────────────────────────
@@ -107,40 +108,21 @@ const SportsFan360Footer: React.FC = () => {
     { label: "X (Twitter)", href: "https://x.com/sportsfan_360", icon: <XIcon /> },
     { label: "Instagram", href: "https://www.instagram.com/sportsfan_360/", icon: <InstagramIcon /> },
     { label: "YouTube", href: "https://www.youtube.com/@sportsfan_360", icon: <YouTubeIcon /> },
-    {label: "Website", href: "https://www.sportsfan360.com", icon: <Globe />},
+    { label: "Website", href: "https://www.sportsfan360.com", icon: <Globe /> },
   ];
 
   return (
-    <footer className="w-full bg-[#111114] text-white pb-2 font-sans selection:bg-pink-700 selection:text-white">
+    <footer className="w-full bg-[#111114] text-white pb-6 font-sans selection:bg-pink-700 selection:text-white">
       {/* Top accent line */}
       <div className="h-px w-full bg-gradient-to-r from-transparent via-pink-600 to-transparent" />
 
-      <div className="mx-auto max-w-6xl px-5 sm:px-8 lg:px-10 py-10 lg:py-14">
+      {/* <div className="mx-auto max-w-6xl px-5 sm:px-8 lg:px-6 py-10 lg:py-10"> */}
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-4 py-6 lg:py-6">
 
         {/* ── Desktop: 3-column grid / Mobile: stacked ── */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-10 md:gap-6 lg:gap-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-6 lg:gap-12">
 
-          {/* ── Col 1: App Info ──────────────────────────── */}
-          {/* <div className="flex flex-col gap-4">
-            <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-pink-500 mb-1">
-              App Info
-            </p>
 
-            <div className="flex items-center gap-4 bg-zinc-900 border border-zinc-800 rounded-2xl px-4 py-4 hover:border-pink-800 transition-colors duration-300">
-              
-              <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-zinc-800 border border-zinc-700 flex items-center justify-center">
-                <RocketIcon />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-white tracking-wide">
-                  Beta Build v0.0.02
-                </p>
-                <p className="text-xs text-zinc-500 mt-0.5">We&apos;re improving every day.</p>
-              </div>
-            </div>
-          </div> */}
-
-          {/* ── Col 2: Quick Links ───────────────────────── */}
           <div className="flex flex-col gap-4">
             <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-pink-500 mb-1">
               Quick Links
@@ -164,7 +146,7 @@ const SportsFan360Footer: React.FC = () => {
             </div>
           </div>
 
-          {/* ── Col 3: Follow Us ─────────────────────────── */}
+          {/* ── Col 3: Follow Us  */}
           <div className="flex flex-col gap-4">
             <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-pink-500 mb-1">
               Follow Us
@@ -183,9 +165,27 @@ const SportsFan360Footer: React.FC = () => {
         {/* <GlowDivider /> */}
 
         {/* ── Bottom Bar ──────────────────────────────────── */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-center gap-4 px-5 mb-2 mt-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 px-5 mb-2 mt-6">
 
-           <div className="flex items-center gap-2.5">
+          {/* <div>
+            <Link href="/MainModules/Feedback">
+              <button
+                className="group relative flex items-center justify-center w-7 h-7 md:w-7 md:h-7 lg:w-14 lg:h-14 rounded-full bg-gradient-to-r from-[#C9115F] to-[#e85d04] shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110 active:scale-95"
+                aria-label="Give Feedback"
+                title="Give Feedback"
+              >
+                <span className="absolute right-full mr-3 px-3 py-1.5 rounded-lg bg-gradient-to-r from-[#C9115F] to-[#e85d04]  text-white text-xs font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+                  Give Feedback
+                </span>
+                <Pencil className="text-white w-3 h-3 md:w-4 md:h-4 lg:w-6 lg:h-6" />
+              <span className="text-xs">Feedback</span>
+                <span className="absolute inset-0 rounded-full animate-ping bg-[#C9115F] opacity-40" />
+              </button>
+            </Link>
+          </div> */}
+
+<div>
+          <div className="flex items-center gap-2.5">
             <RocketIcon />
             <div>
               <p className="text-xs font-medium text-zinc-300 leading-snug">
@@ -205,15 +205,15 @@ const SportsFan360Footer: React.FC = () => {
               <p className="text-[11px] text-zinc-600">All rights reserved.</p>
             </div>
           </div>
+          </div>
 
-        
+
         </div>
-        
+
 
       </div>
 
-      {/* Bottom accent line */}
-      {/* <div className="h-px w-full bg-gradient-to-r from-transparent via-pink-900 to-transparent" /> */}
+
     </footer>
   );
 };

@@ -288,14 +288,31 @@ export default function FanZoneDashboard() {
   
   // Sync the ledger dynamically with the live user points!
   // Fan Battle points come from LeaderboardContext; Audio Drop points are tracked locally.
+  // Sync the ledger dynamically with the live user points!
+  // Fan Battle points come from LeaderboardContext; Audio Drop points are tracked locally.
   const fanBattleHistory = useMemo(() => {
-    return exactUserHistory.map(item => ({
-      ...item,
-      points: currentUserPoints > 0
-        // Subtract audio drop points so Fan Battle entry shows only battle points
-        ? Math.max(0, currentUserPoints - audioDropHistory.reduce((s, a) => s + a.points, 0))
-        : 0
-    }));
+    // 1. Calculate all Audio Drop points (new session drops + initial ledger drops)
+    const sessionAudioPoints = audioDropHistory.reduce((sum, item) => sum + item.points, 0);
+    const initialAudioPoints = exactUserHistory
+      .filter(item => item.action === "Audio Drops")
+      .reduce((sum, item) => sum + item.points, 0);
+      
+    const totalAudioPoints = sessionAudioPoints + initialAudioPoints;
+
+    return exactUserHistory.map(item => {
+      // 2. ONLY adjust the Fan Battles score dynamically to act as the remainder
+      if (item.action === "Fan Battles") {
+        return {
+          ...item,
+          points: currentUserPoints > 0
+            ? Math.max(0, currentUserPoints - totalAudioPoints)
+            : 0
+        };
+      }
+      
+      // 3. Leave Audio Drops at their fixed, authentic values
+      return item;
+    });
   }, [currentUserPoints, audioDropHistory]);
 
   const earningHistoryData = useMemo(() => {

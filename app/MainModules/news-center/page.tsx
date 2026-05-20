@@ -97,7 +97,8 @@ export default function DetailedNewsCenter() {
   const [copied, setCopied] = useState(false);
   const [likeCounts, setLikeCounts] = useState<Record<number, number>>({});
   const [userLikes, setUserLikes] = useState<Set<number>>(new Set());
-  const [selectedArchiveDate, setSelectedArchiveDate] = useState(ARCHIVE_DATES[0]);
+  // Change this line:
+  const [selectedArchiveDate, setSelectedArchiveDate] = useState('last-3-days');
 
   const openShareDialog = (article: NewsArticle) => {
     setSharedArticle(article);
@@ -168,8 +169,14 @@ export default function DetailedNewsCenter() {
       try {
         // Pass the selected date to your API
         const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '';
+        // ADD THIS: Build the query depending on the selected state
+        const dateQuery = selectedArchiveDate === 'last-3-days' 
+          ? ARCHIVE_DATES.slice(0, 3).join(',') 
+          : selectedArchiveDate;
+
+        // UPDATE THIS: Use the new dateQuery variable
         const newsRes = await fetch(
-          `${baseUrl}/api/news-center?date=${selectedArchiveDate}`
+          `${baseUrl}/api/news-center?date=${dateQuery}`
         );
         const newsData = await newsRes.json();
         const newsArticles = (newsData?.articles || []).map((article: NewsApiArticle) => ({
@@ -246,13 +253,15 @@ export default function DetailedNewsCenter() {
     // Sort according to option
     // NOTE: swapping behavior per request: 'latest' will now show oldest-first and
     // 'oldest' will show latest-first (labels unchanged)
+    // Sort according to option
     if (sortOption === 'latest') {
-      // oldest first
-      filtered = filtered.slice().sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
-    } else if (sortOption === 'oldest') {
-      // latest first
+      // Latest first (newest dates at the top)
       filtered = filtered.slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+    } else if (sortOption === 'oldest') {
+      // Oldest first (older dates at the top)
+      filtered = filtered.slice().sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
     } else if (sortOption === 'most-liked') {
+      // Most liked (highest likes at the top)
       filtered = filtered.slice().sort((a, b) => (b.likes || 0) - (a.likes || 0));
     }
 
@@ -432,7 +441,19 @@ export default function DetailedNewsCenter() {
                <Calendar size={16} /> Archive (Date Wise)
              </h3>
             <ul className="space-y-3">
-               {['2026-05-19' , '2026-05-18', '2026-05-17', '2026-05-16'].map((dateString) => {
+               {/* 👇 ADD THIS NEW LIST ITEM 👇 */}
+               <li 
+                 onClick={() => setSelectedArchiveDate('last-3-days')}
+                 className={`flex justify-between text-sm items-center p-2 rounded cursor-pointer transition-colors ${
+                   selectedArchiveDate === 'last-3-days' ? 'bg-pink-500/10 text-pink-500' : 'text-gray-400 hover:bg-gray-800'
+                 }`}
+               >
+                 <span className="flex items-center gap-2 font-semibold">Top Stories (Last 3 Days)</span>
+                 {selectedArchiveDate === 'last-3-days' && <span className="bg-pink-500 text-white text-[10px] px-2 py-0.5 rounded-full font-bold">Active</span>}
+               </li>
+
+               {/* YOUR EXISTING MAP FUNCTION BELOW */}
+               {ARCHIVE_DATES.map((dateString) => {
                  const isSelected = selectedArchiveDate === dateString;
                  const displayDate = new Date(dateString).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
                  

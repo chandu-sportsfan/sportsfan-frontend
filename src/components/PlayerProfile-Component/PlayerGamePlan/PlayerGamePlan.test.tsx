@@ -4,7 +4,7 @@ import { Player } from "@/types/player";
 
 describe("PlayerGamePlan Component", () => {
   // Mock data
-  const mockPlayer: Player = {
+  const mockPlayer: any = {
     name: "Virat Kohli",
     team: "India",
     battingStyle: "Right-handed",
@@ -96,7 +96,7 @@ describe("PlayerGamePlan Component", () => {
   it("should render all strength items", () => {
     render(<PlayerGamePlan player={mockPlayer} />);
 
-    mockPlayer.strengths.forEach((strength) => {
+    mockPlayer.strengths.forEach((strength: any) => {
       expect(screen.getByText(strength)).toBeInTheDocument();
     });
   });
@@ -120,7 +120,7 @@ describe("PlayerGamePlan Component", () => {
   it("should render all media items with titles", () => {
     render(<PlayerGamePlan player={mockPlayer} />);
 
-    mockPlayer.media.forEach((item) => {
+    mockPlayer.media.forEach((item: any) => {
       expect(screen.getByText(item.title)).toBeInTheDocument();
     });
   });
@@ -128,7 +128,7 @@ describe("PlayerGamePlan Component", () => {
   it("should render media items with view counts", () => {
     render(<PlayerGamePlan player={mockPlayer} />);
 
-    mockPlayer.media.forEach((item) => {
+    mockPlayer.media.forEach((item: any) => {
       expect(screen.getByText(new RegExp(item.views))).toBeInTheDocument();
     });
   });
@@ -136,7 +136,7 @@ describe("PlayerGamePlan Component", () => {
   it("should render media items with time duration", () => {
     render(<PlayerGamePlan player={mockPlayer} />);
 
-    mockPlayer.media.forEach((item) => {
+    mockPlayer.media.forEach((item: any) => {
       expect(screen.getByText(new RegExp(item.time))).toBeInTheDocument();
     });
   });

@@ -11,9 +11,13 @@ interface Props {
   hasMore: boolean;
   onLoadMore: () => void;
   onDelete: (id: string) => Promise<void>;
-  onVote: (postId: string, optionId: string, voterId: string) => Promise<void>;
+  onVote: (postId: string, optionId: string, voterId: string, userName: string) => Promise<void>;
   onLike: (postId: string, userId: string) => void;
   currentUserId: string;
+  currentUserName: string; // ← NEW
+  onCommentAdded: (postId: string) => void;
+  onCommentDeleted: (postId: string) => void;
+  
 }
 
 export default function PostFeed({
@@ -25,10 +29,12 @@ export default function PostFeed({
   onVote,
   onLike,
   currentUserId,
+  currentUserName, // ← NEW
+  onCommentAdded,
+  onCommentDeleted,
 }: Props) {
   const sentinelRef = useRef<HTMLDivElement>(null);
 
-  // infinite scroll via IntersectionObserver
   const handleIntersect = useCallback(
     (entries: IntersectionObserverEntry[]) => {
       if (entries[0].isIntersecting && hasMore && !loading) {
@@ -41,9 +47,7 @@ export default function PostFeed({
   useEffect(() => {
     const el = sentinelRef.current;
     if (!el) return;
-    const observer = new IntersectionObserver(handleIntersect, {
-      rootMargin: "200px",
-    });
+    const observer = new IntersectionObserver(handleIntersect, { rootMargin: "200px" });
     observer.observe(el);
     return () => observer.disconnect();
   }, [handleIntersect]);
@@ -52,12 +56,7 @@ export default function PostFeed({
     return (
       <div className="flex flex-col items-center justify-center py-20 gap-3">
         <div className="w-16 h-16 rounded-3xl bg-white/5 flex items-center justify-center">
-          <svg
-            className="w-8 h-8 text-white/20"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
+          <svg className="w-8 h-8 text-white/20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -72,8 +71,7 @@ export default function PostFeed({
   }
 
   return (
-   // AFTER
-<div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-3 items-start">
+    <div className="grid grid-cols-1 mx-auto max-w-4xl gap-3 items-start">
       {posts.map((post) => (
         <PostCard
           key={post.id}
@@ -82,10 +80,12 @@ export default function PostFeed({
           onVote={onVote}
           onLike={onLike}
           currentUserId={currentUserId}
+          currentUserName={currentUserName} // ← NEW
+          onCommentAdded={onCommentAdded}
+          onCommentDeleted={onCommentDeleted}
         />
       ))}
 
-      {/* sentinel for infinite scroll */}
       <div ref={sentinelRef} />
 
       {loading && (
@@ -93,8 +93,6 @@ export default function PostFeed({
           <Loader2 className="w-5 h-5 text-[#C9115F] animate-spin" />
         </div>
       )}
-
-      
     </div>
   );
 }

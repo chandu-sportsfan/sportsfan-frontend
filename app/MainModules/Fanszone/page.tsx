@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useLeaderboard } from "@/context/LeaderboardContext";
 import { 
   ChevronDown, Trophy, Share2, CheckCircle2, 
   Award, TrendingUp, Play, ThumbsUp, FileText, 
   Gamepad2, UserPlus, LayoutGrid, Calendar, Filter,
-  Download, ChevronLeft, ChevronRight, MoreHorizontal, X
+  Download, ChevronLeft, ChevronRight, MoreHorizontal, X, Headphones
 } from "lucide-react";
 
 // --- MOCK DATA ---
@@ -35,8 +35,23 @@ interface CategoryBreakdown {
   xpValue?: number;
 }
 
+// Points awarded per audio drop listen (must match AudioDrop.tsx backend value)
+const AUDIO_DROP_POINTS = 2;
+
 // 1. YOUR EXACT ACTIVITY LEDGER
 const exactUserHistory: HistoryItem[] = [
+  {
+    action: "Audio Drops",
+    details: "Listened: Daily Sports Update",
+    points: AUDIO_DROP_POINTS,
+    type: "Content",
+    date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+    time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+    icon: Headphones,
+    color: "text-sky-400",
+    hexColor: "#38bdf8",
+    typeColor: "text-sky-400 border-white/10 bg-white/5"
+  },
   {
     action: "Fan Battles",
     details: "Played a Fan Battle",
@@ -50,6 +65,20 @@ const exactUserHistory: HistoryItem[] = [
     typeColor: "text-yellow-500 border-white/10 bg-white/5"
   }
 ];
+
+// Factory for creating an Audio Drop history entry when points are awarded
+const createAudioDropHistoryItem = (title: string): HistoryItem => ({
+  action: "Audio Drops",
+  details: `Listened: ${title || "Audio Drop"}`,
+  points: AUDIO_DROP_POINTS,
+  type: "Content",
+  date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+  time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+  icon: Headphones,
+  color: "text-sky-400",
+  hexColor: "#38bdf8",
+  typeColor: "text-sky-400 border-white/10 bg-white/5"
+});
 
 interface GroupedCategory {
   label: string;
@@ -87,10 +116,11 @@ const getExactEarningBreakdown = (history: HistoryItem[]): CategoryBreakdown[] =
 };
 
 const trendData = [30, 45, 40, 60, 55, 75, 70, 90, 85, 100];
-const topActivitiesData = [
+const staticTopActivitiesData = [
   { icon: UserPlus, title: "Register on SportsFan360", xp: "+100 SXP", desc: "1 time", color: "text-emerald-500", bg: "bg-emerald-500/10 border-emerald-500/20" },
   { icon: UserPlus, title: "Invite Friends", xp: "+100 SXP", desc: "3 invites", color: "text-emerald-500", bg: "bg-emerald-500/10 border-emerald-500/20" },
   { icon: Gamepad2, title: "Fantasy - Fan Battle", xp: "+50 SXP", desc: "7 battles", color: "text-yellow-500", bg: "bg-yellow-500/10 border-yellow-500/20" },
+  { icon: Headphones, title: "Listen Audio Drops", xp: "+2 SXP", desc: "Per drop (90% listened)", color: "text-sky-400", bg: "bg-sky-400/10 border-sky-400/20" },
 ];
 
 const activityFeedData = [
@@ -99,6 +129,7 @@ const activityFeedData = [
 ];
 
 const earnPointsActions = [
+  { icon: Headphones, title: "Listen Audio Drops", xp: "+2 SXP", desc: "Per drop (90% listened)", color: "text-sky-400", bg: "bg-sky-400/10" },
   { icon: Play, title: "Watch / Listen to Drops", xp: "+20 SXP", desc: "12 Actions", color: "text-yellow-500", bg: "bg-yellow-500/10" },
   { icon: ThumbsUp, title: "Like a Post", xp: "+10 SXP", desc: "28 Actions", color: "text-rose-500", bg: "bg-rose-500/10" },
   { icon: Share2, title: "Share a Post", xp: "+15 SXP", desc: "18 Actions", color: "text-purple-500", bg: "bg-purple-500/10" },
@@ -116,7 +147,7 @@ function DonutChart({ data, totalPoints }: { data: CategoryBreakdown[], totalPoi
   });
 
   return (
-    <div className="relative w-56 h-56 md:w-64 md:h-64 shrink-0">
+    <div className="relative w-72 h-72 md:w-80 md:h-80 shrink-0">
       <svg viewBox="0 0 100 100" className="w-full h-full transform -rotate-90">
         {slices.map((slice, i) => (
           <circle
@@ -236,14 +267,57 @@ export default function FanZoneDashboard() {
   const previousUserRank = contextData?.previousUserRank ?? 0;
   
   const displayPoints = currentUserPoints.toLocaleString();
+
+  // ── Audio Drop points integration ──────────────────────────────────────────
+  // Holds history entries for every audio drop that awarded points this session.
+  // AudioDrop.tsx dispatches a custom window event "audioDropPointsAwarded"
+  // with detail: { title: string, points: number } when /api/audio-progress
+  // returns pointsAwarded > 0.
+  const [audioDropHistory, setAudioDropHistory] = useState<HistoryItem[]>([]);
+
+  const handleAudioDropPoints = useCallback((e: Event) => {
+    const detail = (e as CustomEvent<{ title?: string; points?: number }>).detail;
+    const title = detail?.title || "Audio Drop";
+    setAudioDropHistory(prev => [createAudioDropHistoryItem(title), ...prev]);
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener("audioDropPointsAwarded", handleAudioDropPoints);
+    return () => window.removeEventListener("audioDropPointsAwarded", handleAudioDropPoints);
+  }, [handleAudioDropPoints]);
   
   // Sync the ledger dynamically with the live user points!
+  // Fan Battle points come from LeaderboardContext; Audio Drop points are tracked locally.
+  // Sync the ledger dynamically with the live user points!
+  // Fan Battle points come from LeaderboardContext; Audio Drop points are tracked locally.
+  const fanBattleHistory = useMemo(() => {
+    // 1. Calculate all Audio Drop points (new session drops + initial ledger drops)
+    const sessionAudioPoints = audioDropHistory.reduce((sum, item) => sum + item.points, 0);
+    const initialAudioPoints = exactUserHistory
+      .filter(item => item.action === "Audio Drops")
+      .reduce((sum, item) => sum + item.points, 0);
+      
+    const totalAudioPoints = sessionAudioPoints + initialAudioPoints;
+
+    return exactUserHistory.map(item => {
+      // 2. ONLY adjust the Fan Battles score dynamically to act as the remainder
+      if (item.action === "Fan Battles") {
+        return {
+          ...item,
+          points: currentUserPoints > 0
+            ? Math.max(0, currentUserPoints - totalAudioPoints)
+            : 0
+        };
+      }
+      
+      // 3. Leave Audio Drops at their fixed, authentic values
+      return item;
+    });
+  }, [currentUserPoints, audioDropHistory]);
+
   const earningHistoryData = useMemo(() => {
-    return exactUserHistory.map(item => ({
-      ...item,
-      points: currentUserPoints > 0 ? currentUserPoints : 0
-    }));
-  }, [currentUserPoints]); 
+    return [...audioDropHistory, ...fanBattleHistory];
+  }, [audioDropHistory, fanBattleHistory]);
   const dynamicEarningBreakdown = getExactEarningBreakdown(earningHistoryData);
   
   // 1. Add state for the active tab (7D, 30D, 90D)
@@ -252,9 +326,10 @@ export default function FanZoneDashboard() {
   // 2. Add the dynamic trend calculator
   const trendAnalytics = useMemo(() => {
     const today = new Date();
-    let days = 30;
-    if (trendPeriod === "7D") days = 7;
-    if (trendPeriod === "90D") days = 90;
+    
+    // Map periods to days without if/else
+    const daysMap: Record<string, number> = { "7D": 7, "30D": 30, "90D": 90 };
+    const days = daysMap[trendPeriod] || 30;
 
     const currentPeriodStart = new Date(today.getTime() - days * 24 * 60 * 60 * 1000);
     const previousPeriodStart = new Date(currentPeriodStart.getTime() - days * 24 * 60 * 60 * 1000);
@@ -262,80 +337,79 @@ export default function FanZoneDashboard() {
     let currentPeriodPoints = 0;
     let previousPeriodPoints = 0;
 
-    // Create 10 data points for the MiniTrendLine graph
     const buckets = new Array(10).fill(0);
     const bucketSize = (today.getTime() - currentPeriodStart.getTime()) / 10;
 
     earningHistoryData.forEach((item) => {
       const itemDate = new Date(item.date);
-      if (itemDate >= currentPeriodStart && itemDate <= today) {
-        currentPeriodPoints += item.points;
-        const bucketIndex = Math.floor((itemDate.getTime() - currentPeriodStart.getTime()) / bucketSize);
-        if (bucketIndex >= 0 && bucketIndex < 10) buckets[bucketIndex] += item.points;
-      } else if (itemDate >= previousPeriodStart && itemDate < currentPeriodStart) {
-        previousPeriodPoints += item.points;
-      }
+      const isCurrent = itemDate >= currentPeriodStart && itemDate <= today;
+      const isPrevious = itemDate >= previousPeriodStart && itemDate < currentPeriodStart;
+
+      // Ternary accumulation to avoid if/else
+      currentPeriodPoints += isCurrent ? item.points : 0;
+      previousPeriodPoints += isPrevious ? item.points : 0;
+
+      const bucketIndex = Math.floor((itemDate.getTime() - currentPeriodStart.getTime()) / bucketSize);
+      const isValidBucket = isCurrent && bucketIndex >= 0 && bucketIndex < 10;
+      
+      // Logical AND evaluation to avoid if statements
+      isValidBucket && (buckets[bucketIndex] += item.points);
     });
 
-    // Make chart data cumulative so the line goes up naturally
-    // Make chart data cumulative so the line goes up naturally
     let cumulative = 0;
-    const chartData = buckets.map((val) => {
+    const calculatedChartData = buckets.map((val) => {
       cumulative += val;
       return cumulative;
     });
 
-    // Valid fallback so the graph doesn't flatline if points are 0
-    // if (currentPeriodPoints === 0) {
-      // chartData =;
-    // }
+    // Fallback data so it doesn't flatline gracefully
+    // Fallback data so it doesn't flatline gracefully
+const defaultChartData = [0, 0, 0, 0, 0, 0, 0];
 
-//     // if (currentPeriodPoints === 0) chartData =;
-//     if (currentPeriodPoints === 0) {
-//   chartData =;
-// }
+const chartData = currentPeriodPoints > 0
+  ? calculatedChartData
+  : defaultChartData;
 
-    // Calculate percentage change
-    let percentChange = 0;
-    if (previousPeriodPoints > 0) {
-      percentChange = Math.round(((currentPeriodPoints - previousPeriodPoints) / previousPeriodPoints) * 100);
-    } else if (currentPeriodPoints > 0) {
-      percentChange = 100; // 100% growth if they had 0 before and gained some now
-    }
+    const percentChange = previousPeriodPoints > 0
+      ? Math.round(((currentPeriodPoints - previousPeriodPoints) / previousPeriodPoints) * 100)
+      : (currentPeriodPoints > 0 ? 100 : 0);
 
-    // Generate dynamic X-axis labels based on the period
-    let labels: string[] = [];
     const formatLabel = (date: Date, options: Intl.DateTimeFormatOptions) => date.toLocaleDateString('en-US', options);
-    
-    if (trendPeriod === "7D") {
-      labels = [
+
+    // Object mapping for dynamic labels without if/else
+    const labelGenerators: Record<string, () => string[]> = {
+      "7D": () => [
         formatLabel(new Date(today.getTime() - 6 * 86400000), { weekday: 'short' }),
         formatLabel(new Date(today.getTime() - 4 * 86400000), { weekday: 'short' }),
         formatLabel(new Date(today.getTime() - 2 * 86400000), { weekday: 'short' }),
         'Today'
-      ];
-    } else if (trendPeriod === "30D") {
-      labels = [
+      ],
+      "30D": () => [
         formatLabel(new Date(today.getTime() - 30 * 86400000), { month: 'short', day: 'numeric' }),
         formatLabel(new Date(today.getTime() - 20 * 86400000), { month: 'short', day: 'numeric' }),
         formatLabel(new Date(today.getTime() - 10 * 86400000), { month: 'short', day: 'numeric' }),
         'Today'
-      ];
-    } else if (trendPeriod === "90D") {
-      labels = [
+      ],
+      "90D": () => [
         formatLabel(new Date(today.getTime() - 90 * 86400000), { month: 'short' }),
         formatLabel(new Date(today.getTime() - 60 * 86400000), { month: 'short' }),
         formatLabel(new Date(today.getTime() - 30 * 86400000), { month: 'short' }),
         'This Month'
-      ];
-    }
+      ]
+    };
+
+    const vsTexts: Record<string, string> = {
+      "7D": "vs last week",
+      "30D": "vs last month",
+      "90D": "vs last 90 days"
+    };
 
     return {
       percentChange,
       isPositive: percentChange >= 0,
       chartData,
-      labels,
-      vsText: trendPeriod === "7D" ? "vs last week" : trendPeriod === "30D" ? "vs last month" : "vs last 90 days"
+      labels: (labelGenerators[trendPeriod] || labelGenerators["30D"])(),
+      vsText: vsTexts[trendPeriod] || vsTexts["30D"]
     };
   }, [earningHistoryData, trendPeriod]);
   
@@ -1218,7 +1292,7 @@ export default function FanZoneDashboard() {
                   <p className="text-xs text-gray-400 font-medium mb-6">By points earned</p>
                   
                   <div className="flex flex-col gap-5 mb-6">
-                    {topActivitiesData.map((action, i) => (
+                    {staticTopActivitiesData.map((action, i) => (
                       <div key={i} className="flex items-start gap-4">
                         <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 border ${action.bg}`}>
                           <action.icon className={`w-5 h-5 ${action.color}`} />

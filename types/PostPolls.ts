@@ -10,7 +10,7 @@ export type Poll = {
   totalVotes: number;
   endsAt: number; // timestamp — 24 hours from creation
   createdAt: number;
-  votedBy?: string[]; // array of user IDs or session tokens
+  votedBy?: (string | { voterId: string; userName: string })[];
 };
 
 export type MediaItem = {
@@ -28,7 +28,9 @@ export type Post = {
   content: string;
   media?: MediaItem[];
   poll?: Poll | null;
+  currentUserName: string | null; 
   commentCount: number;
+  repostCount: number;
   likes: number;
   likedBy: string[];
   createdAt: number;

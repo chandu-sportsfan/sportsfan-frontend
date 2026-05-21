@@ -1671,7 +1671,7 @@ export default function HomeCardsSection() {
             )}
           </div>
         ))}
-
+        {/*
         <div className="min-w-[200px] max-w-[256px] snap-start bg-[#111] rounded-2xl p-3 shadow-lg flex flex-col h-fit">
           <div className="relative rounded-xl overflow-hidden flex-shrink-0">
             <div className="w-[256px] h-[120px] rounded-lg overflow-hidden relative">
@@ -1693,6 +1693,7 @@ export default function HomeCardsSection() {
             <TrendingDropsList />
           </div>
         </div>
+        */}
       </div>
 
       {error && (

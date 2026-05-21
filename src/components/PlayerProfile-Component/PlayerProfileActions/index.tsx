@@ -36,6 +36,8 @@ export default function PlayerProfileActions({ player, playerId }: Props) {
   const [activityItems, setActivityItems] = useState<ActivityItem[]>([]);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [showUnfollowConfirm, setShowUnfollowConfirm] = useState(false);
+  const [showShareDialog, setShowShareDialog] = useState(false);
+  const [copied, setCopied] = useState(false);
   const previousMediaCount = useRef(player.media.length);
 
   const careerStatItems = [
@@ -293,6 +295,114 @@ export default function PlayerProfileActions({ player, playerId }: Props) {
 
   const toggleWatch = () => setIsWatching((c) => !c);
 
+  const openShareDialog = () => {
+    setShowShareDialog(true);
+    setCopied(false);
+  };
+
+  const closeShareDialog = () => {
+    setShowShareDialog(false);
+    setCopied(false);
+  };
+
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch {
+      try {
+        const input = document.createElement("textarea");
+        input.value = text;
+        input.style.position = "fixed";
+        input.style.opacity = "0";
+        document.body.appendChild(input);
+        input.focus();
+        input.select();
+        const ok = document.execCommand("copy");
+        document.body.removeChild(input);
+        return ok;
+      } catch {
+        return false;
+      }
+    }
+  };
+
+  const buildPlayerShareUrl = () => {
+    if (typeof window === "undefined") return "";
+    return window.location.href;
+  };
+
+  const buildPlayerShareText = () => {
+    const previewLink = buildPlayerShareUrl();
+    return [
+      `Check out ${player.name}'s profile`,
+      previewLink ? `View profile: ${previewLink}` : "",
+    ].filter(Boolean).join("\n");
+  };
+
+  const handleShareToWhatsApp = () => {
+    const shareText = buildPlayerShareText();
+    const whatsappAppUrl = `whatsapp://send?text=${encodeURIComponent(shareText)}`;
+    const whatsappWebFallbackUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
+
+    const opened = window.open(whatsappAppUrl, "_self");
+    if (!opened) {
+      window.location.href = whatsappWebFallbackUrl;
+    }
+  };
+
+  const handleShareToThreads = () => {
+    const shareText = buildPlayerShareText();
+    window.open(`https://www.threads.net/intent/post?text=${encodeURIComponent(shareText)}`, "_blank", "noopener,noreferrer");
+  };
+
+  const handleShareToInstagram = async () => {
+    const shareText = buildPlayerShareText();
+    await copyToClipboard(shareText);
+    setCopied(true);
+    window.open("https://www.instagram.com/", "_blank", "noopener,noreferrer");
+    setTimeout(() => setCopied(false), 1600);
+  };
+
+  const handleShareToLinkedIn = () => {
+    const shareUrl = buildPlayerShareUrl();
+    window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`, "_blank", "noopener,noreferrer");
+  };
+
+  const handleShareToX = () => {
+    const shareText = buildPlayerShareText();
+    window.open(`https://x.com/intent/tweet?text=${encodeURIComponent(shareText)}`, "_blank", "noopener,noreferrer");
+  };
+
+  const handleCopyLink = async () => {
+    const ok = await copyToClipboard(buildPlayerShareText());
+    if (!ok) return;
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1600);
+  };
+
+  const shareButtons = (size: string) => (
+    <>
+      {[
+        { handler: handleShareToWhatsApp, src: "/images/share_whatsapp.png", alt: "WhatsApp" },
+        { handler: handleShareToThreads, src: "/images/share_thread.png", alt: "Threads" },
+        { handler: handleShareToInstagram, src: "/images/share_insta.png", alt: "Instagram" },
+        { handler: handleShareToLinkedIn, src: "/images/Share_linkedin.png", alt: "LinkedIn" },
+        { handler: handleShareToX, src: "/images/Share_X.png", alt: "X" },
+        { handler: handleCopyLink, src: "/images/share_copy_link.png", alt: "Copy" },
+      ].map(({ handler, src, alt }) => (
+        <button
+          key={alt}
+          onClick={handler}
+          className={`${size} shrink-0 rounded-full overflow-hidden bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center`}
+          aria-label={`Share on ${alt}`}
+        >
+          <img src={src} alt={alt} className="w-full h-full object-cover rounded-full" />
+        </button>
+      ))}
+    </>
+  );
+
   return (
     <div className="flex flex-col gap-4 px-4 md:px-6 pt-4 pb-4">
       {toastMessage && (
@@ -352,7 +462,7 @@ export default function PlayerProfileActions({ player, playerId }: Props) {
           {isWatching ? "Watching" : "Watch Me"}
         </button>
 
-        <button className="flex items-center justify-center w-[46px] h-[46px] md:w-[52px] md:h-[52px] rounded-full bg-transparent border border-[#e91e8c] text-[#e91e8c] cursor-pointer shrink-0 hover:bg-[#e91e8c]/10 transition-colors">
+        <button onClick={openShareDialog} className="flex items-center justify-center w-[46px] h-[46px] md:w-[52px] md:h-[52px] rounded-full bg-transparent border border-[#e91e8c] text-[#e91e8c] cursor-pointer shrink-0 hover:bg-[#e91e8c]/10 transition-colors" aria-label="Share player profile">
           <svg width="17" height="17" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
             <circle cx="18" cy="5" r="3" />
             <circle cx="6" cy="12" r="3" />
@@ -362,6 +472,38 @@ export default function PlayerProfileActions({ player, playerId }: Props) {
           </svg>
         </button>
       </div>
+
+      {showShareDialog && (
+        <>
+          <button type="button" className="fixed inset-0 z-40 bg-black/70 lg:hidden" onClick={closeShareDialog} />
+          <div className="fixed bottom-16 inset-x-4 z-50 mx-auto w-full max-w-[280px] rounded-2xl border border-white/10 bg-[#1a1a1e] p-3 shadow-2xl lg:hidden" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-white text-sm font-semibold">Share</p>
+              <button onClick={closeShareDialog} className="text-gray-400 hover:text-white" aria-label="Close share dialog">
+                <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M15 5L5 15M5 5L15 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>
+              </button>
+            </div>
+            <div className="flex flex-row flex-nowrap items-center gap-1.5 mb-2 overflow-x-auto">{shareButtons("w-8 h-8")}</div>
+            {copied && <p className="text-xs text-emerald-400">Copied to clipboard</p>}
+          </div>
+          <div className="hidden lg:flex fixed inset-0 z-50 items-center justify-center bg-black/60" onClick={closeShareDialog}>
+            <div className="bg-[#1a1a1e] rounded-2xl border border-white/10 p-4 w-[300px] shadow-2xl" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-white text-sm font-semibold">Share Player Profile</p>
+                <button onClick={closeShareDialog} className="text-gray-400 hover:text-white" aria-label="Close share dialog">
+                  <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M15 5L5 15M5 5L15 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>
+                </button>
+              </div>
+              <div className="rounded-xl border border-white/10 bg-[#111114] p-3 mb-3">
+                <p className="text-white text-sm font-semibold line-clamp-2">{player.name}</p>
+                <p className="text-white/45 text-[11px] mt-2 line-clamp-2 break-all">{buildPlayerShareUrl()}</p>
+              </div>
+              <div className="flex flex-row flex-nowrap items-center gap-2 mb-2">{shareButtons("w-9 h-9")}</div>
+              {copied && <p className="text-xs text-emerald-400">Copied to clipboard</p>}
+            </div>
+          </div>
+        </>
+      )}
 
       {(!isFollowing && !isWatching) && (
         <div className="grid gap-4">

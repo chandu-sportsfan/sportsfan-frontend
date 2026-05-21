@@ -17,6 +17,25 @@ type ActivityItem = {
   time: string;
 };
 
+type FollowingItem = {
+  id?: string | number | null;
+  followingplayername?: string | null;
+};
+
+type FollowingListResponse = {
+  following?: FollowingItem[];
+};
+
+type ResponseMessageBody = Record<string, unknown> | string | null | undefined;
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function normalizeString(value: unknown): string {
+  return typeof value === "string" ? value.trim().toLowerCase() : "";
+}
+
 function SectionLabel({ text }: { text: string }) {
   return (
     <div className="flex items-center gap-2">
@@ -30,7 +49,6 @@ export default function PlayerProfileActions({ player, playerId }: Props) {
   const storageKey = `player-profile-actions:${playerId || player.name.toLowerCase().replace(/\s+/g, "-")}`;
 
   const [isFollowing, setIsFollowing] = useState(false);
-  const [followRecordId, setFollowRecordId] = useState<string | null>(null);
   const [isFollowLoading, setIsFollowLoading] = useState(false);
   const [isWatching, setIsWatching] = useState(false);
   const [activityItems, setActivityItems] = useState<ActivityItem[]>([]);
@@ -100,13 +118,13 @@ export default function PlayerProfileActions({ player, playerId }: Props) {
 
   const { user } = useAuth();
 
-  function formatResponseMessage(body: any, defaultMsg: string, status?: number) {
+  function formatResponseMessage(body: ResponseMessageBody, defaultMsg: string, status?: number) {
     if (!body) return `${defaultMsg}${status ? ` (${status})` : ""}`;
     if (typeof body === "string") {
       const text = body.trim();
       return text ? text : `${defaultMsg}${status ? ` (${status})` : ""}`;
     }
-    if (typeof body === "object") {
+    if (isRecord(body)) {
       if (body.error) return String(body.error);
       if (body.message) return String(body.message);
       try {
@@ -131,19 +149,15 @@ export default function PlayerProfileActions({ player, playerId }: Props) {
           credentials: 'include',
         });
         if (!res.ok) return;
-        const data = await res.json().catch(() => null);
-        const list = data?.following || [];
-        const match = list.find(
-          (f: any) => String(f.followingplayername || "").toLowerCase() === String(player.name || "").toLowerCase()
-        );
+        const data = (await res.json().catch(() => null)) as FollowingListResponse | null;
+        const list = Array.isArray(data?.following) ? data.following : [];
+        const match = list.find((item) => normalizeString(item.followingplayername) === normalizeString(player.name));
         if (match) {
           setIsFollowing(true);
-          setFollowRecordId(match.id || null);
         } else {
           setIsFollowing(false);
-          setFollowRecordId(null);
         }
-      } catch (e) {
+      } catch {
         // ignore
       } finally {
         setIsFollowLoading(false);
@@ -174,7 +188,7 @@ export default function PlayerProfileActions({ player, playerId }: Props) {
       // debug: log request details
       try {
         console.debug('FOLLOW REQ', { url: '/api/following', method: 'POST', payload });
-      } catch (e) {}
+      } catch {}
 
       const res = await fetch("/api/following", {
         method: "POST",
@@ -183,7 +197,7 @@ export default function PlayerProfileActions({ player, playerId }: Props) {
         body: JSON.stringify(payload),
       });
 
-      let body: any = null;
+      let body: ResponseMessageBody = null;
       try {
         body = await res.json();
       } catch {
@@ -195,11 +209,10 @@ export default function PlayerProfileActions({ player, playerId }: Props) {
       }
       try {
         console.debug('FOLLOW RES', { status: res.status, body });
-      } catch (e) {}
+      } catch {}
 
       if (res.status === 201) {
         setToastMessage(`Following ${player.name}`);
-        if (body?.following?.id) setFollowRecordId(body.following.id);
       } else if (res.status === 401 || res.status === 403) {
         setToastMessage("Please sign in to follow players");
         setIsFollowing(false);
@@ -212,7 +225,7 @@ export default function PlayerProfileActions({ player, playerId }: Props) {
         setToastMessage(formatResponseMessage(body, "Failed to follow player", res.status));
         setIsFollowing(false);
       }
-    } catch (err) {
+    } catch {
       setToastMessage("Failed to follow player");
       setIsFollowing(false);
     } finally {
@@ -235,7 +248,7 @@ export default function PlayerProfileActions({ player, playerId }: Props) {
 
     try {
       const reqBody = { userId: uid, followingplayername: player.name };
-      try { console.debug('UNFOLLOW REQ', { url: '/api/following', method: 'DELETE', body: reqBody }); } catch (e) {}
+      try { console.debug('UNFOLLOW REQ', { url: '/api/following', method: 'DELETE', body: reqBody }); } catch {}
 
       let res = await fetch("/api/following", {
         method: "DELETE",
@@ -244,36 +257,35 @@ export default function PlayerProfileActions({ player, playerId }: Props) {
         body: JSON.stringify(reqBody),
       });
 
-      let body: any = null;
+      let body: ResponseMessageBody = null;
       try {
         body = await res.json();
       } catch {
         try { body = await res.text(); } catch { body = null; }
       }
-      try { console.debug('UNFOLLOW RES', { status: res.status, body }); } catch (e) {}
+      try { console.debug('UNFOLLOW RES', { status: res.status, body }); } catch {}
 
       // Fallbacks for 405 Method Not Allowed
       if (res.status === 405) {
         // 1) Try DELETE with query params
         const q = `/api/following?userId=${encodeURIComponent(uid)}&followingplayername=${encodeURIComponent(player.name)}`;
-        try { console.debug('UNFOLLOW FALLBACK 1', { q }); } catch (e) {}
+        try { console.debug('UNFOLLOW FALLBACK 1', { q }); } catch {}
         res = await fetch(q, { method: 'DELETE', credentials: 'include' });
         try { body = await res.json().catch(() => res.text().catch(() => null)); } catch { body = null; }
-        try { console.debug('UNFOLLOW FALLBACK 1 RES', { status: res.status, body }); } catch (e) {}
+        try { console.debug('UNFOLLOW FALLBACK 1 RES', { status: res.status, body }); } catch {}
       }
 
       if (res.status === 405) {
         // 2) Try POST to an 'unfollow' action endpoint (some backends prefer POST)
         const unfollowUrl = process.env.NEXT_PUBLIC_FOLLOWING_API_URL ? new URL('/unfollow', process.env.NEXT_PUBLIC_FOLLOWING_API_URL).pathname : '/api/following/unfollow';
-        try { console.debug('UNFOLLOW FALLBACK 2', { url: unfollowUrl }); } catch (e) {}
+        try { console.debug('UNFOLLOW FALLBACK 2', { url: unfollowUrl }); } catch {}
         res = await fetch(unfollowUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify(reqBody) });
         try { body = await res.json().catch(() => res.text().catch(() => null)); } catch { body = null; }
-        try { console.debug('UNFOLLOW FALLBACK 2 RES', { status: res.status, body }); } catch (e) {}
+        try { console.debug('UNFOLLOW FALLBACK 2 RES', { status: res.status, body }); } catch {}
       }
 
       if (res.status === 200 || res.status === 204) {
         setToastMessage(`Unfollowed ${player.name}`);
-        setFollowRecordId(null);
       } else if (res.status === 401 || res.status === 403) {
         setToastMessage("Please sign in to unfollow players");
         setIsFollowing(true);
@@ -283,7 +295,7 @@ export default function PlayerProfileActions({ player, playerId }: Props) {
         setToastMessage(formatResponseMessage(body, `Failed to unfollow`, res.status));
         setIsFollowing(true);
       }
-    } catch (err) {
+    } catch {
       setToastMessage("Failed to unfollow");
       setIsFollowing(true);
     } finally {

@@ -46,6 +46,9 @@ const nextConfig = {
         { source: '/api/player-profile/:path*', destination: `${apiTarget}/api/player-profile/:path*` },
         { source: '/api/playersprofile-playlist', destination: `${apiTarget}/api/playersprofile-playlist` },
         { source: '/api/playersprofile-playlist/:path*', destination: `${apiTarget}/api/playersprofile-playlist/:path*` },
+        // Following API (backend)
+        { source: '/api/following', destination: `${apiTarget}/api/following` },
+        { source: '/api/following/:path*', destination: `${apiTarget}/api/following/:path*` },
 
         // Club Profile
         { source: '/api/club-profile', destination: `${apiTarget}/api/club-profile` },

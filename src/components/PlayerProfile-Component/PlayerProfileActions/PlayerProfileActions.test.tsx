@@ -40,6 +40,25 @@ describe("PlayerProfileActions Component", () => {
     media: [],
   };
 
+  const playerWithContent: Player = {
+    ...mockPlayer,
+    insights: [
+      {
+        title: "Powerplay control",
+        description: "He settles the innings early and then accelerates without risk.",
+      },
+    ],
+    strengths: ["Timing", "Pull shot", "Big-match temperament"],
+    media: [
+      {
+        title: "Training clip",
+        views: "12.5K",
+        time: "2h ago",
+        thumbnail: "/images/rohit.jpg",
+      },
+    ],
+  };
+
   beforeEach(() => {
     jest.clearAllMocks();
   });
@@ -154,6 +173,14 @@ describe("PlayerProfileActions Component", () => {
     expect(screen.getByText("Matches")).toBeInTheDocument();
   });
 
+  it("should persist follow state in local storage for the player", () => {
+    render(<PlayerProfileActions player={mockPlayer} playerId="rohit-sharma" />);
+
+    fireEvent.click(screen.getByRole("button", { name: /Follow/i }));
+
+    expect(window.localStorage.getItem("player-profile-actions:rohit-sharma")).toContain("following");
+  });
+
   // ========== BUTTON STYLING TESTS ==========
 
   it("should have gradient styling on Follow button", () => {
@@ -238,22 +265,26 @@ describe("PlayerProfileActions Component", () => {
 
   // ========== BUTTON CLICK TESTS ==========
 
-  it("should allow Follow button to be clicked", () => {
-    render(<PlayerProfileActions player={mockPlayer} />);
+  it("should toggle Follow button to Following and show related player content", () => {
+    render(<PlayerProfileActions player={playerWithContent} playerId="rohit-sharma" />);
 
     const followButton = screen.getByRole("button", { name: /Follow/i });
     fireEvent.click(followButton);
 
-    expect(followButton).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^Following$/i })).toBeInTheDocument();
+    expect(screen.getByText("Related to Rohit Sharma")).toBeInTheDocument();
+    expect(screen.getByText("Timing")).toBeInTheDocument();
   });
 
-  it("should allow Watch Me button to be clicked", () => {
-    render(<PlayerProfileActions player={mockPlayer} />);
+  it("should toggle Watch Me button and show notifications for player uploads", () => {
+    render(<PlayerProfileActions player={playerWithContent} playerId="rohit-sharma" />);
 
     const watchMeButton = screen.getByRole("button", { name: /Watch Me/i });
     fireEvent.click(watchMeButton);
 
-    expect(watchMeButton).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^Watching$/i })).toBeInTheDocument();
+    expect(screen.getByText("Watch Me notifications")).toBeInTheDocument();
+    expect(screen.getByText("Training clip")).toBeInTheDocument();
   });
 
   it("should allow Avatar Jersey button to be clicked", () => {

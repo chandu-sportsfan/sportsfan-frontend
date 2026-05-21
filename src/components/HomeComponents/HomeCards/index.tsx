@@ -1674,10 +1674,13 @@ export default function HomeCardsSection() {
 
         <div className="min-w-[200px] max-w-[256px] snap-start bg-[#111] rounded-2xl p-3 shadow-lg flex flex-col h-fit">
           <div className="relative rounded-xl overflow-hidden flex-shrink-0">
-            <div className="w-[256px] h-[120px] rounded-lg bg-gradient-to-br from-[#1e1e22] via-[#141416] to-[#0e0e11] flex items-end p-3">
-              <div>
-                <h2 className="text-[14px] font-bold leading-tight">Trending Drops</h2>
-                <p className="text-[10px] text-gray-300">Top 10 by plays, views and likes</p>
+            <div className="w-[256px] h-[120px] rounded-lg overflow-hidden relative">
+              <img src="/images/trending_drops_bg.png" alt="Trending Drops" className="w-full h-full object-cover" />
+              <div className="absolute inset-0 bg-black/40 flex items-end p-3">
+                <div>
+                  <h2 className="text-[14px] font-bold leading-tight">Trending Drops</h2>
+                  <p className="text-[10px] text-gray-300">Top 10 by plays, views and likes</p>
+                </div>
               </div>
             </div>
           </div>

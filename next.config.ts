@@ -17,17 +17,6 @@ const nextConfig = {
         { source: '/api/auth/host/:path*', destination: `${apiTarget}/api/auth/host/:path*` },
         { source: '/api/auth/forgot-password', destination: `${apiTarget}/api/auth/forgot-password` },
 
-        // ── FIX: Keep these watch-along nested routes LOCAL (Next.js handles them) ──
-        { source: '/api/watch-along/matches', destination: '/api/watch-along/matches' },
-        { source: '/api/watch-along/matches/:matchId', destination: '/api/watch-along/matches/:matchId' },
-        { source: '/api/watch-along/matches/:matchId/predictions', destination: '/api/watch-along/matches/:matchId/predictions' },
-        { source: '/api/watch-along/matches/:matchId/predictions/:path*', destination: '/api/watch-along/matches/:matchId/predictions/:path*' },
-        { source: '/api/watch-along/matches/:matchId/chats', destination: '/api/watch-along/matches/:matchId/chats' },
-        { source: '/api/watch-along/matches/:matchId/chats/:path*', destination: '/api/watch-along/matches/:matchId/chats/:path*' },
-        { source: '/api/watch-along/matches/:matchId/quiz', destination: '/api/watch-along/matches/:matchId/quiz' },
-        { source: '/api/watch-along/matches/:matchId/quiz/:path*', destination: '/api/watch-along/matches/:matchId/quiz/:path*' },
-        { source: '/api/watch-along/matches/:matchId/emoji-storm', destination: '/api/watch-along/matches/:matchId/emoji-storm' },
-        { source: '/api/watch-along/matches/:matchId/emoji-storm/:path*', destination: '/api/watch-along/matches/:matchId/emoji-storm/:path*' },
       ],
 
       afterFiles: [

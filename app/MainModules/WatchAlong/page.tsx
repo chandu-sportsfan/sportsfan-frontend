@@ -19,16 +19,8 @@ export default function WatchAlongPage() {
 
 
   return (
-    
-    // <WatchAlongLobby onEnterRoom={handleEnterRoom} />
-    <>
-    
-    <div className="flex items-center justify-center min-h-screen">
-      <img src="/images/watchsoon.png" alt="Watch Along"  className="w-[1000px] h-[600px]  object-fit"/>
-    </div>
+    <WatchAlongLobby onEnterRoom={handleEnterRoom} />
+  );
 
-    </>
-   
-  )
   
 }

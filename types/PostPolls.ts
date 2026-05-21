@@ -32,6 +32,7 @@ export type Post = {
   commentCount?: number;
   repostCount: number;
   reactions?: Record<string, string>;
+  userEmail?: string; 
   likes: number;
   likedBy: string[];
   createdAt: number;

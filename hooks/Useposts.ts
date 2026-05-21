@@ -99,50 +99,99 @@ export function usePosts() {
   const postsRef = useRef(posts);
   postsRef.current = posts;
 
-  const togglePostLike = useCallback(async (postId: string, userId: string) => {
-    const postSnapshot = postsRef.current.find((p) => p.id === postId);
-    const wasLiked = postSnapshot?.likedBy?.includes(userId) ?? false;
+//   const togglePostLike = useCallback(async (postId: string, userId: string) => {
+//     const postSnapshot = postsRef.current.find((p) => p.id === postId);
+//     const wasLiked = postSnapshot?.likedBy?.includes(userId) ?? false;
 
-    // Optimistic update
-    setPosts((prev) =>
-      prev.map((p) => {
-        if (p.id !== postId) return p;
-        const likedBy = p.likedBy || [];
-        const alreadyLiked = likedBy.includes(userId);
-        return {
-          ...p,
-          likes: (p.likes || 0) + (alreadyLiked ? -1 : 1),
-          likedBy: alreadyLiked
-            ? likedBy.filter((id) => id !== userId)
-            : [...likedBy, userId],
-        };
-      })
-    );
+//     // Optimistic update
+//     setPosts((prev) =>
+//       prev.map((p) => {
+//         if (p.id !== postId) return p;
+//         const likedBy = p.likedBy || [];
+//         const alreadyLiked = likedBy.includes(userId);
+//         return {
+//           ...p,
+//           likes: (p.likes || 0) + (alreadyLiked ? -1 : 1),
+//           likedBy: alreadyLiked
+//             ? likedBy.filter((id) => id !== userId)
+//             : [...likedBy, userId],
+//         };
+//       })
+//     );
 
-    try {
-      await axios.patch(`/api/createpost/${postId}`, {
-        likeAction: wasLiked ? "unlike" : "like",
-        userId,
-      });
-    } catch (err) {
-      // Revert on failure
-      setPosts((prev) =>
-        prev.map((p) => {
-          if (p.id !== postId) return p;
-          const likedBy = p.likedBy || [];
-          const isLiked = likedBy.includes(userId);
-          return {
-            ...p,
-            likes: (p.likes || 0) + (isLiked ? -1 : 1),
-            likedBy: isLiked
-              ? likedBy.filter((id) => id !== userId)
-              : [...likedBy, userId],
-          };
-        })
-      );
-      console.error("[usePosts] Like failed:", err);
-    }
-  }, []);
+//     try {
+//       await axios.patch(`/api/createpost/${postId}`, {
+//         likeAction: wasLiked ? "unlike" : "like",
+//         userId,
+//       });
+//     } catch (err) {
+//       // Revert on failure
+//       setPosts((prev) =>
+//         prev.map((p) => {
+//           if (p.id !== postId) return p;
+//           const likedBy = p.likedBy || [];
+//           const isLiked = likedBy.includes(userId);
+//           return {
+//             ...p,
+//             likes: (p.likes || 0) + (isLiked ? -1 : 1),
+//             likedBy: isLiked
+//               ? likedBy.filter((id) => id !== userId)
+//               : [...likedBy, userId],
+//           };
+//         })
+//       );
+//       console.error("[usePosts] Like failed:", err);
+//     }
+//   }, []);
+// AFTER — paste this in its place
+type ReactionId = "like" | "love" | "haha" | "wow" | "sad" | "angry";
+
+const togglePostLike = useCallback(async (
+  postId: string,
+  userId: string,
+  reaction?: ReactionId
+) => {
+  const postSnapshot = postsRef.current.find((p) => p.id === postId);
+  const wasLiked = postSnapshot?.likedBy?.includes(userId) ?? false;
+  const isRemoving = wasLiked && !reaction;
+
+  // Optimistic update — also update reactions map
+  setPosts((prev) =>
+    prev.map((p) => {
+      if (p.id !== postId) return p;
+      const likedBy = p.likedBy || [];
+      const alreadyLiked = likedBy.includes(userId);
+      const prevReactions = (p.reactions as Record<string, string>) || {};
+
+      const newReactions = isRemoving
+        ? Object.fromEntries(Object.entries(prevReactions).filter(([k]) => k !== userId))
+        : { ...prevReactions, [userId]: reaction ?? "like" };
+
+      return {
+        ...p,
+        likes: isRemoving
+          ? Math.max(0, (p.likes || 0) - 1)
+          : alreadyLiked ? p.likes : (p.likes || 0) + 1,
+        likedBy: isRemoving
+          ? likedBy.filter((id) => id !== userId)
+          : alreadyLiked ? likedBy : [...likedBy, userId],
+        reactions: newReactions,
+      };
+    })
+  );
+
+  try {
+    await axios.patch(`/api/createpost/${postId}`, {
+      likeAction: isRemoving ? "unlike" : "like",
+      userId,
+      reaction,
+    });
+  } catch (err) {
+    // Revert on failure by re-fetching
+    fetchPosts(false);
+    console.error("[usePosts] Like failed:", err);
+  }
+}, [fetchPosts]);
 
   // ── Comment count helpers ─────────────────────────────────────────────────
   const incrementCommentCount = useCallback((postId: string) => {

@@ -454,6 +454,8 @@ export default function PostCard({
 }: Props) {
     const [showComments, setShowComments] = useState(false);
     const [showMenu, setShowMenu] = useState(false);
+    const [showShareDialog, setShowShareDialog] = useState(false);
+    const [copied, setCopied] = useState(false);
     const [deleting, setDeleting] = useState(false);
     const [localPoll, setLocalPoll] = useState(post.poll);
 
@@ -497,9 +499,119 @@ export default function PostCard({
     };
 
     const toggleMenu = () => setShowMenu(!showMenu);
-    const isOwner = currentUserId && post.userId && currentUserId === post.userId;
+    // const isOwner = currentUserId && post.userId && currentUserId === post.userId;
 
-    useEffect(() => { setLocalPoll(post.poll); }, [post.poll]);
+    const openShareDialog = () => {
+        setShowShareDialog(true);
+        setCopied(false);
+    };
+
+    const closeShareDialog = () => {
+        setShowShareDialog(false);
+        setCopied(false);
+    };
+
+    const copyToClipboard = async (text: string) => {
+        try {
+            await navigator.clipboard.writeText(text);
+            return true;
+        } catch {
+            try {
+                const input = document.createElement("textarea");
+                input.value = text;
+                input.style.position = "fixed";
+                input.style.opacity = "0";
+                document.body.appendChild(input);
+                input.focus();
+                input.select();
+                const ok = document.execCommand("copy");
+                document.body.removeChild(input);
+                return ok;
+            } catch {
+                return false;
+            }
+        }
+    };
+
+    const buildPostShareUrl = () => {
+        if (typeof window === "undefined") return "";
+        return `${window.location.origin}${window.location.pathname}${window.location.search}`;
+    };
+
+    const buildPostShareText = () => {
+        const previewText = post.content?.trim() || "Check out this post";
+        const previewLink = buildPostShareUrl();
+        return [
+            previewText,
+            `View post: ${previewLink}`,
+        ].filter(Boolean).join("\n");
+    };
+
+    const handleShareToWhatsApp = () => {
+        const shareText = buildPostShareText();
+        const whatsappAppUrl = `whatsapp://send?text=${encodeURIComponent(shareText)}`;
+        const whatsappWebFallbackUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
+
+        const opened = window.open(whatsappAppUrl, "_self");
+        if (!opened) {
+            window.location.href = whatsappWebFallbackUrl;
+        }
+    };
+
+    const handleShareToThreads = () => {
+        const shareText = buildPostShareText();
+        window.open(`https://www.threads.net/intent/post?text=${encodeURIComponent(shareText)}`, "_blank", "noopener,noreferrer");
+    };
+
+    const handleShareToInstagram = async () => {
+        const shareText = buildPostShareText();
+        await copyToClipboard(shareText);
+        setCopied(true);
+        window.open("https://www.instagram.com/", "_blank", "noopener,noreferrer");
+        setTimeout(() => setCopied(false), 1600);
+    };
+
+    const handleShareToLinkedIn = () => {
+        const shareUrl = buildPostShareUrl();
+        window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`, "_blank", "noopener,noreferrer");
+    };
+
+    const handleShareToX = () => {
+        const shareText = buildPostShareText();
+        window.open(`https://x.com/intent/tweet?text=${encodeURIComponent(shareText)}`, "_blank", "noopener,noreferrer");
+    };
+
+    const handleCopyLink = async () => {
+        const ok = await copyToClipboard(buildPostShareText());
+        if (!ok) return;
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1600);
+    };
+
+    const shareButtons = (size: string) => (
+        <>
+            {[
+                { handler: handleShareToWhatsApp, src: "/images/share_whatsapp.png", alt: "WhatsApp" },
+                { handler: handleShareToThreads, src: "/images/share_thread.png", alt: "Threads" },
+                { handler: handleShareToInstagram, src: "/images/share_insta.png", alt: "Instagram" },
+                { handler: handleShareToLinkedIn, src: "/images/Share_linkedin.png", alt: "LinkedIn" },
+                { handler: handleShareToX, src: "/images/Share_X.png", alt: "X" },
+                { handler: handleCopyLink, src: "/images/share_copy_link.png", alt: "Copy" },
+            ].map(({ handler, src, alt }) => (
+                <button
+                    key={alt}
+                    onClick={handler}
+                    className={`${size} shrink-0 rounded-full overflow-hidden bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center`}
+                    aria-label={`Share on ${alt}`}
+                >
+                    <img src={src} alt={alt} className="w-full h-full object-cover rounded-full" />
+                </button>
+            ))}
+        </>
+    );
+
+    const isOwner =
+        currentUserId && post.userId && currentUserId === post.userId;
 
     useEffect(() => {
         if (typeof post.commentCount === "number") {
@@ -769,22 +881,45 @@ export default function PostCard({
                 </button>
 
                 <button
-                    onClick={() => {
-                        if (navigator.share) {
-                            navigator.share({
-                                title: post.content?.slice(0, 60) || "Post",
-                                url: window.location.href,
-                            });
-                        } else {
-                            navigator.clipboard.writeText(window.location.href);
-                        }
-                    }}
+                    onClick={openShareDialog}
                     className="flex items-center gap-1.5 text-white/40 hover:text-white/70 transition-colors"
                 >
                     <Share className="w-4 h-4" />
                     <span className="text-sm">Share</span>
                 </button>
             </div>
+
+            {showShareDialog && (
+                <>
+                    <button type="button" className="fixed inset-0 z-40 bg-black/70 lg:hidden" onClick={closeShareDialog} />
+                    <div className="fixed bottom-16 inset-x-4 z-50 mx-auto w-full max-w-[280px] rounded-2xl border border-white/10 bg-[#1a1a1e] p-3 shadow-2xl lg:hidden" onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center justify-between mb-2">
+                            <p className="text-white text-sm font-semibold">Share</p>
+                            <button onClick={closeShareDialog} className="text-gray-400 hover:text-white" aria-label="Close share dialog">
+                                <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M15 5L5 15M5 5L15 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>
+                            </button>
+                        </div>
+                        <div className="flex flex-row flex-nowrap items-center gap-1.5 mb-2 overflow-x-auto">{shareButtons("w-8 h-8")}</div>
+                        {copied && <p className="text-xs text-emerald-400">Copied to clipboard</p>}
+                    </div>
+                    <div className="hidden lg:flex fixed inset-0 z-50 items-center justify-center bg-black/60" onClick={closeShareDialog}>
+                        <div className="bg-[#1a1a1e] rounded-2xl border border-white/10 p-4 w-[300px] shadow-2xl" onClick={e => e.stopPropagation()}>
+                            <div className="flex items-center justify-between mb-3">
+                                <p className="text-white text-sm font-semibold">Share Post</p>
+                                <button onClick={closeShareDialog} className="text-gray-400 hover:text-white" aria-label="Close share dialog">
+                                    <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M15 5L5 15M5 5L15 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>
+                                </button>
+                            </div>
+                            <div className="rounded-xl border border-white/10 bg-[#111114] p-3 mb-3">
+                                <p className="text-white text-sm font-semibold line-clamp-2">{post.content?.slice(0, 60) || "Post"}</p>
+                                <p className="text-white/45 text-[11px] mt-2 line-clamp-2 break-all">{buildPostShareUrl()}</p>
+                            </div>
+                            <div className="flex flex-row flex-nowrap items-center gap-2 mb-2">{shareButtons("w-9 h-9")}</div>
+                            {copied && <p className="text-xs text-emerald-400">Copied to clipboard</p>}
+                        </div>
+                    </div>
+                </>
+            )}
 
             {/* Comments Section */}
             {showComments && post.id && (

@@ -701,7 +701,7 @@
 
 "use client";
 import Link from "next/link";
-import { Mic, Play, List } from "lucide-react";
+import { Mic, Play, List, TrendingUp } from "lucide-react";
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { useAuth } from "@/context/AuthContext";
@@ -768,6 +768,10 @@ interface AudioFile {
   duration: string;
   createdAt: string;
   matchInfo?: MatchInfo;
+  views?: string | number;
+  likes?: number;
+  listens?: number;
+  signals?: number;
 }
 
 interface VideoFile {
@@ -781,6 +785,10 @@ interface VideoFile {
     chapter?: string;
     chapterNumber?: number;
   };
+  views?: string | number;
+  likes?: number;
+  listens?: number;
+  signals?: number;
 }
 
 type BadgeType = "FEATURE" | "ANALYSIS" | "OPINION" | "NEWS" | "DAWN DISPATCH";
@@ -798,6 +806,20 @@ interface Article {
   createdAt: number;
   updatedAt?: number;
   commentCount?: number;
+}
+
+interface TrendingDrop {
+  id: string;
+  type: "audio" | "video";
+  title: string;
+  displayTitle: string;
+  displaySubtitle: string;
+  href: string;
+  score: number;
+  plays: number;
+  views: number;
+  likes: number;
+  createdAt: string;
 }
 
 // IPL Teams mapping for filtering
@@ -931,6 +953,17 @@ function extractMatchName(title: string): string {
   }
 
   return "";
+}
+
+function toNumericValue(value?: string | number): number {
+  if (typeof value === "number") return value;
+  if (!value) return 0;
+  const numeric = String(value).replace(/[^\d]/g, "");
+  return numeric ? parseInt(numeric, 10) : 0;
+}
+
+function formatTrendCount(count: number): string {
+  return formatNumber(count);
 }
 
 // ── Latest Playlists List ─────────────────────────────────────────────────────
@@ -1158,6 +1191,154 @@ function LatestDropsList() {
           </div>
         </Link>
       ))}
+    </div>
+  );
+}
+
+// ── Trending Drops List ───────────────────────────────────────────────────────////
+function TrendingDropsList() {
+  const [drops, setDrops] = useState<TrendingDrop[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showAll, setShowAll] = useState(false);
+
+  useEffect(() => {
+    const fetchTrendingDrops = async () => {
+      try {
+        const [audioRes, videoRes, playsRes] = await Promise.allSettled([
+          axios.get(`/api/cloudinary/audio?limit=100`),
+          axios.get(`/api/cloudinary/video?limit=100`),
+          axios.get(`/api/cloudinary/plays`),
+        ]);
+
+        const playsMap: Record<string, number> =
+          playsRes.status === "fulfilled" ? playsRes.value.data.plays || {} : {};
+
+        const combined: TrendingDrop[] = [];
+
+        if (audioRes.status === "fulfilled" && audioRes.value.data.success) {
+          const audioFiles = (audioRes.value.data.audioFiles || []) as AudioFile[];
+          audioFiles.forEach((audio) => {
+            const plays = playsMap[audio.id] || 0;
+            const likes = typeof audio.likes === "number" ? audio.likes : 0;
+            const score = plays + likes;
+
+            combined.push({
+              id: audio.id,
+              type: "audio",
+              title: audio.title,
+              displayTitle: getDisplayTitle(audio),
+              displaySubtitle: extractMatchName(audio.title)
+                ? `${getSpeakerLabel(audio)} · ${extractMatchName(audio.title)}`
+                : `${getSpeakerLabel(audio)} · Audio Drop`,
+              href: `/MainModules/MatchesDropContent/AudioDropScreen?id=${encodeURIComponent(audio.id)}`,
+              score,
+              plays,
+              views: 0,
+              likes,
+              createdAt: audio.createdAt,
+            });
+          });
+        }
+
+        if (videoRes.status === "fulfilled" && videoRes.value.data.success) {
+          const videoFiles = (videoRes.value.data.videoFiles || []) as VideoFile[];
+          videoFiles.forEach((video) => {
+            const plays = playsMap[video.id] || 0;
+            const likes = typeof video.likes === "number" ? video.likes : 0;
+            const score = plays + likes;
+
+            combined.push({
+              id: video.id,
+              type: "video",
+              title: video.title,
+              displayTitle: video.title,
+              displaySubtitle: video.playerInfo?.playerName
+                ? `${video.playerInfo.playerName} · Chapter ${video.playerInfo.chapterNumber ?? "-"}`
+                : "Video Drop",
+              href: `/MainModules/MatchesDropContent/VideoDropScreen?id=${encodeURIComponent(video.id)}`,
+              score,
+              plays,
+              views: 0,
+              likes,
+              createdAt: video.createdAt,
+            });
+          });
+        }
+
+        combined.sort((a, b) => {
+          if (b.score !== a.score) return b.score - a.score;
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        });
+
+        setDrops(combined.slice(0, 10));
+      } catch (err) {
+        console.error("Failed to fetch trending drops", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTrendingDrops();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex flex-col gap-1.5 mt-2">
+        {[1, 2, 3, 4, 5].map((i) => (
+          <div key={i} className="h-8 bg-[#1c1c1c] rounded-lg animate-pulse" />
+        ))}
+      </div>
+    );
+  }
+
+  if (drops.length === 0) {
+    return (
+      <div className="mt-1 text-center py-2">
+        <p className="text-gray-500 text-[11px]">No trending drops yet</p>
+        <p className="text-gray-600 text-[9px] mt-1">Drops will appear here once engagement builds up</p>
+      </div>
+    );
+  }
+
+  const visibleDrops = showAll ? drops : drops.slice(0, 5);
+
+  return (
+    <div className="flex flex-col gap-1.5 mt-2">
+      {visibleDrops.map((drop, index) => (
+        <Link key={`${drop.type}-${drop.id}`} href={drop.href}>
+          <div className="flex items-center gap-2 bg-[#1c1c1c] rounded-lg px-2 py-1.5 hover:bg-[#2a2a2a] transition-colors">
+            <div className="w-6 h-6 rounded-full bg-[#C9115F]/15 text-[#C9115F] flex items-center justify-center flex-shrink-0 text-[10px] font-semibold">
+              {index + 1}
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5">
+                <p className="text-white text-[10px] lg:text-[12px] font-medium leading-tight truncate">
+                  {drop.displayTitle}
+                </p>
+                <span className="text-[8px] uppercase tracking-wide text-[#C9115F] bg-[#C9115F]/10 px-1.5 py-0.5 rounded-full flex-shrink-0">
+                  {drop.type}
+                </span>
+              </div>
+              <p className="text-gray-500 text-[9px] lg:text-[10px] leading-tight truncate">
+                {drop.displaySubtitle}
+              </p>
+              <p className="text-gray-600 text-[8px] lg:text-[9px] leading-tight mt-0.5">
+                {formatTrendCount(drop.plays)} plays · {formatTrendCount(drop.likes)} likes
+              </p>
+            </div>
+          </div>
+        </Link>
+      ))}
+
+      {drops.length > 5 && (
+        <button
+          type="button"
+          onClick={() => setShowAll((current) => !current)}
+          className="mt-1 w-full rounded-lg border border-white/10 bg-[#1c1c1c] px-3 py-2 text-[10px] font-medium text-white hover:bg-[#2a2a2a] transition-colors"
+        >
+          {showAll ? "Show Less" : "View All"}
+        </button>
+      )}
     </div>
   );
 }
@@ -1490,6 +1671,29 @@ export default function HomeCardsSection() {
             )}
           </div>
         ))}
+        {/*
+        <div className="min-w-[200px] max-w-[256px] snap-start bg-[#111] rounded-2xl p-3 shadow-lg flex flex-col h-fit">
+          <div className="relative rounded-xl overflow-hidden flex-shrink-0">
+            <div className="w-[256px] h-[120px] rounded-lg overflow-hidden relative">
+              <img src="/images/trending_drops_bg.png" alt="Trending Drops" className="w-full h-full object-cover" />
+              <div className="absolute inset-0 bg-black/40 flex items-end p-3">
+                <div>
+                  <h2 className="text-[14px] font-bold leading-tight">Trending Drops</h2>
+                  <p className="text-[10px] text-gray-300">Top 10 by plays, views and likes</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-3">
+            <p className="text-gray-500 text-[10px] mb-1 font-medium uppercase tracking-wide flex items-center gap-1">
+              <TrendingUp size={12} />
+              Trending Drops
+            </p>
+            <TrendingDropsList />
+          </div>
+        </div>
+        */}
       </div>
 
       {error && (

@@ -535,7 +535,7 @@ export default function PreferencesOnboarding() {
     breakingNews: true,
     highlightDrops: true,
   });
-
+// done
   const [submitting, setSubmitting] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
 

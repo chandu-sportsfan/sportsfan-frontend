@@ -132,7 +132,7 @@ export default function PlayerProfileContent() {
         <div className="block lg:hidden">
           <div className="max-w-[640px] mx-auto">
             <PlayerProfileHeader player={player} />
-            <PlayerProfileActions player={player} />
+            <PlayerProfileActions player={player} playerId={playerId || undefined} />
             <PlayerSeasonStats player={player} />
             <PlayerGamePlan player={player} />
           </div>
@@ -141,7 +141,7 @@ export default function PlayerProfileContent() {
         <div className="hidden lg:flex lg:items-start lg:gap-6 xl:gap-8 px-8 xl:px-12 py-6">
           <div className="sticky top-[65px] w-[360px] xl:w-[400px] shrink-0 flex flex-col overflow-y-auto max-h-[calc(100vh-65px)] [scrollbar-width:none]">
             <PlayerProfileHeader player={player} />
-            <PlayerProfileActions player={player} />
+            <PlayerProfileActions player={player} playerId={playerId || undefined} />
           </div>
           <div className="flex-1 min-w-0 flex flex-col pb-10">
             <div id="stats-section">

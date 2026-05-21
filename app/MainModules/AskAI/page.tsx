@@ -547,7 +547,30 @@ const SUGGESTIONS = [
 const pickSuggestions = () =>
   [...SUGGESTIONS].sort(() => Math.random() - 0.5).slice(0, 4)
 
-// Add this type definition at the top of the file (around line 5-10)
+// ── Web Speech API Type Declarations (No 'any') ──────────────────────────────
+interface SpeechRecognitionEvent extends Event {
+  resultIndex: number;
+  results: SpeechRecognitionResultList;
+}
+
+interface SpeechRecognitionResultList {
+  length: number;
+  item(index: number): SpeechRecognitionResult;
+  [index: number]: SpeechRecognitionResult;
+}
+
+interface SpeechRecognitionResult {
+  isFinal: boolean;
+  length: number;
+  item(index: number): SpeechRecognitionAlternative;
+  [index: number]: SpeechRecognitionAlternative;
+}
+
+interface SpeechRecognitionAlternative {
+  transcript: string;
+  confidence: number;
+}
+
 interface SpeechRecognition extends EventTarget {
   lang: string;
   continuous: boolean;

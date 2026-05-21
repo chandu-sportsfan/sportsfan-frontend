@@ -95,9 +95,9 @@ const nextConfig = {
         // Static content
         { source: '/Content/:path*', destination: `${apiTarget}/Content/:path*` },
 
-         // Preferences
-         { source: '/api/preferences', destination: `${apiTarget}/api/preferences` },
-         { source: '/api/preferences/:path*', destination: `${apiTarget}/api/preferences/:path*` },
+        // Preferences
+        { source: '/api/preferences', destination: `${apiTarget}/api/preferences` },
+        { source: '/api/preferences/:path*', destination: `${apiTarget}/api/preferences/:path*` },
 
         // Host Rooms
         { source: '/api/hostrooms', destination: `${apiTarget}/api/hostrooms` },
@@ -131,6 +131,10 @@ const nextConfig = {
 
         // Sportsfan360 Profile
         { source: '/api/sportsfan360card', destination: `${apiTarget}/api/sportsfan360card` },
+
+        // Ask AI
+        { source: '/api/ask-ai', destination: `${apiTarget}/api/ask-ai` },
+        { source: '/api/ask-ai/:path*', destination: `${apiTarget}/api/ask-ai/:path*` },
 
         // Playlists
         { source: '/api/playlists', destination: `${apiTarget}/api/playlists` },

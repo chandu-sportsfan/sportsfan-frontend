@@ -1,10 +1,91 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Heart, Reply, Trash2, ChevronDown, ChevronUp, Send, Loader2 } from "lucide-react";
+import { Heart, Reply, Trash2, ChevronDown, ChevronUp, Send, Loader2, Smile } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import axios from "axios";
 
+// ─── Emoji Picker Data ────────────────────────────────────────────────────────
+const EMOJI_CATEGORIES = [
+    {
+        label: "😊 Smileys",
+        emojis: [
+            "😀","😃","😄","😁","😆","😅","🤣","😂","🙂","😊",
+            "😇","🥰","😍","🤩","😘","😗","😚","😙","🥲","😋",
+            "😛","😜","🤪","😝","🤑","🤗","🤭","🤫","🤔","🤐",
+            "😶","😏","😒","🙄","😬","🤥","😌","😔","😪","🤤",
+            "😴","😷","🤒","🤕","🤧","🥵","🥶","🥴","😵","🤯",
+            "😎","🥸","🤓","🧐","😕","😟","🙁","😮","😯","😲",
+            "😳","🥺","😦","😧","😨","😰","😥","😢","😭","😱",
+            "😖","😣","😞","😓","😩","😫","🥱","😤","😡","😠",
+        ],
+    },
+    {
+        label: "👋 Gestures",
+        emojis: [
+            "👋","🤚","🖐","✋","🖖","👌","🤌","🤏","✌","🤞",
+            "🤟","🤘","🤙","👈","👉","👆","🖕","👇","☝","👍",
+            "👎","✊","👊","🤛","🤜","👏","🙌","👐","🤲","🙏",
+            "✍","💅","🤳","💪","🦾","🦵","🦶","👂","🦻","👃",
+        ],
+    },
+    {
+        label: "❤️ Hearts",
+        emojis: [
+            "❤️","🧡","💛","💚","💙","💜","🖤","🤍","🤎","💔",
+            "❣️","💕","💞","💓","💗","💖","💘","💝","💟","☮️",
+            "✝️","☪️","🕉","✡️","🔯","🪯","☯️","☦️","🛐","⛎",
+        ],
+    },
+    {
+        label: "🎉 Celebration",
+        emojis: [
+            "🎉","🎊","🎈","🎁","🎀","🎗","🎟","🎫","🏆","🥇",
+            "🥈","🥉","🏅","🎖","🎪","🎭","🎨","🎬","🎤","🎧",
+            "🎼","🎵","🎶","🎷","🎸","🎹","🎺","🎻","🥁","🪘",
+            "🪗","🪕","🎲","🎯","🎳","🎮","🕹","🎰","🧩","🪅",
+        ],
+    },
+    {
+        label: "🐶 Animals",
+        emojis: [
+            "🐶","🐱","🐭","🐹","🐰","🦊","🐻","🐼","🐨","🐯",
+            "🦁","🐮","🐷","🐸","🐵","🙈","🙉","🙊","🐔","🐧",
+            "🐦","🐤","🦆","🦅","🦉","🦇","🐺","🐗","🐴","🦄",
+            "🐝","🐛","🦋","🐌","🐞","🐜","🦟","🦗","🕷","🦂",
+        ],
+    },
+    {
+        label: "🍕 Food",
+        emojis: [
+            "🍎","🍊","🍋","🍇","🍓","🫐","🍈","🍑","🍒","🥭",
+            "🍍","🥝","🍅","🥑","🫒","🍆","🥦","🥕","🌽","🍄",
+            "🧄","🧅","🥔","🍞","🥐","🥖","🫓","🧀","🥚","🍳",
+            "🧈","🥞","🧇","🥓","🍔","🍟","🌭","🫔","🌮","🌯",
+            "🍕","🫕","🥙","🧆","🥚","🍿","🧂","🥫","🍱","🍘",
+        ],
+    },
+    {
+        label: "⚽ Sports",
+        emojis: [
+            "⚽","🏀","🏈","⚾","🥎","🎾","🏐","🏉","🥏","🎱",
+            "🪀","🏓","🏸","🏒","🥍","🏑","🏏","🪃","🥅","⛳",
+            "🪁","🏹","🎣","🤿","🥊","🥋","🎽","🛹","🛼","🛷",
+            "⛸","🥌","🎿","⛷","🏂","🪂","🏋","🤼","🤸","⛹",
+        ],
+    },
+    {
+        label: "🚀 Travel",
+        emojis: [
+            "🚗","🚕","🚙","🚌","🚎","🏎","🚓","🚑","🚒","🚐",
+            "🛻","🚚","🚛","🚜","🏍","🛵","🛺","🚲","🛴","🛹",
+            "🚁","🛸","🚀","✈️","🛩","🛫","🛬","⛵","🚢","🛳",
+            "🚂","🚃","🚄","🚅","🚆","🚇","🚈","🚉","🚊","🚝",
+        ],
+    },
+] as const;
+
+// ─── Types ────────────────────────────────────────────────────────────────────
 interface Comment {
     id: string;
     commentText: string;
@@ -28,6 +109,7 @@ function timeAgo(ts: number): string {
     return `${Math.floor(diff / 86400000)}d`;
 }
 
+// ─── Avatar ───────────────────────────────────────────────────────────────────
 function Avatar({ name, avatar, size = 8 }: { name: string; avatar?: string; size?: number }) {
     const sizeClass = `w-${size} h-${size}`;
     if (avatar) {
@@ -46,6 +128,85 @@ function Avatar({ name, avatar, size = 8 }: { name: string; avatar?: string; siz
     );
 }
 
+// ─── Emoji Picker ─────────────────────────────────────────────────────────────
+interface EmojiPickerProps {
+    onSelect: (emoji: string) => void;
+    onClose: () => void;
+}
+
+function EmojiPicker({ onSelect, onClose }: EmojiPickerProps) {
+    const [activeCategory, setActiveCategory] = useState(0);
+    const pickerRef = useRef<HTMLDivElement>(null);
+
+    // Close on outside click
+    useEffect(() => {
+        const handler = (e: MouseEvent) => {
+            if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
+                onClose();
+            }
+        };
+        document.addEventListener("mousedown", handler);
+        return () => document.removeEventListener("mousedown", handler);
+    }, [onClose]);
+
+    return (
+        <div
+            ref={pickerRef}
+            className="absolute bottom-full left-0 mb-2 z-50 w-72 rounded-2xl border border-white/10 shadow-2xl overflow-hidden"
+            style={{
+                background: "rgba(20, 20, 24, 0.98)",
+                backdropFilter: "blur(20px)",
+            }}
+        >
+            {/* Category Tabs */}
+            <div className="flex items-center gap-0.5 px-2 pt-2 pb-1 border-b border-white/8 overflow-x-auto scrollbar-hide">
+                {EMOJI_CATEGORIES.map((cat, i) => (
+                    <button
+                        key={i}
+                        onClick={() => setActiveCategory(i)}
+                        title={cat.label}
+                        className={`flex-shrink-0 text-base px-1.5 py-1 rounded-lg transition-colors ${
+                            activeCategory === i
+                                ? "bg-[#C9115F]/20 text-white"
+                                : "text-white/40 hover:text-white/80 hover:bg-white/5"
+                        }`}
+                    >
+                        {cat.emojis[0]}
+                    </button>
+                ))}
+            </div>
+
+            {/* Category Label */}
+            <div className="px-3 pt-2 pb-1">
+                <span className="text-white/30 text-xs font-medium">
+                    {EMOJI_CATEGORIES[activeCategory].label}
+                </span>
+            </div>
+
+            {/* Emoji Grid */}
+            <div className="grid grid-cols-8 gap-0.5 px-2 pb-2 max-h-48 overflow-y-auto scrollbar-hide">
+                {EMOJI_CATEGORIES[activeCategory].emojis.map((emoji, i) => (
+                    <button
+                        key={i}
+                        onClick={() => onSelect(emoji)}
+                        className="flex items-center justify-center w-8 h-8 text-xl rounded-lg hover:bg-white/10 transition-colors active:scale-90"
+                        title={emoji}
+                    >
+                        {emoji}
+                    </button>
+                ))}
+            </div>
+
+            {/* Arrow pointer */}
+            <div
+                className="absolute left-6 -bottom-1.5 w-3 h-3 rotate-45 border-r border-b border-white/10"
+                style={{ background: "rgba(20,20,24,0.98)" }}
+            />
+        </div>
+    );
+}
+
+// ─── Comment Row ──────────────────────────────────────────────────────────────
 function CommentRow({
     comment, currentUserId, onLike, onDelete, onReply, isReply = false, parentCommentId,
 }: {
@@ -86,9 +247,6 @@ function CommentRow({
                         >
                             <Reply className="w-3.5 h-3.5" />
                             Reply
-                            {/* {(comment.replyCount || 0) > 0 && (
-                                <span className="text-white/30">{comment.replyCount}</span>
-                            )} */}
                         </button>
                     )}
                     {isOwner && (
@@ -105,6 +263,7 @@ function CommentRow({
     );
 }
 
+// ─── Comment Thread ───────────────────────────────────────────────────────────
 function CommentThread({
     comment, currentUserId, replies, onLike, onDelete, onReply, onLoadReplies,
 }: {
@@ -164,6 +323,7 @@ function CommentThread({
     );
 }
 
+// ─── Main Component ───────────────────────────────────────────────────────────
 interface Props {
     contentId: string;
     contentType: "article" | "post";
@@ -171,7 +331,7 @@ interface Props {
     className?: string;
     onCommentAdded?: () => void;
     onCommentDeleted?: () => void;
-    onCountLoaded?: (count: number) => void; // ← NEW
+    onCommentCountLoaded?: (count: number) => void;
 }
 
 export default function CommentsSection({
@@ -181,7 +341,7 @@ export default function CommentsSection({
     className = "",
     onCommentAdded,
     onCommentDeleted,
-    onCountLoaded, // ← NEW
+    onCommentCountLoaded,
 }: Props) {
     const { user, getUserDisplayName, user: authUser } = useAuth();
 
@@ -192,10 +352,37 @@ export default function CommentsSection({
     const [text, setText] = useState("");
     const [replyTo, setReplyTo] = useState<{ commentId: string; userName: string } | null>(null);
     const [submitting, setSubmitting] = useState(false);
+    const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+
     const inputRef = useRef<HTMLInputElement>(null);
     const lastDocIdRef = useRef<string | null>(null);
+    const countReportedRef = useRef(false);
+
     const currentUserId = authUser?.userId || authUser?.email || "";
     const displayName = user ? getUserDisplayName() : "Guest";
+
+    // ── Insert emoji at cursor position ───────────────────────────────────────
+    const handleEmojiSelect = useCallback((emoji: string) => {
+        const input = inputRef.current;
+        if (!input) {
+            setText((prev) => prev + emoji);
+            setShowEmojiPicker(false);
+            return;
+        }
+
+        const start = input.selectionStart ?? text.length;
+        const end = input.selectionEnd ?? text.length;
+        const newText = text.slice(0, start) + emoji + text.slice(end);
+        setText(newText);
+        setShowEmojiPicker(false);
+
+        // Restore cursor position after the inserted emoji
+        requestAnimationFrame(() => {
+            input.focus();
+            const newPos = start + emoji.length;
+            input.setSelectionRange(newPos, newPos);
+        });
+    }, [text]);
 
     const fetchComments = useCallback(async (reset = false, signal?: AbortSignal) => {
         setLoading(true);
@@ -208,52 +395,47 @@ export default function CommentsSection({
 
             if (data.success) {
                 const newComments: Comment[] = data.comments ?? [];
-                setComments((prev) => (reset ? newComments : [...prev, ...newComments]));
+                setComments((prev) => {
+                    const next = reset ? newComments : [...prev, ...newComments];
+                    if (reset && !countReportedRef.current) {
+                        countReportedRef.current = true;
+                        const total = data.pagination?.total ?? next.length;
+                        onCommentCountLoaded?.(total);
+                    }
+                    return next;
+                });
                 setHasMore(data.pagination?.hasMore ?? false);
                 if (newComments.length > 0) {
                     lastDocIdRef.current = newComments[newComments.length - 1].id;
                 }
-
-                // ← NEW: on first load, report total top-level count to parent
-                if (reset && onCountLoaded) {
-                    // Sum top-level comments + their reply counts for total
-                    const totalReplies = newComments.reduce(
-                        (acc, c) => acc + (c.replyCount ?? 0),
-                        0
-                    );
-                    onCountLoaded(newComments.length + totalReplies);
-                }
             }
         } catch (error: unknown) {
-            if (axios.isCancel(error) || (error instanceof Error && error.name === "CanceledError")) {
-                return;
-            }
+            if (axios.isCancel(error) || (error instanceof Error && error.name === "CanceledError")) return;
             console.error("[CommentsSection] fetch failed:", error);
         } finally {
             setLoading(false);
         }
-    }, [contentId, contentType, onCountLoaded]);
+    }, [contentId, contentType, onCommentCountLoaded]);
 
     useEffect(() => {
         const controller = new AbortController();
         lastDocIdRef.current = null;
+        countReportedRef.current = false;
         fetchComments(true, controller.signal);
         return () => controller.abort();
     }, [contentId, contentType]);
 
     const fetchReplies = useCallback(async (commentId: string) => {
         try {
-            const res = await axios.get(
-                `/api/comments/${contentType}/${contentId}/replies/${commentId}`
-            );
+            const res = await axios.get(`/api/comments?parentCommentId=${commentId}&limit=20`);
             const data = res.data;
             if (data.success) {
-                setReplies((prev) => ({ ...prev, [commentId]: data.replies }));
+                setReplies((prev) => ({ ...prev, [commentId]: data.comments }));
             }
         } catch (error) {
             console.error("[CommentsSection] fetch replies failed:", error);
         }
-    }, [contentId, contentType]);
+    }, []);
 
     const postComment = useCallback(async (commentData: {
         commentText: string;
@@ -386,7 +568,8 @@ export default function CommentsSection({
 
     return (
         <div className={`flex flex-col gap-4 ${className}`}>
-            <div className="flex items-center gap-2">
+            {/* ── Input Row ─────────────────────────────────────────────────── */}
+            <div className="flex items-start gap-2">
                 <Avatar name={displayName} size={8} />
                 <div className="flex-1 relative">
                     {replyTo && (
@@ -401,6 +584,7 @@ export default function CommentsSection({
                             </button>
                         </div>
                     )}
+
                     <div className="flex items-center bg-white/8 rounded-2xl border border-white/10 focus-within:border-[#C9115F]/50 transition-colors overflow-hidden pr-1">
                         <input
                             ref={inputRef}
@@ -411,11 +595,30 @@ export default function CommentsSection({
                                     e.preventDefault();
                                     handleSubmit();
                                 }
+                                // Close picker on Escape
+                                if (e.key === "Escape") setShowEmojiPicker(false);
                             }}
                             placeholder={user ? "Add a comment…" : "Sign in to comment"}
                             disabled={!user || submitting}
-                            className="flex-1 bg-transparent px-1 py-2.5 text-sm text-white placeholder-white/25 outline-none disabled:opacity-50"
+                            className="flex-1 bg-transparent px-3 py-2.5 text-sm text-white placeholder-white/25 outline-none disabled:opacity-50"
                         />
+
+                        {/* Emoji Trigger */}
+                        <button
+                            type="button"
+                            onClick={() => setShowEmojiPicker((v) => !v)}
+                            disabled={!user}
+                            className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all disabled:opacity-30 ${
+                                showEmojiPicker
+                                    ? "bg-[#C9115F]/20 text-[#C9115F]"
+                                    : "hover:bg-white/10 text-white/30 hover:text-white/60"
+                            }`}
+                            title="Add emoji"
+                        >
+                            <Smile className="w-4 h-4" />
+                        </button>
+
+                        {/* Send */}
                         <button
                             onClick={handleSubmit}
                             disabled={!text.trim() || !user || submitting}
@@ -428,9 +631,18 @@ export default function CommentsSection({
                             )}
                         </button>
                     </div>
+
+                    {/* Emoji Picker Popover */}
+                    {showEmojiPicker && (
+                        <EmojiPicker
+                            onSelect={handleEmojiSelect}
+                            onClose={() => setShowEmojiPicker(false)}
+                        />
+                    )}
                 </div>
             </div>
 
+            {/* ── Comments List ─────────────────────────────────────────────── */}
             {loading && comments.length === 0 ? (
                 <div className="flex justify-center py-4">
                     <Loader2 className="w-5 h-5 animate-spin text-white/30" />

@@ -29,8 +29,9 @@ export type Post = {
   media?: MediaItem[];
   poll?: Poll | null;
   currentUserName: string | null; 
-  commentCount: number;
+  commentCount?: number;
   repostCount: number;
+  reactions?: Record<string, string>;
   likes: number;
   likedBy: string[];
   createdAt: number;

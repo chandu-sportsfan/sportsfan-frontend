@@ -76,6 +76,7 @@ import { PlaysProvider } from "@/context/PlaysContext";
 import { ScriptsProvider } from "@/context/ScriptsContext";
 import { LeaderboardProvider } from "@/context/LeaderboardContext";
 import GlobalActionBar from "@/src/components/GlobalActionBar";
+import { AIChatProvider } from "@/context/AskAIChatContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -118,7 +119,9 @@ export default function RootLayout({
                         <VideoProvider>
                           <PlaysProvider>
                             <ScriptsProvider>
+                              <AIChatProvider>
                               <main >{children}</main>
+                              </AIChatProvider>
                             </ScriptsProvider>
                           </PlaysProvider>
                         </VideoProvider>

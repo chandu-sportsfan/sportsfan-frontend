@@ -6,7 +6,7 @@ import { useLeaderboard } from "@/context/LeaderboardContext";
 import { 
   ChevronDown, Trophy, Share2, CheckCircle2, 
   Award, TrendingUp, Play, ThumbsUp, FileText, 
-  Gamepad2, UserPlus, LayoutGrid, Calendar, Filter,
+  Gamepad2, UserPlus, LayoutGrid, Calendar, Filter ,
   Download, ChevronLeft, ChevronRight, MoreHorizontal, X, Headphones
 } from "lucide-react";
 
@@ -40,6 +40,9 @@ const AUDIO_DROP_POINTS = 2;
 
 // Points awarded per post creation (must match CreatePostDialog.tsx dispatch value)
 const POST_CREATION_POINTS = 12;
+
+// Points awarded per correct trivia answer (must match Triviaquestion.tsx dispatch value)
+const TRIVIA_POINTS = 5;
 
 // 1. YOUR EXACT ACTIVITY LEDGER
 const exactUserHistory: HistoryItem[] = [
@@ -97,6 +100,20 @@ const createPostHistoryItem = (): HistoryItem => ({
   typeColor: "text-rose-400 border-white/10 bg-white/5"
 });
 
+// Factory for creating a Trivia history entry when a correct answer awards points
+const createTriviaHistoryItem = (question: string): HistoryItem => ({
+  action: "Trivia",
+  details: `Answered: ${question || "Trivia Question"}`,
+  points: TRIVIA_POINTS,
+  type: "Trivia",
+  date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+  time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+  icon: CheckCircle2,
+  color: "text-violet-400",
+  hexColor: "#a78bfa",
+  typeColor: "text-violet-400 border-white/10 bg-white/5"
+});
+
 interface GroupedCategory {
   label: string;
   xpValue: number;
@@ -137,6 +154,7 @@ const staticTopActivitiesData = [
   { icon: UserPlus, title: "Register on SportsFan360", xp: "+100 SXP", desc: "1 time", color: "text-emerald-500", bg: "bg-emerald-500/10 border-emerald-500/20" },
   { icon: UserPlus, title: "Invite Friends", xp: "+100 SXP", desc: "3 invites", color: "text-emerald-500", bg: "bg-emerald-500/10 border-emerald-500/20" },
   { icon: Gamepad2, title: "Fantasy - Fan Battle", xp: "+50 SXP", desc: "7 battles", color: "text-yellow-500", bg: "bg-yellow-500/10 border-yellow-500/20" },
+  { icon: CheckCircle2, title: "Answer Trivia Questions", xp: "+5 SXP", desc: "Per correct answer", color: "text-violet-400", bg: "bg-violet-400/10 border-violet-400/20" },
   { icon: Headphones, title: "Listen Audio Drops", xp: "+2 SXP", desc: "Per drop (90% listened)", color: "text-sky-400", bg: "bg-sky-400/10 border-sky-400/20" },
   { icon: FileText, title: "Create a Post", xp: "+12 SXP", desc: "Per post created", color: "text-rose-400", bg: "bg-rose-400/10 border-rose-400/20" },
 ];
@@ -148,6 +166,7 @@ const activityFeedData = [
 
 const earnPointsActions = [
   { icon: Headphones, title: "Listen Audio Drops", xp: "+2 SXP", desc: "Per drop (90% listened)", color: "text-sky-400", bg: "bg-sky-400/10" },
+  { icon: CheckCircle2, title: "Answer Trivia", xp: "+5 SXP", desc: "Per correct answer", color: "text-violet-400", bg: "bg-violet-400/10" },
   { icon: Play, title: "Watch / Listen to Drops", xp: "+20 SXP", desc: "12 Actions", color: "text-yellow-500", bg: "bg-yellow-500/10" },
   { icon: ThumbsUp, title: "Like a Post", xp: "+10 SXP", desc: "28 Actions", color: "text-rose-500", bg: "bg-rose-500/10" },
   { icon: Share2, title: "Share a Post", xp: "+15 SXP", desc: "18 Actions", color: "text-purple-500", bg: "bg-purple-500/10" },
@@ -319,6 +338,23 @@ export default function FanZoneDashboard() {
     window.addEventListener("postCreatedPointsAwarded", handlePostCreatedPoints);
     return () => window.removeEventListener("postCreatedPointsAwarded", handlePostCreatedPoints);
   }, [handlePostCreatedPoints]);
+
+  // ── Trivia points integration ───────────────────────────────────────────────
+  // Holds history entries for every correct trivia answer this session.
+  // Triviaquestion.tsx dispatches a custom window event "triviaAnsweredPointsAwarded"
+  // with detail: { question: string, points: number } when a correct answer is submitted.
+  const [triviaHistory, setTriviaHistory] = useState<HistoryItem[]>([]);
+
+  const handleTriviaPoints = useCallback((e: Event) => {
+    const detail = (e as CustomEvent<{ question?: string; points?: number }>).detail;
+    const question = detail?.question || "Trivia Question";
+    setTriviaHistory(prev => [createTriviaHistoryItem(question), ...prev]);
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener("triviaAnsweredPointsAwarded", handleTriviaPoints);
+    return () => window.removeEventListener("triviaAnsweredPointsAwarded", handleTriviaPoints);
+  }, [handleTriviaPoints]);
   
   // Sync the ledger dynamically with the live user points!
   // Fan Battle points come from LeaderboardContext; Audio Drop + Post Creation points are tracked locally.
@@ -336,25 +372,28 @@ export default function FanZoneDashboard() {
     // 2. Calculate all Post Creation points
     const totalPostPoints = postHistory.reduce((sum, item) => sum + item.points, 0);
 
+    // 3. Calculate all Trivia points
+    const totalTriviaPoints = triviaHistory.reduce((sum, item) => sum + item.points, 0);
+
     return exactUserHistory.map(item => {
-      // 3. ONLY adjust the Fan Battles score dynamically to act as the remainder
+      // 4. ONLY adjust the Fan Battles score dynamically to act as the remainder
       if (item.action === "Fan Battles") {
         return {
           ...item,
           points: currentUserPoints > 0
-            ? Math.max(0, currentUserPoints - totalAudioPoints - totalPostPoints)
+            ? Math.max(0, currentUserPoints - totalAudioPoints - totalPostPoints - totalTriviaPoints)
             : 0
         };
       }
       
-      // 4. Leave Audio Drops at their fixed, authentic values
+      // 5. Leave Audio Drops at their fixed, authentic values
       return item;
     });
-  }, [currentUserPoints, audioDropHistory, postHistory]);
+  }, [currentUserPoints, audioDropHistory, postHistory, triviaHistory]);
 
   const earningHistoryData = useMemo(() => {
-    return [...postHistory, ...audioDropHistory, ...fanBattleHistory];
-  }, [postHistory, audioDropHistory, fanBattleHistory]);
+    return [...triviaHistory, ...postHistory, ...audioDropHistory, ...fanBattleHistory];
+  }, [triviaHistory, postHistory, audioDropHistory, fanBattleHistory]);
   const dynamicEarningBreakdown = getExactEarningBreakdown(earningHistoryData);
   
   // 1. Add state for the active tab (7D, 30D, 90D)

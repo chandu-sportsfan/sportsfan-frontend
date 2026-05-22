@@ -543,7 +543,7 @@ export default function PlayerProfileActions({ player, playerId }: Props) {
 
               {relatedInsights.length > 0 && (
                 <div className="mt-4 space-y-3">
-                  {relatedInsights.map((insight: any) => (
+                  {relatedInsights.map((insight) => (
                     <div key={insight.title} className="rounded-xl bg-[#242424] p-3">
                       <p className="text-sm font-bold text-white">{insight.title}</p>
                       {!isFollowing && (

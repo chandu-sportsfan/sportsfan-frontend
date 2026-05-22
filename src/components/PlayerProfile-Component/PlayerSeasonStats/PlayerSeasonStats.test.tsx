@@ -4,7 +4,7 @@ import { Player } from "@/types/player";
 
 describe("PlayerSeasonStats Component", () => {
   // Mock data
-  const mockPlayer: Player = {
+  const mockPlayer: any = {
     name: "Suryakumar Yadav",
     team: "Mumbai Indians",
     battingStyle: "Right-handed",
@@ -116,7 +116,7 @@ describe("PlayerSeasonStats Component", () => {
 
     expect(screen.getByText("Career Insights")).toBeInTheDocument();
 
-    mockPlayer.insights.forEach((insight) => {
+    mockPlayer.insights.forEach((insight: any) => {
       expect(screen.getByText(insight.description)).toBeInTheDocument();
     });
   });

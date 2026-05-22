@@ -456,13 +456,20 @@ export default function Prediction({ matchId }: { matchId: string }) {
     const [selected, setSelected] = useState<Record<string, string>>({});
     const [votedPredictions, setVotedPredictions] = useState<Set<string>>(new Set());
     const [voting, setVoting] = useState<string | null>(null);
-    const [userId] = useState(() => {
-        const stored = localStorage.getItem("watchalong_user_id");
-        if (stored) return stored;
-        const newId = `user_${Math.random().toString(36).substr(2, 9)}`;
-        localStorage.setItem("watchalong_user_id", newId);
-        return newId;
-    });
+    const [userId, setUserId] = useState<string>("");
+
+    useEffect(() => {
+        if (typeof window !== "undefined") {
+            const stored = localStorage.getItem("watchalong_user_id");
+            if (stored) {
+                setUserId(stored);
+            } else {
+                const newId = `user_${Math.random().toString(36).substr(2, 9)}`;
+                localStorage.setItem("watchalong_user_id", newId);
+                setUserId(newId);
+            }
+        }
+    }, []);
 
     const {
         predictions,

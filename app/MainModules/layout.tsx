@@ -11,6 +11,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import SportsFan360Footer from "@/src/components/footer-component/Footer";
 import { useAuth } from "@/context/AuthContext";
+import GlobalActionBar from "@/src/components/GlobalActionBar";
 
 // ─── Types 
 interface UserProfile {
@@ -246,6 +247,7 @@ export default function MainModulesLayout({
     return <UserSidebar />;
   };
 
+  
   return (
     <div className="min-h-screen bg-black text-white flex flex-col lg:flex-row ">
       {renderSidebar()}
@@ -266,6 +268,7 @@ export default function MainModulesLayout({
 
             <UserPlus className="text-white w-3 h-3 md:w-4 md:h-4 lg:w-6 lg:h-6" />
           </button>
+          <GlobalActionBar />
         </div>
 
         <SportsFan360Footer />

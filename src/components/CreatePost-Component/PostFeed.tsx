@@ -4,6 +4,7 @@ import { useEffect, useRef, useCallback } from "react";
 import { Loader2 } from "lucide-react";
 import PostCard from "./PostCard";
 import type { Post } from "@/types/PostPolls";
+import NewsFeedWidget from "./NewsFeedWidget";
 
 interface Props {
   posts: Post[];
@@ -72,9 +73,9 @@ export default function PostFeed({
 
   return (
     <div className="grid grid-cols-1 mx-auto max-w-4xl gap-3 items-start">
-      {posts.map((post) => (
+      {posts.map((post,index) => (
         <PostCard
-          key={post.id}
+          key={index}
           post={post}
           onDelete={onDelete}
           onVote={onVote}
@@ -85,6 +86,8 @@ export default function PostFeed({
           onCommentDeleted={onCommentDeleted}
         />
       ))}
+
+      <NewsFeedWidget />
 
       <div ref={sentinelRef} />
 

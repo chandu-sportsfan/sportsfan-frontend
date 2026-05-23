@@ -262,7 +262,7 @@ export default function SocialFeedSection() {
 
   return (
     <section className="w-full">
-      <FeedTabs onChange={handleTabChange} />
+      {/* <FeedTabs onChange={handleTabChange} /> */}
       {error && (
         <div className="mb-3 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
           {error}

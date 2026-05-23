@@ -61,6 +61,7 @@
 
 
 
+
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
@@ -77,6 +78,7 @@ import { ScriptsProvider } from "@/context/ScriptsContext";
 import { LeaderboardProvider } from "@/context/LeaderboardContext";
 import GlobalActionBar from "@/src/components/GlobalActionBar";
 import { AIChatProvider } from "@/context/AskAIChatContext";
+// import { usePathname } from "next/navigation";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -101,6 +103,14 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // const pathname = usePathname();
+  
+  // // Define auth routes where GlobalActionBar should NOT appear
+  // const isAuthRoute = pathname === "/login" || 
+  //                     pathname === "/signup" || 
+  //                     pathname === "/forgot-password" ||
+  //                     pathname?.startsWith("/auth/");
+
   return (
     <html lang="en">
       <body
@@ -131,7 +141,7 @@ export default function RootLayout({
                 </PlayerProfile360Provider>
               </WatchAlongProvider>
             </ClubProfileProvider>
-            <GlobalActionBar />
+           {/* {!isAuthRoute && <GlobalActionBar />} */}
           </AuthProvider>
         </SessionProvider>
 

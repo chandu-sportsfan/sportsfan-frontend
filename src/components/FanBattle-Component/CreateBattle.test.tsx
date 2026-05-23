@@ -106,7 +106,7 @@ describe('CreateBattle', () => {
   });
 
   const renderBattle = async () => {
-    render(<CreateBattle />);
+    render(<CreateBattle onClose={jest.fn()} />);
     await screen.findByText('Virat Kohli');
   };
 

@@ -300,7 +300,7 @@ function HeroSection({
                 <TeamLogo abbr={recentMatch.teamA} size="sm" logos={logos} />
                 <span className="text-white font-bold">{recentMatch.teamA}</span>
               </div>
-              <p className="text-white text-xl font-black">{recentMatch.scoreA || "N/A"}</p>
+              <p className="text-white text-xl font-black">{recentMatch.scoreA || "-"}</p>
               {recentMatch.oversA ? (
                 <p className="text-gray-500 text-xs mt-1">({recentMatch.oversA} overs)</p>
               ) : (
@@ -312,7 +312,7 @@ function HeroSection({
                 <TeamLogo abbr={recentMatch.teamB} size="sm" logos={logos} />
                 <span className="text-white font-bold">{recentMatch.teamB}</span>
               </div>
-              <p className="text-white text-xl font-black">{recentMatch.scoreB || "N/A"}</p>
+              <p className="text-white text-xl font-black">{recentMatch.scoreB || "-"}</p>
               {recentMatch.oversB ? (
                 <p className="text-gray-500 text-xs mt-1">({recentMatch.oversB} overs)</p>
               ) : (

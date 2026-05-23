@@ -198,25 +198,32 @@
 import { useState, useEffect, useRef } from "react";
 import { useWatchAlong } from "@/context/WatchAlongContext";
 import { useSession } from "next-auth/react";
+import { useAuth } from "@/context/AuthContext";
+import { Trash2 } from "lucide-react";
 
 interface LiveChatProps {
     matchId: string;
+    userRole: string;
 }
 
-export default function LiveChat({ matchId }: LiveChatProps) {
+export default function LiveChat({ matchId, userRole }: LiveChatProps) {
     const [message, setMessage] = useState("");
     const [sending, setSending] = useState(false);
     const [isInitialLoad, setIsInitialLoad] = useState(true);
 
     // Get user session from NextAuth
     const { data: session, status } = useSession();
+    const { user: authUser } = useAuth();
 
     const [userName, setUserName] = useState<string>("Anonymous");
 
     useEffect(() => {
-        // If user is logged in via NextAuth, use their name
-        if (status === "authenticated" && session?.user?.name) {
-            setUserName(session.user.name);
+        const isUserLoggedIn = status === "authenticated" || !!authUser;
+        const name = authUser?.name || session?.user?.name;
+
+        // If user is logged in, use their name
+        if (isUserLoggedIn && name) {
+            setUserName(name);
             return;
         }
 
@@ -228,13 +235,14 @@ export default function LiveChat({ matchId }: LiveChatProps) {
         }
 
         // Generate a random guest name only if absolutely nothing else exists
-        const name = `Guest_${Math.floor(Math.random() * 1000)}`;
-        localStorage.setItem("watchalong_user_name", name);
-        setUserName(name);
-    }, [status, session]);
+        const nameFallback = `Guest_${Math.floor(Math.random() * 1000)}`;
+        localStorage.setItem("watchalong_user_name", nameFallback);
+        setUserName(nameFallback);
+    }, [status, session, authUser]);
 
     // Also get user ID for tracking (optional)
     const [userId] = useState(() => {
+        if (authUser?.email) return authUser.email;
         if (status === "authenticated" && session?.user?.email) {
             return session.user.email;
         }
@@ -251,6 +259,7 @@ export default function LiveChat({ matchId }: LiveChatProps) {
         chats,
         fetchChats,
         sendChatMessage,
+        deleteChatMessage,
         loading
     } = useWatchAlong();
 
@@ -342,15 +351,31 @@ export default function LiveChat({ matchId }: LiveChatProps) {
                         </div>
                     ) : (
                         chats.map((msg) => (
-                            <div key={msg.id}>
-                                <div className="flex items-baseline gap-1.5">
-                                    <span className={`text-[13px] font-bold ${msg.color}`}>
-                                        {msg.user}
-                                        {status === "authenticated" && session?.user?.name === msg.user && (
-                                            <span className="text-[10px] text-blue-400 ml-1">(You)</span>
-                                        )}
-                                    </span>
-                                    <span className="text-[10px] text-gray-600">{formatTime(msg.createdAt)}</span>
+                            <div key={msg.id} className="group flex flex-col">
+                                <div className="flex items-center justify-between w-full">
+                                    <div className="flex items-baseline gap-1.5 flex-1">
+                                        <span className={`text-[13px] font-bold ${msg.color}`}>
+                                            {msg.user}
+                                            {status === "authenticated" && session?.user?.name === msg.user && (
+                                                <span className="text-[10px] text-blue-400 ml-1">(You)</span>
+                                            )}
+                                        </span>
+                                        <span className="text-[10px] text-gray-600">{formatTime(msg.createdAt)}</span>
+                                    </div>
+                                    {(userRole === 'Host' || userRole === 'Moderator') && (
+                                        <button 
+                                            onClick={async () => {
+                                                const success = await deleteChatMessage(matchId, msg.id);
+                                                if (success) {
+                                                    await fetchChats(matchId, 100);
+                                                }
+                                            }}
+                                            className="text-gray-600 hover:text-red-500 transition-all opacity-0 group-hover:opacity-100 ml-2"
+                                            title="Delete Message"
+                                        >
+                                            <Trash2 size={12} />
+                                        </button>
+                                    )}
                                 </div>
                                 <p className="text-[13px] text-gray-300 mt-0.5 break-words">{msg.text}</p>
                             </div>

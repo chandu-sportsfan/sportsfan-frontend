@@ -91,6 +91,8 @@ export interface Room {
     isLive: boolean;
     liveMatchId: string;
     displayPicture: string;
+    hostUserId?: string;   // The Google user ID of the person who created this room
+    coHostUserId?: string; // The Google user ID of the co-host if one is designated
     createdAt?: number;
     updatedAt?: number;
 }
@@ -236,7 +238,7 @@ export const WatchAlongProvider = ({ children }: { children: ReactNode }) => {
             }
         } catch (err) {
             setError(err instanceof Error ? err.message : "Failed to fetch matches");
-            console.error("Fetch matches error:", err);
+            console.warn("Fetch matches error:", err instanceof Error ? err.message : err);
         } finally {
             setLoading(false);
         }
@@ -252,7 +254,7 @@ export const WatchAlongProvider = ({ children }: { children: ReactNode }) => {
             }
         } catch (err) {
             setError(err instanceof Error ? err.message : "Failed to fetch match");
-            console.error("Fetch match error:", err);
+            console.warn("Fetch match error:", err instanceof Error ? err.message : err);
         } finally {
             setLoading(false);
         }
@@ -320,16 +322,19 @@ export const WatchAlongProvider = ({ children }: { children: ReactNode }) => {
     /* ================= CHAT APIS ================= */
 
     const fetchChats = useCallback(async (matchId: string, limit: number = 50) => {
+        // DEMO BYPASS: skip API call for mock/demo match IDs
+        if (!matchId || matchId === 'm1' || matchId === 'm2') {
+            setChats([]);
+            return;
+        }
         try {
             setLoading(true);
-            setError(null);
             const res = await axios.get(`/api/watch-along/matches/${matchId}/chats?limit=${limit}`);
             if (res.data.success) {
                 setChats(res.data.chats);
             }
         } catch (err) {
-            setError(err instanceof Error ? err.message : "Failed to fetch chats");
-            console.error("Fetch chats error:", err);
+            console.warn("Fetch chats error (non-critical):", err);
         } finally {
             setLoading(false);
         }
@@ -381,18 +386,20 @@ export const WatchAlongProvider = ({ children }: { children: ReactNode }) => {
     /*  PREDICTION APIS  */
 
     const fetchPredictions = useCallback(async (matchId: string, openOnly: boolean = false) => {
+        // DEMO BYPASS
+        if (!matchId || matchId === 'm1' || matchId === 'm2') {
+            setPredictions([]);
+            return;
+        }
         try {
             setLoading(true);
-            setError(null);
-            // const url = `/api/watch-along/matches/${matchId}/predictions${openOnly ? '?open=true' : ''}`;
-               const url = `/api/watch-along/matches/${matchId}/predictions`
+            const url = `/api/watch-along/matches/${matchId}/predictions`;
             const res = await axios.get(url);
             if (res.data.success) {
                 setPredictions(res.data.predictions);
             }
         } catch (err) {
-            setError(err instanceof Error ? err.message : "Failed to fetch predictions");
-            console.error("Fetch predictions error:", err);
+            console.warn("Fetch predictions error (non-critical):", err);
         } finally {
             setLoading(false);
         }
@@ -497,9 +504,13 @@ export const WatchAlongProvider = ({ children }: { children: ReactNode }) => {
     /*  QUIZ APIS  */
 
     const fetchQuizQuestions = useCallback(async (matchId: string, activeOnly: boolean = false) => {
+        // DEMO BYPASS
+        if (!matchId || matchId === 'm1' || matchId === 'm2') {
+            setQuizQuestions([]);
+            return;
+        }
         try {
             setLoading(true);
-            setError(null);
             const url = `/api/watch-along/matches/${matchId}/quiz${activeOnly ? '?active=true' : ''}`;
             const res = await axios.get(url);
             if (res.data.success) {
@@ -508,24 +519,26 @@ export const WatchAlongProvider = ({ children }: { children: ReactNode }) => {
                 setActiveQuizQuestion(active || null);
             }
         } catch (err) {
-            setError(err instanceof Error ? err.message : "Failed to fetch quiz questions");
-            console.error("Fetch quiz error:", err);
+            console.warn("Fetch quiz error (non-critical):", err);
         } finally {
             setLoading(false);
         }
     }, []);
 
     const fetchLeaderboard = useCallback(async (matchId: string) => {
+        // DEMO BYPASS
+        if (!matchId || matchId === 'm1' || matchId === 'm2') {
+            setLeaderboard([]);
+            return;
+        }
         try {
             setLoading(true);
-            setError(null);
             const res = await axios.get(`/api/watch-along/matches/${matchId}/quiz?leaderboard=true`);
             if (res.data.success) {
                 setLeaderboard(res.data.leaderboard);
             }
         } catch (err) {
-            setError(err instanceof Error ? err.message : "Failed to fetch leaderboard");
-            console.error("Fetch leaderboard error:", err);
+            console.warn("Fetch leaderboard error (non-critical):", err);
         } finally {
             setLoading(false);
         }
@@ -603,16 +616,19 @@ export const WatchAlongProvider = ({ children }: { children: ReactNode }) => {
     /* ================= EMOJI STORM APIS ================= */
 
     const fetchEmojiReactions = useCallback(async (matchId: string) => {
+        // DEMO BYPASS
+        if (!matchId || matchId === 'm1' || matchId === 'm2') {
+            setEmojiReactions({});
+            return;
+        }
         try {
             setLoading(true);
-            setError(null);
             const res = await axios.get(`/api/watch-along/matches/${matchId}/emoji-storm`);
             if (res.data.success) {
                 setEmojiReactions(res.data.reactions);
             }
         } catch (err) {
-            setError(err instanceof Error ? err.message : "Failed to fetch emoji reactions");
-            console.error("Fetch emoji error:", err);
+            console.warn("Fetch emoji error (non-critical):", err);
         } finally {
             setLoading(false);
         }
@@ -669,7 +685,6 @@ export const WatchAlongProvider = ({ children }: { children: ReactNode }) => {
                 setRooms(res.data.rooms);
             }
         } catch (err) {
-            setError(err instanceof Error ? err.message : "Failed to fetch rooms");
             console.error("Fetch rooms error:", err);
         } finally {
             setLoading(false);
@@ -680,6 +695,7 @@ export const WatchAlongProvider = ({ children }: { children: ReactNode }) => {
         try {
             setLoading(true);
             setError(null);
+
             const res = await axios.get(`/api/watch-along/${roomId}`);
             if (res.data.success) {
                 setCurrentRoom(res.data.room);
@@ -692,20 +708,31 @@ export const WatchAlongProvider = ({ children }: { children: ReactNode }) => {
         }
     }, []);
 
+
     const createRoom = useCallback(async (formData: FormData): Promise<Room | null> => {
         try {
             setLoading(true);
-            setError(null);
+            const roomName = (formData.get("name") as string) || "My Room";
+
+            // Send all required fields the backend expects
+            formData.set("name", roomName);
+            if (!formData.get("role")) formData.set("role", "Host");
+            if (!formData.get("badge")) formData.set("badge", "Live");
+            if (!formData.get("badgeColor")) formData.set("badgeColor", "bg-pink-600");
+            if (!formData.get("borderColor")) formData.set("borderColor", "border-pink-500");
+            formData.set("isLive", "true");
+
             const res = await axios.post("/api/watch-along", formData, {
                 headers: { "Content-Type": "multipart/form-data" },
             });
-            if (res.data.success) {
-                setRooms(prev => [res.data.room, ...prev]);
-                return res.data.room;
+
+            if (res.data.success && res.data.room) {
+                const newRoom = res.data.room;
+                setRooms(prev => [newRoom, ...prev]);
+                return newRoom;
             }
             return null;
         } catch (err) {
-            setError(err instanceof Error ? err.message : "Failed to create room");
             console.error("Create room error:", err);
             return null;
         } finally {

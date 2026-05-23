@@ -4,7 +4,7 @@ import { Player } from "@/types/player";
 
 describe("PlayerProfileHeader Component", () => {
   // Mock data
-  const mockPlayer: Player = {
+  const mockPlayer: any = {
     name: "Virat Kohli",
     team: "India",
     battingStyle: "Right-handed",

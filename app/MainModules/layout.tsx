@@ -78,8 +78,8 @@ function HostSidebar({ user }: { user: UserProfile }) {
   const initials = `${user.firstName?.[0] || ""}${user.lastName?.[0] || ""}`.toUpperCase() || "U";
 
   return (
-    <aside className="group hidden lg:flex lg:flex-col w-[72px] hover:w-[240px] shrink-0 border-r border-white/5 self-stretch transition-all duration-300 ease-out bg-[#111113]">
-      <div className="sticky top-0 h-screen overflow-y-auto flex flex-col px-3 py-5">
+    <aside className="group hidden lg:flex lg:flex-col w-[72px] hover:w-[240px] shrink-0 border-r border-white/5 sticky top-0 h-screen transition-all duration-300 ease-out bg-[#111113]">
+      <div className="h-full overflow-y-auto flex flex-col px-3 py-5">
 
         {/* User Profile Header */}
         <div className="mb-6 flex items-center gap-0 group-hover:gap-3 overflow-hidden transition-all duration-300">
@@ -147,8 +147,8 @@ function UserSidebar() {
   ];
 
   return (
-    <aside className="group hidden lg:flex lg:flex-col w-[84px] hover:w-[248px] shrink-0 border-r border-pink-500/20 self-stretch transition-all duration-300 ease-out bg-gradient-to-b from-zinc-950 via-black to-zinc-950">
-      <div className="sticky top-0 h-screen overflow-y-auto px-3 py-4">
+    <aside className="group hidden lg:flex lg:flex-col w-[84px] hover:w-[248px] shrink-0 border-r border-pink-500/20 sticky top-0 h-screen transition-all duration-300 ease-out bg-gradient-to-b from-zinc-950 via-black to-zinc-950">
+      <div className="h-full overflow-y-auto px-3 py-4">
         <Link href="/MainModules/HomePage" className="mb-8 h-10 flex items-center justify-center group-hover:justify-start transition-all duration-300 rounded-xl hover:bg-white/5 px-0 group-hover:px-3">
           <Image src="/images/Logo.png" alt="SportsFan360 logo" width={34} height={40} className="shrink-0" />
           <span className="ml-3 text-lg font-bold whitespace-nowrap opacity-0 -translate-x-2 max-w-0 overflow-hidden group-hover:opacity-100 group-hover:translate-x-0 group-hover:max-w-[160px] transition-all duration-300">
@@ -249,13 +249,16 @@ export default function MainModulesLayout({
 
   
   return (
-    <div className="min-h-screen bg-black text-white flex flex-col lg:flex-row ">
+    <div className="h-screen w-full bg-black text-white flex flex-col lg:flex-row overflow-x-hidden">
       {renderSidebar()}
 
-      <main className="flex-1 min-w-0 w-full">
+      <main className="flex-1 min-w-0 w-full h-full flex flex-col overflow-hidden pb-[50px] lg:pb-0">
         <Header />
-        {/* <div className="w-full max-w-[1600px] mx-auto">{children}</div> */}
-        {children}
+        <div className="flex-1 overflow-y-auto overflow-x-hidden">
+          {children}
+          <SportsFan360Footer />
+        </div>
+
         <div className="fixed bottom-28 right-4 md:bottom-28 md:right-6 lg:bottom-27 lg:right-6 z-50">
           <button
             onClick={() => setIsInviteOpen(true)}
@@ -270,8 +273,6 @@ export default function MainModulesLayout({
           </button>
           <GlobalActionBar />
         </div>
-
-        <SportsFan360Footer />
 
         <div className="lg:hidden">
           <BottomNav />

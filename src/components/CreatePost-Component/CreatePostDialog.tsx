@@ -442,7 +442,7 @@ const handleSubmit = async () => {
           fixed bottom-0 left-0 right-0 z-50
           bg-[#0f0f0f] rounded-t-3xl shadow-2xl
           transition-transform duration-500 ease-out
-          max-h-[90vh] flex flex-col
+          max-h-[100vh] pb-16 flex flex-col
           ${isOpen ? "translate-y-0" : "translate-y-full"}
         `}
         style={{ boxShadow: "0 -4px 60px rgba(201,17,95,0.15)" }}

@@ -114,7 +114,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased !p-0`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased !p-0 overflow-x-hidden`}
       >
 
         <SessionProvider>
@@ -142,6 +142,7 @@ export default function RootLayout({
               </WatchAlongProvider>
             </ClubProfileProvider>
            {/* {!isAuthRoute && <GlobalActionBar />} */}
+           {/* <GlobalActionBar /> */}
           </AuthProvider>
         </SessionProvider>
 

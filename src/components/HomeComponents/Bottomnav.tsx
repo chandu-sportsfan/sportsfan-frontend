@@ -30,7 +30,7 @@ export default function BottomNav() {
   ];
 
   return (
-    <div className="fixed bottom-0 left-0 w-full bg-black border-t border-pink-500/30 py-2 flex justify-around z-50">
+    <div className="fixed bottom-0 left-0 w-full bg-black border-t border-pink-500/30 py-2 flex justify-around z-40 overflow-x-hidden">
       {bottomNavData.map((item, i) => {
         const isActive = item.url ? pathname.startsWith(item.url) : false;
 
@@ -38,7 +38,7 @@ export default function BottomNav() {
           <Link
             key={i}
             href={item.url || "#"}
-            className="flex flex-col items-center text-[10px] sm:text-xs"
+            className="flex-1 min-w-0 flex flex-col items-center text-[10px] sm:text-xs"
           >
             <div className={`mb-1 transition-opacity ${isActive ? "opacity-100" : "opacity-50"}`}>
               <Image
@@ -49,7 +49,7 @@ export default function BottomNav() {
                 className={`object-contain transition-all ${isActive ? "drop-shadow-[0_0_6px_rgba(244,114,182,0.7)]" : ""}`}
               />
             </div>
-            <span className={`transition-colors ${isActive ? "text-pink-500 font-semibold" : "text-gray-400"}`}>
+            <span className={`transition-colors truncate max-w-[72px] ${isActive ? "text-pink-500 font-semibold" : "text-gray-400"}`}>
               {item.name}
             </span>
           </Link>

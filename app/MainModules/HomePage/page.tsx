@@ -56,7 +56,7 @@ export default function HomePage() {
         {/* <Player360CardsSection /> */}
         <SocialFeedSection />
         {/* Added News Center Here */}
-        <NewsCenter />
+        {/* <NewsCenter /> */}
       </div>
     </div>
   );

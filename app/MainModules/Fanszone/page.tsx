@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useLeaderboard } from "@/context/LeaderboardContext";
 import { 
@@ -319,55 +319,46 @@ export default function FanZoneDashboard() {
   
   const displayPoints = currentUserPoints.toLocaleString();
 
-  // ── Audio Drop points integration ──────────────────────────────────────────
-  // Holds history entries for every audio drop that awarded points this session.
-  // AudioDrop.tsx dispatches a custom window event "audioDropPointsAwarded"
-  // with detail: { title: string, points: number } when /api/audio-progress
-  // returns pointsAwarded > 0.
+  // ── Activity tracking via currentUserPoints delta ─────────────────────────
+  // Window events (audioDropPointsAwarded, postCreatedPointsAwarded,
+  // triviaAnsweredPointsAwarded) are unreliable when activities happen on OTHER
+  // routes where FanZoneDashboard is not mounted — the events fire into nothing.
+  // Instead we watch currentUserPoints (from LeaderboardContext, always mounted
+  // at the app root) and attribute each increase to the right category based on
+  // the known fixed point values for each activity type.
   const [audioDropHistory, setAudioDropHistory] = useState<HistoryItem[]>([]);
+  const [postHistory, setPostHistory]           = useState<HistoryItem[]>([]);
+  const [triviaHistory, setTriviaHistory]       = useState<HistoryItem[]>([]);
 
-  const handleAudioDropPoints = useCallback((e: Event) => {
-    const detail = (e as CustomEvent<{ title?: string; points?: number }>).detail;
-    const title = detail?.title || "Audio Drop";
-    setAudioDropHistory(prev => [createAudioDropHistoryItem(title), ...prev]);
-  }, []);
-
-  useEffect(() => {
-    window.addEventListener("audioDropPointsAwarded", handleAudioDropPoints);
-    return () => window.removeEventListener("audioDropPointsAwarded", handleAudioDropPoints);
-  }, [handleAudioDropPoints]);
-
-  // ── Post Creation points integration ───────────────────────────────────────
-  // Holds history entries for every post that awarded points this session.
-  // CreatePostDialog.tsx dispatches a custom window event "postCreatedPointsAwarded"
-  // after a successful post submission.
-  const [postHistory, setPostHistory] = useState<HistoryItem[]>([]);
-
-  const handlePostCreatedPoints = useCallback(() => {
-    setPostHistory(prev => [createPostHistoryItem(), ...prev]);
-  }, []);
+  // null = component just mounted, baseline not yet recorded
+  const prevPointsRef = useRef<number | null>(null);
 
   useEffect(() => {
-    window.addEventListener("postCreatedPointsAwarded", handlePostCreatedPoints);
-    return () => window.removeEventListener("postCreatedPointsAwarded", handlePostCreatedPoints);
-  }, [handlePostCreatedPoints]);
+    // First render: record the baseline so we don't misattribute historical points
+    if (prevPointsRef.current === null) {
+      prevPointsRef.current = currentUserPoints;
+      return;
+    }
 
-  // ── Trivia points integration ───────────────────────────────────────────────
-  // Holds history entries for every correct trivia answer this session.
-  // Triviaquestion.tsx dispatches a custom window event "triviaAnsweredPointsAwarded"
-  // with detail: { question: string, points: number } when a correct answer is submitted.
-  const [triviaHistory, setTriviaHistory] = useState<HistoryItem[]>([]);
+    const delta = currentUserPoints - prevPointsRef.current;
+    prevPointsRef.current = currentUserPoints;
 
-  const handleTriviaPoints = useCallback((e: Event) => {
-    const detail = (e as CustomEvent<{ question?: string; points?: number }>).detail;
-    const question = detail?.question || "Trivia Question";
-    setTriviaHistory(prev => [createTriviaHistoryItem(question), ...prev]);
-  }, []);
+    // Only react to increases; decreases / zero changes are ignored
+    if (delta <= 0) return;
 
-  useEffect(() => {
-    window.addEventListener("triviaAnsweredPointsAwarded", handleTriviaPoints);
-    return () => window.removeEventListener("triviaAnsweredPointsAwarded", handleTriviaPoints);
-  }, [handleTriviaPoints]);
+    // Attribute the delta to the matching known activity type.
+    // Fan Battle points are NOT attributed here — they become the remainder
+    // in fanBattleHistory below, so they automatically appear in the chart.
+    if (delta === POST_CREATION_POINTS) {
+      setPostHistory(prev => [createPostHistoryItem(), ...prev]);
+    } else if (delta === TRIVIA_POINTS) {
+      setTriviaHistory(prev => [createTriviaHistoryItem("Trivia Question"), ...prev]);
+    } else if (delta === AUDIO_DROP_POINTS) {
+      setAudioDropHistory(prev => [createAudioDropHistoryItem("Audio Drop"), ...prev]);
+    }
+    // Any other delta (e.g. Fan Battle, registration bonus, invite reward)
+    // flows through as the Fan Battles remainder — no explicit entry needed.
+  }, [currentUserPoints]);
   
   // Sync the ledger dynamically with the live user points!
   // Fan Battle points = total context points minus all locally-tracked activity points.

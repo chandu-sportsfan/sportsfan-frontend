@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   ArrowLeft,
   ChevronDown,
@@ -16,6 +16,324 @@ import {
 import Link from "next/link";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
+// ─── Hardcoded Team Logos (served from /public/teams/) ────────────────────────
+const TEAM_LOGOS: Record<string, string> = {
+  CSK:  "/teams/CSK.png",
+  MI:   "/teams/MI.png",
+  RCB:  "/teams/RCB.png",
+  KKR:  "/teams/KKR.png",
+  SRH:  "/teams/SRH.png",
+  RR:   "/teams/RR.png",
+  PBKS: "/teams/PBKS.png",
+  DC:   "/teams/DC.png",
+  GT:   "/teams/GT.png",
+  LSG:  "/teams/LSG.png",
+};
+
+// ─── Static IPL 2026 Data (as of May 23, 2026 — after Match 68) ───────────────
+const STATIC_DATA: StatsData = {
+
+  teamLogos: {},   // unused — handled by TEAM_LOGOS above
+
+  // ── Points Table ──────────────────────────────────────────────────────────
+  pointsTable: [
+    { rank: 1,  abbr: "RCB",  name: "Royal Challengers Bengaluru", qualified: true,  m: 14, w: 9, l: 5,  nr: 0, pts: 18, nrr: "+0.783" },
+    { rank: 2,  abbr: "GT",   name: "Gujarat Titans",              qualified: true,  m: 14, w: 9, l: 5,  nr: 0, pts: 18, nrr: "+0.695" },
+    { rank: 3,  abbr: "SRH",  name: "Sunrisers Hyderabad",         qualified: true,  m: 14, w: 9, l: 5,  nr: 0, pts: 18, nrr: "+0.524" },
+    { rank: 4,  abbr: "PBKS", name: "Punjab Kings",                qualified: true,  m: 14, w: 7, l: 6,  nr: 1, pts: 15, nrr: "+0.309" },
+    { rank: 5,  abbr: "RR",   name: "Rajasthan Royals",            qualified: false, m: 13, w: 7, l: 6,  nr: 0, pts: 14, nrr: "+0.083" },
+    { rank: 6,  abbr: "KKR",  name: "Kolkata Knight Riders",       qualified: false, m: 13, w: 6, l: 6,  nr: 1, pts: 13, nrr: "+0.011" },
+    { rank: 7,  abbr: "CSK",  name: "Chennai Super Kings",         qualified: false, m: 14, w: 6, l: 8,  nr: 0, pts: 12, nrr: "-0.345" },
+    { rank: 8,  abbr: "DC",   name: "Delhi Capitals",              qualified: false, m: 13, w: 6, l: 7,  nr: 0, pts: 12, nrr: "-0.871" },
+    { rank: 9,  abbr: "MI",   name: "Mumbai Indians",              qualified: false, m: 13, w: 4, l: 9,  nr: 0, pts: 8,  nrr: "-0.510" },
+    { rank: 10, abbr: "LSG",  name: "Lucknow Super Giants",        qualified: false, m: 14, w: 4, l: 10, nr: 0, pts: 8,  nrr: "-0.756" },
+  ],
+
+  // ── Orange Cap ────────────────────────────────────────────────────────────
+  orangeCap: [
+    { rank: 1,  player: "Sai Sudharsan",        team: "GT",   m: 14, runs: 638, avg: "53.16", sr: "162.34", hs: "104*" },
+    { rank: 2,  player: "Shubman Gill",          team: "GT",   m: 14, runs: 616, avg: "47.38", sr: "155.55", hs: "96"   },
+    { rank: 3,  player: "Heinrich Klaasen",      team: "SRH",  m: 14, runs: 606, avg: "50.50", sr: "168.33", hs: "89*"  },
+    { rank: 4,  player: "Vaibhav Sooryavanshi",  team: "RR",   m: 13, runs: 579, avg: "44.53", sr: "172.02", hs: "101"  },
+    { rank: 5,  player: "Mitchell Marsh",        team: "LSG",  m: 13, runs: 563, avg: "43.30", sr: "163.19", hs: "95"   },
+    { rank: 6,  player: "Ishan Kishan",          team: "SRH",  m: 14, runs: 541, avg: "41.61", sr: "158.47", hs: "79"   },
+    { rank: 7,  player: "Virat Kohli",           team: "RCB",  m: 14, runs: 512, avg: "39.38", sr: "142.22", hs: "82"   },
+    { rank: 8,  player: "Jos Buttler",           team: "GT",   m: 14, runs: 498, avg: "38.30", sr: "165.56", hs: "81*"  },
+    { rank: 9,  player: "Shreyas Iyer",          team: "PBKS", m: 14, runs: 487, avg: "37.46", sr: "154.28", hs: "101*" },
+    { rank: 10, player: "Faf du Plessis",        team: "RCB",  m: 14, runs: 476, avg: "36.61", sr: "146.76", hs: "88"   },
+  ],
+
+  // ── Purple Cap ────────────────────────────────────────────────────────────
+  purpleCap: [
+    { rank: 1,  player: "Bhuvneshwar Kumar",   team: "RCB",  m: 14, wickets: 24, avg: "18.41", econ: "7.71", hs: "4/22" },
+    { rank: 2,  player: "Kagiso Rabada",        team: "GT",   m: 14, wickets: 24, avg: "19.08", econ: "8.43", hs: "4/28" },
+    { rank: 3,  player: "Anshul Kamboj",        team: "CSK",  m: 14, wickets: 21, avg: "22.14", econ: "9.12", hs: "4/33" },
+    { rank: 4,  player: "Rashid Khan",          team: "GT",   m: 14, wickets: 19, avg: "20.52", econ: "7.84", hs: "3/18" },
+    { rank: 5,  player: "Jofra Archer",         team: "RR",   m: 13, wickets: 18, avg: "21.27", econ: "8.16", hs: "4/24" },
+    { rank: 6,  player: "Mohammed Siraj",       team: "GT",   m: 14, wickets: 17, avg: "23.41", econ: "8.97", hs: "3/22" },
+    { rank: 7,  player: "Varun Chakravarthy",   team: "KKR",  m: 13, wickets: 17, avg: "24.17", econ: "8.31", hs: "4/21" },
+    { rank: 8,  player: "Arshdeep Singh",       team: "PBKS", m: 14, wickets: 16, avg: "25.62", econ: "8.87", hs: "3/19" },
+    { rank: 9,  player: "Kuldeep Yadav",        team: "DC",   m: 13, wickets: 15, avg: "26.80", econ: "8.58", hs: "3/31" },
+    { rank: 10, player: "Avesh Khan",           team: "LSG",  m: 14, wickets: 15, avg: "27.33", econ: "9.44", hs: "3/28" },
+  ],
+
+  // ── Today's Next Match ────────────────────────────────────────────────────
+  todayMatch: {
+    teamA: "KKR", teamAFull: "Kolkata Knight Riders",
+    teamB: "DC",  teamBFull: "Delhi Capitals",
+    time: "7:30 PM IST",
+    venue: "Eden Gardens, Kolkata",
+    matchNo: 69,
+    totalMatches: 74,
+  },
+
+  // ── Most Recent Completed Match ───────────────────────────────────────────
+  recentMatch: {
+    teamA: "LSG",
+    teamB: "PBKS",
+    result: "Punjab Kings won by 7 wickets",
+    scoreA: "196/6",
+    oversA: "20.0",
+    scoreB: "200/3",
+    oversB: "18.0",
+  },
+
+  // ── Upcoming Matches (league stage remaining) ─────────────────────────────
+  upcomingMatches: [
+    {
+      matchNo: 69, date: "24 May", day: "Sun", time: "3:30 PM IST",
+      teamA: "KKR",  teamAFull: "Kolkata Knight Riders",
+      teamB: "DC",   teamBFull: "Delhi Capitals",
+      venue: "Eden Gardens, Kolkata",
+      status: "upcoming",
+    },
+    {
+      matchNo: 70, date: "24 May", day: "Sun", time: "7:30 PM IST",
+      teamA: "RR",   teamAFull: "Rajasthan Royals",
+      teamB: "MI",   teamBFull: "Mumbai Indians",
+      venue: "Sawai Mansingh Stadium, Jaipur",
+      status: "upcoming",
+    },
+  ],
+
+  // ── Recent Completed Matches ──────────────────────────────────────────────
+  recentMatches: [
+    {
+      matchNo: 68, date: "23 May", day: "Sat", time: "7:30 PM IST",
+      teamA: "LSG",  teamAFull: "Lucknow Super Giants",
+      teamB: "PBKS", teamBFull: "Punjab Kings",
+      venue: "Ekana Cricket Stadium, Lucknow",
+      status: "completed",
+      result: "Punjab Kings won by 7 wkts (200/3 vs 196/6)",
+    },
+    {
+      matchNo: 67, date: "22 May", day: "Fri", time: "7:30 PM IST",
+      teamA: "RCB",  teamAFull: "Royal Challengers Bengaluru",
+      teamB: "SRH",  teamBFull: "Sunrisers Hyderabad",
+      venue: "Rajiv Gandhi Intl. Stadium, Hyderabad",
+      status: "completed",
+      result: "SRH won by 55 runs",
+    },
+    {
+      matchNo: 66, date: "21 May", day: "Thu", time: "7:30 PM IST",
+      teamA: "GT",   teamAFull: "Gujarat Titans",
+      teamB: "CSK",  teamBFull: "Chennai Super Kings",
+      venue: "Narendra Modi Stadium, Ahmedabad",
+      status: "completed",
+      result: "GT won by 89 runs (229/4 vs 140)",
+    },
+    {
+      matchNo: 65, date: "20 May", day: "Wed", time: "7:30 PM IST",
+      teamA: "MI",   teamAFull: "Mumbai Indians",
+      teamB: "KKR",  teamBFull: "Kolkata Knight Riders",
+      venue: "Wankhede Stadium, Mumbai",
+      status: "completed",
+      result: "KKR won by 4 wkts",
+    },
+    {
+      matchNo: 64, date: "19 May", day: "Tue", time: "7:30 PM IST",
+      teamA: "RR",   teamAFull: "Rajasthan Royals",
+      teamB: "LSG",  teamBFull: "Lucknow Super Giants",
+      venue: "Sawai Mansingh Stadium, Jaipur",
+      status: "completed",
+      result: "RR won by 47 runs (225/3 in 19.1 overs)",
+    },
+    {
+      matchNo: 63, date: "18 May", day: "Mon", time: "7:30 PM IST",
+      teamA: "SRH",  teamAFull: "Sunrisers Hyderabad",
+      teamB: "DC",   teamBFull: "Delhi Capitals",
+      venue: "Rajiv Gandhi Intl. Stadium, Hyderabad",
+      status: "completed",
+      result: "SRH won by 6 wkts",
+    },
+    {
+      matchNo: 62, date: "17 May", day: "Sun", time: "7:30 PM IST",
+      teamA: "GT",   teamAFull: "Gujarat Titans",
+      teamB: "KKR",  teamBFull: "Kolkata Knight Riders",
+      venue: "Narendra Modi Stadium, Ahmedabad",
+      status: "completed",
+      result: "KKR won by 3 wkts",
+    },
+    {
+      matchNo: 61, date: "17 May", day: "Sun", time: "3:30 PM IST",
+      teamA: "PBKS", teamAFull: "Punjab Kings",
+      teamB: "RCB",  teamBFull: "Royal Challengers Bengaluru",
+      venue: "Punjab Cricket Assoc. Stadium, Mullanpur",
+      status: "completed",
+      result: "RCB won by 23 runs (222/4 vs 199/8)",
+    },
+    {
+      matchNo: 60, date: "15 May", day: "Fri", time: "7:30 PM IST",
+      teamA: "CSK",  teamAFull: "Chennai Super Kings",
+      teamB: "RR",   teamBFull: "Rajasthan Royals",
+      venue: "MA Chidambaram Stadium, Chennai",
+      status: "completed",
+      result: "RR won by 5 wkts",
+    },
+    {
+      matchNo: 59, date: "14 May", day: "Thu", time: "7:30 PM IST",
+      teamA: "SRH",  teamAFull: "Sunrisers Hyderabad",
+      teamB: "GT",   teamBFull: "Gujarat Titans",
+      venue: "Rajiv Gandhi Intl. Stadium, Hyderabad",
+      status: "completed",
+      result: "GT won by 8 wkts",
+    },
+  ],
+
+  // ── Highest Individual Scores ─────────────────────────────────────────────
+  highestScores: [
+    { rank: 1,  player: "Sai Sudharsan",        team: "GT",   score: "104*" },
+    { rank: 2,  player: "Vaibhav Sooryavanshi", team: "RR",   score: "101"  },
+    { rank: 3,  player: "Shreyas Iyer",         team: "PBKS", score: "101*" },
+    { rank: 4,  player: "Shubman Gill",         team: "GT",   score: "96"   },
+    { rank: 5,  player: "Mitchell Marsh",       team: "LSG",  score: "95"   },
+    { rank: 6,  player: "Heinrich Klaasen",     team: "SRH",  score: "89*"  },
+    { rank: 7,  player: "Faf du Plessis",       team: "RCB",  score: "88"   },
+    { rank: 8,  player: "Sai Sudharsan",        team: "GT",   score: "84"   },
+    { rank: 9,  player: "Virat Kohli",          team: "RCB",  score: "82"   },
+    { rank: 10, player: "Jos Buttler",          team: "GT",   score: "81*"  },
+  ],
+
+  // ── Playoffs ──────────────────────────────────────────────────────────────
+  playoffs: {
+    q1: {
+      matchNo: 71, date: "27 May", day: "Wed", time: "7:30 PM IST",
+      teamA: "RCB",  teamAFull: "Royal Challengers Bengaluru",
+      teamB: "GT",   teamBFull: "Gujarat Titans",
+      venue: "Eden Gardens, Kolkata",
+      status: "upcoming",
+    },
+    eliminator: {
+      matchNo: 72, date: "28 May", day: "Thu", time: "7:30 PM IST",
+      teamA: "SRH",  teamAFull: "Sunrisers Hyderabad",
+      teamB: "PBKS", teamBFull: "Punjab Kings",
+      venue: "M. Chinnaswamy Stadium, Bengaluru",
+      status: "upcoming",
+    },
+    q2: {
+      matchNo: 73, date: "30 May", day: "Sat", time: "7:30 PM IST",
+      teamA: "TBD",  teamAFull: "TBD",
+      teamB: "TBD",  teamBFull: "TBD",
+      venue: "M. Chinnaswamy Stadium, Bengaluru",
+      status: "upcoming",
+    },
+    final: {
+      matchNo: 74, date: "1 Jun",  day: "Mon", time: "7:30 PM IST",
+      teamA: "TBD",  teamAFull: "TBD",
+      teamB: "TBD",  teamBFull: "TBD",
+      venue: "M. Chinnaswamy Stadium, Bengaluru",
+      status: "upcoming",
+    },
+  },
+
+  // ── Extra Stats ───────────────────────────────────────────────────────────
+  extraStats: {
+    battingAvg: [
+      { rank: 1, player: "Sai Sudharsan",        team: "GT",   value: "53.16", subValue: "638" },
+      { rank: 2, player: "Heinrich Klaasen",     team: "SRH",  value: "50.50", subValue: "606" },
+      { rank: 3, player: "Shubman Gill",         team: "GT",   value: "47.38", subValue: "616" },
+      { rank: 4, player: "Vaibhav Sooryavanshi", team: "RR",   value: "44.53", subValue: "579" },
+      { rank: 5, player: "Mitchell Marsh",       team: "LSG",  value: "43.30", subValue: "563" },
+      { rank: 6, player: "Jos Buttler",          team: "GT",   value: "38.30", subValue: "498" },
+      { rank: 7, player: "Virat Kohli",          team: "RCB",  value: "39.38", subValue: "512" },
+      { rank: 8, player: "Shreyas Iyer",         team: "PBKS", value: "37.46", subValue: "487" },
+      { rank: 9, player: "Ishan Kishan",         team: "SRH",  value: "41.61", subValue: "541" },
+      { rank: 10,player: "Faf du Plessis",       team: "RCB",  value: "36.61", subValue: "476" },
+    ],
+    bowlingAvg: [
+      { rank: 1, player: "Bhuvneshwar Kumar",    team: "RCB",  value: "18.41", subValue: "24" },
+      { rank: 2, player: "Kagiso Rabada",        team: "GT",   value: "19.08", subValue: "24" },
+      { rank: 3, player: "Rashid Khan",          team: "GT",   value: "20.52", subValue: "19" },
+      { rank: 4, player: "Jofra Archer",         team: "RR",   value: "21.27", subValue: "18" },
+      { rank: 5, player: "Anshul Kamboj",        team: "CSK",  value: "22.14", subValue: "21" },
+      { rank: 6, player: "Mohammed Siraj",       team: "GT",   value: "23.41", subValue: "17" },
+      { rank: 7, player: "Varun Chakravarthy",   team: "KKR",  value: "24.17", subValue: "17" },
+      { rank: 8, player: "Kuldeep Yadav",        team: "DC",   value: "26.80", subValue: "15" },
+      { rank: 9, player: "Arshdeep Singh",       team: "PBKS", value: "25.62", subValue: "16" },
+      { rank: 10,player: "Avesh Khan",           team: "LSG",  value: "27.33", subValue: "15" },
+    ],
+    bestBowling: [
+      { rank: 1, player: "Bhuvneshwar Kumar",    team: "RCB",  value: "4/22",  subValue: "" },
+      { rank: 2, player: "Kagiso Rabada",        team: "GT",   value: "4/28",  subValue: "" },
+      { rank: 3, player: "Jofra Archer",         team: "RR",   value: "4/24",  subValue: "" },
+      { rank: 4, player: "Anshul Kamboj",        team: "CSK",  value: "4/33",  subValue: "" },
+      { rank: 5, player: "Varun Chakravarthy",   team: "KKR",  value: "4/21",  subValue: "" },
+      { rank: 6, player: "Rashid Khan",          team: "GT",   value: "3/18",  subValue: "" },
+      { rank: 7, player: "Mohammed Siraj",       team: "GT",   value: "3/22",  subValue: "" },
+      { rank: 8, player: "Arshdeep Singh",       team: "PBKS", value: "3/19",  subValue: "" },
+      { rank: 9, player: "Kuldeep Yadav",        team: "DC",   value: "3/31",  subValue: "" },
+      { rank: 10,player: "Avesh Khan",           team: "LSG",  value: "3/28",  subValue: "" },
+    ],
+    mostEcon: [
+      { rank: 1, player: "Rashid Khan",          team: "GT",   value: "7.84",  subValue: "19" },
+      { rank: 2, player: "Bhuvneshwar Kumar",    team: "RCB",  value: "7.71",  subValue: "24" },
+      { rank: 3, player: "Jofra Archer",         team: "RR",   value: "8.16",  subValue: "18" },
+      { rank: 4, player: "Varun Chakravarthy",   team: "KKR",  value: "8.31",  subValue: "17" },
+      { rank: 5, player: "Kagiso Rabada",        team: "GT",   value: "8.43",  subValue: "24" },
+      { rank: 6, player: "Kuldeep Yadav",        team: "DC",   value: "8.58",  subValue: "15" },
+      { rank: 7, player: "Arshdeep Singh",       team: "PBKS", value: "8.87",  subValue: "16" },
+      { rank: 8, player: "Mohammed Siraj",       team: "GT",   value: "8.97",  subValue: "17" },
+      { rank: 9, player: "Anshul Kamboj",        team: "CSK",  value: "9.12",  subValue: "21" },
+      { rank: 10,player: "Avesh Khan",           team: "LSG",  value: "9.44",  subValue: "15" },
+    ],
+    maxSixes: [
+      { rank: 1, player: "Heinrich Klaasen",     team: "SRH",  value: "42",    subValue: "" },
+      { rank: 2, player: "Vaibhav Sooryavanshi", team: "RR",   value: "38",    subValue: "" },
+      { rank: 3, player: "Jos Buttler",          team: "GT",   value: "36",    subValue: "" },
+      { rank: 4, player: "Mitchell Marsh",       team: "LSG",  value: "34",    subValue: "" },
+      { rank: 5, player: "Sai Sudharsan",        team: "GT",   value: "31",    subValue: "" },
+      { rank: 6, player: "Ishan Kishan",         team: "SRH",  value: "29",    subValue: "" },
+      { rank: 7, player: "Shreyas Iyer",         team: "PBKS", value: "27",    subValue: "" },
+      { rank: 8, player: "Shubman Gill",         team: "GT",   value: "24",    subValue: "" },
+      { rank: 9, player: "Virat Kohli",          team: "RCB",  value: "22",    subValue: "" },
+      { rank: 10,player: "Faf du Plessis",       team: "RCB",  value: "21",    subValue: "" },
+    ],
+    maxFours: [
+      { rank: 1, player: "Shubman Gill",         team: "GT",   value: "58",    subValue: "" },
+      { rank: 2, player: "Sai Sudharsan",        team: "GT",   value: "54",    subValue: "" },
+      { rank: 3, player: "Virat Kohli",          team: "RCB",  value: "52",    subValue: "" },
+      { rank: 4, player: "Vaibhav Sooryavanshi", team: "RR",   value: "49",    subValue: "" },
+      { rank: 5, player: "Ishan Kishan",         team: "SRH",  value: "47",    subValue: "" },
+      { rank: 6, player: "Mitchell Marsh",       team: "LSG",  value: "42",    subValue: "" },
+      { rank: 7, player: "Faf du Plessis",       team: "RCB",  value: "41",    subValue: "" },
+      { rank: 8, player: "Heinrich Klaasen",     team: "SRH",  value: "38",    subValue: "" },
+      { rank: 9, player: "Shreyas Iyer",         team: "PBKS", value: "36",    subValue: "" },
+      { rank: 10,player: "Jos Buttler",          team: "GT",   value: "34",    subValue: "" },
+    ],
+    boundaries: [
+      { rank: 1, player: "Sai Sudharsan",        team: "GT",   value: "85",    subValue: "54F + 31S" },
+      { rank: 2, player: "Shubman Gill",         team: "GT",   value: "82",    subValue: "58F + 24S" },
+      { rank: 3, player: "Heinrich Klaasen",     team: "SRH",  value: "80",    subValue: "38F + 42S" },
+      { rank: 4, player: "Vaibhav Sooryavanshi", team: "RR",   value: "79",    subValue: "49F + 30S" },
+      { rank: 5, player: "Mitchell Marsh",       team: "LSG",  value: "76",    subValue: "42F + 34S" },
+      { rank: 6, player: "Virat Kohli",          team: "RCB",  value: "74",    subValue: "52F + 22S" },
+      { rank: 7, player: "Ishan Kishan",         team: "SRH",  value: "76",    subValue: "47F + 29S" },
+      { rank: 8, player: "Faf du Plessis",       team: "RCB",  value: "62",    subValue: "41F + 21S" },
+      { rank: 9, player: "Jos Buttler",          team: "GT",   value: "70",    subValue: "34F + 36S" },
+      { rank: 10,player: "Shreyas Iyer",         team: "PBKS", value: "63",    subValue: "36F + 27S" },
+    ],
+  },
+};
 
 interface TeamRow {
   rank: number;
@@ -125,9 +443,9 @@ type TabId = "table" | "stats" | "matches" | "playoffs";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function TeamLogo({ abbr, logos, size = "md" }: { abbr: string; logos?: Record<string, string>; size?: "sm" | "md" | "lg" | "xl" }) {
+function TeamLogo({ abbr, size = "md" }: { abbr: string; size?: "sm" | "md" | "lg" | "xl" }) {
   const sizes = { sm: "w-6 h-6", md: "w-8 h-8", lg: "w-12 h-12", xl: "w-16 h-16" };
-  const src = logos?.[abbr] || (abbr && abbr !== "TBD" ? `/teams/${abbr.toUpperCase()}.png` : null);
+  const src = TEAM_LOGOS[abbr] ?? (abbr && abbr !== "TBD" ? `/teams/${abbr.toUpperCase()}.png` : null);
   return (
     <div className={`${sizes[size]} flex-shrink-0 flex items-center justify-center bg-white/5 rounded-full overflow-hidden`}>
       {src ? (
@@ -153,11 +471,9 @@ function cleanPlayer(name: string) {
 function HeroSection({
   todayMatch,
   recentMatch,
-  logos, // <--- Add this
 }: {
   todayMatch: TodayMatch;
   recentMatch: RecentMatch;
-  logos: Record<string, string>; // <--- Add this
 }) {
   const [expanded, setExpanded] = useState(false);
 
@@ -199,7 +515,7 @@ function HeroSection({
             }}
           >
             <img
-              src={logos[todayMatch.teamA] || `/teams/${todayMatch.teamA}.png`}
+              src={TEAM_LOGOS[todayMatch.teamA] ?? `/teams/${todayMatch.teamA}.png`}
               alt={todayMatch.teamA}
               className="w-16 h-16 sm:w-20 sm:h-20 object-contain drop-shadow-lg"
             />
@@ -231,7 +547,7 @@ function HeroSection({
             }}
           >
             <img
-              src={logos[todayMatch.teamB] || `/teams/${todayMatch.teamB}.png`}
+              src={TEAM_LOGOS[todayMatch.teamB] ?? `/teams/${todayMatch.teamB}.png`}
               alt={todayMatch.teamB}
               className="w-16 h-16 sm:w-20 sm:h-20 object-contain drop-shadow-lg"
             />
@@ -259,11 +575,11 @@ function HeroSection({
           </span>
           {/* Teams — centered */}
           <div className="flex items-center justify-center gap-2 flex-1">
-            <TeamLogo abbr={recentMatch.teamA} size="sm" logos={logos} />
+            <TeamLogo abbr={recentMatch.teamA} size="sm" />
             <span className="text-white font-bold text-sm">{recentMatch.teamA}</span>
             <span className="text-gray-600 text-xs">vs</span>
             <span className="text-white font-bold text-sm">{recentMatch.teamB}</span>
-            <TeamLogo abbr={recentMatch.teamB} size="sm" logos={logos} />
+            <TeamLogo abbr={recentMatch.teamB} size="sm" />
           </div>
           {/* Result — right aligned */}
           <span className="text-gray-300 text-xs whitespace-nowrap">{recentMatch.result}</span>
@@ -297,7 +613,7 @@ function HeroSection({
           <div className="grid grid-cols-2 divide-x divide-[rgba(255,255,255,0.06)]">
             <div className="p-4 text-center">
               <div className="flex items-center justify-center gap-2 mb-2">
-                <TeamLogo abbr={recentMatch.teamA} size="sm" logos={logos} />
+                <TeamLogo abbr={recentMatch.teamA} size="sm" />
                 <span className="text-white font-bold">{recentMatch.teamA}</span>
               </div>
               <p className="text-white text-xl font-black">{recentMatch.scoreA || "-"}</p>
@@ -309,7 +625,7 @@ function HeroSection({
             </div>
             <div className="p-4 text-center">
               <div className="flex items-center justify-center gap-2 mb-2">
-                <TeamLogo abbr={recentMatch.teamB} size="sm" logos={logos} />
+                <TeamLogo abbr={recentMatch.teamB} size="sm" />
                 <span className="text-white font-bold">{recentMatch.teamB}</span>
               </div>
               <p className="text-white text-xl font-black">{recentMatch.scoreB || "-"}</p>
@@ -334,7 +650,7 @@ function HeroSection({
 
 // ─── Cap Holders Section ──────────────────────────────────────────────────────
 
-function CapHoldersSection({ orangeCap, purpleCap, logos }: { orangeCap: PlayerRow[]; purpleCap: PlayerRow[]; logos: Record<string, string> }) {
+function CapHoldersSection({ orangeCap, purpleCap }: { orangeCap: PlayerRow[]; purpleCap: PlayerRow[] }) {
   const [showAll, setShowAll] = useState(false);
   const [capTab, setCapTab] = useState<"orange" | "purple">("orange");
   const top1Orange = orangeCap[0];
@@ -384,7 +700,7 @@ function CapHoldersSection({ orangeCap, purpleCap, logos }: { orangeCap: PlayerR
                 <span className="text-orange-400 text-xs font-bold tracking-wide">Orange Cap</span>
               </div>
               <div className="flex items-center gap-2 mb-2">
-                <TeamLogo abbr={top1Orange.team} size="sm" logos={logos} />
+                <TeamLogo abbr={top1Orange.team} size="sm" />
                 <div className="min-w-0">
                   <p className="text-white font-bold text-sm leading-tight truncate">
                     {cleanPlayer(top1Orange.player)}
@@ -420,7 +736,7 @@ function CapHoldersSection({ orangeCap, purpleCap, logos }: { orangeCap: PlayerR
                 <span className="text-purple-400 text-xs font-bold tracking-wide">Purple Cap</span>
               </div>
               <div className="flex items-center gap-2 mb-2">
-                <TeamLogo abbr={top1Purple.team} size="md" logos={logos} />
+                <TeamLogo abbr={top1Purple.team} size="md" />
                 <div className="min-w-0">
                   <p className="text-white font-bold text-sm leading-tight truncate">
                     {cleanPlayer(top1Purple.player)}
@@ -493,7 +809,7 @@ function CapHoldersSection({ orangeCap, purpleCap, logos }: { orangeCap: PlayerR
                       <td className="py-2.5 px-4 text-orange-500 font-bold">{p.rank}</td>
                       <td className="py-2.5 px-4">
                         <div className="flex items-center gap-2">
-                          <TeamLogo abbr={p.team} size="sm" logos={logos} />
+                          <TeamLogo abbr={p.team} size="sm" />
                           <div className="min-w-0">
                             <p className="text-white whitespace-nowrap">{cleanPlayer(p.player)}</p>
                             <p className="text-gray-600 text-[10px]">{p.team}</p>
@@ -529,7 +845,7 @@ function CapHoldersSection({ orangeCap, purpleCap, logos }: { orangeCap: PlayerR
                       <td className="py-2.5 px-4 text-purple-500 font-bold">{p.rank}</td>
                       <td className="py-2.5 px-4">
                         <div className="flex items-center gap-2">
-                          <TeamLogo abbr={p.team} size="sm" logos={logos} />
+                          <TeamLogo abbr={p.team} size="sm" />
                           <div className="min-w-0">
                             <p className="text-white whitespace-nowrap">{cleanPlayer(p.player)}</p>
                             <p className="text-gray-600 text-[10px]">{p.team}</p>
@@ -554,7 +870,7 @@ function CapHoldersSection({ orangeCap, purpleCap, logos }: { orangeCap: PlayerR
 
 // ─── Points Table Tab ─────────────────────────────────────────────────────────
 
-function PointsTableTab({ rows, logos }: { rows: TeamRow[]; logos: Record<string, string> }) {
+function PointsTableTab({ rows }: { rows: TeamRow[] }) {
   return (
     <div>
       <div className="flex items-center justify-between mb-3">
@@ -595,7 +911,7 @@ function PointsTableTab({ rows, logos }: { rows: TeamRow[]; logos: Record<string
                 </td>
                 <td className="py-3 px-3">
                   <div className="flex items-center gap-2.5">
-                    <TeamLogo abbr={team.abbr} size="sm" logos={logos} />
+                    <TeamLogo abbr={team.abbr} size="sm" />
                     <span className="text-white font-medium whitespace-nowrap text-sm">{team.name}</span>
                   </div>
                 </td>
@@ -620,11 +936,11 @@ function PointsTableTab({ rows, logos }: { rows: TeamRow[]; logos: Record<string
 
 
 function StatCard({
-  title, subtitle, icon, data, logos, valueLabel, subValueLabel, limit
+  title, subtitle, icon, data, valueLabel, subValueLabel, limit
 }: {
   title: string; subtitle?: string; icon: React.ReactNode;
   data: { rank: number; player: string; team: string; mainValue: string | number; subValue?: string | number }[];
-  logos: Record<string, string>; valueLabel: string; subValueLabel?: string; limit?: number;
+  valueLabel: string; subValueLabel?: string; limit?: number;
 }) {
   const shownData = limit ? data.slice(0, limit) : data;
 
@@ -667,7 +983,7 @@ function StatCard({
                 <td className="py-2.5 px-3 text-white font-medium">{row.player}</td>
                 <td className="py-2.5 px-3 text-center">
                   <div className="flex items-center justify-center">
-                    <TeamLogo abbr={row.team} size="sm" logos={logos} />
+                    <TeamLogo abbr={row.team} size="sm" />
                   </div>
                 </td>
                 <td className="py-2.5 px-3 text-right text-yellow-500 font-bold">{row.mainValue}</td>
@@ -724,7 +1040,6 @@ function StatsTab({ data }: { data: StatsData }) {
           subtitle="IPL 2026 • Top 10"
           icon={<Target size={16} className="text-purple-400" />}
           data={mapData(data.highestScores, "score")}
-          logos={data.teamLogos}
           valueLabel="Score"
           limit={limit}
         />
@@ -734,7 +1049,6 @@ function StatsTab({ data }: { data: StatsData }) {
           subtitle="IPL 2026 • Min 5 Innings"
           icon={<LineChart size={16} className="text-blue-400" />}
           data={mapData(data.extraStats?.battingAvg, "value", "subValue")}
-          logos={data.teamLogos}
           valueLabel="Average"
           subValueLabel="Runs"
           limit={limit}
@@ -745,7 +1059,6 @@ function StatsTab({ data }: { data: StatsData }) {
           subtitle="IPL 2026 • Min 5 Wickets"
           icon={<Crosshair size={16} className="text-pink-400" />}
           data={mapData(data.extraStats?.bowlingAvg, "value", "subValue")}
-          logos={data.teamLogos}
           valueLabel="Average"
           subValueLabel="Wkts"
           limit={limit}
@@ -756,7 +1069,6 @@ function StatsTab({ data }: { data: StatsData }) {
           subtitle="IPL 2026 • Top 10"
           icon={<Zap size={16} className="text-yellow-400" />}
           data={mapData(data.extraStats?.bestBowling, "value")}
-          logos={data.teamLogos}
           valueLabel="Figures"
           limit={limit}
         />
@@ -766,7 +1078,6 @@ function StatsTab({ data }: { data: StatsData }) {
           subtitle="IPL 2026 • Min 5 Wickets"
           icon={<Diamond size={16} className="text-cyan-400" />}
           data={mapData(data.extraStats?.mostEcon, "value", "subValue")}
-          logos={data.teamLogos}
           valueLabel="Economy"
           subValueLabel="Wkts" // Or matches depending on your subValue data
           limit={limit}
@@ -777,7 +1088,6 @@ function StatsTab({ data }: { data: StatsData }) {
           subtitle="IPL 2026 • Top 10"
           icon={<Star size={16} className="text-rose-400" />}
           data={mapData(data.extraStats?.maxSixes, "value")}
-          logos={data.teamLogos}
           valueLabel="Sixes"
           limit={limit}
         />
@@ -787,7 +1097,6 @@ function StatsTab({ data }: { data: StatsData }) {
           subtitle="IPL 2026 • Top 10"
           icon={<Flame size={16} className="text-orange-500" />}
           data={mapData(data.extraStats?.maxFours, "value")}
-          logos={data.teamLogos}
           valueLabel="Fours"
           limit={limit}
         />
@@ -797,7 +1106,6 @@ function StatsTab({ data }: { data: StatsData }) {
           subtitle="IPL 2026 • Fours + Sixes"
           icon={<Trophy size={16} className="text-emerald-400" />}
           data={mapData(data.extraStats?.boundaries, "value")}
-          logos={data.teamLogos}
           valueLabel="Boundaries"
           limit={limit}
         />
@@ -809,7 +1117,7 @@ function StatsTab({ data }: { data: StatsData }) {
 
 // ─── Matches Tab ──────────────────────────────────────────────────────────────
 
-function MatchesTab({ upcomingMatches, recentMatches, logos }: { upcomingMatches: MatchCard[], recentMatches: MatchCard[], logos: Record<string, string> }) {
+function MatchesTab({ upcomingMatches, recentMatches }: { upcomingMatches: MatchCard[], recentMatches: MatchCard[] }) {
   const [subTab, setSubTab] = useState<"upcoming" | "recent">("upcoming");
   const [viewAll, setViewAll] = useState(false);
 
@@ -871,7 +1179,7 @@ function MatchesTab({ upcomingMatches, recentMatches, logos }: { upcomingMatches
             {/* Teams */}
             <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-1">
-                <TeamLogo abbr={match.teamA} size="md" logos={logos} />
+                <TeamLogo abbr={match.teamA} size="md" />
                 <div className="min-w-0">
                   <p className="text-white font-bold text-sm">{match.teamA}</p>
                   <p className="text-gray-500 text-[11px] truncate max-w-[100px]">{match.teamAFull}</p>
@@ -886,7 +1194,7 @@ function MatchesTab({ upcomingMatches, recentMatches, logos }: { upcomingMatches
               </div>
 
               <div className="flex items-center gap-2 flex-1 flex-row-reverse sm:flex-row">
-                <TeamLogo abbr={match.teamB} size="md" logos={logos} />
+                <TeamLogo abbr={match.teamB} size="md"/>
                 <div className="min-w-0 text-right sm:text-left">
                   <p className="text-white font-bold text-sm">{match.teamB}</p>
                   <p className="text-gray-500 text-[11px] truncate max-w-[100px]">{match.teamBFull}</p>
@@ -1000,7 +1308,7 @@ function PlayoffsTab({ data, setTab }: { data: StatsData; setTab: (id: TabId) =>
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
                       <span className="text-gray-500 text-xs font-bold w-3">{getRank(p.q1.teamA)}</span>
-                      <TeamLogo abbr={p.q1.teamA} size="sm" logos={data.teamLogos} />
+                      <TeamLogo abbr={p.q1.teamA} size="sm"  />
                       <span className="text-white text-xs font-bold">{p.q1.teamAFull}</span>
                     </div>
                   </div>
@@ -1008,7 +1316,7 @@ function PlayoffsTab({ data, setTab }: { data: StatsData; setTab: (id: TabId) =>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <span className="text-gray-500 text-xs font-bold w-3">{getRank(p.q1.teamB)}</span>
-                      <TeamLogo abbr={p.q1.teamB} size="sm" logos={data.teamLogos} />
+                      <TeamLogo abbr={p.q1.teamB} size="sm" />
                       <span className="text-white text-xs font-bold">{p.q1.teamBFull}</span>
                     </div>
                   </div>
@@ -1028,7 +1336,7 @@ function PlayoffsTab({ data, setTab }: { data: StatsData; setTab: (id: TabId) =>
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
                       <span className="text-gray-500 text-xs font-bold w-3">{getRank(p.eliminator.teamA)}</span>
-                      <TeamLogo abbr={p.eliminator.teamA} size="sm" logos={data.teamLogos} />
+                      <TeamLogo abbr={p.eliminator.teamA} size="sm" />
                       <span className="text-white text-xs font-bold">{p.eliminator.teamAFull}</span>
                     </div>
                   </div>
@@ -1036,7 +1344,7 @@ function PlayoffsTab({ data, setTab }: { data: StatsData; setTab: (id: TabId) =>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <span className="text-gray-500 text-xs font-bold w-3">{getRank(p.eliminator.teamB)}</span>
-                      <TeamLogo abbr={p.eliminator.teamB} size="sm" logos={data.teamLogos} />
+                      <TeamLogo abbr={p.eliminator.teamB} size="sm" />
                       <span className="text-white text-xs font-bold">{p.eliminator.teamBFull}</span>
                     </div>
                   </div>
@@ -1171,7 +1479,7 @@ function PlayoffsTab({ data, setTab }: { data: StatsData; setTab: (id: TabId) =>
                       <td className="py-3 text-gray-400">{team.rank}</td>
                       <td className="py-3 pr-2">
                         <div className="flex items-center gap-2">
-                          <TeamLogo abbr={team.abbr} size="sm" logos={data.teamLogos} />
+                          <TeamLogo abbr={team.abbr} size="sm" />
                           <span className="text-white whitespace-nowrap overflow-hidden text-ellipsis block max-w-[120px] sm:max-w-[180px]">
                             {team.name}
                           </span>
@@ -1229,7 +1537,7 @@ function PlayoffsTab({ data, setTab }: { data: StatsData; setTab: (id: TabId) =>
                         <span className="text-[9px] text-gray-500 font-bold">TBD</span>
                       </div>
                     ) : (
-                      <TeamLogo abbr={item.match.teamA} size="lg" logos={data.teamLogos} />
+                      <TeamLogo abbr={item.match.teamA} size="lg" />
                     )}
                     <span className="text-white text-xs font-bold leading-tight">{item.match.teamA}</span>
                   </div>
@@ -1244,7 +1552,7 @@ function PlayoffsTab({ data, setTab }: { data: StatsData; setTab: (id: TabId) =>
                         <span className="text-[9px] text-gray-500 font-bold">TBD</span>
                       </div>
                     ) : (
-                      <TeamLogo abbr={item.match.teamB} size="lg" logos={data.teamLogos} />
+                      <TeamLogo abbr={item.match.teamB} size="lg" />
                     )}
                     <span className="text-white text-xs font-bold leading-tight">{item.match.teamB}</span>
                   </div>
@@ -1322,46 +1630,11 @@ function TabBar({ activeTab, onChange }: { activeTab: TabId; onChange: (id: TabI
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
+// ─── Page ─────────────────────────────────────────────────────────────────────
+
 export default function IPLDashboard() {
   const [tab, setTab] = useState<TabId>("table");
-  const [data, setData] = useState<StatsData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
-
-  useEffect(() => {
-    (async () => {
-      try {
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/ipl-stats`
-        );
-        if (!res.ok) throw new Error("fetch failed");
-        setData(await res.json());
-      } catch {
-        setError(true);
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, []);
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-[#0b0c16] flex items-center justify-center">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 rounded-full border-2 border-[#e91e8c] border-t-transparent animate-spin" />
-          <p className="text-gray-400 text-sm">Loading IPL 2026 Stats…</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error || !data) {
-    return (
-      <div className="min-h-screen bg-[#0b0c16] flex items-center justify-center">
-        <p className="text-rose-400 text-sm">Failed to load stats. Please try again.</p>
-      </div>
-    );
-  }
+  const data = STATIC_DATA;
 
   return (
   <div className="min-h-screen bg-[#0b0c16]" style={{ fontFamily: "'Inter', 'SF Pro Display', system-ui, sans-serif" }}>
@@ -1392,23 +1665,21 @@ export default function IPLDashboard() {
         <HeroSection
           todayMatch={data.todayMatch}
           recentMatch={data.recentMatch}
-          logos={data.teamLogos}
         />
 
         {/* Cap Holders */}
         <CapHoldersSection
           orangeCap={data.orangeCap}
           purpleCap={data.purpleCap}
-          logos={data.teamLogos}
         />
 
         {/* Main card with tabs */}
         <div className="rounded-2xl overflow-hidden" style={{ background: "#0d0e1c", border: "1px solid #1e1e30" }}>
           <TabBar activeTab={tab} onChange={setTab} />
           <div className="p-4">
-            {tab === "table" && <PointsTableTab rows={data.pointsTable} logos={data.teamLogos} />}
+            {tab === "table" && <PointsTableTab rows={data.pointsTable} />}
             {tab === "stats" && <StatsTab data={data} />}
-            {tab === "matches" && <MatchesTab upcomingMatches={data.upcomingMatches} recentMatches={data.recentMatches} logos={data.teamLogos} />}
+            {tab === "matches" && <MatchesTab upcomingMatches={data.upcomingMatches} recentMatches={data.recentMatches} />}
             
             {/* Update this line: */}
             {tab === "playoffs" && <PlayoffsTab data={data} setTab={setTab} />}
@@ -1417,7 +1688,7 @@ export default function IPLDashboard() {
 
         {/* Footer */}
         <p className="text-center text-gray-700 text-[11px] mt-4">
-          All times are in IST • Data updates automatically
+          All times are in IST • Data as of 23 May 2026 (Match 68)
         </p>
       </div>
     </div>

@@ -596,6 +596,7 @@ const formatTimeAgo = (timestamp: number): string => {
 
 interface Props {
     post: Post;
+    postMap?: Record<string, Post>;
     onLike?: (postId: string, userId: string, reaction?: ReactionId) => void;
     onDelete?: (id: string) => Promise<void>;
     onVote?: (postId: string, optionId: string, voterId: string, userName: string) => Promise<void>;
@@ -609,6 +610,7 @@ interface Props {
 
 export default function PostCard({
     post,
+    postMap,
     onLike,
     onDelete,
     onVote,
@@ -645,6 +647,19 @@ export default function PostCard({
     const [hasReposted, setHasReposted] = useState(
         !!(post.repostedBy as string[] | undefined)?.includes(currentUserId ?? "")
     );
+
+    const isPlainRepost = post.isRepost && !post.isQuoteRepost;
+    const originalPost = isPlainRepost
+        ? post.quotedPost ?? postMap?.[post.originalPostId ?? ""] ?? null
+        : null;
+    const displayedAuthorName = originalPost?.userName ?? post.userName;
+    const displayedCreatedAt = originalPost?.createdAt ?? post.createdAt;
+    const displayedContent = originalPost?.content ?? post.content;
+    const displayedMedia = originalPost?.media ?? post.media;
+
+    const repostBannerText = hasReposted
+        ? `You reposted ${originalPost?.userName ?? post.userName}'s post`
+        : `${post.userName} reposted`;
 
     const handleDelete = async () => {
         if (!onDelete || !post.id) return;
@@ -891,10 +906,10 @@ export default function PostCard({
                     <span>{post.userName} quoted a post</span>
                 </div>
             )}
-            {post.isRepost && !post.isQuoteRepost && (
+            {(hasReposted || post.isRepost) && !post.isQuoteRepost && (
                 <div className="flex items-center gap-1.5 mb-2 text-green-400/70 text-xs">
                     <Repeat2 className="w-3 h-3" />
-                    <span>{post.userName} reposted</span>
+                    <span>{repostBannerText}</span>
                 </div>
             )}
 
@@ -905,10 +920,10 @@ export default function PostCard({
                         <ProfilePlaceholder size={40} />
                     </div>
                     <div>
-                        <p className="text-white font-semibold text-sm">{post.userName}</p>
+                        <p className="text-white font-semibold text-sm">{displayedAuthorName}</p>
                         <div className="flex items-center gap-2">
                             <span className="text-white/20 text-xs">•</span>
-                            <p className="text-white/30 text-xs">{formatTimeAgo(post.createdAt)}</p>
+                            <p className="text-white/30 text-xs">{formatTimeAgo(displayedCreatedAt)}</p>
                         </div>
                     </div>
                 </div>
@@ -942,18 +957,18 @@ export default function PostCard({
             </div>
 
             {/* Content */}
-            {post.content && (
-                <p className="text-white text-sm mb-3 leading-relaxed">{post.content}</p>
+            {displayedContent && (
+                <p className="text-white text-sm mb-3 leading-relaxed">{displayedContent}</p>
             )}
 
             {/* Media Grid */}
-            {post.media && post.media.length > 0 && (
+            {displayedMedia && displayedMedia.length > 0 && (
                 <div
                     className={`mb-3 grid gap-2 ${
-                        post.media.length === 1 ? "grid-cols-1" : "grid-cols-2"
+                        displayedMedia.length === 1 ? "grid-cols-1" : "grid-cols-2"
                     }`}
                 >
-                    {post.media.map((item, idx) => (
+                    {displayedMedia.map((item, idx) => (
                         <div
                             key={idx}
                             className="relative rounded-xl overflow-hidden bg-zinc-800"
@@ -981,7 +996,7 @@ export default function PostCard({
             )}
 
             {/* Quoted post embed (for quote-reposts) */}
-            {post.quotedPost && (
+            {post.quotedPost && post.isQuoteRepost && (
                 <div className="mb-3 rounded-xl border border-white/10 bg-white/5 p-3">
                     <div className="flex items-center gap-2 mb-2">
                         <ProfilePlaceholder size={22} />

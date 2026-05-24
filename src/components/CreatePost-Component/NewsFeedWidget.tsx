@@ -673,7 +673,7 @@ function NewsPostCard({
       {/* ── Body ── */}
       <div className="flex gap-3 mb-3 items-start">
         {/* Thumbnail */}
-        <div className="relative w-[500px] h-60 shrink-0 rounded-[10px] overflow-hidden bg-gray-800 group">
+        <div className="relative w-[150px] lg:w-[500px] h-40 lg:h-60 shrink-0 rounded-[10px] overflow-hidden bg-gray-800 group">
           <Image
             src={imageSrc}
             alt={article.title}

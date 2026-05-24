@@ -128,6 +128,9 @@ interface Props {
   currentUserName: string;
   onCommentAdded: (postId: string) => void;
   onCommentDeleted: (postId: string) => void;
+  postMap?: Record<string, Post>;
+  filterType?: "top" | "recent";
+  onFilterChange?: (filterType: "top" | "recent") => void;
 }
 
 export default function PostFeed({
@@ -144,6 +147,9 @@ export default function PostFeed({
   currentUserName,
   onCommentAdded,
   onCommentDeleted,
+  postMap,
+  filterType = "recent",
+  onFilterChange,
 }: Props) {
   const sentinelRef = useRef<HTMLDivElement>(null);
 
@@ -184,10 +190,35 @@ export default function PostFeed({
 
   return (
     <div className="grid grid-cols-1 mx-auto max-w-4xl gap-3 items-start">
+      {/* Filter Bar */}
+      <div className="flex gap-2 px-4 py-3  rounded-lg ml-auto">
+        <button
+          onClick={() => onFilterChange?.("recent")}
+          className={`px-4 py-2 rounded-lg font-medium transition-all ${
+            filterType === "recent"
+              ? "bg-[#C9115F] text-white text-[10px] lg:text-[15px]"
+              : "bg-white/10 text-white/70 text-[10px] lg:text-[15px] hover:bg-white/20"
+          }`}
+        >
+          Recent
+        </button>
+        <button
+          onClick={() => onFilterChange?.("top")}
+          className={`px-4 py-2 rounded-lg font-medium transition-all ${
+            filterType === "top"
+              ? "bg-[#C9115F] text-[10px] lg:text-[15px] text-white"
+              : "bg-white/10 text-white/70 text-[10px] lg:text-[15px] hover:bg-white/20"
+          }`}
+        >
+          Top
+        </button>
+      </div>
+
       {posts.map((post, index) => (
         <PostCard
           key={post.id ?? index}
           post={post}
+          postMap={postMap}
           onDelete={onDelete}
           onVote={onVote}
           onLike={onLike}

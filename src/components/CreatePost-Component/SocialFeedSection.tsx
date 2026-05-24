@@ -196,6 +196,7 @@ export default function SocialFeedSection() {
   const { user, getUserDisplayName } = useAuth();
   const [voterId] = useState<string>(getVoterId);
   const currentUserName = user ? getUserDisplayName() : "Anonymous";
+  const [filterType, setFilterType] = useState<"top" | "recent">("recent");
 
   const [postMap, setPostMap] = useState<Record<string, Post>>({});
   useEffect(() => {
@@ -205,6 +206,15 @@ export default function SocialFeedSection() {
       return next;
     });
   }, [posts]);
+
+  // Sort posts based on filter
+  const sortedPosts = [...posts].sort((a, b) => {
+    if (filterType === "top") {
+      return (b.likes || 0) - (a.likes || 0);
+    } else {
+      return (b.createdAt || 0) - (a.createdAt || 0);
+    }
+  });
 
   useEffect(() => { fetchPosts(true); }, []); // eslint-disable-line
 
@@ -299,7 +309,7 @@ export default function SocialFeedSection() {
         </div>
       )}
       <PostFeed
-        posts={posts}
+        posts={sortedPosts}
         loading={loading}
         hasMore={hasMore}
         onLoadMore={() => fetchPosts(false)}
@@ -312,6 +322,9 @@ export default function SocialFeedSection() {
         onCommentDeleted={handleCommentDeleted}
         currentUserId={user?.userId ?? voterId}
         currentUserName={currentUserName}
+        postMap={postMap}
+        filterType={filterType}
+        onFilterChange={setFilterType}
       />
     </section>
   );

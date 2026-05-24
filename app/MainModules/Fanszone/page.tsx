@@ -176,6 +176,8 @@ const earnPointsActions = [
 // --- REUSABLE COMPONENTS ---
 
 function DonutChart({ data, totalPoints }: { data: CategoryBreakdown[], totalPoints?: string }) {
+  const isEmpty = data.length === 0;
+
   let currentOffset = 0;
   const slices = data.map((slice) => {
     const dasharray = `${slice.percent} 100`;
@@ -187,22 +189,33 @@ function DonutChart({ data, totalPoints }: { data: CategoryBreakdown[], totalPoi
   return (
     <div className="relative w-72 h-72 md:w-80 md:h-80 shrink-0">
       <svg viewBox="0 0 100 100" className="w-full h-full transform -rotate-90">
-        {slices.map((slice, i) => (
+        {isEmpty ? (
           <circle
-            key={i}
             cx="50" cy="50" r="15.91549430918954"
             fill="transparent"
-            stroke={slice.color}
+            stroke="#27272a"
             strokeWidth="6"
-            strokeDasharray={slice.dasharray}
-            strokeDashoffset={slice.dashoffset}
-            className="transition-all duration-1000 ease-out"
+            strokeDasharray="100 0"
           />
-        ))}
+        ) : (
+          slices.map((slice, i) => (
+            <circle
+              key={i}
+              cx="50" cy="50" r="15.91549430918954"
+              fill="transparent"
+              stroke={slice.color}
+              strokeWidth="6"
+              strokeDasharray={slice.dasharray}
+              strokeDashoffset={slice.dashoffset}
+              className="transition-all duration-1000 ease-out"
+            />
+          ))
+        )}
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-        <span className="text-3xl md:text-4xl font-black text-white">{totalPoints || "0"}</span>
+        <span className="text-3xl md:text-4xl font-black text-white">{isEmpty ? "0" : (totalPoints || "0")}</span>
         <span className="text-xs md:text-sm text-gray-400 font-bold uppercase tracking-wider mt-1">SXP</span>
+        {isEmpty && <span className="text-[10px] text-gray-600 mt-1 font-medium">No activity yet</span>}
       </div>
     </div>
   );
@@ -357,43 +370,45 @@ export default function FanZoneDashboard() {
   }, [handleTriviaPoints]);
   
   // Sync the ledger dynamically with the live user points!
-  // Fan Battle points come from LeaderboardContext; Audio Drop + Post Creation points are tracked locally.
-  // Sync the ledger dynamically with the live user points!
-  // Fan Battle points come from LeaderboardContext; Audio Drop + Post Creation points are tracked locally.
-  const fanBattleHistory = useMemo(() => {
-    // 1. Calculate all Audio Drop points (new session drops + initial ledger drops)
-    const sessionAudioPoints = audioDropHistory.reduce((sum, item) => sum + item.points, 0);
-    const initialAudioPoints = exactUserHistory
-      .filter(item => item.action === "Audio Drops")
-      .reduce((sum, item) => sum + item.points, 0);
-      
-    const totalAudioPoints = sessionAudioPoints + initialAudioPoints;
-
-    // 2. Calculate all Post Creation points
+  // Fan Battle points = total context points minus all locally-tracked activity points.
+  // This ensures each activity appears as its own slice in the donut chart.
+  const fanBattleHistory = useMemo((): HistoryItem[] => {
+    // Sum all locally-tracked activity points
+    const totalAudioPoints = audioDropHistory.reduce((sum, item) => sum + item.points, 0)
+      + exactUserHistory.filter(item => item.action === "Audio Drops").reduce((sum, item) => sum + item.points, 0);
     const totalPostPoints = postHistory.reduce((sum, item) => sum + item.points, 0);
-
-    // 3. Calculate all Trivia points
     const totalTriviaPoints = triviaHistory.reduce((sum, item) => sum + item.points, 0);
 
-    return exactUserHistory.map(item => {
-      // 4. ONLY adjust the Fan Battles score dynamically to act as the remainder
-      if (item.action === "Fan Battles") {
-        return {
-          ...item,
-          points: currentUserPoints > 0
-            ? Math.max(0, currentUserPoints - totalAudioPoints - totalPostPoints - totalTriviaPoints)
-            : 0
-        };
-      }
-      
-      // 5. Leave Audio Drops at their fixed, authentic values
-      return item;
-    });
+    // Fan Battle points are the remainder from the LeaderboardContext total
+    const fanBattlePoints = currentUserPoints > 0
+      ? Math.max(0, currentUserPoints - totalAudioPoints - totalPostPoints - totalTriviaPoints)
+      : 0;
+
+    // Only include a Fan Battles entry when there are actual fan battle points
+    if (fanBattlePoints <= 0) return [];
+
+    return [{
+      action: "Fan Battles",
+      details: "Played a Fan Battle",
+      points: fanBattlePoints,
+      type: "Fantasy",
+      date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+      time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+      icon: Gamepad2,
+      color: "text-yellow-500",
+      hexColor: "#eab308",
+      typeColor: "text-yellow-500 border-white/10 bg-white/5"
+    }];
   }, [currentUserPoints, audioDropHistory, postHistory, triviaHistory]);
 
+  // Build the initial audio history from exactUserHistory seed data (non-Fan Battle entries)
+  const seedAudioHistory = useMemo((): HistoryItem[] => {
+    return exactUserHistory.filter(item => item.action === "Audio Drops");
+  }, []);
+
   const earningHistoryData = useMemo(() => {
-    return [...triviaHistory, ...postHistory, ...audioDropHistory, ...fanBattleHistory];
-  }, [triviaHistory, postHistory, audioDropHistory, fanBattleHistory]);
+    return [...triviaHistory, ...postHistory, ...audioDropHistory, ...seedAudioHistory, ...fanBattleHistory];
+  }, [triviaHistory, postHistory, audioDropHistory, seedAudioHistory, fanBattleHistory]);
   const dynamicEarningBreakdown = getExactEarningBreakdown(earningHistoryData);
   
   // 1. Add state for the active tab (7D, 30D, 90D)
@@ -694,18 +709,30 @@ const chartData = currentPeriodPoints > 0
                 <div className="xl:col-span-5 flex flex-col sm:flex-row items-center justify-center gap-6 lg:gap-10 w-full py-6 xl:py-0 border-t border-white/10 xl:border-t-0 xl:border-l xl:pl-8">
                   <DonutChart data={dynamicEarningBreakdown} totalPoints={displayPoints} />
                   <div className="space-y-4 w-full sm:w-auto">
-                    {dynamicEarningBreakdown.map((item, i) => (
-                      <div key={i} className="flex items-center justify-between sm:justify-start gap-4 text-sm whitespace-nowrap">
-                        <div className="flex items-center gap-3 w-40">
-                          <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
-                          <span className="text-gray-300">{item.label}</span>
+                    {dynamicEarningBreakdown.length > 0 ? (
+                      dynamicEarningBreakdown.map((item, i) => (
+                        <div key={i} className="flex items-center justify-between sm:justify-start gap-4 text-sm whitespace-nowrap">
+                          <div className="flex items-center gap-3 w-40">
+                            <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
+                            <span className="text-gray-300">{item.label}</span>
+                          </div>
+                         <div className="flex items-center justify-end gap-3 pr-4">
+                            <span className="font-bold text-white text-right">{item.percent}%</span>
+                            <span className="text-gray-400 text-right">{item.xp}</span>
+                          </div>
                         </div>
-                       <div className="flex items-center justify-end gap-3 pr-4">
-                          <span className="font-bold text-white text-right">{item.percent}%</span>
-                          <span className="text-gray-400 text-right">{item.xp}</span>
-                        </div>
+                      ))
+                    ) : (
+                      <div className="space-y-3 opacity-40">
+                        {["Audio Drops", "Fan Battles", "Trivia", "Post Created"].map((label, i) => (
+                          <div key={i} className="flex items-center gap-3 text-sm whitespace-nowrap">
+                            <span className="w-2.5 h-2.5 rounded-full shrink-0 bg-zinc-700" />
+                            <span className="text-gray-600">{label}</span>
+                            <span className="text-gray-700 ml-auto pr-4">—</span>
+                          </div>
+                        ))}
                       </div>
-                    ))}
+                    )}
                   </div>
                 </div>
 
@@ -1348,18 +1375,22 @@ const chartData = currentPeriodPoints > 0
                   </div>
 
                   <div className="space-y-4">
-                    {dynamicEarningBreakdown.map((item, i) => (
-                      <div key={i} className="flex items-center justify-between text-sm">
-                        <div className="flex items-center gap-3">
-                          <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }} />
-                          <span className="text-gray-300">{item.label}</span>
+                    {dynamicEarningBreakdown.length > 0 ? (
+                      dynamicEarningBreakdown.map((item, i) => (
+                        <div key={i} className="flex items-center justify-between text-sm">
+                          <div className="flex items-center gap-3">
+                            <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }} />
+                            <span className="text-gray-300">{item.label}</span>
+                          </div>
+                         <div className="flex justify-end gap-3 pr-2">
+                            <span className="font-bold text-white text-right">{item.percent}%</span>
+                            <span className="text-gray-400 text-right">({item.xp})</span>
+                          </div>
                         </div>
-                       <div className="flex justify-end gap-3 pr-2">
-                          <span className="font-bold text-white text-right">{item.percent}%</span>
-                          <span className="text-gray-400 text-right">({item.xp})</span>
-                        </div>
-                      </div>
-                    ))}
+                      ))
+                    ) : (
+                      <p className="text-xs text-gray-600 text-center py-2">Complete activities to see your breakdown</p>
+                    )}
                   </div>
                 </div>
 

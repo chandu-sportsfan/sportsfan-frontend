@@ -250,8 +250,9 @@ export default function MainModulesLayout({
 
   if (isWatchRoom) {
     return (
-      <div className="h-screen w-screen bg-black text-white overflow-hidden flex flex-col">
-        <main className="flex-1 min-w-0 w-full h-full overflow-hidden relative">
+      <div className="h-screen w-screen bg-black text-white overflow-hidden flex flex-row">
+        {renderSidebar()}
+        <main className="flex-1 min-w-0 h-full overflow-hidden relative">
           {children}
         </main>
       </div>

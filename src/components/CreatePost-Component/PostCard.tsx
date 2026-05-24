@@ -543,6 +543,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Image from "next/image";
+import axios from "axios";
 import {
     MessageCircle,
     MoreHorizontal,
@@ -632,9 +633,11 @@ export default function PostCard({
     const [showReactionsModal, setShowReactionsModal] = useState(false);
     const [showRepostModal, setShowRepostModal] = useState(false);
 
-    // Comment count
+    // Comment count (fall back to embedded comments length if server doesn't provide `commentCount`)
     const [localCommentCount, setLocalCommentCount] = useState<number | null>(
-        typeof post.commentCount === "number" ? post.commentCount : null
+        typeof post.commentCount === "number"
+            ? post.commentCount
+            : (post as { comments?: { length: number } })?.comments?.length ?? null
     );
 
     // Likes & reactions — local optimistic state
@@ -836,8 +839,36 @@ export default function PostCard({
         onCommentDeleted?.(post.id!);
     }, [onCommentDeleted, post.id]);
 
-    const commentCountDisplay =
-        localCommentCount !== null && localCommentCount > 0 ? localCommentCount : null;
+    // If we know the comment count (even zero), show it; otherwise hide until loaded.
+    const commentCountDisplay = localCommentCount !== null ? localCommentCount : null;
+
+    // If the server didn't include a commentCount, fetch the lightweight count
+    useEffect(() => {
+        if (!post.id) return;
+        if (localCommentCount !== null) return; // already known
+
+        const controller = new AbortController();
+        let canceled = false;
+
+        (async () => {
+            try {
+                const res = await axios.get(`/api/comments?contentId=${post.id}&contentType=post&limit=1`, { signal: controller.signal });
+                const data = res.data;
+                const total = data?.pagination?.total ?? (Array.isArray(data?.comments) ? data.comments.length : null);
+                if (!canceled && typeof total === "number") {
+                    setLocalCommentCount(total);
+                }
+            } catch (error) {
+                void error;
+                // ignore — keep comment count unknown until user opens comments
+            }
+        })();
+
+        return () => {
+            canceled = true;
+            controller.abort();
+        };
+    }, [post.id, localCommentCount]);
 
     // ── Reaction toggle handler ──────────────────────────────────────────────
     const handleReactionToggle = (postId: string, userId: string, reaction?: ReactionId) => {

@@ -551,9 +551,9 @@ export default function Prediction({ matchId }: { matchId: string }) {
         return `${totalVotes}`;
     };
 
-    const openPredictions = predictions.filter(p => p.isOpen);
+    const openPredictions = predictions.filter(p => p.isOpen && !p.question.startsWith("[Poll] "));
     const totalActivePredictions = openPredictions.length;
-    const totalVotes = predictions.reduce((sum, p) => sum + p.totalVotes, 0);
+    const totalVotes = predictions.filter(p => !p.question.startsWith("[Poll] ")).reduce((sum, p) => sum + p.totalVotes, 0);
 
     const comingNext: ComingNext[] = [
         { label: "Top scorer in next 5 overs?", hint: "Unlocks in 2 overs" },
@@ -597,6 +597,7 @@ export default function Prediction({ matchId }: { matchId: string }) {
                 <div className="flex flex-col gap-5">
                     {openPredictions.map((pred) => {
                         const timeLeft = getTimeLeft(pred.closesAt);
+                        const isExpired = pred.closesAt ? Date.now() > pred.closesAt : false;
                         const hasVoted = votedPredictions.has(pred.id) || !!selected[pred.id];
                         const isVoting = voting === pred.id;
 
@@ -606,12 +607,10 @@ export default function Prediction({ matchId }: { matchId: string }) {
                                     <span className="text-[13px] font-semibold text-white leading-snug">
                                         {pred.question}
                                     </span>
-                                    {timeLeft.text !== "Closed" && (
-                                        <span className={`text-[11px] font-bold ${timeLeft.color} flex items-center gap-1 shrink-0`}>
-                                            <span className="text-[9px]">⏱</span>
-                                            {timeLeft.text}
-                                        </span>
-                                    )}
+                                    <span className={`text-[11px] font-bold ${timeLeft.text === "Closed" ? "text-gray-500" : timeLeft.color} flex items-center gap-1 shrink-0`}>
+                                        <span className="text-[9px]">⏱</span>
+                                        {timeLeft.text}
+                                    </span>
                                 </div>
 
                                 <div className="flex flex-col gap-1.5">
@@ -619,7 +618,7 @@ export default function Prediction({ matchId }: { matchId: string }) {
                                         const voteCount = pred.votes[option] || 0;
                                         const percentage = pred.totalVotes > 0 ? (voteCount / pred.totalVotes) * 100 : 0;
                                         const isSelected = selected[pred.id] === option;
-                                        const isDisabled = hasVoted || isVoting || !pred.isOpen;
+                                        const isDisabled = hasVoted || isVoting || !pred.isOpen || isExpired;
 
                                         return (
                                             <button

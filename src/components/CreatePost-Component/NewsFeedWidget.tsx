@@ -587,6 +587,17 @@ type NewsArticle = {
   id?: string;
 };
 
+type CricketArticle = {
+  id?: string | number;
+  title?: string;
+  description?: string[];
+  summary?: string;
+  badge?: string;
+  image?: string;
+  cdn_url?: string;
+  createdAt?: number | string;
+};
+
 // ─── Constants for localStorage ───────────────────────────────────────────────
 const NEWS_LIKES_KEY = 'sportsfan_news_likes_widget';
 const NEWS_USER_LIKES_KEY = 'sportsfan_news_user_likes_widget';
@@ -663,26 +674,15 @@ function NewsPostCard({
       <div className="flex gap-3 mb-3 items-start">
         {/* Thumbnail */}
         <div className="relative w-[500px] h-60 shrink-0 rounded-[10px] overflow-hidden bg-gray-800 group">
-          {/* <Image
+          <Image
             src={imageSrc}
             alt={article.title}
             fill
             className="object-cover transition-transform duration-300 group-hover:scale-105"
             onError={(e) => {
-              (e.currentTarget as HTMLImageElement).src =
-                "/images/News_center_Default.png";  
+              (e.currentTarget as HTMLImageElement).src = "/images/News_center_Default.png";
             }}
-          /> */}
-          <div className="relative w-[500px] h-60 shrink-0 rounded-[10px] overflow-hidden bg-gray-800 group">
-            <img
-              src={imageSrc}
-              alt={article.title}
-              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-              onError={(e) => {
-                (e.currentTarget as HTMLImageElement).src = "/images/News_center_Default.png";
-              }}
-            />
-          </div>
+          />
         </div>
 
         {/* Content */}
@@ -820,19 +820,19 @@ export default function NewsFeedWidget() {
         const data = await res.json();
 
         // Fetch cricket articles
-        let cricketArticles: any[] = [];
+        let cricketArticles: CricketArticle[] = [];
         try {
           const cricketRes = await fetch('/api/cricket-articles');
           if (cricketRes.ok) {
             const cricketData = await cricketRes.json();
-            cricketArticles = cricketData?.articles || cricketData?.data || [];
+            cricketArticles = (cricketData?.articles || cricketData?.data || []) as CricketArticle[];
           }
         } catch (error) {
           console.warn('Cricket articles fetch failed', error);
         }
 
         // Transform cricket articles
-        const transformedCricket: NewsArticle[] = cricketArticles.map((article: any) => ({
+        const transformedCricket: NewsArticle[] = cricketArticles.map((article: CricketArticle) => ({
           rank: 0,
           title: article.title || '',
           summary: article.description?.[0] || article.summary || '',
@@ -916,7 +916,7 @@ export default function NewsFeedWidget() {
         if (cricketUserLikesData) {
           try {
             cricketUserLikes = JSON.parse(cricketUserLikesData);
-          } catch (e) {
+          } catch {
             cricketUserLikes = {};
           }
         }

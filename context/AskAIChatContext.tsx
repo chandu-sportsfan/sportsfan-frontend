@@ -60,7 +60,11 @@ export function AIChatProvider({ children }: { children: React.ReactNode }) {
       });
       
       if (!response.ok) {
-        throw new Error('Failed to load recent session');
+        setError('Failed to load recent session');
+        console.warn('Failed to load recent session: Endpoint returned status ' + response.status);
+        setSessionId(null);
+        setMessages([]);
+        return;
       }
       
       const data = await response.json();

@@ -253,7 +253,7 @@ export default function LiveChat({ matchId, userRole }: LiveChatProps) {
         return newId;
     });
 
-    const messagesEndRef = useRef<HTMLDivElement>(null);
+    const chatContainerRef = useRef<HTMLDivElement>(null);
 
     const {
         chats,
@@ -272,29 +272,15 @@ export default function LiveChat({ matchId, userRole }: LiveChatProps) {
         }
     }, [matchId, fetchChats]);
 
-    // Poll for new messages every 5 seconds
-    useEffect(() => {
-        if (!matchId) return;
-
-        let isMounted = true;
-        const interval = setInterval(async () => {
-            if (isMounted && !isInitialLoad) {
-                await fetchChats(matchId, 100);
-            }
-        }, 5000);
-
-        return () => {
-            isMounted = false;
-            clearInterval(interval);
-        };
-    }, [matchId, fetchChats, isInitialLoad]);
+    // Filter out system reactions from chats
+    const visibleChats = chats.filter(msg => !msg.text?.startsWith('[SYSTEM_REACTION]:'));
 
     // Scroll to bottom when new messages arrive
     useEffect(() => {
-        if (chats.length > 0) {
-            messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+        if (chatContainerRef.current) {
+            chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
         }
-    }, [chats]);
+    }, [visibleChats]);
 
     const handleSend = async () => {
         if (!message.trim()) return;
@@ -332,25 +318,24 @@ export default function LiveChat({ matchId, userRole }: LiveChatProps) {
     }
 
     return (
-        <>
-        <div className="flex-1 overflow-y-auto -mt-12 lg:px-0 py-15">
+        <div className="flex flex-col h-full min-h-0 bg-[#0e0e10]">
             {/* Scrollable messages */}
-            <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-3">
+            <div ref={chatContainerRef} className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 min-h-0">
                 <div className="flex items-center gap-2 mb-3">
                     <span className="text-sm font-bold">💬 Live Chat</span>
-                    <span className="text-sm text-gray-500">{chats.length} messages</span>
+                    <span className="text-sm text-gray-500">{visibleChats.length} messages</span>
                     {status === "authenticated" && (
                         <span className="text-xs text-green-500 ml-2">● Logged in as {session?.user?.name?.split(' ')[0]}</span>
                     )}
                 </div>
 
                 <div className="flex flex-col gap-3">
-                    {chats.length === 0 && !isInitialLoad ? (
+                    {visibleChats.length === 0 && !isInitialLoad ? (
                         <div className="text-center py-8 text-gray-500 text-sm">
                             No messages yet. Be the first to chat!
                         </div>
                     ) : (
-                        chats.map((msg) => (
+                        visibleChats.map((msg) => (
                             <div key={msg.id} className="group flex flex-col">
                                 <div className="flex items-center justify-between w-full">
                                     <div className="flex items-baseline gap-1.5 flex-1">
@@ -381,12 +366,11 @@ export default function LiveChat({ matchId, userRole }: LiveChatProps) {
                             </div>
                         ))
                     )}
-                    <div ref={messagesEndRef} />
                 </div>
             </div>
 
             {/* Input */}
-            <div className="flex items-center gap-2.5 px-4 sm:px-6 py-3 border-t border-[#222]">
+            <div className="flex items-center gap-2.5 px-4 sm:px-6 py-3 border-t border-[#222] bg-[#121214] shrink-0">
                 <input
                     type="text"
                     value={message}
@@ -399,20 +383,19 @@ export default function LiveChat({ matchId, userRole }: LiveChatProps) {
                 <button
                     onClick={handleSend}
                     disabled={sending || !message.trim()}
-                    className="bg-pink-600 hover:bg-pink-700 active:scale-95 text-white font-semibold text-sm px-3 py-2.5 rounded-full transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="bg-pink-600 hover:bg-pink-700 active:scale-95 text-white font-semibold text-sm px-3 py-2.5 rounded-full transition-all disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
                 >
                     {sending ? "Sending..." : "Send"}
                 </button>
             </div>
 
             <style jsx>{`
-        @keyframes slideIn {
-          from { transform: translateX(100%); opacity: 0; }
-          to { transform: translateX(0); opacity: 1; }
-        }
-        .animate-slide-in { animation: slideIn 0.3s ease-out; }
-      `}</style>
-      </div>
-        </>
+                @keyframes slideIn {
+                    from { transform: translateX(100%); opacity: 0; }
+                    to { transform: translateX(0); opacity: 1; }
+                }
+                .animate-slide-in { animation: slideIn 0.3s ease-out; }
+            `}</style>
+        </div>
     );
 }

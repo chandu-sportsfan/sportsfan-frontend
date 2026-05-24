@@ -46,54 +46,56 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setLoading(true);
             setError(null);
 
-            // ── 1. Try JWT cookie (email/OTP users) ──────────────────────────
-            const response = await axios.get("/api/auth/host/me");
-
-            if (response.data.success && response.data.user) {
-                const u = response.data.user;
-                // Build full name from name or firstName+lastName
-                const fullName =
-                    u.name ||
-                    [u.firstName, u.lastName].filter(Boolean).join(" ").trim() ||
-                    "";
-                const normalised: User = {
-                    email: u.email,
-                    name: fullName,
-                    role: u.role || "user",
-                    userId: u.userId,
+            // ── 1. Prefer Google/NextAuth session (fastest for Google users) ──
+            if (session?.user?.email) {
+                const googleUser: User = {
+                    email: session.user.email,
+                    name: session.user.name || session.user.email.split("@")[0],
+                    role: (session.user as { role?: string }).role || "user",
+                    userId: (session.user as { userId?: string }).userId ?? session.user.email,
                 };
-                setUser(normalised);
-                localStorage.setItem("auth_user", JSON.stringify(normalised));
+                setUser(googleUser);
+                localStorage.setItem("auth_user", JSON.stringify(googleUser));
+                setLoading(false);
                 return;
             }
+
+            // ── 2. Try JWT cookie (email/OTP users) ──────────────────────────
+            try {
+                const response = await axios.get("/api/auth/host/me");
+                if (response.data.success && response.data.user) {
+                    const u = response.data.user;
+                    const fullName =
+                        u.name ||
+                        [u.firstName, u.lastName].filter(Boolean).join(" ").trim() ||
+                        "";
+                    const normalised: User = {
+                        email: u.email,
+                        name: fullName,
+                        role: u.role || "user",
+                        userId: u.userId,
+                    };
+                    setUser(normalised);
+                    localStorage.setItem("auth_user", JSON.stringify(normalised));
+                    setLoading(false);
+                    return;
+                }
+            } catch {
+                // JWT check failed — fall through to cached user
+            }
+
+            // ── 3. Fallback: cached user ─────────────────────────────────────
+            const cachedUser = localStorage.getItem("auth_user");
+            if (cachedUser) {
+                setUser(JSON.parse(cachedUser));
+            } else {
+                setUser(null);
+            }
         } catch {
-            // JWT check failed — fall through to Google session check
-        }
-
-        // ── 2. Try Google/NextAuth session ───────────────────────────────────
-        if (session?.user?.email) {
-            const googleUser: User = {
-                email: session.user.email,
-                name: session.user.name || session.user.email.split("@")[0],
-                role: (session.user as { role?: string }).role || "user",
-                // userId: (session.user as { userId?: string }).userId,
-                userId: (session.user as { userId?: string }).userId ?? session.user.email,
-            };
-            setUser(googleUser);
-            localStorage.setItem("auth_user", JSON.stringify(googleUser));
-            setLoading(false);
-            return;
-        }
-
-        // ── 3. Fallback: cached user ─────────────────────────────────────────
-        const cachedUser = localStorage.getItem("auth_user");
-        if (cachedUser) {
-            setUser(JSON.parse(cachedUser));
-        } else {
             setUser(null);
+        } finally {
+            setLoading(false);
         }
-
-        setLoading(false);
     };
 
     // Re-run when Google session loads

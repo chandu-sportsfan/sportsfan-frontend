@@ -140,7 +140,7 @@ function LiveCameraFeed({
                 <div className="h-full relative w-full">
                     {/* Jitsi SDK React component */}
                     <JitsiMeeting
-                        domain="meet.jit.si"
+                        domain="meet.uxexpert.in"
                         roomName={roomName}
                         configOverwrite={{
                             prejoinPageEnabled: false,

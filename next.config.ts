@@ -62,6 +62,11 @@ const nextConfig = {
         { source: '/api/user-points', destination: `${apiTarget}/api/user-points` },
         { source: '/api/user-points/:path*', destination: `${apiTarget}/api/user-points/:path*` },
 
+        //Users
+        { source: '/api/users', destination: `${apiTarget}/api/users` },
+        { source: '/api/users/:path*', destination: `${apiTarget}/api/users/:path*` },
+
+
         //Notifications
         { source: '/api/notifications', destination: `${apiTarget}/api/notifications` },
         { source: '/api/notifications/:path*', destination: `${apiTarget}/api/notifications/:path*` },
@@ -157,6 +162,15 @@ const nextConfig = {
         { source: '/api/battle/battle-vote/:path*', destination: `${apiTarget}/api/battle/battle-vote/:path*` },
         { source: '/api/battle/battle-session', destination: `${apiTarget}/api/battle/battle-session` },
         { source: '/api/battle/battle-session/:path*', destination: `${apiTarget}/api/battle/battle-session/:path*` },
+
+
+        //Chat & Community
+        { source: '/api/chats/:id/messages', destination: `${apiTarget}/api/chats/:id/messages` },
+        { source: '/api/chats/:id', destination: `${apiTarget}/api/chats/:id` },
+        { source: '/api/chats', destination: `${apiTarget}/api/chats` },
+        { source: '/api/chats/:path*', destination: `${apiTarget}/api/chats/:path*` },
+        { source: '/api/communities', destination: `${apiTarget}/api/communities` },
+        { source: '/api/communities/:path*', destination: `${apiTarget}/api/communities/:path*` },
 
 
         //Jersey Numbers

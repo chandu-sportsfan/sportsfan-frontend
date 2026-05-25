@@ -76,7 +76,7 @@ import { VideoProvider } from "@/context/VideoContext";
 import { PlaysProvider } from "@/context/PlaysContext";
 import { ScriptsProvider } from "@/context/ScriptsContext";
 import { LeaderboardProvider } from "@/context/LeaderboardContext";
-import GlobalActionBar from "@/src/components/GlobalActionBar";
+// import GlobalActionBar from "@/src/components/GlobalActionBar";
 import { AIChatProvider } from "@/context/AskAIChatContext";
 // import { usePathname } from "next/navigation";
 

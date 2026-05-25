@@ -159,13 +159,16 @@ function LiveCameraFeed({
                             hideConferenceTimer: true,
                             disableThirdPartyRequests: true,
                             p2p: { enabled: false },
+                            whiteboard: {
+                                enabled: true
+                            }
                         }}
                         interfaceConfigOverwrite={{
                             SHOW_JITSI_WATERMARK: false,
                             SHOW_BRAND_WATERMARK: false,
                             SHOW_POWERED_BY: false,
                             TOOLBAR_BUTTONS: isModerator 
-                                ? ['microphone', 'camera', 'desktop', 'fullscreen', 'hangup', 'chat', 'settings', 'raisehand', 'videoquality', 'participants-pane', 'recording', 'select-background'] 
+                                ? ['microphone', 'camera', 'desktop', 'fullscreen', 'hangup', 'chat', 'settings', 'raisehand', 'videoquality', 'participants-pane', 'recording', 'select-background', 'whiteboard'] 
                                 : [],
                             FILM_STRIP_MAX_HEIGHT: isModerator ? undefined : 0,
                             DISABLE_VIDEO_BACKGROUND: true,

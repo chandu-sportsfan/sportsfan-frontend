@@ -10,6 +10,7 @@ interface User {
     name: string;
     role: string;
     userId?: string;
+    uid?: string; // For Firebase users, if used in future
 }
 
 interface AuthContextType {

@@ -106,6 +106,8 @@ const nextConfig = {
         { source: '/api/createpost/:path*', destination: `${apiTarget}/api/createpost/:path*` },
         { source: '/api/createpost/polls', destination: `${apiTarget}/api/createpost/polls` },
         { source: '/api/createpost/polls/:path*', destination: `${apiTarget}/api/createpost/polls/:path*` },
+        { source: '/api/createpost/repost', destination: `${apiTarget}/api/createpost/repost` },
+        { source: '/api/createpost/repost/:path*', destination: `${apiTarget}/api/createpost/repost/:path*` },
 
         // Audio Signals
         { source: '/api/audio-messages', destination: `${apiTarget}/api/audio-messages` },

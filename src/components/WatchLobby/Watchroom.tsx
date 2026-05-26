@@ -13,6 +13,7 @@ import EmojiStorm from "@/src/components/WatchLobby/Emojistorm";
 import Polls from "@/src/components/WatchLobby/Polls";
 import VideoPlayer from "./VideoPlayer";
 import ConfettiWrapper from "./ConfettiWrapper";
+import Telestrator, { Stroke } from "./Telestrator";
 // Live camera feed via native getUserMedia API
 import Link from "next/link";
 import { Mic, MicOff, Video, VideoOff, MonitorUp, Maximize2, Minimize2, CircleDot, Plus, BarChart3, Brain, Zap, Pin, Share2, Info, X } from "lucide-react";
@@ -32,7 +33,13 @@ function LiveCameraFeed({
     onApiReady,
     onReactionReceived,
     onParticipantsChange,
-    activeInterview = null
+    activeInterview = null,
+    telestratorActive = false,
+    telestratorStrokes = [],
+    onTelestratorStrokeAdded,
+    onTelestratorUndo,
+    onTelestratorClear,
+    onTelestratorToggleActive
 }: { 
     hostName: string; 
     roomName: string; 
@@ -42,6 +49,12 @@ function LiveCameraFeed({
     onReactionReceived?: (reaction: string) => void;
     onParticipantsChange?: (participants: any[]) => void;
     activeInterview?: string | null;
+    telestratorActive?: boolean;
+    telestratorStrokes?: Stroke[];
+    onTelestratorStrokeAdded?: (stroke: Stroke) => void;
+    onTelestratorUndo?: () => void;
+    onTelestratorClear?: () => void;
+    onTelestratorToggleActive?: () => void;
 }) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const apiRef = useRef<any>(null);
@@ -124,6 +137,18 @@ function LiveCameraFeed({
         }
     }, []);
 
+    const toggleRecording = useCallback(() => {
+        if (apiRef.current) {
+            try {
+                apiRef.current.executeCommand('toggleRecording', {
+                    mode: 'file'
+                });
+            } catch (err) {
+                console.error("Failed to toggle Jitsi recording:", err);
+            }
+        }
+    }, []);
+
     const toggleExpand = useCallback(() => {
         setIsExpanded(prev => !prev);
     }, []);
@@ -165,7 +190,7 @@ function LiveCameraFeed({
                             SHOW_BRAND_WATERMARK: false,
                             SHOW_POWERED_BY: false,
                             TOOLBAR_BUTTONS: isModerator 
-                                ? ['microphone', 'camera', 'desktop', 'fullscreen', 'hangup', 'chat', 'settings', 'raisehand', 'videoquality', 'participants-pane', 'recording', 'select-background'] 
+                                ? ['microphone', 'camera', 'desktop', 'fullscreen', 'hangup', 'chat', 'settings', 'raisehand', 'videoquality', 'participants-pane', 'recording', 'localrecording', 'select-background'] 
                                 : [],
                             FILM_STRIP_MAX_HEIGHT: isModerator ? undefined : 0,
                             DISABLE_VIDEO_BACKGROUND: true,
@@ -187,6 +212,17 @@ function LiveCameraFeed({
                                 iframe.style.border = 'none';
                             }
                         }}
+                    />
+
+                    {/* Telestrator Drawing Board Overlay */}
+                    <Telestrator 
+                        isActive={telestratorActive}
+                        isModerator={isModerator}
+                        strokes={telestratorStrokes}
+                        onStrokeAdded={onTelestratorStrokeAdded}
+                        onUndo={onTelestratorUndo}
+                        onClear={onTelestratorClear}
+                        onToggleActive={onTelestratorToggleActive}
                     />
 
                     {/* LIVE badge */}
@@ -223,6 +259,18 @@ function LiveCameraFeed({
                                 title="Toggle Camera"
                             >
                                 {vidOn ? <Video size={12} /> : <VideoOff size={12} />}
+                            </button>
+                            <button
+                                type="button"
+                                onClick={toggleRecording}
+                                className={`w-6 h-6 rounded-md flex items-center justify-center transition-all hover:scale-110 ${
+                                    isRecording 
+                                        ? "bg-red-600 text-white animate-pulse" 
+                                        : "bg-white/20 text-white hover:bg-white/30"
+                                }`}
+                                title={isRecording ? "Stop Recording" : "Start Recording"}
+                            >
+                                <CircleDot size={12} className={isRecording ? "text-white" : "text-red-500"} />
                             </button>
                         </div>
                     )}
@@ -640,6 +688,10 @@ export default function WatchRoom({ room, onBack }: Props) {
     const [floatingReactions, setFloatingReactions] = useState<{id: number; emoji: string; x: number}[]>([]);
     const floatCounter = useRef(0);
 
+    // Telestrator states
+    const [isTelestratorActive, setIsTelestratorActive] = useState(false);
+    const [telestratorStrokes, setTelestratorStrokes] = useState<Stroke[]>([]);
+
     const spawnFloatingEmoji = (emoji: string) => {
         const id = ++floatCounter.current;
         const x = 20 + Math.random() * 60;
@@ -838,6 +890,21 @@ export default function WatchRoom({ room, onBack }: Props) {
             setActiveDataDrop(drop);
         } else if (momentType === "DATA_CLEAR") {
             setActiveDataDrop(null);
+        } else if (momentType.startsWith("TEL_DRAW:")) {
+            try {
+                const stroke = JSON.parse(momentType.replace("TEL_DRAW:", ""));
+                setTelestratorStrokes(prev => [...prev, stroke]);
+            } catch (err) {
+                console.error("Failed to parse telestrator draw stroke:", err);
+            }
+        } else if (momentType === "TEL_UNDO") {
+            setTelestratorStrokes(prev => prev.slice(0, -1));
+        } else if (momentType === "TEL_CLEAR") {
+            setTelestratorStrokes([]);
+        } else if (momentType.startsWith("TEL_TOGGLE:")) {
+            const active = momentType.replace("TEL_TOGGLE:", "") === "true";
+            setIsTelestratorActive(active);
+            if (!active) setTelestratorStrokes([]);
         } else if (CONFETTI_MOMENTS.has(momentType)) {
             setConfettiText(momentType);
             setConfettiTrigger(prev => prev + 1);
@@ -1506,6 +1573,12 @@ export default function WatchRoom({ room, onBack }: Props) {
                                 userRole={userRole}
                                 userName={userName}
                                 activeInterview={activeInterview}
+                                telestratorActive={isTelestratorActive}
+                                telestratorStrokes={telestratorStrokes}
+                                onTelestratorStrokeAdded={(stroke) => triggerMoment("TEL_DRAW:" + JSON.stringify(stroke))}
+                                onTelestratorUndo={() => triggerMoment("TEL_UNDO")}
+                                onTelestratorClear={() => triggerMoment("TEL_CLEAR")}
+                                onTelestratorToggleActive={() => triggerMoment("TEL_TOGGLE:" + (!isTelestratorActive).toString())}
                                 onApiReady={(api) => {
                                     jitsiApiRef.current = api;
                                 }}
@@ -1555,6 +1628,19 @@ export default function WatchRoom({ room, onBack }: Props) {
                                 >
                                     <div className="w-5 h-5 rounded-full bg-blue-600 flex items-center justify-center text-[10px] font-black text-white">4</div>
                                     <span>Four</span>
+                                </button>
+
+                                {/* TELESTRATOR / CHALKBOARD DRAW */}
+                                <button 
+                                    onClick={() => triggerMoment("TEL_TOGGLE:" + (!isTelestratorActive).toString())}
+                                    className={`flex-shrink-0 flex items-center gap-2 border rounded-full px-3.5 py-1.5 transition-all hover:scale-105 active:scale-95 text-xs font-semibold ${
+                                        isTelestratorActive 
+                                            ? 'bg-green-600/20 border-green-500 text-green-400 shadow-[0_0_10px_rgba(34,197,94,0.3)] animate-pulse' 
+                                            : 'bg-[#202023] hover:bg-[#2a2a2e] border-white/5 text-gray-200'
+                                    }`}
+                                >
+                                    <div className="w-5 h-5 rounded-full bg-green-600 flex items-center justify-center text-[10px] text-white">✏️</div>
+                                    <span>{isTelestratorActive ? 'Drawing Live...' : 'Draw Live'}</span>
                                 </button>
 
                                 {/* GOAL */}

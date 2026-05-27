@@ -69,23 +69,23 @@ purpleCap: [
 ],
   // ── Today's Next Match ────────────────────────────────────────────────────
   todayMatch: {
-    teamA: "RCB", teamAFull: "Royal Challengers Bangaluru",
-    teamB: "GT",  teamBFull: "Gujarat Titans",
+    teamA: "SRH", teamAFull: "Sunrisers Hyderabad",
+    teamB: "RR",  teamBFull: "Rajasthan Royals",
     time: "7:30 PM IST",
-    venue: "Himachal Pradesh Cricket Association Stadium, Dharamshala",
-    matchNo: 71,
+    venue: "Maharaja Yadavindra Singh PCA Stadium",
+    matchNo: 72,
     totalMatches: 74,
   },
 
   // ── Most Recent Completed Match ───────────────────────────────────────────
   recentMatch: {
-    teamA: "DC",
-    teamB: "KKR",
-    result: "DC Won By 40 Runs",
-    scoreA: "203/5",
+    teamA: "RCB",
+    teamB: "GT",
+    result: "RCB won By 92 runs",
+    scoreA: "254/5",
     oversA: "20.0",
-    scoreB: "163/10",
-    oversB: "18.4",
+    scoreB: "162/10",
+    oversB: "19.3",
   },
 
   // ── Upcoming Matches (league stage remaining) ─────────────────────────────

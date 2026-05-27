@@ -380,6 +380,7 @@ export interface Community {
   description?: string;
   avatarUrl?: string;
   memberCount: number;
+  chatId?: string; 
   groupCount: number;
   isVerified: boolean;
   createdAt: number;
@@ -529,7 +530,7 @@ export const GroupAPI = {
     }),
 };
 
-// ─── Communities ──────────────────────────────────────────────────────────────
+
 // ─── Communities ──────────────────────────────────────────────────────────────
 export const CommunityAPI = {
   list: (params?: { lastDocId?: string; lastDocMemberCount?: number; limit?: number; joined?: boolean }) => {
@@ -561,7 +562,31 @@ export const CommunityAPI = {
 
   leave: (communityId: string) =>
     request<{ success: true; message: string }>(`/communities/${communityId}/join`, { method: "DELETE" }),
+
+  // ── Members ──────────────────────────────────────────────────────────────
+  listMembers: (communityId: string, params?: { role?: string; limit?: number; lastDocId?: string }) => {
+    const q = new URLSearchParams();
+    if (params?.role)      q.set("role",      params.role);
+    if (params?.limit)     q.set("limit",     String(params.limit));
+    if (params?.lastDocId) q.set("lastDocId", params.lastDocId);
+    return request<{ success: true; members: GroupMember[]; pagination: Pagination }>(`/communities/${communityId}/members?${q}`);
+  },
+
+  addMember: (communityId: string, userId: string) =>
+    request<{ success: true; message: string; userId: string; role: string }>(`/communities/${communityId}/members`, {
+      method: "POST",
+      body: JSON.stringify({ userId }),
+    }),
+
+  updateMemberRole: (communityId: string, userId: string, role: "admin" | "member") =>
+    request<{ success: true; message: string; userId: string; role: string }>(`/communities/${communityId}/members`, {
+      method: "PATCH",
+      body: JSON.stringify({ userId, role }),
+    }),
+
+  removeMember: (communityId: string, userId: string) =>
+    request<{ success: true; message: string }>(`/communities/${communityId}/members`, {
+      method: "DELETE",
+      body: JSON.stringify({ userId }),
+    }),
 };
-
-
-

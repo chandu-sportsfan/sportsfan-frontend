@@ -1299,7 +1299,8 @@ import {
 } from "../../../lib/chatApi";
 
 type TabType  = "My Chats" | "Discover Groups" | "Communities";
-type ViewType = "list" | "create_group" | "create_community" | "chat_room" | "group_detail" | "group_members" | "edit_group";
+// type ViewType = "list" | "create_group" | "create_community" | "chat_room" | "group_detail" | "group_members" | "edit_group";
+type ViewType = "list" | "create_group" | "create_community" | "chat_room" | "group_detail" | "group_members" | "edit_group" | "community_detail";
 
 const EMOJIS = ["🤣", "🥳", "🤩", "😡", "😔"];
 
@@ -1550,6 +1551,11 @@ export default function ChatComponent() {
   const chatScrollRef = useRef<HTMLDivElement>(null);
   const inputRef      = useRef<HTMLInputElement>(null);
 
+  // Add these with your other state declarations
+const [activeCommunity, setActiveCommunity] = useState<Community | null>(null);
+const [communityMembers, setCommunityMembers] = useState<GroupMember[]>([]);
+const [communityMembersLoading, setCommunityMembersLoading] = useState(false);
+
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) setShowAddMenu(false);
@@ -1585,6 +1591,62 @@ export default function ChatComponent() {
     setActiveGroup(group);
     setView("group_detail");
   }, []);
+
+  // Add this with your other functions
+const openCommunityDetail = useCallback((community: Community) => {
+  setActiveCommunity(community);
+  setView("community_detail");
+  // Load community members
+  loadCommunityMembers(community.id);
+}, []);
+
+// Add this function
+const loadCommunityMembers = useCallback(async (communityId: string) => {
+  setCommunityMembersLoading(true);
+  try {
+    const res = await CommunityAPI.listMembers(communityId, { limit: 50 });
+    setCommunityMembers(res.members);
+  } catch (e) {
+    console.error("Failed to load community members:", e);
+  } finally {
+    setCommunityMembersLoading(false);
+  }
+}, []);
+
+// Add this function
+const handleJoinCommunity = useCallback(async (communityId: string) => {
+  setJoinLoading(communityId);
+  try {
+    const res = await CommunityAPI.join(communityId);
+    if (res.status === "joined") {
+      showToast("Joined community!");
+      communityHook.refresh();
+      // Get the community with chatId
+      const freshCommunity = await CommunityAPI.get(communityId);
+      if (freshCommunity.community.chatId) {
+        const chatRes = await ChatAPI.get(freshCommunity.community.chatId);
+        chatHook.prependChat(chatRes.chat);
+        openChat(chatRes.chat);
+      }
+    }
+  } catch (e) {
+    showToast(e instanceof Error ? e.message : "Failed to join community");
+  } finally {
+    setJoinLoading(null);
+  }
+}, [communityHook, chatHook, openChat, showToast]);
+
+// Add this function
+const handleLeaveCommunity = useCallback(async (communityId: string) => {
+  try {
+    await CommunityAPI.leave(communityId);
+    communityHook.refresh();
+    showToast("Left community");
+    setView("list");
+  } catch (e) {
+    showToast(e instanceof Error ? e.message : "Failed to leave community");
+  }
+}, [communityHook, showToast]);
 
   // ── Load members for a group ───────────────────────────────────────────────
   const loadMembers = useCallback(async (groupId: string) => {
@@ -1924,6 +1986,133 @@ export default function ChatComponent() {
       </div>
     );
   }
+
+  // ══════════════════════════════════════════════════════════════════════════
+// VIEW: COMMUNITY DETAIL
+// ══════════════════════════════════════════════════════════════════════════
+if (view === "community_detail" && activeCommunity) {
+  const isJoining = joinLoading === activeCommunity.id;
+  const userRole = communityMembers.find(m => m.userId === currentUserId)?.role;
+  const isOwnerOrAdmin = userRole === "owner" || userRole === "admin";
+
+  return (
+    <div className="min-h-screen bg-[#0a0a0a] text-white font-sans">
+      <div className="flex items-center justify-between p-4 bg-[#111] border-b border-white/5">
+        <div className="flex items-center gap-3">
+          <button onClick={() => setView("list")} className="w-10 h-10 flex items-center justify-center rounded bg-[#1a1a1a] border border-white/5">
+            <ChevronLeft size={22} />
+          </button>
+          <h1 className="text-lg font-bold truncate">{activeCommunity.name}</h1>
+        </div>
+        {isOwnerOrAdmin && (
+          <button className="w-10 h-10 flex items-center justify-center rounded bg-[#1a1a1a] border border-white/5">
+            <Settings size={18} className="text-gray-400" />
+          </button>
+        )}
+      </div>
+
+      <div className="p-6 flex flex-col gap-5">
+        <div className="flex items-center gap-5">
+          <div className="w-20 h-20 rounded-2xl bg-[#1a1c2a] border border-blue-500/10 flex items-center justify-center flex-shrink-0">
+            <Globe size={32} className="text-blue-400" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold">{activeCommunity.name}</h2>
+            <div className="flex items-center gap-3 text-sm text-gray-400 mt-1">
+              <span>{activeCommunity.memberCount.toLocaleString()} members</span>
+              <span>·</span>
+              <span>{activeCommunity.groupCount} groups</span>
+            </div>
+            {activeCommunity.isVerified && (
+              <div className="mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-400 text-xs font-bold">
+                <BadgeCheck size={10} /> VERIFIED
+              </div>
+            )}
+          </div>
+        </div>
+
+        {activeCommunity.description && (
+          <p className="text-gray-300 text-sm leading-relaxed bg-[#111] p-4 rounded-xl border border-white/5">
+            {activeCommunity.description}
+          </p>
+        )}
+
+        {/* Members section */}
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold text-gray-400">Members</h3>
+            {isOwnerOrAdmin && (
+              <button
+                onClick={() => setShowAddMemberPicker(true)}
+                className="flex items-center gap-1 text-xs text-[#e91e63] hover:text-pink-400 transition"
+              >
+                <UserPlus size={12} /> Add
+              </button>
+            )}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {communityMembers.slice(0, 5).map(member => (
+              <div key={member.userId} className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#1a1a1a] border border-white/5">
+                <ChatAvatar src={null} name={member.name || member.userId} size="w-6 h-6" />
+                <span className="text-xs truncate max-w-[80px]">{member.name || member.userId}</span>
+              </div>
+            ))}
+            {communityMembers.length > 5 && (
+              <div className="px-3 py-1.5 rounded-full bg-[#1a1a1a] border border-white/5">
+                <span className="text-xs text-gray-400">+{communityMembers.length - 5} more</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Open chat button */}
+        {activeCommunity.chatId ? (
+          <button
+            onClick={async () => {
+              try {
+                const res = await ChatAPI.get(activeCommunity.chatId!);
+                chatHook.prependChat(res.chat);
+                openChat(res.chat);
+              } catch {
+                showToast("Could not open community chat");
+              }
+            }}
+            className="w-full py-4 rounded-xl bg-gradient-to-r from-pink-500 to-orange-500 font-bold flex items-center justify-center gap-2"
+          >
+            Open Community Chat
+          </button>
+        ) : (
+          <button
+            onClick={() => handleJoinCommunity(activeCommunity.id)}
+            disabled={isJoining}
+            className="w-full py-4 rounded-xl bg-gradient-to-r from-pink-500 to-orange-500 font-bold flex items-center justify-center gap-2 disabled:opacity-60"
+          >
+            {isJoining ? <><Spinner /> Joining…</> : "Join Community"}
+          </button>
+        )}
+      </div>
+
+      {/* Add member picker */}
+      {showAddMemberPicker && (
+        <UserPickerSheet
+          open={showAddMemberPicker}
+          onClose={() => setShowAddMemberPicker(false)}
+          title="Add Member to Community"
+          onPickUser={async (userId, displayName) => {
+            setShowAddMemberPicker(false);
+            try {
+              await CommunityAPI.addMember(activeCommunity.id, userId);
+              showToast(`${displayName} added to community!`);
+              loadCommunityMembers(activeCommunity.id);
+            } catch (e) {
+              showToast(e instanceof Error ? e.message : "Failed to add member");
+            }
+          }}
+        />
+      )}
+    </div>
+  );
+}
 
   // ══════════════════════════════════════════════════════════════════════════
   // VIEW: CREATE GROUP
@@ -2581,12 +2770,13 @@ export default function ChatComponent() {
             </>
           )}
 
-          {activeTab === "Communities" && (
-            <>
-              {communityHook.error && <ErrorBanner message={communityHook.error} />}
-              {communityHook.loading && communityHook.communities.length === 0 && <>{[...Array(3)].map((_, i) => <SkeletonRow key={i} />)}</>}
-              {filterBySearch(communityHook.communities).map((community: Community) => (
-                <div key={community.id} className="flex items-center gap-4 p-4 rounded-xl bg-[#111] border border-white/5 cursor-pointer hover:bg-white/5 transition-colors">
+     {activeTab === "Communities" && (
+  <>
+    {communityHook.error && <ErrorBanner message={communityHook.error} />}
+    {communityHook.loading && communityHook.communities.length === 0 && <>{[...Array(3)].map((_, i) => <SkeletonRow key={i} />)}</>}
+    {filterBySearch(communityHook.communities).map((community: Community) => (
+      <div key={community.id} onClick={() => openCommunityDetail(community)}
+      className="flex items-center gap-4 p-4 rounded-xl bg-[#111] border border-white/5 cursor-pointer hover:bg-white/5 transition-colors">
                   <div className="w-14 h-14 rounded-lg bg-[#1a1c2a] border border-blue-500/10 flex items-center justify-center flex-shrink-0">
                     <Users size={24} className="text-blue-400" />
                   </div>

@@ -50,7 +50,7 @@
 
 
 
-
+//lib/auth.config.ts - Frontend
 
 import NextAuth from "next-auth";
 import GoogleProvider from "next-auth/providers/google";

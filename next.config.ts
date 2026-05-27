@@ -22,6 +22,7 @@ const nextConfig = {
         { source: '/api/auth/set-password', destination: `${apiTarget}/api/auth/set-password` },
         { source: '/api/auth/host/:path*', destination: `${apiTarget}/api/auth/host/:path*` },
         { source: '/api/auth/forgot-password', destination: `${apiTarget}/api/auth/forgot-password` },
+   
 
       ],
 
@@ -170,7 +171,18 @@ const nextConfig = {
         { source: '/api/chats', destination: `${apiTarget}/api/chats` },
         { source: '/api/chats/:path*', destination: `${apiTarget}/api/chats/:path*` },
         { source: '/api/communities', destination: `${apiTarget}/api/communities` },
+        { source: '/api/communities/:id', destination: `${apiTarget}/api/communities/:id` },
+        { source: '/api/communities/:id/join', destination: `${apiTarget}/api/communities/:id/join` },
         { source: '/api/communities/:path*', destination: `${apiTarget}/api/communities/:path*` },
+
+
+         //Groups & Community
+        { source: '/api/groups/:id/join', destination: `${apiTarget}/api/groups/:id/join` },
+         { source: '/api/groups/:id/members', destination: `${apiTarget}/api/groups/:id/members` },
+        { source: '/api/groups/:id', destination: `${apiTarget}/api/groups/:id` },
+        { source: '/api/groups', destination: `${apiTarget}/api/groups` },
+        { source: '/api/groups/:path*', destination: `${apiTarget}/api/groups/:path*` },
+      
 
 
         //Jersey Numbers
@@ -234,6 +246,7 @@ const nextConfig = {
       { protocol: 'https', hostname: 'sportsfan360.vercel.app', port: '', pathname: '/Content/**' },
       { protocol: 'https', hostname: 'res.cloudinary.com', port: '', pathname: '/**' },
       { protocol: 'https', hostname: 'documents.iplt20.com', port: '', pathname: '/**' },
+      { protocol: 'https', hostname: 'lh3.googleusercontent.com', port: '', pathname: '/**' },
     ],
   },
 };

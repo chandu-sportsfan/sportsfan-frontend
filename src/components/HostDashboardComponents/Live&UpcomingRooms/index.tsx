@@ -595,7 +595,7 @@
 // }
 
 
-
+//components/HostDashboardComponents/Live&UpcomingRooms/index.tsx
 
 "use client";
 
@@ -987,7 +987,7 @@ export default function LiveRoomsCard() {
     try {
       setLoading(true);
       
-      // Get the current user's email from /api/auth/me
+      // Get the current user's email from /
       const email = await fetchCurrentUser();
       
       if (!email) {

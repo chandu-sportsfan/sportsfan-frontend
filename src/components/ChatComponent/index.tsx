@@ -1943,9 +1943,9 @@ const handleLeaveCommunity = useCallback(async (communityId: string) => {
     );
   }
 
-  // ══════════════════════════════════════════════════════════════════════════
+  // 
   // VIEW: CREATE COMMUNITY
-  // ══════════════════════════════════════════════════════════════════════════
+  // 
   if (view === "create_community") {
     return (
       <div className="min-h-screen bg-[#0a0a0a] text-white p-6 font-sans">

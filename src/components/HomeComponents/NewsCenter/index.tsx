@@ -194,7 +194,13 @@ export default function NewsCenter() {
       try {
         // Append the ?date parameter with your absolute latest date
         const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '';
-        const newsRes = await fetch(`${baseUrl}/api/news-center?date=2026-05-18`);
+        const today = new Date()
+.toISOString()
+.split("T")[0]
+
+const newsRes = await fetch(
+`${baseUrl}/api/news-center?date=${today}`
+);
         const newsData = await newsRes.json();
         const newsArticles = (newsData?.articles || []) as NewsArticle[];
 

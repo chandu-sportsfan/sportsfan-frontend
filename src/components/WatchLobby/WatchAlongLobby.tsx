@@ -253,12 +253,6 @@ export default function WatchAlongLobby({ onEnterRoom }: Props) {
                             </Link>
                             <h1 className="text-xl font-bold">Watch Along</h1>
                         </div>
-                        <button 
-                            onClick={() => setShowCreateModal(true)}
-                            className="bg-pink-600 hover:bg-pink-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg shadow-pink-500/30 transition-all active:scale-95"
-                        >
-                            + Host a Watchalong
-                        </button>
                     </div>
 
                     {/* Live badge + Tab pills */}

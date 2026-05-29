@@ -1,6 +1,7 @@
 // components/watch-along/WatchRoom.tsx
 "use client";
 import { useState, useEffect, useRef, useCallback } from "react";
+import { createPortal } from "react-dom";
 import dynamic from "next/dynamic";
 import { ArrowLeft } from "lucide-react";
 import { useSession } from "next-auth/react";
@@ -16,7 +17,7 @@ import ConfettiWrapper from "./ConfettiWrapper";
 import Telestrator, { Stroke } from "./Telestrator";
 // Live camera feed via native getUserMedia API
 import Link from "next/link";
-import { Mic, MicOff, Video, VideoOff, MonitorUp, Maximize2, Minimize2, CircleDot, Plus, BarChart3, Brain, Zap, Pin, Share2, Info, X } from "lucide-react";
+import { Mic, MicOff, Video, VideoOff, MonitorUp, Maximize2, Minimize2, CircleDot, Plus, BarChart3, Brain, Zap, Pin, Share2, Info, X, Cloud, HardDrive, Crown } from "lucide-react";
 
 
 const JitsiMeeting = dynamic(
@@ -61,7 +62,20 @@ function LiveCameraFeed({
     const [micOn, setMicOn] = useState(true);
     const [vidOn, setVidOn] = useState(true);
     const [isExpanded, setIsExpanded] = useState(false);
-    const [isRecording, setIsRecording] = useState(false);
+    
+    // Custom browser-based screen recorder states
+    const [isMounted, setIsMounted] = useState(false);
+    const [customRecordingState, setCustomRecordingState] = useState<'idle' | 'recording' | 'finished'>('idle');
+    const [customRecordingMode, setCustomRecordingMode] = useState<'local' | 'file' | null>(null);
+    const [recordingDuration, setRecordingDuration] = useState(0);
+    const [recordedBlob, setRecordedBlob] = useState<Blob | null>(null);
+    const [showSaveModal, setShowSaveModal] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+    const [showRecordingOptions, setShowRecordingOptions] = useState(false);
+
+    const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+    const streamRef = useRef<MediaStream | null>(null);
+    const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
     const isModerator = userRole === 'Host' || userRole === 'Co-Host' || userRole === 'Moderator';
 
@@ -79,8 +93,9 @@ function LiveCameraFeed({
         api.addListener("videoMuteStatusChanged", (data: { muted: boolean }) => {
             setVidOn(!data.muted);
         });
-        api.addListener("recordingStatusChanged", (data: { on: boolean; mode: string }) => {
-            setIsRecording(data.on);
+        api.addListener("recordingStatusChanged", (data: { on: boolean; mode?: string }) => {
+            setCustomRecordingState(data.on ? 'recording' : 'idle');
+            setCustomRecordingMode((data.mode || 'local') as 'local' | 'file');
         });
 
         // Listen for custom Jitsi endpoint text messages (used for real-time reactions)
@@ -137,16 +152,121 @@ function LiveCameraFeed({
         }
     }, []);
 
-    const toggleRecording = useCallback(() => {
-        if (apiRef.current) {
+    const formatDuration = useCallback((secs: number) => {
+        const m = Math.floor(secs / 60).toString().padStart(2, '0');
+        const s = (secs % 60).toString().padStart(2, '0');
+        return `${m}:${s}`;
+    }, []);
+
+    const startCustomRecording = useCallback(async (mode: 'local' | 'file') => {
+        try {
+            // Request display media for tab/window capture
+            const stream = await navigator.mediaDevices.getDisplayMedia({
+                video: {
+                    displaySurface: "browser",
+                },
+                audio: true
+            });
+
+            streamRef.current = stream;
+            
+            const options = { mimeType: 'video/webm;codecs=vp9,opus' };
+            let recorder: MediaRecorder;
             try {
-                apiRef.current.executeCommand('toggleRecording', {
-                    mode: 'file'
-                });
-            } catch (err) {
-                console.error("Failed to toggle Jitsi recording:", err);
+                recorder = new MediaRecorder(stream, options);
+            } catch (e) {
+                recorder = new MediaRecorder(stream);
             }
+
+            const chunks: Blob[] = [];
+            recorder.ondataavailable = (e) => {
+                if (e.data && e.data.size > 0) {
+                    chunks.push(e.data);
+                }
+            };
+
+            recorder.onstop = () => {
+                const blob = new Blob(chunks, { type: 'video/webm' });
+                setRecordedBlob(blob);
+                setCustomRecordingState('finished');
+                setShowSaveModal(true);
+                
+                if (streamRef.current) {
+                    streamRef.current.getTracks().forEach(track => track.stop());
+                }
+            };
+
+            mediaRecorderRef.current = recorder;
+            recorder.start();
+
+            setCustomRecordingState('recording');
+            setCustomRecordingMode(mode);
+            setRecordingDuration(0);
+            setShowRecordingOptions(false);
+
+            if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
+            timerIntervalRef.current = setInterval(() => {
+                setRecordingDuration(prev => prev + 1);
+            }, 1000);
+
+        } catch (err) {
+            console.error("Failed to start custom screen recording:", err);
         }
+    }, []);
+
+    const stopCustomRecording = useCallback(() => {
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+            mediaRecorderRef.current.stop();
+        }
+        if (timerIntervalRef.current) {
+            clearInterval(timerIntervalRef.current);
+        }
+    }, []);
+
+    const toggleRecording = useCallback(() => {
+        if (customRecordingState === 'recording') {
+            stopCustomRecording();
+        } else {
+            setShowRecordingOptions(prev => !prev);
+        }
+    }, [customRecordingState, stopCustomRecording]);
+
+    const downloadRecordingLocally = useCallback(() => {
+        if (recordedBlob) {
+            const url = URL.createObjectURL(recordedBlob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `sportsfan-watchalong-${Date.now()}.webm`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            setShowSaveModal(false);
+            setRecordedBlob(null);
+            setCustomRecordingState('idle');
+        }
+    }, [recordedBlob]);
+
+    const uploadRecordingToServer = useCallback(() => {
+        if (recordedBlob) {
+            setUploadProgress(0);
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += 10;
+                setUploadProgress(progress);
+                if (progress >= 100) {
+                    clearInterval(interval);
+                }
+            }, 150);
+        }
+    }, [recordedBlob]);
+
+    useEffect(() => {
+        setIsMounted(true);
+        return () => {
+            if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
+        };
     }, []);
 
     const toggleExpand = useCallback(() => {
@@ -184,11 +304,18 @@ function LiveCameraFeed({
                             hideConferenceTimer: true,
                             disableThirdPartyRequests: true,
                             p2p: { enabled: false },
+                            defaultLogoUrl: 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7',
+                            logoImageUrl: 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7',
+                            logoClickUrl: '',
                         }}
                         interfaceConfigOverwrite={{
                             SHOW_JITSI_WATERMARK: false,
                             SHOW_BRAND_WATERMARK: false,
                             SHOW_POWERED_BY: false,
+                            DEFAULT_LOGO_URL: 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7',
+                            DEFAULT_WELCOME_PAGE_LOGO_URL: 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7',
+                            BRAND_WATERMARK_LINK: '',
+                            JITSI_WATERMARK_LINK: '',
                             TOOLBAR_BUTTONS: isModerator 
                                 ? ['microphone', 'camera', 'desktop', 'fullscreen', 'hangup', 'chat', 'settings', 'raisehand', 'videoquality', 'participants-pane', 'recording', 'localrecording', 'select-background'] 
                                 : [],
@@ -225,21 +352,48 @@ function LiveCameraFeed({
                         onToggleActive={onTelestratorToggleActive}
                     />
 
-                    {/* LIVE badge */}
-                    <div className="absolute top-1.5 left-1.5 flex items-center gap-1 z-30">
-                        <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                        <span className="text-[9px] text-green-400 font-bold">LIVE</span>
-                    </div>
+                    {/* LIVE badge & custom overlays */}
+                    {!isExpanded ? (
+                        <>
+                            {/* LIVE badge for minimized view */}
+                            <div className="absolute top-1.5 left-1.5 flex items-center gap-1 z-[9999] bg-[#111]/80 backdrop-blur-md px-1.5 py-0.5 rounded border border-white/10">
+                                <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                                <span className="text-[9px] text-green-400 font-bold">LIVE</span>
+                            </div>
 
-                    {/* Expand / Minimize toggle button (Available to everyone) */}
-                    <button
-                        type="button"
-                        onClick={toggleExpand}
-                        className="absolute top-1.5 left-8 w-6 h-6 rounded-md flex items-center justify-center bg-[#111]/80 backdrop-blur-md border border-white/10 hover:bg-white/20 text-white transition-all z-30"
-                        title={isExpanded ? "Minimize" : "Expand"}
-                    >
-                        {isExpanded ? <Minimize2 size={12} /> : <Maximize2 size={12} />}
-                    </button>
+                            {/* Expand toggle button for minimized view */}
+                            <button
+                                type="button"
+                                onClick={toggleExpand}
+                                className="absolute top-1.5 left-8 w-6 h-6 rounded-md flex items-center justify-center bg-[#111]/80 backdrop-blur-md border border-white/10 hover:bg-white/20 text-white transition-all z-[9999]"
+                                title="Expand"
+                            >
+                                <Maximize2 size={12} />
+                            </button>
+                        </>
+                    ) : (
+                        <>
+                            {/* Minimize button in the top-right corner when expanded */}
+                            <button
+                                type="button"
+                                onClick={toggleExpand}
+                                className="absolute top-[10px] right-[10px] w-8 h-8 rounded-xl flex items-center justify-center bg-[#111]/90 backdrop-blur-md border border-white/10 hover:bg-white/20 text-white transition-all z-[9999] shadow-2xl"
+                                title="Minimize"
+                            >
+                                <Minimize2 size={14} />
+                            </button>
+                        </>
+                    )}
+
+                    {/* Flashing REC badge for Host */}
+                    {isModerator && customRecordingState === 'recording' && (
+                        <div className="absolute top-1.5 left-14 flex items-center gap-1 z-[9999] bg-red-600/90 backdrop-blur-md px-2 py-0.5 rounded text-[9px] font-black text-white border border-red-500/30 animate-pulse">
+                            <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />
+                            <span>REC {formatDuration(recordingDuration)}</span>
+                        </div>
+                    )}
+
+
 
                     {/* Mic, Video, Screen Share & Record buttons (Host/Mods ONLY) */}
                     {isModerator && (
@@ -264,20 +418,119 @@ function LiveCameraFeed({
                                 type="button"
                                 onClick={toggleRecording}
                                 className={`w-6 h-6 rounded-md flex items-center justify-center transition-all hover:scale-110 ${
-                                    isRecording 
+                                    customRecordingState === 'recording' 
                                         ? "bg-red-600 text-white animate-pulse" 
                                         : "bg-white/20 text-white hover:bg-white/30"
                                 }`}
-                                title={isRecording ? "Stop Recording" : "Start Recording"}
+                                title={customRecordingState === 'recording' ? "Stop Recording" : "Start Recording Options"}
                             >
-                                <CircleDot size={12} className={isRecording ? "text-white" : "text-red-500"} />
+                                <CircleDot size={12} className={customRecordingState === 'recording' ? "text-white" : "text-red-500"} />
                             </button>
                         </div>
                     )}
 
-                    {/* Host name overlay */}
-                    <div className="absolute bottom-2 left-2 bg-[#111]/80 backdrop-blur-md px-2 py-0.5 rounded text-[9px] font-bold text-white border border-white/10 z-30">
-                        {hostName}
+                    {/* Premium Glassmorphic Recording Selector Popover */}
+                    {isModerator && showRecordingOptions && customRecordingState === 'idle' && (
+                        <div className="absolute top-[40px] right-1.5 w-[160px] bg-[#111]/95 backdrop-blur-xl border border-white/15 rounded-xl shadow-2xl p-2.5 z-40 flex flex-col gap-2 animate-in fade-in slide-in-from-top-2 duration-200">
+                            <div className="flex items-center justify-between text-[9px] text-white/50 font-bold uppercase tracking-wider px-1 pb-1 border-b border-white/5">
+                                <span>Record Session</span>
+                                <button 
+                                    onClick={() => setShowRecordingOptions(false)}
+                                    className="text-white/40 hover:text-white transition-colors"
+                                >
+                                    <X size={10} />
+                                </button>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => startCustomRecording('local')}
+                                className="flex items-center justify-center gap-2 w-full py-2 bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500 active:scale-95 text-white font-black text-[10px] uppercase tracking-widest rounded-lg transition-all shadow-md shadow-pink-500/20 group"
+                            >
+                                <CircleDot size={11} className="text-white animate-pulse" />
+                                Start Recording
+                            </button>
+                        </div>
+                    )}
+
+                    {/* Post-Recording Saver Choice Modal */}
+                    {isModerator && showSaveModal && recordedBlob && isMounted && typeof window !== "undefined" && document.body && createPortal(
+                        <div className="fixed inset-0 bg-black/75 backdrop-blur-md flex items-center justify-center p-4 z-[9999] animate-in fade-in duration-200">
+                            <div className="bg-[#111] border border-white/10 rounded-2xl p-5 w-full max-w-[240px] shadow-2xl flex flex-col gap-3.5">
+                                <div className="flex flex-col items-center text-center gap-1">
+                                    <div className="w-10 h-10 rounded-full bg-pink-600/20 flex items-center justify-center text-pink-500 mb-1 animate-bounce">
+                                        <CircleDot size={20} className="animate-pulse" />
+                                    </div>
+                                    <h3 className="text-white text-xs font-black uppercase tracking-wider">Recording Saved!</h3>
+                                    <p className="text-[9px] text-white/60 font-bold uppercase tracking-wider">Duration: {formatDuration(recordingDuration)}</p>
+                                </div>
+
+                                {uploadProgress === null ? (
+                                    <div className="flex flex-col gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={downloadRecordingLocally}
+                                            className="flex items-center justify-center gap-2 w-full py-2 bg-pink-600 hover:bg-pink-500 active:scale-95 text-white font-bold text-[10px] uppercase tracking-wider rounded-xl transition-all shadow-md shadow-pink-500/20"
+                                        >
+                                            <HardDrive size={11} />
+                                            Save Locally
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={uploadRecordingToServer}
+                                            className="flex items-center justify-center gap-2 w-full py-2 bg-white/5 hover:bg-white/10 text-white font-bold text-[10px] uppercase tracking-wider rounded-xl transition-all border border-white/10"
+                                        >
+                                            <Cloud size={11} />
+                                            Save to Server
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setShowSaveModal(false);
+                                                setRecordedBlob(null);
+                                                setCustomRecordingState('idle');
+                                            }}
+                                            className="w-full text-center text-[9px] text-white/40 hover:text-white transition-colors mt-1 font-bold uppercase tracking-wider"
+                                        >
+                                            Dismiss
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="flex flex-col gap-2 py-1">
+                                        <div className="flex justify-between items-center text-[9px] font-black text-white/80 uppercase tracking-wider">
+                                            <span>{uploadProgress < 100 ? "Uploading..." : "Success!"}</span>
+                                            <span>{uploadProgress}%</span>
+                                        </div>
+                                        <div className="w-full h-1 bg-white/10 rounded-full overflow-hidden">
+                                            <div 
+                                                className="h-full bg-pink-500 rounded-full transition-all duration-300"
+                                                style={{ width: `${uploadProgress}%` }}
+                                            />
+                                        </div>
+                                        {uploadProgress === 100 && (
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setShowSaveModal(false);
+                                                    setRecordedBlob(null);
+                                                    setCustomRecordingState('idle');
+                                                    setUploadProgress(null);
+                                                }}
+                                                className="w-full py-1.5 bg-green-600 hover:bg-green-500 text-white font-black text-[10px] uppercase tracking-widest rounded-lg transition-all text-center mt-2 shadow-lg shadow-green-500/20"
+                                            >
+                                                Okay
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        </div>,
+                        document.body
+                    )}
+
+                    {/* Host name overlay with SportsFan Logo */}
+                    <div className="absolute bottom-2 left-2 bg-[#111]/80 backdrop-blur-md px-2 py-1 rounded-lg text-[9px] font-bold text-white border border-white/10 z-[9999] flex items-center gap-1.5">
+                        <img src="/images/Logo.png" alt="SportsFan Logo" className="w-3 h-3.5 shrink-0 object-contain" />
+                        <span>{hostName}</span>
                     </div>
                 </div>
             </div>
@@ -1715,7 +1968,7 @@ export default function WatchRoom({ room, onBack }: Props) {
                             </div>
                         )}
                     </div>
-                    <div className="flex-1 flex flex-col min-h-0 lg:hidden">
+                    <div className="flex-1 flex flex-col min-h-0 lg:hidden relative">
                         <TabContent activeTab={activeTab} matchId={room.liveMatchId} userName={userName} userRole={userRole} room={room} jitsiParticipants={jitsiParticipants} jitsiApi={jitsiApiRef.current} chats={chats} qnaList={qnaList} setQnaList={setQnaList} answeringQuestion={answeringQuestion} setAnsweringQuestion={setAnsweringQuestion} qnaInput={qnaInput} setQnaInput={setQnaInput} sendChatMessage={sendChatMessage} />
                     </div>
                 </div>
@@ -1755,7 +2008,7 @@ export default function WatchRoom({ room, onBack }: Props) {
                         </div>
                     )}
 
-                    <div className="flex-1 flex flex-col min-h-0">
+                    <div className="flex-1 flex flex-col min-h-0 relative">
                         <TabContent activeTab={activeTab} matchId={room.liveMatchId} userName={userName} userRole={userRole} room={room} jitsiParticipants={jitsiParticipants} jitsiApi={jitsiApiRef.current} chats={chats} qnaList={qnaList} setQnaList={setQnaList} answeringQuestion={answeringQuestion} setAnsweringQuestion={setAnsweringQuestion} qnaInput={qnaInput} setQnaInput={setQnaInput} sendChatMessage={sendChatMessage} />
                     </div>
                 </div>
@@ -2290,6 +2543,8 @@ export default function WatchRoom({ room, onBack }: Props) {
                     )}
                 </div>
             )}
+
+
 
         </div>
     );

@@ -1378,8 +1378,6 @@ export default function WatchRoom({ room, onBack }: Props) {
                 } else {
                     setUserRole("Viewer");
                 }
-            } else if (room.id === "abhinav-bindra" || room.id === "daily-standup") {
-                setUserRole("Host");
             } else {
                 const matchName = room.name ? room.name.split(" ")[0].toLowerCase() : "";
                 setUserRole((matchName && actualName.toLowerCase() === matchName) ? "Host" : "Viewer");

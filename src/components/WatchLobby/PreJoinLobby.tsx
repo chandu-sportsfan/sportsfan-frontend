@@ -37,8 +37,6 @@ export default function PreJoinLobby({ room, onJoin, onBack }: PreJoinLobbyProps
             defaultRole = 'Host';
         } else if (room?.coHostUserId && currentUserId && currentUserId === room.coHostUserId) {
             defaultRole = 'Host';
-        } else if (room?.id === 'abhinav-bindra' || room?.id === 'daily-standup') {
-            defaultRole = 'Host';
         } else {
             const userFirst = userName.toLowerCase().split(" ")[0];
             const roomFirst = room?.name ? room.name.toLowerCase().split(" ")[0] : "";

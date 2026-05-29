@@ -1381,7 +1381,8 @@ export default function WatchRoom({ room, onBack }: Props) {
             } else if (room.id === "abhinav-bindra" || room.id === "daily-standup") {
                 setUserRole("Host");
             } else {
-                setUserRole((actualName.toLowerCase() === room.name?.split(" ")[0].toLowerCase()) ? "Host" : "Viewer");
+                const matchName = room.name ? room.name.split(" ")[0].toLowerCase() : "";
+                setUserRole((matchName && actualName.toLowerCase() === matchName) ? "Host" : "Viewer");
             }
 
             // Global Points System: Award points on join
@@ -1409,8 +1410,8 @@ export default function WatchRoom({ room, onBack }: Props) {
         if (!room.hostUserId && userName && room?.name) {
             // Placeholder Logic: If their name matches the room name, they are the Host
             // In a real DB, you'd check if `userId === room.hostId`
-            const hostFirstName = room.name.split(" ")[0].toLowerCase();
-            if (userName.toLowerCase().includes(hostFirstName)) {
+            const hostFirstName = room.name ? room.name.split(" ")[0].toLowerCase() : "";
+            if (hostFirstName && userName.toLowerCase().includes(hostFirstName)) {
                 setUserRole("Host");
             }
         }

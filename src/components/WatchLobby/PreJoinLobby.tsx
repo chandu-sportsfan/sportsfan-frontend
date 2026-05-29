@@ -41,8 +41,8 @@ export default function PreJoinLobby({ room, onJoin, onBack }: PreJoinLobbyProps
             defaultRole = 'Host';
         } else {
             const userFirst = userName.toLowerCase().split(" ")[0];
-            const roomFirst = room?.name?.toLowerCase().split(" ")[0];
-            defaultRole = (userFirst === roomFirst || userName.toLowerCase() === room?.name?.toLowerCase()) ? 'Host' : 'Viewer';
+            const roomFirst = room?.name ? room.name.toLowerCase().split(" ")[0] : "";
+            defaultRole = (userFirst && roomFirst && userFirst === roomFirst || (room?.name && userName.toLowerCase() === room.name.toLowerCase())) ? 'Host' : 'Viewer';
         }
         setSelectedRole(defaultRole);
     }, [userName, room, authUser, session]);

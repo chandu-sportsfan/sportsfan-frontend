@@ -345,48 +345,48 @@ export default function WatchAlongLobby({ onEnterRoom }: Props) {
                 <div className="w-full max-w-8xl mx-auto px-4 sm:px-6 lg:px-10 pt-6 pb-24">
                     {(() => {
                         const combinedRooms: Room[] = [
-                            {
-                                id: "abhinav-bindra",
-                                name: "Abhinav Bindra",
-                                role: "Olympic Gold Medalist & Shooting Legend",
-                                badge: "Olympic Gold",
-                                badgeColor: "bg-yellow-500",
-                                borderColor: "border-yellow-500/50",
-                                watching: "142",
-                                engagement: "98",
-                                active: "9.5",
-                                isLive: true,
-                                liveMatchId: rooms[0]?.liveMatchId || "663f22ac71d9d95f87bdf51a",
-                                displayPicture: ""
-                            },
-                            {
-                                id: "pullela-gopichand",
-                                name: "Pullela Gopichand",
-                                role: "All England Champion & Badminton Coach",
-                                badge: "Legend",
-                                badgeColor: "bg-blue-600",
-                                borderColor: "border-blue-500/50",
-                                watching: "98",
-                                engagement: "96",
-                                active: "8.8",
-                                isLive: true,
-                                liveMatchId: rooms[0]?.liveMatchId || "663f22ac71d9d95f87bdf51a",
-                                displayPicture: ""
-                            },
-                            {
-                                id: "rajaraman-g",
-                                name: "Rajaraman G",
-                                role: "Senior Sports Journalist & Analyst",
-                                badge: "Pro Analyst",
-                                badgeColor: "bg-pink-600",
-                                borderColor: "border-pink-500/50",
-                                watching: "56",
-                                engagement: "92",
-                                active: "7.4",
-                                isLive: true,
-                                liveMatchId: rooms[0]?.liveMatchId || "663f22ac71d9d95f87bdf51a",
-                                displayPicture: ""
-                            },
+                            // {
+                            //     id: "abhinav-bindra",
+                            //     name: "Abhinav Bindra",
+                            //     role: "Olympic Gold Medalist & Shooting Legend",
+                            //     badge: "Olympic Gold",
+                            //     badgeColor: "bg-yellow-500",
+                            //     borderColor: "border-yellow-500/50",
+                            //     watching: "142",
+                            //     engagement: "98",
+                            //     active: "9.5",
+                            //     isLive: true,
+                            //     liveMatchId: rooms[0]?.liveMatchId || "663f22ac71d9d95f87bdf51a",
+                            //     displayPicture: ""
+                            // },
+                            // {
+                            //     id: "pullela-gopichand",
+                            //     name: "Pullela Gopichand",
+                            //     role: "All England Champion & Badminton Coach",
+                            //     badge: "Legend",
+                            //     badgeColor: "bg-blue-600",
+                            //     borderColor: "border-blue-500/50",
+                            //     watching: "98",
+                            //     engagement: "96",
+                            //     active: "8.8",
+                            //     isLive: true,
+                            //     liveMatchId: rooms[0]?.liveMatchId || "663f22ac71d9d95f87bdf51a",
+                            //     displayPicture: ""
+                            // },
+                            // {
+                            //     id: "rajaraman-g",
+                            //     name: "Rajaraman G",
+                            //     role: "Senior Sports Journalist & Analyst",
+                            //     badge: "Pro Analyst",
+                            //     badgeColor: "bg-pink-600",
+                            //     borderColor: "border-pink-500/50",
+                            //     watching: "56",
+                            //     engagement: "92",
+                            //     active: "7.4",
+                            //     isLive: true,
+                            //     liveMatchId: rooms[0]?.liveMatchId || "663f22ac71d9d95f87bdf51a",
+                            //     displayPicture: ""
+                            // },
                             ...rooms
                         ];
 
@@ -397,7 +397,7 @@ export default function WatchAlongLobby({ onEnterRoom }: Props) {
                             </div>
                         ) : (
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
-                                {combinedRooms.map((room) => (
+                                 {combinedRooms.map((room) => (
                                     <ExpertCard
                                         key={room.id}
                                         room={room}
@@ -405,7 +405,7 @@ export default function WatchAlongLobby({ onEnterRoom }: Props) {
                                         onEnter={() => onEnterRoom(room.id)}
                                         onShare={() => openShare(room)}
                                     />
-                                ))}
+                                ))} 
                             </div>
                         );
                     })()}

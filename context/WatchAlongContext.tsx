@@ -235,27 +235,25 @@ export const WatchAlongProvider = ({ children }: { children: ReactNode }) => {
 
     const fetchMatches = useCallback(async () => {
         try {
-            setError(null);
             const res = await axios.get("/api/watch-along/matches");
             if (res.data.success) {
                 setMatches(res.data.matches);
             }
         } catch (err) {
-            setError(err instanceof Error ? err.message : "Failed to fetch matches");
-            console.warn("Fetch matches error:", err instanceof Error ? err.message : err);
+            // Non-critical – don't surface as a global error that hides the room
+            console.warn("Fetch matches error (non-critical):", err instanceof Error ? err.message : err);
         }
     }, []);
 
     const fetchMatchById = useCallback(async (matchId: string) => {
         try {
-            setError(null);
             const res = await axios.get(`/api/watch-along/matches/${matchId}`);
             if (res.data.success) {
                 setCurrentMatch(res.data.match);
             }
         } catch (err) {
-            setError(err instanceof Error ? err.message : "Failed to fetch match");
-            console.warn("Fetch match error:", err instanceof Error ? err.message : err);
+            // Non-critical – don't surface as a global error that hides the room
+            console.warn("Fetch match error (non-critical):", err instanceof Error ? err.message : err);
         }
     }, []);
 
@@ -683,14 +681,13 @@ export const WatchAlongProvider = ({ children }: { children: ReactNode }) => {
 
     const fetchRooms = useCallback(async () => {
         try {
-            setError(null);
             const res = await axios.get("/api/watch-along");
             if (res.data.success) {
                 setRooms(res.data.rooms);
             }
         } catch (err) {
-            setError(err instanceof Error ? err.message : "Failed to fetch rooms");
-            console.error("Fetch rooms error:", err);
+            // Non-critical – don't surface as a global error
+            console.warn("Fetch rooms error (non-critical):", err instanceof Error ? err.message : err);
         }
     }, []);
 
@@ -743,7 +740,6 @@ export const WatchAlongProvider = ({ children }: { children: ReactNode }) => {
     const updateRoom = useCallback(async (roomId: string, formData: FormData): Promise<Room | null> => {
         try {
             setLoading(true);
-            setError(null);
             const res = await axios.put(`/api/watch-along/${roomId}`, formData, {
                 headers: { "Content-Type": "multipart/form-data" },
             });
@@ -754,8 +750,8 @@ export const WatchAlongProvider = ({ children }: { children: ReactNode }) => {
             }
             return null;
         } catch (err) {
-            setError(err instanceof Error ? err.message : "Failed to update room");
-            console.error("Update room error:", err);
+            // Don't crash the room page for update failures (e.g. co-host sync)
+            console.warn("Update room error (non-critical):", err instanceof Error ? err.message : err);
             return null;
         } finally {
             setLoading(false);

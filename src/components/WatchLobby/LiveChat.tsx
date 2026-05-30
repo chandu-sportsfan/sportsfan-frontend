@@ -292,7 +292,8 @@ export default function LiveChat({ matchId, userRole }: LiveChatProps) {
             const result = await sendChatMessage(matchId, userName, message, "text-pink-400");
             if (result) {
                 setMessage("");
-                await fetchChats(matchId, 100);
+                // NOTE: sendChatMessage already appends the new message to state
+                // via setChats — no need to re-fetch from Firestore
             }
         } catch (error) {
             console.error("Failed to send message:", error);
@@ -350,10 +351,8 @@ export default function LiveChat({ matchId, userRole }: LiveChatProps) {
                                     {(userRole === 'Host' || userRole === 'Moderator') && (
                                         <button 
                                             onClick={async () => {
-                                                const success = await deleteChatMessage(matchId, msg.id);
-                                                if (success) {
-                                                    await fetchChats(matchId, 100);
-                                                }
+                                                await deleteChatMessage(matchId, msg.id);
+                                                // deleteChatMessage already removes from local state via setChats filter
                                             }}
                                             className="text-gray-600 hover:text-red-500 transition-all opacity-0 group-hover:opacity-100 ml-2"
                                             title="Delete Message"

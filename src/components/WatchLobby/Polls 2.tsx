@@ -51,12 +51,12 @@ export default function Polls({ matchId }: { matchId: string }) {
         }
     }, [matchId, fetchPredictions]);
 
-    // Auto-refresh every 30 seconds (optimized from 10s)
+    // Auto-refresh every 10 seconds
     useEffect(() => {
         if (!matchId) return;
         const interval = setInterval(() => {
             fetchPredictions(matchId, true);
-        }, 30000);
+        }, 10000);
         return () => clearInterval(interval);
     }, [matchId, fetchPredictions]);
 
@@ -174,7 +174,7 @@ export default function Polls({ matchId }: { matchId: string }) {
                                 </div>
 
                                 <div className="flex flex-col gap-1.5">
-                                    {pred.options.map((option, idx) => {
+                                    {pred.options.map((option) => {
                                         const voteCount = pred.votes[option] || 0;
                                         const percentage = pred.totalVotes > 0 ? (voteCount / pred.totalVotes) * 100 : 0;
                                         const isSelected = selected[pred.id] === option;
@@ -182,7 +182,7 @@ export default function Polls({ matchId }: { matchId: string }) {
 
                                         return (
                                             <button
-                                                key={option + '-' + idx}
+                                                key={option}
                                                 onClick={() => handleSelect(pred.id, option)}
                                                 disabled={isDisabled}
                                                 className={`relative w-full text-left px-4 py-2.5 rounded-lg text-[13px] font-medium transition-all overflow-hidden ${

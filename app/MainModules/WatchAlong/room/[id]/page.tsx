@@ -7,7 +7,6 @@ import { useWatchAlong, Room } from "@/context/WatchAlongContext";
 import WatchRoom from "@/src/components/WatchLobby/Watchroom";
 import PreJoinLobby from "@/src/components/WatchLobby/PreJoinLobby";
 
-
 const MOCK_ROOMS: Record<string, Room> = {
   "abhinav-bindra": {
     id: "abhinav-bindra",
@@ -71,6 +70,7 @@ export default function WatchRoomPage() {
   const params = useParams();
   const router = useRouter();
   const roomId = params?.id as string;
+  
   const [hasJoined, setHasJoined] = useState(false);
   
   const { 
@@ -97,17 +97,16 @@ export default function WatchRoomPage() {
     }
   }, [roomId, fetchRoomById, isMockRoom]);
 
-  if (isMockRoom) {
-    // Dynamic match ID assignment based on matches list or any active rooms loaded from the DB
-    const activeMatchId = rooms.find(r => r.liveMatchId)?.liveMatchId 
-      || matches[0]?.id 
-      || "663f22ac71d9d95f87bdf51a";
+  // Load active match and room details
+  const activeMatchId = rooms.find(r => r.liveMatchId)?.liveMatchId 
+    || matches[0]?.id 
+    || "663f22ac71d9d95f87bdf51a";
       
-    const roomDetails = {
-      ...MOCK_ROOMS[roomId],
-      liveMatchId: activeMatchId
-    };
+  const roomDetails = isMockRoom 
+    ? { ...MOCK_ROOMS[roomId], liveMatchId: activeMatchId } as Room
+    : currentRoom as Room;
 
+  if (isMockRoom) {
     if (!hasJoined) {
       return (
         <PreJoinLobby 
@@ -121,7 +120,7 @@ export default function WatchRoomPage() {
     return (
       <WatchRoom
         room={roomDetails} 
-        onBack={() => router.push("/MainModules/WatchAlong")} 
+        onBack={() => router.push("/MainModules/WatchAlong")}
       />
     );
   }
@@ -134,7 +133,7 @@ export default function WatchRoomPage() {
     );
   }
 
-  if (error) {
+  if (error && !currentRoom) {
     return (
       <div className="min-h-screen bg-[#111] flex items-center justify-center">
         <div className="text-center">
@@ -169,7 +168,7 @@ export default function WatchRoomPage() {
   if (!hasJoined) {
     return (
       <PreJoinLobby 
-        room={currentRoom} 
+        room={roomDetails} 
         onJoin={() => setHasJoined(true)} 
         onBack={() => router.push("/MainModules/WatchAlong")} 
       />
@@ -178,8 +177,8 @@ export default function WatchRoomPage() {
 
   return (
     <WatchRoom
-      room={currentRoom} 
-      onBack={() => router.push("/MainModules/WatchAlong")} 
+      room={roomDetails} 
+      onBack={() => router.push("/MainModules/WatchAlong")}
     />
   );
 }

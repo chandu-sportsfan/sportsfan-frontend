@@ -175,13 +175,16 @@ export default function Header() {
                             href={
                                 result.type === "player"
                                     ? `/MainModules/PlayersProfile?id=${result.playerProfilesId}&tab=highlights`
+                                    : result.type === "user"
+                                    ? `/MainModules/Profile?id=${result.id}` /* <-- Adjust to your actual User Profile route */
                                     : `/MainModules/ClubsProfile?teamProfile=${encodeURIComponent(result.name)}`
                             }
                             onClick={handleResultClick}
                         >
                             <div className="p-3 hover:bg-white/5 transition-colors flex items-center gap-3 border-b border-white/5 last:border-0">
                                 <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-800 flex-shrink-0">
-                                    {result.type === "player" ? (
+                                    {/* Treat Users similarly to Players for Avatars */}
+                                    {result.type === "player" || result.type === "user" ? (
                                         result.image ? (
                                             <img src={result.image} alt={result.name} className="w-full h-full object-cover" />
                                         ) : (
@@ -206,7 +209,8 @@ export default function Header() {
                                             </span>
                                         )}
                                         <span className="text-xs text-gray-500 uppercase">
-                                            {result.type === "player" ? "Player" : "Team"}
+                                            {/* Dynamic Label */}
+                                            {result.type === "player" ? "Player" : result.type === "user" ? "User" : "Team"}
                                         </span>
                                     </div>
                                 </div>

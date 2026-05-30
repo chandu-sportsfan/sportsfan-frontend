@@ -33,16 +33,14 @@ export default function PreJoinLobby({ room, onJoin, onBack }: PreJoinLobbyProps
         if (!userName) return;
         let defaultRole: 'Host' | 'Viewer' = 'Viewer';
         const currentUserId = authUser?.userId || (session?.user as { userId?: string })?.userId || session?.user?.id;
-        if (room?.hostUserId && currentUserId) {
-            if (currentUserId === room.hostUserId) {
-                defaultRole = 'Host';
-            } else if (room?.coHostUserId && currentUserId === room.coHostUserId) {
-                defaultRole = 'Host';
-            }
-        } else if (room?.id === 'abhinav-bindra' || room?.id === 'daily-standup') {
+        if (room?.hostUserId && currentUserId && currentUserId === room.hostUserId) {
+            defaultRole = 'Host';
+        } else if (room?.coHostUserId && currentUserId && currentUserId === room.coHostUserId) {
             defaultRole = 'Host';
         } else {
-            defaultRole = (userName.toLowerCase() === room?.name?.split(" ")[0].toLowerCase()) ? 'Host' : 'Viewer';
+            const userFirst = userName.toLowerCase().split(" ")[0];
+            const roomFirst = room?.name ? room.name.toLowerCase().split(" ")[0] : "";
+            defaultRole = (userFirst && roomFirst && userFirst === roomFirst || (room?.name && userName.toLowerCase() === room.name.toLowerCase())) ? 'Host' : 'Viewer';
         }
         setSelectedRole(defaultRole);
     }, [userName, room, authUser, session]);
@@ -113,39 +111,12 @@ export default function PreJoinLobby({ room, onJoin, onBack }: PreJoinLobbyProps
                     {room?.badge || 'Live Broadcast'}
                 </div>
 
-                {/* User Role Box with Visual Selector Tab */}
+                {/* User Role Box */}
                 <div className="w-full bg-[#222] border border-[#444] rounded-xl p-3.5 sm:p-4 mb-5 sm:mb-8 relative overflow-hidden">
                     {userRole === 'Host' && (
                         <div className="absolute top-0 right-0 w-16 h-16 bg-pink-500/10 rounded-bl-full pointer-events-none"></div>
                     )}
-                    <p className="text-gray-400 text-xs sm:text-sm mb-1 text-center font-medium">Select Perspective</p>
                     
-                    {/* Visual Role Tabs */}
-                    <div className="flex gap-1.5 sm:gap-2.5 bg-black/45 p-1 rounded-xl border border-white/5 mb-3 sm:mb-4 mt-1.5 sm:mt-2">
-                        <button
-                            type="button"
-                            onClick={() => setSelectedRole('Viewer')}
-                            className={`flex-1 py-1.5 sm:py-2 px-2 sm:px-3 text-[10px] sm:text-xs font-bold rounded-lg transition-all ${
-                                selectedRole === 'Viewer' 
-                                    ? 'bg-[#2a2a2e] text-blue-400 border border-blue-500/30 shadow-[0_2px_8px_rgba(59,130,246,0.15)]' 
-                                    : 'text-gray-500 hover:text-gray-300'
-                            }`}
-                        >
-                            👥 Viewer
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => setSelectedRole('Host')}
-                            className={`flex-1 py-1.5 sm:py-2 px-2 sm:px-3 text-[10px] sm:text-xs font-bold rounded-lg transition-all ${
-                                selectedRole === 'Host' 
-                                    ? 'bg-gradient-to-r from-pink-600 to-rose-600 text-white shadow-[0_2px_8px_rgba(219,39,119,0.3)]' 
-                                    : 'text-gray-500 hover:text-gray-300'
-                            }`}
-                        >
-                            🎙️ Host / Expert
-                        </button>
-                    </div>
-
                     <p className="text-gray-500 text-[10px] sm:text-[11px] mb-1 text-center uppercase tracking-widest font-black">Joining As</p>
                     <p className="text-white font-black text-base sm:text-lg text-center mb-3 sm:mb-4">{userName}</p>
                     

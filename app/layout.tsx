@@ -112,9 +112,10 @@ export default function RootLayout({
   //                     pathname?.startsWith("/auth/");
 
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased !p-0 overflow-x-hidden`}
+        suppressHydrationWarning
       >
 
         <SessionProvider>

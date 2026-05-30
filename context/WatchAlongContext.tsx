@@ -7,6 +7,7 @@ import {
     useState,
     ReactNode,
     useCallback,
+    useRef,
 } from "react";
 import axios from "axios";
 
@@ -226,11 +227,14 @@ export const WatchAlongProvider = ({ children }: { children: ReactNode }) => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
+    // Refs for tracking incremental chats sync
+    const lastChatTimestampRef = useRef<number>(0);
+    const lastChatMatchIdRef = useRef<string>("");
+
     /* ================= MATCH APIS ================= */
 
     const fetchMatches = useCallback(async () => {
         try {
-            setLoading(true);
             setError(null);
             const res = await axios.get("/api/watch-along/matches");
             if (res.data.success) {
@@ -239,14 +243,11 @@ export const WatchAlongProvider = ({ children }: { children: ReactNode }) => {
         } catch (err) {
             setError(err instanceof Error ? err.message : "Failed to fetch matches");
             console.warn("Fetch matches error:", err instanceof Error ? err.message : err);
-        } finally {
-            setLoading(false);
         }
     }, []);
 
     const fetchMatchById = useCallback(async (matchId: string) => {
         try {
-            setLoading(true);
             setError(null);
             const res = await axios.get(`/api/watch-along/matches/${matchId}`);
             if (res.data.success) {
@@ -255,8 +256,6 @@ export const WatchAlongProvider = ({ children }: { children: ReactNode }) => {
         } catch (err) {
             setError(err instanceof Error ? err.message : "Failed to fetch match");
             console.warn("Fetch match error:", err instanceof Error ? err.message : err);
-        } finally {
-            setLoading(false);
         }
     }, []);
 
@@ -327,16 +326,34 @@ export const WatchAlongProvider = ({ children }: { children: ReactNode }) => {
             setChats([]);
             return;
         }
+        if (lastChatMatchIdRef.current !== matchId) {
+            lastChatMatchIdRef.current = matchId;
+            lastChatTimestampRef.current = 0;
+        }
+        const since = lastChatTimestampRef.current;
         try {
-            setLoading(true);
-            const res = await axios.get(`/api/watch-along/matches/${matchId}/chats?limit=${limit}`);
+            const res = await axios.get(`/api/watch-along/matches/${matchId}/chats?limit=${limit}${since ? `&since=${since}` : ""}`);
             if (res.data.success) {
-                setChats(res.data.chats);
+                if (since === 0) {
+                    setChats(res.data.chats);
+                    if (res.data.chats.length > 0) {
+                        const newest = res.data.chats[res.data.chats.length - 1];
+                        lastChatTimestampRef.current = newest.createdAt;
+                    }
+                } else {
+                    if (res.data.chats && res.data.chats.length > 0) {
+                        const newest = res.data.chats[res.data.chats.length - 1];
+                        lastChatTimestampRef.current = newest.createdAt;
+                        setChats(prev => {
+                            const existingIds = new Set(prev.map(c => c.id));
+                            const newUnique = res.data.chats.filter((c: any) => !existingIds.has(c.id));
+                            return [...prev, ...newUnique];
+                        });
+                    }
+                }
             }
         } catch (err) {
             console.warn("Fetch chats error (non-critical):", err);
-        } finally {
-            setLoading(false);
         }
     }, []);
 
@@ -392,7 +409,6 @@ export const WatchAlongProvider = ({ children }: { children: ReactNode }) => {
             return;
         }
         try {
-            setLoading(true);
             const url = `/api/watch-along/matches/${matchId}/predictions`;
             const res = await axios.get(url);
             if (res.data.success) {
@@ -400,8 +416,6 @@ export const WatchAlongProvider = ({ children }: { children: ReactNode }) => {
             }
         } catch (err) {
             console.warn("Fetch predictions error (non-critical):", err);
-        } finally {
-            setLoading(false);
         }
     }, []);
 
@@ -510,7 +524,6 @@ export const WatchAlongProvider = ({ children }: { children: ReactNode }) => {
             return;
         }
         try {
-            setLoading(true);
             const url = `/api/watch-along/matches/${matchId}/quiz${activeOnly ? '?active=true' : ''}`;
             const res = await axios.get(url);
             if (res.data.success) {
@@ -520,8 +533,6 @@ export const WatchAlongProvider = ({ children }: { children: ReactNode }) => {
             }
         } catch (err) {
             console.warn("Fetch quiz error (non-critical):", err);
-        } finally {
-            setLoading(false);
         }
     }, []);
 
@@ -532,15 +543,12 @@ export const WatchAlongProvider = ({ children }: { children: ReactNode }) => {
             return;
         }
         try {
-            setLoading(true);
             const res = await axios.get(`/api/watch-along/matches/${matchId}/quiz?leaderboard=true`);
             if (res.data.success) {
                 setLeaderboard(res.data.leaderboard);
             }
         } catch (err) {
             console.warn("Fetch leaderboard error (non-critical):", err);
-        } finally {
-            setLoading(false);
         }
     }, []);
 
@@ -622,15 +630,12 @@ export const WatchAlongProvider = ({ children }: { children: ReactNode }) => {
             return;
         }
         try {
-            setLoading(true);
             const res = await axios.get(`/api/watch-along/matches/${matchId}/emoji-storm`);
             if (res.data.success) {
                 setEmojiReactions(res.data.reactions);
             }
         } catch (err) {
             console.warn("Fetch emoji error (non-critical):", err);
-        } finally {
-            setLoading(false);
         }
     }, []);
 
@@ -678,22 +683,19 @@ export const WatchAlongProvider = ({ children }: { children: ReactNode }) => {
 
     const fetchRooms = useCallback(async () => {
         try {
-            setLoading(true);
             setError(null);
             const res = await axios.get("/api/watch-along");
             if (res.data.success) {
                 setRooms(res.data.rooms);
             }
         } catch (err) {
+            setError(err instanceof Error ? err.message : "Failed to fetch rooms");
             console.error("Fetch rooms error:", err);
-        } finally {
-            setLoading(false);
         }
     }, []);
 
     const fetchRoomById = useCallback(async (roomId: string) => {
         try {
-            setLoading(true);
             setError(null);
 
             const res = await axios.get(`/api/watch-along/${roomId}`);
@@ -703,8 +705,6 @@ export const WatchAlongProvider = ({ children }: { children: ReactNode }) => {
         } catch (err) {
             setError(err instanceof Error ? err.message : "Failed to fetch room");
             console.error("Fetch room error:", err);
-        } finally {
-            setLoading(false);
         }
     }, []);
 

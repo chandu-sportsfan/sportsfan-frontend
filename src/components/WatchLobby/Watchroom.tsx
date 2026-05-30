@@ -2526,7 +2526,7 @@
 //                                             const colors = ["text-yellow-400", "text-gray-300", "text-amber-600"];
 //                                             const bgColors = ["bg-yellow-400/10 border-yellow-400/20", "bg-gray-300/10 border-gray-300/20", "bg-amber-600/10 border-amber-600/20"];
 //                                             return (
-//                                                 <div key={item.name} className={`flex items-center justify-between p-3.5 rounded-xl border ${bgColors[index] || "border-white/5 bg-[#202023]"}`}>
+//                                                 <div key={item.name + '-' + index} className={`flex items-center justify-between p-3.5 rounded-xl border ${bgColors[index] || "border-white/5 bg-[#202023]"}`}>
 //                                                     <div className="flex items-center gap-3">
 //                                                         <span className="text-xl">{medals[index]}</span>
 //                                                         <span className="text-sm font-black text-white">{item.name}</span>
@@ -3152,7 +3152,7 @@ function TabContent({
     setQnaInput?: any;
     sendChatMessage?: any;
 }) {
-    const { updateRoom } = useWatchAlong();
+    const { updateRoom, fetchRoomById } = useWatchAlong();
 
     // Don't render if matchId is not available
     if (!matchId && activeTab !== 'participants' && activeTab !== 'qna') {
@@ -3352,7 +3352,8 @@ function TabContent({
                             const displayName = p.displayName || p.formattedDisplayName || 'Viewer';
                             const initial = displayName.charAt(0).toUpperCase() || '?';
                             const isHostUser = displayName.toLowerCase().includes('host') || displayName.toLowerCase() === room?.name?.split(' ')[0]?.toLowerCase();
-                            const role = isHostUser ? 'Host' : 'Viewer';
+                            const isCoHostUser = room?.coHostUserId && displayName.toLowerCase() === room.coHostUserId.toLowerCase();
+                            const role = isHostUser ? 'Host' : (isCoHostUser ? 'Co-Host' : 'Viewer');
                             return (
                                 <div key={p.id || p.displayName || Math.random()} className="flex items-center justify-between bg-[#1a1a1a] p-3 rounded-xl border border-[#333]">
                                     <div className="flex items-center gap-3">
@@ -3365,12 +3366,56 @@ function TabContent({
                                         </div>
                                     </div>
                                     {(userRole === 'Host' || userRole === 'Co-Host' || userRole === 'Moderator') && (
-                                        <button
-                                            onClick={() => { if (jitsiApi) { try { jitsiApi.executeCommand('kickParticipant', p.id); } catch (err) { console.error('Kick failed:', err); } } }}
-                                            className="px-3 py-1 bg-[#222] hover:bg-red-600 text-white text-xs font-semibold rounded-full border border-[#444] transition-all"
-                                        >
-                                            Kick
-                                        </button>
+                                        <div className="flex gap-1.5">
+                                            {(userRole === 'Host' || userRole === 'Co-Host') && (
+                                                <button
+                                                    onClick={async () => {
+                                                        try {
+                                                            const fd = new FormData();
+                                                            const isAlreadyCoHost = room.coHostUserId?.toLowerCase() === displayName.toLowerCase();
+                                                            fd.set('coHostUserId', isAlreadyCoHost ? '' : displayName);
+                                                            const res = await fetch(`/api/watch-along/${room.id}`, {
+                                                                method: 'PUT',
+                                                                body: fd
+                                                            });
+                                                            if (res.ok) {
+                                                                alert(isAlreadyCoHost ? `${displayName} is no longer Co-Host!` : `${displayName} is now Co-Host!`);
+                                                                if (room.id) await fetchRoomById(room.id);
+                                                            }
+                                                        } catch (err) { console.error('Toggle Co-Host failed:', err); }
+                                                    }}
+                                                    className={`px-3 py-1 text-xs font-semibold rounded-full border transition-all flex items-center gap-1 ${
+                                                        room.coHostUserId?.toLowerCase() === displayName.toLowerCase()
+                                                            ? 'bg-yellow-600 border-yellow-500 text-white'
+                                                            : 'bg-[#222] hover:bg-yellow-600 border-[#444] text-white'
+                                                    }`}
+                                                    title={room.coHostUserId?.toLowerCase() === displayName.toLowerCase() ? "Remove Co-Host" : "Make Co-Host"}
+                                                >
+                                                    <Crown size={10} /> {room.coHostUserId?.toLowerCase() === displayName.toLowerCase() ? "Co-Host" : "Make Co-Host"}
+                                                </button>
+                                            )}
+                                            <button
+                                                onClick={async () => {
+                                                    if (jitsiApi) {
+                                                        try {
+                                                            jitsiApi.executeCommand('kickParticipant', p.id);
+                                                        } catch (err) {
+                                                            console.error('Jitsi kick failed:', err);
+                                                        }
+                                                    }
+                                                    if (sendChatMessage && room?.liveMatchId) {
+                                                        try {
+                                                            await sendChatMessage(room.liveMatchId, "System", `[SYSTEM_REACTION]:KICK:${displayName}`, "text-red-500");
+                                                        } catch (err) {
+                                                            console.error('Broadcast kick failed:', err);
+                                                        }
+                                                    }
+                                                }}
+                                                className="px-3 py-1 bg-[#222] hover:bg-red-600 text-white text-xs font-semibold rounded-full border border-[#444] transition-all"
+                                            >
+                                                Kick
+                                            </button>
+                                        </div>
                                     )}
                                 </div>
                             );
@@ -3419,7 +3464,8 @@ export default function WatchRoom({ room, onBack }: Props) {
         fetchChats,
         fetchPredictions,
         fetchQuizQuestions,
-        sendChatMessage
+        sendChatMessage,
+        fetchRoomById
     } = useWatchAlong();
     const [liveMatch, setLiveMatch] = useState<Match | null>(null);
     const [isLoadingMatch, setIsLoadingMatch] = useState(false);
@@ -3429,6 +3475,7 @@ export default function WatchRoom({ room, onBack }: Props) {
     // Real-time Jitsi states
     const [jitsiParticipants, setJitsiParticipants] = useState<any[]>([]);
     const jitsiApiRef = useRef<any>(null);
+    const [jitsiApi, setJitsiApi] = useState<any>(null);
 
     // Creation Modals Visibility
     const [showPredictionModal, setShowPredictionModal] = useState(false);
@@ -3881,36 +3928,55 @@ export default function WatchRoom({ room, onBack }: Props) {
         fetchChats(room.liveMatchId, 100);
         fetchPredictions(room.liveMatchId, false);
         fetchQuizQuestions(room.liveMatchId, false);
+        if (room.id) fetchRoomById(room.id);
 
+        // Parent-level sync every 2 seconds for flawless, real-time spectator synchronization
         const interval = setInterval(() => {
             fetchChats(room.liveMatchId, 100);
             fetchPredictions(room.liveMatchId, false);
             fetchQuizQuestions(room.liveMatchId, false);
-        }, 5000);
+            if (room.id) fetchRoomById(room.id);
+        }, 2000);
 
         return () => clearInterval(interval);
-    }, [room?.liveMatchId, fetchChats, fetchPredictions, fetchQuizQuestions]);
+    }, [room?.liveMatchId, room?.id, fetchChats, fetchPredictions, fetchQuizQuestions, fetchRoomById]);
 
     // System-wide reactions sync via hidden chat events
     const processedChatReactions = useRef<Set<string>>(new Set());
-    const mountTime = useRef<number>(Date.now());
+    const hasLoadedInitialChats = useRef(false);
 
     useEffect(() => {
         if (!chats || chats.length === 0) return;
+
+        // If we haven't marked the initial chats yet, add all existing IDs to the set
+        if (!hasLoadedInitialChats.current) {
+            chats.forEach((msg: any) => {
+                processedChatReactions.current.add(msg.id);
+            });
+            hasLoadedInitialChats.current = true;
+            return;
+        }
 
         // For subsequent updates, check for any new system reactions
         chats.forEach((msg: any) => {
             if (msg.text?.startsWith('[SYSTEM_REACTION]:') && !processedChatReactions.current.has(msg.id)) {
                 processedChatReactions.current.add(msg.id);
-                // Only trigger if reaction was created after mount (with a 2-second buffer for clock skew)
-                if (msg.createdAt >= mountTime.current - 2000) {
-                    const reactionType = msg.text.replace('[SYSTEM_REACTION]:', '');
+                const reactionType = msg.text.replace('[SYSTEM_REACTION]:', '');
+                
+                if (reactionType.startsWith('KICK:')) {
+                    const kickedName = reactionType.replace('KICK:', '').trim().toLowerCase();
+                    const currentLowerName = userName?.trim().toLowerCase();
+                    if (currentLowerName && kickedName === currentLowerName) {
+                        alert("You have been removed from the watchroom by the host.");
+                        onBack();
+                    }
+                } else {
                     // Play reaction animation locally without re-broadcasting
                     triggerMoment(reactionType, false);
                 }
             }
         });
-    }, [chats]);
+    }, [chats, userName, onBack]);
 
     // No body overflow lock — let the page scroll naturally.
     // The watchroom uses flex layout so internal panels handle their own scroll.
@@ -3920,64 +3986,71 @@ export default function WatchRoom({ room, onBack }: Props) {
         
         const isUserLoggedIn = status === "authenticated" || !!authUser;
         const actualName = authUser?.name || session?.user?.name;
+        
+        let resolvedName = "Anonymous";
+        let resolvedUserId = "";
+        let resolvedEmail = "";
 
         if (isUserLoggedIn && actualName) {
+            resolvedName = actualName;
+            resolvedUserId = authUser?.userId || (session?.user as { userId?: string })?.userId || session?.user?.id || "";
+            resolvedEmail = authUser?.email || session?.user?.email || "";
             setUserName(actualName);
-            
-            // ROLE LOGIC — Priority order:
-            // 1. Real backend: check if session user ID matches room.hostUserId or coHostUserId
-            // 2. Fallback: static demo room IDs
-            const currentUserId = authUser?.userId || (session?.user as { userId?: string })?.userId || session?.user?.id;
-            if (room.hostUserId && currentUserId) {
-                if (currentUserId === room.hostUserId) {
-                    setUserRole("Host");
-                } else if (room.coHostUserId && currentUserId === room.coHostUserId) {
-                    setUserRole("Co-Host");
-                } else {
-                    setUserRole("Viewer");
-                }
-            } else {
-                const matchName = room.name ? room.name.split(" ")[0].toLowerCase() : "";
-                setUserRole((matchName && actualName.toLowerCase() === matchName) ? "Host" : "Viewer");
-            }
-
-            // Global Points System: Award points on join
-            console.log(`[Global Points System] 🏆 50 points awarded to ${actualName} for joining!`);
         } else {
-            // Guest/Viewer fallback so they actually join the Jitsi room and show up in participants list
             const stored = typeof window !== "undefined" ? localStorage.getItem("watchalong_user_name") : null;
             const guestName = stored || `Viewer_${Math.floor(100 + Math.random() * 900)}`;
             if (typeof window !== "undefined" && !stored) {
                 localStorage.setItem("watchalong_user_name", guestName);
             }
+            resolvedName = guestName;
             setUserName(guestName);
-            setUserRole("Viewer");
         }
 
-        // Demo Role Override
-        const demoRoleOverride = typeof window !== 'undefined' ? sessionStorage.getItem("demo_user_role") : null;
-        if (demoRoleOverride) {
-            setUserRole(demoRoleOverride);
-        }
-    }, [status, session, authUser, room.id, room.hostUserId, room.coHostUserId, room.name]);
+        // Resolve user's role based on unified case-insensitive matching
+        let isHost = false;
+        let isCoHost = false;
 
-    // Evaluate Role based on Room Data
-    useEffect(() => {
-        if (!room.hostUserId && userName && room?.name) {
-            // Placeholder Logic: If their name matches the room name, they are the Host
-            // In a real DB, you'd check if `userId === room.hostId`
-            const hostFirstName = room.name ? room.name.split(" ")[0].toLowerCase() : "";
-            if (hostFirstName && userName.toLowerCase().includes(hostFirstName)) {
-                setUserRole("Host");
+        const normalizedCoHostId = room.coHostUserId?.toLowerCase()?.trim() || "";
+        const normalizedHostId = room.hostUserId?.toLowerCase()?.trim() || "";
+
+        const myName = resolvedName.toLowerCase().trim();
+        const myUserId = resolvedUserId.toLowerCase().trim();
+        const myEmail = resolvedEmail.toLowerCase().trim();
+
+        // 1. Host check
+        if (normalizedHostId) {
+            if (myUserId === normalizedHostId || myName === normalizedHostId || myEmail === normalizedHostId) {
+                isHost = true;
+            }
+        } else {
+            const matchName = room.name ? room.name.split(" ")[0].toLowerCase().trim() : "";
+            if (matchName && myName.includes(matchName)) {
+                isHost = true;
             }
         }
 
-        // Demo Role Override
+        // 2. Co-Host check
+        if (normalizedCoHostId) {
+            if (myUserId === normalizedCoHostId || myName === normalizedCoHostId || myEmail === normalizedCoHostId) {
+                isCoHost = true;
+            }
+        }
+
+        // Assign resolved role
+        if (isHost) {
+            setUserRole("Host");
+        } else if (isCoHost) {
+            setUserRole("Co-Host");
+        } else {
+            setUserRole("Viewer");
+        }
+
+        // Demo Role Override (only apply if the user is not actively promoted to Co-Host in real-time)
         const demoRoleOverride = typeof window !== 'undefined' ? sessionStorage.getItem("demo_user_role") : null;
-        if (demoRoleOverride) {
+        if (demoRoleOverride && !isCoHost) {
             setUserRole(demoRoleOverride);
         }
-    }, [userName, room?.name, room.hostUserId]);
+    }, [status, session, authUser, room.id, room.hostUserId, room.coHostUserId, room.name]);
 
 
     // Fetch match details when room has liveMatchId
@@ -4127,7 +4200,14 @@ export default function WatchRoom({ room, onBack }: Props) {
                     )}
                     <span className="text-sm font-bold">{room.name || "Watch Room"}</span>
                 </div>
-                <button className="text-gray-400 hover:text-white text-lg transition-colors">⊕</button>
+                <button
+                    onClick={handleShare}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-pink-600/10 border border-pink-500/30 hover:bg-pink-600/20 active:scale-95 text-pink-400 hover:text-pink-300 text-xs font-black uppercase tracking-wider rounded-xl transition-all duration-300 shadow-[0_0_15px_rgba(236,72,153,0.15)] hover:shadow-[0_0_20px_rgba(236,72,153,0.25)] cursor-pointer"
+                    title="Copy Invite Link"
+                >
+                    <Share2 size={13} className="animate-pulse" />
+                    <span>Share</span>
+                </button>
             </div>
 
             {/* ── Score bar ── */}
@@ -4297,7 +4377,7 @@ export default function WatchRoom({ room, onBack }: Props) {
             <div className="flex flex-col lg:flex-row flex-1 min-h-0">
 
                 {/* ── LEFT: video + action tabs ── */}
-                <div className="flex flex-col lg:flex-1 lg:min-w-0 overflow-y-auto">
+                <div className="flex flex-col flex-1 lg:min-w-0 overflow-y-auto">
 
                     {/* Video player */}
                     <div className="relative w-full aspect-video bg-[#1a0a14] overflow-hidden">
@@ -4391,6 +4471,7 @@ export default function WatchRoom({ room, onBack }: Props) {
                                 onTelestratorToggleActive={() => triggerMoment("TEL_TOGGLE:" + (!isTelestratorActive).toString())}
                                 onApiReady={(api) => {
                                     jitsiApiRef.current = api;
+                                    setJitsiApi(api);
                                 }}
                                 onReactionReceived={(reaction) => {
                                     triggerMoment(reaction, false);
@@ -4400,6 +4481,11 @@ export default function WatchRoom({ room, onBack }: Props) {
                                 }}
                             />
                         )}
+                        {/* SportsFan 360 Watermark — placed in the top-right corner of the video player for broadcast stream feel, preventing chat overlaps */}
+                        <div className="absolute top-4 right-4 z-[40] pointer-events-none select-none flex items-center gap-2 px-3 py-1.5 rounded-lg animate-fade-in" style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(4px)' }}>
+                            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center text-[8px] font-black text-white leading-none">SF</div>
+                            <span className="text-white/80 text-xs font-bold tracking-wide" style={{ textShadow: '0 1px 3px rgba(0,0,0,0.5)' }}>SportsFan 360</span>
+                        </div>
                     </div>
 
                     {/* Zoom-style Host Reactions */}
@@ -4526,7 +4612,7 @@ export default function WatchRoom({ room, onBack }: Props) {
                         )}
                     </div>
                     <div className="flex-1 flex flex-col min-h-0 lg:hidden relative">
-                        <TabContent activeTab={activeTab} matchId={room.liveMatchId} userName={userName} userRole={userRole} room={room} jitsiParticipants={jitsiParticipants} jitsiApi={jitsiApiRef.current} chats={chats} qnaList={qnaList} setQnaList={setQnaList} answeringQuestion={answeringQuestion} setAnsweringQuestion={setAnsweringQuestion} qnaInput={qnaInput} setQnaInput={setQnaInput} sendChatMessage={sendChatMessage} />
+                        <TabContent activeTab={activeTab} matchId={room.liveMatchId} userName={userName} userRole={userRole} room={room} jitsiParticipants={jitsiParticipants} jitsiApi={jitsiApi} chats={chats} qnaList={qnaList} setQnaList={setQnaList} answeringQuestion={answeringQuestion} setAnsweringQuestion={setAnsweringQuestion} qnaInput={qnaInput} setQnaInput={setQnaInput} sendChatMessage={sendChatMessage} />
                     </div>
                 </div>
 
@@ -4566,7 +4652,7 @@ export default function WatchRoom({ room, onBack }: Props) {
                     )}
 
                     <div className="flex-1 flex flex-col min-h-0 relative">
-                        <TabContent activeTab={activeTab} matchId={room.liveMatchId} userName={userName} userRole={userRole} room={room} jitsiParticipants={jitsiParticipants} jitsiApi={jitsiApiRef.current} chats={chats} qnaList={qnaList} setQnaList={setQnaList} answeringQuestion={answeringQuestion} setAnsweringQuestion={setAnsweringQuestion} qnaInput={qnaInput} setQnaInput={setQnaInput} sendChatMessage={sendChatMessage} />
+                        <TabContent activeTab={activeTab} matchId={room.liveMatchId} userName={userName} userRole={userRole} room={room} jitsiParticipants={jitsiParticipants} jitsiApi={jitsiApi} chats={chats} qnaList={qnaList} setQnaList={setQnaList} answeringQuestion={answeringQuestion} setAnsweringQuestion={setAnsweringQuestion} qnaInput={qnaInput} setQnaInput={setQnaInput} sendChatMessage={sendChatMessage} />
                     </div>
                 </div>
 
@@ -5083,7 +5169,7 @@ export default function WatchRoom({ room, onBack }: Props) {
                                             const colors = ["text-yellow-400", "text-gray-300", "text-amber-600"];
                                             const bgColors = ["bg-yellow-400/10 border-yellow-400/20", "bg-gray-300/10 border-gray-300/20", "bg-amber-600/10 border-amber-600/20"];
                                             return (
-                                                <div key={item.name} className={`flex items-center justify-between p-3.5 rounded-xl border ${bgColors[index] || "border-white/5 bg-[#202023]"}`}>
+                                                <div key={item.name + '-' + index} className={`flex items-center justify-between p-3.5 rounded-xl border ${bgColors[index] || "border-white/5 bg-[#202023]"}`}>
                                                     <div className="flex items-center gap-3">
                                                         <span className="text-xl">{medals[index]}</span>
                                                         <span className="text-sm font-black text-white">{item.name}</span>

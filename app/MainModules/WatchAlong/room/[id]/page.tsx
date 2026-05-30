@@ -133,7 +133,7 @@ export default function WatchRoomPage() {
     );
   }
 
-  if (error) {
+  if (error && !currentRoom) {
     return (
       <div className="min-h-screen bg-[#111] flex items-center justify-center">
         <div className="text-center">

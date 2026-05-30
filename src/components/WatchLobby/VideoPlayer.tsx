@@ -242,12 +242,12 @@ interface VideoPlayerProps {
 export default function VideoPlayer({ videoUrl, isLive }: VideoPlayerProps) {
   // Extract video ID from YouTube URL
   const getYouTubeId = (url: string): string | null => {
+    if (!url) return null;
     const patterns = [
-      /(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&?#]+)/,
-      /youtube\.com\/embed\/([^?]+)/,
+      /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&?#]+)/,
     ];
     for (const pattern of patterns) {
-      const match = url.split('?')[0].match(pattern);
+      const match = url.match(pattern);
       if (match) return match[1];
     }
     return null;

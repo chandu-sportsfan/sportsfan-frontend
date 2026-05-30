@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { getAuthHeaders } from '@/lib/getAuthHeaders';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://sportsfan360.vercel.app';
 const API_BASE = `${BACKEND_URL}/api/watch-along`;
@@ -82,9 +83,10 @@ export async function GET(req: Request, { params }: { params: Promise<{ matchId:
     const localPredictions = getLocalPredictions(matchId);
 
     try {
+        const authHeaders = await getAuthHeaders();
         const response = await fetch(`${API_BASE}/matches/${matchId}/predictions`, {
             method: 'GET',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', ...authHeaders },
             cache: 'no-store',
         });
 
@@ -122,9 +124,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ matchId
     const body = await req.json();
 
     try {
+        const authHeaders = await getAuthHeaders();
         const response = await fetch(`${API_BASE}/matches/${matchId}/predictions`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', ...authHeaders },
             body: JSON.stringify(body),
         });
 
@@ -202,9 +205,10 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ matchI
     const body = await req.json();
 
     try {
+        const authHeaders = await getAuthHeaders();
         const response = await fetch(`${API_BASE}/matches/${matchId}/predictions`, {
             method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', ...authHeaders },
             body: JSON.stringify(body),
         });
 

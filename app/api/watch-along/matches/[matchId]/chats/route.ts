@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
+import { getAuthHeaders } from '@/lib/getAuthHeaders';
 
-const API_BASE_URL = 'https://sportsfan360.vercel.app/api/watch-along';
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://sportsfan360.vercel.app';
+const API_BASE_URL = `${BACKEND_URL}/api/watch-along`;
 
 export async function GET(req: Request, { params }: { params: Promise<{ matchId: string }> }) {
     try {
@@ -30,10 +32,11 @@ export async function POST(req: Request, { params }: { params: Promise<{ matchId
     try {
         const { matchId } = await params;
         const body = await req.json();
+        const authHeaders = await getAuthHeaders();
         
         const response = await fetch(`${API_BASE_URL}/matches/${matchId}/chats`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', ...authHeaders },
             body: JSON.stringify(body),
         });
         
@@ -57,10 +60,11 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ match
     try {
         const { matchId } = await params;
         const body = await req.json();
+        const authHeaders = await getAuthHeaders();
         
         const response = await fetch(`${API_BASE_URL}/matches/${matchId}/chats`, {
             method: 'DELETE',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', ...authHeaders },
             body: JSON.stringify(body),
         });
         

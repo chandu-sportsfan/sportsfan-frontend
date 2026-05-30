@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { getAuthHeaders } from '@/lib/getAuthHeaders';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://sportsfan360.vercel.app';
 const API_BASE = `${BACKEND_URL}/api/watch-along`;
@@ -31,10 +32,12 @@ export async function PUT(req: Request, { params }: { params: Promise<{ roomId: 
     try {
         const { roomId } = await params;
         const formData = await req.formData();
+        const authHeaders = await getAuthHeaders();
 
         const response = await fetch(`${API_BASE}/${roomId}`, {
             method: 'PUT',
             body: formData,
+            headers: { ...authHeaders },
         });
 
         if (!response.ok) {
@@ -54,9 +57,10 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ roomI
     try {
         const { roomId } = await params;
 
+        const authHeaders = await getAuthHeaders();
         const response = await fetch(`${API_BASE}/${roomId}`, {
             method: 'DELETE',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', ...authHeaders },
         });
 
         if (!response.ok) {

@@ -198,6 +198,13 @@ const nextConfig = {
         { source: '/api/fanbattle/session', destination: `${apiTarget}/api/fanbattle/session` },
         { source: '/api/fanbattle/session/:path*', destination: `${apiTarget}/api/fanbattle/session/:path*` },
 
+         // Reports & Preferences
+        { source: '/api/post-report', destination: `${apiTarget}/api/post-report` },
+        { source: '/api/post-report/:path*', destination: `${apiTarget}/api/post-report/:path*` },
+        { source: '/api/post-preference', destination: `${apiTarget}/api/post-preference` },
+        { source: '/api/post-preference/:path*', destination: `${apiTarget}/api/post-preference/:path*` },
+
+
         //Comments
         { source: '/api/comments', destination: `${apiTarget}/api/comments` },
 

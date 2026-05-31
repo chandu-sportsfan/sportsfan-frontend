@@ -1,27 +1,26 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   ArrowLeft, Edit2, MapPin, Calendar,
   Link as LinkIcon, Globe, User,
   MessageSquare, ThumbsUp, Users, Radio,
-  Check, Share2, Loader2, AlertCircle,
+  Check, Share2,
 } from "lucide-react";
-import { useAuth } from "@/context/AuthContext";
 
 /* ═══════════════════════════════
    DESIGN TOKENS
 ═══════════════════════════════ */
-const BG   = "#070809";
-const CARD = "#0B0C10";
+const BG    = "#070809";
+const CARD  = "#0B0C10";
 const INNER = "#121317";
-const TXT  = "#f3f3f7";
-const SUB  = "#a1a1af";
+const TXT   = "#f3f3f7";
+const SUB   = "#a1a1af";
 const MUTED = "#676777";
-const PINK = "#e8437a";
-const GRAD = "linear-gradient(90deg,#e8437a,#f4732a)";
-const R    = 14;
+const PINK  = "#e8437a";
+const GRAD  = "linear-gradient(90deg,#e8437a,#f4732a)";
+const R     = 14;
 
 const card = (extra: React.CSSProperties = {}): React.CSSProperties => ({
   background: CARD,
@@ -53,7 +52,7 @@ interface ProfileData {
   location: string;
   joinedDate: string;
   website: string;
-  stats: { following: number | string; followers: number | string; following2: number | string };
+  stats: { following: number | string; followers: number | string; mutual: number | string };
   interests: string[];
   favoriteTeams: { name: string; league: string; liked: boolean; initial: string; color: string }[];
   socialLinks: { platform: string; handle: string; icon: string }[];
@@ -67,12 +66,29 @@ interface ValidationErrors {
   website?: string;
 }
 
-interface PostData {
-  id?: string;
-  _id?: string;
-  commentCount?: number;
-  [key: string]: unknown;
-}
+/* ─── Static default profile ─── */
+const DEFAULT_PROFILE: ProfileData = {
+  name: "Raghav Gupta",
+  handle: "@raghavfan360",
+  avatar: "",
+  subtitle: "Die-hard sports fan • Cricket & Football lover",
+  description: "Passionate about sports since childhood. Love watching live matches, debating tactics, and connecting with fellow fans around the world.",
+  location: "New Delhi, India",
+  joinedDate: "January 2024",
+  website: "https://sportsfan360.com",
+  stats: { following: 128, followers: 495, mutual: 43 },
+  interests: ["Cricket", "Football", "Basketball", "F1", "Tennis"],
+  favoriteTeams: [
+    { name: "Mumbai Indians", league: "IPL",        liked: true,  initial: "MI", color: "#004C8C" },
+    { name: "Real Madrid",    league: "La Liga",     liked: true,  initial: "RM", color: "#FEBE10" },
+    { name: "India National", league: "Cricket",     liked: true,  initial: "IN", color: "#FF9933" },
+  ],
+  socialLinks: [
+    { platform: "Instagram", handle: "raghavfan360",     icon: "ig" },
+    { platform: "X",         handle: "@raghavfan360",    icon: "x"  },
+    { platform: "YouTube",   handle: "RaghavFan360",     icon: "yt" },
+  ],
+};
 
 /* ─── Helpers ─── */
 function deriveHandle(name: string): string {
@@ -80,7 +96,7 @@ function deriveHandle(name: string): string {
   return `@${slug || "user"}fan360`;
 }
 
-/* ─── Avatar display (read-only, no upload) ─── */
+/* ─── Avatar ─── */
 function Av({ src, name, sz = 38 }: { src: string; name: string; sz?: number }) {
   return (
     <div style={{
@@ -90,7 +106,8 @@ function Av({ src, name, sz = 38 }: { src: string; name: string; sz?: number }) 
       fontSize: sz * 0.38, fontWeight: 700, color: "#fff",
     }}>
       {src
-        ? <img src={src} alt={name} style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
+        ? <img src={src} alt={name} style={{ width: "100%", height: "100%", objectFit: "cover" }}
+            onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
         : name.charAt(0).toUpperCase()}
     </div>
   );
@@ -136,6 +153,7 @@ function SocialIcon({ icon }: { icon: string }) {
       </svg>
     </div>
   );
+  /* YouTube / default */
   return (
     <div style={wrap}>
       <svg width="16" height="16" viewBox="0 0 24 24" fill="#ff4444">
@@ -149,27 +167,14 @@ function SocialIcon({ icon }: { icon: string }) {
    MAIN PAGE
 ═══════════════════════════════ */
 export default function ProfilePage() {
-  const { user } = useAuth();
+  const [isEditing, setIsEditing]     = useState(false);
+  const [activeTab, setActiveTab]     = useState("Posts");
+  const [isMobile, setIsMobile]       = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
-  const [isEditing, setIsEditing] = useState(false);
-  const [activeTab, setActiveTab] = useState("Posts");
-  const [isMobile, setIsMobile]   = useState(false);
-
-  const [profile, setProfile]               = useState<ProfileData | null>(null);
-  const [profileLoading, setProfileLoading] = useState(true);
-  const [profileError, setProfileError]     = useState<string | null>(null);
-  const [saving, setSaving]                 = useState(false);
-  const [saveSuccess, setSaveSuccess]       = useState(false);
-
-  const [editForm, setEditForm]       = useState<ProfileData | null>(null);
+  const [profile, setProfile]         = useState<ProfileData>(DEFAULT_PROFILE);
+  const [editForm, setEditForm]       = useState<ProfileData>(DEFAULT_PROFILE);
   const [fieldErrors, setFieldErrors] = useState<ValidationErrors>({});
-
-  const [posts, setPosts]               = useState<PostData[]>([]);
-  const [postsLoading, setPostsLoading] = useState(false);
-  const [postsError, setPostsError]     = useState<string | null>(null);
-  const [postsPage, setPostsPage]       = useState(1);
-  const [postsHasMore, setPostsHasMore] = useState(false);
-  const sentinelRef = useRef<HTMLDivElement>(null);
 
   /* ── Responsive ── */
   useEffect(() => {
@@ -179,80 +184,14 @@ export default function ProfilePage() {
     return () => window.removeEventListener("resize", check);
   }, []);
 
-  /* ── Fetch profile ── */
-  useEffect(() => {
-    async function load() {
-      setProfileLoading(true);
-      setProfileError(null);
-      try {
-        const res = await fetch("/api/profile");
-        if (!res.ok) {
-          // Never render raw HTML — always show a human-readable message
-          throw new Error(`Server returned ${res.status}. Check that /api/profile/route.ts exists.`);
-        }
-        const data: ProfileData = await res.json();
-        setProfile(data);
-        setEditForm(data);
-      } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : "Failed to load profile.";
-        // Truncate any accidental HTML blobs so they never render in the UI
-        setProfileError(msg.length > 200 ? "Could not load profile. Please try again." : msg);
-      } finally {
-        setProfileLoading(false);
-      }
-    }
-    load();
-  }, []);
-
-  /* ── Fetch posts ── */
-  const fetchPosts = useCallback(async (page: number, replace = false) => {
-    if (!user) return;
-    setPostsLoading(true);
-    setPostsError(null);
-    try {
-      const res = await fetch(`/api/user-posts?page=${page}&limit=10`);
-      if (!res.ok) throw new Error(`Posts fetch failed (${res.status})`);
-      const data = await res.json();
-      setPosts(prev => replace ? data.posts : [...prev, ...data.posts]);
-      setPostsHasMore(data.hasMore ?? false);
-      setPostsPage(page);
-    } catch (err: unknown) {
-      setPostsError(err instanceof Error ? err.message : "Failed to load posts.");
-    } finally {
-      setPostsLoading(false);
-    }
-  }, [user]);
-
-  useEffect(() => { fetchPosts(1, true); }, [fetchPosts]);
-
-  /* ── Infinite scroll ── */
-  useEffect(() => {
-    const el = sentinelRef.current;
-    if (!el) return;
-    const io = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting && postsHasMore && !postsLoading) fetchPosts(postsPage + 1); },
-      { rootMargin: "200px" }
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, [postsHasMore, postsLoading, postsPage, fetchPosts]);
-
   /* ── Field change ── */
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFieldErrors(prev => ({ ...prev, [name]: undefined }));
     setEditForm(prev => {
-      if (!prev) return prev;
       const u = { ...prev, [name]: value };
       if (name === "name") {
         u.handle = deriveHandle(value);
-        const slug = value.trim().toLowerCase().replace(/\s+/g, "").replace(/[^a-z0-9]/g, "") || "user";
-        u.socialLinks = prev.socialLinks.map((l, i) => ({
-          ...l,
-          handle: i === 2
-            ? slug.charAt(0).toUpperCase() + slug.slice(1) + "Fan360"
-            : `${slug}fan360`,
-        }));
       }
       return u;
     });
@@ -261,11 +200,14 @@ export default function ProfilePage() {
   /* ── Validation ── */
   function validate(form: ProfileData): ValidationErrors {
     const e: ValidationErrors = {};
-    if (!form.name.trim()) { e.name = "Name is required."; }
-    else if (!/^[A-Za-z\s'\-]{2,60}$/.test(form.name.trim())) { e.name = "Name must be 2–60 letters only."; }
-    if (form.subtitle   && form.subtitle.length   > 160) e.subtitle   = "Max 160 characters.";
+    if (!form.name.trim()) {
+      e.name = "Name is required.";
+    } else if (!/^[A-Za-z\s'\-]{2,60}$/.test(form.name.trim())) {
+      e.name = "Name must be 2–60 letters only.";
+    }
+    if (form.subtitle    && form.subtitle.length    > 160) e.subtitle    = "Max 160 characters.";
     if (form.description && form.description.length > 500) e.description = "Max 500 characters.";
-    if (form.location   && form.location.length   > 80)  e.location   = "Max 80 characters.";
+    if (form.location    && form.location.length    > 80)  e.location    = "Max 80 characters.";
     if (form.website) {
       try { new URL(form.website.startsWith("http") ? form.website : `https://${form.website}`); }
       catch { e.website = "Enter a valid URL."; }
@@ -273,44 +215,19 @@ export default function ProfilePage() {
     return e;
   }
 
-  /* ── Save (text fields only — no avatar upload) ── */
-  const save = async () => {
-    if (!editForm) return;
+  /* ── Save (local state only) ── */
+  const save = () => {
     const errors = validate(editForm);
     if (Object.keys(errors).length > 0) { setFieldErrors(errors); return; }
-    setSaving(true);
-    try {
-      const res = await fetch("/api/profile", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name:        editForm.name,
-          subtitle:    editForm.subtitle,
-          description: editForm.description,
-          location:    editForm.location,
-          website:     editForm.website,
-          interests:   editForm.interests,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        if (data.errors) { setFieldErrors(data.errors); return; }
-        throw new Error(data.error || "Save failed.");
-      }
-      setProfile(prev => prev ? { ...prev, ...data.profile } : prev);
-      setIsEditing(false);
-      setFieldErrors({});
-      setSaveSuccess(true);
-      setTimeout(() => setSaveSuccess(false), 3000);
-    } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : "Something went wrong.");
-    } finally {
-      setSaving(false);
-    }
+    setProfile({ ...editForm });
+    setIsEditing(false);
+    setFieldErrors({});
+    setSaveSuccess(true);
+    setTimeout(() => setSaveSuccess(false), 3000);
   };
 
   const cancel = () => {
-    setEditForm(profile ? { ...profile } : null);
+    setEditForm({ ...profile });
     setFieldErrors({});
     setIsEditing(false);
   };
@@ -325,8 +242,8 @@ export default function ProfilePage() {
     { bg: "rgba(232,67,122,0.14)", color: "#e8437a" },
     { bg: "rgba(244,115,42,0.14)", color: "#f4732a" },
     { bg: "rgba(139,92,246,0.14)", color: "#9b7ef8" },
-    { bg: "rgba(56,124,220,0.14)", color: "#5b9ae8" },
-    { bg: "rgba(34,180,100,0.14)", color: "#38b46e" },
+    { bg: "rgba(56,124,220,0.14)",  color: "#5b9ae8" },
+    { bg: "rgba(34,180,100,0.14)",  color: "#38b46e" },
   ];
 
   const tabIcons: Record<string, React.ReactNode> = {
@@ -339,10 +256,11 @@ export default function ProfilePage() {
   /* ─── Sidebar ─── */
   const Sidebar = () => (
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      {/* Interests */}
       <div style={{ ...card(), padding: 18 }}>
         <SH title="Interests" />
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-          {(profile?.interests || []).map((interest, i) => {
+          {profile.interests.map((interest, i) => {
             const c = chips[i % chips.length];
             return (
               <span key={interest} style={{ padding: "5px 13px", borderRadius: 20, fontSize: 12, fontWeight: 600, background: c.bg, color: c.color }}>
@@ -350,14 +268,15 @@ export default function ProfilePage() {
               </span>
             );
           })}
-          {(profile?.interests || []).length === 0 && <span style={{ fontSize: 12, color: MUTED }}>No interests added yet.</span>}
+          {profile.interests.length === 0 && <span style={{ fontSize: 12, color: MUTED }}>No interests added yet.</span>}
         </div>
       </div>
 
+      {/* Favorite Teams */}
       <div style={{ ...card(), padding: 18 }}>
         <SH title="Favorite Teams" />
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          {(profile?.favoriteTeams || []).map((team, i) => (
+          {profile.favoriteTeams.map((team, i) => (
             <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
                 <div style={{ width: 34, height: 34, borderRadius: "50%", background: team.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 800, color: "#fff", flexShrink: 0 }}>
@@ -371,58 +290,25 @@ export default function ProfilePage() {
               <span style={{ fontSize: 16 }}>{team.liked ? "❤️" : "🤍"}</span>
             </div>
           ))}
-          {(profile?.favoriteTeams || []).length === 0 && <span style={{ fontSize: 12, color: MUTED }}>No teams added yet.</span>}
+          {profile.favoriteTeams.length === 0 && <span style={{ fontSize: 12, color: MUTED }}>No teams added yet.</span>}
         </div>
       </div>
 
+      {/* Social Links */}
       <div style={{ ...card(), padding: 18 }}>
         <SH title="Social Links" />
         <div style={{ display: "flex", flexDirection: "column", gap: 13 }}>
-          {(profile?.socialLinks || []).map((link, i) => (
-            <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <SocialIcon icon={link.icon} />
-                <span style={{ fontSize: 13, color: SUB, fontWeight: 500 }}>{link.handle}</span>
-              </div>
+          {profile.socialLinks.map((link, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <SocialIcon icon={link.icon} />
+              <span style={{ fontSize: 13, color: SUB, fontWeight: 500 }}>{link.handle}</span>
             </div>
           ))}
-          {(profile?.socialLinks || []).length === 0 && <span style={{ fontSize: 12, color: MUTED }}>No social links yet.</span>}
+          {profile.socialLinks.length === 0 && <span style={{ fontSize: 12, color: MUTED }}>No social links yet.</span>}
         </div>
       </div>
     </div>
   );
-
-  /* ─── Loading ─── */
-  if (profileLoading) {
-    return (
-      <div style={{ minHeight: "100vh", background: BG, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 14 }}>
-        <Loader2 size={32} color={PINK} style={{ animation: "spin 1s linear infinite" }} />
-        <p style={{ color: MUTED, fontSize: 13 }}>Loading profile…</p>
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-      </div>
-    );
-  }
-
-  /* ─── Error ─── */
-  if (profileError || !profile || !disp) {
-    return (
-      <div style={{ minHeight: "100vh", background: BG, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, padding: 24 }}>
-        <AlertCircle size={32} color={PINK} />
-        <p style={{ color: SUB, fontSize: 14, textAlign: "center", maxWidth: 340 }}>
-          {profileError || "Could not load profile."}
-        </p>
-        <p style={{ color: MUTED, fontSize: 12, textAlign: "center", maxWidth: 340 }}>
-          Make sure <code style={{ background: INNER, padding: "2px 6px", borderRadius: 4 }}>app/api/profile/route.ts</code> exists (inside a <em>profile</em> folder, not a file named <em>profile.route.ts</em>).
-        </p>
-        <button
-          onClick={() => window.location.reload()}
-          style={{ padding: "8px 20px", borderRadius: 50, background: GRAD, border: "none", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}
-        >
-          Retry
-        </button>
-      </div>
-    );
-  }
 
   /* ═══════════════════════════════
      RENDER
@@ -461,7 +347,7 @@ export default function ProfilePage() {
           {/* Identity card */}
           <div style={{ ...card(), padding: "24px 18px", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
 
-            {/* Avatar (display only) */}
+            {/* Avatar */}
             <div style={{ marginBottom: 14 }}>
               <div style={{ width: 104, height: 104, borderRadius: "50%", padding: 2.5, background: GRAD }}>
                 <div style={{ width: "100%", height: "100%", borderRadius: "50%", overflow: "hidden", background: CARD }}>
@@ -475,7 +361,7 @@ export default function ProfilePage() {
               <div style={{ width: "100%", marginBottom: 5 }}>
                 <input
                   name="name"
-                  value={editForm?.name || ""}
+                  value={editForm.name}
                   onChange={handleChange}
                   style={{ ...inputBase, textAlign: "center", fontWeight: 700, fontSize: 15, borderColor: fieldErrors.name ? "#ef4444" : "rgba(255,255,255,0.07)" }}
                   placeholder="Your name"
@@ -493,7 +379,7 @@ export default function ProfilePage() {
               <div style={{ width: "100%", marginBottom: 14 }}>
                 <input
                   name="subtitle"
-                  value={editForm?.subtitle || ""}
+                  value={editForm.subtitle}
                   onChange={handleChange}
                   maxLength={160}
                   style={{ ...inputBase, textAlign: "center", fontSize: 12, borderColor: fieldErrors.subtitle ? "#ef4444" : "rgba(255,255,255,0.07)" }}
@@ -508,9 +394,9 @@ export default function ProfilePage() {
             {/* Stats */}
             <div style={{ display: "flex", justifyContent: "space-around", width: "100%", marginBottom: 16, paddingBottom: 14, borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
               {[
-                { v: profile.stats.following,  l: "Following" },
-                { v: profile.stats.followers,  l: "Followers" },
-                { v: profile.stats.following2, l: "Mutual" },
+                { v: profile.stats.following, l: "Following" },
+                { v: profile.stats.followers, l: "Followers" },
+                { v: profile.stats.mutual,    l: "Mutual"    },
               ].map((s, i) => (
                 <div key={i} style={{ textAlign: "center" }}>
                   <div style={{ fontSize: 15, fontWeight: 700, color: "#fff", lineHeight: 1 }}>{s.v}</div>
@@ -519,19 +405,27 @@ export default function ProfilePage() {
               ))}
             </div>
 
-            {/* Buttons */}
+            {/* Edit / Save / Cancel buttons */}
             {isEditing ? (
               <div style={{ display: "flex", gap: 8, width: "100%" }}>
-                <button onClick={cancel} disabled={saving} style={{ flex: 1, padding: "8px 0", borderRadius: 50, fontSize: 12, fontWeight: 600, background: "transparent", border: "1px solid rgba(255,255,255,0.1)", color: SUB, cursor: "pointer" }}>
+                <button
+                  onClick={cancel}
+                  style={{ flex: 1, padding: "8px 0", borderRadius: 50, fontSize: 12, fontWeight: 600, background: "transparent", border: "1px solid rgba(255,255,255,0.1)", color: SUB, cursor: "pointer" }}
+                >
                   Cancel
                 </button>
-                <button onClick={save} disabled={saving} style={{ flex: 1, padding: "8px 0", borderRadius: 50, fontSize: 12, fontWeight: 700, background: GRAD, border: "none", color: "#fff", cursor: saving ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 5, opacity: saving ? 0.7 : 1 }}>
-                  {saving ? <Loader2 size={12} style={{ animation: "spin 1s linear infinite" }} /> : <Check size={12} />}
-                  {saving ? "Saving…" : "Save"}
+                <button
+                  onClick={save}
+                  style={{ flex: 1, padding: "8px 0", borderRadius: 50, fontSize: 12, fontWeight: 700, background: GRAD, border: "none", color: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}
+                >
+                  <Check size={12} /> Save
                 </button>
               </div>
             ) : (
-              <button onClick={() => setIsEditing(true)} style={{ width: "100%", padding: "9px 0", borderRadius: 50, fontSize: 13, fontWeight: 700, background: GRAD, border: "none", color: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+              <button
+                onClick={() => setIsEditing(true)}
+                style={{ width: "100%", padding: "9px 0", borderRadius: 50, fontSize: 13, fontWeight: 700, background: GRAD, border: "none", color: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}
+              >
                 <Edit2 size={13} /> Edit Profile
               </button>
             )}
@@ -556,21 +450,21 @@ export default function ProfilePage() {
                     <label style={{ fontSize: 10, color: MUTED, textTransform: "uppercase", letterSpacing: 1, display: "block", marginBottom: 4 }}>Description</label>
                     <textarea
                       name="description"
-                      value={editForm?.description || ""}
+                      value={editForm.description}
                       onChange={handleChange}
                       rows={3}
                       maxLength={500}
                       style={{ ...inputBase, resize: "none", lineHeight: 1.6, borderColor: fieldErrors.description ? "#ef4444" : "rgba(255,255,255,0.07)" }}
-                      onFocus={e => (e.target.style.borderColor = PINK)}
-                      onBlur={e => (e.target.style.borderColor = fieldErrors.description ? "#ef4444" : "rgba(255,255,255,0.07)")}
+                      onFocus={e  => (e.target.style.borderColor = PINK)}
+                      onBlur={e   => (e.target.style.borderColor = fieldErrors.description ? "#ef4444" : "rgba(255,255,255,0.07)")}
                     />
                     {fieldErrors.description && <p style={{ fontSize: 11, color: "#ef4444", marginTop: 3 }}>{fieldErrors.description}</p>}
-                    <p style={{ fontSize: 10, color: MUTED, textAlign: "right", marginTop: 2 }}>{(editForm?.description || "").length}/500</p>
+                    <p style={{ fontSize: 10, color: MUTED, textAlign: "right", marginTop: 2 }}>{editForm.description.length}/500</p>
                   </div>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                     {([
-                      { name: "location", Icon: MapPin,   val: editForm?.location || "", label: "Location", errKey: "location" as const },
-                      { name: "website",  Icon: LinkIcon,  val: editForm?.website  || "", label: "Website",  errKey: "website"  as const },
+                      { name: "location", Icon: MapPin,  val: editForm.location, label: "Location", errKey: "location" as const },
+                      { name: "website",  Icon: LinkIcon, val: editForm.website,  label: "Website",  errKey: "website"  as const },
                     ] as const).map(({ name, Icon, val, label, errKey }) => (
                       <div key={name}>
                         <label style={{ fontSize: 10, color: MUTED, textTransform: "uppercase", letterSpacing: 1, display: "block", marginBottom: 4 }}>{label}</label>
@@ -582,7 +476,7 @@ export default function ProfilePage() {
                             onChange={handleChange}
                             style={{ ...inputBase, paddingLeft: 28, borderColor: fieldErrors[errKey] ? "#ef4444" : "rgba(255,255,255,0.07)" }}
                             onFocus={e => (e.target.style.borderColor = PINK)}
-                            onBlur={e => (e.target.style.borderColor = fieldErrors[errKey] ? "#ef4444" : "rgba(255,255,255,0.07)")}
+                            onBlur={e  => (e.target.style.borderColor = fieldErrors[errKey] ? "#ef4444" : "rgba(255,255,255,0.07)")}
                           />
                         </div>
                         {fieldErrors[errKey] && <p style={{ fontSize: 11, color: "#ef4444", marginTop: 3 }}>{fieldErrors[errKey]}</p>}
@@ -595,9 +489,9 @@ export default function ProfilePage() {
                   <p style={{ fontSize: 13, color: SUB, lineHeight: 1.7, marginBottom: 16 }}>{profile.description || "No description yet."}</p>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px 28px" }}>
                     {[
-                      { Icon: MapPin,   text: profile.location || "—" },
+                      { Icon: MapPin,   text: profile.location  || "—" },
                       { Icon: Calendar, text: `Joined ${profile.joinedDate || "—"}` },
-                      { Icon: LinkIcon, text: profile.website || "—" },
+                      { Icon: LinkIcon, text: profile.website   || "—" },
                       { Icon: Globe,    text: "Public Profile" },
                     ].map(({ Icon, text }, i) => (
                       <div key={i} style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 13, color: SUB }}>
@@ -617,7 +511,7 @@ export default function ProfilePage() {
                   { Icon: MessageSquare, val: "340",  lbl: "Comments",      c: "#8b5cf6" },
                   { Icon: ThumbsUp,      val: "1.2K", lbl: "Reactions",     c: "#d97706" },
                   { Icon: Users,         val: "56",   lbl: "Rooms Joined",  c: "#3b82f6" },
-                  { Icon: Radio,         val: "78",   lbl: "Live Sessions", c: PINK },
+                  { Icon: Radio,         val: "78",   lbl: "Live Sessions", c: PINK      },
                 ].map(({ Icon, val, lbl, c }, i) => (
                   <div key={i} style={{ background: "#0F1014", borderRadius: 10, padding: "14px 6px", display: "flex", flexDirection: "column", alignItems: "center", gap: 5 }}>
                     <Icon size={17} color={c} />
@@ -631,13 +525,11 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* ROW 2: Posts | Sidebar */}
+        {/* ROW 2: Activity Tabs | Sidebar */}
         <div style={{ display: "grid", gridTemplateColumns: col2, gap: 18, marginTop: 18 }}>
 
-          {/* Posts */}
+          {/* Tabs */}
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-
-            {/* Tabs */}
             <div style={{ borderBottom: "1px solid rgba(255,255,255,0.06)", display: "flex" }}>
               {tabs.map(tab => (
                 <button
@@ -652,34 +544,14 @@ export default function ProfilePage() {
               ))}
             </div>
 
-            {activeTab === "Posts" && (
-              <>
-                {postsError && (
-                  <div style={{ ...card(), padding: 16, display: "flex", alignItems: "center", gap: 8, color: "#ef4444", fontSize: 13 }}>
-                    <AlertCircle size={15} /> {postsError}
-                  </div>
-                )}
-                {!postsLoading && posts.length === 0 && (
-                  <div style={{ ...card(), padding: "40px 20px", textAlign: "center" }}>
-                    <div style={{ fontSize: 32, marginBottom: 10 }}>📝</div>
-                    <p style={{ color: MUTED, fontSize: 13 }}>No posts yet.</p>
-                  </div>
-                )}
-                {/* Wire up PostCard here when ready */}
-                <div ref={sentinelRef} />
-                {postsLoading && (
-                  <div style={{ display: "flex", justifyContent: "center", padding: "20px 0" }}>
-                    <Loader2 size={20} color={PINK} style={{ animation: "spin 1s linear infinite" }} />
-                  </div>
-                )}
-              </>
-            )}
-
-            {activeTab !== "Posts" && (
-              <div style={{ ...card(), padding: "40px 20px", textAlign: "center" }}>
-                <p style={{ color: MUTED, fontSize: 13 }}>Coming soon</p>
+            <div style={{ ...card(), padding: "40px 20px", textAlign: "center" }}>
+              <div style={{ fontSize: 32, marginBottom: 10 }}>
+                {activeTab === "Posts" ? "📝" : activeTab === "Live Reactions" ? "📡" : activeTab === "Comments" ? "💬" : "👥"}
               </div>
-            )}
+              <p style={{ color: MUTED, fontSize: 13 }}>
+                {activeTab === "Posts" ? "No posts yet." : "Coming soon"}
+              </p>
+            </div>
           </div>
 
           {!isMobile && <div><Sidebar /></div>}

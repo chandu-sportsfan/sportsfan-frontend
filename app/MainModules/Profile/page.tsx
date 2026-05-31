@@ -6,12 +6,12 @@ import {
   ArrowLeft, Edit2, MapPin, Calendar,
   Link as LinkIcon, Globe, User,
   MessageSquare, ThumbsUp, Users, Radio,
-  Camera, Check, Share2, MoreHorizontal,
+  Camera, Check, Share2,
   Loader2, AlertCircle,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import PostCard from "@/src/components/CreatePost-Component/PostCard";
-// import PostCard from "@/components/PostCard"; // reuse your existing PostCard
+// Uncomment when PostCard is ready:
+// import PostCard from "@/src/components/CreatePost-Component/PostCard";
 
 /* ════════════════════════════════════════════
    DESIGN TOKENS
@@ -118,20 +118,29 @@ function SocialIcon({ icon }: { icon: string }) {
     width: 32, height: 32, borderRadius: "50%", background: "#0F1014",
     display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
   };
-  const ig = <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
-    <rect x="2" y="2" width="20" height="20" rx="5" stroke="url(#ig)" strokeWidth="2" />
-    <circle cx="12" cy="12" r="4" stroke="url(#ig)" strokeWidth="2" />
-    <circle cx="17.5" cy="6.5" r="1.2" fill="#f4732a" />
-    <defs><linearGradient id="ig" x1="2" y1="22" x2="22" y2="2" gradientUnits="userSpaceOnUse">
-      <stop stopColor="#f4732a" /><stop offset="1" stopColor="#e8437a" />
-    </linearGradient></defs>
-  </svg>;
-  const xIcon = <svg width="13" height="13" viewBox="0 0 24 24" fill="#aaa">
-    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.402 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.253 5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-  </svg>;
-  const yt = <svg width="16" height="16" viewBox="0 0 24 24" fill="#ff4444">
-    <path d="M21.8 8s-.2-1.4-.8-2c-.8-.8-1.7-.8-2.1-.9C16.3 5 12 5 12 5s-4.3 0-6.9.1c-.4.1-1.3.1-2.1.9-.6.6-.8 2-.8 2S2 9.6 2 11.2v1.5c0 1.6.2 3.2.2 3.2s.2 1.4.8 2c.8.8 1.8.8 2.3.8C6.8 19 12 19 12 19s4.3 0 6.9-.2c.4-.1 1.3-.1 2.1-.9.6-.6.8-2 .8-2s.2-1.6.2-3.2v-1.5C22 9.6 21.8 8 21.8 8zM9.7 14.5V9l5.7 2.8-5.7 2.7z" />
-  </svg>;
+  const ig = (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+      <rect x="2" y="2" width="20" height="20" rx="5" stroke="url(#ig)" strokeWidth="2" />
+      <circle cx="12" cy="12" r="4" stroke="url(#ig)" strokeWidth="2" />
+      <circle cx="17.5" cy="6.5" r="1.2" fill="#f4732a" />
+      <defs>
+        <linearGradient id="ig" x1="2" y1="22" x2="22" y2="2" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#f4732a" />
+          <stop offset="1" stopColor="#e8437a" />
+        </linearGradient>
+      </defs>
+    </svg>
+  );
+  const xIcon = (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="#aaa">
+      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.402 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.253 5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+    </svg>
+  );
+  const yt = (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="#ff4444">
+      <path d="M21.8 8s-.2-1.4-.8-2c-.8-.8-1.7-.8-2.1-.9C16.3 5 12 5 12 5s-4.3 0-6.9.1c-.4.1-1.3.1-2.1.9-.6.6-.8 2-.8 2S2 9.6 2 11.2v1.5c0 1.6.2 3.2.2 3.2s.2 1.4.8 2c.8.8 1.8.8 2.3.8C6.8 19 12 19 12 19s4.3 0 6.9-.2c.4-.1 1.3-.1 2.1-.9.6-.6.8-2 .8-2s.2-1.6.2-3.2v-1.5C22 9.6 21.8 8 21.8 8zM9.7 14.5V9l5.7 2.8-5.7 2.7z" />
+    </svg>
+  );
   return <div style={s}>{icon === "ig" ? ig : icon === "x" ? xIcon : yt}</div>;
 }
 
@@ -156,25 +165,25 @@ export default function ProfilePage() {
   const fileInputRef                = useRef<HTMLInputElement>(null);
 
   /* ── Profile data state ── */
-  const [profile, setProfile]           = useState<ProfileData | null>(null);
+  const [profile, setProfile]               = useState<ProfileData | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
-  const [profileError, setProfileError] = useState<string | null>(null);
-  const [saving, setSaving]             = useState(false);
-  const [saveSuccess, setSaveSuccess]   = useState(false);
+  const [profileError, setProfileError]     = useState<string | null>(null);
+  const [saving, setSaving]                 = useState(false);
+  const [saveSuccess, setSaveSuccess]       = useState(false);
 
   /* ── Edit form state ── */
-  const [editForm, setEditForm]   = useState<ProfileData | null>(null);
-  const [fieldErrors, setFieldErrors] = useState<ValidationErrors>({});
-  const [avatarFile, setAvatarFile]   = useState<File | null>(null);
+  const [editForm, setEditForm]         = useState<ProfileData | null>(null);
+  const [fieldErrors, setFieldErrors]   = useState<ValidationErrors>({});
+  const [avatarFile, setAvatarFile]     = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string>("");
 
   /* ── Posts state ── */
-  const [posts, setPosts]       = useState<PostData[]>([]);
+  const [posts, setPosts]               = useState<PostData[]>([]);
   const [postsLoading, setPostsLoading] = useState(false);
   const [postsError, setPostsError]     = useState<string | null>(null);
   const [postsPage, setPostsPage]       = useState(1);
   const [postsHasMore, setPostsHasMore] = useState(false);
-  const sentinelRef = useRef<HTMLDivElement>(null);
+  const sentinelRef                     = useRef<HTMLDivElement>(null);
 
   /* ── Responsive ── */
   useEffect(() => {
@@ -270,7 +279,6 @@ export default function ProfilePage() {
     });
   };
 
-  /* ── Client-side validation mirror ── */
   function validateForm(form: ProfileData): ValidationErrors {
     const errors: ValidationErrors = {};
     if (!form.name.trim()) {
@@ -297,16 +305,15 @@ export default function ProfilePage() {
     return errors;
   }
 
-  /* ── Handle avatar file select ── */
   const handleImg = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
     if (!f) return;
     setAvatarFile(f);
-    setAvatarPreview(URL.createObjectURL(f));
-    setEditForm(prev => prev ? { ...prev, avatar: URL.createObjectURL(f) } : prev);
+    const preview = URL.createObjectURL(f);
+    setAvatarPreview(preview);
+    setEditForm(prev => prev ? { ...prev, avatar: preview } : prev);
   };
 
-  /* ── Save profile ── */
   const save = async () => {
     if (!editForm) return;
     const errors = validateForm(editForm);
@@ -317,7 +324,6 @@ export default function ProfilePage() {
 
     setSaving(true);
     try {
-      // 1. Upload avatar if changed
       let avatarUrl = editForm.avatar;
       if (avatarFile) {
         const fd = new FormData();
@@ -328,7 +334,6 @@ export default function ProfilePage() {
         avatarUrl = newUrl;
       }
 
-      // 2. Save profile fields
       const res = await fetch("/api/profile", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -346,7 +351,6 @@ export default function ProfilePage() {
       const data = await res.json();
 
       if (!res.ok) {
-        // Server returned field-level errors
         if (data.errors) {
           setFieldErrors(data.errors);
         } else {
@@ -355,7 +359,6 @@ export default function ProfilePage() {
         return;
       }
 
-      // 3. Update local state with server-confirmed data
       setProfile(prev => prev
         ? { ...prev, ...data.profile, avatar: avatarUrl }
         : prev
@@ -382,27 +385,23 @@ export default function ProfilePage() {
   };
 
   /* ────────────────────────────────────────
-     POST ACTIONS (passed to PostCard)
+     POST ACTIONS
   ──────────────────────────────────────── */
-  const handleDeletePost = async (id: string) => {
+  const handleDeletePost = (id: string) => {
     setPosts(prev => prev.filter(p => p.id !== id && p._id !== id));
   };
 
-  const handleVote = async (postId: string, optionId: string, voterId: string, userName: string) => {
-    // Delegate to your existing vote handler; optimistic update here if needed
-  };
-
-  const handleLike = (postId: string, userId: string) => {
-    // Delegate to your existing like handler
-  };
+  // Kept as no-ops until PostCard is wired up — avoids unused-var TS errors
+  const _handleDeletePost = handleDeletePost; void _handleDeletePost;
+  const _setPosts = setPosts; void _setPosts;
 
   /* ────────────────────────────────────────
      DERIVED DISPLAY VALUES
   ──────────────────────────────────────── */
-  const disp = isEditing ? editForm : profile;
-  const tabs = ["Posts", "Live Reactions", "Comments", "Following"];
-  const col1 = isMobile ? "1fr" : "230px 1fr";
-  const col2 = isMobile ? "1fr" : "1fr 264px";
+  const disp   = isEditing ? editForm : profile;
+  const tabs   = ["Posts", "Live Reactions", "Comments", "Following"];
+  const col1   = isMobile ? "1fr" : "230px 1fr";
+  const col2   = isMobile ? "1fr" : "1fr 264px";
 
   const chips = [
     { bg: "rgba(232,67,122,0.14)", color: "#e8437a" },
@@ -420,7 +419,7 @@ export default function ProfilePage() {
   };
 
   /* ────────────────────────────────────────
-     SIDEBAR
+     SIDEBAR COMPONENT
   ──────────────────────────────────────── */
   const Sidebar = () => (
     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
@@ -443,13 +442,21 @@ export default function ProfilePage() {
       {/* FAVORITE TEAMS */}
       <div style={{ ...card(), padding: "18px", marginTop: "2px", minHeight: "180px" }}>
         <SH title="Favorite Teams"
-          right={<button style={{ fontSize: 12, color: PINK, background: "none", border: "none", cursor: "pointer", fontWeight: 600 }}>Edit</button>}
+          right={
+            <button style={{ fontSize: 12, color: PINK, background: "none", border: "none", cursor: "pointer", fontWeight: 600 }}>
+              Edit
+            </button>
+          }
         />
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           {(profile?.favoriteTeams || []).map((team, i) => (
             <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
-                <div style={{ width: 34, height: 34, borderRadius: "50%", background: team.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 800, color: "#fff", flexShrink: 0 }}>
+                <div style={{
+                  width: 34, height: 34, borderRadius: "50%", background: team.color,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: 10, fontWeight: 800, color: "#fff", flexShrink: 0,
+                }}>
                   {team.initial}
                 </div>
                 <div>
@@ -521,11 +528,21 @@ export default function ProfilePage() {
         <Link href="/MainModules/HomePage" style={{ display: "inline-flex", alignItems: "center", gap: 7, color: "#9090a8", textDecoration: "none", fontSize: 13, fontWeight: 500 }}>
           <ArrowLeft size={15} /> Back
         </Link>
-        {saveSuccess && (
-          <span style={{ fontSize: 12, color: "#22c55e", display: "flex", alignItems: "center", gap: 5 }}>
-            <Check size={13} /> Profile saved!
-          </span>
-        )}
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          {saveSuccess && (
+            <span style={{ fontSize: 12, color: "#22c55e", display: "flex", alignItems: "center", gap: 5 }}>
+              <Check size={13} /> Profile saved!
+            </span>
+          )}
+          {!isEditing && (
+            <button
+              onClick={() => navigator.share?.({ title: profile.name, url: window.location.href }).catch(() => {})}
+              style={{ background: "none", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 20, padding: "5px 12px", color: MUTED, cursor: "pointer", display: "flex", alignItems: "center", gap: 5, fontSize: 12 }}
+            >
+              <Share2 size={11} /> Share
+            </button>
+          )}
+        </div>
       </div>
 
       {/* ── PAGE ── */}
@@ -562,7 +579,13 @@ export default function ProfilePage() {
                 >
                   <Camera size={19} color={PINK} />
                   <span style={{ fontSize: 8, color: "#fff", marginTop: 3, textTransform: "uppercase", letterSpacing: 1 }}>Change</span>
-                  <input type="file" ref={fileInputRef} style={{ display: "none" }} accept="image/jpeg,image/png,image/webp,image/gif" onChange={handleImg} />
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    style={{ display: "none" }}
+                    accept="image/jpeg,image/png,image/webp,image/gif"
+                    onChange={handleImg}
+                  />
                 </button>
               )}
             </div>
@@ -574,7 +597,13 @@ export default function ProfilePage() {
                   name="name"
                   value={editForm?.name || ""}
                   onChange={handleChange}
-                  style={{ ...inputBase, textAlign: "center", fontWeight: 700, fontSize: 15, borderColor: fieldErrors.name ? "#ef4444" : "rgba(255,255,255,0.07)" }}
+                  style={{
+                    ...inputBase,
+                    textAlign: "center",
+                    fontWeight: 700,
+                    fontSize: 15,
+                    borderColor: fieldErrors.name ? "#ef4444" : "rgba(255,255,255,0.07)",
+                  }}
                   placeholder="Your name"
                 />
                 {fieldErrors.name && (
@@ -585,7 +614,7 @@ export default function ProfilePage() {
               <div style={{ fontSize: 17, fontWeight: 800, color: "#fff", marginBottom: 3, letterSpacing: 0.2 }}>{profile.name}</div>
             )}
 
-            {/* Handle (always derived, never manually entered) */}
+            {/* Handle */}
             <div style={{ fontSize: 12, color: MUTED, marginBottom: 8 }}>{disp.handle}</div>
 
             {/* Subtitle */}
@@ -595,7 +624,12 @@ export default function ProfilePage() {
                   name="subtitle"
                   value={editForm?.subtitle || ""}
                   onChange={handleChange}
-                  style={{ ...inputBase, textAlign: "center", fontSize: 12, borderColor: fieldErrors.subtitle ? "#ef4444" : "rgba(255,255,255,0.07)" }}
+                  style={{
+                    ...inputBase,
+                    textAlign: "center",
+                    fontSize: 12,
+                    borderColor: fieldErrors.subtitle ? "#ef4444" : "rgba(255,255,255,0.07)",
+                  }}
                   placeholder="Short bio (160 chars)"
                   maxLength={160}
                 />
@@ -634,7 +668,13 @@ export default function ProfilePage() {
                 <button
                   onClick={save}
                   disabled={saving}
-                  style={{ flex: 1, padding: "8px 0", borderRadius: 50, fontSize: 12, fontWeight: 700, background: GRAD, border: "none", color: "#fff", cursor: saving ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 5, opacity: saving ? 0.7 : 1 }}
+                  style={{
+                    flex: 1, padding: "8px 0", borderRadius: 50, fontSize: 12, fontWeight: 700,
+                    background: GRAD, border: "none", color: "#fff",
+                    cursor: saving ? "not-allowed" : "pointer",
+                    display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
+                    opacity: saving ? 0.7 : 1,
+                  }}
                 >
                   {saving ? <Loader2 size={12} style={{ animation: "spin 1s linear infinite" }} /> : <Check size={12} />}
                   {saving ? "Saving…" : "Save"}
@@ -673,20 +713,27 @@ export default function ProfilePage() {
                       onChange={handleChange}
                       rows={3}
                       maxLength={500}
-                      style={{ ...inputBase, resize: "none", lineHeight: 1.6, borderColor: fieldErrors.description ? "#ef4444" : "rgba(255,255,255,0.07)" }}
+                      style={{
+                        ...inputBase,
+                        resize: "none",
+                        lineHeight: 1.6,
+                        borderColor: fieldErrors.description ? "#ef4444" : "rgba(255,255,255,0.07)",
+                      }}
                       onFocus={e => (e.target.style.borderColor = PINK)}
                       onBlur={e => (e.target.style.borderColor = fieldErrors.description ? "#ef4444" : "rgba(255,255,255,0.07)")}
                     />
                     {fieldErrors.description && (
                       <p style={{ fontSize: 11, color: "#ef4444", marginTop: 3 }}>{fieldErrors.description}</p>
                     )}
-                    <p style={{ fontSize: 10, color: MUTED, textAlign: "right", marginTop: 2 }}>{(editForm?.description || "").length}/500</p>
+                    <p style={{ fontSize: 10, color: MUTED, textAlign: "right", marginTop: 2 }}>
+                      {(editForm?.description || "").length}/500
+                    </p>
                   </div>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                    {[
-                      { name: "location", Icon: MapPin,   val: editForm?.location || "",  label: "Location",      errKey: "location" as const },
-                      { name: "website",  Icon: LinkIcon,  val: editForm?.website || "",   label: "Website",       errKey: "website" as const },
-                    ].map(({ name, Icon, val, label, errKey }) => (
+                    {([
+                      { name: "location", Icon: MapPin,  val: editForm?.location || "", label: "Location", errKey: "location" as const },
+                      { name: "website",  Icon: LinkIcon, val: editForm?.website  || "", label: "Website",  errKey: "website"  as const },
+                    ] as const).map(({ name, Icon, val, label, errKey }) => (
                       <div key={name}>
                         <label style={{ fontSize: 10, color: MUTED, textTransform: "uppercase", letterSpacing: 1, display: "block", marginBottom: 4 }}>{label}</label>
                         <div style={{ position: "relative" }}>
@@ -695,7 +742,11 @@ export default function ProfilePage() {
                             name={name}
                             value={val}
                             onChange={handleChange}
-                            style={{ ...inputBase, paddingLeft: 28, borderColor: fieldErrors[errKey] ? "#ef4444" : "rgba(255,255,255,0.07)" }}
+                            style={{
+                              ...inputBase,
+                              paddingLeft: 28,
+                              borderColor: fieldErrors[errKey] ? "#ef4444" : "rgba(255,255,255,0.07)",
+                            }}
                             onFocus={e => (e.target.style.borderColor = PINK)}
                             onBlur={e => (e.target.style.borderColor = fieldErrors[errKey] ? "#ef4444" : "rgba(255,255,255,0.07)")}
                           />
@@ -734,7 +785,7 @@ export default function ProfilePage() {
                   { Icon: MessageSquare, val: "340",  lbl: "Comments",      c: "#8b5cf6" },
                   { Icon: ThumbsUp,      val: "1.2K", lbl: "Reactions",     c: "#d97706" },
                   { Icon: Users,         val: "56",   lbl: "Rooms Joined",  c: "#3b82f6" },
-                  { Icon: Radio,         val: "78",   lbl: "Live Sessions", c: PINK },
+                  { Icon: Radio,         val: "78",   lbl: "Live Sessions", c: PINK      },
                 ].map(({ Icon, val, lbl, c }, i) => (
                   <div key={i} style={{ background: "#0F1014", borderRadius: 10, padding: "14px 6px", display: "flex", flexDirection: "column", alignItems: "center", gap: 5 }}>
                     <Icon size={17} color={c} />
@@ -757,14 +808,18 @@ export default function ProfilePage() {
             {/* TABS */}
             <div style={{ borderBottom: "1px solid rgba(255,255,255,0.06)", display: "flex", gap: 0 }}>
               {tabs.map(tab => (
-                <button key={tab} onClick={() => setActiveTab(tab)} style={{
-                  display: "flex", alignItems: "center", gap: 5,
-                  padding: "11px 14px", fontSize: 12, fontWeight: 600,
-                  background: "none", border: "none", cursor: "pointer",
-                  color: activeTab === tab ? PINK : MUTED,
-                  position: "relative", transition: "color .15s",
-                  whiteSpace: "nowrap",
-                }}>
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 5,
+                    padding: "11px 14px", fontSize: 12, fontWeight: 600,
+                    background: "none", border: "none", cursor: "pointer",
+                    color: activeTab === tab ? PINK : MUTED,
+                    position: "relative", transition: "color .15s",
+                    whiteSpace: "nowrap",
+                  }}
+                >
                   <span style={{ opacity: activeTab === tab ? 1 : 0.5 }}>{tabIcons[tab]}</span>
                   {tab}
                   {activeTab === tab && (
@@ -777,7 +832,7 @@ export default function ProfilePage() {
             {/* POSTS TAB CONTENT */}
             {activeTab === "Posts" && (
               <>
-                {/* {postsError && (
+                {postsError && (
                   <div style={{ ...card(), padding: 16, display: "flex", alignItems: "center", gap: 8, color: "#ef4444", fontSize: 13 }}>
                     <AlertCircle size={15} /> {postsError}
                   </div>
@@ -790,33 +845,33 @@ export default function ProfilePage() {
                   </div>
                 )}
 
-                {posts.map(post => (
-                  <PostCard
-                    key={post.id || post._id}
-                    post={post}
-                    onDelete={handleDeletePost}
-                    onVote={handleVote}
-                    onLike={handleLike}
-                    currentUserId={user?.userId || user?.email || ""}
-                    currentUserName={profile.name}
-                    onCommentAdded={(postId) => {
-                      setPosts(prev => prev.map(p =>
-                        (p.id || p._id) === postId
-                          ? { ...p, commentCount: (p.commentCount || 0) + 1 }
-                          : p
-                      ));
-                    }}
-                    onCommentDeleted={(postId) => {
-                      setPosts(prev => prev.map(p =>
-                        (p.id || p._id) === postId
-                          ? { ...p, commentCount: Math.max(0, (p.commentCount || 0) - 1) }
-                          : p
-                      ));
-                    }}
-                  />
-                ))} */}
+                {/*
+                  Uncomment when PostCard is ready:
+                  {posts.map(post => (
+                    <PostCard
+                      key={post.id || post._id}
+                      post={post}
+                      onDelete={handleDeletePost}
+                      currentUserId={user?.userId || user?.email || ""}
+                      currentUserName={profile.name}
+                      onCommentAdded={(postId) => {
+                        setPosts(prev => prev.map(p =>
+                          (p.id || p._id) === postId
+                            ? { ...p, commentCount: (p.commentCount || 0) + 1 }
+                            : p
+                        ));
+                      }}
+                      onCommentDeleted={(postId) => {
+                        setPosts(prev => prev.map(p =>
+                          (p.id || p._id) === postId
+                            ? { ...p, commentCount: Math.max(0, (p.commentCount || 0) - 1) }
+                            : p
+                        ));
+                      }}
+                    />
+                  ))}
+                */}
 
-                {/* Infinite scroll sentinel */}
                 <div ref={sentinelRef} />
 
                 {postsLoading && (
@@ -827,18 +882,15 @@ export default function ProfilePage() {
               </>
             )}
 
-            {/* Other tabs — placeholder */}
             {activeTab !== "Posts" && (
               <div style={{ ...card(), padding: "40px 20px", textAlign: "center" }}>
                 <p style={{ color: MUTED, fontSize: 13 }}>Coming soon</p>
               </div>
             )}
-
           </div>
 
           {/* RIGHT — Sidebar (desktop) */}
           {!isMobile && <div><Sidebar /></div>}
-
         </div>
 
         {/* Mobile sidebar */}
@@ -846,23 +898,29 @@ export default function ProfilePage() {
 
         {/* ── INVITE YOUR FRIENDS ── */}
         <div style={{ marginTop: 14, ...card(), padding: "18px 22px", display: "flex", alignItems: "center", gap: 16 }}>
-          <div style={{ width: 44, height: 44, borderRadius: "50%", background: "rgba(232,67,122,0.08)", border: "1px solid rgba(232,67,122,0.16)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <div style={{
+            width: 44, height: 44, borderRadius: "50%",
+            background: "rgba(232,67,122,0.08)",
+            border: "1px solid rgba(232,67,122,0.16)",
+            display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+          }}>
             <Users size={19} color={PINK} />
           </div>
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 14, fontWeight: 700, color: TXT, marginBottom: 3 }}>Invite Your Friends</div>
             <div style={{ fontSize: 12, color: MUTED, lineHeight: 1.5 }}>Invite your friends to join live rooms and enjoy the game together!</div>
           </div>
-          <button style={{ padding: "9px 20px", borderRadius: 50, fontSize: 12, fontWeight: 700, background: GRAD, border: "none", color: "#fff", cursor: "pointer", display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+          <button
+            onClick={() => navigator.share?.({ title: "Join SportsFan360!", url: window.location.origin }).catch(() => {})}
+            style={{ padding: "9px 20px", borderRadius: 50, fontSize: 12, fontWeight: 700, background: GRAD, border: "none", color: "#fff", cursor: "pointer", display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}
+          >
             <Share2 size={12} /> Invite Friends
           </button>
         </div>
 
       </div>
 
-      <style>{`
-        @keyframes spin { to { transform: rotate(360deg); } }
-      `}</style>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }

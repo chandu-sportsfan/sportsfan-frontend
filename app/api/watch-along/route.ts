@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { getAuthHeaders } from '@/lib/getAuthHeaders';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://sportsfan360.vercel.app';
 const API_BASE = `${BACKEND_URL}/api/watch-along`;
@@ -31,10 +32,12 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
     try {
         const formData = await req.formData();
+        const authHeaders = await getAuthHeaders();
 
         const response = await fetch(`${API_BASE}`, {
             method: 'POST',
             body: formData, // forward the multipart form data directly
+            headers: { ...authHeaders },
         });
 
         if (!response.ok) {

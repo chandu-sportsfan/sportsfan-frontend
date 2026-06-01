@@ -11,6 +11,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useLeaderboard } from "@/context/LeaderboardContext";
 import { useAuth } from "@/context/AuthContext";
+import { useChats } from "@/hooks/useChat";
 import LogoutButton from "../LogoutButton";
 
 // ─── Bell with badge ──────────────────────────────────────────────────────────
@@ -21,6 +22,32 @@ function BellButton({ unreadCount }: { unreadCount: number }) {
     <Link href="/MainModules/Notifications">
       <div className="relative w-9 h-9 flex items-center justify-center bg-[#111] border border-white/10 rounded-full hover:bg-pink-500/10 transition-colors">
         <Bell size={15} className="text-pink-400" />
+        {capped > 0 && (
+          <span
+            className={`
+              absolute -top-1 -right-1
+              flex items-center justify-center
+              rounded-full
+              bg-[#e91e8c]
+              text-white font-bold leading-none
+              border border-[#07070f]
+              ${capped > 9 ? "min-w-[18px] px-[3px] text-[9px] h-[18px]" : "w-4 h-4 text-[9px]"}
+            `}
+          >
+            {capped}
+          </span>
+        )}
+      </div>
+    </Link>
+  );
+}
+
+function ChatButton({ unreadCount }: { unreadCount: number }) {
+  const capped = Math.min(unreadCount, 99);
+  return (
+    <Link href="/MainModules/Chat">
+      <div className="relative w-9 h-9 flex items-center justify-center bg-[#111] border border-white/10 rounded-full hover:bg-pink-500/10 transition-colors">
+        <MessageCircle size={15} className="text-pink-400" />
         {capped > 0 && (
           <span
             className={`
@@ -52,6 +79,8 @@ export default function Header() {
     } = useGlobalSearch();
      const { currentUserPoints } = useLeaderboard();
      const { user, getUserDisplayName, loading: authLoading } = useAuth();
+     const { chats } = useChats();
+     const totalUnreadChats = chats.reduce((sum, chat) => sum + (chat.unreadCount || 0), 0);
      
     // Helper to format points (e.g., 12.5k for 12500)
     const formatPoints = (pts: number | undefined | null) => {
@@ -146,13 +175,16 @@ export default function Header() {
                             href={
                                 result.type === "player"
                                     ? `/MainModules/PlayersProfile?id=${result.playerProfilesId}&tab=highlights`
+                                    : result.type === "user"
+                                    ? `/MainModules/Profile?id=${result.id}` /* <-- Adjust to your actual User Profile route */
                                     : `/MainModules/ClubsProfile?teamProfile=${encodeURIComponent(result.name)}`
                             }
                             onClick={handleResultClick}
                         >
                             <div className="p-3 hover:bg-white/5 transition-colors flex items-center gap-3 border-b border-white/5 last:border-0">
                                 <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-800 flex-shrink-0">
-                                    {result.type === "player" ? (
+                                    {/* Treat Users similarly to Players for Avatars */}
+                                    {result.type === "player" || result.type === "user" ? (
                                         result.image ? (
                                             <img src={result.image} alt={result.name} className="w-full h-full object-cover" />
                                         ) : (
@@ -177,7 +209,8 @@ export default function Header() {
                                             </span>
                                         )}
                                         <span className="text-xs text-gray-500 uppercase">
-                                            {result.type === "player" ? "Player" : "Team"}
+                                            {/* Dynamic Label */}
+                                            {result.type === "player" ? "Player" : result.type === "user" ? "User" : "Team"}
                                         </span>
                                     </div>
                                 </div>
@@ -351,13 +384,7 @@ export default function Header() {
                     <SlidersHorizontal size={13} />
                     Preferences
                 </button>
-                   {/* Replace this in your Header sections */}
-{/* Updated Chat Link using the MessageCircle component */}
-<Link href="/MainModules/Chat"> 
-    <div className="w-9 h-9 flex items-center justify-center bg-[#111] border border-white/10 rounded-full hover:bg-pink-500/10 transition-colors cursor-pointer shrink-0">
-        <MessageCircle size={18} className="text-pink-400" />
-    </div>
-</Link>
+                <ChatButton unreadCount={totalUnreadChats} />
                 <div className="flex items-center gap-2 bg-[#111] border border-white/10 rounded-full px-3 py-2">
                     <Star size={14} className="text-pink-500 fill-pink-500" />
                     <div className="flex flex-col leading-tight">

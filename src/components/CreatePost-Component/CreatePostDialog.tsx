@@ -8,6 +8,16 @@ import { useAuth } from "@/context/AuthContext";
 // ─── helpers 
 const FALLBACK_AVATAR = "https://api.dicebear.com/7.x/avataaars/svg?seed=AthleteFan";
 
+function getVoterId(): string {
+  if (typeof window === "undefined") return "guest";
+  let id = sessionStorage.getItem("voterId");
+  if (!id) {
+    id = `user_${Math.random().toString(36).slice(2, 10)}`;
+    sessionStorage.setItem("voterId", id);
+  }
+  return id;
+}
+
 function formatTimeLeft(endsAt: number): string {
   const diff = endsAt - Date.now();
   if (diff <= 0) return "Ended";
@@ -31,6 +41,7 @@ interface Props {
 // ─── component 
 export default function CreatePostDialog({ isOpen, onClose, onSubmit }: Props) {
   const { user, getUserDisplayName, getUserName } = useAuth();
+  const [voterId] = useState<string>(getVoterId);
 
   const [content, setContent] = useState("");
   const [media, setMedia] = useState<MediaItem[]>([]);
@@ -132,22 +143,20 @@ export default function CreatePostDialog({ isOpen, onClose, onSubmit }: Props) {
   };
 
   // ── submit 
-const handleSubmit = async () => {
-  if (!content.trim() && !media.length && !showPoll) return;
-  setSubmitting(true);
-  try {
-    const userId = user?.userId || user?.email || "guest";
-    const userName = displayName;
-    const userEmail = user?.email;
-
-    // Create FormData for multipart upload
-    const formData = new FormData();
-    formData.append("userName", displayName);
-    formData.append("userHandle", handle);
-    formData.append("userAvatar", avatar);
-    formData.append("content", content.trim());
-    formData.append("userId", userId);
-    if (userEmail) formData.append("userEmail", userEmail);
+  const handleSubmit = async () => {
+    if (!content.trim() && !media.length && !showPoll) return;
+    setSubmitting(true);
+    try {
+      const userId = user?.userId || user?.email || voterId || "guest";
+      const userName = displayName;
+      const userEmail = user?.email;
+      const formData = new FormData();
+      formData.append("userName", displayName);
+      formData.append("userHandle", handle);
+      formData.append("userAvatar", avatar);
+      formData.append("content", content.trim());
+      formData.append("userId", userId);
+      if (userEmail) formData.append("userEmail", userEmail);
     
     // Add poll if exists
     if (showPoll && pollOptions.filter(o => o.trim()).length >= 2) {
@@ -442,7 +451,7 @@ const handleSubmit = async () => {
           fixed bottom-0 left-0 right-0 z-50
           bg-[#0f0f0f] rounded-t-3xl shadow-2xl
           transition-transform duration-500 ease-out
-          max-h-[90vh] flex flex-col
+          max-h-[100vh] pb-16 flex flex-col
           ${isOpen ? "translate-y-0" : "translate-y-full"}
         `}
         style={{ boxShadow: "0 -4px 60px rgba(201,17,95,0.15)" }}

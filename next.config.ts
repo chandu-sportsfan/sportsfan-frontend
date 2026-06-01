@@ -22,6 +22,7 @@ const nextConfig = {
         { source: '/api/auth/set-password', destination: `${apiTarget}/api/auth/set-password` },
         { source: '/api/auth/host/:path*', destination: `${apiTarget}/api/auth/host/:path*` },
         { source: '/api/auth/forgot-password', destination: `${apiTarget}/api/auth/forgot-password` },
+   
 
       ],
 
@@ -49,11 +50,6 @@ const nextConfig = {
         { source: '/api/club-profile', destination: `${apiTarget}/api/club-profile` },
         { source: '/api/club-profile/:path*', destination: `${apiTarget}/api/club-profile/:path*` },
 
-        // Watch Along — only room-level routes go to admin panel
-        // (match/predictions/quiz/chats are handled locally via beforeFiles above)
-        { source: '/api/watch-along', destination: `${apiTarget}/api/watch-along` },
-        { source: '/api/watch-along/:path*', destination: `${apiTarget}/api/watch-along/:path*` },
-
         // Events
         { source: '/api/events', destination: `${apiTarget}/api/events` },
         { source: '/api/events/:path*', destination: `${apiTarget}/api/events/:path*` },
@@ -61,6 +57,11 @@ const nextConfig = {
         //Globalleaderboard
         { source: '/api/user-points', destination: `${apiTarget}/api/user-points` },
         { source: '/api/user-points/:path*', destination: `${apiTarget}/api/user-points/:path*` },
+
+        //Users
+        { source: '/api/users', destination: `${apiTarget}/api/users` },
+        { source: '/api/users/:path*', destination: `${apiTarget}/api/users/:path*` },
+
 
         //Notifications
         { source: '/api/notifications', destination: `${apiTarget}/api/notifications` },
@@ -106,6 +107,8 @@ const nextConfig = {
         { source: '/api/createpost/:path*', destination: `${apiTarget}/api/createpost/:path*` },
         { source: '/api/createpost/polls', destination: `${apiTarget}/api/createpost/polls` },
         { source: '/api/createpost/polls/:path*', destination: `${apiTarget}/api/createpost/polls/:path*` },
+        { source: '/api/createpost/repost', destination: `${apiTarget}/api/createpost/repost` },
+        { source: '/api/createpost/repost/:path*', destination: `${apiTarget}/api/createpost/repost/:path*` },
 
         // Audio Signals
         { source: '/api/audio-messages', destination: `${apiTarget}/api/audio-messages` },
@@ -157,6 +160,26 @@ const nextConfig = {
         { source: '/api/battle/battle-session/:path*', destination: `${apiTarget}/api/battle/battle-session/:path*` },
 
 
+        //Chat & Community
+        { source: '/api/chats/:id/messages', destination: `${apiTarget}/api/chats/:id/messages` },
+        { source: '/api/chats/:id', destination: `${apiTarget}/api/chats/:id` },
+        { source: '/api/chats', destination: `${apiTarget}/api/chats` },
+        { source: '/api/chats/:path*', destination: `${apiTarget}/api/chats/:path*` },
+        { source: '/api/communities', destination: `${apiTarget}/api/communities` },
+        { source: '/api/communities/:id', destination: `${apiTarget}/api/communities/:id` },
+        { source: '/api/communities/:id/join', destination: `${apiTarget}/api/communities/:id/join` },
+        { source: '/api/communities/:path*', destination: `${apiTarget}/api/communities/:path*` },
+
+
+         //Groups & Community
+        { source: '/api/groups/:id/join', destination: `${apiTarget}/api/groups/:id/join` },
+         { source: '/api/groups/:id/members', destination: `${apiTarget}/api/groups/:id/members` },
+        { source: '/api/groups/:id', destination: `${apiTarget}/api/groups/:id` },
+        { source: '/api/groups', destination: `${apiTarget}/api/groups` },
+        { source: '/api/groups/:path*', destination: `${apiTarget}/api/groups/:path*` },
+      
+
+
         //Jersey Numbers
         { source: '/api/player-profile/seasonstats/playerProfilesId=:playerProfilesId', destination: `${apiTarget}/api/player-profile/seasonstats/playerProfilesId=:playerProfilesId` },
 
@@ -169,6 +192,13 @@ const nextConfig = {
         // Sessions
         { source: '/api/fanbattle/session', destination: `${apiTarget}/api/fanbattle/session` },
         { source: '/api/fanbattle/session/:path*', destination: `${apiTarget}/api/fanbattle/session/:path*` },
+
+         // Reports & Preferences
+        { source: '/api/post-report', destination: `${apiTarget}/api/post-report` },
+        { source: '/api/post-report/:path*', destination: `${apiTarget}/api/post-report/:path*` },
+        { source: '/api/post-preference', destination: `${apiTarget}/api/post-preference` },
+        { source: '/api/post-preference/:path*', destination: `${apiTarget}/api/post-preference/:path*` },
+
 
         //Comments
         { source: '/api/comments', destination: `${apiTarget}/api/comments` },
@@ -188,6 +218,9 @@ const nextConfig = {
         { source: '/api/upload', destination: `${apiTarget}/api/upload` },
         { source: '/api/upload/:path*', destination: `${apiTarget}/api/upload/:path*` },
 
+        // Watch Along APIs
+        { source: '/api/watch-along', destination: `${apiTarget}/api/watch-along` },
+        { source: '/api/watch-along/:path*', destination: `${apiTarget}/api/watch-along/:path*` },
 
       ],
     };
@@ -218,6 +251,7 @@ const nextConfig = {
       { protocol: 'https', hostname: 'sportsfan360.vercel.app', port: '', pathname: '/Content/**' },
       { protocol: 'https', hostname: 'res.cloudinary.com', port: '', pathname: '/**' },
       { protocol: 'https', hostname: 'documents.iplt20.com', port: '', pathname: '/**' },
+      { protocol: 'https', hostname: 'lh3.googleusercontent.com', port: '', pathname: '/**' },
     ],
   },
 };

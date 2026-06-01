@@ -113,8 +113,11 @@ export function ScriptsProvider({ children }: { children: ReactNode }) {
         try {
             setLoading(true);
             setError(null);
-            const res = await axios.get<{ success: boolean; scriptFiles: ScriptFile[] }>(
-                "/api/cloudinary/scripts?limit=50"
+            // const res = await axios.get<{ success: boolean; scriptFiles: ScriptFile[] }>(
+            //     "/api/cloudinary/scripts?limit=50"
+            // );
+             const res = await axios.get<{ success: boolean; scriptFiles: ScriptFile[] }>(
+                "/"
             );
             if (res.data.success) {
                 setScripts(res.data.scriptFiles);

@@ -50,24 +50,35 @@ pointsTable: [
 ],
 
   // ── Orange Cap ────────────────────────────────────────────────────────────
- orangeCap: [
-    { rank: 1, player: "Vaibhav Sooryavanshi", team: "RR",  m: 15, runs: 680, avg: "45.33" },
-    { rank: 2, player: "Sai Sudharsan",       team: "GT",  m: 15, runs: 652, avg: "46.57" },
-    { rank: 3, player: "Heinrich Klaasen",    team: "SRH", m: 15, runs: 624, avg: "48.00" },
-    { rank: 4, player: "Shubman Gill",        team: "GT",  m: 14, runs: 618, avg: "44.14" },
-    { rank: 5, player: "Ishan Kishan",        team: "SRH", m: 15, runs: 602, avg: "40.13" },
-  ],
+orangeCap: [
+  { rank: 1, player: "Vaibhav Sooryavanshi", team: "RR", m: 16, runs: 776, avg: "48.50" },
+  { rank: 2, player: "Shubman Gill", team: "GT", m: 16, runs: 732, avg: "45.75" },
+  { rank: 3, player: "Sai Sudharsan", team: "GT", m: 17, runs: 722, avg: "45.13" },
+  { rank: 4, player: "Virat Kohli", team: "RCB", m: 16, runs: 675, avg: "56.25" },
+  { rank: 5, player: "Heinrich Klaasen", team: "SRH", m: 15, runs: 624, avg: "48.00" },
+],
 
   // ── Purple Cap ───────────────────────────────────────────────────────────
-  purpleCap: [
-    { rank: 1, player: "Bhuvneshwar Kumar", team: "RCB", m: 15, wickets: 26, econ: "8.00" },
-    { rank: 1, player: "Kagiso Rabada",     team: "GT",  m: 15, wickets: 26, econ: "9.49" },
-    { rank: 3, player: "Jofra Archer",      team: "RR",  m: 15, wickets: 24, econ: "9.18" },
-    { rank: 4, player: "Anshul Kamboj",     team: "CSK", m: 14, wickets: 21, econ: "10.53" },
-    { rank: 5, player: "Eshan Malinga",     team: "SRH", m: 15, wickets: 20, econ: "9.33" },
-  ],
+ purpleCap: [
+  { rank: 1, player: "Kagiso Rabada", team: "GT", m: 17, wickets: 29, econ: "9.68" },
+  { rank: 2, player: "Bhuvneshwar Kumar", team: "RCB", m: 16, wickets: 28, econ: "7.95" },
+  { rank: 3, player: "Jofra Archer", team: "RR", m: 16, wickets: 25, econ: "9.32" },
+  { rank: 4, player: "Rashid Khan", team: "GT", m: 17, wickets: 21, econ: "9.08" },
+  { rank: 5, player: "Anshul Kamboj", team: "CSK", m: 14, wickets: 21, econ: "10.53" },
+],
   // ── Today's Next Match ────────────────────────────────────────────────────
-   todayMatch: {
+todayMatch: null,
+recentMatch: {
+  teamA: "GT",
+  teamB: "RCB",
+  result: "RCB won by 5 wickets (12 balls left)",
+  scoreA: "155/8",
+  oversA: "20",
+  scoreB: "161/5",
+  oversB: "18",
+},
+
+upcomingMatches: [], {
     teamA: "GT",
     teamAFull: "Gujarat Titans",
     teamB: "RR",
@@ -185,97 +196,126 @@ pointsTable: [
   ],
 
   // ── Playoffs ──────────────────────────────────────────────────────────────
-  playoffs: {
-    q1: {
-      matchNo: 71, date: "26 May", day: "Tue", time: "7:30 PM IST",
-      teamA: "RCB",  teamAFull: "Royal Challengers Bengaluru",
-      teamB: "GT",   teamBFull: "Gujarat Titans",
-      venue: "Himachal Pradesh Cricket Association Stadium, Dharamshala",
-      status: "upcoming",
-    },
-    eliminator: {
-      matchNo: 72, date: "27 May", day: "Wed", time: "7:30 PM IST",
-      teamA: "SRH",  teamAFull: "Sunrisers Hyderabad",
-      teamB: "RR", teamBFull: "Rajasthan Royals",
-      venue: "Maharaja Yadavindra Singh PCA Stadium",
-      status: "upcoming",
-    },
-    q2: {
-      matchNo: 73, date: "29 May", day: "Fri", time: "7:30 PM IST",
-      teamA: "GT",  teamAFull: "Gujarat Titans",
-      teamB: "RR",  teamBFull: "Rajasthan Royals",
-      venue: "Maharaja Yadavindra Singh PCA Stadium",
-      status: "upcoming",
-    },
-    final: {
-      matchNo: 74, date: "31 May",  day: "Sun", time: "7:30 PM IST",
-      teamA: "RCB",  teamAFull: "Royal Challengers Bengaluru",
-      teamB: "TBD",  teamBFull: "TBD",
-      venue: "Narendra Modi Stadium, Ahmedabad",
-      status: "upcoming",
-    },
+ playoffs: {
+  q1: {
+    matchNo: 71,
+    date: "26 May",
+    day: "Tue",
+    time: "7:30 PM IST",
+    teamA: "RCB",
+    teamAFull: "Royal Challengers Bengaluru",
+    teamB: "GT",
+    teamBFull: "Gujarat Titans",
+    venue: "Himachal Pradesh Cricket Association Stadium, Dharamshala",
+    status: "completed",
+    result: "RCB won by 92 runs",
   },
 
-  // ── Extra Stats ───────────────────────────────────────────────────────────
+  eliminator: {
+    matchNo: 72,
+    date: "28 May",
+    day: "Thu",
+    time: "7:30 PM IST",
+    teamA: "SRH",
+    teamAFull: "Sunrisers Hyderabad",
+    teamB: "RR",
+    teamBFull: "Rajasthan Royals",
+    venue: "Maharaja Yadavindra Singh PCA Stadium",
+    status: "completed",
+    result: "RR won by 47 runs",
+  },
+
+  q2: {
+    matchNo: 73,
+    date: "29 May",
+    day: "Fri",
+    time: "7:30 PM IST",
+    teamA: "GT",
+    teamAFull: "Gujarat Titans",
+    teamB: "RR",
+    teamBFull: "Rajasthan Royals",
+    venue: "Maharaja Yadavindra Singh PCA Stadium",
+    status: "completed",
+    result: "GT won by 7 wickets (8 balls left)",
+    scoreA: "214/6",
+    oversA: "20",
+    scoreB: "219/3",
+    oversB: "18.4",
+  },
+
+  final: {
+    matchNo: 74,
+    date: "31 May",
+    day: "Sun",
+    time: "7:30 PM IST",
+    teamA: "RCB",
+    teamAFull: "Royal Challengers Bengaluru",
+    teamB: "GT",
+    teamBFull: "Gujarat Titans",
+    venue: "Narendra Modi Stadium, Ahmedabad",
+    status: "completed",
+    result: "RCB won by 5 wickets (12 balls left)",
+    scoreA: "GT 155/8 (20)",
+    scoreB: "RCB 161/5 (18)",
+  },
+}, // ── Extra Stats ───────────────────────────────────────────────────────────
   extraStats: {
 
- battingAvg: [
-      { rank: 1, player: "Quinton de Kock", team: "MI",  value: "66.00", subValue: "132" },
-      { rank: 2, player: "Rinku Singh",    team: "KKR", value: "59.00", subValue: "295" },
-      { rank: 2, player: "Venkatesh Iyer", team: "RCB", value: "59.00", subValue: "177" },
-      { rank: 4, player: "Anshul Kamboj",  team: "CSK", value: "58.00", subValue: "58" },
-      { rank: 5, player: "Shreyas Iyer",   team: "PBKS",value: "55.33", subValue: "498" },
-    ],
+battingAvg: [
+  { rank: 1, player: "Ravindra Jadeja", team: "RR", value: "66.50", subValue: "266" },
+  { rank: 2, player: "Quinton de Kock", team: "MI", value: "66.00", subValue: "132" },
+  { rank: 3, player: "Rinku Singh", team: "KKR", value: "59.00", subValue: "295" },
+  { rank: 4, player: "Anshul Kamboj", team: "CSK", value: "58.00", subValue: "58" },
+  { rank: 5, player: "Virat Kohli", team: "RCB", value: "56.25", subValue: "675" },
+],
 
-    bowlingAvg: [
-      { rank: 1, player: "Travis Head",   team: "SRH", value: "7.00",  subValue: "1" },
-      { rank: 2, player: "Corbin Bosch",  team: "MI",  value: "16.25", subValue: "12" },
-      { rank: 3, player: "Jason Holder",  team: "GT",  value: "16.47", subValue: "15" },
-      { rank: 4, player: "Ashwani Kumar", team: "MI",  value: "17.00", subValue: "6" },
-      { rank: 5, player: "Jamie Overton", team: "CSK", value: "17.79", subValue: "14" },
-    ],
+bowlingAvg: [
+  { rank: 1, player: "Travis Head", team: "SRH", value: "7.00", subValue: "1" },
+  { rank: 2, player: "Corbin Bosch", team: "MI", value: "16.25", subValue: "12" },
+  { rank: 3, player: "Ashwani Kumar", team: "MI", value: "17.00", subValue: "6" },
+  { rank: 4, player: "Jason Holder", team: "GT", value: "17.06", subValue: "17" },
+  { rank: 5, player: "Jamie Overton", team: "CSK", value: "17.79", subValue: "14" },
+],
 
-    bestBowling: [
-      { rank: 1, player: "Mohsin Khan",       team: "LSG", value: "5/23", subValue: "" },
-      { rank: 2, player: "Josh Hazlewood",    team: "RCB", value: "4/12", subValue: "" },
-      { rank: 3, player: "Akeal Hosein",      team: "CSK", value: "4/17", subValue: "" },
-      { rank: 4, player: "Jamie Overton",     team: "CSK", value: "4/18", subValue: "" },
-      { rank: 5, player: "Bhuvneshwar Kumar", team: "RCB", value: "4/23", subValue: "" },
-    ],
+bestBowling: [
+  { rank: 1, player: "Mohsin Khan", team: "LSG", value: "5/23" },
+  { rank: 2, player: "Josh Hazlewood", team: "RCB", value: "4/12" },
+  { rank: 3, player: "Akeal Hosein", team: "CSK", value: "4/17" },
+  { rank: 4, player: "Jamie Overton", team: "CSK", value: "4/18" },
+  { rank: 5, player: "Bhuvneshwar Kumar", team: "RCB", value: "4/23" },
+],
 
-    mostEcon: [
-      { rank: 1, player: "Sunil Narine",      team: "KKR", value: "6.65", subValue: "15" },
-      { rank: 2, player: "Harpreet Brar",     team: "PBKS",value: "7.50", subValue: "2" },
-      { rank: 3, player: "Jason Holder",      team: "GT",  value: "7.64", subValue: "15" },
-      { rank: 4, player: "Bhuvneshwar Kumar", team: "RCB", value: "8.00", subValue: "26" },
-      { rank: 5, player: "Akeal Hosein",      team: "CSK", value: "8.03", subValue: "8" },
-    ],
+mostEcon: [
+  { rank: 1, player: "Sunil Narine", team: "KKR", value: "6.65", subValue: "15" },
+  { rank: 2, player: "Harpreet Brar", team: "PBKS", value: "7.50", subValue: "2" },
+  { rank: 3, player: "Jason Holder", team: "GT", value: "7.57", subValue: "17" },
+  { rank: 4, player: "Bhuvneshwar Kumar", team: "RCB", value: "7.95", subValue: "28" },
+  { rank: 5, player: "Akeal Hosein", team: "CSK", value: "8.03", subValue: "8" },
+],
 
- maxSixes: [
-      { rank: 1, player: "Vaibhav Sooryavanshi", team: "RR",  value: "65", subValue: "680" },
-      { rank: 2, player: "Abhishek Sharma",     team: "SRH", value: "43", subValue: "563" },
-      { rank: 3, player: "Rajat Patidar",       team: "RCB", value: "41", subValue: "486" },
-      { rank: 4, player: "Ryan Rickelton",      team: "MI",  value: "38", subValue: "448" },
-      { rank: 5, player: "Mitchell Marsh",      team: "LSG", value: "36", subValue: "563" },
-    ],
+maxSixes: [
+  { rank: 1, player: "Vaibhav Sooryavanshi", team: "RR", value: "72", subValue: "776" },
+  { rank: 2, player: "Abhishek Sharma", team: "SRH", value: "43", subValue: "563" },
+  { rank: 3, player: "Rajat Patidar", team: "RCB", value: "42", subValue: "501" },
+  { rank: 4, player: "Ryan Rickelton", team: "MI", value: "38", subValue: "448" },
+  { rank: 5, player: "Mitchell Marsh", team: "LSG", value: "36", subValue: "563" },
+],
 
-    maxFours: [
-      { rank: 1, player: "Sai Sudharsan", team: "GT",  value: "65", subValue: "652" },
-      { rank: 2, player: "Virat Kohli",   team: "RCB", value: "64", subValue: "600" },
-      { rank: 3, player: "Ishan Kishan",  team: "SRH", value: "60", subValue: "602" },
-      { rank: 4, player: "Shubman Gill",  team: "GT",  value: "57", subValue: "618" },
-      { rank: 5, player: "KL Rahul",      team: "DC",  value: "56", subValue: "593" },
-    ],
+maxFours: [
+  { rank: 1, player: "Sai Sudharsan", team: "GT", value: "75", subValue: "722" },
+  { rank: 2, player: "Shubman Gill", team: "GT", value: "74", subValue: "732" },
+  { rank: 3, player: "Virat Kohli", team: "RCB", value: "73", subValue: "675" },
+  { rank: 4, player: "Vaibhav Sooryavanshi", team: "RR", value: "63", subValue: "776" },
+  { rank: 5, player: "Ishan Kishan", team: "SRH", value: "60", subValue: "602" },
+],
 
-    boundaries: [
-      { rank: 1, player: "Vaibhav Sooryavanshi", team: "RR",  value: "120", subValue: "" },
-      { rank: 2, player: "Sai Sudharsan",        team: "GT",  value: "94",  subValue: "" },
-      { rank: 3, player: "Abhishek Sharma",      team: "SRH", value: "93",  subValue: "" },
-      { rank: 4, player: "Ishan Kishan",         team: "SRH", value: "92",  subValue: "" },
-      { rank: 5, player: "KL Rahul",             team: "DC",  value: "87",  subValue: "" },
-      { rank: 5, player: "Mitchell Marsh",       team: "LSG", value: "87",  subValue: "" },
-      { rank: 5, player: "Shubman Gill",         team: "GT",  value: "87",  subValue: "" },
-    ],
+boundaries: [
+  { rank: 1, player: "Vaibhav Sooryavanshi", team: "RR", value: "135" },
+  { rank: 2, player: "Shubman Gill", team: "GT", value: "107" },
+  { rank: 3, player: "Sai Sudharsan", team: "GT", value: "105" },
+  { rank: 4, player: "Virat Kohli", team: "RCB", value: "98" },
+  { rank: 5, player: "Abhishek Sharma", team: "SRH", value: "93" },
+],
   },
 };
 

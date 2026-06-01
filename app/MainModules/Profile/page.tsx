@@ -2,6 +2,8 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
 import {
   ArrowLeft, Edit2, MapPin, Calendar,
   Link as LinkIcon, Globe, User,
@@ -49,6 +51,24 @@ const inputBase: React.CSSProperties = {
 function deriveHandle(name: string): string {
   const slug = name.trim().toLowerCase().replace(/\s+/g,"").replace(/[^a-z0-9]/g,"");
   return `@${slug||"user"}fan360`;
+}
+
+function normalizeString(value: unknown): string {
+  return typeof value === "string" ? value.trim().toLowerCase() : "";
+}
+
+function getStoredUserId() {
+  if (typeof window === "undefined") return null;
+
+  try {
+    const stored = window.localStorage.getItem("auth_user");
+    if (!stored) return null;
+
+    const parsed = JSON.parse(stored) as { userId?: string; email?: string } | null;
+    return parsed?.userId || parsed?.email || null;
+  } catch {
+    return null;
+  }
 }
 
 /* ── Avatar ── */
@@ -118,6 +138,7 @@ export default function ProfilePage() {
   const [activeTab, setActiveTab]   = useState("Posts");
   const [isMobile, setIsMobile]     = useState(false);
   const fileInputRef                = useRef<HTMLInputElement>(null);
+  const { user, loading: authLoading, refreshUser } = useAuth();
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
@@ -126,7 +147,20 @@ export default function ProfilePage() {
     return () => window.removeEventListener("resize", check);
   }, []);
 
-  const [profile, setProfile] = useState({
+  const [profile, setProfile] = useState<{
+    name: string;
+    handle: string;
+    avatar: string;
+    subtitle: string;
+    description: string;
+    location: string;
+    joinedDate: string;
+    website: string;
+    stats: { following: number | null; followers: string; following2: number };
+    interests: string[];
+    favoriteTeams: Array<{ name: string; league: string; liked: boolean; initial: string; color: string }>;
+    socialLinks: Array<{ platform: string; handle: string; icon: string }>;
+  }>({
     name:        "Rohit Sharma",
     handle:      "@rohitfan360",
     avatar:      "",
@@ -135,7 +169,7 @@ export default function ProfilePage() {
     location:    "Mumbai, India",
     joinedDate:  "May 2024",
     website:     "sportsfan360.com",
-    stats:       { following: 128, followers: "2.3K", following2: 186 },
+    stats:       { following: null, followers: "2.3K", following2: 186 },
     interests:   ["Cricket","Football","Tennis","F1","eSports"],
     favoriteTeams: [
       { name:"Mumbai Indians",    league:"IPL",      liked:true,  initial:"MI", color:"#0a4f8c" },
@@ -149,6 +183,15 @@ export default function ProfilePage() {
       { platform:"YouTube",   handle:"RohitFan360", icon:"yt" },
     ],
   });
+
+  const [followingCount, setFollowingCount] = useState<number | null>(null);
+  const followingCountRef = useRef<number | null>(null);
+  const [followingLoading, setFollowingLoading] = useState(false);
+  const [followingError, setFollowingError] = useState<string | null>(null);
+  const [followingItems, setFollowingItems] = useState<Array<{ id?: string; playerProfilesId?: string; followingplayername?: string; userId?: string; userEmail?: string; image?: string; avatar?: string; logo?: string; createdAt?: number; updatedAt?: number }>>([]);
+  const [followingPreviews, setFollowingPreviews] = useState<Record<string, { profileId?: string; image?: string; label?: string }>>({});
+  const [unfollowingId, setUnfollowingId] = useState<string | null>(null);
+  const router = useRouter();
 
   const [editForm, setEditForm] = useState({...profile});
   const disp = isEditing ? editForm : profile;
@@ -176,6 +219,206 @@ export default function ProfilePage() {
     if (f) setEditForm(p=>({...p,avatar:URL.createObjectURL(f)}));
   };
 
+  const getPlayerKey = (item: { id?: string; followingplayername?: string }) => {
+    return (item.followingplayername || item.id || "").trim().toLowerCase();
+  };
+
+  const loadFollowingCount = async () => {
+    const uid = user?.userId || user?.email || getStoredUserId();
+    if (!uid) {
+      setFollowingCount(null);
+      setFollowingItems([]);
+      return null;
+    }
+
+    const url = `/api/following?userId=${encodeURIComponent(uid)}`;
+    const res = await fetch(url, { credentials: 'include' });
+    const text = await res.text().catch(() => '');
+    let data: any = null;
+    try { data = text ? JSON.parse(text) : null; } catch { data = text; }
+
+    const list = Array.isArray(data?.following) ? data.following : [];
+    const resolvedCount = typeof data?.count === 'number'
+      ? data.count
+      : typeof data?.total === 'number'
+        ? data.total
+        : list.length;
+
+    setFollowingItems(list);
+    setFollowingCount(resolvedCount);
+    try { setProfile(p => ({ ...p, stats: { ...p.stats, following: resolvedCount } })); } catch {}
+
+    if (!res.ok) {
+      const errorText = typeof data === 'string' ? data : text;
+      throw new Error(`HTTP ${res.status}: ${errorText || res.statusText}`);
+    }
+
+    return resolvedCount;
+  };
+
+  useEffect(() => {
+    if (!followingItems.length) return;
+
+    let cancelled = false;
+
+    const resolvePreviews = async () => {
+      const entries = followingItems.filter((item) => item.followingplayername).slice(0, 12);
+      await Promise.all(entries.map(async (item) => {
+        const key = getPlayerKey(item);
+        if (!key || followingPreviews[key]) return;
+
+        try {
+          const response = await fetch(`/api/global-search?q=${encodeURIComponent(item.followingplayername || "")}`, { credentials: "include" });
+          if (!response.ok) return;
+
+          const body = await response.json().catch(() => null);
+          const results = Array.isArray(body?.results) ? body.results : [];
+          const match = results.find((result: { type?: string; name?: string; playerProfilesId?: string; image?: string; logo?: string; jerseyNumber?: number; category?: string[] }) => (
+            result?.type === "player" &&
+            normalizeString(result.name) === normalizeString(item.followingplayername)
+          ));
+
+          const profileId = match?.playerProfilesId;
+          const image = match?.image || item.image || item.avatar || item.logo;
+          const label = typeof match?.jerseyNumber === "number" ? `Jersey #${match.jerseyNumber}` : (Array.isArray(match?.category) && match?.category?.length ? match.category[0] : undefined);
+
+          if (!cancelled && (profileId || image)) {
+            setFollowingPreviews(prev => ({
+              ...prev,
+              [key]: {
+                profileId: profileId || prev[key]?.profileId,
+                image: image || prev[key]?.image,
+                label: label || prev[key]?.label,
+              },
+            }));
+          }
+        } catch {
+          // ignore preview lookup errors and fall back to initials
+        }
+      }));
+    };
+
+    resolvePreviews();
+
+    return () => { cancelled = true; };
+  }, [followingItems]);
+
+  const handleUnfollowFromList = async (item: { id?: string; followingplayername?: string; userId?: string; userEmail?: string }) => {
+    const uid = user?.userId || user?.email || getStoredUserId();
+    const playerName = item.followingplayername;
+
+    if (!uid || !playerName) {
+      setFollowingError("Unable to unfollow this player right now.");
+      return;
+    }
+
+    const removeFromState = () => {
+      setFollowingItems(prev => prev.filter(entry => entry.id !== item.id));
+      setFollowingCount(prev => {
+        const next = Math.max(0, (prev ?? 0) - 1);
+        setProfile(profileState => ({ ...profileState, stats: { ...profileState.stats, following: next } }));
+        return next;
+      });
+    };
+
+    const reqBody = { userId: uid, followingplayername: playerName };
+    const itemKey = item.id || playerName;
+
+    try {
+      setUnfollowingId(itemKey);
+
+      let res = await fetch("/api/following", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(reqBody),
+      });
+
+      if (res.status === 405) {
+        const q = `/api/following?userId=${encodeURIComponent(uid)}&followingplayername=${encodeURIComponent(playerName)}`;
+        res = await fetch(q, { method: "DELETE", credentials: "include" });
+      }
+
+      if (res.status === 405) {
+        const unfollowUrl = process.env.NEXT_PUBLIC_FOLLOWING_API_URL ? new URL('/unfollow', process.env.NEXT_PUBLIC_FOLLOWING_API_URL).pathname : '/api/following/unfollow';
+        res = await fetch(unfollowUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(reqBody),
+        });
+      }
+
+      if (res.status === 200 || res.status === 204) {
+        removeFromState();
+        return;
+      }
+
+      throw new Error(`Failed to unfollow ${playerName}`);
+    } catch (err: any) {
+      setFollowingError(err?.message || "Failed to unfollow player");
+    } finally {
+      setUnfollowingId(null);
+    }
+  };
+
+  const openPlayerProfileFromFollowing = async (item: { id?: string; playerProfilesId?: string; followingplayername?: string }) => {
+    const key = getPlayerKey(item);
+    const preview = followingPreviews[key];
+    let profileId = preview?.profileId || item.playerProfilesId;
+
+    if (!profileId && item.followingplayername) {
+      try {
+        const response = await fetch(`/api/global-search?q=${encodeURIComponent(item.followingplayername)}`, { credentials: "include" });
+        if (response.ok) {
+          const body = await response.json().catch(() => null);
+          const results = Array.isArray(body?.results) ? body.results : [];
+          const match = results.find((result: { type?: string; name?: string; playerProfilesId?: string; jerseyNumber?: number; category?: string[] }) => (
+            result?.type === "player" &&
+            normalizeString(result.name) === normalizeString(item.followingplayername)
+          ));
+          profileId = match?.playerProfilesId || profileId;
+        }
+      } catch {
+        // ignore and keep current resolution
+      }
+    }
+
+    if (!profileId) return;
+
+    router.push(`/MainModules/PlayersProfile?id=${encodeURIComponent(profileId)}&tab=highlights`);
+  };
+
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      setFollowingLoading(true);
+      setFollowingError(null);
+      try {
+        const count = await loadFollowingCount();
+        if (!cancelled && typeof count === 'number') {
+          setFollowingCount(count);
+        }
+      } catch (err: any) {
+        if (!cancelled) {
+          setFollowingError(err?.message || String(err));
+          setFollowingCount(null);
+          setFollowingItems([]);
+        }
+      } finally {
+        if (!cancelled) setFollowingLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.email, user?.userId]);
+
+  // keep a ref in sync so retry closures can read the latest value
+  useEffect(() => { followingCountRef.current = followingCount; }, [followingCount]);
+
   const tabs = ["Posts","Live Reactions","Comments","Following"];
 
   const chips = [
@@ -196,6 +439,82 @@ export default function ProfilePage() {
   /* ── responsive column widths ── */
   const col1 = isMobile ? "1fr" : "230px 1fr";
   const col2 = isMobile ? "1fr" : "1fr 264px";
+
+  const FollowingSection = () => (
+    <div style={{...card(),padding:18}}>
+      <SH title="Following" />
+
+      {followingLoading ? (
+        <div style={{fontSize:13,color:SUB,padding:"8px 0"}}>Loading following list...</div>
+      ) : followingItems.length > 0 ? (
+        <div style={{display:"flex",flexDirection:"column",gap:10}}>
+          {followingItems.map((item, index) => (
+            <div
+              key={item.id || `${item.followingplayername || 'item'}-${index}`}
+              role="button"
+              tabIndex={0}
+              onClick={() => { void openPlayerProfileFromFollowing(item); }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  openPlayerProfileFromFollowing(item);
+                }
+              }}
+              style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 14px",borderRadius:12,background:"#0F1014",border:"1px solid rgba(255,255,255,0.04)",cursor:"pointer",transition:"transform .15s ease, border-color .15s ease, background .15s ease"}}
+            >
+              <div style={{display:"flex",alignItems:"center",gap:12,minWidth:0}}>
+                <div style={{width:44,height:44,borderRadius:"50%",background:"#15161c",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,color:"#fff",flexShrink:0,overflow:"hidden",border:"1px solid rgba(255,255,255,0.06)"}}>
+                  {(() => {
+                    const key = getPlayerKey(item);
+                    const preview = followingPreviews[key];
+                    const imageSrc = preview?.image || item.image || item.avatar || item.logo;
+                    return imageSrc ? (
+                      <img src={imageSrc} alt={item.followingplayername || "Player"} style={{width:"100%",height:"100%",objectFit:"cover"}} />
+                    ) : (
+                      (item.followingplayername || "?").charAt(0).toUpperCase()
+                    );
+                  })()}
+                </div>
+                <div style={{minWidth:0}}>
+                  <div style={{fontSize:13,fontWeight:700,color:TXT,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{item.followingplayername || "Unknown player"}</div>
+                  <div style={{fontSize:11,color:MUTED,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                    {(() => {
+                      const key = getPlayerKey(item);
+                      const preview = followingPreviews[key];
+                      return preview?.label || item.playerProfilesId || "Tap to open player profile";
+                    })()}
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleUnfollowFromList(item);
+                }}
+                disabled={unfollowingId === (item.id || item.followingplayername || null)}
+                style={{
+                  fontSize:11,
+                  color:PINK,
+                  fontWeight:700,
+                  background:"transparent",
+                  border:"1px solid rgba(232,67,122,0.28)",
+                  borderRadius:999,
+                  padding:"7px 12px",
+                  cursor:"pointer",
+                  opacity: unfollowingId === (item.id || item.followingplayername || null) ? 0.7 : 1,
+                }}
+              >
+                {unfollowingId === (item.id || item.followingplayername || null) ? "Unfollowing…" : "Unfollow"}
+              </button>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div style={{fontSize:13,color:SUB,padding:"8px 0"}}>No following items found.</div>
+      )}
+    </div>
+  );
 
   /* ── Sidebar content (shared between desktop sidebar + mobile stacked) ── */
   const Sidebar = () => (
@@ -341,13 +660,16 @@ alignItems:"stretch",
             {/* Stats */}
             <div style={{display:"flex",justifyContent:"space-around",width:"100%",marginBottom:16,paddingBottom:14,borderBottom:"1px solid rgba(255,255,255,0.05)"}}>
               {[
-                {v:profile.stats.following, l:"Following"},
+                {v:followingLoading ? "…" : followingCount === null ? "—" : followingCount, l:"Following"},
                 {v:profile.stats.followers, l:"Followers"},
-                {v:profile.stats.following2,l:"Following"},
+                {v:profile.stats.following2,l:"Connections"},
               ].map((s,i)=>(
                 <div key={i} style={{textAlign:"center"}}>
                   <div style={{fontSize:15,fontWeight:700,color:"#fff",lineHeight:1}}>{s.v}</div>
                   <div style={{fontSize:10,color:MUTED,marginTop:4}}>{s.l}</div>
+                  {s.l === "Following" && followingError && (
+                    <div style={{fontSize:10,color:"#ff6b6b",marginTop:6}}>{followingError}</div>
+                  )}
                 </div>
               ))}
             </div>
@@ -361,9 +683,11 @@ alignItems:"stretch",
                 </button>
               </div>
             ):(
-              <button onClick={()=>setIsEditing(true)} style={{width:"100%",padding:"9px 0",borderRadius:50,fontSize:13,fontWeight:700,background:GRAD,border:"none",color:"#fff",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
-                <Edit2 size={13}/> Edit Profile
-              </button>
+              <div style={{display:"flex",flexDirection:"column",gap:8,width:"100%"}}>
+                <button onClick={()=>setIsEditing(true)} style={{width:"100%",padding:"9px 0",borderRadius:50,fontSize:13,fontWeight:700,background:GRAD,border:"none",color:"#fff",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
+                  <Edit2 size={13}/> Edit Profile
+                </button>
+              </div>
             )}
           </div>
 
@@ -458,7 +782,7 @@ gap:"18px",
 alignItems:"stretch"
 }}>
 
-          {/* LEFT — Posts + Tabs */}
+          {/* LEFT — Tab content */}
           <div style={{
 display:"flex",
 flexDirection:"column",
@@ -483,86 +807,92 @@ gap:"10px"
               ))}
             </div>
 
-            {/* POST 1 */}
-            <div style={{...card(),padding:18}}>
-              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:11}}>
-                <div style={{display:"flex",alignItems:"center",gap:10}}>
-                  <div style={{position:"relative"}}>
-                    <Av src={profile.avatar} name={profile.name} sz={40}/>
-                    <div style={{position:"absolute",bottom:1,right:1,width:10,height:10,borderRadius:"50%",background:"#22c55e",border:`2px solid ${CARD}`}}/>
+            {activeTab === "Following" ? (
+              <FollowingSection />
+            ) : (
+              <>
+                {/* POST 1 */}
+                <div style={{...card(),padding:18}}>
+                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:11}}>
+                    <div style={{display:"flex",alignItems:"center",gap:10}}>
+                      <div style={{position:"relative"}}>
+                        <Av src={profile.avatar} name={profile.name} sz={40}/>
+                        <div style={{position:"absolute",bottom:1,right:1,width:10,height:10,borderRadius:"50%",background:"#22c55e",border:`2px solid ${CARD}`}}/>
+                      </div>
+                      <div>
+                        <div style={{fontSize:13,fontWeight:700,color:TXT}}>{profile.name}</div>
+                        <div style={{fontSize:11,color:MUTED}}>{profile.handle} · 2h ago</div>
+                      </div>
+                    </div>
+                    <div style={{display:"flex",alignItems:"center",gap:7}}>
+                      <span style={{fontSize:10,fontWeight:700,padding:"3px 8px",borderRadius:5,background:"rgba(232,67,122,0.12)",color:PINK,border:"1px solid rgba(232,67,122,0.22)"}}>📌 Pinned</span>
+                      <button style={{background:"none",border:"none",cursor:"pointer",color:MUTED,display:"flex"}}><MoreHorizontal size={15}/></button>
+                    </div>
                   </div>
-                  <div>
-                    <div style={{fontSize:13,fontWeight:700,color:TXT}}>{profile.name}</div>
-                    <div style={{fontSize:11,color:MUTED}}>{profile.handle} · 2h ago</div>
+                  <p style={{fontSize:13,color:SUB,lineHeight:1.65,marginBottom:13}}>
+                    What a match! India showed pure class under pressure. 💙<br/>This is why we love cricket! 🏏🔥
+                  </p>
+                  {/* Match card */}
+                  <div style={{background:"#0F1014",borderRadius:10,padding:"12px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:13}}>
+                    <div style={{display:"flex",alignItems:"center",gap:9}}>
+                      <div style={{width:34,height:34,borderRadius:"50%",background:"#0f3e7a",display:"flex",alignItems:"center",justifyContent:"center",fontSize:17}}>🇮🇳</div>
+                      <div>
+                        <div style={{fontSize:13,fontWeight:800,color:TXT}}>IND 198/7</div>
+                        <div style={{fontSize:10,color:MUTED}}>20 Overs</div>
+                      </div>
+                    </div>
+                    <div style={{textAlign:"center"}}>
+                      <div style={{fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:4,background:"rgba(232,67,122,0.13)",color:PINK,border:"1px solid rgba(232,67,122,0.26)",display:"inline-block",marginBottom:4}}>LIVE</div>
+                      <div style={{fontSize:10,color:"#6e6e82"}}>India won by 7 runs</div>
+                    </div>
+                    <div style={{display:"flex",alignItems:"center",gap:9,flexDirection:"row-reverse"}}>
+                      <div style={{width:34,height:34,borderRadius:"50%",background:"#1a4d28",display:"flex",alignItems:"center",justifyContent:"center",fontSize:17}}>🇦🇺</div>
+                      <div style={{textAlign:"right"}}>
+                        <div style={{fontSize:13,fontWeight:800,color:TXT}}>AUS 191/9</div>
+                        <div style={{fontSize:10,color:MUTED}}>20 Overs</div>
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{display:"flex",gap:18,paddingTop:10,borderTop:"1px solid rgba(255,255,255,0.04)"}}>
+                    {[{Icon:ThumbsUp,n:256},{Icon:MessageSquare,n:48},{Icon:Share2,n:12}].map(({Icon,n},i)=>(
+                      <button key={i} style={{display:"flex",alignItems:"center",gap:5,background:"none",border:"none",cursor:"pointer",color:MUTED,fontSize:12,fontWeight:500}}>
+                        <Icon size={13}/> {n}
+                      </button>
+                    ))}
                   </div>
                 </div>
-                <div style={{display:"flex",alignItems:"center",gap:7}}>
-                  <span style={{fontSize:10,fontWeight:700,padding:"3px 8px",borderRadius:5,background:"rgba(232,67,122,0.12)",color:PINK,border:"1px solid rgba(232,67,122,0.22)"}}>📌 Pinned</span>
-                  <button style={{background:"none",border:"none",cursor:"pointer",color:MUTED,display:"flex"}}><MoreHorizontal size={15}/></button>
-                </div>
-              </div>
-              <p style={{fontSize:13,color:SUB,lineHeight:1.65,marginBottom:13}}>
-                What a match! India showed pure class under pressure. 💙<br/>This is why we love cricket! 🏏🔥
-              </p>
-              {/* Match card */}
-              <div style={{background:"#0F1014",borderRadius:10,padding:"12px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:13}}>
-                <div style={{display:"flex",alignItems:"center",gap:9}}>
-                  <div style={{width:34,height:34,borderRadius:"50%",background:"#0f3e7a",display:"flex",alignItems:"center",justifyContent:"center",fontSize:17}}>🇮🇳</div>
-                  <div>
-                    <div style={{fontSize:13,fontWeight:800,color:TXT}}>IND 198/7</div>
-                    <div style={{fontSize:10,color:MUTED}}>20 Overs</div>
-                  </div>
-                </div>
-                <div style={{textAlign:"center"}}>
-                  <div style={{fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:4,background:"rgba(232,67,122,0.13)",color:PINK,border:"1px solid rgba(232,67,122,0.26)",display:"inline-block",marginBottom:4}}>LIVE</div>
-                  <div style={{fontSize:10,color:"#6e6e82"}}>India won by 7 runs</div>
-                </div>
-                <div style={{display:"flex",alignItems:"center",gap:9,flexDirection:"row-reverse"}}>
-                  <div style={{width:34,height:34,borderRadius:"50%",background:"#1a4d28",display:"flex",alignItems:"center",justifyContent:"center",fontSize:17}}>🇦🇺</div>
-                  <div style={{textAlign:"right"}}>
-                    <div style={{fontSize:13,fontWeight:800,color:TXT}}>AUS 191/9</div>
-                    <div style={{fontSize:10,color:MUTED}}>20 Overs</div>
-                  </div>
-                </div>
-              </div>
-              <div style={{display:"flex",gap:18,paddingTop:10,borderTop:"1px solid rgba(255,255,255,0.04)"}}>
-                {[{Icon:ThumbsUp,n:256},{Icon:MessageSquare,n:48},{Icon:Share2,n:12}].map(({Icon,n},i)=>(
-                  <button key={i} style={{display:"flex",alignItems:"center",gap:5,background:"none",border:"none",cursor:"pointer",color:MUTED,fontSize:12,fontWeight:500}}>
-                    <Icon size={13}/> {n}
-                  </button>
-                ))}
-              </div>
-            </div>
 
-            {/* POST 2 */}
-            <div style={{...card(),padding:18}}>
-              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:11}}>
-                <div style={{display:"flex",alignItems:"center",gap:10}}>
-                  <Av src={profile.avatar} name={profile.name} sz={40}/>
-                  <div>
-                    <div style={{fontSize:13,fontWeight:700,color:TXT}}>{profile.name}</div>
-                    <div style={{fontSize:11,color:MUTED}}>{profile.handle} · 1d ago</div>
+                {/* POST 2 */}
+                <div style={{...card(),padding:18}}>
+                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:11}}>
+                    <div style={{display:"flex",alignItems:"center",gap:10}}>
+                      <Av src={profile.avatar} name={profile.name} sz={40}/>
+                      <div>
+                        <div style={{fontSize:13,fontWeight:700,color:TXT}}>{profile.name}</div>
+                        <div style={{fontSize:11,color:MUTED}}>{profile.handle} · 1d ago</div>
+                      </div>
+                    </div>
+                    <button style={{background:"none",border:"none",cursor:"pointer",color:MUTED,display:"flex"}}><MoreHorizontal size={15}/></button>
+                  </div>
+                  <p style={{fontSize:13,color:SUB,lineHeight:1.65,marginBottom:13}}>
+                    RCB all the way! ❤️🖤<br/>Ee Sala Cup Namde! 🏆
+                  </p>
+                  <div style={{borderRadius:10,overflow:"hidden",marginBottom:13,height:190,background:"linear-gradient(145deg,#4a0808,#8c1212,#b81a1a)",display:"flex",alignItems:"center",justifyContent:"center",position:"relative"}}>
+                    <div style={{position:"absolute",inset:0,background:"radial-gradient(ellipse at 50% 60%,rgba(200,30,30,0.25) 0%,transparent 65%)"}}/>
+                    <span style={{fontSize:48,opacity:0.45}}>🏏</span>
+                  </div>
+                  <div style={{display:"flex",gap:18,paddingTop:10,borderTop:"1px solid rgba(255,255,255,0.04)"}}>
+                    {[{Icon:ThumbsUp,n:189},{Icon:MessageSquare,n:36},{Icon:Share2,n:8}].map(({Icon,n},i)=>(
+                      <button key={i} style={{display:"flex",alignItems:"center",gap:5,background:"none",border:"none",cursor:"pointer",color:MUTED,fontSize:12,fontWeight:500}}>
+                        <Icon size={13}/> {n}
+                      </button>
+                    ))}
                   </div>
                 </div>
-                <button style={{background:"none",border:"none",cursor:"pointer",color:MUTED,display:"flex"}}><MoreHorizontal size={15}/></button>
-              </div>
-              <p style={{fontSize:13,color:SUB,lineHeight:1.65,marginBottom:13}}>
-                RCB all the way! ❤️🖤<br/>Ee Sala Cup Namde! 🏆
-              </p>
-              <div style={{borderRadius:10,overflow:"hidden",marginBottom:13,height:190,background:"linear-gradient(145deg,#4a0808,#8c1212,#b81a1a)",display:"flex",alignItems:"center",justifyContent:"center",position:"relative"}}>
-                <div style={{position:"absolute",inset:0,background:"radial-gradient(ellipse at 50% 60%,rgba(200,30,30,0.25) 0%,transparent 65%)"}}/>
-                <span style={{fontSize:48,opacity:0.45}}>🏏</span>
-              </div>
-              <div style={{display:"flex",gap:18,paddingTop:10,borderTop:"1px solid rgba(255,255,255,0.04)"}}>
-                {[{Icon:ThumbsUp,n:189},{Icon:MessageSquare,n:36},{Icon:Share2,n:8}].map(({Icon,n},i)=>(
-                  <button key={i} style={{display:"flex",alignItems:"center",gap:5,background:"none",border:"none",cursor:"pointer",color:MUTED,fontSize:12,fontWeight:500}}>
-                    <Icon size={13}/> {n}
-                  </button>
-                ))}
-              </div>
-            </div>
+              </>
+            )}
 
-          </div>{/* end posts */}
+          </div>{/* end left column */}
 
           {/* RIGHT — Sidebar (desktop only; mobile shows below) */}
           {!isMobile && (

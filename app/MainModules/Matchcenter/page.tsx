@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { useEffect, useRef } from "react";
 import {
   ArrowLeft,
   ChevronDown,
@@ -1411,7 +1412,144 @@ function TabBar({ activeTab, onChange }: { activeTab: TabId; onChange: (id: TabI
     </div>
   );
 }
+function RCBChampionPopup() {
+  const [show, setShow] = useState(true);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
+  useEffect(() => {
+    if (!show) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const pieces: {
+      x: number; y: number; r: number;
+      color: string; rot: number;
+      vx: number; vy: number; vr: number;
+    }[] = [];
+
+    const colors = ["#e91e8c", "#ff0000", "#ffd700", "#ffffff", "#ff6b00", "#a855f7"];
+    for (let i = 0; i < 180; i++) {
+      pieces.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height - canvas.height,
+        r: Math.random() * 8 + 4,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        rot: Math.random() * Math.PI * 2,
+        vx: (Math.random() - 0.5) * 4,
+        vy: Math.random() * 4 + 2,
+        vr: (Math.random() - 0.5) * 0.2,
+      });
+    }
+
+    let animId: number;
+    const draw = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      pieces.forEach((p) => {
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rot);
+        ctx.fillStyle = p.color;
+        ctx.fillRect(-p.r / 2, -p.r / 2, p.r, p.r * 0.4);
+        ctx.restore();
+        p.x += p.vx;
+        p.y += p.vy;
+        p.rot += p.vr;
+        if (p.y > canvas.height) {
+          p.y = -10;
+          p.x = Math.random() * canvas.width;
+        }
+      });
+      animId = requestAnimationFrame(draw);
+    };
+    draw();
+    return () => cancelAnimationFrame(animId);
+  }, [show]);
+
+  if (!show) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      {/* Confetti canvas */}
+      <canvas ref={canvasRef} className="absolute inset-0 pointer-events-none" />
+
+      {/* Dim overlay */}
+      <div className="absolute inset-0 bg-black/60" onClick={() => setShow(false)} />
+
+      {/* Popup card */}
+      <div
+        className="relative z-10 rounded-3xl overflow-hidden text-center px-8 py-10 max-w-sm w-full mx-4 shadow-2xl"
+        style={{
+          background: "linear-gradient(135deg, #1a0000 0%, #2d0000 40%, #1a0000 100%)",
+          border: "2px solid rgba(233,30,140,0.6)",
+          boxShadow: "0 0 60px rgba(233,30,140,0.3), 0 0 120px rgba(255,0,0,0.15)",
+        }}
+      >
+        {/* Glow ring */}
+        <div className="absolute inset-0 rounded-3xl pointer-events-none" style={{ boxShadow: "inset 0 0 40px rgba(233,30,140,0.1)" }} />
+
+        {/* Trophy */}
+        <div className="text-6xl mb-3">🏆</div>
+
+        {/* Champion badge */}
+        <div
+          className="inline-block px-4 py-1 rounded-full text-xs font-black uppercase tracking-widest mb-4"
+          style={{ background: "rgba(233,30,140,0.2)", border: "1px solid rgba(233,30,140,0.5)", color: "#e91e8c" }}
+        >
+          IPL 2026 Champions
+        </div>
+
+        {/* RCB logo + name */}
+        <div className="flex items-center justify-center gap-3 mb-2">
+          <img src="/teams/RCB.png" alt="RCB" className="w-14 h-14 object-contain drop-shadow-lg" />
+          <div className="text-left">
+            <p className="text-white font-black text-2xl leading-none">RCB</p>
+            <p className="text-gray-400 text-xs leading-snug">Royal Challengers<br />Bengaluru</p>
+          </div>
+        </div>
+
+        {/* Result */}
+        <p className="text-gray-300 text-sm mt-4 mb-1">
+          Defeated <span className="text-white font-bold">GT</span> in the Final
+        </p>
+        <p className="text-emerald-400 font-bold text-sm">Won by 5 wickets (12 balls left)</p>
+
+        {/* Scores */}
+        <div
+          className="flex justify-center gap-6 mt-4 mb-6 px-4 py-3 rounded-xl"
+          style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}
+        >
+          <div className="text-center">
+            <p className="text-gray-500 text-[10px] uppercase tracking-wider mb-1">GT</p>
+            <p className="text-white font-black text-lg">155/8</p>
+            <p className="text-gray-600 text-[10px]">(20 overs)</p>
+          </div>
+          <div className="w-px bg-white/10" />
+          <div className="text-center">
+            <p className="text-[#e91e8c] text-[10px] uppercase tracking-wider mb-1 font-bold">RCB ✓</p>
+            <p className="text-white font-black text-lg">161/5</p>
+            <p className="text-gray-600 text-[10px]">(18 overs)</p>
+          </div>
+        </div>
+
+        {/* Close button */}
+        <button
+          onClick={() => setShow(false)}
+          className="w-full py-3 rounded-xl font-black text-sm uppercase tracking-widest transition-all"
+          style={{
+            background: "linear-gradient(135deg, #e91e8c, #ff0040)",
+            boxShadow: "0 4px 20px rgba(233,30,140,0.4)",
+          }}
+        >
+          Let's Go RCB! 🎉
+        </button>
+      </div>
+    </div>
+  );
+}
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function IPLDashboard() {
@@ -1420,6 +1558,7 @@ export default function IPLDashboard() {
 
   return (
     <div className="min-h-screen bg-[#0b0c16]" style={{ fontFamily: "'Inter', 'SF Pro Display', system-ui, sans-serif" }}>
+       <RCBChampionPopup />  
       <div className={`mx-auto px-3 py-4 sm:px-6 sm:py-6 transition-all duration-500 ${tab === "playoffs" ? "max-w-7xl" : "max-w-4xl"}`}>
         <Link href="/MainModules/HomePage" className="inline-flex items-center gap-1.5 text-gray-500 hover:text-gray-300 mb-4 transition-colors">
           <ArrowLeft size={16} />

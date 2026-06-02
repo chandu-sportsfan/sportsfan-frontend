@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
@@ -136,7 +136,7 @@ function SocialIcon({ icon }) {
 /* ═══════════════════════════════
    MAIN PAGE
 ═══════════════════════════════ */
-export default function ProfilePage() {
+function ProfilePageInner() {
   const [isEditing, setIsEditing]   = useState(false);
   const [activeTab, setActiveTab]   = useState("Posts");
   const [isMobile, setIsMobile]     = useState(false);
@@ -1033,5 +1033,30 @@ export default function ProfilePage() {
 
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
+  );
+}
+
+/* ═══════════════════════════════
+   SUSPENSE WRAPPER — required by Next.js App Router
+   because useSearchParams() needs a Suspense boundary
+═══════════════════════════════ */
+export default function ProfilePage() {
+  return (
+    <Suspense fallback={
+      <div style={{
+        minHeight: "100vh",
+        background: "#070809",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        color: "#a1a1af",
+        fontSize: 14,
+        fontFamily: "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif",
+      }}>
+        Loading profile…
+      </div>
+    }>
+      <ProfilePageInner />
+    </Suspense>
   );
 }

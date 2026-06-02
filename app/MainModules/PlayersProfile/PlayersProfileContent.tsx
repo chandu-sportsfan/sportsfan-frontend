@@ -1,7 +1,7 @@
 // MainModules/PlayersProfile/PlayerProfileContent.tsx
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 import PlayerGamePlan from "@/src/components/PlayerProfile-Component/PlayerGamePlan/index";
@@ -72,7 +72,7 @@ export default function PlayerProfileContent() {
     team: Player360Data.profile?.team || "",
     battingStyle: Player360Data.profile?.battingStyle || "",
     bowlingStyle: Player360Data.profile?.bowlingStyle || "",
-    avatar: Player360Data.profile?.avatar || "",
+    avatar: Player360Data.home?.[0]?.image || Player360Data.profile?.avatar || "",
     about: Player360Data.profile?.about || "",
     stats: {
       runs: Player360Data.profile?.stats?.runs || "0",
@@ -110,6 +110,8 @@ export default function PlayerProfileContent() {
     media: Player360Data.media?.mediaItems || [],
   };
 
+  const displayPlayer: Player = player;
+
   return (
     <div className="min-h-screen bg-[#111111] font-sans">
       <div className="sticky top-0 z-50 flex items-center px-4 md:px-8 lg:px-12 py-3.5 bg-[#111111]/90 backdrop-blur-md border-b border-[#1f1f1f]">
@@ -131,24 +133,24 @@ export default function PlayerProfileContent() {
       <div className="w-full max-w-[1280px] mx-auto">
         <div className="block lg:hidden">
           <div className="max-w-[640px] mx-auto">
-            <PlayerProfileHeader player={player} />
-            <PlayerProfileActions player={player} playerId={playerId || undefined} />
-            <PlayerSeasonStats player={player} />
-            <PlayerGamePlan player={player} />
+            <PlayerProfileHeader player={displayPlayer} />
+            <PlayerProfileActions player={displayPlayer} playerId={playerId || undefined} />
+            <PlayerSeasonStats player={displayPlayer} />
+            <PlayerGamePlan player={displayPlayer} />
           </div>
         </div>
 
         <div className="hidden lg:flex lg:items-start lg:gap-6 xl:gap-8 px-8 xl:px-12 py-6">
           <div className="sticky top-[65px] w-[360px] xl:w-[400px] shrink-0 flex flex-col overflow-y-auto max-h-[calc(100vh-65px)] [scrollbar-width:none]">
-            <PlayerProfileHeader player={player} />
-            <PlayerProfileActions player={player} playerId={playerId || undefined} />
+            <PlayerProfileHeader player={displayPlayer} />
+            <PlayerProfileActions player={displayPlayer} playerId={playerId || undefined} />
           </div>
           <div className="flex-1 min-w-0 flex flex-col pb-10">
             <div id="stats-section">
-              <PlayerSeasonStats player={player} />
+              <PlayerSeasonStats player={displayPlayer} />
             </div>
             <div id="highlights-section">
-              <PlayerGamePlan player={player} />
+              <PlayerGamePlan player={displayPlayer} />
             </div>
           </div>
         </div>

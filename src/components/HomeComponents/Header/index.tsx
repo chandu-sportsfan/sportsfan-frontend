@@ -170,7 +170,7 @@ export default function Header() {
                         <button
                             key={`${result.type}-${result.id}`}
                             onClick={() => {
-                                // Run navigation first, do NOT call setShowDropdown here
+                                setShowDropdown(false);
                                 navigateToResult(result);
                             }}
                             className="w-full text-left p-3 hover:bg-white/5 transition-colors flex items-center gap-3 border-b border-white/5 last:border-0 cursor-pointer"

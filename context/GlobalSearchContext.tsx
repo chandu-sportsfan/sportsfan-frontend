@@ -1,16 +1,18 @@
 "use client";
 
 import { createContext, useContext, useState, useCallback, ReactNode } from "react";
+import { useRouter } from "next/navigation";
 import axios from "axios";
 
-// 1. Add 'user' to the type and make playerProfilesId optional
+// ── Types ────────────────────────────────────────────────────────────────────
+
 interface SearchResult {
-    type: 'player' | 'team' | 'user'; 
+    type: 'player' | 'team' | 'user';
     id: string;
     name: string;
     image?: string;
     logo?: string;
-    playerProfilesId?: string; 
+    playerProfilesId?: string;   // optional – not all results have one
     jerseyNumber?: number;
     category?: string[];
 }
@@ -22,14 +24,21 @@ interface GlobalSearchContextType {
     isSearching: boolean;
     performSearch: (query: string) => Promise<void>;
     clearSearch: () => void;
+    /** Call this when the user clicks any result in the search dropdown. */
+    navigateToResult: (result: SearchResult) => void;
 }
 
+// ── Context ───────────────────────────────────────────────────────────────────
+
 const GlobalSearchContext = createContext<GlobalSearchContextType | undefined>(undefined);
+
+// ── Provider ──────────────────────────────────────────────────────────────────
 
 export function GlobalSearchProvider({ children }: { children: ReactNode }) {
     const [searchQuery, setSearchQuery] = useState("");
     const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
     const [isSearching, setIsSearching] = useState(false);
+    const router = useRouter();
 
     const performSearch = useCallback(async (query: string) => {
         if (!query.trim()) {
@@ -40,17 +49,17 @@ export function GlobalSearchProvider({ children }: { children: ReactNode }) {
         setIsSearching(true);
         try {
             const response = await axios.get(`/api/global-search?q=${encodeURIComponent(query)}`);
-            const results = response.data.results || [];
+            const results: SearchResult[] = response.data.results || [];
 
-            // 2. Sort the array: Players first, Users second, Teams third
-            const sortedResults = [...results].sort((a, b) => {
-                const order = { player: 1, user: 2, team: 3 };
-                const rankA = order[a.type as keyof typeof order] || 4;
-                const rankB = order[b.type as keyof typeof order] || 4;
+            // Sort: Players first → Users second → Teams third
+            const order: Record<string, number> = { player: 1, user: 2, team: 3 };
+            const sorted = [...results].sort((a, b) => {
+                const rankA = order[a.type] ?? 4;
+                const rankB = order[b.type] ?? 4;
                 return rankA - rankB;
             });
 
-            setSearchResults(sortedResults);
+            setSearchResults(sorted);
         } catch (error) {
             console.error("Search failed:", error);
             setSearchResults([]);
@@ -64,6 +73,34 @@ export function GlobalSearchProvider({ children }: { children: ReactNode }) {
         setSearchResults([]);
     }, []);
 
+    /**
+     * Navigate to the correct profile page based on result type, then clear search.
+     *
+     * • type === "user"   → /MainModules/Profile?userId=<id>
+     *     The Profile page reads ?userId and, if it differs from the logged-in
+     *     user, renders "Add Friend" instead of "Edit Profile".
+     *
+     * • type === "player" → /MainModules/PlayersProfile?id=<playerProfilesId>
+     *
+     * • type === "team"   → /MainModules/PlayersProfile?id=<id>  (adjust if needed)
+     */
+    const navigateToResult = useCallback((result: SearchResult) => {
+        // Close the search dropdown immediately
+        clearSearch();
+
+        if (result.type === "user") {
+            // Use playerProfilesId if available, otherwise fall back to id
+            const userId = result.playerProfilesId || result.id;
+            router.push(`/MainModules/Profile?userId=${encodeURIComponent(userId)}`);
+        } else {
+            // Player or Team → existing player profile page
+            const profileId = result.playerProfilesId || result.id;
+            router.push(
+                `/MainModules/PlayersProfile?id=${encodeURIComponent(profileId)}&tab=highlights`
+            );
+        }
+    }, [clearSearch, router]);
+
     return (
         <GlobalSearchContext.Provider value={{
             searchQuery,
@@ -71,12 +108,15 @@ export function GlobalSearchProvider({ children }: { children: ReactNode }) {
             searchResults,
             isSearching,
             performSearch,
-            clearSearch
+            clearSearch,
+            navigateToResult,
         }}>
             {children}
         </GlobalSearchContext.Provider>
     );
 }
+
+// ── Hook ──────────────────────────────────────────────────────────────────────
 
 export function useGlobalSearch() {
     const context = useContext(GlobalSearchContext);

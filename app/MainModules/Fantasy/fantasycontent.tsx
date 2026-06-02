@@ -105,10 +105,9 @@
 
 import ChallengesSection from "@/src/components/FanBattle-Component/Challengessection";
 import FanBattleCard from "@/src/components/FanBattle-Component/Fanbattlearena";
-import FanBattleHeader from "@/src/components/FanBattle-Component/Fanbattleheader";
 import PlayerPowerCarousel from "@/src/components/FanBattle-Component/PlayerPowerCarousel";
 import RankingsModal from "@/src/components/FanBattle-Component/RankingsModal";
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import FantasyGamesHub from "../FantasyGames/page";
 import { Sword, BarChart2, Trophy, ArrowLeft } from "lucide-react";
@@ -124,7 +123,6 @@ export default function FanBattlePage() {
   const searchParams = useSearchParams();
   const [isRankingsOpen, setIsRankingsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("fan-battle");
-  const tabsContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const tabParam = searchParams.get("tab");
@@ -148,12 +146,9 @@ export default function FanBattlePage() {
         {/* Tabs Section */}
         <div className="mt-8 px-4 overflow-hidden">
           {/* Tab Bar - Premium Pill Style */}
-          <div 
-            ref={tabsContainerRef}
-            className="flex items-center justify-center gap-2 p-1.5 bg-[#1a1a1a]/80 backdrop-blur-md rounded-2xl border border-white/5 overflow-x-auto no-scrollbar shadow-xl"
-            style={{
-              WebkitOverflowScrolling: "touch",
-            }}
+          <div
+            className="flex justify-start items-center gap-2 overflow-x-auto rounded-2xl border border-white/5 bg-[#1a1a1a]/80 p-1.5 shadow-xl [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:justify-center"
+            style={{ WebkitOverflowScrolling: "touch" }}
           >
             {tabs.map((tab) => {
               const isActive = activeTab === tab.id;
@@ -162,19 +157,17 @@ export default function FanBattlePage() {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`relative flex items-center gap-2.5 px-6 py-3.5 rounded-xl text-sm font-bold tracking-wide transition-all duration-300 whitespace-nowrap shrink-0 group
+                  className={`relative flex min-w-max items-center justify-center gap-2 px-4 py-3 rounded-xl text-[11px] sm:px-5 sm:py-3.5 sm:text-sm font-bold tracking-wide transition-all duration-300 text-center whitespace-nowrap shrink-0 snap-start group min-h-[52px]
                     ${isActive
                       ? "text-white shadow-lg shadow-pink-500/20"
                       : "text-white/40 hover:text-white/70 hover:bg-white/5"
                     }`}
-                  style={isActive ? {
-                    background: "linear-gradient(90deg, #e91e8c, #ff6b35)",
-                  } : {}}
+                  style={isActive ? { background: "linear-gradient(90deg, #e91e8c, #ff6b35)" } : {}}
                 >
                   <Icon size={16} className={`${isActive ? "text-white" : "text-white/40 group-hover:text-white/70"} transition-colors`} />
-                  {tab.label}
 
-                  {/* NEW badge */}
+                  <span className="block leading-tight text-[11px] sm:text-sm">{tab.label}</span>
+
                   {tab.hasNew && (
                     <span className={`flex items-center justify-center px-1.5 py-0.5 text-[8px] font-black tracking-tighter uppercase rounded-md leading-none
                       ${isActive ? "bg-white text-[#e91e8c]" : "bg-[#e91e8c] text-white"}`}>

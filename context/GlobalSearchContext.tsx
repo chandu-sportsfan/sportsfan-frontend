@@ -85,20 +85,21 @@ export function GlobalSearchProvider({ children }: { children: ReactNode }) {
      * • type === "team"   → /MainModules/PlayersProfile?id=<id>  (adjust if needed)
      */
     const navigateToResult = useCallback((result: SearchResult) => {
-        // Close the search dropdown immediately
-        clearSearch();
-
+        // 1. Trigger the route change FIRST
         if (result.type === "user") {
-            // Use playerProfilesId if available, otherwise fall back to id
             const userId = result.playerProfilesId || result.id;
             router.push(`/MainModules/Profile?userId=${encodeURIComponent(userId)}`);
         } else {
-            // Player or Team → existing player profile page
             const profileId = result.playerProfilesId || result.id;
             router.push(
                 `/MainModules/PlayersProfile?id=${encodeURIComponent(profileId)}&tab=highlights`
             );
         }
+
+        // 2. Delay the cleanup by 150ms so the router has time to execute
+        setTimeout(() => {
+            clearSearch();
+        }, 150);
     }, [clearSearch, router]);
 
     return (

@@ -2,13 +2,13 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import {
   ArrowLeft, Edit2, MapPin, Calendar,
   Link as LinkIcon, Globe, User,
   MessageSquare, ThumbsUp, Users, Radio,
-  Check, Share2, MoreHorizontal,
+  Check, Share2, MoreHorizontal, UserPlus,
 } from "lucide-react";
 
 /* ═══════════════════════════════
@@ -24,7 +24,7 @@ const PINK  = "#e8437a";
 const GRAD  = "linear-gradient(90deg,#e8437a,#f4732a)";
 const R     = 14;
 
-const card = (extra: React.CSSProperties = {}): React.CSSProperties => ({
+const card = (extra = {}) => ({
   background: CARD,
   borderRadius: R,
   border: "1px solid rgba(255,255,255,0.015)",
@@ -32,7 +32,7 @@ const card = (extra: React.CSSProperties = {}): React.CSSProperties => ({
   ...extra,
 });
 
-const inputBase: React.CSSProperties = {
+const inputBase = {
   background: INNER,
   border: "1px solid rgba(255,255,255,0.07)",
   borderRadius: 8,
@@ -45,40 +45,22 @@ const inputBase: React.CSSProperties = {
 };
 
 /* ─── Types ─── */
-interface ProfileData {
-  name: string;
-  handle: string;
-  avatar: string;
-  subtitle: string;
-  description: string;
-  location: string;
-  joinedDate: string;
-  website: string;
-  stats: { following?: number | string | null; followers?: number | string; mutual?: number | string; following2?: number | string };
-  interests: string[];
-  favoriteTeams: { name: string; league: string; liked: boolean; initial: string; color: string }[];
-  socialLinks: { platform: string; handle: string; icon: string }[];
-}
 
-function normalizeString(value: unknown): string {
+function normalizeString(value) {
   return typeof value === "string" ? value.trim().toLowerCase() : "";
 }
 
-type ValidationErrors = Record<string, string>;
-
-function deriveHandle(name: string) {
+function deriveHandle(name) {
   const slug = String(name || "").trim().toLowerCase().replace(/[^a-z0-9]+/g, "");
   return slug ? `@${slug.slice(0, 32)}` : "@user";
 }
 
 function getStoredUserId() {
   if (typeof window === "undefined") return null;
-
   try {
     const stored = window.localStorage.getItem("auth_user");
     if (!stored) return null;
-
-    const parsed = JSON.parse(stored) as { userId?: string; email?: string } | null;
+    const parsed = JSON.parse(stored);
     return parsed?.userId || parsed?.email || null;
   } catch {
     return null;
@@ -86,7 +68,7 @@ function getStoredUserId() {
 }
 
 /* ── Avatar ── */
-function Av({ src, name, sz = 38 }: { src:string; name:string; sz?:number }) {
+function Av({ src, name, sz = 38 }) {
   return (
     <div style={{
       width: sz, height: sz, borderRadius: "50%", flexShrink: 0,
@@ -96,14 +78,14 @@ function Av({ src, name, sz = 38 }: { src:string; name:string; sz?:number }) {
     }}>
       {src
         ? <img src={src} alt={name} style={{ width: "100%", height: "100%", objectFit: "cover" }}
-            onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
+            onError={e => { e.target.style.display = "none"; }} />
         : name.charAt(0).toUpperCase()}
     </div>
   );
 }
 
 /* ─── Section heading ─── */
-function SH({ title, right }: { title: string; right?: React.ReactNode }) {
+function SH({ title, right }) {
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -116,8 +98,8 @@ function SH({ title, right }: { title: string; right?: React.ReactNode }) {
 }
 
 /* ─── Social icons ─── */
-function SocialIcon({ icon }: { icon: string }) {
-  const wrap: React.CSSProperties = {
+function SocialIcon({ icon }) {
+  const wrap = {
     width: 32, height: 32, borderRadius: "50%", background: "#0F1014",
     display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
   };
@@ -142,7 +124,6 @@ function SocialIcon({ icon }: { icon: string }) {
       </svg>
     </div>
   );
-  /* YouTube / default */
   return (
     <div style={wrap}>
       <svg width="16" height="16" viewBox="0 0 24 24" fill="#ff4444">
@@ -159,12 +140,25 @@ export default function ProfilePage() {
   const [isEditing, setIsEditing]   = useState(false);
   const [activeTab, setActiveTab]   = useState("Posts");
   const [isMobile, setIsMobile]     = useState(false);
-  const fileInputRef                = useRef<HTMLInputElement>(null);
-  const { user, loading: authLoading, refreshUser } = useAuth();
+  const { user, loading: authLoading, getUserDisplayName } = useAuth();
 
   // Local UI state
   const [saveSuccess, setSaveSuccess] = useState(false);
-  const [fieldErrors, setFieldErrors] = useState<ValidationErrors>({});
+  const [fieldErrors, setFieldErrors] = useState({});
+
+  /* ── Detect if we're viewing someone else's profile ── */
+  const searchParams = useSearchParams();
+  const viewedUserId = searchParams.get("userId"); // set when navigated from global search
+
+  // Derive the logged-in user's own id the same way getStoredUserId does
+  const loggedInUserId = user?.userId || user?.email || getStoredUserId();
+
+  // isOwnProfile = true  → show Edit Profile button (default / owner view)
+  // isOwnProfile = false → show Add Friend button (visitor view)
+  const isOwnProfile = !viewedUserId || viewedUserId === loggedInUserId;
+
+  /* ── Add-friend state ── */
+  const [friendStatus, setFriendStatus] = useState<"none" | "pending" | "friends">("none");
 
   /* ── Responsive ── */
   useEffect(() => {
@@ -174,22 +168,12 @@ export default function ProfilePage() {
     return () => window.removeEventListener("resize", check);
   }, []);
 
-  const [profile, setProfile] = useState<{
-    name: string;
-    handle: string;
-    avatar: string;
-    subtitle: string;
-    description: string;
-    location: string;
-    joinedDate: string;
-    website: string;
-    stats: { following: number | null; followers: string; following2: number };
-    interests: string[];
-    favoriteTeams: Array<{ name: string; league: string; liked: boolean; initial: string; color: string }>;
-    socialLinks: Array<{ platform: string; handle: string; icon: string }>;
-  }>({
-    name:        "Rohit Sharma",
-    handle:      "@rohitfan360",
+  /* ── Derive display name from auth (like Header does) ── */
+  const authDisplayName = authLoading ? "" : (getUserDisplayName ? getUserDisplayName() : (user?.name || user?.displayName || user?.email || ""));
+
+  const [profile, setProfile] = useState({
+    name:        "",
+    handle:      "",
     avatar:      "",
     subtitle:    "Sports lover | Cricket fanatic | Live to watch, live to react!",
     description: "Die-hard cricket fan who lives for the big moments! 🏏 Follow live matches, join watch rooms, react in real-time and connect with fans across the globe.",
@@ -211,20 +195,43 @@ export default function ProfilePage() {
     ],
   });
 
-  const [followingCount, setFollowingCount] = useState<number | null>(null);
-  const followingCountRef = useRef<number | null>(null);
+  /* ── Sync name/handle from auth when auth resolves ── */
+  useEffect(() => {
+    if (authDisplayName) {
+      setProfile(prev => ({
+        ...prev,
+        name:   authDisplayName,
+        handle: deriveHandle(authDisplayName),
+      }));
+    }
+  }, [authDisplayName]);
+
+  const [followingCount, setFollowingCount]   = useState(null);
+  const followingCountRef                      = useRef(null);
   const [followingLoading, setFollowingLoading] = useState(false);
-  const [followingError, setFollowingError] = useState<string | null>(null);
-  const [followingItems, setFollowingItems] = useState<Array<{ id?: string; playerProfilesId?: string; followingplayername?: string; userId?: string; userEmail?: string; image?: string; avatar?: string; logo?: string; createdAt?: number; updatedAt?: number }>>([]);
-  const [followingPreviews, setFollowingPreviews] = useState<Record<string, { profileId?: string; image?: string; label?: string }>>({});
-  const [unfollowingId, setUnfollowingId] = useState<string | null>(null);
+  const [followingError, setFollowingError]   = useState(null);
+  const [followingItems, setFollowingItems]   = useState([]);
+  const [followingPreviews, setFollowingPreviews] = useState({});
+  const [unfollowingId, setUnfollowingId]     = useState(null);
   const router = useRouter();
 
-  const [editForm, setEditForm] = useState({...profile});
+  const [editForm, setEditForm] = useState({ ...profile });
+
+  /* Keep editForm name in sync when auth loads */
+  useEffect(() => {
+    if (authDisplayName) {
+      setEditForm(prev => ({
+        ...prev,
+        name:   authDisplayName,
+        handle: deriveHandle(authDisplayName),
+      }));
+    }
+  }, [authDisplayName]);
+
   const disp = isEditing ? editForm : profile;
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement|HTMLTextAreaElement>) => {
-    const {name,value} = e.target;
+  const handleChange = (e) => {
+    const { name, value } = e.target;
     setEditForm(prev => {
       const u = { ...prev, [name]: value };
       if (name === "name") {
@@ -235,8 +242,8 @@ export default function ProfilePage() {
   };
 
   /* ── Validation ── */
-  function validate(form: ProfileData): ValidationErrors {
-    const e: ValidationErrors = {};
+  function validate(form) {
+    const e = {};
     if (!form.name.trim()) {
       e.name = "Name is required.";
     } else if (!/^[A-Za-z\s'\-]{2,60}$/.test(form.name.trim())) {
@@ -269,7 +276,7 @@ export default function ProfilePage() {
     setFieldErrors({});
   };
 
-  const getPlayerKey = (item: { id?: string; followingplayername?: string }) => {
+  const getPlayerKey = (item) => {
     return (item.followingplayername || item.id || "").trim().toLowerCase();
   };
 
@@ -282,15 +289,15 @@ export default function ProfilePage() {
     }
 
     const url = `/api/following?userId=${encodeURIComponent(uid)}`;
-    const res = await fetch(url, { credentials: 'include' });
-    const text = await res.text().catch(() => '');
-    let data: any = null;
+    const res = await fetch(url, { credentials: "include" });
+    const text = await res.text().catch(() => "");
+    let data = null;
     try { data = text ? JSON.parse(text) : null; } catch { data = text; }
 
     const list = Array.isArray(data?.following) ? data.following : [];
-    const resolvedCount = typeof data?.count === 'number'
+    const resolvedCount = typeof data?.count === "number"
       ? data.count
-      : typeof data?.total === 'number'
+      : typeof data?.total === "number"
         ? data.total
         : list.length;
 
@@ -299,7 +306,7 @@ export default function ProfilePage() {
     try { setProfile(p => ({ ...p, stats: { ...p.stats, following: resolvedCount } })); } catch {}
 
     if (!res.ok) {
-      const errorText = typeof data === 'string' ? data : text;
+      const errorText = typeof data === "string" ? data : text;
       throw new Error(`HTTP ${res.status}: ${errorText || res.statusText}`);
     }
 
@@ -323,14 +330,16 @@ export default function ProfilePage() {
 
           const body = await response.json().catch(() => null);
           const results = Array.isArray(body?.results) ? body.results : [];
-          const match = results.find((result: { type?: string; name?: string; playerProfilesId?: string; image?: string; logo?: string; jerseyNumber?: number; category?: string[] }) => (
+          const match = results.find((result) => (
             result?.type === "player" &&
             normalizeString(result.name) === normalizeString(item.followingplayername)
           ));
 
           const profileId = match?.playerProfilesId;
           const image = match?.image || item.image || item.avatar || item.logo;
-          const label = typeof match?.jerseyNumber === "number" ? `Jersey #${match.jerseyNumber}` : (Array.isArray(match?.category) && match?.category?.length ? match.category[0] : undefined);
+          const label = typeof match?.jerseyNumber === "number"
+            ? `Jersey #${match.jerseyNumber}`
+            : (Array.isArray(match?.category) && match?.category?.length ? match.category[0] : undefined);
 
           if (!cancelled && (profileId || image)) {
             setFollowingPreviews(prev => ({
@@ -353,7 +362,7 @@ export default function ProfilePage() {
     return () => { cancelled = true; };
   }, [followingItems]);
 
-  const handleUnfollowFromList = async (item: { id?: string; followingplayername?: string; userId?: string; userEmail?: string }) => {
+  const handleUnfollowFromList = async (item) => {
     const uid = user?.userId || user?.email || getStoredUserId();
     const playerName = item.followingplayername;
 
@@ -390,7 +399,9 @@ export default function ProfilePage() {
       }
 
       if (res.status === 405) {
-        const unfollowUrl = process.env.NEXT_PUBLIC_FOLLOWING_API_URL ? new URL('/unfollow', process.env.NEXT_PUBLIC_FOLLOWING_API_URL).pathname : '/api/following/unfollow';
+        const unfollowUrl = process.env.NEXT_PUBLIC_FOLLOWING_API_URL
+          ? new URL("/unfollow", process.env.NEXT_PUBLIC_FOLLOWING_API_URL).pathname
+          : "/api/following/unfollow";
         res = await fetch(unfollowUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -405,14 +416,14 @@ export default function ProfilePage() {
       }
 
       throw new Error(`Failed to unfollow ${playerName}`);
-    } catch (err: any) {
+    } catch (err) {
       setFollowingError(err?.message || "Failed to unfollow player");
     } finally {
       setUnfollowingId(null);
     }
   };
 
-  const openPlayerProfileFromFollowing = async (item: { id?: string; playerProfilesId?: string; followingplayername?: string }) => {
+  const openPlayerProfileFromFollowing = async (item) => {
     const key = getPlayerKey(item);
     const preview = followingPreviews[key];
     let profileId = preview?.profileId || item.playerProfilesId;
@@ -423,7 +434,7 @@ export default function ProfilePage() {
         if (response.ok) {
           const body = await response.json().catch(() => null);
           const results = Array.isArray(body?.results) ? body.results : [];
-          const match = results.find((result: { type?: string; name?: string; playerProfilesId?: string; jerseyNumber?: number; category?: string[] }) => (
+          const match = results.find((result) => (
             result?.type === "player" &&
             normalizeString(result.name) === normalizeString(item.followingplayername)
           ));
@@ -447,10 +458,10 @@ export default function ProfilePage() {
       setFollowingError(null);
       try {
         const count = await loadFollowingCount();
-        if (!cancelled && typeof count === 'number') {
+        if (!cancelled && typeof count === "number") {
           setFollowingCount(count);
         }
-      } catch (err: any) {
+      } catch (err) {
         if (!cancelled) {
           setFollowingError(err?.message || String(err));
           setFollowingCount(null);
@@ -461,12 +472,9 @@ export default function ProfilePage() {
       }
     })();
 
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [user?.email, user?.userId]);
 
-  // keep a ref in sync so retry closures can read the latest value
   useEffect(() => { followingCountRef.current = followingCount; }, [followingCount]);
 
   const tabs = ["Posts","Live Reactions","Comments","Following"];
@@ -479,7 +487,7 @@ export default function ProfilePage() {
     { bg: "rgba(34,180,100,0.14)",  color: "#38b46e" },
   ];
 
-  const tabIcons: Record<string, React.ReactNode> = {
+  const tabIcons = {
     "Posts":          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>,
     "Live Reactions": <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.49-.01a6 6 0 0 1 0-8.49"/></svg>,
     "Comments":       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>,
@@ -500,10 +508,10 @@ export default function ProfilePage() {
         <div style={{display:"flex",flexDirection:"column",gap:10}}>
           {followingItems.map((item, index) => (
             <div
-              key={item.id || `${item.followingplayername || 'item'}-${index}`}
+              key={item.id || `${item.followingplayername || "item"}-${index}`}
               role="button"
               tabIndex={0}
-              onClick={() => { void openPlayerProfileFromFollowing(item); }}
+              onClick={() => { openPlayerProfileFromFollowing(item); }}
               onKeyDown={(e) => {
                 if (e.key === "Enter" || e.key === " ") {
                   e.preventDefault();
@@ -664,7 +672,7 @@ export default function ProfilePage() {
             <div style={{ marginBottom: 14 }}>
               <div style={{ width: 104, height: 104, borderRadius: "50%", padding: 2.5, background: GRAD }}>
                 <div style={{ width: "100%", height: "100%", borderRadius: "50%", overflow: "hidden", background: CARD }}>
-                  <Av src={profile.avatar} name={profile.name} sz={99} />
+                  <Av src={profile.avatar} name={profile.name || "U"} sz={99} />
                 </div>
               </div>
             </div>
@@ -682,7 +690,9 @@ export default function ProfilePage() {
                 {fieldErrors.name && <p style={{ fontSize: 11, color: "#ef4444", marginTop: 4, textAlign: "left" }}>{fieldErrors.name}</p>}
               </div>
             ) : (
-              <div style={{ fontSize: 17, fontWeight: 800, color: "#fff", marginBottom: 3 }}>{profile.name}</div>
+              <div style={{ fontSize: 17, fontWeight: 800, color: "#fff", marginBottom: 3 }}>
+                {authLoading ? "Loading..." : (profile.name || authDisplayName || "User")}
+              </div>
             )}
 
             <div style={{ fontSize: 12, color: MUTED, marginBottom: 8 }}>{disp.handle}</div>
@@ -706,11 +716,11 @@ export default function ProfilePage() {
 
             {/* Stats */}
             <div style={{ display: "flex", justifyContent: "space-around", width: "100%", marginBottom: 16, paddingBottom: 14, borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
-                {[
-                {v:followingLoading ? "…" : followingCount === null ? "—" : followingCount, l:"Following"},
-                {v:profile.stats.followers, l:"Followers"},
-                {v:(profile.stats as any).following2 ?? (profile.stats as any).mutual ?? "—", l:"Connections"},
-              ].map((s,i)=>(
+              {[
+                {v: followingLoading ? "…" : followingCount === null ? "—" : followingCount, l: "Following"},
+                {v: profile.stats.followers, l: "Followers"},
+                {v: profile.stats.following2 ?? "—", l: "Connections"},
+              ].map((s, i) => (
                 <div key={i} style={{textAlign:"center"}}>
                   <div style={{fontSize:15,fontWeight:700,color:"#fff",lineHeight:1}}>{s.v}</div>
                   <div style={{fontSize:10,color:MUTED,marginTop:4}}>{s.l}</div>
@@ -721,26 +731,65 @@ export default function ProfilePage() {
               ))}
             </div>
 
-            {/* Edit / Save / Cancel buttons */}
-            {isEditing ? (
-              <div style={{ display: "flex", gap: 8, width: "100%" }}>
-                <button
-                  onClick={cancel}
-                  style={{ flex: 1, padding: "8px 0", borderRadius: 50, fontSize: 12, fontWeight: 600, background: "transparent", border: "1px solid rgba(255,255,255,0.1)", color: SUB, cursor: "pointer" }}
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={save}
-                  style={{ flex: 1, padding: "8px 0", borderRadius: 50, fontSize: 12, fontWeight: 700, background: GRAD, border: "none", color: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}
-                >
-                  <Check size={12} /> Save
-                </button>
-              </div>
-            ):(
+            {/* Edit Profile (owner) / Add Friend (visitor) */}
+            {isOwnProfile ? (
+              isEditing ? (
+                <div style={{ display: "flex", gap: 8, width: "100%" }}>
+                  <button
+                    onClick={cancel}
+                    style={{ flex: 1, padding: "8px 0", borderRadius: 50, fontSize: 12, fontWeight: 600, background: "transparent", border: "1px solid rgba(255,255,255,0.1)", color: SUB, cursor: "pointer" }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={save}
+                    style={{ flex: 1, padding: "8px 0", borderRadius: 50, fontSize: 12, fontWeight: 700, background: GRAD, border: "none", color: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}
+                  >
+                    <Check size={12} /> Save
+                  </button>
+                </div>
+              ) : (
+                <div style={{display:"flex",flexDirection:"column",gap:8,width:"100%"}}>
+                  <button onClick={() => setIsEditing(true)} style={{width:"100%",padding:"9px 0",borderRadius:50,fontSize:13,fontWeight:700,background:GRAD,border:"none",color:"#fff",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
+                    <Edit2 size={13}/> Edit Profile
+                  </button>
+                </div>
+              )
+            ) : (
+              /* ── Visitor: Add Friend button ── */
               <div style={{display:"flex",flexDirection:"column",gap:8,width:"100%"}}>
-                <button onClick={()=>setIsEditing(true)} style={{width:"100%",padding:"9px 0",borderRadius:50,fontSize:13,fontWeight:700,background:GRAD,border:"none",color:"#fff",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
-                  <Edit2 size={13}/> Edit Profile
+                <button
+                  onClick={() => {
+                    if (friendStatus === "none") {
+                      setFriendStatus("pending");
+                      // TODO: call your friend-request API here
+                      // e.g. axios.post("/api/friend-request", { toUserId: viewedUserId })
+                    }
+                  }}
+                  style={{
+                    width: "100%",
+                    padding: "9px 0",
+                    borderRadius: 50,
+                    fontSize: 13,
+                    fontWeight: 700,
+                    background: friendStatus === "none" ? GRAD
+                               : friendStatus === "pending" ? "transparent"
+                               : "rgba(34,197,94,0.15)",
+                    border: friendStatus === "none" ? "none"
+                           : friendStatus === "pending" ? `1px solid rgba(232,67,122,0.35)`
+                           : "1px solid rgba(34,197,94,0.35)",
+                    color: friendStatus === "friends" ? "#22c55e" : "#fff",
+                    cursor: friendStatus === "friends" ? "default" : "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 6,
+                    transition: "all .2s ease",
+                  }}
+                >
+                  {friendStatus === "none"    && <><UserPlus size={13}/> Add Friend</>}
+                  {friendStatus === "pending" && <><Check size={13}/> Request Sent</>}
+                  {friendStatus === "friends" && <><Check size={13}/> Friends</>}
                 </button>
               </div>
             )}
@@ -756,7 +805,7 @@ export default function ProfilePage() {
                   <div style={{ width: 3, height: 17, background: PINK, borderRadius: 2 }} />
                   <span style={{ fontSize: 14, fontWeight: 700, color: "#fff" }}>About</span>
                 </div>
-                <User size={14} color={PINK} />
+                <User size={14} color={isOwnProfile ? PINK : "transparent"} />
               </div>
 
               {isEditing ? (
@@ -777,10 +826,10 @@ export default function ProfilePage() {
                     <p style={{ fontSize: 10, color: MUTED, textAlign: "right", marginTop: 2 }}>{editForm.description.length}/500</p>
                   </div>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                    {([
-                      { name: "location", Icon: MapPin,  val: editForm.location, label: "Location", errKey: "location" as const },
-                      { name: "website",  Icon: LinkIcon, val: editForm.website,  label: "Website",  errKey: "website"  as const },
-                    ] as const).map(({ name, Icon, val, label, errKey }) => (
+                    {[
+                      { name: "location", Icon: MapPin,  val: editForm.location, label: "Location", errKey: "location" },
+                      { name: "website",  Icon: LinkIcon, val: editForm.website,  label: "Website",  errKey: "website"  },
+                    ].map(({ name, Icon, val, label, errKey }) => (
                       <div key={name}>
                         <label style={{ fontSize: 10, color: MUTED, textTransform: "uppercase", letterSpacing: 1, display: "block", marginBottom: 4 }}>{label}</label>
                         <div style={{ position: "relative" }}>
@@ -844,16 +893,12 @@ export default function ProfilePage() {
         <div style={{ display: "grid", gridTemplateColumns: col2, gap: 18, marginTop: 18 }}>
 
           {/* LEFT — Tab content */}
-          <div style={{
-display:"flex",
-flexDirection:"column",
-gap:"10px"
-}}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
 
-            {/* TABS — plain bar, no card border, just a bottom line */}
+            {/* TABS */}
             <div style={{borderBottom:"1px solid rgba(255,255,255,0.06)",display:"flex",gap:0}}>
-              {tabs.map(tab=>(
-                <button key={tab} onClick={()=>setActiveTab(tab)} style={{
+              {tabs.map(tab => (
+                <button key={tab} onClick={() => setActiveTab(tab)} style={{
                   display:"flex",alignItems:"center",gap:5,
                   padding:"11px 14px",fontSize:12,fontWeight:600,
                   background:"none",border:"none",cursor:"pointer",
@@ -877,11 +922,11 @@ gap:"10px"
                   <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:11}}>
                     <div style={{display:"flex",alignItems:"center",gap:10}}>
                       <div style={{position:"relative"}}>
-                        <Av src={profile.avatar} name={profile.name} sz={40}/>
+                        <Av src={profile.avatar} name={profile.name || "U"} sz={40}/>
                         <div style={{position:"absolute",bottom:1,right:1,width:10,height:10,borderRadius:"50%",background:"#22c55e",border:`2px solid ${CARD}`}}/>
                       </div>
                       <div>
-                        <div style={{fontSize:13,fontWeight:700,color:TXT}}>{profile.name}</div>
+                        <div style={{fontSize:13,fontWeight:700,color:TXT}}>{profile.name || authDisplayName || "User"}</div>
                         <div style={{fontSize:11,color:MUTED}}>{profile.handle} · 2h ago</div>
                       </div>
                     </div>
@@ -927,9 +972,9 @@ gap:"10px"
                 <div style={{...card(),padding:18}}>
                   <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:11}}>
                     <div style={{display:"flex",alignItems:"center",gap:10}}>
-                      <Av src={profile.avatar} name={profile.name} sz={40}/>
+                      <Av src={profile.avatar} name={profile.name || "U"} sz={40}/>
                       <div>
-                        <div style={{fontSize:13,fontWeight:700,color:TXT}}>{profile.name}</div>
+                        <div style={{fontSize:13,fontWeight:700,color:TXT}}>{profile.name || authDisplayName || "User"}</div>
                         <div style={{fontSize:11,color:MUTED}}>{profile.handle} · 1d ago</div>
                       </div>
                     </div>
@@ -955,40 +1000,19 @@ gap:"10px"
 
           </div>{/* end left column */}
 
-          {/* RIGHT — Sidebar (desktop only; mobile shows below) */}
+          {/* RIGHT — Sidebar (desktop only) */}
           {!isMobile && (
-  <div>
-    <Sidebar/>
-  </div>
-)}
+            <div>
+              <Sidebar />
+            </div>
+          )}
 
         </div>{/* end Row 2 */}
 
-        {/* Mobile: show sidebar below posts */}
-        {isMobile && <div style={{marginTop:14}}><Sidebar/></div>}
+        {/* Mobile: show sidebar below posts — ONLY ONCE */}
+        {isMobile && <div style={{marginTop:14}}><Sidebar /></div>}
 
-        {/* ── INVITE YOUR FRIENDS ── flush below, no extra gap ── */}
-        <div style={{
-          marginTop:14,
-          ...card(),
-          padding:"18px 22px",
-          display:"flex",alignItems:"center",gap:16,
-        }}>
-          <div style={{
-            width:44,height:44,borderRadius:"50%",
-            background:"rgba(232,67,122,0.08)",
-            border:"1px solid rgba(232,67,122,0.16)",
-            display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,
-          }}>
-            <Users size={19} color={PINK}/>
-          </div>
-
-          {!isMobile && <div><Sidebar /></div>}
-        </div>
-
-        {isMobile && <div style={{ marginTop: 14 }}><Sidebar /></div>}
-
-        {/* Invite */}
+        {/* Invite Your Friends */}
         <div style={{ marginTop: 14, ...card(), padding: "18px 22px", display: "flex", alignItems: "center", gap: 16 }}>
           <div style={{ width: 44, height: 44, borderRadius: "50%", background: "rgba(232,67,122,0.08)", border: "1px solid rgba(232,67,122,0.16)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
             <Users size={19} color={PINK} />

@@ -85,22 +85,17 @@ export function GlobalSearchProvider({ children }: { children: ReactNode }) {
      * • type === "team"   → /MainModules/PlayersProfile?id=<id>  (adjust if needed)
      */
     const navigateToResult = useCallback((result: SearchResult) => {
-        // Close the search dropdown immediately
-        clearSearch();
+    if (result.type === "user") {
+        const userId = result.playerProfilesId || result.id;
+        router.push(`/MainModules/Profile?userId=${encodeURIComponent(userId)}`);
+    } else {
+        const profileId = result.playerProfilesId || result.id;
+        router.push(`/MainModules/PlayersProfile?id=${encodeURIComponent(profileId)}&tab=highlights`);
+    }
 
-        if (result.type === "user") {
-            // Use playerProfilesId if available, otherwise fall back to id
-            const userId = result.playerProfilesId || result.id;
-            router.push(`/MainModules/Profile?userId=${encodeURIComponent(userId)}`);
-        } else {
-            // Player or Team → existing player profile page
-            const profileId = result.playerProfilesId || result.id;
-            router.push(
-                `/MainModules/PlayersProfile?id=${encodeURIComponent(profileId)}&tab=highlights`
-            );
-        }
-    }, [clearSearch, router]);
-
+    // Move this to the very end of the execution block
+    clearSearch();
+}, [clearSearch, router]);
     return (
         <GlobalSearchContext.Provider value={{
             searchQuery,

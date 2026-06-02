@@ -1,4 +1,3 @@
-
 // "use client";
 // import Link from "next/link";
 // import { Mic, Play, List } from "lucide-react";
@@ -838,6 +837,36 @@ const IPL_TEAMS: Record<string, string[]> = {
 
 const homeCardsData: CardProps[] = [
   {
+    id: 4,
+    title: "FIFA World Cup 2026",
+    subtitle: "The world's biggest football tournament",
+    image: "/images/fifa2026.jpg",
+    profileUrl: "/MainModules/FIFAWorldCup",
+    stats: [
+      { label: "Teams", value: "48" },
+      { label: "Drops", value: "0" },
+      { label: "Matches", value: "104" },
+    ],
+    buttonText: "View Full Playlist",
+    buttonIcon: "play",
+    buttonUrl: "/MainModules/FIFAWorldCup",
+  },
+  {
+    id: 5,
+    title: "Women's T20 2026",
+    subtitle: "Exclusive coverage of women's cricket",
+    image: "/images/womens_t20.jpg",
+    profileUrl: "/MainModules/WomensT20",
+    stats: [
+      { label: "Teams", value: "10" },
+      { label: "Drops", value: "0" },
+      { label: "Plays", value: "0" },
+    ],
+    buttonText: "View Full Playlist",
+    buttonIcon: "play",
+    buttonUrl: "/MainModules/WomensT20",
+  },
+  {
     id: 1,
     title: "IPL T20 2026 360World",
     subtitle: "Exclusive content from all 10 teams",
@@ -1563,6 +1592,34 @@ export default function HomeCardsSection() {
               </div>
             </div>
 
+            {/* Stats - For FIFA World Cup card (id: 4) */}
+            {card.id === 4 && (
+              <div className="grid grid-cols-3 gap-2 mt-2 text-center">
+                {card.stats.map((stat, i) => (
+                  <div key={i} className="bg-[#1c1c1c] p-2 rounded-lg">
+                    <p className="text-gray-400 text-[9px]">{stat.label}</p>
+                    <p className="font-semibold text-[12px] text-white">
+                      {stat.value}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Stats - For Women's T20 card (id: 5) */}
+            {card.id === 5 && (
+              <div className="grid grid-cols-3 gap-2 mt-2 text-center">
+                {card.stats.map((stat, i) => (
+                  <div key={i} className="bg-[#1c1c1c] p-2 rounded-lg">
+                    <p className="text-gray-400 text-[9px]">{stat.label}</p>
+                    <p className="font-semibold text-[12px] text-white">
+                      {stat.value}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+
             {/* Stats - For IPL card */}
             {card.id === 1 && (
               <div className="grid grid-cols-3 gap-2 mt-2 text-center">
@@ -1609,6 +1666,26 @@ export default function HomeCardsSection() {
               </div>
             )}
 
+            {/* Latest Drops — FIFA World Cup card (id: 4) */}
+            {card.id === 4 && (
+              <>
+                <p className="text-gray-500 text-[10px] mt-3 mb-1 font-medium uppercase tracking-wide">
+                  Latest Drops
+                </p>
+                <LatestDropsList />
+              </>
+            )}
+
+            {/* Latest Drops — Women's T20 card (id: 5) */}
+            {card.id === 5 && (
+              <>
+                <p className="text-gray-500 text-[10px] mt-3 mb-1 font-medium uppercase tracking-wide">
+                  Latest Drops
+                </p>
+                <LatestDropsList />
+              </>
+            )}
+
             {/* Latest drops — only on IPL card (id: 1) */}
             {card.id === 1 && (
               <>
@@ -1639,8 +1716,8 @@ export default function HomeCardsSection() {
               </>
             )}
 
-            {/* Button - Show for card 1, 2 and 3 */}
-            {(card.id === 1 || card.id === 2 || card.id === 3) && (
+            {/* Button - Show for all main cards */}
+            {(card.id === 1 || card.id === 2 || card.id === 3 || card.id === 4 || card.id === 5) && (
               <div className="mt-auto pt-2">
                 <Link href={card.buttonUrl || "#"}>
                   <button className="w-full bg-gradient-to-r from-pink-500 to-orange-500 py-1.5 rounded-full font-semibold text-[13px] flex items-center justify-center gap-2 cursor-pointer">
@@ -1653,20 +1730,39 @@ export default function HomeCardsSection() {
               </div>
             )}
 
-            {/* Button - Show for card 1 and card 3 */}
-            {(card.id === 1) && (
+            {/* Match Center Button — only for IPL card */}
+            {card.id === 1 && (
               <div className="mt-auto pt-2 flex flex-col gap-2">
+                <Link href="/MainModules/Matchcenter">
+                  <button className="w-full bg-[#1c1c1c] border border-[#C9115F]/40 py-1.5 rounded-full font-semibold text-[13px] flex items-center justify-center gap-2 cursor-pointer text-white hover:bg-[#2a2a2a] transition-colors">
+                    <span>🏆</span>
+                    Match center
+                  </button>
+                </Link>
+              </div>
+            )}
 
-                {/* Points Table Button — only for IPL card */}
-                {card.id === 1 && (
-                  <Link href="/MainModules/Matchcenter">
-                    <button className="w-full bg-[#1c1c1c] border border-[#C9115F]/40 py-1.5 rounded-full font-semibold text-[13px] flex items-center justify-center gap-2 cursor-pointer text-white hover:bg-[#2a2a2a] transition-colors">
-                      <span>🏆</span>
-                     Match center
-                    </button>
-                  </Link>
-                )}
+            {/* Match Center Button — FIFA World Cup card */}
+            {card.id === 4 && (
+              <div className="mt-auto pt-2 flex flex-col gap-2">
+                <Link href="/MainModules/FIFAWorldCup/Standings">
+                  <button className="w-full bg-[#1c1c1c] border border-[#C9115F]/40 py-1.5 rounded-full font-semibold text-[13px] flex items-center justify-center gap-2 cursor-pointer text-white hover:bg-[#2a2a2a] transition-colors">
+                    <span>⚽</span>
+                    Group Standings
+                  </button>
+                </Link>
+              </div>
+            )}
 
+            {/* Match Center Button — Women's T20 card */}
+            {card.id === 5 && (
+              <div className="mt-auto pt-2 flex flex-col gap-2">
+                <Link href="/MainModules/WomensT20/Matchcenter">
+                  <button className="w-full bg-[#1c1c1c] border border-[#C9115F]/40 py-1.5 rounded-full font-semibold text-[13px] flex items-center justify-center gap-2 cursor-pointer text-white hover:bg-[#2a2a2a] transition-colors">
+                    <span>🏏</span>
+                    Match Center
+                  </button>
+                </Link>
               </div>
             )}
           </div>

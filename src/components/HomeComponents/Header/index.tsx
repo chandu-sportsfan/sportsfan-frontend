@@ -169,7 +169,8 @@ export default function Header() {
                          */
                         <button
                             key={`${result.type}-${result.id}`}
-                            onClick={() => {
+                            onMouseDown={(e) => {
+                                e.preventDefault(); // Prevents input blur from interrupting
                                 setShowDropdown(false);
                                 navigateToResult(result);
                             }}

@@ -76,6 +76,7 @@ export default function Header() {
         isSearching,
         performSearch,
         clearSearch,
+        navigateToResult,   // ← added: handles routing for all result types
     } = useGlobalSearch();
      const { currentUserPoints } = useLeaderboard();
      const { user, getUserDisplayName, loading: authLoading } = useAuth();
@@ -118,48 +119,32 @@ export default function Header() {
     }, [searchQuery, searchResults, isSearching]);
 
     // Close dropdowns on outside click
-   // Close dropdowns on outside click
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      const target = e.target as Node;
-      if (
-        dropdownRef.current && !dropdownRef.current.contains(target) &&
-        // tabletDropdownRef.current && !tabletDropdownRef.current.contains(target) && <-- See note below!
-        mobileDropdownRef.current && !mobileDropdownRef.current.contains(target)
-      ) {
-        setShowDropdown(false);
-        if (inputRef.current) inputRef.current.value = "";
-        if (mobileInputRef.current) mobileInputRef.current.value = "";
-      } // 1. Close the if statement here
-    };  // 2. Close the handleClickOutside function here!
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            const target = e.target as Node;
+            if (
+                dropdownRef.current && !dropdownRef.current.contains(target) &&
+                mobileDropdownRef.current && !mobileDropdownRef.current.contains(target)
+            ) {
+                setShowDropdown(false);
+                if (inputRef.current) inputRef.current.value = "";
+                if (mobileInputRef.current) mobileInputRef.current.value = "";
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value);
-    const handleResultClick = () => {
-        setShowDropdown(false);
-        clearSearch();
-    };
 
     const handleClear = () => {
         clearSearch();
         setShowDropdown(false);
-        if (inputRef.current) {
-            inputRef.current.value = "";
-        }
-        if (mobileInputRef.current) {
-            mobileInputRef.current.value = "";
-        }
+        if (inputRef.current) inputRef.current.value = "";
+        if (mobileInputRef.current) mobileInputRef.current.value = "";
     };
 
-  // Show dropdown when results arrive
- useEffect(() => {
-    if (searchQuery.trim() && !isSearching) setShowDropdown(true);
-  }, [searchQuery, searchResults, isSearching]);
-
-    // Reusable results list
+    // ── Reusable results list ────────────────────────────────────────────────
     const ResultsList = () => (
         <>
             {isSearching ? (
@@ -170,52 +155,70 @@ export default function Header() {
             ) : searchResults.length > 0 ? (
                 <div>
                     {searchResults.map((result) => (
-                        <Link
+                        /*
+                         * Use a <button> instead of <Link> so ALL three types
+                         * (player, team, user) go through navigateToResult,
+                         * which knows the correct URL for each.
+                         *
+                         * For "user" → /MainModules/Profile?userId=<id>
+                         *   The Profile page reads ?userId and shows
+                         *   "Add Friend" instead of "Edit Profile" for visitors.
+                         *
+                         * For "player" → /MainModules/PlayersProfile?id=<playerProfilesId>
+                         * For "team"   → /MainModules/ClubsProfile?teamProfile=<name>
+                         */
+                        <button
                             key={`${result.type}-${result.id}`}
-                            href={
-                                result.type === "player"
-                                    ? `/MainModules/PlayersProfile?id=${result.playerProfilesId}&tab=highlights`
-                                    : result.type === "user"
-                                    ? `/MainModules/Profile?id=${result.id}` /* <-- Adjust to your actual User Profile route */
-                                    : `/MainModules/ClubsProfile?teamProfile=${encodeURIComponent(result.name)}`
-                            }
-                            onClick={handleResultClick}
+                            onClick={() => {
+                                setShowDropdown(false);
+                                navigateToResult(result);
+                            }}
+                            className="w-full text-left p-3 hover:bg-white/5 transition-colors flex items-center gap-3 border-b border-white/5 last:border-0 cursor-pointer"
                         >
-                            <div className="p-3 hover:bg-white/5 transition-colors flex items-center gap-3 border-b border-white/5 last:border-0">
-                                <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-800 flex-shrink-0">
-                                    {/* Treat Users similarly to Players for Avatars */}
-                                    {result.type === "player" || result.type === "user" ? (
-                                        result.image ? (
-                                            <img src={result.image} alt={result.name} className="w-full h-full object-cover" />
-                                        ) : (
-                                            <div className="w-full h-full bg-gradient-to-br from-pink-500 to-orange-500 flex items-center justify-center text-white font-bold">
-                                                {result.name.charAt(0)}
-                                            </div>
-                                        )
-                                    ) : result.logo ? (
-                                        <img src={result.logo} alt={result.name} className="w-full h-full object-cover" />
+                            {/* Avatar */}
+                            <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-800 flex-shrink-0">
+                                {result.type === "player" || result.type === "user" ? (
+                                    result.image ? (
+                                        <img src={result.image} alt={result.name} className="w-full h-full object-cover" />
                                     ) : (
-                                        <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold">
+                                        <div className="w-full h-full bg-gradient-to-br from-pink-500 to-orange-500 flex items-center justify-center text-white font-bold">
                                             {result.name.charAt(0)}
                                         </div>
-                                    )}
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2">
-                                        <p className="text-white font-medium text-sm truncate">{result.name}</p>
-                                        {result.type === "player" && result.jerseyNumber && (
-                                            <span className="text-xs bg-pink-500/20 text-pink-400 px-1.5 py-0.5 rounded-full">
-                                                #{result.jerseyNumber}
-                                            </span>
-                                        )}
-                                        <span className="text-xs text-gray-500 uppercase">
-                                            {/* Dynamic Label */}
-                                            {result.type === "player" ? "Player" : result.type === "user" ? "User" : "Team"}
-                                        </span>
+                                    )
+                                ) : result.logo ? (
+                                    <img src={result.logo} alt={result.name} className="w-full h-full object-cover" />
+                                ) : (
+                                    <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold">
+                                        {result.name.charAt(0)}
                                     </div>
+                                )}
+                            </div>
+
+                            {/* Name + type badge */}
+                            <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2">
+                                    <p className="text-white font-medium text-sm truncate">{result.name}</p>
+
+                                    {/* Jersey number — players only */}
+                                    {result.type === "player" && result.jerseyNumber && (
+                                        <span className="text-xs bg-pink-500/20 text-pink-400 px-1.5 py-0.5 rounded-full flex-shrink-0">
+                                            #{result.jerseyNumber}
+                                        </span>
+                                    )}
+
+                                    {/* Type badge: USER (blue) · PLAYER (muted) · TEAM (muted) */}
+                                    <span className={`text-xs font-semibold uppercase px-1.5 py-0.5 rounded-full flex-shrink-0 ${
+                                        result.type === "user"
+                                            ? "bg-blue-500/20 text-blue-400"
+                                            : result.type === "player"
+                                            ? "bg-pink-500/10 text-gray-400"
+                                            : "bg-purple-500/10 text-gray-400"
+                                    }`}>
+                                        {result.type === "user" ? "User" : result.type === "player" ? "Player" : "Team"}
+                                    </span>
                                 </div>
                             </div>
-                        </Link>
+                        </button>
                     ))}
                 </div>
             ) : searchQuery.trim() ? (
@@ -226,7 +229,7 @@ export default function Header() {
         </>
     );
 
-    // Profile dropdown menu items
+    // ── Profile dropdown menu ────────────────────────────────────────────────
     const ProfileMenu = ({ onClose }: { onClose: () => void }) => (
         <div className="py-1.5">
             <Link href="/MainModules/Profile" onClick={onClose}
@@ -297,26 +300,15 @@ export default function Header() {
                         <SlidersHorizontal size={15} />
                         Preferences
                     </button>
-                  {/* Replace this in your Header sections */}
-{/* Updated Chat Link using the MessageCircle component */}
-<Link href="/MainModules/Chat"> 
-    <div className="w-9 h-9 flex items-center justify-center bg-[#111] border border-white/10 rounded-full hover:bg-pink-500/10 transition-colors cursor-pointer shrink-0">
-        <MessageCircle size={18} className="text-pink-400" />
-    </div>
-</Link>
+                    <ChatButton unreadCount={totalUnreadChats} />
                     <div className="flex items-center gap-2 bg-[#111] border border-white/10 rounded-full px-4 py-2.5">
                         <Star size={16} className="text-pink-500 fill-pink-500" />
                         <div className="flex flex-col leading-tight">
                             <span className="text-white font-semibold text-sm">{formatPoints(currentUserPoints)}</span>
-                            {/* <span className="text-gray-500 text-xs">Points</span> */}
                         </div>
                     </div>
 
-                    <Link href="/MainModules/Notifications">
-                        <div className="w-9 h-9 flex items-center justify-center bg-[#111] border border-white/10 rounded-full hover:bg-pink-500/10 transition-colors">
-                            <Bell size={15} className="text-pink-400" />
-                        </div>
-                    </Link>
+                    <BellButton unreadCount={0} />
 
                     <div className="relative" ref={profileDropdownRef}>
                         <button
@@ -343,7 +335,7 @@ export default function Header() {
                 </div>
             </header>
 
-            {/*  TABLET (768px – 1279px)  */}
+            {/* ── TABLET (768px – 1279px) ─────────────────────────────────────── */}
             <header className="hidden md:flex xl:hidden w-full items-center gap-3 px-4 py-2 bg-[#0a0a0a] border-b border-white/5 sticky top-0 z-50">
                 <Link href="/MainModules/HomePage" className="flex-shrink-0">
                     <Image src="/images/Logo.png" alt="SportsFan360 logo" width={32} height={36} className="shrink-0" />
@@ -389,15 +381,10 @@ export default function Header() {
                     <Star size={14} className="text-pink-500 fill-pink-500" />
                     <div className="flex flex-col leading-tight">
                         <span className="text-white font-semibold text-xs">{formatPoints(currentUserPoints)}</span>
-                        {/* <span className="text-gray-500 text-[10px]">Points</span> */}
                     </div>
                 </div>
 
-                <Link href="/MainModules/Notifications">
-                    <div className="w-9 h-9 flex items-center justify-center bg-[#111] border border-white/10 rounded-full hover:bg-pink-500/10 transition-colors">
-                        <Bell size={15} className="text-pink-400" />
-                    </div>
-                </Link>
+                <BellButton unreadCount={0} />
 
                 <div className="relative" ref={profileDropdownRef}>
                     <button
@@ -405,10 +392,6 @@ export default function Header() {
                         className="flex items-center gap-1.5 bg-[#111] border border-white/10 rounded-full pl-1 pr-2 py-1 hover:bg-white/5 transition-colors"
                     >
                         <Avatar src={""} name={authLoading ? "" : getUserDisplayName()} size={30} ring />
-                        {/* <div className="flex flex-col items-start leading-tight">
-                            <span className="text-white font-medium text-xs">{USER.name}</span>
-                            <span className="text-pink-400 text-[10px]">{USER.role}</span>
-                        </div> */}
                         <ChevronDown size={12} className="text-gray-400" />
                     </button>
                     {showProfileDropdown && (
@@ -419,7 +402,7 @@ export default function Header() {
                 </div>
             </header>
 
-            {/* ── MOBILE (< 768px)  */}
+            {/* ── MOBILE (< 768px) ────────────────────────────────────────────── */}
             <header
                 className="flex md:hidden flex-col bg-[#0a0a0a] border-b border-white/5"
                 style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 50 }}
@@ -430,7 +413,6 @@ export default function Header() {
                         <Image src="/images/Logo.png" alt="SportsFan360 logo" width={32} height={36} />
                     </Link>
 
-                    {/* min-w-0 is critical: lets flex-1 shrink below content size */}
                     <div className="relative flex-1 min-w-0" ref={mobileDropdownRef}>
                         <div className="flex items-center bg-[#111] border border-white/10 rounded-full overflow-hidden pr-1">
                             <Search size={14} className="text-gray-500 ml-3 shrink-0" />
@@ -449,11 +431,11 @@ export default function Header() {
                                 </button>
                             )}
                             <Link href="/MainModules/AskAI">
-                            <button className="flex items-center gap-1 bg-[#1a1a1a] hover:bg-[#222] border border-white/10 text-pink-400 text-xs font-medium px-3 py-1.5 rounded-full transition-colors whitespace-nowrap shrink-0">
-                                <Sparkles size={11} />
-                                Ask AI
-                            </button>
-                             </Link>
+                                <button className="flex items-center gap-1 bg-[#1a1a1a] hover:bg-[#222] border border-white/10 text-pink-400 text-xs font-medium px-3 py-1.5 rounded-full transition-colors whitespace-nowrap shrink-0">
+                                    <Sparkles size={11} />
+                                    Ask AI
+                                </button>
+                            </Link>
                         </div>
                         {showDropdown && (
                             <div className="absolute top-full left-0 right-0 mt-2 bg-[#111] border border-pink-500/20 rounded-2xl shadow-2xl z-50 max-h-[60vh] overflow-y-auto">
@@ -465,19 +447,12 @@ export default function Header() {
 
                 {/* Row 2: Icon strip */}
                 <div className="flex items-center justify-around pb-2.5 px-2 w-full">
-                    {/* Preferences */}
                     <button className="flex flex-col items-center group">
                         <div className="w-9 h-9 flex items-center justify-center border border-pink-500 bg-pink-500/10 rounded-full group-hover:bg-pink-500/20 transition-colors">
                             <SlidersHorizontal size={15} className="text-pink-400" />
                         </div>
                     </button>
-{/* Updated Chat Link using the MessageCircle component */}
-<Link href="/MainModules/Chat"> 
-    <div className="w-9 h-9 flex items-center justify-center bg-[#111] border border-white/10 rounded-full hover:bg-pink-500/10 transition-colors cursor-pointer shrink-0">
-        <MessageCircle size={18} className="text-pink-400" />
-    </div>
-</Link>
-                    {/* Points */}
+                    <ChatButton unreadCount={totalUnreadChats} />
                     <button className="flex flex-col items-center group">
                         <div className="w-9 h-9 flex flex-col items-center justify-center bg-[#111] border border-white/10 rounded-full group-hover:bg-white/5 transition-colors gap-0.5">
                             <Star size={10} className="text-pink-500 fill-pink-500" />
@@ -486,15 +461,7 @@ export default function Header() {
                             </span>
                         </div>
                     </button>
-
-                    {/* Notifications */}
-                    <Link href="/MainModules/Notifications">
-                        <div className="w-9 h-9 flex items-center justify-center bg-[#111] border border-white/10 rounded-full hover:bg-pink-500/10 transition-colors">
-                            <Bell size={15} className="text-pink-400" />
-                        </div>
-                    </Link>
-
-                    {/* Avatar / Profile — dropdown opens upward */}
+                    <BellButton unreadCount={0} />
                     <div className="relative" ref={mobileProfileDropdownRef}>
                         <button onClick={() => setShowProfileDropdown((v) => !v)}>
                             <Avatar src={""} name={authLoading ? "" : getUserDisplayName()} size={36} ring />
@@ -508,13 +475,12 @@ export default function Header() {
                 </div>
             </header>
 
-          
             <div className="h-[104px] md:hidden" aria-hidden="true" />
         </>
     );
 }
 
-// ─── Sub-components 
+// ─── Sub-components ───────────────────────────────────────────────────────────
 
 function Avatar({ src, name, size = 36, ring = false }: { src?: string; name: string; size?: number; ring?: boolean }) {
     return (

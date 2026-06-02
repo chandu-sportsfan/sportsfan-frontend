@@ -195,16 +195,60 @@ function ProfilePageInner() {
     ],
   });
 
-  /* ── Sync name/handle from auth when auth resolves ── */
+  /* ── Sync name/handle based on whose profile we are viewing ── */
   useEffect(() => {
-    if (authDisplayName) {
-      setProfile(prev => ({
-        ...prev,
-        name:   authDisplayName,
-        handle: deriveHandle(authDisplayName),
-      }));
+    if (isOwnProfile) {
+      if (authDisplayName) {
+        const myProfileInfo = {
+          name: authDisplayName,
+          handle: deriveHandle(authDisplayName),
+          subtitle: "Sports lover | Cricket fanatic | Live to watch, live to react!",
+          description: "Die-hard cricket fan who lives for the big moments! 🏏 Follow live matches, join watch rooms, react in real-time and connect with fans across the globe.",
+          location: "Mumbai, India",
+          website: "sportsfan360.com",
+        };
+        setProfile(prev => ({ ...prev, ...myProfileInfo }));
+        setEditForm(prev => ({ ...prev, ...myProfileInfo }));
+      }
+    } else if (viewedUserId) {
+      // 🌟 LOCAL MOCK FALLBACK: Instantly swaps data to Raghav for testing
+      const fallbackName = viewedUserId === "raghav" ? "Raghav" : "Sports Fan";
+      const visitorProfileInfo = {
+        name: fallbackName,
+        handle: deriveHandle(fallbackName),
+        subtitle: "Cricket Enthusiast | Tracking live matches 🏏",
+        description: `Hey! I am using SportsFan360 to follow my favorite teams, join live watch rooms, and track match analytics. Let's connect!`,
+        location: "Delhi, India",
+        website: "sportsfan360.com/fan",
+      };
+      
+      setProfile(prev => ({ ...prev, ...visitorProfileInfo }));
+      setEditForm(prev => ({ ...prev, ...visitorProfileInfo }));
+
+      // ── Optional: Fetch actual database record if your endpoint is live ──
+      const fetchUserProfile = async () => {
+        try {
+          const res = await fetch(`/api/users/${viewedUserId}`);
+          if (res.ok) {
+            const userData = await res.json();
+            const updatedData = {
+              name: userData.name || fallbackName,
+              handle: deriveHandle(userData.name || fallbackName),
+              avatar: userData.image || userData.avatar || "",
+              location: userData.location || "India",
+              description: userData.description || visitorProfileInfo.description,
+            };
+            setProfile(prev => ({ ...prev, ...updatedData }));
+            setEditForm(prev => ({ ...prev, ...updatedData }));
+          }
+        } catch (err) {
+          console.error("Failed to fetch user profile from database:", err);
+        }
+      };
+
+      fetchUserProfile();
     }
-  }, [authDisplayName]);
+  }, [authDisplayName, isOwnProfile, viewedUserId]);
 
   const [followingCount, setFollowingCount]   = useState(null);
   const followingCountRef                      = useRef(null);
@@ -218,15 +262,15 @@ function ProfilePageInner() {
   const [editForm, setEditForm] = useState({ ...profile });
 
   /* Keep editForm name in sync when auth loads */
-  useEffect(() => {
-    if (authDisplayName) {
-      setEditForm(prev => ({
-        ...prev,
-        name:   authDisplayName,
-        handle: deriveHandle(authDisplayName),
-      }));
-    }
-  }, [authDisplayName]);
+  // useEffect(() => {
+  //   if (authDisplayName) {
+  //     setEditForm(prev => ({
+  //       ...prev,
+  //       name:   authDisplayName,
+  //       handle: deriveHandle(authDisplayName),
+  //     }));
+  //   }
+  // }, [authDisplayName]);
 
   const disp = isEditing ? editForm : profile;
 

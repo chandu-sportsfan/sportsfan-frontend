@@ -112,23 +112,23 @@ const SportsFan360Footer: React.FC = () => {
   ];
 
   return (
-    <footer className="w-full bg-[#111114] text-white pb-6 font-sans selection:bg-pink-700 selection:text-white">
+    <footer className="w-full bg-[#111114] text-white pb-2 font-sans selection:bg-pink-700 selection:text-white">
       {/* Top accent line */}
       <div className="h-px w-full bg-gradient-to-r from-transparent via-pink-600 to-transparent" />
 
       {/* <div className="mx-auto max-w-6xl px-5 sm:px-8 lg:px-6 py-10 lg:py-10"> */}
-      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-4 py-6 lg:py-6">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-4 py-2 lg:py-6">
 
         {/* ── Desktop: 3-column grid / Mobile: stacked ── */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-6 lg:gap-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-6 lg:gap-12">
 
 
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1">
             <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-pink-500 mb-1">
               Quick Links
             </p>
 
-            <div className="flex flex-wrap gap-x-2 gap-y-3">
+            <div className="flex flex-wrap gap-x-2 gap-y-1">
               {quickLinks.map((link, i) => (
                 <React.Fragment key={link.label}>
                   <a
@@ -147,7 +147,7 @@ const SportsFan360Footer: React.FC = () => {
           </div>
 
           {/* ── Col 3: Follow Us  */}
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1">
             <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-pink-500 mb-1">
               Follow Us
             </p>
@@ -165,7 +165,7 @@ const SportsFan360Footer: React.FC = () => {
         {/* <GlowDivider /> */}
 
         {/* ── Bottom Bar ──────────────────────────────────── */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 px-5 mb-2 mt-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between lg:justify-center gap-4 lg:gap-6 px-5 mb-2 mt-6">
 
           {/* <div>
             <Link href="/MainModules/Feedback">
@@ -184,27 +184,30 @@ const SportsFan360Footer: React.FC = () => {
             </Link>
           </div> */}
 
-<div>
-          <div className="flex items-center gap-2.5">
-            <RocketIcon />
-            <div>
-              <p className="text-xs font-medium text-zinc-300 leading-snug">
-                Beta Build v0.0.02
-              </p>
-              <p className="text-[11px] text-zinc-600">We&apos;re improving every day.</p>
+          <div className="flex flex-row justify-center items-center">
+            <div className="flex items-center gap-2.5">
+              <RocketIcon />
+              <div>
+                <p className="text-xs font-medium text-zinc-300 leading-snug">
+                  Beta Build v0.0.02
+                </p>
+                <p className="text-[11px] text-zinc-600">We&apos;re improving every day.</p>
+              </div>
             </div>
-          </div>
 
-          {/* Left: copyright */}
-          <div className="flex items-center gap-2.5">
-            <ShieldIcon />
-            <div>
-              <p className="text-xs font-medium text-zinc-300 leading-snug">
-                © 2026 SportsFan360
-              </p>
-              <p className="text-[11px] text-zinc-600">All rights reserved.</p>
+            {/* Left: copyright */}
+            <div className="flex items-center gap-2.5">
+              <div className="w-4 h-4">
+                  <ShieldIcon  />
+              </div>
+             
+              <div>
+                <p className="text-xs font-medium text-zinc-300 leading-snug">
+                  © 2026 SportsFan360
+                </p>
+                <p className="text-[11px] text-zinc-600">All rights reserved.</p>
+              </div>
             </div>
-          </div>
           </div>
 
 

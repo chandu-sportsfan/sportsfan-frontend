@@ -1587,6 +1587,14 @@ const [communityMembersLoading, setCommunityMembersLoading] = useState(false);
     setView("chat_room");
   }, [chatHook]);
 
+  const activeChatId = activeChat?.id;
+
+  useEffect(() => {
+    if (activeChatId) {
+      chatHook.markChatAsRead(activeChatId);
+    }
+  }, [activeChatId, chatHook]);
+
   const openGroupDetail = useCallback((group: Group) => {
     setActiveGroup(group);
     setView("group_detail");
@@ -1732,6 +1740,7 @@ const handleLeaveCommunity = useCallback(async (communityId: string) => {
     await messageHook.send(text, replyingTo ? { replyToId: replyingTo.id } : undefined);
     setReplyingTo(null);
     chatHook.refresh();
+    chatHook.markChatAsRead(activeChat.id);
   }, [messageInput, activeChat, editingMsg, replyingTo, messageHook, chatHook]);
 
   const confirmDelete = useCallback(async () => {

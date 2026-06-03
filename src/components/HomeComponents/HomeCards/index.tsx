@@ -440,7 +440,7 @@ function LatestDropsList({ type }: { type: string }) {
       try {
         const [audioRes, videoRes] = await Promise.all([
           axios.get(`/api/cloudinary/audio?type=${type}&limit=100`),
-          axios.get(`/api/cloudinary/video?limit=100`)
+          axios.get(`/api/cloudinary/video?type=${type}&limit=100`)
         ]);
 
         let combined: UnifiedDrop[] = [];

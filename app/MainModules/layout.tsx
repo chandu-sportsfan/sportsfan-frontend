@@ -22,6 +22,12 @@ interface UserProfile {
   status: string;
 }
 
+type SidebarItem = {
+  name: string;
+  icon: string | React.ReactNode;
+  href: string;
+};
+
 // ─── Host Sidebar (for Host users) 
 function HostSidebar({ user }: { user: UserProfile }) {
   const pathname = usePathname();
@@ -134,10 +140,21 @@ function UserSidebar() {
   const { user } = useAuth();
   const isMatchIntelligence = user?.email?.endsWith("@sportsfan360.com");
 
-  const sidebarItems = [
+  const sidebarItems: SidebarItem[] = [
     { name: "Feed", icon: "/images/feed.png", href: "/MainModules/HomePage" },
     { name: "Watch Along", icon: "/images/live.png", href: "/MainModules/WatchAlong" },
     { name: "Fantasy", icon: "/images/battle.png", href: "/MainModules/Fantasy" },
+    {
+      name: "ROAR",
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-5 h-5 shrink-0">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 3c4.4 0 8 3.6 8 8 0 3.8-2.7 7-6.3 7.8-.6.1-1 .6-1 1.2v.5c0 .8-.7 1.5-1.5 1.5S9.7 21.3 9.7 20.5V20c0-.6-.4-1.1-1-1.2C5.1 18 2.4 14.8 2.4 11c0-4.4 3.6-8 8-8h1.6Z" />
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9 9.5c.6-.9 1.5-1.5 3-1.5 1.8 0 3 1.1 3 2.7 0 2.6-3.2 2.7-3.2 5.3" />
+          <circle cx="12" cy="17.5" r="0.8" fill="currentColor" stroke="none" />
+        </svg>
+      ),
+      href: "/MainModules/ROAR",
+    },
     { 
       name: isMatchIntelligence ? "Match Intelligence" : "Store", 
       icon: "/images/store.png", 
@@ -172,17 +189,21 @@ function UserSidebar() {
                     : "text-gray-300 hover:text-pink-400 hover:bg-white/5"
                 }`}
               >
-                <Image
-                  src={item.icon}
-                  alt={`${item.name} icon`}
-                  width={22}
-                  height={22}
-                  className={`shrink-0 transition-all duration-300 ${
-                    isActive
-                      ? "brightness-75 contrast-90 drop-shadow-[0_0_6px_rgba(244,114,182,0.5)]"
-                      : "brightness-55 contrast-90"
-                  }`}
-                />
+                {typeof item.icon === "string" ? (
+                  <Image
+                    src={item.icon as string}
+                    alt={`${item.name} icon`}
+                    width={22}
+                    height={22}
+                    className={`shrink-0 transition-all duration-300 ${
+                      isActive
+                        ? "brightness-75 contrast-90 drop-shadow-[0_0_6px_rgba(244,114,182,0.5)]"
+                        : "brightness-55 contrast-90"
+                    }`}
+                  />
+                ) : (
+                  <span className={isActive ? "text-pink-300" : "text-gray-400"}>{item.icon}</span>
+                )}
                 <span className="whitespace-nowrap opacity-0 -translate-x-2 max-w-0 overflow-hidden group-hover:opacity-100 group-hover:translate-x-0 group-hover:max-w-[140px] transition-all duration-300">
                   {item.name}
                 </span>
@@ -248,6 +269,7 @@ export default function MainModulesLayout({
   };
 
   const isWatchRoom = pathname && pathname.includes("/MainModules/WatchAlong/room/");
+  const isROARPath = pathname === "/MainModules/ROAR" || pathname?.startsWith("/MainModules/ROAR/");
 
   if (isWatchRoom) {
     return (
@@ -272,7 +294,9 @@ export default function MainModulesLayout({
       {renderSidebar()}
 
       <main className="flex-1 min-w-0 w-full h-full flex flex-col overflow-hidden pb-[50px] lg:pb-0">
-        <Header />
+        <div className="relative z-20">
+          <Header />
+        </div>
         <div className="flex-1 overflow-y-auto overflow-x-hidden">
           {children}
           <SportsFan360Footer />
@@ -293,9 +317,11 @@ export default function MainModulesLayout({
           <GlobalActionBar />
         </div>
 
-        <div className="lg:hidden">
-          <BottomNav />
-        </div>
+        {!isROARPath && (
+          <div className="lg:hidden">
+            <BottomNav />
+          </div>
+        )}
       </main>
 
       <InviteFriendModal

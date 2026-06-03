@@ -4308,27 +4308,6 @@ export default function WatchRoom({ room, onBack }: Props) {
                         </div>
                     </button>
 
-
-
-                    {/* Chalkboard Analysis Button */}
-                    <button 
-                        onClick={() => {
-                            setShowTacticalModal(true);
-                            setShowDropsMenu(false);
-                            setShowInterviewMenu(false);
-                            setShowPredictTemplates(false);
-                        }}
-                        className="flex-shrink-0 flex items-center gap-3 bg-[#202023] hover:bg-[#28282b] border border-white/5 rounded-xl px-4 py-2.5 transition-all duration-300 hover:scale-105 active:scale-95"
-                    >
-                        <div className="w-8 h-8 rounded-lg bg-purple-500/10 text-purple-400 flex items-center justify-center font-bold text-lg border border-purple-500/20">
-                            🧠
-                        </div>
-                        <div className="text-left">
-                            <p className="text-xs font-black tracking-wide uppercase text-white">Chalkboard</p>
-                            <p className="text-[10px] text-gray-400 font-medium">Match strategic analysis</p>
-                        </div>
-                    </button>
-
                     {/* Emoji Storm Button */}
                     <button 
                         onClick={handleEmojiStorm}

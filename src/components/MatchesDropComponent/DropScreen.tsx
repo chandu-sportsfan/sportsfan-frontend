@@ -710,9 +710,21 @@ const TEAM_ABBR_MAP: Record<string, string[]> = {
 };
 
 function audioMatchesTeam(audioTitle: string, teamName: string): boolean {
-    const abbrs = TEAM_ABBR_MAP[teamName] || [teamName];
-    const title = audioTitle.toUpperCase();
-    return abbrs.some((abbr) => title.includes(abbr.toUpperCase()));
+    if (!audioTitle || !teamName) return false;
+
+    const title = audioTitle.toLowerCase();
+    const filter = teamName.toLowerCase();
+
+    // IPL aliases
+    const abbrs = TEAM_ABBR_MAP[teamName] || [];
+
+    // direct match
+    if (title.includes(filter)) return true;
+
+    // alias match
+    return abbrs.some((abbr) =>
+        title.includes(abbr.toLowerCase())
+    );
 }
 
 interface MatchInfo {

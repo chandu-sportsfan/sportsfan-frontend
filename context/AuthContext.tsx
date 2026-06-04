@@ -209,6 +209,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                     userId: (session.user as { userId?: string }).userId ?? session.user.email,
                 };
                 setUser(googleUser);
+                console.log("Google session detected, user set:", googleUser);
                 localStorage.setItem("auth_user", JSON.stringify(googleUser));
 
                 try {
@@ -243,6 +244,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                         userId: u.userId,
                     };
                     setUser(normalised);
+                    console.log("JWT user detected, user set:", normalised);
                     localStorage.setItem("auth_user", JSON.stringify(normalised));
                     setLoading(false);
                     setAuthReady(true);   // ← cookie is already set by browser

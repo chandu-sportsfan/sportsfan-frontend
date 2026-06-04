@@ -58,12 +58,12 @@ export default function EmojiStorm({ matchId }: EmojiStormProps) {
     }
   }, [matchId, fetchEmojiReactions]);
 
-  // Poll for new reactions every 3 seconds
+  // Poll for new reactions every 15 seconds (optimized from 3s)
   useEffect(() => {
     if (!matchId) return;
     const interval = setInterval(() => {
       fetchEmojiReactions(matchId);
-    }, 3000);
+    }, 15000);
     return () => clearInterval(interval);
   }, [matchId, fetchEmojiReactions]);
 

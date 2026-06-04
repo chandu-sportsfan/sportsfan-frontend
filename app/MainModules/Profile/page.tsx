@@ -10,6 +10,15 @@ import {
   MessageSquare, ThumbsUp, Users, Radio,
   Check, Share2, MoreHorizontal, UserPlus,
 } from "lucide-react";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
+
+/* ── Upload profile image to Firebase Storage ── */
+async function uploadProfileImage(file: File, userId: string): Promise<string> {
+  const storage = getStorage();
+  const storageRef = ref(storage, `profile-images/${userId}`);
+  await uploadBytes(storageRef, file);
+  return getDownloadURL(storageRef);
+}
 
 /* ═══════════════════════════════
    DESIGN TOKENS
@@ -41,10 +50,8 @@ const inputBase = {
   width: "100%",
   padding: "8px 12px",
   fontSize: 13,
-  boxSizing: "border-box",
+  boxSizing: "border-box" as const,
 };
-
-/* ─── Types ─── */
 
 function normalizeString(value) {
   return typeof value === "string" ? value.trim().toLowerCase() : "";
@@ -78,14 +85,14 @@ function Av({ src, name, sz = 38 }) {
     }}>
       {src
         ? <img src={src} alt={name} style={{ width: "100%", height: "100%", objectFit: "cover" }}
-            onError={e => { e.target.style.display = "none"; }} />
+            onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
         : name.charAt(0).toUpperCase()}
     </div>
   );
 }
 
 /* ─── Section heading ─── */
-function SH({ title, right }) {
+function SH({ title, right }: { title: string; right?: React.ReactNode }) {
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -144,17 +151,20 @@ function ProfilePageInner() {
 
   // Local UI state
   const [saveSuccess, setSaveSuccess] = useState(false);
-  const [fieldErrors, setFieldErrors] = useState({});
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [isSaving, setIsSaving]       = useState(false);
+
+  // ── NEW: tracks the image file the user picked from their device ──
+  const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
+  // ── NEW: object URL for instant preview before upload ──
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   /* ── Detect if we're viewing someone else's profile ── */
   const searchParams = useSearchParams();
-  const viewedUserId = searchParams.get("userId"); // set when navigated from global search
+  const viewedUserId = searchParams.get("userId");
 
-  // Derive the logged-in user's own id the same way getStoredUserId does
   const loggedInUserId = user?.userId || user?.email || getStoredUserId();
 
-  // isOwnProfile = true  → show Edit Profile button (default / owner view)
-  // isOwnProfile = false → show Add Friend button (visitor view)
   const isOwnProfile = !viewedUserId || viewedUserId === loggedInUserId;
 
   /* ── Add-friend state ── */
@@ -168,7 +178,7 @@ function ProfilePageInner() {
     return () => window.removeEventListener("resize", check);
   }, []);
 
-  /* ── Derive display name from auth (like Header does) ── */
+  /* ── Derive display name from auth ── */
   const authDisplayName = authLoading ? "" : (getUserDisplayName ? getUserDisplayName() : (user?.name || user?.displayName || user?.email || ""));
 
   const [profile, setProfile] = useState({
@@ -195,60 +205,46 @@ function ProfilePageInner() {
     ],
   });
 
-  /* ── Sync name/handle based on whose profile we are viewing ── */
+  /* ── Sync name/handle from auth when auth resolves ── */
   useEffect(() => {
-    if (isOwnProfile) {
-      if (authDisplayName) {
-        const myProfileInfo = {
-          name: authDisplayName,
-          handle: deriveHandle(authDisplayName),
-          subtitle: "Sports lover | Cricket fanatic | Live to watch, live to react!",
-          description: "Die-hard cricket fan who lives for the big moments! 🏏 Follow live matches, join watch rooms, react in real-time and connect with fans across the globe.",
-          location: "Mumbai, India",
-          website: "sportsfan360.com",
-        };
-        setProfile(prev => ({ ...prev, ...myProfileInfo }));
-        setEditForm(prev => ({ ...prev, ...myProfileInfo }));
-      }
-    } else if (viewedUserId) {
-      // 🌟 LOCAL MOCK FALLBACK: Instantly swaps data to Raghav for testing
-      const fallbackName = viewedUserId === "raghav" ? "Raghav" : "Sports Fan";
-      const visitorProfileInfo = {
-        name: fallbackName,
-        handle: deriveHandle(fallbackName),
-        subtitle: "Cricket Enthusiast | Tracking live matches 🏏",
-        description: `Hey! I am using SportsFan360 to follow my favorite teams, join live watch rooms, and track match analytics. Let's connect!`,
-        location: "Delhi, India",
-        website: "sportsfan360.com/fan",
-      };
-      
-      setProfile(prev => ({ ...prev, ...visitorProfileInfo }));
-      setEditForm(prev => ({ ...prev, ...visitorProfileInfo }));
-
-      // ── Optional: Fetch actual database record if your endpoint is live ──
-      const fetchUserProfile = async () => {
-        try {
-          const res = await fetch(`/api/users/${viewedUserId}`);
-          if (res.ok) {
-            const userData = await res.json();
-            const updatedData = {
-              name: userData.name || fallbackName,
-              handle: deriveHandle(userData.name || fallbackName),
-              avatar: userData.image || userData.avatar || "",
-              location: userData.location || "India",
-              description: userData.description || visitorProfileInfo.description,
-            };
-            setProfile(prev => ({ ...prev, ...updatedData }));
-            setEditForm(prev => ({ ...prev, ...updatedData }));
-          }
-        } catch (err) {
-          console.error("Failed to fetch user profile from database:", err);
-        }
-      };
-
-      fetchUserProfile();
+    if (authDisplayName) {
+      setProfile(prev => ({
+        ...prev,
+        name:   authDisplayName,
+        handle: deriveHandle(authDisplayName),
+      }));
     }
-  }, [authDisplayName, isOwnProfile, viewedUserId]);
+  }, [authDisplayName]);
+
+  /* ══════════════════════════════════════════
+     LOAD PROFILE FROM FIREBASE (on page open)
+  ══════════════════════════════════════════ */
+  useEffect(() => {
+    if (!loggedInUserId) return;
+    fetch(`/api/profile?userId=${encodeURIComponent(loggedInUserId)}`)
+      .then(r => r.json())
+      .then(data => {
+        if (data && !data.error) {
+          setProfile(prev => ({
+            ...prev,
+            description: data.description || prev.description,
+            location:    data.location    || prev.location,
+            avatar:      data.avatarUrl   || prev.avatar,
+            name:        data.name        || prev.name,
+          }));
+          // also sync editForm so it's pre-filled when user opens edit mode
+          setEditForm(prev => ({
+            ...prev,
+            description: data.description || prev.description,
+            location:    data.location    || prev.location,
+            avatar:      data.avatarUrl   || prev.avatar,
+            name:        data.name        || prev.name,
+          }));
+        }
+      })
+      .catch(() => { /* silently ignore — user will just see defaults */ });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loggedInUserId]);
 
   const [followingCount, setFollowingCount]   = useState(null);
   const followingCountRef                      = useRef(null);
@@ -262,15 +258,15 @@ function ProfilePageInner() {
   const [editForm, setEditForm] = useState({ ...profile });
 
   /* Keep editForm name in sync when auth loads */
-  // useEffect(() => {
-  //   if (authDisplayName) {
-  //     setEditForm(prev => ({
-  //       ...prev,
-  //       name:   authDisplayName,
-  //       handle: deriveHandle(authDisplayName),
-  //     }));
-  //   }
-  // }, [authDisplayName]);
+  useEffect(() => {
+    if (authDisplayName) {
+      setEditForm(prev => ({
+        ...prev,
+        name:   authDisplayName,
+        handle: deriveHandle(authDisplayName),
+      }));
+    }
+  }, [authDisplayName]);
 
   const disp = isEditing ? editForm : profile;
 
@@ -285,9 +281,19 @@ function ProfilePageInner() {
     });
   };
 
+  /* ── Image picker handler ── */
+  const handleImagePick = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setSelectedImageFile(file);
+    // create a local preview URL so the user sees the new image instantly
+    const url = URL.createObjectURL(file);
+    setPreviewUrl(url);
+  };
+
   /* ── Validation ── */
   function validate(form) {
-    const e = {};
+    const e: Record<string, string> = {};
     if (!form.name.trim()) {
       e.name = "Name is required.";
     } else if (!/^[A-Za-z\s'\-]{2,60}$/.test(form.name.trim())) {
@@ -303,21 +309,56 @@ function ProfilePageInner() {
     return e;
   }
 
-  /* ── Save (local state only) ── */
-  const save = () => {
+  /* ══════════════════════════════════════════
+     SAVE — uploads image (if new) then saves
+     all fields to Firestore via /api/profile
+  ══════════════════════════════════════════ */
+  const save = async () => {
     const errors = validate(editForm);
     if (Object.keys(errors).length > 0) { setFieldErrors(errors); return; }
-    setProfile({ ...editForm });
-    setIsEditing(false);
-    setFieldErrors({});
-    setSaveSuccess(true);
-    setTimeout(() => setSaveSuccess(false), 3000);
+
+    setIsSaving(true);
+    try {
+      // 1️⃣ If user picked a new image, upload it to Firebase Storage first
+      let avatarUrl = editForm.avatar;
+      if (selectedImageFile) {
+        avatarUrl = await uploadProfileImage(selectedImageFile, loggedInUserId);
+      }
+
+      // 2️⃣ Save everything to Firestore via our API route
+      await fetch("/api/profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId:      loggedInUserId,
+          name:        editForm.name,
+          location:    editForm.location,
+          description: editForm.description,
+          avatarUrl,
+        }),
+      });
+
+      // 3️⃣ Update local state so the page reflects saved values instantly
+      setProfile(prev => ({ ...prev, ...editForm, avatar: avatarUrl }));
+      setIsEditing(false);
+      setFieldErrors({});
+      setSelectedImageFile(null);
+      setPreviewUrl(null);
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
+    } catch (err) {
+      console.error("Failed to save profile:", err);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const cancel = () => {
     setEditForm({ ...profile });
     setIsEditing(false);
     setFieldErrors({});
+    setSelectedImageFile(null);
+    setPreviewUrl(null);
   };
 
   const getPlayerKey = (item) => {
@@ -712,13 +753,44 @@ function ProfilePageInner() {
           {/* Identity card */}
           <div style={{ ...card(), padding: "24px 18px", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
 
-            {/* Avatar */}
-            <div style={{ marginBottom: 14 }}>
+            {/* ══ Avatar — clickable in edit mode to pick a new photo ══ */}
+            <div style={{ marginBottom: 14, position: "relative", display: "inline-block" }}>
               <div style={{ width: 104, height: 104, borderRadius: "50%", padding: 2.5, background: GRAD }}>
                 <div style={{ width: "100%", height: "100%", borderRadius: "50%", overflow: "hidden", background: CARD }}>
-                  <Av src={profile.avatar} name={profile.name || "U"} sz={99} />
+                  {/* show local preview while editing, otherwise show saved avatar */}
+                  <Av
+                    src={isEditing && previewUrl ? previewUrl : profile.avatar}
+                    name={profile.name || "U"}
+                    sz={99}
+                  />
                 </div>
               </div>
+
+              {/* Camera button — only visible in edit mode */}
+              {isEditing && (
+                <label
+                  title="Change photo"
+                  style={{
+                    position: "absolute", bottom: 4, right: 4,
+                    width: 30, height: 30, borderRadius: "50%",
+                    background: GRAD, border: `2px solid ${CARD}`,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    cursor: "pointer", zIndex: 2,
+                  }}
+                >
+                  {/* camera icon */}
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                    <circle cx="12" cy="13" r="4"/>
+                  </svg>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    style={{ display: "none" }}
+                    onChange={handleImagePick}
+                  />
+                </label>
+              )}
             </div>
 
             {/* Name */}
@@ -781,15 +853,24 @@ function ProfilePageInner() {
                 <div style={{ display: "flex", gap: 8, width: "100%" }}>
                   <button
                     onClick={cancel}
-                    style={{ flex: 1, padding: "8px 0", borderRadius: 50, fontSize: 12, fontWeight: 600, background: "transparent", border: "1px solid rgba(255,255,255,0.1)", color: SUB, cursor: "pointer" }}
+                    disabled={isSaving}
+                    style={{ flex: 1, padding: "8px 0", borderRadius: 50, fontSize: 12, fontWeight: 600, background: "transparent", border: "1px solid rgba(255,255,255,0.1)", color: SUB, cursor: "pointer", opacity: isSaving ? 0.5 : 1 }}
                   >
                     Cancel
                   </button>
                   <button
                     onClick={save}
-                    style={{ flex: 1, padding: "8px 0", borderRadius: 50, fontSize: 12, fontWeight: 700, background: GRAD, border: "none", color: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}
+                    disabled={isSaving}
+                    style={{ flex: 1, padding: "8px 0", borderRadius: 50, fontSize: 12, fontWeight: 700, background: GRAD, border: "none", color: "#fff", cursor: isSaving ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 5, opacity: isSaving ? 0.7 : 1 }}
                   >
-                    <Check size={12} /> Save
+                    {isSaving ? (
+                      <>
+                        <span style={{ width: 12, height: 12, border: "2px solid rgba(255,255,255,0.4)", borderTopColor: "#fff", borderRadius: "50%", display: "inline-block", animation: "spin 0.7s linear infinite" }} />
+                        Saving…
+                      </>
+                    ) : (
+                      <><Check size={12} /> Save</>
+                    )}
                   </button>
                 </div>
               ) : (
@@ -806,8 +887,6 @@ function ProfilePageInner() {
                   onClick={() => {
                     if (friendStatus === "none") {
                       setFriendStatus("pending");
-                      // TODO: call your friend-request API here
-                      // e.g. axios.post("/api/friend-request", { toUserId: viewedUserId })
                     }
                   }}
                   style={{

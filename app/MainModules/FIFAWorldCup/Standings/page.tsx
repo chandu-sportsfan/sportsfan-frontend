@@ -7,9 +7,9 @@ import { Calendar, MapPin, Trophy, Users, ChevronRight, Play, Tv2 } from "lucide
 // ─── Data ────────────────────────────────────────────────────────────────────
 
 const upcomingMatches = [
-  { date: "11", month: "JUN", day: "11 JUN", t1: "MEX", t1Flag: "🇲🇽", t1Img: "/images/flags/mexico.jpg", t2: "CAN", t2Flag: "🇨🇦", t2Img: "/images/flags/canada.png", time: "7:00 PM", venue: "Estadio Azteca" },
-  { date: "11", month: "JUN", day: "11 JUN", t1: "USA", t1Flag: "🇺🇸", t1Img: "/images/flags/usa.png", t2: "CZE", t2Flag: "🇨🇿", t2Img: "/images/flags/czech.png", time: "8:00 PM", venue: "AT&T Stadium" },
-  { date: "12", month: "JUN", day: "12 JUN", t1: "ESP", t1Flag: "🇪🇸", t1Img: "/images/flags/spain.jpg", t2: "BRA", t2Flag: "🇧🇷", t2Img: "/images/flags/brazil.png", time: "6:00 PM", venue: "MetLife Stadium" },
+  { date: "11", month: "JUN", day: "11 JUN", t1: "MEX", t1Flag: "🇲🇽", t1Img: "/images/mexico.jpg", t2: "CAN", t2Flag: "🇨🇦", t2Img: "/images/canada.png", time: "7:00 PM", venue: "Estadio Azteca" },
+  { date: "11", month: "JUN", day: "11 JUN", t1: "USA", t1Flag: "🇺🇸", t1Img: "/images/usa.png", t2: "CZE", t2Flag: "🇨🇿", t2Img: "/images/czech.png", time: "8:00 PM", venue: "AT&T Stadium" },
+  { date: "12", month: "JUN", day: "12 JUN", t1: "ESP", t1Flag: "🇪🇸", t1Img: "/images/spain.jpg", t2: "BRA", t2Flag: "🇧🇷", t2Img: "/images/brazil.png", time: "6:00 PM", venue: "MetLife Stadium" },
 ];
 
 const groups = [
@@ -64,17 +64,17 @@ const groups = [
 ];
 
 const topPlayers = [
-  { name: "Lionel Messi", country: "Argentina", countryFlag: "🇦🇷", num: 10, img: "/images/players/messi.jpg", gradient: "from-sky-900/60 to-[#1A1A2E]" },
-  { name: "Kylian Mbappé", country: "France", countryFlag: "🇫🇷", num: 9, img: "/images/players/mbappe.jpg", gradient: "from-blue-900/60 to-[#1A1A2E]" },
-  { name: "Erling Haaland", country: "Norway", countryFlag: "🇳🇴", num: 9, img: "/images/players/haaland.jpg", gradient: "from-red-900/60 to-[#1A1A2E]" },
-  { name: "Jude Bellingham", country: "England", countryFlag: "🏴󠁧󠁢󠁥󠁮󠁧󠁿", num: 10, img: "/images/players/bellingham.jpg", gradient: "from-yellow-900/60 to-[#1A1A2E]" },
-  { name: "Vinícius Júnior", country: "Brazil", countryFlag: "🇧🇷", num: 10, img: "/images/players/vinicius.jpg", gradient: "from-green-900/60 to-[#1A1A2E]" },
+  { name: "Lionel Messi", country: "Argentina", countryFlag: "🇦🇷", num: 10, img: "/images/messi.jpg", gradient: "from-sky-900/60 to-[#1A1A2E]" },
+  { name: "Kylian Mbappé", country: "France", countryFlag: "🇫🇷", num: 9, img: "/images/mbappe.jpg", gradient: "from-blue-900/60 to-[#1A1A2E]" },
+  { name: "Erling Haaland", country: "Norway", countryFlag: "🇳🇴", num: 9, img: "/images/haaland.jpg", gradient: "from-red-900/60 to-[#1A1A2E]" },
+  { name: "Jude Bellingham", country: "England", countryFlag: "🏴󠁧󠁢󠁥󠁮󠁧󠁿", num: 10, img: "/images/bellingham.jpg", gradient: "from-yellow-900/60 to-[#1A1A2E]" },
+  { name: "Vinícius Júnior", country: "Brazil", countryFlag: "🇧🇷", num: 10, img: "/images/vinicius.jpg", gradient: "from-green-900/60 to-[#1A1A2E]" },
 ];
 
 const hostCities = [
-  { name: "Mexico City", stadium: "Estadio Azteca", country: "MEX", countryColor: "text-green-400 bg-green-400/20", img: "/images/cities/mexico-city.jpg" },
-  { name: "New York New Jersey", stadium: "MetLife Stadium", country: "USA", countryColor: "text-blue-400 bg-blue-400/20", img: "/images/cities/new-york.jpg" },
-  { name: "Toronto", stadium: "BMO Field", country: "CAN", countryColor: "text-red-400 bg-red-400/20", img: "/images/cities/toronto.png" },
+  { name: "Mexico City", stadium: "Estadio Azteca", country: "MEX", countryColor: "text-green-400 bg-green-400/20", img: "/images/mexico-city.jpg" },
+  { name: "New York New Jersey", stadium: "MetLife Stadium", country: "USA", countryColor: "text-blue-400 bg-blue-400/20", img: "/images/new-york.jpg" },
+  { name: "Toronto", stadium: "BMO Field", country: "CAN", countryColor: "text-red-400 bg-red-400/20", img: "/images/toronto.png" },
 ];
 
 const tournamentStats = [
@@ -190,7 +190,8 @@ export default function FIFAMatchCenter() {
             <div
               className="absolute inset-0"
               style={{
-                backgroundImage: "url('/images/fifa/stadium-bg.jpg'), url('/fifa/stadium-bg.jpg')",
+                // backgroundImage: "url('/images/stadium-bg.jpg')", url('/fifa/stadium-bg.jpg')",
+                backgroundImage: "url('/images/stadium-bg.jpg')",
                 backgroundSize: "cover",
                 backgroundPosition: "center right",
                 opacity: 0.35,
@@ -313,7 +314,7 @@ export default function FIFAMatchCenter() {
               <div className="flex justify-between items-center px-2 flex-grow mb-6">
                 <div className="flex flex-col items-center gap-3">
                   <div className="w-20 h-20 rounded-full border-2 border-white/20 overflow-hidden bg-gradient-to-br from-green-700/40 to-green-900/40 flex items-center justify-center shadow-[0_0_20px_rgba(34,197,94,0.2)]">
-                    <FlagImg src="/images/flags/mexico.png" alt="MEX" emoji="🇲🇽" size={80} />
+                    <FlagImg src="/images/mexico.jpg" alt="MEX" emoji="🇲🇽" size={80} />
                   </div>
                   <span className="font-black tracking-widest text-sm">MEXICO</span>
                 </div>
@@ -326,7 +327,7 @@ export default function FIFAMatchCenter() {
 
                 <div className="flex flex-col items-center gap-3">
                   <div className="w-20 h-20 rounded-full border-2 border-white/20 overflow-hidden bg-gradient-to-br from-red-700/40 to-red-900/40 flex items-center justify-center shadow-[0_0_20px_rgba(239,68,68,0.2)]">
-                    <FlagImg src="/images/flags/canada.png" alt="CAN" emoji="🇨🇦" size={80} />
+                    <FlagImg src="/images/canada.png" alt="CAN" emoji="🇨🇦" size={80} />
                   </div>
                   <span className="font-black tracking-widest text-sm">CANADA</span>
                 </div>

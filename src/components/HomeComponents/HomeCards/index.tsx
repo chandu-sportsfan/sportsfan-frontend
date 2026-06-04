@@ -1,12 +1,9 @@
-
-
 "use client";
 import Link from "next/link";
 import { Mic, Play, List, TrendingUp } from "lucide-react";
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { useAuth } from "@/context/AuthContext";
-import { useRouter } from "next/navigation";
 
 type Stat = {
   label: string;
@@ -184,35 +181,35 @@ const homeCardsData: CardProps[] = [
     buttonUrl: "/MainModules/Playlists"
   },
   {
-  id: 4,
-  title: "FIFA World Cup 2026",
-  subtitle: "The world's biggest football tournament",
-  image: "/images/fifa.jpg",
-  profileUrl: "",
-  stats: [
-    { label: "Teams", value: "48" },
-    { label: "Drops", value: "0" },
-    { label: "Matches", value: "104" },
-  ],
-  buttonText: "View Full Playlist",
-  buttonIcon: "play",
-  buttonUrl: "/MainModules/MatchesDropContent?team=FIFA",
-},
-{
-  id: 5,
-  title: "Women's T20 2026",
-  subtitle: "Exclusive coverage of women's cricket",
-  image: "/images/womens-t20.jpg",
-  profileUrl: "",
-  stats: [
-    { label: "Teams", value: "10" },
-    { label: "Drops", value: "0" },
-    { label: "Plays", value: "0" },
-  ],
-  buttonText: "View Full Playlist",
-  buttonIcon: "play",
-  buttonUrl: "/MainModules/MatchesDropContent?team=Women%20T20",
-},
+    id: 4,
+    title: "FIFA World Cup 2026",
+    subtitle: "The world's biggest football tournament",
+    image: "/images/fifa.jpg",
+    profileUrl: "",
+    stats: [
+      { label: "Teams", value: "48" },
+      { label: "Drops", value: "0" },
+      { label: "Matches", value: "104" },
+    ],
+    buttonText: "View Full Playlist",
+    buttonIcon: "play",
+    buttonUrl: "/MainModules/MatchesDropContent?team=FIFA",
+  },
+  {
+    id: 5,
+    title: "Women's T20 2026",
+    subtitle: "Exclusive coverage of women's cricket",
+    image: "/images/womens-t20.jpg",
+    profileUrl: "",
+    stats: [
+      { label: "Teams", value: "10" },
+      { label: "Drops", value: "0" },
+      { label: "Plays", value: "0" },
+    ],
+    buttonText: "View Full Playlist",
+    buttonIcon: "play",
+    buttonUrl: "/MainModules/MatchesDropContent?team=Women%20T20",
+  },
 ];
 
 function getDisplayTitle(audio: AudioFile): string {
@@ -256,25 +253,18 @@ function formatNumber(n: number): string {
 // Check if a drop is from an IPL match
 function isIPLDrop(matchInfo?: MatchInfo, title?: string): boolean {
   if (!matchInfo) return false;
-
-  // Check if team1 or team2 is an IPL team
   const teams = [matchInfo.team1, matchInfo.team2];
   const allTeamKeys = Object.keys(IPL_TEAMS);
-
   return teams.some(team => team && allTeamKeys.includes(team));
 }
 
 // Extract match name from audio title (e.g., "GT vs RCB" from "GT vs RCB - TOSS REPORT")
 function extractMatchName(title: string): string {
   if (!title) return "";
-
-  // Try to extract text before " - " which typically separates match name from type
   const dashIndex = title.indexOf(" - ");
   if (dashIndex > 0) {
     return title.substring(0, dashIndex).trim();
   }
-
-  // If no dash found, try to extract before common keywords
   const keywords = ["TOSS REPORT", "POST MATCH", "PRE MATCH", "MATCH ANALYSIS", "HIGHLIGHTS"];
   for (const keyword of keywords) {
     if (title.toUpperCase().includes(keyword)) {
@@ -282,7 +272,6 @@ function extractMatchName(title: string): string {
       return title.substring(0, keywordIndex).trim();
     }
   }
-
   return "";
 }
 
@@ -334,7 +323,6 @@ function LatestPlaylistsList({ userId }: { userId: string | null }) {
           .map((playlist) => {
             const dropCount = (playlist.audioDrops?.length || 0) + (playlist.videoDrops?.length || 0);
             const teamName = teamNameById.get(playlist.team360PostId) || "Team 360 Playlist";
-
             return {
               id: playlist.id,
               title: teamName,
@@ -393,34 +381,11 @@ function LatestPlaylistsList({ userId }: { userId: string | null }) {
           <p className="text-gray-600 text-[9px] mt-1">Team 360 playlists are shown below if available</p>
         </div>
       )}
-
-      {/* {teamPlaylists.length > 0 && (
-        <div className="pt-2">
-          <p className="text-gray-500 text-[10px] font-medium uppercase tracking-wide mb-1">Team 360 Playlists</p>
-          <div className="flex flex-col gap-2">
-            {teamPlaylists.map((playlist) => (
-              <Link key={playlist.id} href={playlist.href}>
-                <div className="flex items-center gap-2 bg-[#1c1c1c] rounded-lg px-2 py-2 hover:bg-[#2a2a2a] transition-colors cursor-pointer">
-                  <List size={18} className="text-[#C9115F] flex-shrink-0" />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-white text-[11px] lg:text-[12px] font-medium leading-tight truncate">
-                      {playlist.title}
-                    </p>
-                    <p className="text-gray-500 text-[9px] lg:text-[10px] leading-tight">
-                      {playlist.dropCount} {playlist.dropCount === 1 ? "drop" : "drops"}
-                    </p>
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-      )} */}
     </div>
   );
 }
 
-// ── Latest Drops List (Unified Audio + Video) ─────────────────────────────────
+// ── Latest Drops List (Unified Audio + Video, filtered by type) ───────────────
 interface UnifiedDrop {
   id: string;
   title: string;
@@ -452,7 +417,7 @@ function LatestDropsList({ type }: { type: string }) {
             type: 'audio' as const,
             createdAt: a.createdAt,
             displayTitle: getDisplayTitle(a),
-            displaySubtitle: extractMatchName(a.title) 
+            displaySubtitle: extractMatchName(a.title)
               ? `${getSpeakerLabel(a)} · ${extractMatchName(a.title)}`
               : `${getDisplayTitle(a)} · ${getSpeakerLabel(a)}`,
             href: `/MainModules/MatchesDropContent/AudioDropScreen?id=${encodeURIComponent(a.id)}`
@@ -475,9 +440,7 @@ function LatestDropsList({ type }: { type: string }) {
           combined = [...combined, ...videos];
         }
 
-        // Sort by createdAt newest first
         combined.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-        
         setDrops(combined.slice(0, 4));
       } catch (err) {
         console.error("Failed to fetch drops", err);
@@ -526,7 +489,7 @@ function LatestDropsList({ type }: { type: string }) {
   );
 }
 
-// ── Trending Drops List ───────────────────────────────────────────────────────////
+// ── Trending Drops List ───────────────────────────────────────────────────────
 function TrendingDropsList() {
   const [drops, setDrops] = useState<TrendingDrop[]>([]);
   const [loading, setLoading] = useState(true);
@@ -674,7 +637,7 @@ function TrendingDropsList() {
   );
 }
 
-// ── Latest Articles List ──────────────────────────────────────────────────
+// ── Latest Articles List ──────────────────────────────────────────────────────
 function LatestArticlesList() {
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
@@ -757,7 +720,6 @@ export default function HomeCardsSection() {
 
           setPlaylistStats({ totalPlaylists, totalDrops });
 
-          // Update the My Playlists card stats
           setCardsData(prevCards =>
             prevCards.map(card =>
               card.id === 3
@@ -782,43 +744,31 @@ export default function HomeCardsSection() {
     fetchPlaylistStats();
   }, [userId]);
 
-  // Fetch drops and plays stats for IPL card
+  // Fetch drops and plays stats for IPL, FIFA, Women's T20 cards
   useEffect(() => {
     const fetchDrops = async () => {
       try {
-        const [iplRes, fifaRes, womensRes, playsRes] =
-  await Promise.allSettled([
-    axios.get(`/api/cloudinary/audio?type=ipl&limit=500`),
-    axios.get(`/api/cloudinary/audio?type=fifa&limit=500`),
-    axios.get(`/api/cloudinary/audio?type=womens_t20&limit=500`),
-    axios.get(`/api/cloudinary/plays`),
-  ]);
+        const [iplRes, fifaRes, womensRes, playsRes] = await Promise.allSettled([
+          axios.get(`/api/cloudinary/audio?type=ipl&limit=500`),
+          axios.get(`/api/cloudinary/audio?type=fifa&limit=500`),
+          axios.get(`/api/cloudinary/audio?type=womens_t20&limit=500`),
+          axios.get(`/api/cloudinary/plays`),
+        ]);
 
-        // const totalCount =
-        //   audioRes.status === "fulfilled"
-        //     ? audioRes.value.data.totalCount || audioRes.value.data.audioFiles?.length || 0
-        //     : 0;
         const iplCount =
-  iplRes.status === "fulfilled"
-    ? iplRes.value.data.totalCount ||
-      iplRes.value.data.audioFiles?.length ||
-      0
-    : 0;
+          iplRes.status === "fulfilled"
+            ? iplRes.value.data.totalCount || iplRes.value.data.audioFiles?.length || 0
+            : 0;
 
-const fifaCount =
-  fifaRes.status === "fulfilled"
-    ? fifaRes.value.data.totalCount ||
-      fifaRes.value.data.audioFiles?.length ||
-      0
-    : 0;
+        const fifaCount =
+          fifaRes.status === "fulfilled"
+            ? fifaRes.value.data.totalCount || fifaRes.value.data.audioFiles?.length || 0
+            : 0;
 
-const womensCount =
-  womensRes.status === "fulfilled"
-    ? womensRes.value.data.totalCount ||
-      womensRes.value.data.audioFiles?.length ||
-      0
-    : 0;
-
+        const womensCount =
+          womensRes.status === "fulfilled"
+            ? womensRes.value.data.totalCount || womensRes.value.data.audioFiles?.length || 0
+            : 0;
 
         const playsMap: Record<string, number> =
           playsRes.status === "fulfilled" ? playsRes.value.data.plays || {} : {};
@@ -863,7 +813,6 @@ const womensCount =
           const articles = res.data.articles || [];
           const totalArticles = articles.length;
 
-          // Calculate total views
           const totalViews = articles.reduce((sum: number, art: Article) => {
             const viewsStr = art.views || "0";
             const numeric = parseInt(viewsStr.replace(/[^\d]/g, "")) || 0;
@@ -916,65 +865,35 @@ const womensCount =
               </div>
             </div>
 
-            {/* Stats - For IPL card */}
-            {card.id === 1 && (
-              <div className="grid grid-cols-3 gap-2 mt-2 text-center">
-                {card.stats.map((stat, i) => (
-                  <div key={i} className="bg-[#1c1c1c] p-2 rounded-lg">
-                    <p className="text-gray-400 text-[9px]">{stat.label}</p>
-                    <p className="font-semibold text-[12px]">
-                      {loading && card.id === 1 && (stat.label === "Drops" || stat.label === "Plays") ? (
-                        <span className="inline-block w-8 h-3 bg-gray-700 rounded animate-pulse"></span>
-                      ) : (
-                        stat.value
-                      )}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            )}
+            {/* Stats */}
+            <div className="grid grid-cols-3 gap-2 mt-2 text-center">
+              {card.stats.map((stat, i) => (
+                <div key={i} className="bg-[#1c1c1c] p-2 rounded-lg">
+                  <p className="text-gray-400 text-[9px]">{stat.label}</p>
+                  <p className="font-semibold text-[12px] text-white">
+                    {loading && card.id === 1 && (stat.label === "Drops" || stat.label === "Plays") ? (
+                      <span className="inline-block w-8 h-3 bg-gray-700 rounded animate-pulse"></span>
+                    ) : (
+                      stat.value
+                    )}
+                  </p>
+                </div>
+              ))}
+            </div>
 
-            {/* Stats - For SportsFan360 card */}
-            {card.id === 2 && (
-              <div className="grid grid-cols-3 gap-2 mt-2 text-center">
-                {card.stats.map((stat, i) => (
-                  <div key={i} className="bg-[#1c1c1c] p-2 rounded-lg">
-                    <p className="text-gray-400 text-[9px]">{stat.label}</p>
-                    <p className="font-semibold text-[12px] text-white">
-                      {stat.value}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Stats - For My Playlists card */}
-            {card.id === 3 && (
-              <div className="grid grid-cols-3 gap-2 mt-2 text-center">
-                {card.stats.map((stat, i) => (
-                  <div key={i} className="bg-[#1c1c1c] p-2 rounded-lg">
-                    <p className="text-gray-400 text-[9px]">{stat.label}</p>
-                    <p className="font-semibold text-[12px] text-white">
-                      {stat.value}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Latest drops — only on IPL card (id: 1) */}
+            {/* Latest Drops — IPL, FIFA, Women's T20 cards */}
             {(card.id === 1 || card.id === 4 || card.id === 5) && (
               <>
                 <p className="text-gray-500 text-[10px] mt-3 mb-1 font-medium uppercase tracking-wide">
                   Latest Drops
                 </p>
-                  {card.id === 1 && <LatestDropsList type="ipl" />}
-                  {card.id === 4 && <LatestDropsList type="fifa" />}
-                  {card.id === 5 && <LatestDropsList type="womens_t20" />}
+                {card.id === 1 && <LatestDropsList type="ipl" />}
+                {card.id === 4 && <LatestDropsList type="fifa" />}
+                {card.id === 5 && <LatestDropsList type="womens_t20" />}
               </>
             )}
 
-            {/* Latest Articles — only on SportsFan360 card (id: 2) */}
+            {/* Latest Articles — SportsFan360 card */}
             {card.id === 2 && (
               <>
                 <p className="text-gray-500 text-[10px] mt-3 mb-1 font-medium uppercase tracking-wide">
@@ -984,7 +903,7 @@ const womensCount =
               </>
             )}
 
-            {/* Latest Playlists — only on My Playlists card (id: 3) */}
+            {/* Recent Playlists — My Playlists card */}
             {card.id === 3 && (
               <>
                 <p className="text-gray-500 text-[10px] mt-3 mb-1 font-medium uppercase tracking-wide">
@@ -994,39 +913,57 @@ const womensCount =
               </>
             )}
 
-            {/* Button - Show for card 1, 2 and 3 */}
-            {(card.id === 1 || card.id === 2 || card.id === 3 || card.id === 4 || card.id === 5)&& (
-              <div className="mt-auto pt-2">
-                <Link href={card.buttonUrl || "#"}>
-                  <button className="w-full bg-gradient-to-r from-pink-500 to-orange-500 py-1.5 rounded-full font-semibold text-[13px] flex items-center justify-center gap-2 cursor-pointer">
-                    {card.buttonIcon === "play"
-                      ? <img src="/images/explore.png" alt="Play" />
-                      : <img src="/images/discover.png" alt="Chart" />}
-                    {card.buttonText}
+            {/* Primary CTA button — all cards */}
+            <div className="mt-auto pt-2">
+              <Link href={card.buttonUrl || "#"}>
+                <button className="w-full bg-gradient-to-r from-pink-500 to-orange-500 py-1.5 rounded-full font-semibold text-[13px] flex items-center justify-center gap-2 cursor-pointer">
+                  {card.buttonIcon === "play"
+                    ? <img src="/images/explore.png" alt="Play" />
+                    : <img src="/images/discover.png" alt="Chart" />}
+                  {card.buttonText}
+                </button>
+              </Link>
+            </div>
+
+            {/* Secondary button — IPL: Match Center */}
+            {card.id === 1 && (
+              <div className="pt-2">
+                <Link href="/MainModules/Matchcenter">
+                  <button className="w-full bg-[#1c1c1c] border border-[#C9115F]/40 py-1.5 rounded-full font-semibold text-[13px] flex items-center justify-center gap-2 cursor-pointer text-white hover:bg-[#2a2a2a] transition-colors">
+                    <span>🏆</span>
+                    Match center
                   </button>
                 </Link>
               </div>
             )}
 
-            {/* Button - Show for card 1 and card 3 */}
-            {(card.id === 1) && (
-              <div className="mt-auto pt-2 flex flex-col gap-2">
+            {/* Secondary button — FIFA: Group Standings */}
+            {card.id === 4 && (
+              <div className="pt-2">
+                <Link href="/MainModules/FIFAWorldCup/Standings">
+                  <button className="w-full bg-[#1c1c1c] border border-[#C9115F]/40 py-1.5 rounded-full font-semibold text-[13px] flex items-center justify-center gap-2 cursor-pointer text-white hover:bg-[#2a2a2a] transition-colors">
+                    <span>⚽</span>
+                    Group Standings
+                  </button>
+                </Link>
+              </div>
+            )}
 
-                {/* Points Table Button — only for IPL card */}
-                {card.id === 1 && (
-                  <Link href="/MainModules/Matchcenter">
-                    <button className="w-full bg-[#1c1c1c] border border-[#C9115F]/40 py-1.5 rounded-full font-semibold text-[13px] flex items-center justify-center gap-2 cursor-pointer text-white hover:bg-[#2a2a2a] transition-colors">
-                      <span>🏆</span>
-                     Match center
-                    </button>
-                  </Link>
-                )}
-
+            {/* Secondary button — Women's T20: Match Center */}
+            {card.id === 5 && (
+              <div className="pt-2">
+                <Link href="/MainModules/WomensT20/Matchcenter">
+                  <button className="w-full bg-[#1c1c1c] border border-[#C9115F]/40 py-1.5 rounded-full font-semibold text-[13px] flex items-center justify-center gap-2 cursor-pointer text-white hover:bg-[#2a2a2a] transition-colors">
+                    <span>🏏</span>
+                    Match Center
+                  </button>
+                </Link>
               </div>
             )}
           </div>
         ))}
-        
+
+        {/* Trending Drops card */}
         <div className="min-w-[200px] max-w-[256px] snap-start bg-[#111] rounded-2xl p-3 shadow-lg flex flex-col h-fit">
           <div className="relative rounded-xl overflow-hidden flex-shrink-0">
             <div className="w-[256px] h-[120px] rounded-lg overflow-hidden relative">
@@ -1048,7 +985,6 @@ const womensCount =
             <TrendingDropsList />
           </div>
         </div>
-        
       </div>
 
       {error && (

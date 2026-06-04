@@ -8,8 +8,6 @@
 // import Player360CardsSection from "@/src/components/HomeComponents/Player360Cards";
 // import Team360CardsSection from "@/src/components/HomeComponents/Team360Cards";
 
-
-
 // export default function HomePage() {
 //   return (
 //     <div className="flex flex-col w-full">
@@ -26,10 +24,6 @@
 //   );
 // }
 
-
-
-
-
 "use client";
 
 import ContinueListening from "@/src/components/HomeComponents/ContinueListening/index";
@@ -43,6 +37,7 @@ import NewsCenter from "@/src/components/HomeComponents/NewsCenter";
 import IPLSpotlight from "../IPLSpotlight/page";
 import SocialFeedSection from "@/src/components/CreatePost-Component/SocialFeedSection";
 import FifaWorldSection from "@/src/components/HomeComponents/FifaWorldSection";
+import WomensT20Section from "@/src/components/HomeComponents/WomensT20Section";
 
 export default function HomePage() {
   return (
@@ -51,7 +46,7 @@ export default function HomePage() {
       <div className="flex flex-col gap-6 px-4 lg:px-6 py-4 w-full">
         <HomeBanners />
         <IPLSpotlight />
-        
+<WomensT20Section/>
         <FifaWorldSection />
 
         <ContinueListening />

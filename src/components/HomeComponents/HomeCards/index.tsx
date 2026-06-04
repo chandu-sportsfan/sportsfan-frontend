@@ -184,7 +184,7 @@ const homeCardsData: CardProps[] = [
     id: 4,
     title: "FIFA World Cup 2026",
     subtitle: "The world's biggest football tournament",
-    image: "/images/fifa.jpg",
+    image: "/images/fifa2026.png",
     profileUrl: "",
     stats: [
       { label: "Teams", value: "48" },
@@ -199,7 +199,7 @@ const homeCardsData: CardProps[] = [
     id: 5,
     title: "Women's T20 2026",
     subtitle: "Exclusive coverage of women's cricket",
-    image: "/images/womens-t20.jpg",
+    image: "/images/womens_t20.jpg",
     profileUrl: "",
     stats: [
       { label: "Teams", value: "10" },
@@ -855,7 +855,8 @@ export default function HomeCardsSection() {
               <Link href={card.profileUrl}>
                 <img
                   src={card.image}
-                  className="w-[256px] h-[120px] object-fit rounded-lg"
+                  // className="w-[256px] h-[120px] object-fit rounded-lg"
+                  className="w-[256px] h-[120px] object-cover rounded-lg"
                   alt={card.title}
                 />
               </Link>

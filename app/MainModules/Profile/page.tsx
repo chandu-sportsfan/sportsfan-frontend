@@ -10,15 +10,15 @@ import {
   MessageSquare, ThumbsUp, Users, Radio,
   Check, Share2, MoreHorizontal, UserPlus,
 } from "lucide-react";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
+// import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 /* ── Upload profile image to Firebase Storage ── */
-async function uploadProfileImage(file: File, userId: string): Promise<string> {
-  const storage = getStorage();
-  const storageRef = ref(storage, `profile-images/${userId}`);
-  await uploadBytes(storageRef, file);
-  return getDownloadURL(storageRef);
-}
+// async function uploadProfileImage(file: File, userId: string): Promise<string> {
+//   const storage = getStorage();
+//   const storageRef = ref(storage, `profile-images/${userId}`);
+//   await uploadBytes(storageRef, file);
+//   return getDownloadURL(storageRef);
+// }
 
 /* ═══════════════════════════════
    DESIGN TOKENS
@@ -207,14 +207,14 @@ function ProfilePageInner() {
 
   /* ── Sync name/handle from auth when auth resolves ── */
   useEffect(() => {
-    if (authDisplayName) {
-      setProfile(prev => ({
-        ...prev,
-        name:   authDisplayName,
-        handle: deriveHandle(authDisplayName),
-      }));
-    }
-  }, [authDisplayName]);
+  if (authDisplayName) {
+    setProfile(prev => ({
+      ...prev,
+      name: authDisplayName,
+      handle: deriveHandle(authDisplayName),
+    }));
+  }
+}, [authDisplayName]);
 
   /* ══════════════════════════════════════════
      LOAD PROFILE FROM FIREBASE (on page open)
@@ -226,20 +226,22 @@ function ProfilePageInner() {
       .then(data => {
         if (data && !data.error) {
           setProfile(prev => ({
-            ...prev,
-            description: data.description || prev.description,
-            location:    data.location    || prev.location,
-            avatar:      data.avatarUrl   || prev.avatar,
-            name:        data.name        || prev.name,
-          }));
+  ...prev,
+  description: data.description || prev.description,
+  location: data.location || prev.location,
+  avatar: data.avatarUrl || prev.avatar,
+  name: data.name || prev.name,
+  website: data.website || prev.website,
+}));
           // also sync editForm so it's pre-filled when user opens edit mode
-          setEditForm(prev => ({
-            ...prev,
-            description: data.description || prev.description,
-            location:    data.location    || prev.location,
-            avatar:      data.avatarUrl   || prev.avatar,
-            name:        data.name        || prev.name,
-          }));
+         setEditForm(prev => ({
+  ...prev,
+  description: data.description || prev.description,
+  location: data.location || prev.location,
+  avatar: data.avatarUrl || prev.avatar,
+  name: data.name || prev.name,
+  website: data.website || prev.website,
+}));
         }
       })
       .catch(() => { /* silently ignore — user will just see defaults */ });
@@ -320,26 +322,29 @@ function ProfilePageInner() {
     setIsSaving(true);
     try {
       // 1️⃣ If user picked a new image, upload it to Firebase Storage first
-      let avatarUrl = editForm.avatar;
-      if (selectedImageFile) {
-        avatarUrl = await uploadProfileImage(selectedImageFile, loggedInUserId);
-      }
+      // let avatarUrl = editForm.avatar;
+      // if (selectedImageFile) {
+      //   avatarUrl = await uploadProfileImage(selectedImageFile, loggedInUserId);
+      // }
 
       // 2️⃣ Save everything to Firestore via our API route
       await fetch("/api/profile", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userId:      loggedInUserId,
-          name:        editForm.name,
-          location:    editForm.location,
-          description: editForm.description,
-          avatarUrl,
-        }),
+       body: JSON.stringify({
+  userId: loggedInUserId,
+  name: editForm.name,
+  location: editForm.location,
+  description: editForm.description,
+  website: editForm.website,
+}),
       });
 
       // 3️⃣ Update local state so the page reflects saved values instantly
-      setProfile(prev => ({ ...prev, ...editForm, avatar: avatarUrl }));
+      setProfile(prev => ({
+  ...prev,
+  ...editForm,
+}));
       setIsEditing(false);
       setFieldErrors({});
       setSelectedImageFile(null);
@@ -1158,7 +1163,6 @@ function ProfilePageInner() {
     </div>
   );
 }
-
 /* ═══════════════════════════════
    SUSPENSE WRAPPER — required by Next.js App Router
    because useSearchParams() needs a Suspense boundary
@@ -1182,4 +1186,5 @@ export default function ProfilePage() {
       <ProfilePageInner />
     </Suspense>
   );
+  
 }

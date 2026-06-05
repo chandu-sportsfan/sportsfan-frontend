@@ -206,47 +206,50 @@ function ProfilePageInner() {
   });
 
   /* ── Sync name/handle from auth when auth resolves ── */
-  useEffect(() => {
-  if (authDisplayName) {
-    setProfile(prev => ({
-      ...prev,
-      name: authDisplayName,
-      handle: deriveHandle(authDisplayName),
-    }));
-  }
-}, [authDisplayName]);
+  // AFTER — only override name from auth if viewing own profile
+useEffect(() => {
+    if (authDisplayName && isOwnProfile) {
+        setProfile(prev => ({ ...prev, name: authDisplayName, handle: deriveHandle(authDisplayName) }));
+    }
+}, [authDisplayName, isOwnProfile]);
 
   /* ══════════════════════════════════════════
      LOAD PROFILE FROM FIREBASE (on page open)
   ══════════════════════════════════════════ */
-  useEffect(() => {
-    if (!loggedInUserId) return;
-    fetch(`/api/profile?userId=${encodeURIComponent(loggedInUserId)}`)
-      .then(r => r.json())
-      .then(data => {
-        if (data && !data.error) {
-          setProfile(prev => ({
-  ...prev,
-  description: data.description || prev.description,
-  location: data.location || prev.location,
-  avatar: data.avatarUrl || prev.avatar,
-  name: data.name || prev.name,
-  website: data.website || prev.website,
-}));
-          // also sync editForm so it's pre-filled when user opens edit mode
-         setEditForm(prev => ({
-  ...prev,
-  description: data.description || prev.description,
-  location: data.location || prev.location,
-  avatar: data.avatarUrl || prev.avatar,
-  name: data.name || prev.name,
-  website: data.website || prev.website,
-}));
-        }
-      })
-      .catch(() => { /* silently ignore — user will just see defaults */ });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loggedInUserId]);
+  // AFTER — derive the profile target early in your component
+const profileTargetId = viewedUserId || loggedInUserId;
+
+useEffect(() => {
+    if (!profileTargetId) return;
+    fetch(`/api/profile?userId=${encodeURIComponent(profileTargetId)}`)
+        .then(r => r.json())
+        .then(data => {
+            if (data && !data.error) {
+                setProfile(prev => ({
+                    ...prev,
+                    name:        data.name        || prev.name,
+                    description: data.description || prev.description,
+                    location:    data.location    || prev.location,
+                    avatar:      data.avatarUrl   || prev.avatar,
+                    website:     data.website     || prev.website,
+                    subtitle:    data.subtitle    || prev.subtitle,
+                    joinedDate:  data.joinedDate  || prev.joinedDate,
+                }));
+                if (isOwnProfile) {
+                    setEditForm(prev => ({
+                        ...prev,
+                        name:        data.name        || prev.name,
+                        description: data.description || prev.description,
+                        location:    data.location    || prev.location,
+                        avatar:      data.avatarUrl   || prev.avatar,
+                        website:     data.website     || prev.website,
+                        subtitle:    data.subtitle    || prev.subtitle,
+                    }));
+                }
+            }
+        })
+        .catch(() => {});
+}, [profileTargetId]);
 
   const [followingCount, setFollowingCount]   = useState(null);
   const followingCountRef                      = useRef(null);
@@ -337,6 +340,7 @@ function ProfilePageInner() {
   location: editForm.location,
   description: editForm.description,
   website: editForm.website,
+    subtitle: editForm.subtitle, 
 }),
       });
 

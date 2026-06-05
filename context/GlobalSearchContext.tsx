@@ -315,14 +315,11 @@ export function GlobalSearchProvider({ children }: { children: ReactNode }) {
             const userId = result.playerProfilesId || result.id;
             router.push(`/MainModules/Profile?userId=${encodeURIComponent(userId)}`);
         } else if (isWomenPlayer(result)) {
-            // Both womens_ipl and womens_t20i → same women profile page
-            // Pass tournament so the page can show correct label
             const profileId = result.playerProfilesId || result.id;
             router.push(
                 `/MainModules/WplPlayers?id=${encodeURIComponent(profileId)}&tournament=${encodeURIComponent(result.tournament ?? "womens_ipl")}`
             );
-        } else {
-            // Men IPL players + teams
+        } else if (result.type === "player" || result.type === "team") {
             const profileId = result.playerProfilesId || result.id;
             router.push(
                 `/MainModules/PlayersProfile?id=${encodeURIComponent(profileId)}&tab=highlights`

@@ -86,10 +86,10 @@ export function GlobalSearchProvider({ children }: { children: ReactNode }) {
      */
     const navigateToResult = useCallback((result: SearchResult) => {
         // 1. Trigger the route change FIRST
-        if (result.type === "user") {
-            const userId = result.playerProfilesId || result.id;
-            router.push(`/MainModules/Profile?userId=${encodeURIComponent(userId)}`);
-        } else {
+        // AFTER
+if (result.type === "user") {
+    router.push(`/MainModules/Profile?userId=${encodeURIComponent(result.id)}`);
+}else {
             const profileId = result.playerProfilesId || result.id;
             router.push(
                 `/MainModules/PlayersProfile?id=${encodeURIComponent(profileId)}&tab=highlights`

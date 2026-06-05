@@ -208,9 +208,9 @@ export default function WPLPlayerProfileHeader({
             {/* Name + tournament */}
             <div className="space-y-1">
                 <h1 className="text-2xl md:text-3xl font-extrabold text-white">{player.player_name}</h1>
-                <p className="font-semibold transition-colors duration-300" style={{ color: cfg.accentColor }}>
+                {/* <p className="font-semibold transition-colors duration-300" style={{ color: cfg.accentColor }}>
                     {cfg.fullName}
-                </p>
+                </p> */}
             </div>
 
             {/* Tournament toggle — only for dual-tournament players */}
@@ -258,7 +258,7 @@ export default function WPLPlayerProfileHeader({
             )}
 
             {/* Badges */}
-            <div className="flex flex-wrap items-center justify-center gap-2">
+            {/* <div className="flex flex-wrap items-center justify-center gap-2">
                 <span className="rounded-full border border-white/15 px-3 py-1 text-sm text-white">
                     {player.format}
                 </span>
@@ -270,7 +270,7 @@ export default function WPLPlayerProfileHeader({
                         #{player.jersey_no}
                     </span>
                 )}
-            </div>
+            </div> */}
 
             {/* About */}
             <div className="w-full rounded-2xl bg-[#1a1a1a] p-4 md:p-5 text-left">

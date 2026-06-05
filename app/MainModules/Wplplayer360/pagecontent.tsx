@@ -463,7 +463,7 @@ type WPLPlayerListApiResponse = {
     pageSize?: number;
 };
 
-// ── Helpers ────────────────────────────────────────────────────────────────
+// ── Helpers 
 
 function deriveRole(player: WPLPlayer): string {
     const hasBat = player.runs > 0;
@@ -496,7 +496,7 @@ function formatCount(n: number): string {
 
 function deriveCategories(player: WPLPlayer): string[] {
     const role = deriveRole(player);
-    const cats: string[] = ["WPL 2024"];
+    const cats: string[] = ["Women's T20 WC 2026"];
     if (role === "All-Rounder") cats.push("All-Rounder");
     else if (role === "Bowler") cats.push("Bowler");
     else cats.push("Batter");
@@ -620,13 +620,8 @@ function WPLPlayerCard({ player }: { player: WPLPlayer }) {
                         </text>
                     </svg>
 
-                    {/* WPL badge */}
-                    <div className="absolute top-2 left-2">
-                        <span className="text-[9px] bg-gradient-to-r from-rose-600 to-orange-500 text-white px-2 py-0.5 rounded-full font-bold uppercase tracking-wide shadow-[0_0_12px_rgba(251,146,60,0.25)]">
-                            WPL
-                        </span>
-                    </div>
-
+                 
+                    
                     {/* Role badge */}
                     <div className="absolute top-2 right-2">
                         <span className="text-[9px] bg-black/60 backdrop-blur-sm text-amber-200 border border-orange-400/30 px-2 py-0.5 rounded-full font-medium">
@@ -635,14 +630,14 @@ function WPLPlayerCard({ player }: { player: WPLPlayer }) {
                     </div>
 
                     {/* Name overlay */}
-                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent px-3 py-3">
+                    {/* <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent px-3 py-3">
                         <p className="text-white font-bold text-sm leading-tight">
                             {player.player_name}
                         </p>
-                        <p className="text-rose-200/90 text-[10px] font-medium">
-                            Women's Premier League
-                        </p>
-                    </div>
+                            <p className="text-rose-200/90 text-[10px] font-medium">
+                                Women's T20 WC
+                            </p>
+                    </div> */}
                 </div>
             </Link>
 
@@ -650,7 +645,7 @@ function WPLPlayerCard({ player }: { player: WPLPlayer }) {
             <Link href={href}>
                 <div className="px-3 pt-2 pb-1">
                     <h4 className="font-semibold text-white text-sm leading-snug">
-                        {player.player_name} · {role} · WPL Season Highlights
+                        {player.player_name} 
                     </h4>
                 </div>
             </Link>
@@ -673,7 +668,7 @@ function WPLPlayerCard({ player }: { player: WPLPlayer }) {
             </div>
 
             {/* ── Stats row ── */}
-            <div className="px-3 pb-3 flex items-center gap-2 flex-wrap">
+            <div className="px-3 pb-3 flex items-center gap-2 flex-nowrap">
                 <span className="rounded-2xl px-2 py-1 flex items-center gap-1.5 bg-gray-950">
                     <img
                         src="/images/profile.png"
@@ -783,7 +778,7 @@ export default function WPLPlayer360CardsSection() {
                 setHasMore(Boolean(nc));
             }
         } catch (err) {
-            console.error("Failed to fetch WPL players:", err);
+            console.error("Failed to fetch women's T20 WC players:", err);
         } finally {
             setLoading(false);
             setLoadingMore(false);
@@ -813,9 +808,9 @@ export default function WPLPlayer360CardsSection() {
     return (
         <div className="w-full py-4">
             {/* ── Header ── */}
-            <div className="flex items-center justify-between lg:justify-start lg:gap-4 gap-3 mb-4">
+            <div className="flex flex-col md:flex-row md:items-center justify-between lg:justify-start lg:gap-4 gap-3 mb-4">
                 <h1 className="text-[18px] sm:text-[20px] font-semibold text-white whitespace-nowrap">
-                    WPL Players 360
+                    Women's T20WC Players 360
                 </h1>
 
                 <div className="flex items-center bg-[#1a1a1a] border border-white/10 rounded-full px-3 py-1.5 w-[160px] sm:w-[200px] md:w-[240px] focus-within:border-orange-400/70 transition">
@@ -841,7 +836,7 @@ export default function WPLPlayer360CardsSection() {
                         <p className="text-gray-400 text-sm">
                             {searchTerm
                                 ? `No players found matching '${searchTerm}'.`
-                                : "No WPL players available."}
+                                : "No Women's T20WC players available."}
                         </p>
                     </div>
                 )}

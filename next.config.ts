@@ -227,6 +227,11 @@ const nextConfig = {
         { source: '/api/player-stats/:path*', destination: `${apiTarget}/api/player-stats/:path*` },
 
 
+          //Fifa players
+        { source: '/api/fifa-player-stats', destination: `${apiTarget}/api/fifa-player-stats` },
+        { source: '/api/fifa-player-stats/:path*', destination: `${apiTarget}/api/fifa-player-stats/:path*` },
+
+
       ],
     };
   },

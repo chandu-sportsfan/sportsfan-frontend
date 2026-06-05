@@ -44,8 +44,9 @@ import IPLSpotlight from "../IPLSpotlight/page";
 import SocialFeedSection from "@/src/components/CreatePost-Component/SocialFeedSection";
 import FifaWorldSection from "@/src/components/HomeComponents/FifaWorldSection";
 import NewHomePage from "@/src/components/NewHomePageComponent/newhomepage";
-import PlayerProfilePage from "../WplPlayers/page";
+
 import WPLPlayerPage from "../Wplplayer360/page";
+import FifaPlayerProfilePage from "../FifaPlayer360/page";
 
 export default function HomePage() {
   return (
@@ -63,10 +64,11 @@ export default function HomePage() {
          {/* <IPLSpotlight /> */}
          
         <NewHomePage />
-          <HomeCardsSection />
-        <Team360CardsSection />
+          {/* <HomeCardsSection /> */}
+        {/* <Team360CardsSection /> */}
         {/* <PlayerProfilePage /> */}
         <WPLPlayerPage />
+        <FifaPlayerProfilePage />
         {/* <Player360CardsSection /> */}
          <SocialFeedSection />
       {/*  <NewsCenter /> */}

@@ -189,7 +189,7 @@ type QuickLink = {
 
 const quickLinks: QuickLink[] = [
   { label: "Match Centre",     icon: "🏟️", badge: "LIVE", badgeColor: "bg-red-500",    href: "/MainModules/Matchcenter"     },
-  { label: "Predictions",      icon: "🎯", badge: "New",  badgeColor: "bg-orange-500", href: "/MainModules/Predictions"     },
+  // { label: "Predictions",      icon: "🎯", badge: "New",  badgeColor: "bg-orange-500", href: "/MainModules/Pollcards"     },
   { label: "Community Groups", icon: "👥", badge: null,   badgeColor: "",              href: "/MainModules/Chat" },
   { label: "Fan Battle",       icon: "⚔️", badge: null,   badgeColor: "",              href: "/MainModules/Fantasy"       },
 ];
@@ -197,38 +197,38 @@ const quickLinks: QuickLink[] = [
 const cards: CardItem[] = [
   {
     id: 1,
-    title: "IPL T20 2026 360World",
-    subtitle: "Exclusive content from all 10 teams",
-    image: "/images/ipl360.jpg",
-    url: "/MainModules/MatchesDropContent",
-  },
-  {
-    id: 2,
     title: "FIFA World Cup 2026",
     subtitle: "The world's biggest football tournament",
     image: "/images/fifa2026.png",
     url: "/MainModules/MatchesDropContent?team=FIFA",
   },
   {
-    id: 3,
+    id: 2,
     title: "Women's T20 2026",
     subtitle: "Exclusive coverage of women's cricket",
     image: "/images/womens_t20.jpg",
     url: "/MainModules/MatchesDropContent?team=Women%20T20",
   },
   {
-    id: 4,
+    id: 3,
     title: "SportsFan360",
     subtitle: "Your ultimate sports companion",
     image: "/images/sportsfan360.jpeg",
     url: "/MainModules/CricketArticles",
   },
   {
-    id: 5,
+    id: 4,
     title: "My Playlists",
     subtitle: "All your favorite sports content in one place",
     image: "/images/cricketarticlessecond.jpg",
     url: "/MainModules/Playlists",
+  },
+  {
+    id: 5,
+    title: "IPL T20 2026 360World",
+    subtitle: "Exclusive content from all 10 teams",
+    image: "/images/ipl360.jpg",
+    url: "/MainModules/MatchesDropContent",
   },
 ];
 

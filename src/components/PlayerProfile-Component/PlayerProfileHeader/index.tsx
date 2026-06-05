@@ -1,3 +1,5 @@
+// components/PlayerProfile-Component/PlayerProfileHeader/index.tsx
+
 "use client";
 
 import { Player } from "@/types/player";

@@ -78,6 +78,7 @@ import { ScriptsProvider } from "@/context/ScriptsContext";
 import { LeaderboardProvider } from "@/context/LeaderboardContext";
 // import GlobalActionBar from "@/src/components/GlobalActionBar";
 import { AIChatProvider } from "@/context/AskAIChatContext";
+import { WPLPlayerProfileProvider } from "@/context/Wplplayerprofilecontext";
 // import { usePathname } from "next/navigation";
 
 const geistSans = Geist({
@@ -131,7 +132,9 @@ export default function RootLayout({
                           <PlaysProvider>
                             <ScriptsProvider>
                               <AIChatProvider>
-                              <main >{children}</main>
+                                <WPLPlayerProfileProvider>
+                                  <main >{children}</main>
+                                </WPLPlayerProfileProvider>
                               </AIChatProvider>
                             </ScriptsProvider>
                           </PlaysProvider>

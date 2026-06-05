@@ -222,6 +222,11 @@ const nextConfig = {
         { source: '/api/watch-along', destination: `${apiTarget}/api/watch-along` },
         { source: '/api/watch-along/:path*', destination: `${apiTarget}/api/watch-along/:path*` },
 
+        //wpl players
+        { source: '/api/player-stats', destination: `${apiTarget}/api/player-stats` },
+        { source: '/api/player-stats/:path*', destination: `${apiTarget}/api/player-stats/:path*` },
+
+
       ],
     };
   },

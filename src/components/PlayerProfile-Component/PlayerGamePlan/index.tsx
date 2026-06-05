@@ -1,3 +1,4 @@
+// components/PlayerProfile-Component/PlayerGamePlan/index.tsx
 "use client";
 
 import { useState } from "react";

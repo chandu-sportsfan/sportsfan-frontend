@@ -1,5 +1,6 @@
 
 
+
 // "use client";
 
 // import { useEffect, useState, useCallback, useRef } from "react";
@@ -14,6 +15,11 @@
 //     CheckCircle2,
 //     User,
 //     Quote,
+//     Flag,
+//     ThumbsUp,
+//     ThumbsDown,
+//     X,
+//     AlertTriangle,
 // } from "lucide-react";
 // import type { Post } from "@/types/PostPolls";
 // import PostLikeButton from "./Postlikebutton";
@@ -23,6 +29,21 @@
 
 // type ReactionId = "like" | "love" | "haha" | "wow" | "sad" | "angry";
 // type VotedByEntry = { voterId: string; userName: string } | string;
+
+// type ReportReason =
+//     | "illegal_content"
+//     | "indecent_content"
+//     | "irrelevant_content"
+//     | "misleading_information"
+//     | "offensive_content";
+
+// const REPORT_REASONS: { id: ReportReason; label: string }[] = [
+//     { id: "illegal_content",       label: "Illegal content e.g. drugs, weapons" },
+//     { id: "indecent_content",      label: "Indecent content" },
+//     { id: "irrelevant_content",    label: "Irrelevant content e.g. politics, religion" },
+//     { id: "misleading_information",label: "Misleading or false information" },
+//     { id: "offensive_content",     label: "Offensive or hateful content" },
+// ];
 
 // const REACTION_EMOJIS: Record<ReactionId, string> = {
 //     like:  "👍",
@@ -82,7 +103,6 @@
 //     onCommentDeleted,
 // }: Props) {
 //     const [showComments, setShowComments] = useState(false);
-//     // Single unified menu state — only one MoreHorizontal button now
 //     const [showMenu, setShowMenu] = useState(false);
 //     const menuRef = useRef<HTMLDivElement>(null);
 //     const [showShareDialog, setShowShareDialog] = useState(false);
@@ -92,6 +112,16 @@
 
 //     const [showReactionsModal, setShowReactionsModal] = useState(false);
 //     const [showRepostModal, setShowRepostModal] = useState(false);
+
+//     // ── Report modal state ────────────────────────────────────────────────────
+//     const [showReportModal, setShowReportModal] = useState(false);
+//     const [selectedReason, setSelectedReason] = useState<ReportReason | null>(null);
+//     const [reporting, setReporting] = useState(false);
+//     const [reportDone, setReportDone] = useState(false);
+
+//     // ── Preference (suggest more/less) state ─────────────────────────────────
+//     const [preferenceAction, setPreferenceAction] = useState<"suggest_more" | "suggest_less" | null>(null);
+//     const [preferenceToast, setPreferenceToast] = useState<string | null>(null);
 
 //     const [localCommentCount, setLocalCommentCount] = useState<number | null>(
 //         typeof post.commentCount === "number" ? post.commentCount : null
@@ -107,9 +137,6 @@
 //         !!(post.repostedBy as string[] | undefined)?.includes(currentUserId ?? "")
 //     );
 
-//     // ── isOwner: compare trimmed strings, check uid AND email ────────────────
-//     // Posts are created with userId = Firebase uid and userEmail = email.
-//     // currentUserId comes from SocialFeedSection as: user?.uid ?? user?.email ?? voterId
 //     const isOwner = (() => {
 //         if (!currentUserId?.trim()) return false;
 //         const cid = currentUserId.trim().toLowerCase();
@@ -130,7 +157,6 @@
 //         return () => document.removeEventListener("mousedown", handler);
 //     }, [showMenu]);
 
-//     // For plain reposts: show the original post's content/author
 //     const isPlainRepost = post.isRepost && !post.isQuoteRepost;
 //     const originalPost = isPlainRepost
 //         ? post.quotedPost ?? postMap?.[post.originalPostId ?? ""] ?? null
@@ -146,7 +172,6 @@
 //         setDeleting(true);
 //         setShowMenu(false);
 //         try {
-//             // Call the API directly — works even if parent didn't pass onDelete
 //             if (onDelete) {
 //                 await onDelete(post.id);
 //             } else {
@@ -157,6 +182,54 @@
 //             alert("Failed to delete post. Please try again.");
 //         } finally {
 //             setDeleting(false);
+//         }
+//     };
+
+//     // ── Report handlers ───────────────────────────────────────────────────────
+//     const openReportModal = () => {
+//         setShowMenu(false);
+//         setSelectedReason(null);
+//         setReportDone(false);
+//         setShowReportModal(true);
+//     };
+
+//     const handleSubmitReport = async () => {
+//         if (!selectedReason || !post.id || !currentUserId) return;
+//         setReporting(true);
+//         try {
+//             await axios.post("/api/post-report", {
+//                 postId: post.id,
+//                 reporterId: currentUserId,
+//                 reporterName: currentUserName,
+//                 reason: selectedReason,
+//             });
+//             setReportDone(true);
+//         } catch (err: unknown) {
+//             const msg =
+//                 axios.isAxiosError(err) && err.response?.data?.error
+//                     ? err.response.data.error
+//                     : "Failed to submit report. Please try again.";
+//             alert(msg);
+//         } finally {
+//             setReporting(false);
+//         }
+//     };
+
+//     // ── Preference handlers ───────────────────────────────────────────────────
+//     const handlePreference = async (action: "suggest_more" | "suggest_less") => {
+//         if (!post.id || !currentUserId) return;
+//         setShowMenu(false);
+//         try {
+//             const res = await axios.post("/api/post-preference", {
+//                 postId: post.id,
+//                 userId: currentUserId,
+//                 action,
+//             });
+//             setPreferenceAction(action);
+//             setPreferenceToast(res.data?.message ?? (action === "suggest_more" ? "You'll see more posts like this." : "You'll see fewer posts like this."));
+//             setTimeout(() => setPreferenceToast(null), 3000);
+//         } catch (err) {
+//             console.error("Failed to save preference:", err);
 //         }
 //     };
 
@@ -186,33 +259,22 @@
 //     const buildPostShareText = () =>
 //         [(post.content?.trim() || "Check out this post"), `View post: ${buildPostShareUrl()}`].join("\n");
 
-//     const handleShareToWhatsApp = () => {
-//         const url = `whatsapp://send?text=${encodeURIComponent(buildPostShareText())}`;
-//         const opened = window.open(url, "_self");
-//         if (!opened) window.location.href = `https://wa.me/?text=${encodeURIComponent(buildPostShareText())}`;
-//     };
-//     const handleShareToThreads  = () => window.open(`https://www.threads.net/intent/post?text=${encodeURIComponent(buildPostShareText())}`, "_blank", "noopener,noreferrer");
-//     const handleShareToInstagram = async () => {
-//         await copyToClipboard(buildPostShareText()); setCopied(true);
-//         window.open("https://www.instagram.com/", "_blank", "noopener,noreferrer");
-//         setTimeout(() => setCopied(false), 1600);
-//     };
-//     const handleShareToLinkedIn = () => window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(buildPostShareUrl())}`, "_blank", "noopener,noreferrer");
-//     const handleShareToX        = () => window.open(`https://x.com/intent/tweet?text=${encodeURIComponent(buildPostShareText())}`, "_blank", "noopener,noreferrer");
-//     const handleCopyLink = async () => {
-//         const ok = await copyToClipboard(buildPostShareText());
-//         if (ok) { setCopied(true); setTimeout(() => setCopied(false), 1600); }
-//     };
+//     const handleShareToWhatsApp  = () => { const url = `whatsapp://send?text=${encodeURIComponent(buildPostShareText())}`; const opened = window.open(url, "_self"); if (!opened) window.location.href = `https://wa.me/?text=${encodeURIComponent(buildPostShareText())}`; };
+//     const handleShareToThreads   = () => window.open(`https://www.threads.net/intent/post?text=${encodeURIComponent(buildPostShareText())}`, "_blank", "noopener,noreferrer");
+//     const handleShareToInstagram = async () => { await copyToClipboard(buildPostShareText()); setCopied(true); window.open("https://www.instagram.com/", "_blank", "noopener,noreferrer"); setTimeout(() => setCopied(false), 1600); };
+//     const handleShareToLinkedIn  = () => window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(buildPostShareUrl())}`, "_blank", "noopener,noreferrer");
+//     const handleShareToX         = () => window.open(`https://x.com/intent/tweet?text=${encodeURIComponent(buildPostShareText())}`, "_blank", "noopener,noreferrer");
+//     const handleCopyLink = async () => { const ok = await copyToClipboard(buildPostShareText()); if (ok) { setCopied(true); setTimeout(() => setCopied(false), 1600); } };
 
 //     const shareButtons = (size: string) => (
 //         <>
 //             {[
-//                 { handler: handleShareToWhatsApp, src: "/images/share_whatsapp.png",  alt: "WhatsApp" },
-//                 { handler: handleShareToThreads,  src: "/images/share_thread.png",    alt: "Threads"  },
-//                 { handler: handleShareToInstagram,src: "/images/share_insta.png",     alt: "Instagram"},
-//                 { handler: handleShareToLinkedIn, src: "/images/Share_linkedin.png",  alt: "LinkedIn" },
-//                 { handler: handleShareToX,        src: "/images/Share_X.png",         alt: "X"        },
-//                 { handler: handleCopyLink,        src: "/images/share_copy_link.png", alt: "Copy"     },
+//                 { handler: handleShareToWhatsApp,  src: "/images/share_whatsapp.png",  alt: "WhatsApp"  },
+//                 { handler: handleShareToThreads,   src: "/images/share_thread.png",    alt: "Threads"   },
+//                 { handler: handleShareToInstagram, src: "/images/share_insta.png",     alt: "Instagram" },
+//                 { handler: handleShareToLinkedIn,  src: "/images/Share_linkedin.png",  alt: "LinkedIn"  },
+//                 { handler: handleShareToX,         src: "/images/Share_X.png",         alt: "X"         },
+//                 { handler: handleCopyLink,         src: "/images/share_copy_link.png", alt: "Copy"      },
 //             ].map(({ handler, src, alt }) => (
 //                 <button key={alt} onClick={handler}
 //                     className={`${size} shrink-0 rounded-full overflow-hidden bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center`}
@@ -241,7 +303,6 @@
 //         });
 //     }, [post.likes, post.likedBy, post.reactions, post.repostCount, currentUserId]);
 
-//     // Lazy-fetch comment count if not provided
 //     useEffect(() => {
 //         if (!post.id || localCommentCount !== null) return;
 //         const controller = new AbortController();
@@ -362,8 +423,8 @@
 //                     </div>
 //                 </div>
 
-//                 {/* ── Single MoreHorizontal button, only shown to owner ── */}
-//                 {isOwner && (
+//                 {/* ── Three-dot menu — different options for owner vs others ── */}
+//                 {currentUserId && (
 //                     <div className="relative" ref={menuRef}>
 //                         <button
 //                             onClick={() => setShowMenu((v) => !v)}
@@ -375,15 +436,52 @@
 //                         </button>
 
 //                         {showMenu && (
-//                             <div className="absolute right-0 top-9 z-30 bg-[#1a1a1a] rounded-xl shadow-xl border border-white/10 overflow-hidden min-w-[150px]">
-//                                 <button
-//                                     onClick={handleDelete}
-//                                     disabled={deleting}
-//                                     className="w-full px-4 py-2.5 text-left text-sm text-red-400 hover:bg-red-500/10 transition-colors flex items-center gap-2"
-//                                 >
-//                                     <Trash2 className="w-4 h-4" />
-//                                     {deleting ? "Deleting…" : "Delete Post"}
-//                                 </button>
+//                             <div className="absolute right-0 top-9 z-30 bg-[#1a1a1a] rounded-xl shadow-xl border border-white/10 overflow-hidden min-w-[180px]">
+//                                 {isOwner ? (
+//                                     /* ── Owner: only Delete ── */
+//                                     <button
+//                                         onClick={handleDelete}
+//                                         disabled={deleting}
+//                                         className="w-full px-4 py-2.5 text-left text-sm text-red-400 hover:bg-red-500/10 transition-colors flex items-center gap-2"
+//                                     >
+//                                         <Trash2 className="w-4 h-4" />
+//                                         {deleting ? "Deleting…" : "Delete Post"}
+//                                     </button>
+//                                 ) : (
+//                                     /* ── Other user: Report / Suggest More / Suggest Less ── */
+//                                     <>
+//                                         <button
+//                                             onClick={openReportModal}
+//                                             className="w-full px-4 py-2.5 text-left text-sm text-red-400 hover:bg-red-500/10 transition-colors flex items-center gap-2.5"
+//                                         >
+//                                             <Flag className="w-4 h-4" />
+//                                             Report
+//                                         </button>
+//                                         <div className="h-px bg-white/8 mx-3" />
+//                                         <button
+//                                             onClick={() => handlePreference("suggest_more")}
+//                                             disabled={preferenceAction === "suggest_more"}
+//                                             className={`w-full px-4 py-2.5 text-left text-sm transition-colors flex items-center gap-2.5
+//                                                 ${preferenceAction === "suggest_more"
+//                                                     ? "text-[#C9115F] bg-[#C9115F]/10 cursor-default"
+//                                                     : "text-white/70 hover:bg-white/10"}`}
+//                                         >
+//                                             <ThumbsUp className="w-4 h-4" />
+//                                             Suggest more like this
+//                                         </button>
+//                                         <button
+//                                             onClick={() => handlePreference("suggest_less")}
+//                                             disabled={preferenceAction === "suggest_less"}
+//                                             className={`w-full px-4 py-2.5 text-left text-sm transition-colors flex items-center gap-2.5
+//                                                 ${preferenceAction === "suggest_less"
+//                                                     ? "text-white/50 bg-white/5 cursor-default"
+//                                                     : "text-white/70 hover:bg-white/10"}`}
+//                                         >
+//                                             <ThumbsDown className="w-4 h-4" />
+//                                             Suggest less like this
+//                                         </button>
+//                                     </>
+//                                 )}
 //                             </div>
 //                         )}
 //                     </div>
@@ -492,7 +590,6 @@
 //                     reactions={localReactions}
 //                     onToggle={handleReactionToggle}
 //                 />
-
 //                 <button
 //                     onClick={() => setShowComments((v) => !v)}
 //                     className={`flex items-center gap-1.5 transition-colors ${showComments ? "text-[#C9115F]" : "text-white/40 hover:text-white/70"}`}
@@ -502,7 +599,6 @@
 //                         <span className="tabular-nums text-sm">{commentCountDisplay}</span>
 //                     )}
 //                 </button>
-
 //                 <button
 //                     onClick={() => setShowRepostModal(true)}
 //                     className={`flex items-center gap-1.5 transition-colors ${hasReposted ? "text-green-400" : "text-white/40 hover:text-green-400"}`}
@@ -511,7 +607,6 @@
 //                     <Repeat2 className="w-5 h-5" />
 //                     {localRepostCount > 0 && <span className="tabular-nums text-sm">{localRepostCount}</span>}
 //                 </button>
-
 //                 <button onClick={openShareDialog} className="flex items-center gap-1.5 text-white/40 hover:text-white/70 transition-colors">
 //                     <Share className="w-4 h-4" />
 //                     <span className="text-sm">Share</span>
@@ -578,10 +673,108 @@
 //                 onQuoteRepost={handleQuoteRepost}
 //                 hasReposted={hasReposted}
 //             />
+
+//             {/* ── Preference toast ── */}
+//             {preferenceToast && (
+//                 <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-[#1a1a1e] border border-white/10 rounded-xl px-4 py-2.5 shadow-xl flex items-center gap-2 text-sm text-white/80 animate-fade-in">
+//                     {preferenceAction === "suggest_more"
+//                         ? <ThumbsUp className="w-4 h-4 text-[#C9115F]" />
+//                         : <ThumbsDown className="w-4 h-4 text-white/50" />}
+//                     {preferenceToast}
+//                 </div>
+//             )}
+
+//             {/* ── Report Modal ── */}
+//             {showReportModal && (
+//                 <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 px-4 pb-4 sm:pb-0"
+//                     onClick={(e) => { if (e.target === e.currentTarget) setShowReportModal(false); }}>
+//                     <div className="w-full max-w-sm bg-[#1a1a1e] rounded-2xl border border-white/10 shadow-2xl overflow-hidden">
+
+//                         {/* Drag handle (mobile) */}
+//                         <div className="flex justify-center pt-3 pb-1 sm:hidden">
+//                             <div className="w-9 h-1 rounded-full bg-white/20" />
+//                         </div>
+
+//                         {/* Header */}
+//                         <div className="flex items-center justify-between px-5 pt-4 pb-2">
+//                             <div className="flex items-center gap-2">
+//                                 <AlertTriangle className="w-4 h-4 text-red-400" />
+//                                 <h2 className="text-white font-semibold text-base">Report a post</h2>
+//                             </div>
+//                             <button onClick={() => setShowReportModal(false)} className="p-1 rounded-full hover:bg-white/10 text-white/50 hover:text-white transition-colors">
+//                                 <X className="w-4 h-4" />
+//                             </button>
+//                         </div>
+
+//                         {!reportDone ? (
+//                             <>
+//                                 <p className="text-white/40 text-xs px-5 pb-4 leading-relaxed">
+//                                     We&apos;ll assess the post according to the guidelines before taking any action. Your report is anonymous.
+//                                 </p>
+
+//                                 {/* Reason list */}
+//                                 <div className="px-3 pb-3 space-y-1">
+//                                     {REPORT_REASONS.map((r) => (
+//                                         <button
+//                                             key={r.id}
+//                                             onClick={() => setSelectedReason(r.id)}
+//                                             className={`w-full flex items-center justify-between px-3 py-3 rounded-xl text-sm transition-colors text-left
+//                                                 ${selectedReason === r.id
+//                                                     ? "bg-red-500/10 text-white"
+//                                                     : "text-white/70 hover:bg-white/5"}`}
+//                                         >
+//                                             <span>{r.label}</span>
+//                                             {/* Radio-style indicator */}
+//                                             <span className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ml-3 transition-colors
+//                                                 ${selectedReason === r.id
+//                                                     ? "border-red-400 bg-red-400"
+//                                                     : "border-white/25"}`}>
+//                                                 {selectedReason === r.id && (
+//                                                     <span className="w-2 h-2 rounded-full bg-white" />
+//                                                 )}
+//                                             </span>
+//                                         </button>
+//                                     ))}
+//                                 </div>
+
+//                                 {/* Submit */}
+//                                 <div className="px-4 pb-5 pt-1">
+//                                     <button
+//                                         onClick={handleSubmitReport}
+//                                         disabled={!selectedReason || reporting}
+//                                         className={`w-full py-3 rounded-xl font-semibold text-sm transition-all
+//                                             ${selectedReason && !reporting
+//                                                 ? "bg-white text-[#111] hover:bg-white/90 active:scale-[0.98]"
+//                                                 : "bg-white/10 text-white/30 cursor-not-allowed"}`}
+//                                     >
+//                                         {reporting ? "Submitting…" : "Report"}
+//                                     </button>
+//                                 </div>
+//                             </>
+//                         ) : (
+//                             /* ── Success state ── */
+//                             <div className="flex flex-col items-center gap-3 px-6 pb-8 pt-4 text-center">
+//                                 <div className="w-14 h-14 rounded-full bg-red-500/15 flex items-center justify-center">
+//                                     <CheckCircle2 className="w-7 h-7 text-red-400" />
+//                                 </div>
+//                                 <h3 className="text-white font-semibold">Report submitted</h3>
+//                                 <p className="text-white/45 text-sm leading-relaxed">
+//                                     Thank you for helping keep the community safe. We&apos;ll review this post and take action if needed.
+//                                 </p>
+//                                 <button
+//                                     onClick={() => setShowReportModal(false)}
+//                                     className="mt-2 w-full py-3 rounded-xl bg-white/10 text-white/70 text-sm font-medium hover:bg-white/15 transition-colors"
+//                                 >
+//                                     Done
+//                                 </button>
+//                             </div>
+//                         )}
+//                     </div>
+//                 </div>
+//             )}
 //         </div>
 //     );
 // }
-
 
 
 
@@ -608,6 +801,7 @@ import {
     ThumbsDown,
     X,
     AlertTriangle,
+    Heart,
 } from "lucide-react";
 import type { Post } from "@/types/PostPolls";
 import PostLikeButton from "./Postlikebutton";
@@ -626,11 +820,11 @@ type ReportReason =
     | "offensive_content";
 
 const REPORT_REASONS: { id: ReportReason; label: string }[] = [
-    { id: "illegal_content",       label: "Illegal content e.g. drugs, weapons" },
-    { id: "indecent_content",      label: "Indecent content" },
-    { id: "irrelevant_content",    label: "Irrelevant content e.g. politics, religion" },
-    { id: "misleading_information",label: "Misleading or false information" },
-    { id: "offensive_content",     label: "Offensive or hateful content" },
+    { id: "illegal_content",        label: "Illegal content e.g. drugs, weapons" },
+    { id: "indecent_content",       label: "Indecent content" },
+    { id: "irrelevant_content",     label: "Irrelevant content e.g. politics, religion" },
+    { id: "misleading_information", label: "Misleading or false information" },
+    { id: "offensive_content",      label: "Offensive or hateful content" },
 ];
 
 const REACTION_EMOJIS: Record<ReactionId, string> = {
@@ -642,9 +836,11 @@ const REACTION_EMOJIS: Record<ReactionId, string> = {
     angry: "😡",
 };
 
+const REACTION_IDS: ReactionId[] = ["like", "love", "haha", "wow", "sad", "angry"];
+
 const ProfilePlaceholder = ({ size = 40 }: { size?: number }) => (
     <div
-        className="bg-gradient-to-br from-[#C9115F] to-[#e8185a] rounded-full flex items-center justify-center text-white shadow-inner"
+        className="bg-gradient-to-br from-[#C9115F] to-[#e8185a] rounded-full flex items-center justify-center text-white shadow-inner flex-shrink-0"
         style={{ width: `${size}px`, height: `${size}px` }}
     >
         <User style={{ width: size * 0.4, height: size * 0.4 }} />
@@ -701,20 +897,23 @@ export default function PostCard({
     const [showReactionsModal, setShowReactionsModal] = useState(false);
     const [showRepostModal, setShowRepostModal] = useState(false);
 
+    // ── Emoji picker state ────────────────────────────────────────────────────
+    const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+    const emojiHideTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
     // ── Report modal state ────────────────────────────────────────────────────
     const [showReportModal, setShowReportModal] = useState(false);
     const [selectedReason, setSelectedReason] = useState<ReportReason | null>(null);
     const [reporting, setReporting] = useState(false);
     const [reportDone, setReportDone] = useState(false);
 
-    // ── Preference (suggest more/less) state ─────────────────────────────────
+    // ── Preference state ──────────────────────────────────────────────────────
     const [preferenceAction, setPreferenceAction] = useState<"suggest_more" | "suggest_less" | null>(null);
     const [preferenceToast, setPreferenceToast] = useState<string | null>(null);
 
     const [localCommentCount, setLocalCommentCount] = useState<number | null>(
         typeof post.commentCount === "number" ? post.commentCount : null
     );
-
     const [localLikes, setLocalLikes] = useState(post.likes || 0);
     const [localLikedBy, setLocalLikedBy] = useState<string[]>(post.likedBy || []);
     const [localReactions, setLocalReactions] = useState<Record<string, string>>(
@@ -745,6 +944,15 @@ export default function PostCard({
         return () => document.removeEventListener("mousedown", handler);
     }, [showMenu]);
 
+    // Emoji picker hover helpers — delay hide so cursor can travel to picker
+    const handleEmojiEnter = () => {
+        if (emojiHideTimeout.current) clearTimeout(emojiHideTimeout.current);
+        setShowEmojiPicker(true);
+    };
+    const handleEmojiLeave = () => {
+        emojiHideTimeout.current = setTimeout(() => setShowEmojiPicker(false), 180);
+    };
+
     const isPlainRepost = post.isRepost && !post.isQuoteRepost;
     const originalPost = isPlainRepost
         ? post.quotedPost ?? postMap?.[post.originalPostId ?? ""] ?? null
@@ -760,11 +968,8 @@ export default function PostCard({
         setDeleting(true);
         setShowMenu(false);
         try {
-            if (onDelete) {
-                await onDelete(post.id);
-            } else {
-                await axios.delete(`/api/createpost/${post.id}`);
-            }
+            if (onDelete) await onDelete(post.id);
+            else await axios.delete(`/api/createpost/${post.id}`);
         } catch (error) {
             console.error("Failed to delete post:", error);
             alert("Failed to delete post. Please try again.");
@@ -773,7 +978,6 @@ export default function PostCard({
         }
     };
 
-    // ── Report handlers ───────────────────────────────────────────────────────
     const openReportModal = () => {
         setShowMenu(false);
         setSelectedReason(null);
@@ -793,26 +997,20 @@ export default function PostCard({
             });
             setReportDone(true);
         } catch (err: unknown) {
-            const msg =
-                axios.isAxiosError(err) && err.response?.data?.error
-                    ? err.response.data.error
-                    : "Failed to submit report. Please try again.";
+            const msg = axios.isAxiosError(err) && err.response?.data?.error
+                ? err.response.data.error
+                : "Failed to submit report. Please try again.";
             alert(msg);
         } finally {
             setReporting(false);
         }
     };
 
-    // ── Preference handlers ───────────────────────────────────────────────────
     const handlePreference = async (action: "suggest_more" | "suggest_less") => {
         if (!post.id || !currentUserId) return;
         setShowMenu(false);
         try {
-            const res = await axios.post("/api/post-preference", {
-                postId: post.id,
-                userId: currentUserId,
-                action,
-            });
+            const res = await axios.post("/api/post-preference", { postId: post.id, userId: currentUserId, action });
             setPreferenceAction(action);
             setPreferenceToast(res.data?.message ?? (action === "suggest_more" ? "You'll see more posts like this." : "You'll see fewer posts like this."));
             setTimeout(() => setPreferenceToast(null), 3000);
@@ -825,10 +1023,8 @@ export default function PostCard({
     const closeShareDialog = () => { setShowShareDialog(false); setCopied(false); };
 
     const copyToClipboard = async (text: string) => {
-        try {
-            await navigator.clipboard.writeText(text);
-            return true;
-        } catch {
+        try { await navigator.clipboard.writeText(text); return true; }
+        catch {
             try {
                 const el = document.createElement("textarea");
                 el.value = text;
@@ -952,6 +1148,14 @@ export default function PostCard({
         onLike?.(postId, userId, reaction);
     };
 
+    // Direct emoji reaction from picker
+    const handleEmojiReaction = (reaction: ReactionId) => {
+        if (!post.id || !currentUserId) return;
+        setShowEmojiPicker(false);
+        if (emojiHideTimeout.current) clearTimeout(emojiHideTimeout.current);
+        handleReactionToggle(post.id, currentUserId, reaction);
+    };
+
     const handleRepost = async (postId: string) => {
         if (!onRepost) return;
         setHasReposted(true);
@@ -977,8 +1181,12 @@ export default function PostCard({
 
     const commentCountDisplay = localCommentCount !== null ? localCommentCount : null;
 
+    // Derived display state for like button
+    const isLiked = currentUserId ? localLikedBy.includes(currentUserId) : false;
+    const currentUserReaction = currentUserId ? (localReactions[currentUserId] as ReactionId | undefined) : undefined;
+
     return (
-        <div className="bg-white/5 rounded-2xl p-4 border border-white/10 hover:bg-white/8 transition-all duration-200">
+        <div className="bg-white/5 rounded-2xl p-4 border border-white/10 hover:bg-white/[0.08] transition-all duration-200">
 
             {/* Repost / quote banners */}
             {post.isQuoteRepost && post.quotedPost && (
@@ -1011,61 +1219,59 @@ export default function PostCard({
                     </div>
                 </div>
 
-                {/* ── Three-dot menu — different options for owner vs others ── */}
+                {/* ── Three-dot menu ── */}
                 {currentUserId && (
                     <div className="relative" ref={menuRef}>
                         <button
                             onClick={() => setShowMenu((v) => !v)}
                             disabled={deleting}
-                            className="p-2 rounded-full hover:bg-white/10 transition-colors"
+                            className="w-8 h-8 rounded-full hover:bg-white/10 transition-colors flex items-center justify-center"
                             aria-label="Post options"
                         >
-                            <MoreHorizontal className="w-4 h-4 text-white/60" />
+                            <MoreHorizontal className="w-5 h-5 text-white/60" />
                         </button>
 
                         {showMenu && (
-                            <div className="absolute right-0 top-9 z-30 bg-[#1a1a1a] rounded-xl shadow-xl border border-white/10 overflow-hidden min-w-[180px]">
+                            <div className="absolute right-0 top-10 z-30 bg-[#1a1a1a] rounded-xl shadow-2xl border border-white/10 overflow-hidden min-w-[210px]">
                                 {isOwner ? (
-                                    /* ── Owner: only Delete ── */
                                     <button
                                         onClick={handleDelete}
                                         disabled={deleting}
-                                        className="w-full px-4 py-2.5 text-left text-sm text-red-400 hover:bg-red-500/10 transition-colors flex items-center gap-2"
+                                        className="w-full px-4 py-3 text-left text-sm text-red-400 hover:bg-red-500/10 transition-colors flex items-center gap-2.5"
                                     >
-                                        <Trash2 className="w-4 h-4" />
+                                        <Trash2 className="w-4 h-4 shrink-0" />
                                         {deleting ? "Deleting…" : "Delete Post"}
                                     </button>
                                 ) : (
-                                    /* ── Other user: Report / Suggest More / Suggest Less ── */
                                     <>
                                         <button
                                             onClick={openReportModal}
-                                            className="w-full px-4 py-2.5 text-left text-sm text-red-400 hover:bg-red-500/10 transition-colors flex items-center gap-2.5"
+                                            className="w-full px-4 py-3 text-left text-sm text-red-400 hover:bg-red-500/10 transition-colors flex items-center gap-2.5"
                                         >
-                                            <Flag className="w-4 h-4" />
+                                            <Flag className="w-4 h-4 shrink-0" />
                                             Report
                                         </button>
                                         <div className="h-px bg-white/8 mx-3" />
                                         <button
                                             onClick={() => handlePreference("suggest_more")}
                                             disabled={preferenceAction === "suggest_more"}
-                                            className={`w-full px-4 py-2.5 text-left text-sm transition-colors flex items-center gap-2.5
+                                            className={`w-full px-4 py-3 text-left text-sm transition-colors flex items-center gap-2.5
                                                 ${preferenceAction === "suggest_more"
                                                     ? "text-[#C9115F] bg-[#C9115F]/10 cursor-default"
                                                     : "text-white/70 hover:bg-white/10"}`}
                                         >
-                                            <ThumbsUp className="w-4 h-4" />
+                                            <ThumbsUp className="w-4 h-4 shrink-0" />
                                             Suggest more like this
                                         </button>
                                         <button
                                             onClick={() => handlePreference("suggest_less")}
                                             disabled={preferenceAction === "suggest_less"}
-                                            className={`w-full px-4 py-2.5 text-left text-sm transition-colors flex items-center gap-2.5
+                                            className={`w-full px-4 py-3 text-left text-sm transition-colors flex items-center gap-2.5
                                                 ${preferenceAction === "suggest_less"
                                                     ? "text-white/50 bg-white/5 cursor-default"
                                                     : "text-white/70 hover:bg-white/10"}`}
                                         >
-                                            <ThumbsDown className="w-4 h-4" />
+                                            <ThumbsDown className="w-4 h-4 shrink-0" />
                                             Suggest less like this
                                         </button>
                                     </>
@@ -1169,35 +1375,77 @@ export default function PostCard({
                 </button>
             )}
 
-            {/* Action bar */}
-            <div className="flex items-center justify-between mt-1 pt-3 border-t border-white/8">
-                <PostLikeButton
-                    postId={post.id ?? ""}
-                    likes={localLikes}
-                    likedBy={localLikedBy}
-                    reactions={localReactions}
-                    onToggle={handleReactionToggle}
-                />
+            {/* ── Action bar ── */}
+            <div className="flex items-center justify-between mt-1 pt-3 border-t border-white/8 flex-nowrap gap-1 min-w-0">
+
+                {/* ── Like + Emoji Picker ── */}
+                <div
+                    className="relative flex-shrink-0"
+                    onMouseEnter={handleEmojiEnter}
+                    onMouseLeave={handleEmojiLeave}
+                >
+                    {/* Floating emoji picker — appears above on hover */}
+                    {showEmojiPicker && (
+                        <div
+                            onMouseEnter={handleEmojiEnter}
+                            onMouseLeave={handleEmojiLeave}
+                            className="absolute bottom-[calc(100%+8px)] left-0 z-50 flex items-center gap-0.5 bg-[#1c1c1f] border border-white/[0.12] rounded-full px-2.5 py-1.5 shadow-2xl"
+                            style={{ whiteSpace: "nowrap" }}
+                        >
+                            {REACTION_IDS.map((r) => (
+                                <button
+                                    key={r}
+                                    onMouseDown={(e) => { e.preventDefault(); handleEmojiReaction(r); }}
+                                    className={`text-xl w-9 h-9 flex items-center justify-center rounded-full transition-transform duration-150 hover:scale-[1.3] hover:bg-white/10 ${currentUserReaction === r ? "bg-white/10 scale-110 ring-2 ring-[#C9115F]/50" : ""}`}
+                                    aria-label={r}
+                                    title={r}
+                                >
+                                    {REACTION_EMOJIS[r]}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* PostLikeButton unchanged — just wrapped for hover area */}
+                    <PostLikeButton
+                        postId={post.id ?? ""}
+                        likes={localLikes}
+                        likedBy={localLikedBy}
+                        reactions={localReactions}
+                        onToggle={handleReactionToggle}
+                    />
+                </div>
+
+                {/* ── Comment ── */}
                 <button
                     onClick={() => setShowComments((v) => !v)}
-                    className={`flex items-center gap-1.5 transition-colors ${showComments ? "text-[#C9115F]" : "text-white/40 hover:text-white/70"}`}
+                    className={`flex-shrink-0 flex items-center gap-1 px-2 py-1.5 rounded-lg transition-colors hover:bg-white/8 ${showComments ? "text-[#C9115F]" : "text-white/40 hover:text-white/70"}`}
                 >
-                    <MessageCircle className="w-4 h-4" />
+                    <MessageCircle className="w-4 h-4 shrink-0" />
                     {commentCountDisplay !== null && (
                         <span className="tabular-nums text-sm">{commentCountDisplay}</span>
                     )}
                 </button>
+
+                {/* ── Repost ── */}
                 <button
                     onClick={() => setShowRepostModal(true)}
-                    className={`flex items-center gap-1.5 transition-colors ${hasReposted ? "text-green-400" : "text-white/40 hover:text-green-400"}`}
+                    className={`flex-shrink-0 flex items-center gap-1 px-2 py-1.5 rounded-lg transition-colors hover:bg-white/8 ${hasReposted ? "text-green-400 hover:text-green-300" : "text-white/40 hover:text-green-400"}`}
                     title={hasReposted ? "Already reposted" : "Repost or Quote"}
                 >
-                    <Repeat2 className="w-5 h-5" />
-                    {localRepostCount > 0 && <span className="tabular-nums text-sm">{localRepostCount}</span>}
+                    <Repeat2 className="w-5 h-5 shrink-0" />
+                    {localRepostCount > 0 && (
+                        <span className="tabular-nums text-sm">{localRepostCount}</span>
+                    )}
                 </button>
-                <button onClick={openShareDialog} className="flex items-center gap-1.5 text-white/40 hover:text-white/70 transition-colors">
-                    <Share className="w-4 h-4" />
-                    <span className="text-sm">Share</span>
+
+                {/* ── Share ── */}
+                <button
+                    onClick={openShareDialog}
+                    className="flex-shrink-0 flex items-center gap-1 px-2 py-1.5 rounded-lg text-white/40 hover:text-white/70 hover:bg-white/8 transition-colors"
+                >
+                    <Share className="w-4 h-4 shrink-0" />
+                    <span className="text-sm whitespace-nowrap">Share</span>
                 </button>
             </div>
 
@@ -1262,7 +1510,7 @@ export default function PostCard({
                 hasReposted={hasReposted}
             />
 
-            {/* ── Preference toast ── */}
+            {/* Preference toast */}
             {preferenceToast && (
                 <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-[#1a1a1e] border border-white/10 rounded-xl px-4 py-2.5 shadow-xl flex items-center gap-2 text-sm text-white/80 animate-fade-in">
                     {preferenceAction === "suggest_more"
@@ -1272,18 +1520,14 @@ export default function PostCard({
                 </div>
             )}
 
-            {/* ── Report Modal ── */}
+            {/* Report Modal */}
             {showReportModal && (
                 <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 px-4 pb-4 sm:pb-0"
                     onClick={(e) => { if (e.target === e.currentTarget) setShowReportModal(false); }}>
                     <div className="w-full max-w-sm bg-[#1a1a1e] rounded-2xl border border-white/10 shadow-2xl overflow-hidden">
-
-                        {/* Drag handle (mobile) */}
                         <div className="flex justify-center pt-3 pb-1 sm:hidden">
                             <div className="w-9 h-1 rounded-full bg-white/20" />
                         </div>
-
-                        {/* Header */}
                         <div className="flex items-center justify-between px-5 pt-4 pb-2">
                             <div className="flex items-center gap-2">
                                 <AlertTriangle className="w-4 h-4 text-red-400" />
@@ -1299,33 +1543,22 @@ export default function PostCard({
                                 <p className="text-white/40 text-xs px-5 pb-4 leading-relaxed">
                                     We&apos;ll assess the post according to the guidelines before taking any action. Your report is anonymous.
                                 </p>
-
-                                {/* Reason list */}
                                 <div className="px-3 pb-3 space-y-1">
                                     {REPORT_REASONS.map((r) => (
                                         <button
                                             key={r.id}
                                             onClick={() => setSelectedReason(r.id)}
                                             className={`w-full flex items-center justify-between px-3 py-3 rounded-xl text-sm transition-colors text-left
-                                                ${selectedReason === r.id
-                                                    ? "bg-red-500/10 text-white"
-                                                    : "text-white/70 hover:bg-white/5"}`}
+                                                ${selectedReason === r.id ? "bg-red-500/10 text-white" : "text-white/70 hover:bg-white/5"}`}
                                         >
                                             <span>{r.label}</span>
-                                            {/* Radio-style indicator */}
                                             <span className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ml-3 transition-colors
-                                                ${selectedReason === r.id
-                                                    ? "border-red-400 bg-red-400"
-                                                    : "border-white/25"}`}>
-                                                {selectedReason === r.id && (
-                                                    <span className="w-2 h-2 rounded-full bg-white" />
-                                                )}
+                                                ${selectedReason === r.id ? "border-red-400 bg-red-400" : "border-white/25"}`}>
+                                                {selectedReason === r.id && <span className="w-2 h-2 rounded-full bg-white" />}
                                             </span>
                                         </button>
                                     ))}
                                 </div>
-
-                                {/* Submit */}
                                 <div className="px-4 pb-5 pt-1">
                                     <button
                                         onClick={handleSubmitReport}
@@ -1340,7 +1573,6 @@ export default function PostCard({
                                 </div>
                             </>
                         ) : (
-                            /* ── Success state ── */
                             <div className="flex flex-col items-center gap-3 px-6 pb-8 pt-4 text-center">
                                 <div className="w-14 h-14 rounded-full bg-red-500/15 flex items-center justify-center">
                                     <CheckCircle2 className="w-7 h-7 text-red-400" />

@@ -364,62 +364,42 @@ function ProfilePageInner() {
      state is updated so the page reflects new
      values instantly without a refresh.
   ══════════════════════════════════════════ */
-  const save = async () => {
-    const errors = validate(editForm);
-    if (Object.keys(errors).length > 0) {
-      setFieldErrors(errors);
-      return;
+const save = async () => {
+  const errors = validate(editForm);
+  if (Object.keys(errors).length > 0) {
+    setFieldErrors(errors);
+    return;
+  }
+
+  setIsSaving(true);
+  setApiError(null);
+
+  try {
+    // ✅ Read the token exactly as your other fetches do
+    const stored = window.localStorage.getItem("auth_user");
+    const token = stored ? JSON.parse(stored)?.token : null;
+
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
     }
 
-    setIsSaving(true);
-    setApiError(null);
+    const res = await fetch("/api/profile", {
+      method: "POST",
+      headers,
+      credentials: "include", // also send cookies (Path A fallback)
+      body: JSON.stringify({
+        name:        editForm.name,
+        subtitle:    editForm.subtitle,
+        description: editForm.description,
+        location:    editForm.location,
+        website:     editForm.website,
+      }),
+    });
 
-    try {
-      // 1️⃣ If user picked a new image, upload it to Firebase Storage first
-      // let avatarUrl = editForm.avatar;
-      // if (selectedImageFile) {
-      //   avatarUrl = await uploadProfileImage(selectedImageFile, loggedInUserId);
-      // }
-
-      // 2️⃣ Persist to Firestore via the API route
-      //
-      // FIX #4 (ROOT CAUSE): Added `credentials: "include"` so the browser
-      // sends the httpOnly "token" cookie with the POST request. Without this,
-      // the route's getUser() sees no cookie and no Authorization header,
-      // returns null, and the server sends back 401 Unauthorized. The fetch
-      // Promise rejects in some environments (or the response body can't be
-      // parsed as JSON), which causes the catch() block to show the
-      // "network error" message shown in the screenshot.
-      //
-      // FIX #5: Also attach the Bearer token for Google-signed-in users.
-      // If the user authenticated via Google, the JWT lives in localStorage
-      // rather than an httpOnly cookie. Without this header those users always
-      // get 401s.
-      const authToken = (() => {
-        try {
-          const stored = window.localStorage.getItem("auth_user");
-          if (!stored) return null;
-          const parsed = JSON.parse(stored);
-          return parsed?.token || parsed?.accessToken || parsed?.idToken || null;
-        } catch { return null; }
-      })();
-
-      const headers: Record<string, string> = { "Content-Type": "application/json" };
-      if (authToken) headers["Authorization"] = `Bearer ${authToken}`;
-
-      const res = await fetch("/api/profile", {
-        method:      "POST",
-        headers,
-        credentials: "include",
-        body: JSON.stringify({
-          name:        editForm.name,
-          subtitle:    editForm.subtitle,
-          description: editForm.description,
-          location:    editForm.location,
-          website:     editForm.website,
-          // avatarUrl: avatarUrl,  ← uncomment when Storage is enabled
-        }),
-      });
+    // ... rest of your code unchanged
 
       // FIX #6: Parse response body safely. If the server sent a non-JSON
       // error page (e.g. a 502 from a proxy, or a Next.js error HTML page),

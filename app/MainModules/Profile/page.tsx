@@ -335,7 +335,7 @@ useEffect(() => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
        body: JSON.stringify({
-  userId: loggedInUserId,
+  // userId: loggedInUserId,
   name: editForm.name,
   location: editForm.location,
   description: editForm.description,

@@ -236,21 +236,19 @@ export default function PostFeed({
       <div className="flex gap-2 px-4 py-3 rounded-lg ml-auto">
         <button
           onClick={() => onFilterChange?.("recent")}
-          className={`px-4 py-2 rounded-lg font-medium transition-all ${
-            filterType === "recent"
+          className={`px-4 py-2 rounded-lg font-medium transition-all ${filterType === "recent"
               ? "bg-[#C9115F] text-white text-[10px] lg:text-[15px]"
               : "bg-white/10 text-white/70 text-[10px] lg:text-[15px] hover:bg-white/20"
-          }`}
+            }`}
         >
           Recent
         </button>
         <button
           onClick={() => onFilterChange?.("top")}
-          className={`px-4 py-2 rounded-lg font-medium transition-all ${
-            filterType === "top"
+          className={`px-4 py-2 rounded-lg font-medium transition-all ${filterType === "top"
               ? "bg-[#C9115F] text-[10px] lg:text-[15px] text-white"
               : "bg-white/10 text-white/70 text-[10px] lg:text-[15px] hover:bg-white/20"
-          }`}
+            }`}
         >
           Top
         </button>
@@ -295,7 +293,9 @@ export default function PostFeed({
           </div>
         ))}
 
-        <NewsFeedWidget />
+        {/* <div className="flex-shrink-0 w-[85vw] sm:w-[420px] lg:w-[460px]">
+          <NewsFeedWidget />
+        </div> */}
 
         {/* Sentinel — triggers load-more when user scrolls near the end */}
         <div ref={sentinelRef} className="flex-shrink-0 w-1" />

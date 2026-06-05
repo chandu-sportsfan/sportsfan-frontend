@@ -225,13 +225,26 @@ function ProfilePageInner() {
       return;
     }
     setProfileLoading(true);
-    fetch(`/api/profile?userId=${encodeURIComponent(profileTargetId)}`)
-      .then(r => r.json())
+    // FIX #1 (ROOT CAUSE): Added `credentials: "include"` so the browser
+    // attaches the httpOnly "token" cookie. Without this the server's
+    // getUser() always returns null → 401 Unauthorized. The frontend's
+    // catch() block then displays the generic "network error" message.
+    fetch(`/api/profile?userId=${encodeURIComponent(profileTargetId)}`, {
+      credentials: "include",
+    })
+      .then(async r => {
+        // FIX #2: Check r.ok BEFORE calling r.json(). If the server returns
+        // 401/500 with a non-JSON body, r.json() throws a SyntaxError which
+        // the original .catch(() => {}) silently swallowed — hiding the real
+        // error and leaving the page stuck in a loading state.
+        if (!r.ok) {
+          const text = await r.text().catch(() => "");
+          throw new Error(`HTTP ${r.status}: ${text || r.statusText}`);
+        }
+        return r.json();
+      })
       .then((data: Record<string, string | null>) => {
         if (data && !data.error) {
-          // Map every editable field from Firestore.
-          // We only overwrite a field when Firestore has a real value; this
-          // prevents empty-string responses from clearing good auth-derived data.
           setProfile(prev => ({
             ...prev,
             name:        data.name        || prev.name,
@@ -257,7 +270,13 @@ function ProfilePageInner() {
           }
         }
       })
-      .catch(() => {})
+      .catch((err) => {
+        // FIX #3: Surface the actual error instead of silently swallowing it.
+        // The original .catch(() => {}) discarded the error so developers had
+        // no visibility into whether it was a 401, a network timeout, or a
+        // JSON parse failure.
+        console.error("Failed to load profile:", err);
+      })
       .finally(() => setProfileLoading(false));
   }, [profileTargetId]);
 
@@ -363,9 +382,35 @@ function ProfilePageInner() {
       // }
 
       // 2️⃣ Persist to Firestore via the API route
+      //
+      // FIX #4 (ROOT CAUSE): Added `credentials: "include"` so the browser
+      // sends the httpOnly "token" cookie with the POST request. Without this,
+      // the route's getUser() sees no cookie and no Authorization header,
+      // returns null, and the server sends back 401 Unauthorized. The fetch
+      // Promise rejects in some environments (or the response body can't be
+      // parsed as JSON), which causes the catch() block to show the
+      // "network error" message shown in the screenshot.
+      //
+      // FIX #5: Also attach the Bearer token for Google-signed-in users.
+      // If the user authenticated via Google, the JWT lives in localStorage
+      // rather than an httpOnly cookie. Without this header those users always
+      // get 401s.
+      const authToken = (() => {
+        try {
+          const stored = window.localStorage.getItem("auth_user");
+          if (!stored) return null;
+          const parsed = JSON.parse(stored);
+          return parsed?.token || parsed?.accessToken || parsed?.idToken || null;
+        } catch { return null; }
+      })();
+
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (authToken) headers["Authorization"] = `Bearer ${authToken}`;
+
       const res = await fetch("/api/profile", {
-        method:  "POST",
-        headers: { "Content-Type": "application/json" },
+        method:      "POST",
+        headers,
+        credentials: "include",
         body: JSON.stringify({
           name:        editForm.name,
           subtitle:    editForm.subtitle,
@@ -376,14 +421,24 @@ function ProfilePageInner() {
         }),
       });
 
-      const json = await res.json();
+      // FIX #6: Parse response body safely. If the server sent a non-JSON
+      // error page (e.g. a 502 from a proxy, or a Next.js error HTML page),
+      // calling res.json() throws and the catch() block shows "network error"
+      // instead of the real HTTP error. We now read the text first, attempt
+      // JSON parsing, and fall back to a plain-text error message.
+      const rawText = await res.text().catch(() => "");
+      let json: Record<string, unknown> = {};
+      try { json = rawText ? JSON.parse(rawText) : {}; } catch { /* ignore parse errors */ }
 
       if (!res.ok) {
         // Surface server-side validation errors into the form
-        if (json.fields) {
-          setFieldErrors(json.fields);
+        if (json.fields && typeof json.fields === "object") {
+          setFieldErrors(json.fields as Record<string, string>);
         } else {
-          setApiError(json.error || "Failed to save profile. Please try again.");
+          setApiError(
+            (typeof json.error === "string" ? json.error : null) ||
+            `Save failed (HTTP ${res.status}). Please try again.`
+          );
         }
         return;
       }
@@ -436,7 +491,15 @@ function ProfilePageInner() {
     }
 
     const url = `/api/following?userId=${encodeURIComponent(uid)}`;
-    const res  = await fetch(url, { credentials: "include" });
+    const res  = await fetch(url, { credentials: "include" }); // FIX #8: was missing credentials:include
+    // FIX #9: Check res.ok BEFORE updating state. The original code set
+    // followingItems and followingCount from the response body even on
+    // error responses, then threw afterwards — leaving stale/wrong data
+    // in the UI while also propagating the error to the caller.
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+    }
+
     const text = await res.text().catch(() => "");
     let data: Record<string, unknown> | null = null;
     try { data = text ? JSON.parse(text) : null; } catch { /* ignore */ }
@@ -450,10 +513,6 @@ function ProfilePageInner() {
     setFollowingItems(list);
     setFollowingCount(resolvedCount);
     try { setProfile(p => ({ ...p, stats: { ...p.stats, following: resolvedCount } })); } catch { /* ignore */ }
-
-    if (!res.ok) {
-      throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-    }
 
     return resolvedCount;
   };

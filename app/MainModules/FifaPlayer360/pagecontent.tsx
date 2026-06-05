@@ -52,7 +52,7 @@ function deriveCategories(player: FifaPlayer): string[] {
 }
 
 function playerHref(player: FifaPlayer): string {
-    return `/MainModules/FifaPlayers?id=${encodeURIComponent(player.player_id)}&tournament=${encodeURIComponent(player.tournament)}`;
+    return `/MainModules/FifaPlayersProfile?id=${encodeURIComponent(player.player_id)}&tournament=${encodeURIComponent(player.tournament)}`;
 }
 
 // ── Single card ────────────────────────────────────────────────────────────────

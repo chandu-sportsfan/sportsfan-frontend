@@ -387,7 +387,7 @@ export function GlobalSearchProvider({ children }: { children: ReactNode }) {
             router.push(`/MainModules/Profile?userId=${encodeURIComponent(profileId)}`);
         } else if (isFifaPlayer(result)) {
             router.push(
-                `/MainModules/FifaPlayers?id=${encodeURIComponent(profileId)}&tournament=${encodeURIComponent(result.tournament ?? "")}`
+                `/MainModules/FifaPlayersProfile?id=${encodeURIComponent(profileId)}&tournament=${encodeURIComponent(result.tournament ?? "")}`
             );
         } else if (isWomenCricketPlayer(result)) {
             router.push(

@@ -806,7 +806,7 @@ export default function WPLPlayer360CardsSection() {
     if (loading) return <WPLCardSkeleton />;
 
     return (
-        <div className="w-full py-4">
+        <div className="w-full py-2">
             {/* ── Header ── */}
             <div className="flex flex-col md:flex-row md:items-center justify-between lg:justify-start lg:gap-4 gap-3 mb-4">
                 <h1 className="text-[18px] sm:text-[20px] font-semibold text-white whitespace-nowrap">

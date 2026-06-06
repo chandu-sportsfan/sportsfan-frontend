@@ -188,10 +188,10 @@ type QuickLink = {
 };
 
 const quickLinks: QuickLink[] = [
-  { label: "Match Centre",     icon: "🏟️", badge: "LIVE", badgeColor: "bg-red-500",    href: "/MainModules/Matchcenter"     },
+  { label: "Match Centre", icon: "🏟️", badge: "LIVE", badgeColor: "bg-red-500", href: "/MainModules/Matchcenter" },
   // { label: "Predictions",      icon: "🎯", badge: "New",  badgeColor: "bg-orange-500", href: "/MainModules/Pollcards"     },
-  { label: "Community Groups", icon: "👥", badge: null,   badgeColor: "",              href: "/MainModules/Chat" },
-  { label: "Fan Battle",       icon: "⚔️", badge: null,   badgeColor: "",              href: "/MainModules/Fantasy"       },
+  { label: "Community Groups", icon: "👥", badge: null, badgeColor: "", href: "/MainModules/Chat" },
+  { label: "Fan Battle", icon: "⚔️", badge: null, badgeColor: "", href: "/MainModules/Fantasy" },
 ];
 
 const cards: CardItem[] = [
@@ -247,7 +247,7 @@ export default function NewHomePage() {
 
   return (
     <div className="bg-black text-white">
-      <div className="max-w-6xl mx-auto px-0.5 pb-6 pt-5">
+      <div className="max-w-6xl mx-auto px-0.5 pt-5">
 
         {/* Tab Bar */}
         {/* <div className="flex gap-2 overflow-x-auto pb-2 mb-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
@@ -304,11 +304,10 @@ export default function NewHomePage() {
           {cards.map((_, i) => (
             <div
               key={i}
-              className={`rounded-full transition-all duration-300 ${
-                i === activeCard
-                  ? "w-5 h-2 bg-[#C9115F]"
-                  : "w-2 h-2 bg-neutral-600"
-              }`}
+              className={`rounded-full transition-all duration-300 ${i === activeCard
+                ? "w-5 h-2 bg-[#C9115F]"
+                : "w-2 h-2 bg-neutral-600"
+                }`}
             />
           ))}
         </div>
@@ -334,6 +333,81 @@ export default function NewHomePage() {
               </div>
             </Link>
           ))}
+        </div>
+
+
+        <div className="flex flex-row gap-3 mt-2 md:mt-6 w-full">
+          <Link href="/MainModules/WatchAlong" className="flex-1">
+            {/* Live Fan Rooms Card */}
+            <div className="flex-1 bg-[#2D1B2E] rounded-2xl p-3 sm:p-4 flex flex-col justify-between min-h-[150px] sm:min-h-[120px]">
+              {/* Top Row */}
+              <div className="flex items-center justify-between">
+                <span className="bg-[#3D2B3E] text-white text-[10px] sm:text-xs font-medium px-2.5 sm:px-4 py-1 sm:py-1.5 rounded-full">
+                  Watch Along
+                </span>
+                <button className="bg-[#3D2B3E] hover:bg-[#4D3B4E] text-white rounded-full w-7 h-7 sm:w-9 sm:h-9 flex items-center justify-center transition-colors">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3 sm:w-4 sm:h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                    <circle cx="9" cy="7" r="4" />
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Content */}
+              <div className="mt-3 sm:mt-4">
+                <h3 className="text-white font-bold text-sm sm:text-lg leading-tight">Live Fan Rooms</h3>
+                <p className="text-gray-400 text-[10px] sm:text-sm mt-0.5">Join now</p>
+              </div>
+
+              {/* Bottom Row */}
+              <div className="flex items-center justify-between mt-3 sm:mt-4">
+                <span className="text-gray-400 text-[10px] sm:text-sm font-medium">2.4K watching</span>
+                <button className="bg-[#3D2B3E] hover:bg-[#4D3B4E] text-white rounded-full w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center transition-colors">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3 sm:w-4 sm:h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="9 18 15 12 9 6" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </Link>
+
+          {/* New Prediction Card */}
+            <Link href="/MainModules/ROAR" className="flex-1">
+          <div className="flex-1 bg-[#5C2010] rounded-2xl p-3 sm:p-4 flex flex-col justify-between min-h-[150px] sm:min-h-[120px]">
+          
+              {/* Top Row */}
+              <div className="flex items-center justify-between">
+                <span className="bg-[#6C3020] text-white text-[10px] sm:text-xs font-medium px-2.5 sm:px-4 py-1 sm:py-1.5 rounded-full">
+                  ROAR
+                </span>
+                <button className="bg-[#6C3020] hover:bg-[#7C4030] text-white rounded-full w-7 h-7 sm:w-9 sm:h-9 flex items-center justify-center transition-colors">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3 sm:w-4 sm:h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
+                    <polyline points="17 6 23 6 23 12" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Content */}
+              <div className="mt-3 sm:mt-4">
+                <h3 className="text-white font-bold text-sm sm:text-lg leading-tight">New prediction</h3>
+                <p className="text-gray-400 text-[10px] sm:text-sm mt-0.5">Hot Takes</p>
+              </div>
+
+              {/* Bottom Row */}
+              <div className="flex items-center justify-between mt-3 sm:mt-4">
+                <span className="text-gray-400 text-[10px] sm:text-sm font-medium">156K active</span>
+                <button className="bg-[#6C3020] hover:bg-[#7C4030] text-white rounded-full w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center transition-colors">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3 sm:w-4 sm:h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="9 18 15 12 9 6" />
+                  </svg>
+                </button>
+              </div>
+          </div>
+          </Link>
+
         </div>
 
       </div>

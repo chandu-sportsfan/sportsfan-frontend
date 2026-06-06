@@ -8,8 +8,6 @@
 // import Player360CardsSection from "@/src/components/HomeComponents/Player360Cards";
 // import Team360CardsSection from "@/src/components/HomeComponents/Team360Cards";
 
-
-
 // export default function HomePage() {
 //   return (
 //     <div className="flex flex-col w-full">
@@ -25,10 +23,6 @@
 //     </div>
 //   );
 // }
-
-
-
-
 
 "use client";
 
@@ -47,6 +41,7 @@ import NewHomePage from "@/src/components/NewHomePageComponent/newhomepage";
 
 import WPLPlayerPage from "../Wplplayer360/page";
 import FifaPlayerProfilePage from "../FifaPlayer360/page";
+import WomensT20Section from "@/src/components/HomeComponents/WomensT20Section";
 
 export default function HomePage() {
   return (
@@ -54,8 +49,8 @@ export default function HomePage() {
       {/* <Header /> -> REMOVED to prevent duplication with layout.tsx */}
       <div className="flex flex-col gap-6 px-4 lg:px-6 py-4 w-full">
         {/* <HomeBanners />
-       
-        
+        <IPLSpotlight />
+        <WomensT20Section/>
         <FifaWorldSection />
 
         <ContinueListening />

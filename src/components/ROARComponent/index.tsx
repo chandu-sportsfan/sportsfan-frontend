@@ -73,6 +73,28 @@ const GLOBAL_CSS = `
   }
 }
 
+.roar-inner::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.12;
+  background-image: radial-gradient(circle, #ffffff1f 1px, transparent 1px);
+  background-size: 18px 18px;
+}
+
+.roar-inner::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.08;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.35'/%3E%3C/svg%3E");
+}
+
 .roar-root * {
   box-sizing: border-box;
   -webkit-tap-highlight-color: transparent;
@@ -122,6 +144,12 @@ const GLOBAL_CSS = `
 @keyframes roar-livePulse {
   0%,100% { opacity:1; transform:scale(1); }
   50% { opacity:0.5; transform:scale(0.85); }
+}
+@keyframes roar-driftUp {
+  0% { opacity: 0; transform: translateY(0) scale(1); }
+  10% { opacity: 0.3; }
+  90% { opacity: 0.15; }
+  100% { opacity: 0; transform: translateY(-100vh) scale(0.8); }
 }
 .roar-root .oracle-ring-animate {
   animation: roar-oracleShimmer 3s linear infinite;
@@ -568,26 +596,7 @@ const NOTIFICATIONS_DATA = [
     fan: { username: "StatsKing_99", badge: "ORACLE" },
     cta: null,
   },
-  {
-    id: "n3",
-    type: "HEATING_UP",
-    title: "This room is heating up 🔥",
-    subtitle: "India vs Australia debate: 1,247 fans live. Jump in.",
-    time: "15m",
-    read: false,
-    fan: null,
-    cta: null,
-  },
-  {
-    id: "n4",
-    type: "MATCH_LIVE",
-    title: "MATCH LIVE: India vs Australia",
-    subtitle: "Discussion room is open. 312 fans already debating.",
-    time: "1h",
-    read: false,
-    fan: null,
-    cta: null,
-  },
+
   {
     id: "n5",
     type: "BADGE",
@@ -1106,13 +1115,18 @@ function Onboarding({ onComplete }: { onComplete: (prefs: any) => void }) {
   const handleCompleteOnboarding = async () => {
     try {
       // setLoading(true);
+      const contributionText = firstVote === "agree" || firstVote === "disagree"
+        ? (sports.includes("cricket")
+          ? "Virat Kohli in 2025 is better than Sachin Tendulkar ever was. Change my mind."
+          : "ISL is now world-class football. Change my mind.")
+        : firstVote;
 
       await axios.post("/api/roar/onboarding", {
         sports,
         teams,
         tenure,
         badge: selectedTenure?.badge || "RISING_FAN",
-        firstContribution: firstVote,
+        firstContribution: contributionText,
       });
 
       onComplete({
@@ -1120,7 +1134,7 @@ function Onboarding({ onComplete }: { onComplete: (prefs: any) => void }) {
         teams,
         tenure,
         badge: selectedTenure?.badge || "RISING_FAN",
-        firstContribution: firstVote,
+        firstContribution: contributionText,
       });
     } catch (err) {
       console.error(err);
@@ -1848,6 +1862,7 @@ function ComposeModal({
   const [match, setMatch] = useState(UPCOMING_MATCHES[0]);
   const [confidence, setConf] = useState(7);
   const [audience, setAud] = useState("Everyone");
+  const [sport, setSport] = useState("cricket");
 
   useEffect(() => {
     if (open && initialType) setSelected(initialType);
@@ -1860,6 +1875,7 @@ function ComposeModal({
     setSideA("");
     setSideB("");
     setMemCtx("");
+    setSport("cricket");
   };
   const canPost =
     (selected === "hot_take" && text.trim()) ||
@@ -1876,6 +1892,7 @@ function ComposeModal({
       confidence,
       audience,
       memCtx,
+      sport,
     });
     onClose();
   };
@@ -2162,6 +2179,57 @@ function ComposeModal({
                         }}
                       />
                     </div>
+                  )}
+                  {(selected === "hot_take" || selected === "prediction") && (
+                    <>
+                      <label
+                        style={{
+                          fontSize: 11,
+                          color: "var(--text-muted)",
+                          display: "block",
+                          marginTop: 16,
+                          marginBottom: 4,
+                        }}
+                      >
+                        Sport
+                      </label>
+                      <div style={{ display: "flex", gap: 8, marginTop: 4, marginBottom: 12 }}>
+                        <button
+                          type="button"
+                          onClick={() => setSport("cricket")}
+                          style={{
+                            flex: 1,
+                            padding: "8px",
+                            borderRadius: 10,
+                            fontSize: 12,
+                            fontWeight: 700,
+                            cursor: "pointer",
+                            border: sport === "cricket" ? "1px solid var(--accent-magenta)" : "1px solid var(--border)",
+                            background: sport === "cricket" ? "rgba(233,30,140,0.15)" : "transparent",
+                            color: sport === "cricket" ? "var(--accent-magenta)" : "var(--text-secondary)",
+                          }}
+                        >
+                          🏏 Cricket
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setSport("football")}
+                          style={{
+                            flex: 1,
+                            padding: "8px",
+                            borderRadius: 10,
+                            fontSize: 12,
+                            fontWeight: 700,
+                            cursor: "pointer",
+                            border: sport === "football" ? "1px solid #3b82f6" : "1px solid var(--border)",
+                            background: sport === "football" ? "rgba(59,130,246,0.15)" : "transparent",
+                            color: sport === "football" ? "#3b82f6" : "var(--text-secondary)",
+                          }}
+                        >
+                          ⚽ Football
+                        </button>
+                      </div>
+                    </>
                   )}
                   <label
                     style={{
@@ -2492,10 +2560,14 @@ function HomeFeed({
   showBanner,
   onDismissBanner,
   userBadge,
+  rooms,
+  dbPosts = [],
+  onPostClick,
+  onVote,
 }: {
   unreadCount: number;
   onNavigateAlerts: () => void;
-  onJoinRoom: () => void;
+  onJoinRoom: (room?: any) => void;
   onLeaderboard: () => void;
   onFanProfile: () => void;
   onToast: (m: string) => void;
@@ -2503,26 +2575,60 @@ function HomeFeed({
   showBanner: boolean;
   onDismissBanner: () => void;
   userBadge: string;
+  rooms?: any[];
+  dbPosts?: any[];
+  onPostClick?: (post: any) => void;
+  onVote?: (id: string, vote: "agree" | "disagree" | null) => void;
 }) {
   const [filter, setFilter] = useState("For You");
   const [votes, setVotes] = useState<Record<string, boolean | null>>({});
   const [pcts, setPcts] = useState<Record<string, number>>({});
 
-  const vote = (id: string, agree: boolean, basePercent: number) => {
+  const vote = (id: string, agree: boolean, basePercent: number, isDbPost?: boolean) => {
     const prev = votes[id];
+    let nextVote: boolean | null = agree;
     if (prev === agree) {
-      setVotes((v) => ({ ...v, [id]: null }));
-      setPcts((p) => ({ ...p, [id]: basePercent }));
-      return;
+      nextVote = null;
     }
-    setVotes((v) => ({ ...v, [id]: agree }));
+    setVotes((v) => ({ ...v, [id]: nextVote }));
     setPcts((p) => ({
       ...p,
-      [id]: clamp(basePercent + (agree ? 4 : -4), 5, 95),
+      [id]: clamp(basePercent + (nextVote === true ? 4 : nextVote === false ? -4 : 0), 5, 95),
     }));
+
+    if (isDbPost && onVote) {
+      onVote(id, nextVote === true ? "agree" : nextVote === false ? "disagree" : null);
+    }
   };
 
-  const allPosts = [...extraItems, ...FEED_POSTS];
+  const mappedDbPosts = dbPosts.map((p) => {
+    const agreeCount = p.agreeCount ?? 0;
+    const disagreeCount = p.disagreeCount ?? 0;
+    const totalVotes = agreeCount + disagreeCount;
+    const agreePercent = totalVotes > 0 ? Math.round((agreeCount / totalVotes) * 100) : 50;
+    return {
+      id: p.postId,
+      type: p.type,
+      sport: p.sport || "cricket",
+      fan: {
+        username: p.authorUsername || "RoarUser",
+        badge: p.authorBadge || "RISING_FAN",
+        team: p.sport === "cricket" ? "India" : "MCFC",
+      },
+      text: p.text,
+      agreePercent,
+      fanCount: totalVotes + (p.type === "hot_take" ? 47 : 1240),
+      replies: p.replyCount ?? 0,
+      following: false,
+      isLive: false,
+      match: p.matchId || (p.type === "prediction" ? (p.sport === "cricket" ? "IND vs AUS · 3rd Test" : "ISL 2025") : undefined),
+      samePredictionCount: p.type === "prediction" ? (p.agreeCount ?? 0) : undefined,
+      counterCount: p.type === "prediction" ? (p.disagreeCount ?? 0) : undefined,
+      isDbPost: true,
+    };
+  });
+
+  const allPosts = [...mappedDbPosts, ...extraItems, ...FEED_POSTS];
   const filtered = allPosts.filter((p) => {
     if (filter === "For You") return true;
     if (filter === "Cricket") return p.sport === "cricket";
@@ -2532,9 +2638,8 @@ function HomeFeed({
     return true;
   });
 
-  const showLiveBanner =
-    filter === "For You" || filter === "Cricket" || filter === "Live";
-  const showFootyBanner = filter === "Football" || filter === "Live";
+  const showLiveBanner = false;
+  const showFootyBanner = false;
 
   return (
     <div className="screen-scroll">
@@ -2703,6 +2808,7 @@ function HomeFeed({
           gap: 14,
         }}
       >
+        {/* Original Cricket Banner */}
         {showLiveBanner && (
           <motion.div
             initial={{ opacity: 0, y: 8 }}
@@ -2710,100 +2816,41 @@ function HomeFeed({
             className="glass-card"
             style={{
               padding: 16,
-              background:
-                "linear-gradient(135deg,rgba(233,30,140,0.12),rgba(255,107,53,0.06))",
+              background: "linear-gradient(135deg,rgba(233,30,140,0.12),rgba(255,107,53,0.06))",
               border: "1px solid rgba(233,30,140,0.25)",
               cursor: "pointer",
             }}
-            onClick={onJoinRoom}
+            onClick={() => onJoinRoom({ roomId: "mock-cricket", name: "India vs Australia" })}
           >
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "flex-start",
-              }}
-            >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
               <div>
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 6,
-                    marginBottom: 6,
-                  }}
-                >
-                  <span
-                    className="live-pulse"
-                    style={{
-                      width: 8,
-                      height: 8,
-                      borderRadius: "50%",
-                      background: "var(--live-green)",
-                      display: "inline-block",
-                    }}
-                  />
-                  <span
-                    style={{
-                      fontSize: 10,
-                      fontWeight: 800,
-                      letterSpacing: "0.1em",
-                      color: "var(--live-green)",
-                    }}
-                  >
-                    LIVE NOW
-                  </span>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+                  <span className="live-pulse" style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--live-green)", display: "inline-block" }} />
+                  <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.1em", color: "var(--live-green)" }}>LIVE NOW</span>
                 </div>
-                <p
-                  className="font-display"
-                  style={{ fontSize: 26, lineHeight: 1 }}
-                >
-                  India vs Australia
-                </p>
-                <p
-                  style={{
-                    fontSize: 12,
-                    color: "var(--text-muted)",
-                    marginTop: 4,
-                  }}
-                >
-                  3rd Test · Day 2 · Adelaide Oval
-                </p>
+                <p className="font-display" style={{ fontSize: 26, lineHeight: 1 }}>India vs Australia</p>
+                <p style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 4 }}>3rd Test · Day 2 · Adelaide Oval</p>
               </div>
               <div style={{ textAlign: "right" }}>
-                <p
-                  className="font-display"
-                  style={{ fontSize: 30, color: "white" }}
-                >
-                  287/4
-                </p>
-                <p style={{ fontSize: 11, color: "var(--text-muted)" }}>
-                  IND · 68 overs
-                </p>
+                <p className="font-display" style={{ fontSize: 30, color: "white" }}>287/4</p>
+                <p style={{ fontSize: 11, color: "var(--text-muted)" }}>IND · 68 overs</p>
               </div>
             </div>
             <motion.button
               whileTap={{ scale: 0.97 }}
               onClick={(e) => {
                 e.stopPropagation();
-                onJoinRoom();
+                onJoinRoom({ roomId: "mock-cricket", name: "India vs Australia" });
               }}
               className="btn-gradient"
-              style={{
-                width: "100%",
-                marginTop: 12,
-                padding: "10px 0",
-                borderRadius: 999,
-                fontSize: 13,
-                border: "none",
-                cursor: "pointer",
-              }}
+              style={{ width: "100%", marginTop: 12, padding: "10px 0", borderRadius: 999, fontSize: 13, border: "none", cursor: "pointer" }}
             >
               JOIN LIVE · 1,247 fans →
             </motion.button>
           </motion.div>
         )}
 
+        {/* Original Football Banner */}
         {showFootyBanner && (
           <motion.div
             initial={{ opacity: 0, y: 8 }}
@@ -2811,73 +2858,23 @@ function HomeFeed({
             className="glass-card"
             style={{
               padding: 16,
-              background:
-                "linear-gradient(135deg,rgba(59,130,246,0.12),rgba(59,130,246,0.04))",
+              background: "linear-gradient(135deg,rgba(59,130,246,0.12),rgba(59,130,246,0.04))",
               border: "1px solid rgba(59,130,246,0.25)",
               cursor: "pointer",
             }}
-            onClick={onJoinRoom}
+            onClick={() => onJoinRoom({ roomId: "mock-football", name: "Mumbai City vs Bengaluru FC" })}
           >
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "flex-start",
-              }}
-            >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
               <div>
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 6,
-                    marginBottom: 6,
-                  }}
-                >
-                  <span
-                    className="live-pulse"
-                    style={{
-                      width: 8,
-                      height: 8,
-                      borderRadius: "50%",
-                      background: "#60a5fa",
-                      display: "inline-block",
-                    }}
-                  />
-                  <span
-                    style={{
-                      fontSize: 10,
-                      fontWeight: 800,
-                      letterSpacing: "0.1em",
-                      color: "#60a5fa",
-                    }}
-                  >
-                    LIVE NOW
-                  </span>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+                  <span className="live-pulse" style={{ width: 8, height: 8, borderRadius: "50%", background: "#60a5fa", display: "inline-block" }} />
+                  <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.1em", color: "#60a5fa" }}>LIVE NOW</span>
                 </div>
-                <p
-                  className="font-display"
-                  style={{ fontSize: 22, lineHeight: 1 }}
-                >
-                  Mumbai City vs Bengaluru FC
-                </p>
-                <p
-                  style={{
-                    fontSize: 12,
-                    color: "var(--text-muted)",
-                    marginTop: 4,
-                  }}
-                >
-                  ISL 2025 · 67' · Mumbai Football Arena
-                </p>
+                <p className="font-display" style={{ fontSize: 22, lineHeight: 1 }}>Mumbai City vs Bengaluru FC</p>
+                <p style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 4 }}>ISL 2025 · 67' · Mumbai Football Arena</p>
               </div>
               <div style={{ textAlign: "right" }}>
-                <p
-                  className="font-display"
-                  style={{ fontSize: 28, color: "white" }}
-                >
-                  2 — 1
-                </p>
+                <p className="font-display" style={{ fontSize: 28, color: "white" }}>2 — 1</p>
                 <p style={{ fontSize: 11, color: "#60a5fa" }}>MCFC lead</p>
               </div>
             </div>
@@ -2885,27 +2882,93 @@ function HomeFeed({
               whileTap={{ scale: 0.97 }}
               onClick={(e) => {
                 e.stopPropagation();
-                onJoinRoom();
+                onJoinRoom({ roomId: "mock-football", name: "Mumbai City vs Bengaluru FC" });
               }}
-              style={{
-                width: "100%",
-                marginTop: 12,
-                padding: "10px 0",
-                borderRadius: 999,
-                fontSize: 13,
-                border: "none",
-                cursor: "pointer",
-                background: "#3b82f6",
-                color: "white",
-                fontWeight: 800,
-                fontFamily: "'Bebas Neue',sans-serif",
-                letterSpacing: "0.06em",
-              }}
+              style={{ width: "100%", marginTop: 12, padding: "10px 0", borderRadius: 999, fontSize: 13, border: "none", cursor: "pointer", background: "#3b82f6", color: "white", fontWeight: 800, fontFamily: "'Bebas Neue',sans-serif", letterSpacing: "0.06em" }}
             >
               JOIN LIVE · 634 fans →
             </motion.button>
           </motion.div>
         )}
+
+        {/* Dynamic Backend-fetched Banners */}
+        {rooms &&
+          rooms
+            .filter((r) => r.roomId !== "mock-cricket" && r.roomId !== "mock-football")
+            .map((room, idx) => {
+              const showThisRoom =
+                filter === "Live" ||
+                filter === "For You" ||
+                (filter === "Cricket" && room.sport?.toLowerCase() === "cricket") ||
+                (filter === "Football" && room.sport?.toLowerCase() === "football");
+
+              if (!showThisRoom) return null;
+
+              const isBlueStyle = room.sport?.toLowerCase() === "football" || idx % 2 === 1;
+              const bg = isBlueStyle
+                ? "linear-gradient(135deg,rgba(59,130,246,0.12),rgba(59,130,246,0.04))"
+                : "linear-gradient(135deg,rgba(233,30,140,0.12),rgba(255,107,53,0.06))";
+              const border = isBlueStyle ? "1px solid rgba(59,130,246,0.25)" : "1px solid rgba(233,30,140,0.25)";
+              const btnBg = isBlueStyle ? "#3b82f6" : undefined;
+              const btnClass = isBlueStyle ? undefined : "btn-gradient";
+              const livePulseBg = isBlueStyle ? "#60a5fa" : "var(--live-green)";
+              const liveTextCol = isBlueStyle ? "#60a5fa" : "var(--live-green)";
+
+              return (
+                <motion.div
+                  key={room.roomId}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="glass-card"
+                  style={{
+                    padding: 16,
+                    background: bg,
+                    border: border,
+                    cursor: "pointer",
+                  }}
+                  onClick={() => onJoinRoom(room)}
+                >
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                    <div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+                        <span className="live-pulse" style={{ width: 8, height: 8, borderRadius: "50%", background: livePulseBg, display: "inline-block" }} />
+                        <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.1em", color: liveTextCol }}>LIVE NOW</span>
+                      </div>
+                      <p className="font-display" style={{ fontSize: isBlueStyle ? 22 : 26, lineHeight: 1 }}>{room.name}</p>
+                      <p style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 4 }}>{room.description || "Discussion Show"}</p>
+                    </div>
+                    <div style={{ textAlign: "right" }}>
+                      <p className="font-display" style={{ fontSize: isBlueStyle ? 28 : 30, color: "white" }}>LIVE</p>
+                      <p style={{ fontSize: 11, color: isBlueStyle ? "#60a5fa" : "var(--text-muted)" }}>Active Now</p>
+                    </div>
+                  </div>
+                  <motion.button
+                    whileTap={{ scale: 0.97 }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onJoinRoom(room);
+                    }}
+                    className={btnClass}
+                    style={{
+                      width: "100%",
+                      marginTop: 12,
+                      padding: "10px 0",
+                      borderRadius: 999,
+                      fontSize: 13,
+                      border: "none",
+                      cursor: "pointer",
+                      background: btnBg,
+                      color: "white",
+                      fontWeight: 800,
+                      fontFamily: isBlueStyle ? "'Bebas Neue',sans-serif" : undefined,
+                      letterSpacing: isBlueStyle ? "0.06em" : undefined,
+                    }}
+                  >
+                    JOIN LIVE · {room.fanCount || 0} fans →
+                  </motion.button>
+                </motion.div>
+              );
+            })}
 
         {filtered.map((item, i) => {
           if (item.type === "hot_take" || item.type === "prediction") {
@@ -2918,7 +2981,8 @@ function HomeFeed({
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.04 }}
                 className="glass-card"
-                style={{ padding: "16px" }}
+                style={{ padding: "16px", cursor: "pointer" }}
+                onClick={() => onPostClick && onPostClick(item)}
               >
                 <div
                   style={{
@@ -3042,9 +3106,10 @@ function HomeFeed({
                     <div style={{ display: "flex", gap: 8 }}>
                       <motion.button
                         whileTap={{ scale: 0.93 }}
-                        onClick={() =>
-                          vote(item.id, true, item.agreePercent ?? 50)
-                        }
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          vote(item.id, true, item.agreePercent ?? 50, item.isDbPost);
+                        }}
                         style={{
                           flex: 1,
                           padding: "10px",
@@ -3068,9 +3133,10 @@ function HomeFeed({
                       </motion.button>
                       <motion.button
                         whileTap={{ scale: 0.93 }}
-                        onClick={() =>
-                          vote(item.id, false, item.agreePercent ?? 50)
-                        }
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          vote(item.id, false, item.agreePercent ?? 50, item.isDbPost);
+                        }}
                         style={{
                           flex: 1,
                           padding: "10px",
@@ -3128,12 +3194,17 @@ function HomeFeed({
 function DiscussionRoom({
   onBack,
   onToast,
+  roomId,
+  roomName,
 }: {
   onBack: () => void;
   onToast: (m: string) => void;
+  roomId?: string;
+  roomName?: string;
 }) {
   const [tab, setTab] = useState("Debate");
-  const [posts, setPosts] = useState(ROOM_POSTS.map((p) => ({ ...p })));
+  const [posts, setPosts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [input, setInput] = useState("");
   const [mode, setMode] = useState<"chat" | "prediction" | "hottake">("chat");
   const [fanCount, setFanCount] = useState(312);
@@ -3141,7 +3212,16 @@ function DiscussionRoom({
   const [composerPre, setComposerPre] = useState("");
   const listRef = useRef<HTMLDivElement>(null);
   const joinIdx = useRef(0);
-  const TABS = ["Debate", "Predictions", "Hot Takes", "Post-Match"];
+  const TABS = ["Debate", "Predictions", "Hot Takes", "Post-Match 🔒"];
+
+  const [userUsername, setUserUsername] = useState("RoarUser");
+  const [userBadge, setUserBadge] = useState("RISING_FAN");
+  useEffect(() => {
+    try {
+      setUserUsername(localStorage.getItem("roar_username") || "RoarUser");
+      setUserBadge(localStorage.getItem("roar_badge") || "RISING_FAN");
+    } catch {}
+  }, []);
 
   useEffect(() => {
     const t = setInterval(() => setFanCount((c) => c + 1), 7000);
@@ -3158,39 +3238,99 @@ function DiscussionRoom({
     return () => clearInterval(iv);
   }, []);
 
-  const send = () => {
+  useEffect(() => {
+    if (!roomId) return;
+    const fetchMessages = async () => {
+      try {
+        const res = await axios.get(`/api/roar/rooms/${roomId}/messages`);
+        if (res.data?.success) {
+          const mapped = res.data.messages.map((m: any) => ({
+            id: m.msgId,
+            fan: { username: m.authorUsername, badge: m.authorBadge },
+            text: m.text,
+            fireCount: m.fireCount || 0,
+            nochanceCount: m.noChanceCount || 0,
+            timeAgo: new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            type: m.type,
+          }));
+          setPosts(mapped);
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchMessages();
+    const interval = setInterval(fetchMessages, 3000);
+    return () => clearInterval(interval);
+  }, [roomId]);
+
+  const send = async () => {
+    if (!roomId) return;
     const text = (composerPre || input).trim();
     if (!text) return;
-    setPosts((p) => [
-      {
-        id: `n-${Date.now()}`,
-        fan: { username: CURRENT_USER.username, badge: CURRENT_USER.badge },
+    try {
+      const res = await axios.post(`/api/roar/rooms/${roomId}/messages`, {
         text,
-        fireCount: 0,
-        nochanceCount: 0,
-        timeAgo: "now",
         type: mode,
-      },
-      ...p,
-    ]);
-    setInput("");
-    setComposerPre("");
-    setTimeout(
-      () => listRef.current?.scrollTo({ top: 0, behavior: "smooth" }),
-      50,
-    );
+      });
+      if (res.data?.success) {
+        const m = res.data.message;
+        setPosts((p) => [
+          {
+            id: m.msgId,
+            fan: { username: m.authorUsername, badge: m.authorBadge },
+            text: m.text,
+            fireCount: 0,
+            nochanceCount: 0,
+            timeAgo: "now",
+            type: m.type,
+          },
+          ...p,
+        ]);
+        setInput("");
+        setComposerPre("");
+        setTimeout(
+          () => listRef.current?.scrollTo({ top: 0, behavior: "smooth" }),
+          50,
+        );
+      }
+    } catch (err) {
+      console.error(err);
+      onToast("Failed to send message");
+    }
   };
 
-  const fire = (id: string) =>
-    setPosts((p) =>
-      p.map((x) => (x.id === id ? { ...x, fireCount: x.fireCount + 1 } : x)),
-    );
-  const noChance = (id: string) =>
-    setPosts((p) =>
-      p.map((x) =>
-        x.id === id ? { ...x, nochanceCount: x.nochanceCount + 1 } : x,
-      ),
-    );
+  const fire = async (id: string) => {
+    if (!roomId) return;
+    try {
+      await axios.post(`/api/roar/rooms/${roomId}/messages/${id}/react`, {
+        reaction: "fire",
+      });
+      setPosts((p) =>
+        p.map((x) => (x.id === id ? { ...x, fireCount: x.fireCount + 1 } : x)),
+      );
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const noChance = async (id: string) => {
+    if (!roomId) return;
+    try {
+      await axios.post(`/api/roar/rooms/${roomId}/messages/${id}/react`, {
+        reaction: "noChance",
+      });
+      setPosts((p) =>
+        p.map((x) =>
+          x.id === id ? { ...x, nochanceCount: x.nochanceCount + 1 } : x,
+        ),
+      );
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   const modeColor: Record<string, string> = {
     chat: "var(--text-primary)",
@@ -3198,9 +3338,9 @@ function DiscussionRoom({
     hottake: "#f87171",
   };
   const modeLabel: Record<string, string> = {
-    chat: "💬 Chat",
+    chat: "💬 Fire",
     prediction: "📊 Predict",
-    hottake: "🔥 Hot Take",
+    hottake: "⚡ Bold Take",
   };
 
   return (
@@ -3238,121 +3378,58 @@ function DiscussionRoom({
       </AnimatePresence>
 
       {/* Header */}
-      <div
-        style={{
-          padding: "12px 16px",
-          background: "rgba(14,14,20,0.95)",
-          backdropFilter: "blur(20px)",
-          borderBottom: "1px solid var(--border)",
-          flexShrink: 0,
-          zIndex: 20,
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <button
-            onClick={onBack}
-            style={{
-              background: "none",
-              border: "none",
-              fontSize: 22,
-              cursor: "pointer",
-              color: "var(--text-primary)",
-            }}
-          >
-            ←
-          </button>
-          <div style={{ flex: 1, textAlign: "center" }}>
-            <p
-              className="font-display"
-              style={{ fontSize: 20, letterSpacing: "0.04em" }}
-            >
-              India vs Pakistan
-            </p>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 6,
-                justifyContent: "center",
-                marginTop: 2,
-              }}
-            >
-              <span
-                className="live-pulse"
-                style={{
-                  width: 6,
-                  height: 6,
-                  borderRadius: "50%",
-                  background: "var(--live-green)",
-                  display: "inline-block",
-                }}
-              />
-              <span
-                style={{
-                  fontSize: 10,
-                  fontWeight: 700,
-                  color: "var(--live-green)",
-                }}
-              >
-                LIVE
-              </span>
-              <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
-                · {fanCount} fans
-              </span>
+      <div style={{ padding: '12px 16px', background: 'rgba(14,14,20,0.95)', backdropFilter: 'blur(20px)', borderBottom: '1px solid var(--border)', flexShrink: 0, zIndex: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <button onClick={onBack} style={{ background: 'none', border: 'none', fontSize: 22, cursor: 'pointer', color: 'var(--text-primary)' }}>←</button>
+          <div style={{ flex: 1, textAlign: 'center' }}>
+            <p className="font-display" style={{ fontSize: 20, letterSpacing: '0.04em' }}>{roomName || "India vs Pakistan"}</p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'center', marginTop: 2 }}>
+              <span className="live-pulse" style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--live-green)', display: 'inline-block' }} />
+              <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--live-green)' }}>LIVE</span>
+              <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>· {fmt(fanCount)} fans</span>
             </div>
           </div>
-          <div style={{ textAlign: "right" }}>
-            <p
-              className="font-display"
-              style={{ fontSize: 22, color: "var(--gold)" }}
-            >
-              287/4
-            </p>
-            <p style={{ fontSize: 10, color: "var(--text-muted)" }}>
-              IND · 68 ov
-            </p>
+          <div style={{ textAlign: 'right' }}>
+            <p className="font-display" style={{ fontSize: 22, color: 'var(--gold)' }}>287/4</p>
+            <p style={{ fontSize: 10, color: 'var(--text-muted)' }}>IND · 88 ov</p>
           </div>
         </div>
         <div style={{ marginTop: 10 }}>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              fontSize: 10,
-              color: "var(--text-muted)",
-              marginBottom: 4,
-            }}
-          >
-            <span>Room Energy</span>
-            <span>{fanCount} in room</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--text-muted)', marginBottom: 4 }}>
+            <span>Room Energy</span><span>{fmt(fanCount)} in room</span>
           </div>
-          <div
-            className="room-energy-bar room-energy-fast"
-            style={{ borderRadius: 999 }}
-          />
+          <div className="room-energy-bar room-energy-fast" style={{ borderRadius: 999 }} />
         </div>
-        <div
-          style={{ display: "flex", gap: 6, marginTop: 12, overflowX: "auto" }}
-        >
-          {TABS.map((t) => (
-            <button
-              key={t}
-              onClick={() => setTab(t)}
-              style={{
-                flexShrink: 0,
-                padding: "6px 14px",
-                borderRadius: 999,
-                fontSize: 12,
-                fontWeight: 600,
-                border: "none",
-                cursor: "pointer",
-                background: tab === t ? "var(--accent-magenta)" : "transparent",
-                color: tab === t ? "white" : "var(--text-secondary)",
-              }}
-            >
-              {t}
-            </button>
-          ))}
+        <div style={{ display: 'flex', gap: 6, marginTop: 12, overflowX: 'auto' }}>
+          {TABS.map(t => {
+            const isLocked = t.includes("🔒");
+            return (
+              <button
+                key={t}
+                onClick={() => {
+                  if (isLocked) {
+                    onToast("🔒 Post-Match stats unlock when the game ends!");
+                  } else {
+                    setTab(t);
+                  }
+                }}
+                style={{
+                  flexShrink: 0,
+                  padding: '6px 14px',
+                  borderRadius: 999,
+                  fontSize: 12,
+                  fontWeight: 600,
+                  border: 'none',
+                  cursor: isLocked ? 'not-allowed' : 'pointer',
+                  background: tab === t ? 'var(--accent-magenta)' : 'transparent',
+                  color: tab === t ? 'white' : 'var(--text-secondary)',
+                  opacity: isLocked ? 0.6 : 1,
+                }}
+              >
+                {t}
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -3362,361 +3439,414 @@ function DiscussionRoom({
         style={{
           flex: 1,
           overflowY: "auto",
-          padding: "12px 14px 8px",
+          padding: "16px 16px 140px",
           display: "flex",
-          flexDirection: "column",
-          gap: 10,
+          flexDirection: "column-reverse",
+          gap: 12,
         }}
       >
-        {tab === "Debate" &&
-          posts.map((post, i) => (
-            <motion.div
-              key={post.id}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i < ROOM_POSTS.length ? i * 0.04 : 0 }}
-              style={{ display: "flex", gap: 10 }}
-            >
-              <AvatarWithBadge
-                username={post.fan.username}
-                badge={post.fan.badge}
-                size="sm"
-              />
-              <div style={{ flex: 1 }}>
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 6,
-                    marginBottom: 4,
-                  }}
-                >
-                  <span style={{ fontSize: 12, fontWeight: 700 }}>
-                    {post.fan.username}
-                  </span>
-                  <span
-                    style={{ fontSize: 10, color: "var(--accent-magenta)" }}
-                  >
-                    {BADGE_LABELS[post.fan.badge]}
-                  </span>
-                  <span
-                    style={{
-                      fontSize: 10,
-                      color: "var(--text-muted)",
-                      marginLeft: "auto",
-                    }}
-                  >
-                    {post.timeAgo} ago
-                  </span>
-                </div>
-                <div
-                  style={{
-                    padding: "10px 14px",
-                    borderRadius: "14px 14px 14px 4px",
-                    background:
-                      post.type === "prediction"
-                        ? "rgba(255,184,0,0.1)"
-                        : post.type === "hottake"
-                          ? "rgba(239,68,68,0.08)"
-                          : "rgba(255,255,255,0.06)",
-                    border:
-                      post.type === "prediction"
-                        ? "1px solid rgba(255,184,0,0.2)"
-                        : post.type === "hottake"
-                          ? "1px solid rgba(239,68,68,0.15)"
-                          : "none",
-                  }}
-                >
-                  <p
-                    style={{
-                      fontSize: 14,
-                      color:
-                        post.type === "prediction"
-                          ? "var(--gold)"
-                          : post.type === "hottake"
-                            ? "#f87171"
-                            : "var(--text-primary)",
-                      lineHeight: 1.45,
-                    }}
-                  >
-                    {post.text}
-                  </p>
-                </div>
-                <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-                  <motion.button
-                    whileTap={{ scale: 1.15 }}
-                    onClick={() => fire(post.id)}
-                    style={{
-                      padding: "6px 14px",
-                      borderRadius: 999,
-                      background: "var(--bg-tertiary)",
-                      border: "1px solid var(--border)",
-                      fontSize: 13,
-                      cursor: "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 4,
-                    }}
-                  >
-                    🔥 <span style={{ fontSize: 12 }}>{post.fireCount}</span>
-                  </motion.button>
-                  <motion.button
-                    whileTap={{ scale: 1.15 }}
-                    onClick={() => noChance(post.id)}
-                    style={{
-                      padding: "6px 14px",
-                      borderRadius: 999,
-                      background: "var(--bg-tertiary)",
-                      border: "1px solid var(--border)",
-                      fontSize: 12,
-                      cursor: "pointer",
-                      color: "var(--text-secondary)",
-                    }}
-                  >
-                    No chance {post.nochanceCount}
-                  </motion.button>
-                </div>
-              </div>
-            </motion.div>
-          ))}
-
-        {tab === "Predictions" && (
-          <div
-            style={{
-              padding: "8px 0",
-              display: "flex",
-              flexDirection: "column",
-              gap: 12,
-            }}
-          >
-            {posts
-              .filter((p) => p.type === "prediction")
-              .map((p) => (
-                <div
-                  key={p.id}
-                  className="glass-card"
-                  style={{ padding: "14px 16px" }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      gap: 8,
-                      alignItems: "center",
-                      marginBottom: 8,
-                    }}
-                  >
-                    <AvatarWithBadge
-                      username={p.fan.username}
-                      badge={p.fan.badge}
-                      size="sm"
-                    />
-                    <span style={{ fontWeight: 700, fontSize: 13 }}>
-                      {p.fan.username}
-                    </span>
-                  </div>
-                  <p
-                    style={{
-                      fontStyle: "italic",
-                      fontSize: 14,
-                      color: "var(--gold)",
-                    }}
-                  >
-                    {p.text}
-                  </p>
-                </div>
-              ))}
-            <motion.button
-              whileTap={{ scale: 0.97 }}
-              onClick={() => {
-                setMode("prediction");
-                setComposerPre("My prediction: ");
-              }}
-              className="btn-gradient"
-              style={{
-                width: "100%",
-                padding: "12px",
-                borderRadius: 999,
-                fontSize: 14,
-                border: "none",
-                cursor: "pointer",
-              }}
-            >
-              Make your prediction
-            </motion.button>
-          </div>
-        )}
-
-        {tab === "Hot Takes" && (
-          <div
-            style={{
-              padding: "8px 0",
-              display: "flex",
-              flexDirection: "column",
-              gap: 12,
-            }}
-          >
-            {posts
-              .filter((p) => p.type === "hottake")
-              .map((p) => (
-                <div
-                  key={p.id}
-                  className="glass-card"
-                  style={{
-                    padding: "14px 16px",
-                    borderLeft: "3px solid var(--accent-magenta)",
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      gap: 8,
-                      alignItems: "center",
-                      marginBottom: 8,
-                    }}
-                  >
-                    <AvatarWithBadge
-                      username={p.fan.username}
-                      badge={p.fan.badge}
-                      size="sm"
-                    />
-                    <span style={{ fontWeight: 700, fontSize: 13 }}>
-                      {p.fan.username}
-                    </span>
-                  </div>
-                  <p style={{ fontSize: 14 }}>{p.text}</p>
-                  <p
-                    style={{
-                      fontSize: 11,
-                      color: "var(--accent-magenta)",
-                      marginTop: 6,
-                    }}
-                  >
-                    Most controversial · 50/50 split
-                  </p>
-                </div>
-              ))}
-          </div>
-        )}
-
-        {tab === "Post-Match" && (
-          <div style={{ padding: "8px 0" }}>
-            <p
-              className="font-display"
-              style={{ fontSize: 24, marginBottom: 16 }}
-            >
-              Match Ended · India won by 6 wickets
-            </p>
-            {[
-              { id: "r1", text: "Kohli scores 80+", status: "CORRECT" },
-              { id: "r2", text: "Bumrah 5 wickets", status: "WRONG" },
-            ].map((r) => (
+        <AnimatePresence initial={false}>
+          {loading ? (
+            <div style={{ textAlign: "center", color: "var(--text-muted)", padding: "20px 0" }}>
+              Loading messages...
+            </div>
+          ) : tab === "Post-Match" ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 12 }}>
+              <p className="font-display" style={{ fontSize: 20, color: "white" }}>
+                MATCH ENDED · INDIA WON BY 6 WICKETS
+              </p>
               <div
-                key={r.id}
+                className="glass-card"
                 style={{
-                  padding: "12px 16px",
-                  borderRadius: 16,
-                  marginBottom: 8,
-                  border: `1px solid ${r.status === "CORRECT" ? "var(--correct-green)" : "var(--wrong-red)"}`,
-                  background:
-                    r.status === "CORRECT"
-                      ? "rgba(0,200,83,0.06)"
-                      : "rgba(244,67,54,0.06)",
+                  padding: 16,
+                  border: "1px solid var(--correct-green)",
+                  background: "rgba(0,200,83,0.05)",
                 }}
               >
-                <p style={{ fontSize: 13 }}>{r.text}</p>
+                <p style={{ fontWeight: 700, fontSize: 14, color: "white" }}>Kohli scores 80+</p>
                 <span
                   style={{
-                    fontSize: 11,
+                    fontSize: 10,
                     fontWeight: 800,
-                    color:
-                      r.status === "CORRECT"
-                        ? "var(--correct-green)"
-                        : "var(--wrong-red)",
+                    color: "var(--correct-green)",
+                    marginTop: 4,
+                    display: "inline-block",
                   }}
                 >
-                  {r.status}
+                  CORRECT
                 </span>
               </div>
-            ))}
-          </div>
-        )}
+              <div
+                className="glass-card"
+                style={{
+                  padding: 16,
+                  border: "1px solid var(--wrong-red)",
+                  background: "rgba(244,67,54,0.05)",
+                }}
+              >
+                <p style={{ fontWeight: 700, fontSize: 14, color: "white" }}>Bumrah 5 wickets</p>
+                <span
+                  style={{
+                    fontSize: 10,
+                    fontWeight: 800,
+                    color: "var(--wrong-red)",
+                    marginTop: 4,
+                    display: "inline-block",
+                  }}
+                >
+                  WRONG
+                </span>
+              </div>
+            </div>
+          ) : posts.filter((p) => {
+              if (tab === "Debate") return p.type === "chat" || !p.type;
+              if (tab === "Predictions") return p.type === "prediction";
+              if (tab === "Hot Takes") return p.type === "hottake";
+              return false;
+            }).length === 0 ? (
+            <div style={{ textAlign: "center", color: "var(--text-muted)", padding: "20px 0" }}>
+              {tab === "Predictions"
+                ? "No predictions yet. Make one to start!"
+                : tab === "Hot Takes"
+                ? "No hot takes yet. Share yours!"
+                : "Welcome to the community chat! Type a message below to start."}
+            </div>
+          ) : (
+            <>
+              {posts
+                .filter((p) => {
+                  if (tab === "Debate") return p.type === "chat" || !p.type;
+                  if (tab === "Predictions") return p.type === "prediction";
+                  if (tab === "Hot Takes") return p.type === "hottake";
+                  return false;
+                })
+                .map((p, i) => {
+                  const bg =
+                    p.type === "prediction"
+                      ? "linear-gradient(135deg,rgba(255,215,0,0.08),rgba(255,215,0,0.02))"
+                      : p.type === "hottake"
+                        ? "linear-gradient(135deg,rgba(239,68,68,0.08),rgba(239,68,68,0.02))"
+                        : undefined;
+                  const border =
+                    p.type === "prediction"
+                      ? "1px solid rgba(255,215,0,0.18)"
+                      : p.type === "hottake"
+                        ? "1px solid rgba(239,68,68,0.18)"
+                        : undefined;
+
+                  return (
+                    <motion.div
+                      key={p.id}
+                      initial={{ opacity: 0, y: 16 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.22 }}
+                      className="glass-card"
+                      style={{ padding: 12, background: bg, border }}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                        }}
+                      >
+                        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                          <AvatarWithBadge
+                            username={p.fan.username}
+                            badge={p.fan.badge}
+                            size="sm"
+                          />
+                          <div>
+                            <p style={{ fontWeight: 700, fontSize: 13 }}>
+                              {p.fan.username}
+                            </p>
+                            <p style={{ fontSize: 10, color: "var(--text-muted)" }}>
+                              {BADGE_LABELS[p.fan.badge] || "Fan"} · {p.timeAgo}
+                            </p>
+                          </div>
+                        </div>
+
+                        {p.type !== "chat" && (
+                          <span
+                            style={{
+                              fontSize: 9,
+                              fontWeight: 800,
+                              padding: "2px 6px",
+                              borderRadius: 4,
+                              background:
+                                p.type === "prediction"
+                                  ? "rgba(255,215,0,0.15)"
+                                  : "rgba(239,68,68,0.15)",
+                              color: p.type === "prediction" ? "#fbbf24" : "#f87171",
+                              border:
+                                p.type === "prediction"
+                                  ? "1px solid rgba(255,215,0,0.25)"
+                                  : "1px solid rgba(239,68,68,0.25)",
+                            }}
+                          >
+                            {p.type === "prediction" ? "PREDICTION" : "HOT TAKE"}
+                          </span>
+                        )}
+                      </div>
+
+                      <p
+                        style={{
+                          fontSize: 14,
+                          lineHeight: 1.4,
+                          marginTop: 8,
+                          color: modeColor[p.type] || "white",
+                        }}
+                      >
+                        {p.text}
+                      </p>
+
+                      <div
+                        style={{
+                          display: "flex",
+                          gap: 8,
+                          marginTop: 10,
+                          justifyContent: "flex-end",
+                        }}
+                      >
+                        <motion.button
+                          whileTap={{ scale: 0.9 }}
+                          onClick={() => fire(p.id)}
+                          style={{
+                            padding: "6px 14px",
+                            fontSize: 12,
+                            fontWeight: 600,
+                            background: "rgba(255,255,255,0.05)",
+                            borderRadius: 999,
+                            border: "1px solid rgba(255,255,255,0.08)",
+                            color: "var(--text-primary)",
+                            cursor: "pointer",
+                          }}
+                        >
+                          🔥 {p.fireCount}
+                        </motion.button>
+                        <motion.button
+                          whileTap={{ scale: 0.9 }}
+                          onClick={() => noChance(p.id)}
+                          style={{
+                            padding: "6px 14px",
+                            fontSize: 12,
+                            fontWeight: 600,
+                            background: "rgba(255,255,255,0.05)",
+                            borderRadius: 999,
+                            border: "1px solid rgba(255,255,255,0.08)",
+                            color: "var(--text-primary)",
+                            cursor: "pointer",
+                          }}
+                        >
+                          No chance {p.nochanceCount}
+                        </motion.button>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              {tab === "Predictions" && (
+                <motion.button
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => {
+                    setMode("prediction");
+                    setComposerPre("My prediction: ");
+                  }}
+                  className="btn-gradient"
+                  style={{
+                    width: "100%",
+                    padding: "14px",
+                    borderRadius: 999,
+                    color: "white",
+                    fontSize: 14,
+                    fontWeight: 700,
+                    letterSpacing: "0.06em",
+                    border: "none",
+                    cursor: "pointer",
+                    flexShrink: 0,
+                    margin: "8px 0 16px",
+                  }}
+                >
+                  MAKE YOUR PREDICTION
+                </motion.button>
+              )}
+            </>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Composer */}
       <div
         style={{
-          padding: "8px 14px 24px",
+          position: "absolute",
+          bottom: 0,
+          left: 0,
+          right: 0,
+          padding: "10px 12px 14px",
+          background: "rgba(14,14,20,0.92)",
+          backdropFilter: "blur(20px)",
           borderTop: "1px solid var(--border)",
-          background: "rgba(14,14,20,0.96)",
-          flexShrink: 0,
+          zIndex: 10,
+          display: "flex",
+          flexDirection: "column",
+          gap: 8,
         }}
       >
-        <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
-          {(["chat", "prediction", "hottake"] as const).map((m) => (
-            <button
-              key={m}
-              onClick={() => setMode(m)}
+        {/* Quick preset triggers */}
+        {composerPre && (
+          <div
+            style={{
+              position: "absolute",
+              bottom: 110,
+              left: 12,
+              right: 12,
+              padding: "8px 12px",
+              borderRadius: 12,
+              background: "var(--bg-tertiary)",
+              border: "1px solid var(--border)",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              zIndex: 30,
+            }}
+          >
+            <p
               style={{
-                padding: "5px 12px",
-                borderRadius: 999,
-                fontSize: 11,
-                fontWeight: 700,
-                border: `1px solid ${mode === m ? modeColor[m] : "var(--border)"}`,
-                background: mode === m ? `${modeColor[m]}18` : "transparent",
-                color: mode === m ? modeColor[m] : "var(--text-muted)",
+                fontSize: 12,
+                color: modeColor[mode],
+                fontStyle: "italic",
+              }}
+            >
+              {modeLabel[mode]} preset selected
+            </p>
+            <button
+              onClick={() => setComposerPre("")}
+              style={{
+                background: "none",
+                border: "none",
+                color: "var(--text-muted)",
                 cursor: "pointer",
               }}
             >
-              {modeLabel[m]}
+              ✕
             </button>
-          ))}
+          </div>
+        )}
+
+        {/* Pills for mode switching */}
+        <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
+          {(["chat", "prediction", "hottake"] as const).map((m) => {
+            const active = mode === m;
+            const label = modeLabel[m];
+            const activeColor = modeColor[m];
+
+            let border = "1px solid var(--border)";
+            let bg = "rgba(255,255,255,0.03)";
+            let color = "var(--text-secondary)";
+
+            if (active) {
+              bg = m === "prediction"
+                ? "rgba(255,215,0,0.1)"
+                : m === "hottake"
+                  ? "rgba(239,68,68,0.1)"
+                  : "rgba(255,255,255,0.1)";
+              border = m === "prediction"
+                ? "1px solid rgba(255,215,0,0.3)"
+                : m === "hottake"
+                  ? "1px solid rgba(239,68,68,0.3)"
+                  : "1px solid rgba(255,255,255,0.3)";
+              color = activeColor;
+            }
+
+            return (
+              <button
+                key={m}
+                onClick={() => {
+                  setMode(m);
+                  if (m === "prediction") {
+                    setComposerPre("My prediction: ");
+                  } else {
+                    setComposerPre("");
+                  }
+                }}
+                style={{
+                  padding: "6px 12px",
+                  borderRadius: 999,
+                  fontSize: 12,
+                  fontWeight: 600,
+                  border,
+                  background: bg,
+                  color,
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 4,
+                  transition: "all 0.2s",
+                }}
+              >
+                {label}
+              </button>
+            );
+          })}
         </div>
-        <div style={{ display: "flex", gap: 10, alignItems: "flex-end" }}>
+
+        {/* Input Row */}
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           <AvatarWithBadge
-            username={CURRENT_USER.username}
-            badge={CURRENT_USER.badge}
+            username={userUsername}
+            badge={userBadge}
             size="sm"
           />
-          <input
-            value={composerPre || input}
-            onChange={(e) => {
-              setComposerPre("");
-              setInput(e.target.value);
-            }}
-            onKeyDown={(e) => e.key === "Enter" && send()}
-            placeholder={
-              mode === "chat"
-                ? "Drop your take..."
-                : mode === "prediction"
-                  ? "My prediction..."
-                  : "Hot take..."
-            }
+
+          <div
             style={{
               flex: 1,
-              padding: "10px 16px",
-              borderRadius: 999,
-              background: "rgba(0,0,0,0.4)",
-              border: "1px solid var(--border)",
-              color: "var(--text-primary)",
-              fontSize: 13,
-              outline: "none",
+              position: "relative",
+              display: "flex",
+              alignItems: "center",
             }}
-          />
+          >
+            <input
+              type="text"
+              placeholder="Drop your take..."
+              value={composerPre || input}
+              onChange={(e) => {
+                if (composerPre) {
+                  setComposerPre(e.target.value);
+                } else {
+                  setInput(e.target.value);
+                }
+              }}
+              onKeyDown={(e) => e.key === "Enter" && send()}
+              style={{
+                width: "100%",
+                height: 44,
+                borderRadius: 22,
+                background: "var(--bg-secondary)",
+                border: "1px solid var(--border)",
+                paddingLeft: 16,
+                paddingRight: 16,
+                color: "white",
+                fontSize: 14,
+                outline: "none",
+              }}
+            />
+          </div>
+
           <motion.button
-            whileTap={{ scale: 0.9 }}
+            whileTap={{ scale: 0.96 }}
             onClick={send}
-            className="btn-gradient"
             style={{
-              width: 40,
-              height: 40,
+              width: 44,
+              height: 44,
               borderRadius: "50%",
+              background: "var(--accent-magenta)",
+              backgroundImage: "var(--accent-gradient)",
               border: "none",
-              cursor: "pointer",
-              fontSize: 16,
+              color: "white",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              flexShrink: 0,
+              cursor: "pointer",
             }}
           >
             ↑
@@ -3765,13 +3895,15 @@ function Notifications({
   onCompose,
   onJoinRoom,
   onNavigateTab,
+  rooms = [],
 }: {
   notifications: any[];
   onMarkRead: (id: string) => void;
   onMarkAllRead: () => void;
   onCompose: () => void;
-  onJoinRoom: () => void;
+  onJoinRoom: (room?: any) => void;
   onNavigateTab: (tab: string) => void;
+  rooms?: any[];
 }) {
   const [filter, setFilter] = useState("All");
 
@@ -3788,6 +3920,20 @@ function Notifications({
       return n.type === "MATCH_LIVE" || n.type === "HEATING_UP";
     return true;
   });
+
+  const findRoomForNotification = (n: any) => {
+    if (!rooms || rooms.length === 0) return null;
+    const matchText = `${n.title} ${n.subtitle}`.toLowerCase();
+    
+    // Find room name mentioned in the notification
+    const matchedRoom = rooms.find(room => 
+      matchText.includes(room.name.toLowerCase()) ||
+      room.name.toLowerCase().includes("india") ||
+      room.name.toLowerCase().includes("australia")
+    );
+    
+    return matchedRoom || rooms[0];
+  };
 
   return (
     <div className="screen-scroll">
@@ -3880,8 +4026,9 @@ function Notifications({
         <AnimatePresence>
           {filtered.map((n, i) => {
             const style = TYPE_STYLES[n.type] || TYPE_STYLES.CHALLENGE;
+            const targetRoom = findRoomForNotification(n);
             return (
-              <motion.button
+              <motion.div
                 key={n.id}
                 layout
                 initial={{ opacity: 0, x: 16 }}
@@ -3890,7 +4037,7 @@ function Notifications({
                 onClick={() => {
                   onMarkRead(n.id);
                   if (n.type === "MATCH_LIVE" || n.type === "HEATING_UP") {
-                    onJoinRoom();
+                    onJoinRoom(targetRoom);
                     return;
                   }
                   if (n.type === "CHALLENGE") {
@@ -3952,24 +4099,27 @@ function Notifications({
                 <div
                   style={{
                     display: "flex",
-                    gap: 10,
+                    gap: 12,
+                    marginTop: 10,
                     alignItems: "flex-start",
-                    marginTop: 8,
                   }}
                 >
                   {n.fan && (
-                    <AvatarWithBadge
-                      username={n.fan.username}
-                      badge={n.fan.badge}
-                      size="sm"
-                    />
+                    <div style={{ flexShrink: 0 }}>
+                      <AvatarWithBadge
+                        username={n.fan.username}
+                        badge={n.fan.badge}
+                        size="sm"
+                      />
+                    </div>
                   )}
                   <div style={{ flex: 1 }}>
                     <p
                       style={{
-                        fontWeight: n.read ? 500 : 700,
                         fontSize: 13,
-                        paddingRight: 40,
+                        fontWeight: 700,
+                        color: "white",
+                        lineHeight: 1.4,
                       }}
                     >
                       {n.title}
@@ -4009,7 +4159,7 @@ function Notifications({
                         whileTap={{ scale: 0.95 }}
                         onClick={(e) => {
                           e.stopPropagation();
-                          onJoinRoom();
+                          onJoinRoom(targetRoom);
                         }}
                         className="btn-gradient"
                         style={{
@@ -4051,7 +4201,7 @@ function Notifications({
                     }}
                   />
                 )}
-              </motion.button>
+              </motion.div>
             );
           })}
         </AnimatePresence>
@@ -4367,29 +4517,69 @@ function Profile({
   userBadge,
   setUserBadge,
   onCompose,
+  onToast,
 }: {
   userBadge: string;
   setUserBadge: (b: string) => void;
   onCompose: () => void;
+  onToast: (m: string) => void;
 }) {
+  const [profileData, setProfileData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const [predTab, setPredTab] = useState("All");
   const [badgeModal, setBadgeModal] = useState<any>(null);
   const [editOpen, setEditOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [rivalFollowed, setRivalFollowed] = useState(false);
-  const [editName, setEditName] = useState(CURRENT_USER.username);
+  const [editName, setEditName] = useState("");
 
-  const filteredPreds = USER_PREDICTIONS.filter(
-    (p) => predTab === "All" || p.status === predTab.toUpperCase(),
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const res = await axios.get("/api/roar/profile");
+        if (res.data?.success) {
+          setProfileData(res.data);
+          if (res.data.user?.badge) {
+            setUserBadge(res.data.user.badge);
+          }
+          if (res.data.user?.username) {
+            setEditName(res.data.user.username);
+          }
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProfile();
+  }, [setUserBadge]);
+
+  if (loading || !profileData) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', color: 'var(--text-muted)' }}>
+        Loading profile...
+      </div>
+    );
+  }
+
+  const user = profileData.user || CURRENT_USER;
+  const badges = profileData.badges && profileData.badges.length > 0 ? profileData.badges : BADGES_LIST;
+  const predictions = profileData.predictions || [];
+  const hotTakes = profileData.hotTakes || [];
+  const rival = profileData.rival || RIVAL;
+
+  const filteredPreds = predictions.filter(
+    (p: any) => predTab === "All" || p.status?.toUpperCase() === predTab.toUpperCase() || (predTab === "Correct" && p.status === "settled_correct") || (predTab === "Wrong" && p.status === "settled_wrong") || (predTab === "Pending" && p.status === "active")
   );
-  const unlocked = BADGES_LIST.filter((b) => b.unlocked).length;
+  const unlocked = badges.filter((b: any) => b.unlocked).length;
 
   return (
     <div className="screen-scroll">
       <div style={{ padding: "20px 16px 0", textAlign: "center" }}>
         <div style={{ display: "flex", justifyContent: "center" }}>
           <AvatarWithBadge
-            username={CURRENT_USER.username}
+            username={user.username || CURRENT_USER.username}
             badge={userBadge}
             size="lg"
           />
@@ -4401,12 +4591,12 @@ function Profile({
           {editName.replace(/_/g, " ")}
         </h1>
         <p style={{ fontSize: 13, color: "var(--text-muted)" }}>
-          @{CURRENT_USER.handle}
+          @{user.handle || CURRENT_USER.handle}
         </p>
         <p
           style={{ fontSize: 13, color: "var(--text-secondary)", marginTop: 6 }}
         >
-          Fan since {CURRENT_USER.fanSince} · {CURRENT_USER.yearsFandom} years ·{" "}
+          Fan since {user.fanSince || CURRENT_USER.fanSince} · {user.yearsFandom || CURRENT_USER.yearsFandom || 1} years ·{" "}
           {BADGE_LABELS[userBadge]}
         </p>
         <div
@@ -4417,7 +4607,7 @@ function Profile({
             marginTop: 10,
           }}
         >
-          {CURRENT_USER.teams.map((t) => {
+          {(user.teams || CURRENT_USER.teams).map((t: string) => {
             const team = TEAMS.find((x) => x.id === t);
             return (
               <div
@@ -4449,389 +4639,102 @@ function Profile({
           <motion.button
             whileTap={{ scale: 0.96 }}
             onClick={() => setEditOpen(true)}
+            className="btn-pill"
             style={{
               padding: "8px 20px",
-              borderRadius: 999,
-              border: "1px solid var(--border)",
-              fontSize: 13,
-              fontWeight: 600,
-              background: "transparent",
-              color: "var(--text-primary)",
-              cursor: "pointer",
+              background: "rgba(255,255,255,0.05)",
             }}
           >
-            Edit Profile
+            ✏️ Edit Profile
           </motion.button>
           <motion.button
             whileTap={{ scale: 0.96 }}
             onClick={() => setShareOpen(true)}
-            className="btn-gradient"
+            className="btn-pill"
             style={{
               padding: "8px 20px",
-              borderRadius: 999,
-              fontSize: 13,
-              border: "none",
-              cursor: "pointer",
+              background: "rgba(255,255,255,0.05)",
             }}
           >
-            Share Profile
+            🔗 Share Legacy
           </motion.button>
         </div>
       </div>
 
-      {/* Stats */}
+      {/* Stats Cards */}
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(4,1fr)",
-          gap: 8,
+          gridTemplateColumns: "repeat(2,1fr)",
+          gap: 12,
           padding: "20px 16px 0",
         }}
       >
-        {[
-          { label: "Accuracy", ring: true },
-          { label: "Predictions", val: `${CURRENT_USER.predictionCount}` },
-          { label: "Hot Takes", val: `${CURRENT_USER.hotTakeCount}` },
-          { label: "Rep", val: `${CURRENT_USER.reputationScore}`, gold: true },
-        ].map((s) => (
+        <div
+          className="glass-card"
+          style={{
+            padding: 16,
+            background:
+              "linear-gradient(135deg,rgba(0,230,118,0.08),rgba(255,255,255,0.02))",
+          }}
+        >
+          <p style={{ fontSize: 11, color: "var(--text-muted)" }}>
+            PREDICTION ACCURACY
+          </p>
           <div
-            key={s.label}
             style={{
-              background: "var(--bg-tertiary)",
-              borderRadius: 16,
-              padding: "10px 8px",
-              textAlign: "center",
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              marginTop: 6,
             }}
           >
-            {s.ring ? (
-              <div
-                style={{
-                  position: "relative",
-                  width: 52,
-                  height: 52,
-                  margin: "0 auto",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <div style={{ position: "absolute", inset: 0 }}>
-                  <AccuracyRing percent={CURRENT_USER.accuracy} />
-                </div>
-                <span
-                  className="font-display"
-                  style={{
-                    position: "relative",
-                    fontSize: 18,
-                    lineHeight: 1,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  {CURRENT_USER.accuracy}%
-                </span>
-              </div>
-            ) : (
+            <AccuracyRing percent={user.accuracy || 0} />
+            <div>
               <p
                 className="font-display"
-                style={{
-                  fontSize: 26,
-                  color: s.gold ? "var(--gold)" : undefined,
-                }}
+                style={{ fontSize: 32, lineHeight: 1 }}
               >
-                {s.val}
+                {user.accuracy || 0}%
               </p>
-            )}
-            <p
-              style={{
-                fontSize: 9,
-                color: "var(--text-muted)",
-                marginTop: 4,
-                textTransform: "uppercase",
-                letterSpacing: "0.06em",
-              }}
-            >
-              {s.label}
-            </p>
-          </div>
-        ))}
-      </div>
-
-      {/* Rival */}
-      <div style={{ padding: "24px 16px 0" }}>
-        <h2
-          className="font-display"
-          style={{
-            fontSize: 24,
-            color: "var(--accent-magenta)",
-            marginBottom: 12,
-          }}
-        >
-          Your Rival This Month
-        </h2>
-        <div
-          style={{
-            background: "var(--bg-secondary)",
-            borderRadius: 28,
-            padding: "16px",
-            border: "1px solid var(--border)",
-            borderLeft: "4px solid rgba(244,67,54,0.7)",
-          }}
-        >
-          <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
-            <AvatarWithBadge
-              username={RIVAL.fan.username}
-              badge={RIVAL.fan.badge}
-              size="md"
-            />
-            <div style={{ flex: 1 }}>
-              <p className="font-display" style={{ fontSize: 20 }}>
-                {RIVAL.fan.username} · {BADGE_LABELS[RIVAL.fan.badge]}
-              </p>
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(3,1fr)",
-                  gap: 8,
-                  marginTop: 12,
-                  textAlign: "center",
-                }}
-              >
-                <div>
-                  <p className="font-display" style={{ fontSize: 26 }}>
-                    {RIVAL.disagreements}
-                  </p>
-                  <p
-                    style={{
-                      fontSize: 9,
-                      color: "var(--text-muted)",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.05em",
-                    }}
-                  >
-                    Disagreements
-                  </p>
-                </div>
-                <div>
-                  <p
-                    className="font-display"
-                    style={{ fontSize: 26, color: "var(--wrong-red)" }}
-                  >
-                    {RIVAL.rivalWins}
-                  </p>
-                  <p style={{ fontSize: 9, color: "var(--text-muted)" }}>
-                    They won
-                  </p>
-                </div>
-                <div>
-                  <p
-                    className="font-display"
-                    style={{ fontSize: 26, color: "var(--correct-green)" }}
-                  >
-                    {RIVAL.yourWins}
-                  </p>
-                  <p style={{ fontSize: 9, color: "var(--text-muted)" }}>
-                    You won
-                  </p>
-                </div>
-              </div>
-              <p
-                style={{
-                  fontSize: 13,
-                  fontStyle: "italic",
-                  color: "var(--text-secondary)",
-                  marginTop: 12,
-                  borderLeft: "2px solid var(--border)",
-                  paddingLeft: 10,
-                }}
-              >
-                {RIVAL.topDisagreement}
+              <p style={{ fontSize: 10, color: "var(--text-muted)" }}>
+                {user.correctPredictions || 0} of {user.predictionCount || 0}
               </p>
             </div>
           </div>
-          <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
-            <motion.button
-              whileTap={{ scale: 0.97 }}
-              onClick={() => setRivalFollowed((f) => !f)}
-              style={{
-                flex: 1,
-                padding: "10px",
-                borderRadius: 999,
-                border: "2px solid var(--accent-magenta)",
-                background: rivalFollowed
-                  ? "var(--accent-magenta)"
-                  : "transparent",
-                color: rivalFollowed ? "white" : "var(--accent-magenta)",
-                fontSize: 13,
-                fontWeight: 700,
-                cursor: "pointer",
-              }}
-            >
-              {rivalFollowed ? "Following ✓" : "Follow Rival"}
-            </motion.button>
-            <motion.button
-              whileTap={{ scale: 0.97 }}
-              onClick={onCompose}
-              className="btn-gradient"
-              style={{
-                flex: 1,
-                padding: "10px",
-                borderRadius: 999,
-                border: "none",
-                fontSize: 13,
-                cursor: "pointer",
-              }}
-            >
-              Challenge →
-            </motion.button>
-          </div>
-          <p style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 8 }}>
-            ⓘ Following your rival makes you a better predictor.
+        </div>
+
+        <div
+          className="glass-card"
+          style={{
+            padding: 16,
+            background:
+              "linear-gradient(135deg,rgba(255,107,53,0.08),rgba(255,255,255,0.02))",
+          }}
+        >
+          <p style={{ fontSize: 11, color: "var(--text-muted)" }}>
+            REPUTATION SCORE
           </p>
+          <div style={{ marginTop: 6 }}>
+            <p className="font-display" style={{ fontSize: 36, lineHeight: 1 }}>
+              {fmt(user.reputationScore || 0)}
+            </p>
+            <p
+              style={{
+                fontSize: 10,
+                color: "var(--accent-orange)",
+                fontWeight: 700,
+                marginTop: 2,
+              }}
+            >
+              TOP 3.2% OF FANS
+            </p>
+          </div>
         </div>
       </div>
 
-      {/* Badges */}
-      <div style={{ padding: "24px 16px 0" }}>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-            marginBottom: 6,
-          }}
-        >
-          <h2 className="font-display" style={{ fontSize: 24 }}>
-            Your Badges
-          </h2>
-          <span
-            style={{
-              fontSize: 11,
-              padding: "2px 8px",
-              borderRadius: 999,
-              background: "rgba(255,255,255,0.08)",
-            }}
-          >
-            {unlocked}/{BADGES_LIST.length}
-          </span>
-        </div>
-        <p
-          style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 16 }}
-        >
-          2 away from next badge →
-        </p>
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(3,1fr)",
-            gap: 16,
-            justifyItems: "center",
-          }}
-        >
-          {BADGES_LIST.map((b) => {
-            const detail = BADGE_DETAIL[b.id];
-            return (
-              <div key={b.id} style={{ textAlign: "center", width: "100%" }}>
-                <motion.button
-                  whileTap={b.unlocked ? { scale: 1.1 } : {}}
-                  onClick={() => setBadgeModal({ ...b, ...detail })}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    cursor: "pointer",
-                    width: 72,
-                    height: 72,
-                  }}
-                >
-                  <div
-                    style={{
-                      position: "relative",
-                      width: 72,
-                      height: 72,
-                      clipPath:
-                        "polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%)",
-                      background: b.unlocked
-                        ? detail?.gradient || "var(--bg-tertiary)"
-                        : "var(--bg-tertiary)",
-                      opacity: b.unlocked ? 1 : 0.45,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontSize: 30,
-                      boxShadow: b.unlocked
-                        ? "0 0 20px rgba(233,30,140,0.35)"
-                        : "none",
-                    }}
-                  >
-                    {BADGE_CONFIG[b.id]?.icon}
-                    {!b.unlocked && (
-                      <span
-                        style={{
-                          position: "absolute",
-                          inset: 0,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          fontSize: 18,
-                          opacity: 0.5,
-                        }}
-                      >
-                        🔒
-                      </span>
-                    )}
-                  </div>
-                </motion.button>
-                <p
-                  className="font-display"
-                  style={{
-                    fontSize: 11,
-                    color: "var(--text-secondary)",
-                    marginTop: 6,
-                  }}
-                >
-                  {detail?.name}
-                </p>
-                {!b.unlocked && b.progress != null && b.progress > 0 && (
-                  <div
-                    style={{
-                      marginTop: 6,
-                      height: 4,
-                      borderRadius: 2,
-                      background: "var(--bg-tertiary)",
-                      overflow: "hidden",
-                    }}
-                  >
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{ width: `${b.progress}%` }}
-                      transition={{ duration: 0.7 }}
-                      style={{
-                        height: "100%",
-                        background: "var(--accent-magenta)",
-                      }}
-                    />
-                  </div>
-                )}
-                {!b.unlocked && b.progress != null && (
-                  <p
-                    style={{
-                      fontSize: 9,
-                      color: "var(--text-muted)",
-                      marginTop: 3,
-                    }}
-                  >
-                    {b.progress}% complete
-                  </p>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Predictions */}
-      <div style={{ padding: "24px 16px 0" }}>
+      {/* Badge Progress section */}
+      <div style={{ padding: "20px 16px 0" }}>
         <div
           style={{
             display: "flex",
@@ -4840,552 +4743,931 @@ function Profile({
             marginBottom: 10,
           }}
         >
-          <h2 className="font-display" style={{ fontSize: 24 }}>
-            Your Calls
-          </h2>
-          <span
-            style={{
-              fontSize: 12,
-              color: "var(--correct-green)",
-              fontWeight: 700,
-            }}
-          >
-            {CURRENT_USER.accuracy}% accurate
+          <h3 style={{ fontWeight: 700, fontSize: 15 }}>
+            BADGES ({unlocked}/{badges.length})
+          </h3>
+          <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
+            Earn reputation to unlock
           </span>
         </div>
+
         <div
           style={{
             display: "flex",
-            gap: 8,
-            marginBottom: 14,
+            gap: 10,
             overflowX: "auto",
+            paddingBottom: 8,
           }}
         >
-          {["All", "Correct", "Wrong", "Pending"].map((t) => (
-            <button
-              key={t}
-              onClick={() => setPredTab(t)}
-              style={{
-                flexShrink: 0,
-                padding: "6px 14px",
-                borderRadius: 999,
-                fontSize: 12,
-                border: "none",
-                cursor: "pointer",
-                background:
-                  predTab === t
-                    ? "var(--accent-magenta)"
-                    : "var(--bg-tertiary)",
-                color: predTab === t ? "white" : "var(--text-secondary)",
-                fontWeight: 600,
-              }}
-            >
-              {t}
-            </button>
-          ))}
-        </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {filteredPreds.map((p) => (
-            <div
-              key={p.id}
-              className="glass-card"
-              style={{
-                padding: "14px 16px",
-                borderLeft: `3px solid ${p.status === "CORRECT" ? "var(--correct-green)" : p.status === "WRONG" ? "var(--wrong-red)" : "var(--pending-amber)"}`,
-              }}
-            >
-              <p style={{ fontStyle: "italic", fontSize: 14 }}>{p.text}</p>
-              <p
+          {badges.map((b: any) => {
+            const cfg = BADGE_CONFIG[b.badgeId] || BADGE_CONFIG.RISING_FAN;
+            return (
+              <motion.button
+                key={b.badgeId}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setBadgeModal(b)}
+                className="glass-card"
                 style={{
-                  fontSize: 11,
-                  color: "var(--text-muted)",
-                  marginTop: 4,
-                }}
-              >
-                {p.match}
-              </p>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  marginTop: 8,
-                }}
-              >
-                <span
-                  style={{
-                    fontSize: 10,
-                    fontWeight: 800,
-                    padding: "2px 8px",
-                    borderRadius: 999,
-                    background: `${p.status === "CORRECT" ? "rgba(0,200,83,0.15)" : p.status === "WRONG" ? "rgba(244,67,54,0.15)" : "rgba(255,152,0,0.15)"}`,
-                    color:
-                      p.status === "CORRECT"
-                        ? "var(--correct-green)"
-                        : p.status === "WRONG"
-                          ? "var(--wrong-red)"
-                          : "var(--pending-amber)",
-                  }}
-                >
-                  {p.status}
-                </span>
-                {p.status === "WRONG" && (
-                  <span
-                    style={{ fontSize: 10, color: "var(--accent-magenta)" }}
-                  >
-                    Bold call 👊
-                  </span>
-                )}
-                <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
-                  {p.date}
-                </span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Hot Takes */}
-      <div style={{ padding: "24px 16px 16px" }}>
-        <h2 className="font-display" style={{ fontSize: 24, marginBottom: 12 }}>
-          Your Takes
-        </h2>
-        {USER_HOT_TAKES.map((t) => (
-          <div
-            key={t.id}
-            className="glass-card"
-            style={{
-              padding: "14px 16px",
-              marginBottom: 10,
-              border: `1px solid ${t.top ? "rgba(255,184,0,0.3)" : t.controversial ? "rgba(255,107,53,0.3)" : "var(--border)"}`,
-            }}
-          >
-            <p style={{ fontWeight: 600, fontSize: 14 }}>{t.text}</p>
-            {t.controversial && (
-              <span style={{ fontSize: 10, color: "var(--accent-orange)" }}>
-                Most controversial
-              </span>
-            )}
-            {t.top && (
-              <span style={{ fontSize: 10, color: "var(--gold)" }}>
-                Most agreed
-              </span>
-            )}
-            <div style={{ marginTop: 10 }}>
-              <SplitBar left={t.agreePercent} />
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Badge Modal */}
-      <AnimatePresence>
-        {badgeModal && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setBadgeModal(null)}
-              style={{
-                position: "absolute",
-                inset: 0,
-                zIndex: 80,
-                background: "rgba(0,0,0,0.7)",
-              }}
-            />
-            <motion.div
-              initial={{ y: "100%" }}
-              animate={{ y: 0 }}
-              exit={{ y: "100%" }}
-              style={{
-                position: "absolute",
-                bottom: 0,
-                left: 0,
-                right: 0,
-                zIndex: 90,
-                background: "var(--bg-glass)",
-                backdropFilter: "blur(20px)",
-                borderRadius: "32px 32px 0 0",
-                padding: "24px 24px 48px",
-              }}
-            >
-              <button
-                onClick={() => setBadgeModal(null)}
-                style={{
-                  position: "absolute",
-                  top: 16,
-                  right: 16,
-                  background: "none",
-                  border: "none",
-                  color: "var(--text-muted)",
-                  fontSize: 18,
+                  flexShrink: 0,
+                  width: 96,
+                  padding: "12px 8px",
+                  textAlign: "center",
+                  border: b.unlocked ? undefined : "1px dashed var(--border)",
+                  background: b.unlocked
+                    ? "rgba(255,255,255,0.03)"
+                    : "rgba(0,0,0,0.2)",
+                  opacity: b.unlocked ? 1 : 0.45,
                   cursor: "pointer",
                 }}
               >
-                ✕
-              </button>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "center",
-                  marginBottom: 20,
-                  transform: "scale(1.4)",
-                  transformOrigin: "center top",
-                  paddingTop: 8,
-                }}
-              >
-                <div
-                  style={{
-                    width: 72,
-                    height: 72,
-                    clipPath:
-                      "polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%)",
-                    background: badgeModal.gradient || "var(--bg-tertiary)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: 32,
-                    boxShadow: badgeModal.unlocked
-                      ? "0 0 30px rgba(233,30,140,0.4)"
-                      : "none",
-                    opacity: badgeModal.unlocked ? 1 : 0.45,
-                  }}
-                >
-                  {BADGE_CONFIG[badgeModal.id]?.icon}
-                </div>
-              </div>
-              <h3
-                className="font-display"
-                style={{ fontSize: 32, textAlign: "center", marginTop: 16 }}
-              >
-                {badgeModal.name}
-              </h3>
-              <p
-                style={{
-                  fontSize: 13,
-                  textAlign: "center",
-                  color: "var(--text-secondary)",
-                  marginTop: 8,
-                }}
-              >
-                {badgeModal.description}
-              </p>
-              <p
-                style={{
-                  textAlign: "center",
-                  color: "var(--gold)",
-                  fontSize: 13,
-                  marginTop: 8,
-                }}
-              >
-                {badgeModal.rarity}
-              </p>
-              {badgeModal.earnedDate && (
+                <div style={{ fontSize: 24, marginBottom: 6 }}>{cfg.icon}</div>
                 <p
                   style={{
-                    textAlign: "center",
-                    fontSize: 12,
-                    color: "var(--accent-magenta)",
-                    marginTop: 4,
+                    fontSize: 9,
+                    fontWeight: 700,
+                    textOverflow: "ellipsis",
+                    overflow: "hidden",
+                    whiteSpace: "nowrap",
                   }}
                 >
-                  {badgeModal.earnedDate}
+                  {cfg.name}
                 </p>
-              )}
-              <p
+                <div
+                  style={{
+                    width: "100%",
+                    height: 3,
+                    background: "rgba(255,255,255,0.1)",
+                    borderRadius: 99,
+                    marginTop: 8,
+                    overflow: "hidden",
+                  }}
+                >
+                  <div
+                    style={{
+                      height: "100%",
+                      width: `${b.progress}%`,
+                      background: "var(--accent-magenta)",
+                    }}
+                  />
+                </div>
+              </motion.button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div
+        style={{
+          display: "flex",
+          borderBottom: "1px solid var(--border)",
+          marginTop: 20,
+        }}
+      >
+        {["Predictions", "Hot Takes", "Debates", "Legacy"].map((tabName) => {
+          const active =
+            tabName === "Predictions" || (tabName === "Hot Takes" && false); // simplified
+          return (
+            <button
+              key={tabName}
+              style={{
+                flex: 1,
+                padding: "12px 0",
+                fontSize: 13,
+                fontWeight: 700,
+                color: active ? "var(--accent-magenta)" : "var(--text-muted)",
+                borderBottom: active
+                  ? "2px solid var(--accent-magenta)"
+                  : "none",
+                background: "none",
+                borderTop: "none",
+                borderLeft: "none",
+                borderRight: "none",
+                cursor: "pointer",
+              }}
+            >
+              {tabName}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Predictions list */}
+      <div
+        style={{
+          padding: "16px 16px 80px",
+          display: "flex",
+          flexDirection: "column",
+          gap: 12,
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            gap: 6,
+            overflowX: "auto",
+            marginBottom: 4,
+          }}
+        >
+          {["All", "Pending", "Correct", "Wrong"].map((t) => {
+            const active = predTab === t;
+            return (
+              <button
+                key={t}
+                onClick={() => setPredTab(t)}
                 style={{
-                  textAlign: "center",
+                  padding: "6px 12px",
+                  borderRadius: 999,
                   fontSize: 11,
-                  color: "var(--text-muted)",
-                  marginTop: 12,
+                  fontWeight: 700,
+                  border: active ? "none" : "1px solid var(--border)",
+                  background: active ? "var(--bg-tertiary)" : "none",
+                  color: active ? "var(--accent-magenta)" : "var(--text-muted)",
+                  cursor: "pointer",
                 }}
               >
-                How to earn: {badgeModal.howTo}
-              </p>
-              {!badgeModal.unlocked && badgeModal.progress != null && (
-                <div style={{ marginTop: 16 }}>
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      fontSize: 11,
-                      color: "var(--text-muted)",
-                      marginBottom: 6,
-                    }}
-                  >
-                    <span>Progress</span>
-                    <span>{badgeModal.progress}%</span>
-                  </div>
-                  <div
-                    style={{
-                      height: 6,
-                      borderRadius: 3,
-                      background: "var(--bg-tertiary)",
-                      overflow: "hidden",
-                    }}
-                  >
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{ width: `${badgeModal.progress}%` }}
-                      transition={{ duration: 0.8 }}
-                      style={{
-                        height: "100%",
-                        background: "var(--accent-magenta)",
-                      }}
-                    />
-                  </div>
-                </div>
-              )}
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
+                {t}
+              </button>
+            );
+          })}
+        </div>
 
-      {/* Edit Modal */}
+        {filteredPreds.length === 0 ? (
+          <p
+            style={{
+              textAlign: "center",
+              padding: "30px 0",
+              color: "var(--text-muted)",
+              fontSize: 13,
+            }}
+          >
+            No predictions found.
+          </p>
+        ) : (
+          filteredPreds.map((p: any) => {
+            const statusColor =
+              p.status === "CORRECT" || p.status === "settled_correct"
+                ? "var(--live-green)"
+                : p.status === "WRONG" || p.status === "settled_wrong"
+                  ? "var(--accent-magenta)"
+                  : "var(--accent-orange)";
+            return (
+              <div key={p.id || p.postId} className="glass-card" style={{ padding: 12 }}>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: 10,
+                      fontWeight: 800,
+                      color: "var(--text-muted)",
+                    }}
+                  >
+                    {p.match || "GENERAL"}
+                  </span>
+                  <span
+                    style={{ fontSize: 10, fontWeight: 800, color: statusColor }}
+                  >
+                    {p.status || "PENDING"}
+                  </span>
+                </div>
+                <p style={{ fontSize: 14, marginTop: 8, lineHeight: 1.4 }}>
+                  {p.text}
+                </p>
+                <p
+                  style={{
+                    fontSize: 10,
+                    color: "var(--text-muted)",
+                    marginTop: 6,
+                    textAlign: "right",
+                  }}
+                >
+                  {p.date || "Just now"}
+                </p>
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {/* Edit Profile Modal */}
       <AnimatePresence>
         {editOpen && (
-          <>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            style={{
+              position: "absolute",
+              inset: 0,
+              zIndex: 110,
+              background: "rgba(0,0,0,0.85)",
+              backdropFilter: "blur(8px)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: 20,
+            }}
+          >
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setEditOpen(false)}
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              className="glass-card animate-glow"
               style={{
-                position: "absolute",
-                inset: 0,
-                zIndex: 80,
-                background: "rgba(0,0,0,0.7)",
-              }}
-            />
-            <motion.div
-              initial={{ y: "100%" }}
-              animate={{ y: 0 }}
-              exit={{ y: "100%" }}
-              style={{
-                position: "absolute",
-                bottom: 0,
-                left: 0,
-                right: 0,
-                zIndex: 90,
-                background: "var(--bg-glass)",
-                backdropFilter: "blur(20px)",
-                borderRadius: "32px 32px 0 0",
-                padding: "24px 24px 48px",
+                width: "100%",
+                maxWidth: 320,
+                padding: 20,
+                background: "var(--bg-secondary)",
               }}
             >
               <h3
                 className="font-display"
-                style={{ fontSize: 28, marginBottom: 20 }}
+                style={{ fontSize: 24, marginBottom: 16 }}
               >
-                Edit Profile
+                EDIT PROFILE
               </h3>
               <label
                 style={{
                   fontSize: 11,
-                  color: "var(--text-muted)",
-                  display: "block",
-                  marginBottom: 4,
+                  color: "var(--text-secondary)",
+                  fontWeight: 700,
                 }}
               >
-                Display name
+                DISPLAY NAME
               </label>
               <input
+                type="text"
                 value={editName}
                 onChange={(e) => setEditName(e.target.value)}
                 style={{
                   width: "100%",
-                  padding: "12px",
-                  borderRadius: 14,
-                  background: "rgba(0,0,0,0.4)",
+                  height: 40,
+                  borderRadius: 10,
+                  background: "var(--bg-tertiary)",
                   border: "1px solid var(--border)",
-                  color: "var(--text-primary)",
+                  padding: "0 12px",
+                  color: "white",
                   fontSize: 14,
-                  marginBottom: 14,
+                  marginTop: 6,
+                  marginBottom: 16,
                   outline: "none",
                 }}
               />
-              <label
-                style={{
-                  fontSize: 11,
-                  color: "var(--text-muted)",
-                  display: "block",
-                  marginBottom: 4,
-                }}
-              >
-                Favourite player
-              </label>
-              <input
-                placeholder="e.g. Rohit Sharma"
-                style={{
-                  width: "100%",
-                  padding: "12px",
-                  borderRadius: 14,
-                  background: "rgba(0,0,0,0.4)",
-                  border: "1px solid var(--border)",
-                  color: "var(--text-primary)",
-                  fontSize: 13,
-                  marginBottom: 14,
-                  outline: "none",
-                }}
-              />
-              <label
-                style={{
-                  fontSize: 11,
-                  color: "var(--text-muted)",
-                  display: "block",
-                  marginBottom: 4,
-                }}
-              >
-                About me (140 chars)
-              </label>
-              <textarea
-                rows={3}
-                style={{
-                  width: "100%",
-                  padding: "12px",
-                  borderRadius: 14,
-                  background: "rgba(0,0,0,0.4)",
-                  border: "1px solid var(--border)",
-                  color: "var(--text-primary)",
-                  fontSize: 13,
-                  resize: "none",
-                  marginBottom: 14,
-                  outline: "none",
-                }}
-              />
-              <label
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 8,
-                  fontSize: 13,
-                  marginBottom: 20,
-                }}
-              >
-                <input
-                  type="checkbox"
-                  defaultChecked
-                  style={{ accentColor: "var(--accent-magenta)" }}
-                />
-                Show prediction history to other fans
-              </label>
-              <motion.button
-                whileTap={{ scale: 0.97 }}
-                onClick={() => setEditOpen(false)}
-                className="btn-gradient"
-                style={{
-                  width: "100%",
-                  padding: "14px",
-                  borderRadius: 999,
-                  fontSize: 15,
-                  border: "none",
-                  cursor: "pointer",
-                }}
-              >
-                Save Changes
-              </motion.button>
+              <div style={{ display: "flex", gap: 10 }}>
+                <button
+                  onClick={() => setEditOpen(false)}
+                  className="btn-pill"
+                  style={{ flex: 1, padding: "10px 0" }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={async () => {
+                    try {
+                      await axios.patch("/api/roar/profile", { username: editName });
+                      setEditOpen(false);
+                      onToast("Profile updated successfully");
+                    } catch (err) {
+                      console.error(err);
+                      onToast("Failed to update profile");
+                    }
+                  }}
+                  className="btn-gradient"
+                  style={{
+                    flex: 1,
+                    padding: "10px 0",
+                    border: "none",
+                    borderRadius: 10,
+                    cursor: "pointer",
+                  }}
+                >
+                  Save
+                </button>
+              </div>
             </motion.div>
-          </>
+          </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Share Modal */}
+      {/* Share Legacy Modal */}
       <AnimatePresence>
         {shareOpen && (
-          <>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setShareOpen(false)}
+            style={{
+              position: "absolute",
+              inset: 0,
+              zIndex: 110,
+              background: "rgba(0,0,0,0.85)",
+              backdropFilter: "blur(8px)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: 20,
+            }}
+          >
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setShareOpen(false)}
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
+              className="glass-card animate-glow"
               style={{
-                position: "absolute",
-                inset: 0,
-                zIndex: 80,
-                background: "rgba(0,0,0,0.7)",
-              }}
-            />
-            <motion.div
-              initial={{ y: "100%" }}
-              animate={{ y: 0 }}
-              exit={{ y: "100%" }}
-              style={{
-                position: "absolute",
-                bottom: 0,
-                left: 0,
-                right: 0,
-                zIndex: 90,
-                background: "var(--bg-glass)",
-                backdropFilter: "blur(20px)",
-                borderRadius: "32px 32px 0 0",
-                padding: "24px 24px 48px",
+                width: "100%",
+                maxWidth: 300,
+                padding: 24,
+                textAlign: "center",
+                background: "var(--bg-secondary)",
               }}
             >
-              <h3
-                className="font-display"
-                style={{ fontSize: 28, marginBottom: 16 }}
-              >
-                Share Profile
-              </h3>
               <div
                 style={{
-                  padding: "16px",
-                  borderRadius: 20,
-                  background: "var(--bg-tertiary)",
-                  marginBottom: 20,
+                  display: "inline-flex",
+                  width: 54,
+                  height: 54,
+                  borderRadius: "50%",
+                  background: "rgba(0,230,118,0.1)",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "var(--live-green)",
+                  fontSize: 24,
+                  marginBottom: 14,
                 }}
               >
-                <p
-                  style={{
-                    fontSize: 12,
-                    color: "var(--text-muted)",
-                    marginBottom: 8,
-                  }}
-                >
-                  Your profile link
-                </p>
-                <p
-                  style={{
-                    fontSize: 14,
-                    color: "var(--accent-magenta)",
-                    fontWeight: 600,
-                  }}
-                >
-                  roar.app/@{CURRENT_USER.handle}
-                </p>
+                ✓
               </div>
-              <div
-                style={{ display: "flex", flexDirection: "column", gap: 10 }}
+              <h3
+                className="font-display"
+                style={{ fontSize: 24, marginBottom: 8 }}
               >
-                {["Copy Link", "Share on WhatsApp", "Share on Twitter"].map(
-                  (s) => (
-                    <motion.button
-                      key={s}
-                      whileTap={{ scale: 0.97 }}
-                      onClick={() => setShareOpen(false)}
-                      style={{
-                        width: "100%",
-                        padding: "13px",
-                        borderRadius: 999,
-                        border: "1px solid var(--border)",
-                        background: "transparent",
-                        color: "var(--text-primary)",
-                        fontSize: 14,
-                        fontWeight: 600,
-                        cursor: "pointer",
-                      }}
-                    >
-                      {s}
-                    </motion.button>
-                  ),
-                )}
-              </div>
+                LEGACY SHARE LINK
+              </h3>
+              <p
+                style={{
+                  fontSize: 12,
+                  color: "var(--text-secondary)",
+                  lineHeight: 1.4,
+                  marginBottom: 16,
+                }}
+              >
+                Share your prediction accuracy and unlocked legacy badges with the sportsfan community!
+              </p>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(window.location.href);
+                  setShareOpen(false);
+                  onToast("Link copied to clipboard!");
+                }}
+                className="btn-gradient"
+                style={{
+                  width: "100%",
+                  padding: "12px 0",
+                  border: "none",
+                  borderRadius: 12,
+                  cursor: "pointer",
+                }}
+              >
+                Copy Link
+              </button>
             </motion.div>
-          </>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Badge Progress detail Modal */}
+      <AnimatePresence>
+        {badgeModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setBadgeModal(null)}
+            style={{
+              position: "absolute",
+              inset: 0,
+              zIndex: 110,
+              background: "rgba(0,0,0,0.85)",
+              backdropFilter: "blur(8px)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: 20,
+            }}
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
+              className="glass-card animate-glow"
+              style={{
+                width: "100%",
+                maxWidth: 300,
+                padding: 20,
+                textAlign: "center",
+                background: "var(--bg-secondary)",
+              }}
+            >
+              <div style={{ fontSize: 48, marginBottom: 12 }}>
+                {BADGE_CONFIG[badgeModal.badgeId]?.icon}
+              </div>
+              <h3
+                className="font-display"
+                style={{ fontSize: 26, marginBottom: 4 }}
+              >
+                {BADGE_CONFIG[badgeModal.badgeId]?.name}
+              </h3>
+              <p
+                style={{
+                  fontSize: 10,
+                  color: "var(--accent-magenta)",
+                  fontWeight: 700,
+                  letterSpacing: "0.05em",
+                }}
+              >
+                {badgeModal.unlocked ? "UNLOCKED" : "LOCKED"}
+              </p>
+              <p
+                style={{
+                  fontSize: 12,
+                  color: "var(--text-secondary)",
+                  marginTop: 10,
+                  lineHeight: 1.4,
+                }}
+              >
+                {BADGE_CONFIG[badgeModal.badgeId]?.sub || "Unlock by building your legacy!"}
+              </p>
+              <div
+                style={{
+                  height: 6,
+                  background: "rgba(255,255,255,0.08)",
+                  borderRadius: 3,
+                  margin: "16px 0 6px",
+                  overflow: "hidden",
+                }}
+              >
+                <div
+                  style={{
+                    height: "100%",
+                    width: `${badgeModal.progress}%`,
+                    background: "var(--accent-magenta)",
+                  }}
+                />
+              </div>
+              <p style={{ fontSize: 11, color: "var(--text-muted)" }}>
+                Progress: {badgeModal.progress}%
+              </p>
+            </motion.div>
+          </motion.div>
         )}
       </AnimatePresence>
     </div>
+  );
+}
+
+/* ─── COMPONENT: POST DETAILS OVERLAY (Reddit Style) ────────────────────── */
+
+function PostDetailsOverlay({
+  post,
+  onClose,
+  onToast,
+  onVote,
+}: {
+  post: any;
+  onClose: () => void;
+  onToast: (m: string) => void;
+  onVote: (id: string, vote: "agree" | "disagree" | null) => void;
+}) {
+  const [comments, setComments] = useState<any[]>([]);
+  const [commentText, setCommentText] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [userUsername, setUserUsername] = useState("RoarUser");
+  const [userBadge, setUserBadge] = useState("RISING_FAN");
+  const [votes, setVotes] = useState<Record<string, boolean | null>>({});
+  const [pct, setPct] = useState(post.agreePercent ?? 50);
+
+  useEffect(() => {
+    try {
+      setUserUsername(localStorage.getItem("roar_username") || "RoarUser");
+      setUserBadge(localStorage.getItem("roar_badge") || "RISING_FAN");
+    } catch {}
+  }, []);
+
+  const fetchComments = useCallback(async () => {
+    if (!post?.id) return;
+    try {
+      if (!post.isDbPost) {
+        setComments([
+          {
+            commentId: "c1",
+            authorUsername: "KolkataKnight07",
+            authorBadge: "CRICKET_HEAD",
+            text: "IPL crowds are great, but nothing matches the tension of a bilateral series in Test cricket. Five days of tactical battle > 4 hours of cheerleaders.",
+            heartCount: 50,
+            createdAt: Date.now() - 14400000,
+          },
+          {
+            commentId: "c2",
+            authorUsername: "NagpurNight",
+            authorBadge: "ORACLE",
+            text: "@KolkataKnight07 Unpopular but 100% correct. Test cricket is where reputations are truly made.",
+            heartCount: 16,
+            createdAt: Date.now() - 10800000,
+          },
+        ]);
+        return;
+      }
+      const res = await axios.get(`/api/roar/posts/${post.id}/comments`);
+      if (res.data?.success) {
+        setComments(res.data.comments);
+      }
+    } catch (err) {
+      console.error("Failed to fetch comments:", err);
+    }
+  }, [post]);
+
+  useEffect(() => {
+    fetchComments();
+  }, [fetchComments]);
+
+  const submitComment = async () => {
+    if (!commentText.trim()) return;
+    try {
+      setLoading(true);
+      if (!post.isDbPost) {
+        setComments((prev) => [
+          ...prev,
+          {
+            commentId: `c-${Date.now()}`,
+            authorUsername: userUsername,
+            authorBadge: userBadge,
+            text: commentText.trim(),
+            heartCount: 0,
+            createdAt: Date.now(),
+          },
+        ]);
+        setCommentText("");
+        onToast("Comment posted!");
+        return;
+      }
+
+      const res = await axios.post(`/api/roar/posts/${post.id}/comments`, {
+        text: commentText.trim(),
+      });
+      if (res.data?.success) {
+        setCommentText("");
+        fetchComments();
+        onToast("Comment posted successfully!");
+      }
+    } catch (err) {
+      console.error("Failed to submit comment:", err);
+      onToast("Error posting comment");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const reactToComment = async (commentId: string) => {
+    try {
+      if (!post.isDbPost) {
+        setComments((prev) =>
+          prev.map((c) =>
+            c.commentId === commentId ? { ...c, heartCount: c.heartCount + 1 } : c
+          )
+        );
+        return;
+      }
+      const res = await axios.post(`/api/roar/posts/${post.id}/comments/${commentId}/react`);
+      if (res.data?.success) {
+        setComments((prev) =>
+          prev.map((c) =>
+            c.commentId === commentId ? { ...c, heartCount: res.data.heartCount } : c
+          )
+        );
+      }
+    } catch (err) {
+      console.error("Failed to react to comment:", err);
+    }
+  };
+
+  const userVote = votes[post.id];
+  const handleVoteClick = (agree: boolean) => {
+    const prev = votes[post.id];
+    let nextVote: boolean | null = agree;
+    if (prev === agree) {
+      nextVote = null;
+    }
+    setVotes((v) => ({ ...v, [post.id]: nextVote }));
+    setPct(post.agreePercent + (nextVote === true ? 4 : nextVote === false ? -4 : 0));
+    onVote(post.id, nextVote === true ? "agree" : nextVote === false ? "disagree" : null);
+  };
+
+  // Truncate text for header title
+  const headerTitle = post.text.length > 40 ? post.text.slice(0, 40) + "..." : post.text;
+
+  return (
+    <AnimatePresence>
+      <div style={{ position: "absolute", inset: 0, zIndex: 100, display: "flex", flexDirection: "column", background: "var(--bg-primary)" }}>
+        {/* Header (Matching Screenshot 2) */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 14,
+            padding: "16px 20px",
+            borderBottom: "1px solid var(--border)",
+            background: "rgba(5, 5, 8, 0.95)",
+            backdropFilter: "blur(10px)",
+            zIndex: 10,
+          }}
+        >
+          <button
+            onClick={onClose}
+            style={{
+              background: "none",
+              border: "none",
+              color: "white",
+              fontSize: 18,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: 0,
+            }}
+          >
+            ←
+          </button>
+          <div style={{ display: "flex", flexDirection: "column", flex: 1, minWidth: 0 }}>
+            <h2
+              style={{
+                fontSize: 12,
+                fontWeight: 700,
+                color: "white",
+                margin: 0,
+                textTransform: "uppercase",
+                letterSpacing: "0.03em",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {headerTitle}
+            </h2>
+            <p style={{ fontSize: 9, color: "var(--text-secondary)", margin: "2px 0 0" }}>
+              Posted by {post.fan?.username || post.authorUsername} • {post.timeAgo || "2h ago"} • {comments.length} comments
+            </p>
+          </div>
+        </div>
+
+        {/* Scrollable Content */}
+        <div style={{ flex: 1, overflowY: "auto", padding: "16px 20px", background: "linear-gradient(to bottom, #050508, #0b0b12)" }}>
+          {/* Main Post Card */}
+          <div
+            className="glass-card"
+            style={{
+              padding: "16px",
+              marginBottom: 20,
+              background: "rgba(255,255,255,0.03)",
+              border: "1px solid rgba(255,255,255,0.06)",
+            }}
+          >
+            <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 12 }}>
+              <AvatarWithBadge username={post.fan?.username || post.authorUsername} badge={post.fan?.badge || post.authorBadge} size="sm" />
+              <div>
+                <p style={{ fontWeight: 700, fontSize: 13, color: "white", margin: 0, display: "flex", alignItems: "center", gap: 4 }}>
+                  {post.fan?.username || post.authorUsername}
+                  <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#00E676", display: "inline-block" }} />
+                </p>
+                <p style={{ fontSize: 10, color: "var(--text-secondary)", margin: 0 }}>
+                  {post.timeAgo || "2h ago"}
+                </p>
+              </div>
+            </div>
+
+            <p style={{ fontWeight: 600, fontSize: 15, lineHeight: 1.5, marginBottom: 12, color: "white" }}>
+              {post.text}
+            </p>
+
+            {post.type === "hot_take" && (
+              <>
+                <div style={{ marginBottom: 10 }}>
+                  <SplitBar left={pct} />
+                </div>
+                <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+                  <button
+                    onClick={() => handleVoteClick(true)}
+                    style={{
+                      flex: 1,
+                      padding: "10px",
+                      borderRadius: 999,
+                      fontSize: 13,
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      border: `2px solid ${userVote === true ? "var(--accent-magenta)" : "rgba(233,30,140,0.35)"}`,
+                      background: userVote === true ? "var(--accent-magenta)" : "transparent",
+                      color: userVote === true ? "white" : "var(--accent-magenta)",
+                      transition: "all 0.2s",
+                    }}
+                  >
+                    Agree
+                  </button>
+                  <button
+                    onClick={() => handleVoteClick(false)}
+                    style={{
+                      flex: 1,
+                      padding: "10px",
+                      borderRadius: 999,
+                      fontSize: 13,
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      border: `2px solid ${userVote === false ? "var(--accent-orange)" : "rgba(255,107,53,0.35)"}`,
+                      background: userVote === false ? "var(--accent-orange)" : "transparent",
+                      color: userVote === false ? "white" : "var(--accent-orange)",
+                      transition: "all 0.2s",
+                    }}
+                  >
+                    Disagree
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Comments Heading Section (Matching Screenshot 2) */}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+            <span style={{ fontSize: 11, fontWeight: 800, color: "white", letterSpacing: "0.06em", textTransform: "uppercase" }}>
+              Comments
+            </span>
+            <span style={{ fontSize: 10, color: "var(--text-secondary)" }}>
+              {comments.length} total responses
+            </span>
+          </div>
+
+          {/* Comments List */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 12, paddingBottom: 80 }}>
+            {comments.length === 0 ? (
+              <p style={{ fontSize: 13, color: "var(--text-muted)", textAlign: "center", padding: "20px 0" }}>
+                No comments yet. Be the first to share your opinion!
+              </p>
+            ) : (
+              comments.map((comment) => {
+                const isReply = comment.text.trim().startsWith("@");
+                // Clean text for presentation (optional, but keep it original)
+                return (
+                  <div
+                    key={comment.commentId}
+                    style={{
+                      position: "relative",
+                      marginLeft: isReply ? 24 : 0,
+                      padding: "12px 14px",
+                      borderRadius: 16,
+                      background: "rgba(255,255,255,0.03)",
+                      border: "1px solid rgba(255,255,255,0.05)",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 6,
+                    }}
+                  >
+                    {/* Thread connector line for nested replies */}
+                    {isReply && (
+                      <div
+                        style={{
+                          position: "absolute",
+                          left: -14,
+                          top: -12,
+                          bottom: "50%",
+                          width: 12,
+                          borderLeft: "1.5px solid rgba(255,255,255,0.12)",
+                          borderBottom: "1.5px solid rgba(255,255,255,0.12)",
+                          borderRadius: "0 0 0 8px",
+                          pointerEvents: "none",
+                        }}
+                      />
+                    )}
+
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                        <AvatarWithBadge username={comment.authorUsername} badge={comment.authorBadge} size="sm" />
+                        <div>
+                          <p style={{ fontWeight: 700, fontSize: 12, color: "white", margin: 0, display: "flex", alignItems: "center", gap: 4 }}>
+                            {comment.authorUsername}
+                            <span style={{ width: 5, height: 5, borderRadius: "50%", background: "#E91E8C", display: "inline-block" }} />
+                          </p>
+                        </div>
+                      </div>
+                      <span style={{ fontSize: 9, color: "var(--text-muted)" }}>
+                        {comment.createdAt ? "4h ago" : "Just now"}
+                      </span>
+                    </div>
+
+                    <p style={{ fontSize: 13, color: "var(--text-primary)", lineHeight: 1.4, margin: "4px 0" }}>
+                      {comment.text}
+                    </p>
+
+                    <div style={{ display: "flex", gap: 14, alignItems: "center", marginTop: 4 }}>
+                      <button
+                        onClick={() => reactToComment(comment.commentId)}
+                        style={{
+                          background: "none",
+                          border: "none",
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 4,
+                          fontSize: 12,
+                          color: comment.heartCount > 0 ? "white" : "var(--text-muted)",
+                          padding: 0,
+                          transition: "all 0.2s",
+                        }}
+                      >
+                        🤍 {comment.heartCount ?? 0}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setCommentText(`@${comment.authorUsername} `);
+                        }}
+                        style={{
+                          background: "none",
+                          border: "none",
+                          cursor: "pointer",
+                          fontSize: 11,
+                          color: "var(--text-muted)",
+                          fontWeight: 600,
+                          padding: 0,
+                        }}
+                      >
+                        Reply
+                      </button>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+
+        {/* Bottom Composer (Matching Screenshot 2) */}
+        <div
+          style={{
+            padding: "12px 20px 24px",
+            background: "rgba(5, 5, 8, 0.95)",
+            borderTop: "1px solid var(--border)",
+            display: "flex",
+            gap: 10,
+            alignItems: "center",
+            zIndex: 10,
+          }}
+        >
+          <AvatarWithBadge username={userUsername} badge={userBadge} size="sm" />
+          <input
+            type="text"
+            placeholder="Share your opinion.."
+            value={commentText}
+            onChange={(e) => setCommentText(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && !loading && submitComment()}
+            style={{
+              flex: 1,
+              height: 40,
+              borderRadius: 20,
+              background: "var(--bg-secondary)",
+              border: "1px solid var(--border)",
+              paddingLeft: 16,
+              paddingRight: 16,
+              color: "white",
+              fontSize: 13,
+              outline: "none",
+            }}
+          />
+          <button
+            onClick={submitComment}
+            disabled={loading || !commentText.trim()}
+            style={{
+              width: 38,
+              height: 38,
+              borderRadius: "50%",
+              background: "var(--accent-magenta)",
+              border: "none",
+              color: "white",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer",
+              opacity: commentText.trim() ? 1 : 0.5,
+            }}
+          >
+            ↑
+          </button>
+        </div>
+      </div>
+    </AnimatePresence>
   );
 }
 
@@ -5394,25 +5676,26 @@ function Profile({
 export default function ROARApp() {
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const [onboarded, setOnboarded] = useState(() => {
+  const [mounted, setMounted] = useState(false);
+  const [onboarded, setOnboarded] = useState(false);
+  const [userBadge, setUserBadge] = useState("RISING_FAN");
+
+  useEffect(() => {
+    setMounted(true);
     try {
-      return !!localStorage.getItem("roar_v2_complete");
-    } catch {
-      return false;
-    }
-  });
-  const [userBadge, setUserBadge] = useState(() => {
-    try {
-      return localStorage.getItem("roar_badge") || "RISING_FAN";
-    } catch {
-      return "RISING_FAN";
-    }
-  });
+      setOnboarded(!!localStorage.getItem("roar_v2_complete"));
+      setUserBadge(localStorage.getItem("roar_badge") || "RISING_FAN");
+    } catch {}
+  }, []);
+
   const [activeTab, setActiveTab] = useState("home");
   const [overlay, setOverlay] = useState<string | null>(null);
   const [composeOpen, setComposeOpen] = useState(false);
   const [composeType, setComposeType] = useState<string | null>(null);
   const [toast, setToast] = useState({ visible: false, message: "" });
+
+  const [rooms, setRooms] = useState<any[]>([]);
+  const [selectedRoom, setSelectedRoom] = useState<any | null>(null);
 
   // Elevate notifications state to parent so mark read is permanent
   const [notifications, setNotifications] = useState(
@@ -5420,6 +5703,92 @@ export default function ROARApp() {
   );
   const [extraItems, setExtraItems] = useState<any[]>([]);
   const [showBanner, setShowBanner] = useState(true);
+  const [dbPosts, setDbPosts] = useState<any[]>([]);
+  const [selectedPost, setSelectedPost] = useState<any | null>(null);
+
+  const fetchPosts = useCallback(async () => {
+    try {
+      const res = await axios.get("/api/roar/posts");
+      if (res.data?.success) {
+        setDbPosts(res.data.posts);
+      }
+    } catch (err) {
+      console.error("Failed to fetch posts:", err);
+    }
+  }, []);
+
+  useEffect(() => {
+    const fetchRooms = async () => {
+      try {
+        const res = await axios.get("/api/roar/rooms");
+        if (res.data?.success) {
+          setRooms(res.data.rooms);
+          if (res.data.rooms.length > 0 && !selectedRoom) {
+            setSelectedRoom(res.data.rooms[0]);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch rooms:", err);
+      }
+    };
+    if (onboarded) {
+      fetchRooms();
+      fetchPosts();
+    }
+  }, [onboarded, fetchPosts]);
+
+  useEffect(() => {
+    if (rooms) {
+      setNotifications((prev) => {
+        // Keep non-match notifications (badges, challenges, etc.)
+        const nonMatchNotifs = prev.filter(
+          (n) => n.type !== "MATCH_LIVE" && n.type !== "HEATING_UP"
+        );
+        
+        // Generate new match notifications from active rooms
+        const matchNotifs: any[] = [];
+        rooms.forEach((room) => {
+          if (room.isActive) {
+            const existingLive = prev.find((n) => n.id === `live-${room.roomId}`);
+            const existingHeat = prev.find((n) => n.id === `heat-${room.roomId}`);
+
+            matchNotifs.push({
+              id: `live-${room.roomId}`,
+              type: "MATCH_LIVE",
+              title: `MATCH LIVE: ${room.name}`,
+              subtitle: `Discussion room is open. ${room.fanCount || 0} fans already debating.`,
+              time: "Just now",
+              read: existingLive ? existingLive.read : false,
+              fan: null,
+              cta: null,
+            });
+
+            matchNotifs.push({
+              id: `heat-${room.roomId}`,
+              type: "HEATING_UP",
+              title: "This room is heating up 🔥",
+              subtitle: `${room.name} debate: ${room.fanCount || 0} fans live. Jump in.`,
+              time: "15m",
+              read: existingHeat ? existingHeat.read : false,
+              fan: null,
+              cta: null,
+            });
+          }
+        });
+        
+        return [...matchNotifs, ...nonMatchNotifs];
+      });
+    }
+  }, [rooms]);
+
+  const handleVote = useCallback(async (postId: string, voteType: "agree" | "disagree" | null) => {
+    try {
+      await axios.post(`/api/roar/posts/${postId}/vote`, { vote: voteType });
+      fetchPosts();
+    } catch (err) {
+      console.error("Failed to submit vote:", err);
+    }
+  }, [fetchPosts]);
 
   const showToast = useCallback((msg: string) => {
     setToast({ visible: true, message: msg });
@@ -5428,31 +5797,27 @@ export default function ROARApp() {
   }, []);
 
   const handlePost = useCallback(
-    (payload: any) => {
-      if (payload.type === "hot_take" && payload.text) {
-        setExtraItems((items) => [
-          {
-            id: `u-${Date.now()}`,
-            type: "hot_take",
-            sport: "cricket",
-            isLive: false,
-            fan: {
-              username: CURRENT_USER.username,
-              badge: userBadge,
-              team: "India",
-            },
-            text: payload.text,
-            agreePercent: 50,
-            fanCount: 47,
-            replies: 0,
-          },
-          ...items,
-        ]);
+    async (payload: any) => {
+      try {
+        const res = await axios.post("/api/roar/posts", {
+          type: payload.type === "hot_take" ? "hot_take" : "prediction",
+          text: payload.text,
+          sport: payload.sport || "cricket",
+          matchId: payload.match,
+          confidence: payload.confidence,
+          audience: payload.audience,
+        });
+        if (res.data?.success) {
+          showToast("🔥 Your take is live · 47 fans may see it");
+          fetchPosts();
+        }
+      } catch (err) {
+        console.error("Failed to post:", err);
+        showToast("Failed to create post");
       }
       setShowBanner(false);
-      showToast("🔥 Your take is live · 47 fans may see it");
     },
-    [showToast, userBadge],
+    [showToast, fetchPosts],
   );
 
   const completeOnboarding = useCallback((prefs: any) => {
@@ -5485,6 +5850,12 @@ export default function ROARApp() {
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
+  if (!mounted) {
+    return (
+      <div className="roar-root" style={{ minHeight: "100vh", background: "var(--bg-primary)" }} />
+    );
+  }
+
   return (
     <div className="roar-root">
       {/* Scoped styles */}
@@ -5503,9 +5874,27 @@ export default function ROARApp() {
             pointerEvents: "none",
             zIndex: 0,
             background:
-              "radial-gradient(ellipse 90% 55% at 50% -15%,rgba(233,30,140,0.14),transparent 55%),radial-gradient(ellipse 70% 45% at 100% 80%,rgba(255,107,53,0.1),transparent 50%),var(--bg-primary)",
+              "radial-gradient(ellipse 90% 55% at 50% -15%,rgba(233,30,140,0.18),transparent 55%),radial-gradient(ellipse 70% 45% at 100% 80%,rgba(255,107,53,0.12),transparent 50%),radial-gradient(ellipse 50% 40% at 0% 60%,rgba(0,232,198,0.08),transparent 45%),var(--bg-primary)",
           }}
         />
+
+        {/* Floating Spark Particles */}
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            overflow: "hidden",
+            pointerEvents: "none",
+            zIndex: 0,
+          }}
+        >
+          <div style={{ position: "absolute", bottom: -10, left: "12%", width: 3, height: 3, borderRadius: "50%", background: "var(--accent-magenta)", animation: "roar-driftUp 14s linear infinite" }} />
+          <div style={{ position: "absolute", bottom: -10, left: "28%", width: 4, height: 4, borderRadius: "50%", background: "var(--accent-orange)", animation: "roar-driftUp 18s linear infinite 2s" }} />
+          <div style={{ position: "absolute", bottom: -10, left: "50%", width: 3, height: 3, borderRadius: "50%", background: "var(--teal)", animation: "roar-driftUp 15s linear infinite 5s" }} />
+          <div style={{ position: "absolute", bottom: -10, left: "72%", width: 4, height: 4, borderRadius: "50%", background: "var(--accent-magenta)", animation: "roar-driftUp 20s linear infinite 1s" }} />
+          <div style={{ position: "absolute", bottom: -10, left: "88%", width: 3, height: 3, borderRadius: "50%", background: "var(--accent-yellow)", animation: "roar-driftUp 16s linear infinite 7s" }} />
+        </div>
+
         {/* ROAR watermark */}
         <div
           style={{
@@ -5518,7 +5907,7 @@ export default function ROARApp() {
             fontFamily: "'Bebas Neue',sans-serif",
             fontSize: 72,
             color: "white",
-            opacity: 0.035,
+            opacity: 0.04,
             pointerEvents: "none",
             zIndex: 0,
             letterSpacing: "0.1em",
@@ -5575,6 +5964,8 @@ export default function ROARApp() {
                   }}
                 >
                   <DiscussionRoom
+                    roomId={selectedRoom?.roomId}
+                    roomName={selectedRoom?.name}
                     onBack={() => {
                       setOverlay(null);
                       setActiveTab("home");
@@ -5595,7 +5986,14 @@ export default function ROARApp() {
                     <HomeFeed
                       unreadCount={unreadCount}
                       onNavigateAlerts={() => setActiveTab("alerts")}
-                      onJoinRoom={() => setOverlay("room")}
+                      onJoinRoom={(room) => {
+                        if (room) {
+                          setSelectedRoom(room);
+                        } else if (rooms.length > 0) {
+                          setSelectedRoom(rooms[0]);
+                        }
+                        setOverlay("room");
+                      }}
                       onLeaderboard={() => setOverlay("leaderboard")}
                       onFanProfile={() => setActiveTab("profile")}
                       onToast={showToast}
@@ -5603,6 +6001,10 @@ export default function ROARApp() {
                       showBanner={showBanner}
                       onDismissBanner={() => setShowBanner(false)}
                       userBadge={userBadge}
+                      rooms={rooms}
+                      dbPosts={dbPosts}
+                      onPostClick={(post) => setSelectedPost(post)}
+                      onVote={handleVote}
                     />
                   )}
                   {activeTab === "profile" && (
@@ -5610,6 +6012,7 @@ export default function ROARApp() {
                       userBadge={userBadge}
                       setUserBadge={setUserBadge}
                       onCompose={() => openCompose("prediction")}
+                      onToast={showToast}
                     />
                   )}
                   {activeTab === "alerts" && (
@@ -5628,8 +6031,16 @@ export default function ROARApp() {
                         )
                       }
                       onCompose={() => openCompose()}
-                      onJoinRoom={() => setOverlay("room")}
+                      onJoinRoom={(room) => {
+                        if (room) {
+                          setSelectedRoom(room);
+                        } else if (rooms.length > 0) {
+                          setSelectedRoom(rooms[0]);
+                        }
+                        setOverlay("room");
+                      }}
                       onNavigateTab={handleTab}
+                      rooms={rooms}
                     />
                   )}
                 </motion.div>
@@ -5648,6 +6059,16 @@ export default function ROARApp() {
             unreadCount={unreadCount}
             matchLive
             badgeNearUnlock
+          />
+        )}
+
+        {/* Post details overlay */}
+        {onboarded && selectedPost && (
+          <PostDetailsOverlay
+            post={selectedPost}
+            onClose={() => setSelectedPost(null)}
+            onToast={showToast}
+            onVote={handleVote}
           />
         )}
 

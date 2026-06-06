@@ -518,10 +518,9 @@ const nextConfig = {
         },
         //roar apis
         {
-          source: "/api/roar/onboarding",
-          destination: "http://localhost:3000/api/roar/onboarding",
-        }, // {source: '/api/roar/onboarding', destination: `${apiTarget}/api/roar/onboarding`}
-        // {source: '/api/roar/onboarding', destination: `${apiTarget}/api/roar/onboarding`}
+          source: "/api/roar/:path*",
+          destination: "http://localhost:3000/api/roar/:path*",
+        },
       ],
     };
   },

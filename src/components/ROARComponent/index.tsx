@@ -4518,11 +4518,13 @@ function Profile({
   setUserBadge,
   onCompose,
   onToast,
+  setOnboarded,
 }: {
   userBadge: string;
   setUserBadge: (b: string) => void;
   onCompose: () => void;
   onToast: (m: string) => void;
+  setOnboarded?: (b: boolean) => void;
 }) {
   const [profileData, setProfileData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -4546,14 +4548,20 @@ function Profile({
             setEditName(res.data.user.username);
           }
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error(err);
+        if (err.response?.status === 404) {
+          try {
+            localStorage.removeItem("roar_v2_complete");
+          } catch {}
+          setOnboarded?.(false);
+        }
       } finally {
         setLoading(false);
       }
     };
     fetchProfile();
-  }, [setUserBadge]);
+  }, [setUserBadge, setOnboarded]);
 
   if (loading || !profileData) {
     return (
@@ -4570,27 +4578,51 @@ function Profile({
   const rival = profileData.rival || RIVAL;
 
   const filteredPreds = predictions.filter(
-    (p: any) => predTab === "All" || p.status?.toUpperCase() === predTab.toUpperCase() || (predTab === "Correct" && p.status === "settled_correct") || (predTab === "Wrong" && p.status === "settled_wrong") || (predTab === "Pending" && p.status === "active")
+    (p: any) => predTab === "All" || p.status?.toUpperCase() === predTab.toUpperCase() || (predTab === "Correct" && (p.status === "settled_correct" || p.status === "CORRECT")) || (predTab === "Wrong" && (p.status === "settled_wrong" || p.status === "WRONG")) || (predTab === "Pending" && (p.status === "active" || p.status === "PENDING"))
   );
   const unlocked = badges.filter((b: any) => b.unlocked).length;
 
   return (
     <div className="screen-scroll">
-      <div style={{ padding: "20px 16px 0", textAlign: "center" }}>
-        <div style={{ display: "flex", justifyContent: "center" }}>
+      {/* Top Header Section */}
+      <div style={{ padding: "24px 16px 0", textAlign: "center", position: "relative" }}>
+        <div style={{ display: "flex", justifyContent: "center", position: "relative", width: 96, margin: "0 auto" }}>
           <AvatarWithBadge
             username={user.username || CURRENT_USER.username}
             badge={userBadge}
             size="lg"
           />
+          {/* Plus icon on Avatar */}
+          <div
+            style={{
+              position: "absolute",
+              bottom: 0,
+              right: 4,
+              width: 20,
+              height: 20,
+              borderRadius: "50%",
+              background: "var(--accent-magenta)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              border: "2px solid var(--bg-primary)",
+              color: "#fff",
+              fontSize: 12,
+              fontWeight: 900,
+              cursor: "pointer"
+            }}
+            onClick={() => onToast("Upload avatar feature coming soon!")}
+          >
+            +
+          </div>
         </div>
         <h1
           className="font-display"
-          style={{ fontSize: 32, letterSpacing: "0.04em", marginTop: 14 }}
+          style={{ fontSize: 32, letterSpacing: "0.04em", marginTop: 14, color: "#fff" }}
         >
-          {editName.replace(/_/g, " ")}
+          {user.username ? user.username.toUpperCase() : "ROARFAN"}
         </h1>
-        <p style={{ fontSize: 13, color: "var(--text-muted)" }}>
+        <p style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 2 }}>
           @{user.handle || CURRENT_USER.handle}
         </p>
         <p
@@ -4599,291 +4631,252 @@ function Profile({
           Fan since {user.fanSince || CURRENT_USER.fanSince} · {user.yearsFandom || CURRENT_USER.yearsFandom || 1} years ·{" "}
           {BADGE_LABELS[userBadge]}
         </p>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "center",
-            gap: 8,
-            marginTop: 10,
-          }}
-        >
-          {(user.teams || CURRENT_USER.teams).map((t: string) => {
-            const team = TEAMS.find((x) => x.id === t);
-            return (
-              <div
-                key={t}
-                style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: "50%",
-                  background: team?.color || "#333",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 16,
-                }}
-              >
-                {team?.emoji || "⚽"}
-              </div>
-            );
-          })}
+
+        {/* 3 dots/circles underneath */}
+        <div style={{ display: "flex", justifyContent: "center", gap: 6, marginTop: 10 }}>
+          <div style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--accent-magenta)" }} />
+          <div style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--teal)" }} />
+          <div style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--accent-orange)" }} />
         </div>
+
+        {/* Action Buttons */}
         <div
           style={{
             display: "flex",
             gap: 10,
             justifyContent: "center",
-            marginTop: 14,
+            marginTop: 16,
           }}
         >
-          <motion.button
-            whileTap={{ scale: 0.96 }}
+          <button
             onClick={() => setEditOpen(true)}
-            className="btn-pill"
             style={{
-              padding: "8px 20px",
-              background: "rgba(255,255,255,0.05)",
+              flex: 1,
+              maxWidth: 140,
+              padding: "10px 0",
+              background: "none",
+              border: "1px solid var(--border)",
+              borderRadius: 24,
+              color: "#fff",
+              fontSize: 12,
+              fontWeight: 700,
+              cursor: "pointer"
             }}
           >
-            ✏️ Edit Profile
-          </motion.button>
-          <motion.button
-            whileTap={{ scale: 0.96 }}
+            Edit Profile
+          </button>
+          <button
             onClick={() => setShareOpen(true)}
-            className="btn-pill"
+            className="btn-gradient"
             style={{
-              padding: "8px 20px",
-              background: "rgba(255,255,255,0.05)",
+              flex: 1,
+              maxWidth: 140,
+              padding: "10px 0",
+              border: "none",
+              borderRadius: 24,
+              color: "#fff",
+              fontSize: 12,
+              fontWeight: 700,
+              cursor: "pointer"
             }}
           >
-            🔗 Share Legacy
-          </motion.button>
+            Share Profile
+          </button>
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(2,1fr)",
-          gap: 12,
-          padding: "20px 16px 0",
-        }}
-      >
-        <div
-          className="glass-card"
-          style={{
-            padding: 16,
-            background:
-              "linear-gradient(135deg,rgba(0,230,118,0.08),rgba(255,255,255,0.02))",
-          }}
-        >
-          <p style={{ fontSize: 11, color: "var(--text-muted)" }}>
-            PREDICTION ACCURACY
-          </p>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 10,
-              marginTop: 6,
-            }}
-          >
-            <AccuracyRing percent={user.accuracy || 0} />
-            <div>
-              <p
-                className="font-display"
-                style={{ fontSize: 32, lineHeight: 1 }}
-              >
-                {user.accuracy || 0}%
-              </p>
-              <p style={{ fontSize: 10, color: "var(--text-muted)" }}>
-                {user.correctPredictions || 0} of {user.predictionCount || 0}
-              </p>
-            </div>
-          </div>
+      {/* Stats Cards (4 items in 1 row) */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, padding: "20px 16px 0" }}>
+        {/* 1st block: Accuracy Ring */}
+        <div className="glass-card" style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "10px 4px", minHeight: 74 }}>
+          <AccuracyRing percent={user.accuracy || 0} size={50} stroke={4} />
         </div>
-
-        <div
-          className="glass-card"
-          style={{
-            padding: 16,
-            background:
-              "linear-gradient(135deg,rgba(255,107,53,0.08),rgba(255,255,255,0.02))",
-          }}
-        >
-          <p style={{ fontSize: 11, color: "var(--text-muted)" }}>
-            REPUTATION SCORE
-          </p>
-          <div style={{ marginTop: 6 }}>
-            <p className="font-display" style={{ fontSize: 36, lineHeight: 1 }}>
-              {fmt(user.reputationScore || 0)}
-            </p>
-            <p
-              style={{
-                fontSize: 10,
-                color: "var(--accent-orange)",
-                fontWeight: 700,
-                marginTop: 2,
-              }}
-            >
-              TOP 3.2% OF FANS
-            </p>
-          </div>
+        {/* 2nd block: Predictions */}
+        <div className="glass-card" style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "10px 4px", minHeight: 74, textAlign: "center" }}>
+          <span className="font-display" style={{ fontSize: 22, color: "#fff", lineHeight: 1 }}>{user.predictionCount || 0}</span>
+          <span style={{ fontSize: 9, color: "var(--text-muted)", marginTop: 4 }}>Predictions</span>
+        </div>
+        {/* 3rd block: Hot Takes */}
+        <div className="glass-card" style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "10px 4px", minHeight: 74, textAlign: "center" }}>
+          <span className="font-display" style={{ fontSize: 22, color: "#fff", lineHeight: 1 }}>{user.hotTakeCount || 0}</span>
+          <span style={{ fontSize: 9, color: "var(--text-muted)", marginTop: 4 }}>Hot Takes</span>
+        </div>
+        {/* 4th block: Rep */}
+        <div className="glass-card" style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "10px 4px", minHeight: 74, textAlign: "center" }}>
+          <span className="font-display" style={{ fontSize: 22, color: "#fff", lineHeight: 1 }}>{fmt(user.reputationScore || 0)}</span>
+          <span style={{ fontSize: 9, color: "var(--text-muted)", marginTop: 4 }}>Rep</span>
         </div>
       </div>
 
-      {/* Badge Progress section */}
-      <div style={{ padding: "20px 16px 0" }}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: 10,
-          }}
-        >
-          <h3 style={{ fontWeight: 700, fontSize: 15 }}>
-            BADGES ({unlocked}/{badges.length})
+      {/* Rival Card */}
+      <div style={{ padding: "24px 16px 0" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+          <h3 className="font-display" style={{ fontWeight: 700, fontSize: 18, color: "var(--accent-magenta)", letterSpacing: "0.05em" }}>
+            YOUR RIVAL THIS MONTH
           </h3>
-          <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
-            Earn reputation to unlock
+          <span style={{ fontSize: 11, color: "var(--accent-magenta)", fontWeight: 600, cursor: "pointer" }} onClick={() => onToast("Feature coming soon!")}>
+            See Fan Match →
           </span>
         </div>
 
-        <div
-          style={{
-            display: "flex",
-            gap: 10,
-            overflowX: "auto",
-            paddingBottom: 8,
-          }}
-        >
+        <div className="gradient-border" style={{ padding: 16, background: "rgba(22, 22, 31, 0.6)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <div style={{ position: "relative" }}>
+              <AvatarWithBadge
+                username={rival.fan?.username || RIVAL.fan.username}
+                badge={rival.badge || RIVAL.badge}
+                size="md"
+              />
+            </div>
+            <div>
+              <h4 className="font-display" style={{ fontSize: 16, color: "#fff", letterSpacing: "0.03em" }}>
+                {(rival.fan?.username || RIVAL.fan.username).toUpperCase()} · {BADGE_LABELS[rival.badge || RIVAL.badge]?.toUpperCase()}
+              </h4>
+              <div style={{ display: "flex", gap: 12, marginTop: 4 }}>
+                <span style={{ fontSize: 10, color: "var(--text-secondary)" }}>
+                  <strong style={{ color: "#fff" }}>{rival.disagreements || RIVAL.disagreements}</strong> DISAGREEMENTS
+                </span>
+                <span style={{ fontSize: 10, color: "var(--text-secondary)" }}>
+                  They won: <strong style={{ color: "var(--wrong-red)" }}>{rival.rivalWins || RIVAL.rivalWins}</strong>
+                </span>
+                <span style={{ fontSize: 10, color: "var(--text-secondary)" }}>
+                  You won: <strong style={{ color: "var(--correct-green)" }}>{rival.yourWins || RIVAL.yourWins}</strong>
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <p style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 12, fontStyle: "italic", lineHeight: 1.4, paddingLeft: 8, borderLeft: "2px solid var(--accent-magenta)" }}>
+            {rival.topDisagreement || RIVAL.topDisagreement}
+          </p>
+
+          <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
+            <button
+              onClick={() => setRivalFollowed(!rivalFollowed)}
+              className="btn-pill"
+              style={{
+                flex: 1,
+                padding: "8px 0",
+                fontSize: 12,
+                fontWeight: 700,
+                border: "1px solid var(--border)",
+                background: rivalFollowed ? "rgba(255,255,255,0.08)" : "none",
+                color: "#fff",
+                borderRadius: 20,
+                cursor: "pointer"
+              }}
+            >
+              {rivalFollowed ? "✓ Following" : "Follow Rival"}
+            </button>
+            <button
+              onClick={() => onToast("Challenged rival to a prediction duel!")}
+              className="btn-gradient"
+              style={{
+                flex: 1,
+                padding: "8px 0",
+                fontSize: 12,
+                borderRadius: 20,
+                border: "none",
+                cursor: "pointer"
+              }}
+            >
+              CHALLENGE →
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Badges Hexagonal Layout */}
+      <div style={{ padding: "24px 16px 0" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+          <h3 className="font-display" style={{ fontWeight: 700, fontSize: 18, color: "#fff", letterSpacing: "0.03em" }}>
+            YOUR BADGES <span style={{ color: "var(--text-muted)" }}>{unlocked}/{badges.length}</span>
+          </h3>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, padding: "4px 8px" }}>
           {badges.map((b: any) => {
             const cfg = BADGE_CONFIG[b.badgeId] || BADGE_CONFIG.RISING_FAN;
+            const isUnlocked = b.unlocked;
             return (
-              <motion.button
+              <div
                 key={b.badgeId}
-                whileTap={{ scale: 0.95 }}
                 onClick={() => setBadgeModal(b)}
-                className="glass-card"
                 style={{
-                  flexShrink: 0,
-                  width: 96,
-                  padding: "12px 8px",
-                  textAlign: "center",
-                  border: b.unlocked ? undefined : "1px dashed var(--border)",
-                  background: b.unlocked
-                    ? "rgba(255,255,255,0.03)"
-                    : "rgba(0,0,0,0.2)",
-                  opacity: b.unlocked ? 1 : 0.45,
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
                   cursor: "pointer",
+                  opacity: isUnlocked ? 1 : 0.4
                 }}
               >
-                <div style={{ fontSize: 24, marginBottom: 6 }}>{cfg.icon}</div>
-                <p
-                  style={{
-                    fontSize: 9,
-                    fontWeight: 700,
-                    textOverflow: "ellipsis",
-                    overflow: "hidden",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {cfg.name}
-                </p>
+                {/* Hexagon icon */}
                 <div
                   style={{
-                    width: "100%",
-                    height: 3,
-                    background: "rgba(255,255,255,0.1)",
-                    borderRadius: 99,
-                    marginTop: 8,
-                    overflow: "hidden",
+                    position: "relative",
+                    width: 68,
+                    height: 76,
+                    background: isUnlocked ? cfg.color || "var(--accent-gradient)" : "rgba(255,255,255,0.06)",
+                    clipPath: "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    boxShadow: isUnlocked ? "0 4px 12px rgba(0,0,0,0.3)" : "none"
                   }}
                 >
                   <div
                     style={{
-                      height: "100%",
-                      width: `${b.progress}%`,
-                      background: "var(--accent-magenta)",
+                      position: "absolute",
+                      inset: 2,
+                      background: isUnlocked ? "none" : "var(--bg-primary)",
+                      clipPath: "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: 28
                     }}
-                  />
+                  >
+                    {cfg.icon}
+                  </div>
                 </div>
-              </motion.button>
+                <span style={{ fontSize: 10, fontWeight: 700, color: "#fff", marginTop: 8, textAlign: "center" }}>
+                  {cfg.name?.toUpperCase()}
+                </span>
+              </div>
             );
           })}
         </div>
       </div>
 
-      {/* Tabs */}
-      <div
-        style={{
-          display: "flex",
-          borderBottom: "1px solid var(--border)",
-          marginTop: 20,
-        }}
-      >
-        {["Predictions", "Hot Takes", "Debates", "Legacy"].map((tabName) => {
-          const active =
-            tabName === "Predictions" || (tabName === "Hot Takes" && false); // simplified
-          return (
-            <button
-              key={tabName}
-              style={{
-                flex: 1,
-                padding: "12px 0",
-                fontSize: 13,
-                fontWeight: 700,
-                color: active ? "var(--accent-magenta)" : "var(--text-muted)",
-                borderBottom: active
-                  ? "2px solid var(--accent-magenta)"
-                  : "none",
-                background: "none",
-                borderTop: "none",
-                borderLeft: "none",
-                borderRight: "none",
-                cursor: "pointer",
-              }}
-            >
-              {tabName}
-            </button>
-          );
-        })}
-      </div>
+      {/* Calls Section */}
+      <div style={{ padding: "24px 16px 0" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+          <h3 className="font-display" style={{ fontWeight: 700, fontSize: 18, color: "#fff" }}>
+            YOUR CALLS
+          </h3>
+          <span style={{ fontSize: 11, color: "var(--live-green)", fontWeight: 700 }}>
+            {user.accuracy || 0}% accurate
+          </span>
+        </div>
 
-      {/* Predictions list */}
-      <div
-        style={{
-          padding: "16px 16px 80px",
-          display: "flex",
-          flexDirection: "column",
-          gap: 12,
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            gap: 6,
-            overflowX: "auto",
-            marginBottom: 4,
-          }}
-        >
-          {["All", "Pending", "Correct", "Wrong"].map((t) => {
+        {/* Filter buttons */}
+        <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 10 }}>
+          {["All", "Correct", "Wrong", "Pending"].map((t) => {
             const active = predTab === t;
             return (
               <button
                 key={t}
                 onClick={() => setPredTab(t)}
                 style={{
-                  padding: "6px 12px",
-                  borderRadius: 999,
-                  fontSize: 11,
+                  padding: "6px 14px",
+                  borderRadius: 20,
+                  fontSize: 12,
                   fontWeight: 700,
                   border: active ? "none" : "1px solid var(--border)",
-                  background: active ? "var(--bg-tertiary)" : "none",
-                  color: active ? "var(--accent-magenta)" : "var(--text-muted)",
+                  background: active ? "var(--accent-gradient)" : "rgba(255,255,255,0.03)",
+                  color: "#fff",
                   cursor: "pointer",
+                  transition: "all 0.2s"
                 }}
               >
                 {t}
@@ -4892,66 +4885,119 @@ function Profile({
           })}
         </div>
 
-        {filteredPreds.length === 0 ? (
-          <p
-            style={{
-              textAlign: "center",
-              padding: "30px 0",
-              color: "var(--text-muted)",
-              fontSize: 13,
-            }}
-          >
-            No predictions found.
-          </p>
-        ) : (
-          filteredPreds.map((p: any) => {
-            const statusColor =
-              p.status === "CORRECT" || p.status === "settled_correct"
-                ? "var(--live-green)"
-                : p.status === "WRONG" || p.status === "settled_wrong"
-                  ? "var(--accent-magenta)"
-                  : "var(--accent-orange)";
-            return (
-              <div key={p.id || p.postId} className="glass-card" style={{ padding: 12 }}>
+        {/* Calls Cards */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {filteredPreds.length === 0 ? (
+            <p style={{ textAlign: "center", padding: "20px 0", color: "var(--text-muted)", fontSize: 13 }}>
+              No calls found.
+            </p>
+          ) : (
+            filteredPreds.map((p: any) => {
+              const isCorrect = p.status === "CORRECT" || p.status === "settled_correct";
+              const isWrong = p.status === "WRONG" || p.status === "settled_wrong";
+              const isPending = !isCorrect && !isWrong;
+
+              const statusText = isCorrect ? "CORRECT" : isWrong ? "WRONG" : "PENDING";
+              const statusColor = isCorrect
+                ? "var(--correct-green)"
+                : isWrong
+                  ? "var(--wrong-red)"
+                  : "var(--pending-amber)";
+
+              return (
                 <div
+                  key={p.id || p.postId}
+                  className="glass-card"
                   style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
+                    padding: 14,
+                    background: "rgba(22, 22, 31, 0.4)",
+                    border: "1px solid rgba(255,255,255,0.03)"
                   }}
                 >
-                  <span
-                    style={{
-                      fontSize: 10,
-                      fontWeight: 800,
-                      color: "var(--text-muted)",
-                    }}
-                  >
-                    {p.match || "GENERAL"}
-                  </span>
-                  <span
-                    style={{ fontSize: 10, fontWeight: 800, color: statusColor }}
-                  >
-                    {p.status || "PENDING"}
-                  </span>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)" }}>
+                      {p.matchId || "GENERAL"}
+                    </span>
+                    <span
+                      style={{
+                        fontSize: 10,
+                        fontWeight: 900,
+                        color: statusColor,
+                        background: `${statusColor}18`,
+                        padding: "2px 6px",
+                        borderRadius: 4
+                      }}
+                    >
+                      {statusText}
+                    </span>
+                  </div>
+                  <p style={{ fontSize: 14, color: "#fff", lineHeight: 1.4 }}>
+                    {p.text}
+                  </p>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 10 }}>
+                    <span style={{ fontSize: 10, color: "var(--text-muted)" }}>
+                      {p.createdAt ? new Date(p.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : "Today"}
+                    </span>
+                    <button
+                      onClick={() => onToast("Shared call legacy link!")}
+                      style={{ background: "none", border: "none", color: "var(--text-muted)", fontSize: 10, cursor: "pointer", textDecoration: "underline" }}
+                    >
+                      Share
+                    </button>
+                  </div>
                 </div>
-                <p style={{ fontSize: 14, marginTop: 8, lineHeight: 1.4 }}>
-                  {p.text}
-                </p>
-                <p
+              );
+            })
+          )}
+        </div>
+      </div>
+
+      {/* Takes Section */}
+      <div style={{ padding: "24px 16px 80px" }}>
+        <h3 className="font-display" style={{ fontWeight: 700, fontSize: 18, color: "#fff", marginBottom: 12 }}>
+          YOUR TAKES
+        </h3>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {hotTakes.length === 0 ? (
+            <p style={{ textAlign: "center", padding: "20px 0", color: "var(--text-muted)", fontSize: 13 }}>
+              No hot takes created.
+            </p>
+          ) : (
+            hotTakes.map((ht: any) => {
+              const agree = ht.agreeCount || 0;
+              const disagree = ht.disagreeCount || 0;
+              const total = agree + disagree || 1;
+              const agreePct = Math.round((agree / total) * 100) || 50;
+              const disagreePct = 100 - agreePct;
+
+              return (
+                <div
+                  key={ht.id || ht.postId}
+                  className="glass-card"
                   style={{
-                    fontSize: 10,
-                    color: "var(--text-muted)",
-                    marginTop: 6,
-                    textAlign: "right",
+                    padding: 14,
+                    background: "rgba(22, 22, 31, 0.4)",
+                    border: "1px solid rgba(255,255,255,0.03)"
                   }}
                 >
-                  {p.date || "Just now"}
-                </p>
-              </div>
-            );
-          })
-        )}
+                  <p style={{ fontSize: 14, color: "#fff", lineHeight: 1.4, marginBottom: 10 }}>
+                    {ht.text}
+                  </p>
+                  
+                  {/* Percentage bar */}
+                  <div style={{ position: "relative", width: "100%", height: 16, background: "rgba(255,255,255,0.06)", borderRadius: 8, overflow: "hidden" }}>
+                    <div style={{ height: "100%", width: `${agreePct}%`, background: "var(--accent-gradient)", transition: "width 1s" }} />
+                    <div style={{ position: "absolute", inset: 0, display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0 8px", fontSize: 9, fontWeight: 700, color: "#fff" }}>
+                      <span>{agreePct}% Agree</span>
+                      <span>{disagreePct}% Disagree</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
       </div>
 
       {/* Edit Profile Modal */}
@@ -6013,6 +6059,7 @@ export default function ROARApp() {
                       setUserBadge={setUserBadge}
                       onCompose={() => openCompose("prediction")}
                       onToast={showToast}
+                      setOnboarded={setOnboarded}
                     />
                   )}
                   {activeTab === "alerts" && (

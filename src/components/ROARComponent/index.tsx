@@ -45,21 +45,19 @@ const GLOBAL_CSS = `
   box-sizing: border-box;
 }
 
-/* On desktop: center a phone-width column */
+/* On desktop: let it occupy full width of parent */
 @media (min-width: 481px) {
   .roar-root {
     display: flex;
     justify-content: center;
     align-items: stretch;
-    background: #000;
+    background: var(--bg-primary);
   }
   .roar-inner {
-    width: 420px;
-    flex-shrink: 0;
+    width: 100%;
     position: relative;
     overflow: hidden;
     background: var(--bg-primary);
-    box-shadow: 0 0 80px rgba(233,30,140,0.12), 0 0 0 1px rgba(255,255,255,0.04);
   }
 }
 
@@ -2411,7 +2409,9 @@ function BottomNav({
             display: "flex",
             alignItems: "center",
             justifyContent: "space-around",
-            margin: "0 12px",
+            margin: "0 auto",
+            maxWidth: 420,
+            width: "calc(100% - 24px)",
             pointerEvents: "auto",
           }}
         >

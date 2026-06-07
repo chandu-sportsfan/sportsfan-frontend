@@ -508,7 +508,10 @@ const nextConfig = {
         },
 
         // Watch Along APIs
-        { source: "/api/watch-along", destination: `${apiTarget}/api/watch-along` },
+        {
+          source: "/api/watch-along",
+          destination: `${apiTarget}/api/watch-along`,
+        },
         {
           source: "/api/watch-along/:path*",
           destination: `${apiTarget}/api/watch-along/:path*`,
@@ -534,7 +537,8 @@ const nextConfig = {
         // roar apis
         {
           source: "/api/roar/:path*",
-          destination: `${apiTarget}/api/roar/:path*`,
+          // destination: `${apiTarget}/api/roar/:path*`,
+          destination: `http://localhost:3001/api/roar/:path*`,
         },
       ],
     };

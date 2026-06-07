@@ -1094,7 +1094,11 @@ export default function ChatComponent() {
                         <span className={`inline-flex items-center gap-1 ml-2 float-right mt-[5px] text-[10px] leading-none ${
                           isMe ? "text-white/50" : "text-[#4a3a35]"
                         }`}>
-                          {msg.editedAt && <span className="text-[9px] opacity-70 italic">edited</span>}
+                          {msg.edited && (
+                            <span className="text-[9px] opacity-70 italic">
+                              edited
+                            </span>
+                          )}
                           {new Date(msg.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                           {isMe && <Ticks status={status} />}
                         </span>

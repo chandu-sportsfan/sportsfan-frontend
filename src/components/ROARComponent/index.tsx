@@ -1113,11 +1113,12 @@ function Onboarding({ onComplete }: { onComplete: (prefs: any) => void }) {
   const handleCompleteOnboarding = async () => {
     try {
       // setLoading(true);
-      const contributionText = firstVote === "agree" || firstVote === "disagree"
-        ? (sports.includes("cricket")
-          ? "Virat Kohli in 2025 is better than Sachin Tendulkar ever was. Change my mind."
-          : "ISL is now world-class football. Change my mind.")
-        : firstVote;
+      const contributionText =
+        firstVote === "agree" || firstVote === "disagree"
+          ? sports.includes("cricket")
+            ? "Virat Kohli in 2025 is better than Sachin Tendulkar ever was. Change my mind."
+            : "ISL is now world-class football. Change my mind."
+          : firstVote;
 
       await axios.post("/api/roar/onboarding", {
         sports,
@@ -2191,7 +2192,14 @@ function ComposeModal({
                       >
                         Sport
                       </label>
-                      <div style={{ display: "flex", gap: 8, marginTop: 4, marginBottom: 12 }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          gap: 8,
+                          marginTop: 4,
+                          marginBottom: 12,
+                        }}
+                      >
                         <button
                           type="button"
                           onClick={() => setSport("cricket")}
@@ -2202,9 +2210,18 @@ function ComposeModal({
                             fontSize: 12,
                             fontWeight: 700,
                             cursor: "pointer",
-                            border: sport === "cricket" ? "1px solid var(--accent-magenta)" : "1px solid var(--border)",
-                            background: sport === "cricket" ? "rgba(233,30,140,0.15)" : "transparent",
-                            color: sport === "cricket" ? "var(--accent-magenta)" : "var(--text-secondary)",
+                            border:
+                              sport === "cricket"
+                                ? "1px solid var(--accent-magenta)"
+                                : "1px solid var(--border)",
+                            background:
+                              sport === "cricket"
+                                ? "rgba(233,30,140,0.15)"
+                                : "transparent",
+                            color:
+                              sport === "cricket"
+                                ? "var(--accent-magenta)"
+                                : "var(--text-secondary)",
                           }}
                         >
                           🏏 Cricket
@@ -2219,9 +2236,18 @@ function ComposeModal({
                             fontSize: 12,
                             fontWeight: 700,
                             cursor: "pointer",
-                            border: sport === "football" ? "1px solid #3b82f6" : "1px solid var(--border)",
-                            background: sport === "football" ? "rgba(59,130,246,0.15)" : "transparent",
-                            color: sport === "football" ? "#3b82f6" : "var(--text-secondary)",
+                            border:
+                              sport === "football"
+                                ? "1px solid #3b82f6"
+                                : "1px solid var(--border)",
+                            background:
+                              sport === "football"
+                                ? "rgba(59,130,246,0.15)"
+                                : "transparent",
+                            color:
+                              sport === "football"
+                                ? "#3b82f6"
+                                : "var(--text-secondary)",
                           }}
                         >
                           ⚽ Football
@@ -2564,6 +2590,7 @@ function HomeFeed({
   dbPosts = [],
   onPostClick,
   onVote,
+  userSports = [],
 }: {
   unreadCount: number;
   onNavigateAlerts: () => void;
@@ -2579,12 +2606,18 @@ function HomeFeed({
   dbPosts?: any[];
   onPostClick?: (post: any) => void;
   onVote?: (id: string, vote: "agree" | "disagree" | null) => void;
+  userSports?: string[];
 }) {
   const [filter, setFilter] = useState("For You");
   const [votes, setVotes] = useState<Record<string, boolean | null>>({});
   const [pcts, setPcts] = useState<Record<string, number>>({});
 
-  const vote = (id: string, agree: boolean, basePercent: number, isDbPost?: boolean) => {
+  const vote = (
+    id: string,
+    agree: boolean,
+    basePercent: number,
+    isDbPost?: boolean,
+  ) => {
     const prev = votes[id];
     let nextVote: boolean | null = agree;
     if (prev === agree) {
@@ -2593,11 +2626,18 @@ function HomeFeed({
     setVotes((v) => ({ ...v, [id]: nextVote }));
     setPcts((p) => ({
       ...p,
-      [id]: clamp(basePercent + (nextVote === true ? 4 : nextVote === false ? -4 : 0), 5, 95),
+      [id]: clamp(
+        basePercent + (nextVote === true ? 4 : nextVote === false ? -4 : 0),
+        5,
+        95,
+      ),
     }));
 
     if (isDbPost && onVote) {
-      onVote(id, nextVote === true ? "agree" : nextVote === false ? "disagree" : null);
+      onVote(
+        id,
+        nextVote === true ? "agree" : nextVote === false ? "disagree" : null,
+      );
     }
   };
 
@@ -2605,7 +2645,8 @@ function HomeFeed({
     const agreeCount = p.agreeCount ?? 0;
     const disagreeCount = p.disagreeCount ?? 0;
     const totalVotes = agreeCount + disagreeCount;
-    const agreePercent = totalVotes > 0 ? Math.round((agreeCount / totalVotes) * 100) : 50;
+    const agreePercent =
+      totalVotes > 0 ? Math.round((agreeCount / totalVotes) * 100) : 50;
     return {
       id: p.postId,
       type: p.type,
@@ -2621,9 +2662,17 @@ function HomeFeed({
       replies: p.replyCount ?? 0,
       following: false,
       isLive: false,
-      match: p.matchId || (p.type === "prediction" ? (p.sport === "cricket" ? "IND vs AUS · 3rd Test" : "ISL 2025") : undefined),
-      samePredictionCount: p.type === "prediction" ? (p.agreeCount ?? 0) : undefined,
-      counterCount: p.type === "prediction" ? (p.disagreeCount ?? 0) : undefined,
+      match:
+        p.matchId ||
+        (p.type === "prediction"
+          ? p.sport === "cricket"
+            ? "IND vs AUS · 3rd Test"
+            : "ISL 2025"
+          : undefined),
+      samePredictionCount:
+        p.type === "prediction" ? (p.agreeCount ?? 0) : undefined,
+      counterCount:
+        p.type === "prediction" ? (p.disagreeCount ?? 0) : undefined,
       isDbPost: true,
     };
   });
@@ -2816,34 +2865,99 @@ function HomeFeed({
             className="glass-card"
             style={{
               padding: 16,
-              background: "linear-gradient(135deg,rgba(233,30,140,0.12),rgba(255,107,53,0.06))",
+              background:
+                "linear-gradient(135deg,rgba(233,30,140,0.12),rgba(255,107,53,0.06))",
               border: "1px solid rgba(233,30,140,0.25)",
               cursor: "pointer",
             }}
-            onClick={() => onJoinRoom({ roomId: "mock-cricket", name: "India vs Australia" })}
+            onClick={() =>
+              onJoinRoom({ roomId: "mock-cricket", name: "India vs Australia" })
+            }
           >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "flex-start",
+              }}
+            >
               <div>
-                <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
-                  <span className="live-pulse" style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--live-green)", display: "inline-block" }} />
-                  <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.1em", color: "var(--live-green)" }}>LIVE NOW</span>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                    marginBottom: 6,
+                  }}
+                >
+                  <span
+                    className="live-pulse"
+                    style={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: "50%",
+                      background: "var(--live-green)",
+                      display: "inline-block",
+                    }}
+                  />
+                  <span
+                    style={{
+                      fontSize: 10,
+                      fontWeight: 800,
+                      letterSpacing: "0.1em",
+                      color: "var(--live-green)",
+                    }}
+                  >
+                    LIVE NOW
+                  </span>
                 </div>
-                <p className="font-display" style={{ fontSize: 26, lineHeight: 1 }}>India vs Australia</p>
-                <p style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 4 }}>3rd Test · Day 2 · Adelaide Oval</p>
+                <p
+                  className="font-display"
+                  style={{ fontSize: 26, lineHeight: 1 }}
+                >
+                  India vs Australia
+                </p>
+                <p
+                  style={{
+                    fontSize: 12,
+                    color: "var(--text-muted)",
+                    marginTop: 4,
+                  }}
+                >
+                  3rd Test · Day 2 · Adelaide Oval
+                </p>
               </div>
               <div style={{ textAlign: "right" }}>
-                <p className="font-display" style={{ fontSize: 30, color: "white" }}>287/4</p>
-                <p style={{ fontSize: 11, color: "var(--text-muted)" }}>IND · 68 overs</p>
+                <p
+                  className="font-display"
+                  style={{ fontSize: 30, color: "white" }}
+                >
+                  287/4
+                </p>
+                <p style={{ fontSize: 11, color: "var(--text-muted)" }}>
+                  IND · 68 overs
+                </p>
               </div>
             </div>
             <motion.button
               whileTap={{ scale: 0.97 }}
               onClick={(e) => {
                 e.stopPropagation();
-                onJoinRoom({ roomId: "mock-cricket", name: "India vs Australia" });
+                onJoinRoom({
+                  roomId: "mock-cricket",
+                  name: "India vs Australia",
+                });
               }}
               className="btn-gradient"
-              style={{ width: "100%", marginTop: 12, padding: "10px 0", borderRadius: 999, fontSize: 13, border: "none", cursor: "pointer" }}
+              style={{
+                width: "100%",
+                marginTop: 12,
+                padding: "10px 0",
+                borderRadius: 999,
+                fontSize: 13,
+                border: "none",
+                cursor: "pointer",
+              }}
             >
               JOIN LIVE · 1,247 fans →
             </motion.button>
@@ -2858,23 +2972,78 @@ function HomeFeed({
             className="glass-card"
             style={{
               padding: 16,
-              background: "linear-gradient(135deg,rgba(59,130,246,0.12),rgba(59,130,246,0.04))",
+              background:
+                "linear-gradient(135deg,rgba(59,130,246,0.12),rgba(59,130,246,0.04))",
               border: "1px solid rgba(59,130,246,0.25)",
               cursor: "pointer",
             }}
-            onClick={() => onJoinRoom({ roomId: "mock-football", name: "Mumbai City vs Bengaluru FC" })}
+            onClick={() =>
+              onJoinRoom({
+                roomId: "mock-football",
+                name: "Mumbai City vs Bengaluru FC",
+              })
+            }
           >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "flex-start",
+              }}
+            >
               <div>
-                <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
-                  <span className="live-pulse" style={{ width: 8, height: 8, borderRadius: "50%", background: "#60a5fa", display: "inline-block" }} />
-                  <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.1em", color: "#60a5fa" }}>LIVE NOW</span>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                    marginBottom: 6,
+                  }}
+                >
+                  <span
+                    className="live-pulse"
+                    style={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: "50%",
+                      background: "#60a5fa",
+                      display: "inline-block",
+                    }}
+                  />
+                  <span
+                    style={{
+                      fontSize: 10,
+                      fontWeight: 800,
+                      letterSpacing: "0.1em",
+                      color: "#60a5fa",
+                    }}
+                  >
+                    LIVE NOW
+                  </span>
                 </div>
-                <p className="font-display" style={{ fontSize: 22, lineHeight: 1 }}>Mumbai City vs Bengaluru FC</p>
-                <p style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 4 }}>ISL 2025 · 67' · Mumbai Football Arena</p>
+                <p
+                  className="font-display"
+                  style={{ fontSize: 22, lineHeight: 1 }}
+                >
+                  Mumbai City vs Bengaluru FC
+                </p>
+                <p
+                  style={{
+                    fontSize: 12,
+                    color: "var(--text-muted)",
+                    marginTop: 4,
+                  }}
+                >
+                  ISL 2025 · 67' · Mumbai Football Arena
+                </p>
               </div>
               <div style={{ textAlign: "right" }}>
-                <p className="font-display" style={{ fontSize: 28, color: "white" }}>2 — 1</p>
+                <p
+                  className="font-display"
+                  style={{ fontSize: 28, color: "white" }}
+                >
+                  2 — 1
+                </p>
                 <p style={{ fontSize: 11, color: "#60a5fa" }}>MCFC lead</p>
               </div>
             </div>
@@ -2882,9 +3051,25 @@ function HomeFeed({
               whileTap={{ scale: 0.97 }}
               onClick={(e) => {
                 e.stopPropagation();
-                onJoinRoom({ roomId: "mock-football", name: "Mumbai City vs Bengaluru FC" });
+                onJoinRoom({
+                  roomId: "mock-football",
+                  name: "Mumbai City vs Bengaluru FC",
+                });
               }}
-              style={{ width: "100%", marginTop: 12, padding: "10px 0", borderRadius: 999, fontSize: 13, border: "none", cursor: "pointer", background: "#3b82f6", color: "white", fontWeight: 800, fontFamily: "'Bebas Neue',sans-serif", letterSpacing: "0.06em" }}
+              style={{
+                width: "100%",
+                marginTop: 12,
+                padding: "10px 0",
+                borderRadius: 999,
+                fontSize: 13,
+                border: "none",
+                cursor: "pointer",
+                background: "#3b82f6",
+                color: "white",
+                fontWeight: 800,
+                fontFamily: "'Bebas Neue',sans-serif",
+                letterSpacing: "0.06em",
+              }}
             >
               JOIN LIVE · 634 fans →
             </motion.button>
@@ -2894,21 +3079,31 @@ function HomeFeed({
         {/* Dynamic Backend-fetched Banners */}
         {rooms &&
           rooms
-            .filter((r) => r.roomId !== "mock-cricket" && r.roomId !== "mock-football")
+            .filter(
+              (r) =>
+                r.roomId !== "mock-cricket" && r.roomId !== "mock-football",
+            )
             .map((room, idx) => {
               const showThisRoom =
-                filter === "Live" ||
-                filter === "For You" ||
-                (filter === "Cricket" && room.sport?.toLowerCase() === "cricket") ||
-                (filter === "Football" && room.sport?.toLowerCase() === "football");
+                filter === "Live" || // Live tab: show all rooms
+                (filter === "For You" &&
+                  (userSports.length === 0 || // no prefs yet: show all
+                    userSports.includes(room.sport?.toLowerCase()))) || // matches user's interest
+                (filter === "Cricket" &&
+                  room.sport?.toLowerCase() === "cricket") ||
+                (filter === "Football" &&
+                  room.sport?.toLowerCase() === "football");
 
               if (!showThisRoom) return null;
 
-              const isBlueStyle = room.sport?.toLowerCase() === "football" || idx % 2 === 1;
+              const isBlueStyle =
+                room.sport?.toLowerCase() === "football" || idx % 2 === 1;
               const bg = isBlueStyle
                 ? "linear-gradient(135deg,rgba(59,130,246,0.12),rgba(59,130,246,0.04))"
                 : "linear-gradient(135deg,rgba(233,30,140,0.12),rgba(255,107,53,0.06))";
-              const border = isBlueStyle ? "1px solid rgba(59,130,246,0.25)" : "1px solid rgba(233,30,140,0.25)";
+              const border = isBlueStyle
+                ? "1px solid rgba(59,130,246,0.25)"
+                : "1px solid rgba(233,30,140,0.25)";
               const btnBg = isBlueStyle ? "#3b82f6" : undefined;
               const btnClass = isBlueStyle ? undefined : "btn-gradient";
               const livePulseBg = isBlueStyle ? "#60a5fa" : "var(--live-green)";
@@ -2928,18 +3123,80 @@ function HomeFeed({
                   }}
                   onClick={() => onJoinRoom(room)}
                 >
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "flex-start",
+                    }}
+                  >
                     <div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
-                        <span className="live-pulse" style={{ width: 8, height: 8, borderRadius: "50%", background: livePulseBg, display: "inline-block" }} />
-                        <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.1em", color: liveTextCol }}>LIVE NOW</span>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 6,
+                          marginBottom: 6,
+                        }}
+                      >
+                        <span
+                          className="live-pulse"
+                          style={{
+                            width: 8,
+                            height: 8,
+                            borderRadius: "50%",
+                            background: livePulseBg,
+                            display: "inline-block",
+                          }}
+                        />
+                        <span
+                          style={{
+                            fontSize: 10,
+                            fontWeight: 800,
+                            letterSpacing: "0.1em",
+                            color: liveTextCol,
+                          }}
+                        >
+                          LIVE NOW
+                        </span>
                       </div>
-                      <p className="font-display" style={{ fontSize: isBlueStyle ? 22 : 26, lineHeight: 1 }}>{room.name}</p>
-                      <p style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 4 }}>{room.description || "Discussion Show"}</p>
+                      <p
+                        className="font-display"
+                        style={{
+                          fontSize: isBlueStyle ? 22 : 26,
+                          lineHeight: 1,
+                        }}
+                      >
+                        {room.name}
+                      </p>
+                      <p
+                        style={{
+                          fontSize: 12,
+                          color: "var(--text-muted)",
+                          marginTop: 4,
+                        }}
+                      >
+                        {room.description || "Discussion Show"}
+                      </p>
                     </div>
                     <div style={{ textAlign: "right" }}>
-                      <p className="font-display" style={{ fontSize: isBlueStyle ? 28 : 30, color: "white" }}>LIVE</p>
-                      <p style={{ fontSize: 11, color: isBlueStyle ? "#60a5fa" : "var(--text-muted)" }}>Active Now</p>
+                      <p
+                        className="font-display"
+                        style={{
+                          fontSize: isBlueStyle ? 28 : 30,
+                          color: "white",
+                        }}
+                      >
+                        LIVE
+                      </p>
+                      <p
+                        style={{
+                          fontSize: 11,
+                          color: isBlueStyle ? "#60a5fa" : "var(--text-muted)",
+                        }}
+                      >
+                        Active Now
+                      </p>
                     </div>
                   </div>
                   <motion.button
@@ -2960,7 +3217,9 @@ function HomeFeed({
                       background: btnBg,
                       color: "white",
                       fontWeight: 800,
-                      fontFamily: isBlueStyle ? "'Bebas Neue',sans-serif" : undefined,
+                      fontFamily: isBlueStyle
+                        ? "'Bebas Neue',sans-serif"
+                        : undefined,
                       letterSpacing: isBlueStyle ? "0.06em" : undefined,
                     }}
                   >
@@ -3108,7 +3367,12 @@ function HomeFeed({
                         whileTap={{ scale: 0.93 }}
                         onClick={(e) => {
                           e.stopPropagation();
-                          vote(item.id, true, item.agreePercent ?? 50, item.isDbPost);
+                          vote(
+                            item.id,
+                            true,
+                            item.agreePercent ?? 50,
+                            item.isDbPost,
+                          );
                         }}
                         style={{
                           flex: 1,
@@ -3135,7 +3399,12 @@ function HomeFeed({
                         whileTap={{ scale: 0.93 }}
                         onClick={(e) => {
                           e.stopPropagation();
-                          vote(item.id, false, item.agreePercent ?? 50, item.isDbPost);
+                          vote(
+                            item.id,
+                            false,
+                            item.agreePercent ?? 50,
+                            item.isDbPost,
+                          );
                         }}
                         style={{
                           flex: 1,
@@ -3250,7 +3519,10 @@ function DiscussionRoom({
             text: m.text,
             fireCount: m.fireCount || 0,
             nochanceCount: m.noChanceCount || 0,
-            timeAgo: new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            timeAgo: new Date(m.createdAt).toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            }),
             type: m.type,
           }));
           setPosts(mapped);
@@ -3378,30 +3650,103 @@ function DiscussionRoom({
       </AnimatePresence>
 
       {/* Header */}
-      <div style={{ padding: '12px 16px', background: 'rgba(14,14,20,0.95)', backdropFilter: 'blur(20px)', borderBottom: '1px solid var(--border)', flexShrink: 0, zIndex: 20 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <button onClick={onBack} style={{ background: 'none', border: 'none', fontSize: 22, cursor: 'pointer', color: 'var(--text-primary)' }}>←</button>
-          <div style={{ flex: 1, textAlign: 'center' }}>
-            <p className="font-display" style={{ fontSize: 20, letterSpacing: '0.04em' }}>{roomName || "India vs Pakistan"}</p>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'center', marginTop: 2 }}>
-              <span className="live-pulse" style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--live-green)', display: 'inline-block' }} />
-              <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--live-green)' }}>LIVE</span>
-              <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>· {fmt(fanCount)} fans</span>
+      <div
+        style={{
+          padding: "12px 16px",
+          background: "rgba(14,14,20,0.95)",
+          backdropFilter: "blur(20px)",
+          borderBottom: "1px solid var(--border)",
+          flexShrink: 0,
+          zIndex: 20,
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <button
+            onClick={onBack}
+            style={{
+              background: "none",
+              border: "none",
+              fontSize: 22,
+              cursor: "pointer",
+              color: "var(--text-primary)",
+            }}
+          >
+            ←
+          </button>
+          <div style={{ flex: 1, textAlign: "center" }}>
+            <p
+              className="font-display"
+              style={{ fontSize: 20, letterSpacing: "0.04em" }}
+            >
+              {roomName || "India vs Pakistan"}
+            </p>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                justifyContent: "center",
+                marginTop: 2,
+              }}
+            >
+              <span
+                className="live-pulse"
+                style={{
+                  width: 6,
+                  height: 6,
+                  borderRadius: "50%",
+                  background: "var(--live-green)",
+                  display: "inline-block",
+                }}
+              />
+              <span
+                style={{
+                  fontSize: 10,
+                  fontWeight: 700,
+                  color: "var(--live-green)",
+                }}
+              >
+                LIVE
+              </span>
+              <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
+                · {fmt(fanCount)} fans
+              </span>
             </div>
           </div>
-          <div style={{ textAlign: 'right' }}>
-            <p className="font-display" style={{ fontSize: 22, color: 'var(--gold)' }}>287/4</p>
-            <p style={{ fontSize: 10, color: 'var(--text-muted)' }}>IND · 88 ov</p>
+          <div style={{ textAlign: "right" }}>
+            <p
+              className="font-display"
+              style={{ fontSize: 22, color: "var(--gold)" }}
+            >
+              287/4
+            </p>
+            <p style={{ fontSize: 10, color: "var(--text-muted)" }}>
+              IND · 88 ov
+            </p>
           </div>
         </div>
         <div style={{ marginTop: 10 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--text-muted)', marginBottom: 4 }}>
-            <span>Room Energy</span><span>{fmt(fanCount)} in room</span>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              fontSize: 10,
+              color: "var(--text-muted)",
+              marginBottom: 4,
+            }}
+          >
+            <span>Room Energy</span>
+            <span>{fmt(fanCount)} in room</span>
           </div>
-          <div className="room-energy-bar room-energy-fast" style={{ borderRadius: 999 }} />
+          <div
+            className="room-energy-bar room-energy-fast"
+            style={{ borderRadius: 999 }}
+          />
         </div>
-        <div style={{ display: 'flex', gap: 6, marginTop: 12, overflowX: 'auto' }}>
-          {TABS.map(t => {
+        <div
+          style={{ display: "flex", gap: 6, marginTop: 12, overflowX: "auto" }}
+        >
+          {TABS.map((t) => {
             const isLocked = t.includes("🔒");
             return (
               <button
@@ -3415,14 +3760,15 @@ function DiscussionRoom({
                 }}
                 style={{
                   flexShrink: 0,
-                  padding: '6px 14px',
+                  padding: "6px 14px",
                   borderRadius: 999,
                   fontSize: 12,
                   fontWeight: 600,
-                  border: 'none',
-                  cursor: isLocked ? 'not-allowed' : 'pointer',
-                  background: tab === t ? 'var(--accent-magenta)' : 'transparent',
-                  color: tab === t ? 'white' : 'var(--text-secondary)',
+                  border: "none",
+                  cursor: isLocked ? "not-allowed" : "pointer",
+                  background:
+                    tab === t ? "var(--accent-magenta)" : "transparent",
+                  color: tab === t ? "white" : "var(--text-secondary)",
                   opacity: isLocked ? 0.6 : 1,
                 }}
               >
@@ -3447,12 +3793,28 @@ function DiscussionRoom({
       >
         <AnimatePresence initial={false}>
           {loading ? (
-            <div style={{ textAlign: "center", color: "var(--text-muted)", padding: "20px 0" }}>
+            <div
+              style={{
+                textAlign: "center",
+                color: "var(--text-muted)",
+                padding: "20px 0",
+              }}
+            >
               Loading messages...
             </div>
           ) : tab === "Post-Match" ? (
-            <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 12 }}>
-              <p className="font-display" style={{ fontSize: 20, color: "white" }}>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: 12,
+                marginTop: 12,
+              }}
+            >
+              <p
+                className="font-display"
+                style={{ fontSize: 20, color: "white" }}
+              >
                 MATCH ENDED · INDIA WON BY 6 WICKETS
               </p>
               <div
@@ -3463,7 +3825,9 @@ function DiscussionRoom({
                   background: "rgba(0,200,83,0.05)",
                 }}
               >
-                <p style={{ fontWeight: 700, fontSize: 14, color: "white" }}>Kohli scores 80+</p>
+                <p style={{ fontWeight: 700, fontSize: 14, color: "white" }}>
+                  Kohli scores 80+
+                </p>
                 <span
                   style={{
                     fontSize: 10,
@@ -3484,7 +3848,9 @@ function DiscussionRoom({
                   background: "rgba(244,67,54,0.05)",
                 }}
               >
-                <p style={{ fontWeight: 700, fontSize: 14, color: "white" }}>Bumrah 5 wickets</p>
+                <p style={{ fontWeight: 700, fontSize: 14, color: "white" }}>
+                  Bumrah 5 wickets
+                </p>
                 <span
                   style={{
                     fontSize: 10,
@@ -3504,12 +3870,18 @@ function DiscussionRoom({
               if (tab === "Hot Takes") return p.type === "hottake";
               return false;
             }).length === 0 ? (
-            <div style={{ textAlign: "center", color: "var(--text-muted)", padding: "20px 0" }}>
+            <div
+              style={{
+                textAlign: "center",
+                color: "var(--text-muted)",
+                padding: "20px 0",
+              }}
+            >
               {tab === "Predictions"
                 ? "No predictions yet. Make one to start!"
                 : tab === "Hot Takes"
-                ? "No hot takes yet. Share yours!"
-                : "Welcome to the community chat! Type a message below to start."}
+                  ? "No hot takes yet. Share yours!"
+                  : "Welcome to the community chat! Type a message below to start."}
             </div>
           ) : (
             <>
@@ -3550,7 +3922,13 @@ function DiscussionRoom({
                           alignItems: "center",
                         }}
                       >
-                        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                        <div
+                          style={{
+                            display: "flex",
+                            gap: 8,
+                            alignItems: "center",
+                          }}
+                        >
                           <AvatarWithBadge
                             username={p.fan.username}
                             badge={p.fan.badge}
@@ -3560,7 +3938,12 @@ function DiscussionRoom({
                             <p style={{ fontWeight: 700, fontSize: 13 }}>
                               {p.fan.username}
                             </p>
-                            <p style={{ fontSize: 10, color: "var(--text-muted)" }}>
+                            <p
+                              style={{
+                                fontSize: 10,
+                                color: "var(--text-muted)",
+                              }}
+                            >
                               {BADGE_LABELS[p.fan.badge] || "Fan"} · {p.timeAgo}
                             </p>
                           </div>
@@ -3577,14 +3960,17 @@ function DiscussionRoom({
                                 p.type === "prediction"
                                   ? "rgba(255,215,0,0.15)"
                                   : "rgba(239,68,68,0.15)",
-                              color: p.type === "prediction" ? "#fbbf24" : "#f87171",
+                              color:
+                                p.type === "prediction" ? "#fbbf24" : "#f87171",
                               border:
                                 p.type === "prediction"
                                   ? "1px solid rgba(255,215,0,0.25)"
                                   : "1px solid rgba(239,68,68,0.25)",
                             }}
                           >
-                            {p.type === "prediction" ? "PREDICTION" : "HOT TAKE"}
+                            {p.type === "prediction"
+                              ? "PREDICTION"
+                              : "HOT TAKE"}
                           </span>
                         )}
                       </div>
@@ -3744,16 +4130,18 @@ function DiscussionRoom({
             let color = "var(--text-secondary)";
 
             if (active) {
-              bg = m === "prediction"
-                ? "rgba(255,215,0,0.1)"
-                : m === "hottake"
-                  ? "rgba(239,68,68,0.1)"
-                  : "rgba(255,255,255,0.1)";
-              border = m === "prediction"
-                ? "1px solid rgba(255,215,0,0.3)"
-                : m === "hottake"
-                  ? "1px solid rgba(239,68,68,0.3)"
-                  : "1px solid rgba(255,255,255,0.3)";
+              bg =
+                m === "prediction"
+                  ? "rgba(255,215,0,0.1)"
+                  : m === "hottake"
+                    ? "rgba(239,68,68,0.1)"
+                    : "rgba(255,255,255,0.1)";
+              border =
+                m === "prediction"
+                  ? "1px solid rgba(255,215,0,0.3)"
+                  : m === "hottake"
+                    ? "1px solid rgba(239,68,68,0.3)"
+                    : "1px solid rgba(255,255,255,0.3)";
               color = activeColor;
             }
 
@@ -3924,14 +4312,15 @@ function Notifications({
   const findRoomForNotification = (n: any) => {
     if (!rooms || rooms.length === 0) return null;
     const matchText = `${n.title} ${n.subtitle}`.toLowerCase();
-    
+
     // Find room name mentioned in the notification
-    const matchedRoom = rooms.find(room => 
-      matchText.includes(room.name.toLowerCase()) ||
-      room.name.toLowerCase().includes("india") ||
-      room.name.toLowerCase().includes("australia")
+    const matchedRoom = rooms.find(
+      (room) =>
+        matchText.includes(room.name.toLowerCase()) ||
+        room.name.toLowerCase().includes("india") ||
+        room.name.toLowerCase().includes("australia"),
     );
-    
+
     return matchedRoom || rooms[0];
   };
 
@@ -4565,28 +4954,61 @@ function Profile({
 
   if (loading || !profileData) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', color: 'var(--text-muted)' }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "100%",
+          color: "var(--text-muted)",
+        }}
+      >
         Loading profile...
       </div>
     );
   }
 
   const user = profileData.user || CURRENT_USER;
-  const badges = profileData.badges && profileData.badges.length > 0 ? profileData.badges : BADGES_LIST;
+  const badges =
+    profileData.badges && profileData.badges.length > 0
+      ? profileData.badges
+      : BADGES_LIST;
   const predictions = profileData.predictions || [];
   const hotTakes = profileData.hotTakes || [];
   const rival = profileData.rival || RIVAL;
 
   const filteredPreds = predictions.filter(
-    (p: any) => predTab === "All" || p.status?.toUpperCase() === predTab.toUpperCase() || (predTab === "Correct" && (p.status === "settled_correct" || p.status === "CORRECT")) || (predTab === "Wrong" && (p.status === "settled_wrong" || p.status === "WRONG")) || (predTab === "Pending" && (p.status === "active" || p.status === "PENDING"))
+    (p: any) =>
+      predTab === "All" ||
+      p.status?.toUpperCase() === predTab.toUpperCase() ||
+      (predTab === "Correct" &&
+        (p.status === "settled_correct" || p.status === "CORRECT")) ||
+      (predTab === "Wrong" &&
+        (p.status === "settled_wrong" || p.status === "WRONG")) ||
+      (predTab === "Pending" &&
+        (p.status === "active" || p.status === "PENDING")),
   );
   const unlocked = badges.filter((b: any) => b.unlocked).length;
 
   return (
     <div className="screen-scroll">
       {/* Top Header Section */}
-      <div style={{ padding: "24px 16px 0", textAlign: "center", position: "relative" }}>
-        <div style={{ display: "flex", justifyContent: "center", position: "relative", width: 96, margin: "0 auto" }}>
+      <div
+        style={{
+          padding: "24px 16px 0",
+          textAlign: "center",
+          position: "relative",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            position: "relative",
+            width: 96,
+            margin: "0 auto",
+          }}
+        >
           <AvatarWithBadge
             username={user.username || CURRENT_USER.username}
             badge={userBadge}
@@ -4609,7 +5031,7 @@ function Profile({
               color: "#fff",
               fontSize: 12,
               fontWeight: 900,
-              cursor: "pointer"
+              cursor: "pointer",
             }}
             onClick={() => onToast("Upload avatar feature coming soon!")}
           >
@@ -4618,7 +5040,12 @@ function Profile({
         </div>
         <h1
           className="font-display"
-          style={{ fontSize: 32, letterSpacing: "0.04em", marginTop: 14, color: "#fff" }}
+          style={{
+            fontSize: 32,
+            letterSpacing: "0.04em",
+            marginTop: 14,
+            color: "#fff",
+          }}
         >
           {user.username ? user.username.toUpperCase() : "ROARFAN"}
         </h1>
@@ -4628,15 +5055,44 @@ function Profile({
         <p
           style={{ fontSize: 13, color: "var(--text-secondary)", marginTop: 6 }}
         >
-          Fan since {user.fanSince || CURRENT_USER.fanSince} · {user.yearsFandom || CURRENT_USER.yearsFandom || 1} years ·{" "}
+          Fan since {user.fanSince || CURRENT_USER.fanSince} ·{" "}
+          {user.yearsFandom || CURRENT_USER.yearsFandom || 1} years ·{" "}
           {BADGE_LABELS[userBadge]}
         </p>
 
         {/* 3 dots/circles underneath */}
-        <div style={{ display: "flex", justifyContent: "center", gap: 6, marginTop: 10 }}>
-          <div style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--accent-magenta)" }} />
-          <div style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--teal)" }} />
-          <div style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--accent-orange)" }} />
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            gap: 6,
+            marginTop: 10,
+          }}
+        >
+          <div
+            style={{
+              width: 8,
+              height: 8,
+              borderRadius: "50%",
+              background: "var(--accent-magenta)",
+            }}
+          />
+          <div
+            style={{
+              width: 8,
+              height: 8,
+              borderRadius: "50%",
+              background: "var(--teal)",
+            }}
+          />
+          <div
+            style={{
+              width: 8,
+              height: 8,
+              borderRadius: "50%",
+              background: "var(--accent-orange)",
+            }}
+          />
         </div>
 
         {/* Action Buttons */}
@@ -4660,7 +5116,7 @@ function Profile({
               color: "#fff",
               fontSize: 12,
               fontWeight: 700,
-              cursor: "pointer"
+              cursor: "pointer",
             }}
           >
             Edit Profile
@@ -4677,7 +5133,7 @@ function Profile({
               color: "#fff",
               fontSize: 12,
               fontWeight: 700,
-              cursor: "pointer"
+              cursor: "pointer",
             }}
           >
             Share Profile
@@ -4686,40 +5142,143 @@ function Profile({
       </div>
 
       {/* Stats Cards (4 items in 1 row) */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, padding: "20px 16px 0" }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(4, 1fr)",
+          gap: 8,
+          padding: "20px 16px 0",
+        }}
+      >
         {/* 1st block: Accuracy Ring */}
-        <div className="glass-card" style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "10px 4px", minHeight: 74 }}>
-          <AccuracyRing percent={user.accuracy || 0} size={50} stroke={4} />
+        <div
+          className="glass-card"
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "10px 4px",
+            minHeight: 74,
+          }}
+        >
+          <AccuracyRing percent={user.accuracy || 0} />
         </div>
         {/* 2nd block: Predictions */}
-        <div className="glass-card" style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "10px 4px", minHeight: 74, textAlign: "center" }}>
-          <span className="font-display" style={{ fontSize: 22, color: "#fff", lineHeight: 1 }}>{user.predictionCount || 0}</span>
-          <span style={{ fontSize: 9, color: "var(--text-muted)", marginTop: 4 }}>Predictions</span>
+        <div
+          className="glass-card"
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "10px 4px",
+            minHeight: 74,
+            textAlign: "center",
+          }}
+        >
+          <span
+            className="font-display"
+            style={{ fontSize: 22, color: "#fff", lineHeight: 1 }}
+          >
+            {user.predictionCount || 0}
+          </span>
+          <span
+            style={{ fontSize: 9, color: "var(--text-muted)", marginTop: 4 }}
+          >
+            Predictions
+          </span>
         </div>
         {/* 3rd block: Hot Takes */}
-        <div className="glass-card" style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "10px 4px", minHeight: 74, textAlign: "center" }}>
-          <span className="font-display" style={{ fontSize: 22, color: "#fff", lineHeight: 1 }}>{user.hotTakeCount || 0}</span>
-          <span style={{ fontSize: 9, color: "var(--text-muted)", marginTop: 4 }}>Hot Takes</span>
+        <div
+          className="glass-card"
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "10px 4px",
+            minHeight: 74,
+            textAlign: "center",
+          }}
+        >
+          <span
+            className="font-display"
+            style={{ fontSize: 22, color: "#fff", lineHeight: 1 }}
+          >
+            {user.hotTakeCount || 0}
+          </span>
+          <span
+            style={{ fontSize: 9, color: "var(--text-muted)", marginTop: 4 }}
+          >
+            Hot Takes
+          </span>
         </div>
         {/* 4th block: Rep */}
-        <div className="glass-card" style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "10px 4px", minHeight: 74, textAlign: "center" }}>
-          <span className="font-display" style={{ fontSize: 22, color: "#fff", lineHeight: 1 }}>{fmt(user.reputationScore || 0)}</span>
-          <span style={{ fontSize: 9, color: "var(--text-muted)", marginTop: 4 }}>Rep</span>
+        <div
+          className="glass-card"
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "10px 4px",
+            minHeight: 74,
+            textAlign: "center",
+          }}
+        >
+          <span
+            className="font-display"
+            style={{ fontSize: 22, color: "#fff", lineHeight: 1 }}
+          >
+            {fmt(user.reputationScore || 0)}
+          </span>
+          <span
+            style={{ fontSize: 9, color: "var(--text-muted)", marginTop: 4 }}
+          >
+            Rep
+          </span>
         </div>
       </div>
 
       {/* Rival Card */}
       <div style={{ padding: "24px 16px 0" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-          <h3 className="font-display" style={{ fontWeight: 700, fontSize: 18, color: "var(--accent-magenta)", letterSpacing: "0.05em" }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: 10,
+          }}
+        >
+          <h3
+            className="font-display"
+            style={{
+              fontWeight: 700,
+              fontSize: 18,
+              color: "var(--accent-magenta)",
+              letterSpacing: "0.05em",
+            }}
+          >
             YOUR RIVAL THIS MONTH
           </h3>
-          <span style={{ fontSize: 11, color: "var(--accent-magenta)", fontWeight: 600, cursor: "pointer" }} onClick={() => onToast("Feature coming soon!")}>
+          <span
+            style={{
+              fontSize: 11,
+              color: "var(--accent-magenta)",
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+            onClick={() => onToast("Feature coming soon!")}
+          >
             See Fan Match →
           </span>
         </div>
 
-        <div className="gradient-border" style={{ padding: 16, background: "rgba(22, 22, 31, 0.6)" }}>
+        <div
+          className="gradient-border"
+          style={{ padding: 16, background: "rgba(22, 22, 31, 0.6)" }}
+        >
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <div style={{ position: "relative" }}>
               <AvatarWithBadge
@@ -4729,24 +5288,47 @@ function Profile({
               />
             </div>
             <div>
-              <h4 className="font-display" style={{ fontSize: 16, color: "#fff", letterSpacing: "0.03em" }}>
-                {(rival.fan?.username || RIVAL.fan.username).toUpperCase()} · {BADGE_LABELS[rival.badge || RIVAL.badge]?.toUpperCase()}
+              <h4
+                className="font-display"
+                style={{ fontSize: 16, color: "#fff", letterSpacing: "0.03em" }}
+              >
+                {(rival.fan?.username || RIVAL.fan.username).toUpperCase()} ·{" "}
+                {BADGE_LABELS[rival.badge || RIVAL.badge]?.toUpperCase()}
               </h4>
               <div style={{ display: "flex", gap: 12, marginTop: 4 }}>
                 <span style={{ fontSize: 10, color: "var(--text-secondary)" }}>
-                  <strong style={{ color: "#fff" }}>{rival.disagreements || RIVAL.disagreements}</strong> DISAGREEMENTS
+                  <strong style={{ color: "#fff" }}>
+                    {rival.disagreements || RIVAL.disagreements}
+                  </strong>{" "}
+                  DISAGREEMENTS
                 </span>
                 <span style={{ fontSize: 10, color: "var(--text-secondary)" }}>
-                  They won: <strong style={{ color: "var(--wrong-red)" }}>{rival.rivalWins || RIVAL.rivalWins}</strong>
+                  They won:{" "}
+                  <strong style={{ color: "var(--wrong-red)" }}>
+                    {rival.rivalWins || RIVAL.rivalWins}
+                  </strong>
                 </span>
                 <span style={{ fontSize: 10, color: "var(--text-secondary)" }}>
-                  You won: <strong style={{ color: "var(--correct-green)" }}>{rival.yourWins || RIVAL.yourWins}</strong>
+                  You won:{" "}
+                  <strong style={{ color: "var(--correct-green)" }}>
+                    {rival.yourWins || RIVAL.yourWins}
+                  </strong>
                 </span>
               </div>
             </div>
           </div>
 
-          <p style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 12, fontStyle: "italic", lineHeight: 1.4, paddingLeft: 8, borderLeft: "2px solid var(--accent-magenta)" }}>
+          <p
+            style={{
+              fontSize: 12,
+              color: "var(--text-secondary)",
+              marginTop: 12,
+              fontStyle: "italic",
+              lineHeight: 1.4,
+              paddingLeft: 8,
+              borderLeft: "2px solid var(--accent-magenta)",
+            }}
+          >
             {rival.topDisagreement || RIVAL.topDisagreement}
           </p>
 
@@ -4763,7 +5345,7 @@ function Profile({
                 background: rivalFollowed ? "rgba(255,255,255,0.08)" : "none",
                 color: "#fff",
                 borderRadius: 20,
-                cursor: "pointer"
+                cursor: "pointer",
               }}
             >
               {rivalFollowed ? "✓ Following" : "Follow Rival"}
@@ -4777,7 +5359,7 @@ function Profile({
                 fontSize: 12,
                 borderRadius: 20,
                 border: "none",
-                cursor: "pointer"
+                cursor: "pointer",
               }}
             >
               CHALLENGE →
@@ -4788,13 +5370,38 @@ function Profile({
 
       {/* Badges Hexagonal Layout */}
       <div style={{ padding: "24px 16px 0" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-          <h3 className="font-display" style={{ fontWeight: 700, fontSize: 18, color: "#fff", letterSpacing: "0.03em" }}>
-            YOUR BADGES <span style={{ color: "var(--text-muted)" }}>{unlocked}/{badges.length}</span>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: 12,
+          }}
+        >
+          <h3
+            className="font-display"
+            style={{
+              fontWeight: 700,
+              fontSize: 18,
+              color: "#fff",
+              letterSpacing: "0.03em",
+            }}
+          >
+            YOUR BADGES{" "}
+            <span style={{ color: "var(--text-muted)" }}>
+              {unlocked}/{badges.length}
+            </span>
           </h3>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, padding: "4px 8px" }}>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(3, 1fr)",
+            gap: 16,
+            padding: "4px 8px",
+          }}
+        >
           {badges.map((b: any) => {
             const cfg = BADGE_CONFIG[b.badgeId] || BADGE_CONFIG.RISING_FAN;
             const isUnlocked = b.unlocked;
@@ -4807,7 +5414,7 @@ function Profile({
                   flexDirection: "column",
                   alignItems: "center",
                   cursor: "pointer",
-                  opacity: isUnlocked ? 1 : 0.4
+                  opacity: isUnlocked ? 1 : 0.4,
                 }}
               >
                 {/* Hexagon icon */}
@@ -4816,12 +5423,17 @@ function Profile({
                     position: "relative",
                     width: 68,
                     height: 76,
-                    background: isUnlocked ? cfg.color || "var(--accent-gradient)" : "rgba(255,255,255,0.06)",
-                    clipPath: "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)",
+                    background: isUnlocked
+                      ? cfg.color || "var(--accent-gradient)"
+                      : "rgba(255,255,255,0.06)",
+                    clipPath:
+                      "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    boxShadow: isUnlocked ? "0 4px 12px rgba(0,0,0,0.3)" : "none"
+                    boxShadow: isUnlocked
+                      ? "0 4px 12px rgba(0,0,0,0.3)"
+                      : "none",
                   }}
                 >
                   <div
@@ -4829,17 +5441,26 @@ function Profile({
                       position: "absolute",
                       inset: 2,
                       background: isUnlocked ? "none" : "var(--bg-primary)",
-                      clipPath: "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)",
+                      clipPath:
+                        "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      fontSize: 28
+                      fontSize: 28,
                     }}
                   >
                     {cfg.icon}
                   </div>
                 </div>
-                <span style={{ fontSize: 10, fontWeight: 700, color: "#fff", marginTop: 8, textAlign: "center" }}>
+                <span
+                  style={{
+                    fontSize: 10,
+                    fontWeight: 700,
+                    color: "#fff",
+                    marginTop: 8,
+                    textAlign: "center",
+                  }}
+                >
                   {cfg.name?.toUpperCase()}
                 </span>
               </div>
@@ -4850,17 +5471,40 @@ function Profile({
 
       {/* Calls Section */}
       <div style={{ padding: "24px 16px 0" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-          <h3 className="font-display" style={{ fontWeight: 700, fontSize: 18, color: "#fff" }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: 12,
+          }}
+        >
+          <h3
+            className="font-display"
+            style={{ fontWeight: 700, fontSize: 18, color: "#fff" }}
+          >
             YOUR CALLS
           </h3>
-          <span style={{ fontSize: 11, color: "var(--live-green)", fontWeight: 700 }}>
+          <span
+            style={{
+              fontSize: 11,
+              color: "var(--live-green)",
+              fontWeight: 700,
+            }}
+          >
             {user.accuracy || 0}% accurate
           </span>
         </div>
 
         {/* Filter buttons */}
-        <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 10 }}>
+        <div
+          style={{
+            display: "flex",
+            gap: 6,
+            overflowX: "auto",
+            paddingBottom: 10,
+          }}
+        >
           {["All", "Correct", "Wrong", "Pending"].map((t) => {
             const active = predTab === t;
             return (
@@ -4873,10 +5517,12 @@ function Profile({
                   fontSize: 12,
                   fontWeight: 700,
                   border: active ? "none" : "1px solid var(--border)",
-                  background: active ? "var(--accent-gradient)" : "rgba(255,255,255,0.03)",
+                  background: active
+                    ? "var(--accent-gradient)"
+                    : "rgba(255,255,255,0.03)",
                   color: "#fff",
                   cursor: "pointer",
-                  transition: "all 0.2s"
+                  transition: "all 0.2s",
                 }}
               >
                 {t}
@@ -4888,16 +5534,29 @@ function Profile({
         {/* Calls Cards */}
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {filteredPreds.length === 0 ? (
-            <p style={{ textAlign: "center", padding: "20px 0", color: "var(--text-muted)", fontSize: 13 }}>
+            <p
+              style={{
+                textAlign: "center",
+                padding: "20px 0",
+                color: "var(--text-muted)",
+                fontSize: 13,
+              }}
+            >
               No calls found.
             </p>
           ) : (
             filteredPreds.map((p: any) => {
-              const isCorrect = p.status === "CORRECT" || p.status === "settled_correct";
-              const isWrong = p.status === "WRONG" || p.status === "settled_wrong";
+              const isCorrect =
+                p.status === "CORRECT" || p.status === "settled_correct";
+              const isWrong =
+                p.status === "WRONG" || p.status === "settled_wrong";
               const isPending = !isCorrect && !isWrong;
 
-              const statusText = isCorrect ? "CORRECT" : isWrong ? "WRONG" : "PENDING";
+              const statusText = isCorrect
+                ? "CORRECT"
+                : isWrong
+                  ? "WRONG"
+                  : "PENDING";
               const statusColor = isCorrect
                 ? "var(--correct-green)"
                 : isWrong
@@ -4911,11 +5570,24 @@ function Profile({
                   style={{
                     padding: 14,
                     background: "rgba(22, 22, 31, 0.4)",
-                    border: "1px solid rgba(255,255,255,0.03)"
+                    border: "1px solid rgba(255,255,255,0.03)",
                   }}
                 >
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                    <span style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)" }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      marginBottom: 6,
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontSize: 11,
+                        fontWeight: 700,
+                        color: "var(--text-muted)",
+                      }}
+                    >
                       {p.matchId || "GENERAL"}
                     </span>
                     <span
@@ -4925,7 +5597,7 @@ function Profile({
                         color: statusColor,
                         background: `${statusColor}18`,
                         padding: "2px 6px",
-                        borderRadius: 4
+                        borderRadius: 4,
                       }}
                     >
                       {statusText}
@@ -4934,13 +5606,32 @@ function Profile({
                   <p style={{ fontSize: 14, color: "#fff", lineHeight: 1.4 }}>
                     {p.text}
                   </p>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 10 }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      marginTop: 10,
+                    }}
+                  >
                     <span style={{ fontSize: 10, color: "var(--text-muted)" }}>
-                      {p.createdAt ? new Date(p.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : "Today"}
+                      {p.createdAt
+                        ? new Date(p.createdAt).toLocaleDateString(undefined, {
+                            month: "short",
+                            day: "numeric",
+                          })
+                        : "Today"}
                     </span>
                     <button
                       onClick={() => onToast("Shared call legacy link!")}
-                      style={{ background: "none", border: "none", color: "var(--text-muted)", fontSize: 10, cursor: "pointer", textDecoration: "underline" }}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        color: "var(--text-muted)",
+                        fontSize: 10,
+                        cursor: "pointer",
+                        textDecoration: "underline",
+                      }}
                     >
                       Share
                     </button>
@@ -4954,13 +5645,28 @@ function Profile({
 
       {/* Takes Section */}
       <div style={{ padding: "24px 16px 80px" }}>
-        <h3 className="font-display" style={{ fontWeight: 700, fontSize: 18, color: "#fff", marginBottom: 12 }}>
+        <h3
+          className="font-display"
+          style={{
+            fontWeight: 700,
+            fontSize: 18,
+            color: "#fff",
+            marginBottom: 12,
+          }}
+        >
           YOUR TAKES
         </h3>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {hotTakes.length === 0 ? (
-            <p style={{ textAlign: "center", padding: "20px 0", color: "var(--text-muted)", fontSize: 13 }}>
+            <p
+              style={{
+                textAlign: "center",
+                padding: "20px 0",
+                color: "var(--text-muted)",
+                fontSize: 13,
+              }}
+            >
               No hot takes created.
             </p>
           ) : (
@@ -4978,17 +5684,52 @@ function Profile({
                   style={{
                     padding: 14,
                     background: "rgba(22, 22, 31, 0.4)",
-                    border: "1px solid rgba(255,255,255,0.03)"
+                    border: "1px solid rgba(255,255,255,0.03)",
                   }}
                 >
-                  <p style={{ fontSize: 14, color: "#fff", lineHeight: 1.4, marginBottom: 10 }}>
+                  <p
+                    style={{
+                      fontSize: 14,
+                      color: "#fff",
+                      lineHeight: 1.4,
+                      marginBottom: 10,
+                    }}
+                  >
                     {ht.text}
                   </p>
-                  
+
                   {/* Percentage bar */}
-                  <div style={{ position: "relative", width: "100%", height: 16, background: "rgba(255,255,255,0.06)", borderRadius: 8, overflow: "hidden" }}>
-                    <div style={{ height: "100%", width: `${agreePct}%`, background: "var(--accent-gradient)", transition: "width 1s" }} />
-                    <div style={{ position: "absolute", inset: 0, display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0 8px", fontSize: 9, fontWeight: 700, color: "#fff" }}>
+                  <div
+                    style={{
+                      position: "relative",
+                      width: "100%",
+                      height: 16,
+                      background: "rgba(255,255,255,0.06)",
+                      borderRadius: 8,
+                      overflow: "hidden",
+                    }}
+                  >
+                    <div
+                      style={{
+                        height: "100%",
+                        width: `${agreePct}%`,
+                        background: "var(--accent-gradient)",
+                        transition: "width 1s",
+                      }}
+                    />
+                    <div
+                      style={{
+                        position: "absolute",
+                        inset: 0,
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        padding: "0 8px",
+                        fontSize: 9,
+                        fontWeight: 700,
+                        color: "#fff",
+                      }}
+                    >
                       <span>{agreePct}% Agree</span>
                       <span>{disagreePct}% Disagree</span>
                     </div>
@@ -5075,7 +5816,9 @@ function Profile({
                 <button
                   onClick={async () => {
                     try {
-                      await axios.patch("/api/roar/profile", { username: editName });
+                      await axios.patch("/api/roar/profile", {
+                        username: editName,
+                      });
                       setEditOpen(false);
                       onToast("Profile updated successfully");
                     } catch (err) {
@@ -5164,7 +5907,8 @@ function Profile({
                   marginBottom: 16,
                 }}
               >
-                Share your prediction accuracy and unlocked legacy badges with the sportsfan community!
+                Share your prediction accuracy and unlocked legacy badges with
+                the sportsfan community!
               </p>
               <button
                 onClick={() => {
@@ -5249,7 +5993,8 @@ function Profile({
                   lineHeight: 1.4,
                 }}
               >
-                {BADGE_CONFIG[badgeModal.badgeId]?.sub || "Unlock by building your legacy!"}
+                {BADGE_CONFIG[badgeModal.badgeId]?.sub ||
+                  "Unlock by building your legacy!"}
               </p>
               <div
                 style={{
@@ -5386,17 +6131,23 @@ function PostDetailsOverlay({
       if (!post.isDbPost) {
         setComments((prev) =>
           prev.map((c) =>
-            c.commentId === commentId ? { ...c, heartCount: c.heartCount + 1 } : c
-          )
+            c.commentId === commentId
+              ? { ...c, heartCount: c.heartCount + 1 }
+              : c,
+          ),
         );
         return;
       }
-      const res = await axios.post(`/api/roar/posts/${post.id}/comments/${commentId}/react`);
+      const res = await axios.post(
+        `/api/roar/posts/${post.id}/comments/${commentId}/react`,
+      );
       if (res.data?.success) {
         setComments((prev) =>
           prev.map((c) =>
-            c.commentId === commentId ? { ...c, heartCount: res.data.heartCount } : c
-          )
+            c.commentId === commentId
+              ? { ...c, heartCount: res.data.heartCount }
+              : c,
+          ),
         );
       }
     } catch (err) {
@@ -5412,16 +6163,31 @@ function PostDetailsOverlay({
       nextVote = null;
     }
     setVotes((v) => ({ ...v, [post.id]: nextVote }));
-    setPct(post.agreePercent + (nextVote === true ? 4 : nextVote === false ? -4 : 0));
-    onVote(post.id, nextVote === true ? "agree" : nextVote === false ? "disagree" : null);
+    setPct(
+      post.agreePercent + (nextVote === true ? 4 : nextVote === false ? -4 : 0),
+    );
+    onVote(
+      post.id,
+      nextVote === true ? "agree" : nextVote === false ? "disagree" : null,
+    );
   };
 
   // Truncate text for header title
-  const headerTitle = post.text.length > 40 ? post.text.slice(0, 40) + "..." : post.text;
+  const headerTitle =
+    post.text.length > 40 ? post.text.slice(0, 40) + "..." : post.text;
 
   return (
     <AnimatePresence>
-      <div style={{ position: "absolute", inset: 0, zIndex: 100, display: "flex", flexDirection: "column", background: "var(--bg-primary)" }}>
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          zIndex: 100,
+          display: "flex",
+          flexDirection: "column",
+          background: "var(--bg-primary)",
+        }}
+      >
         {/* Header (Matching Screenshot 2) */}
         <div
           style={{
@@ -5451,7 +6217,14 @@ function PostDetailsOverlay({
           >
             ←
           </button>
-          <div style={{ display: "flex", flexDirection: "column", flex: 1, minWidth: 0 }}>
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              flex: 1,
+              minWidth: 0,
+            }}
+          >
             <h2
               style={{
                 fontSize: 12,
@@ -5467,14 +6240,28 @@ function PostDetailsOverlay({
             >
               {headerTitle}
             </h2>
-            <p style={{ fontSize: 9, color: "var(--text-secondary)", margin: "2px 0 0" }}>
-              Posted by {post.fan?.username || post.authorUsername} • {post.timeAgo || "2h ago"} • {comments.length} comments
+            <p
+              style={{
+                fontSize: 9,
+                color: "var(--text-secondary)",
+                margin: "2px 0 0",
+              }}
+            >
+              Posted by {post.fan?.username || post.authorUsername} •{" "}
+              {post.timeAgo || "2h ago"} • {comments.length} comments
             </p>
           </div>
         </div>
 
         {/* Scrollable Content */}
-        <div style={{ flex: 1, overflowY: "auto", padding: "16px 20px", background: "linear-gradient(to bottom, #050508, #0b0b12)" }}>
+        <div
+          style={{
+            flex: 1,
+            overflowY: "auto",
+            padding: "16px 20px",
+            background: "linear-gradient(to bottom, #050508, #0b0b12)",
+          }}
+        >
           {/* Main Post Card */}
           <div
             className="glass-card"
@@ -5485,20 +6272,63 @@ function PostDetailsOverlay({
               border: "1px solid rgba(255,255,255,0.06)",
             }}
           >
-            <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 12 }}>
-              <AvatarWithBadge username={post.fan?.username || post.authorUsername} badge={post.fan?.badge || post.authorBadge} size="sm" />
+            <div
+              style={{
+                display: "flex",
+                gap: 10,
+                alignItems: "center",
+                marginBottom: 12,
+              }}
+            >
+              <AvatarWithBadge
+                username={post.fan?.username || post.authorUsername}
+                badge={post.fan?.badge || post.authorBadge}
+                size="sm"
+              />
               <div>
-                <p style={{ fontWeight: 700, fontSize: 13, color: "white", margin: 0, display: "flex", alignItems: "center", gap: 4 }}>
+                <p
+                  style={{
+                    fontWeight: 700,
+                    fontSize: 13,
+                    color: "white",
+                    margin: 0,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 4,
+                  }}
+                >
                   {post.fan?.username || post.authorUsername}
-                  <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#00E676", display: "inline-block" }} />
+                  <span
+                    style={{
+                      width: 6,
+                      height: 6,
+                      borderRadius: "50%",
+                      background: "#00E676",
+                      display: "inline-block",
+                    }}
+                  />
                 </p>
-                <p style={{ fontSize: 10, color: "var(--text-secondary)", margin: 0 }}>
+                <p
+                  style={{
+                    fontSize: 10,
+                    color: "var(--text-secondary)",
+                    margin: 0,
+                  }}
+                >
                   {post.timeAgo || "2h ago"}
                 </p>
               </div>
             </div>
 
-            <p style={{ fontWeight: 600, fontSize: 15, lineHeight: 1.5, marginBottom: 12, color: "white" }}>
+            <p
+              style={{
+                fontWeight: 600,
+                fontSize: 15,
+                lineHeight: 1.5,
+                marginBottom: 12,
+                color: "white",
+              }}
+            >
               {post.text}
             </p>
 
@@ -5518,8 +6348,12 @@ function PostDetailsOverlay({
                       fontWeight: 700,
                       cursor: "pointer",
                       border: `2px solid ${userVote === true ? "var(--accent-magenta)" : "rgba(233,30,140,0.35)"}`,
-                      background: userVote === true ? "var(--accent-magenta)" : "transparent",
-                      color: userVote === true ? "white" : "var(--accent-magenta)",
+                      background:
+                        userVote === true
+                          ? "var(--accent-magenta)"
+                          : "transparent",
+                      color:
+                        userVote === true ? "white" : "var(--accent-magenta)",
                       transition: "all 0.2s",
                     }}
                   >
@@ -5535,8 +6369,12 @@ function PostDetailsOverlay({
                       fontWeight: 700,
                       cursor: "pointer",
                       border: `2px solid ${userVote === false ? "var(--accent-orange)" : "rgba(255,107,53,0.35)"}`,
-                      background: userVote === false ? "var(--accent-orange)" : "transparent",
-                      color: userVote === false ? "white" : "var(--accent-orange)",
+                      background:
+                        userVote === false
+                          ? "var(--accent-orange)"
+                          : "transparent",
+                      color:
+                        userVote === false ? "white" : "var(--accent-orange)",
                       transition: "all 0.2s",
                     }}
                   >
@@ -5548,8 +6386,23 @@ function PostDetailsOverlay({
           </div>
 
           {/* Comments Heading Section (Matching Screenshot 2) */}
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-            <span style={{ fontSize: 11, fontWeight: 800, color: "white", letterSpacing: "0.06em", textTransform: "uppercase" }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: 12,
+            }}
+          >
+            <span
+              style={{
+                fontSize: 11,
+                fontWeight: 800,
+                color: "white",
+                letterSpacing: "0.06em",
+                textTransform: "uppercase",
+              }}
+            >
               Comments
             </span>
             <span style={{ fontSize: 10, color: "var(--text-secondary)" }}>
@@ -5558,9 +6411,23 @@ function PostDetailsOverlay({
           </div>
 
           {/* Comments List */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 12, paddingBottom: 80 }}>
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: 12,
+              paddingBottom: 80,
+            }}
+          >
             {comments.length === 0 ? (
-              <p style={{ fontSize: 13, color: "var(--text-muted)", textAlign: "center", padding: "20px 0" }}>
+              <p
+                style={{
+                  fontSize: 13,
+                  color: "var(--text-muted)",
+                  textAlign: "center",
+                  padding: "20px 0",
+                }}
+              >
                 No comments yet. Be the first to share your opinion!
               </p>
             ) : (
@@ -5599,13 +6466,47 @@ function PostDetailsOverlay({
                       />
                     )}
 
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                        <AvatarWithBadge username={comment.authorUsername} badge={comment.authorBadge} size="sm" />
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          gap: 8,
+                          alignItems: "center",
+                        }}
+                      >
+                        <AvatarWithBadge
+                          username={comment.authorUsername}
+                          badge={comment.authorBadge}
+                          size="sm"
+                        />
                         <div>
-                          <p style={{ fontWeight: 700, fontSize: 12, color: "white", margin: 0, display: "flex", alignItems: "center", gap: 4 }}>
+                          <p
+                            style={{
+                              fontWeight: 700,
+                              fontSize: 12,
+                              color: "white",
+                              margin: 0,
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 4,
+                            }}
+                          >
                             {comment.authorUsername}
-                            <span style={{ width: 5, height: 5, borderRadius: "50%", background: "#E91E8C", display: "inline-block" }} />
+                            <span
+                              style={{
+                                width: 5,
+                                height: 5,
+                                borderRadius: "50%",
+                                background: "#E91E8C",
+                                display: "inline-block",
+                              }}
+                            />
                           </p>
                         </div>
                       </div>
@@ -5614,11 +6515,25 @@ function PostDetailsOverlay({
                       </span>
                     </div>
 
-                    <p style={{ fontSize: 13, color: "var(--text-primary)", lineHeight: 1.4, margin: "4px 0" }}>
+                    <p
+                      style={{
+                        fontSize: 13,
+                        color: "var(--text-primary)",
+                        lineHeight: 1.4,
+                        margin: "4px 0",
+                      }}
+                    >
                       {comment.text}
                     </p>
 
-                    <div style={{ display: "flex", gap: 14, alignItems: "center", marginTop: 4 }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        gap: 14,
+                        alignItems: "center",
+                        marginTop: 4,
+                      }}
+                    >
                       <button
                         onClick={() => reactToComment(comment.commentId)}
                         style={{
@@ -5629,7 +6544,10 @@ function PostDetailsOverlay({
                           alignItems: "center",
                           gap: 4,
                           fontSize: 12,
-                          color: comment.heartCount > 0 ? "white" : "var(--text-muted)",
+                          color:
+                            comment.heartCount > 0
+                              ? "white"
+                              : "var(--text-muted)",
                           padding: 0,
                           transition: "all 0.2s",
                         }}
@@ -5672,7 +6590,11 @@ function PostDetailsOverlay({
             zIndex: 10,
           }}
         >
-          <AvatarWithBadge username={userUsername} badge={userBadge} size="sm" />
+          <AvatarWithBadge
+            username={userUsername}
+            badge={userBadge}
+            size="sm"
+          />
           <input
             type="text"
             placeholder="Share your opinion.."
@@ -5739,6 +6661,7 @@ export default function ROARApp() {
   const [composeOpen, setComposeOpen] = useState(false);
   const [composeType, setComposeType] = useState<string | null>(null);
   const [toast, setToast] = useState({ visible: false, message: "" });
+  const [userSports, setUserSports] = useState<string[]>([]);
 
   const [rooms, setRooms] = useState<any[]>([]);
   const [selectedRoom, setSelectedRoom] = useState<any | null>(null);
@@ -5763,6 +6686,7 @@ export default function ROARApp() {
     }
   }, []);
 
+
   useEffect(() => {
     const fetchRooms = async () => {
       try {
@@ -5777,26 +6701,42 @@ export default function ROARApp() {
         console.error("Failed to fetch rooms:", err);
       }
     };
+  // 👇 Add this — fetch user's saved sports from profile
+  const fetchUserSports = async () => {
+    try {
+      const res = await axios.get("/api/roar/profile");
+      console.log("fetch user sports", res.data);
+      if (res.data?.success) {
+        setUserSports(res.data.user.sports ?? []);
+      }
+    } catch (err) {
+      console.error("Failed to fetch user sports:", err);
+    }
+  };
     if (onboarded) {
       fetchRooms();
       fetchPosts();
+      fetchUserSports();
     }
   }, [onboarded, fetchPosts]);
-
   useEffect(() => {
     if (rooms) {
       setNotifications((prev) => {
         // Keep non-match notifications (badges, challenges, etc.)
         const nonMatchNotifs = prev.filter(
-          (n) => n.type !== "MATCH_LIVE" && n.type !== "HEATING_UP"
+          (n) => n.type !== "MATCH_LIVE" && n.type !== "HEATING_UP",
         );
-        
+
         // Generate new match notifications from active rooms
         const matchNotifs: any[] = [];
         rooms.forEach((room) => {
           if (room.isActive) {
-            const existingLive = prev.find((n) => n.id === `live-${room.roomId}`);
-            const existingHeat = prev.find((n) => n.id === `heat-${room.roomId}`);
+            const existingLive = prev.find(
+              (n) => n.id === `live-${room.roomId}`,
+            );
+            const existingHeat = prev.find(
+              (n) => n.id === `heat-${room.roomId}`,
+            );
 
             matchNotifs.push({
               id: `live-${room.roomId}`,
@@ -5821,20 +6761,23 @@ export default function ROARApp() {
             });
           }
         });
-        
+
         return [...matchNotifs, ...nonMatchNotifs];
       });
     }
   }, [rooms]);
-
-  const handleVote = useCallback(async (postId: string, voteType: "agree" | "disagree" | null) => {
-    try {
-      await axios.post(`/api/roar/posts/${postId}/vote`, { vote: voteType });
-      fetchPosts();
-    } catch (err) {
-      console.error("Failed to submit vote:", err);
-    }
-  }, [fetchPosts]);
+  console.log("userSports", userSports);
+  const handleVote = useCallback(
+    async (postId: string, voteType: "agree" | "disagree" | null) => {
+      try {
+        await axios.post(`/api/roar/posts/${postId}/vote`, { vote: voteType });
+        fetchPosts();
+      } catch (err) {
+        console.error("Failed to submit vote:", err);
+      }
+    },
+    [fetchPosts],
+  );
 
   const showToast = useCallback((msg: string) => {
     setToast({ visible: true, message: msg });
@@ -5868,6 +6811,7 @@ export default function ROARApp() {
 
   const completeOnboarding = useCallback((prefs: any) => {
     const badge = prefs.badge || "RISING_FAN";
+    setUserSports(prefs.sports ?? []);
     setUserBadge(badge);
     setOnboarded(true);
     try {
@@ -5898,7 +6842,10 @@ export default function ROARApp() {
 
   if (!mounted) {
     return (
-      <div className="roar-root" style={{ minHeight: "100vh", background: "var(--bg-primary)" }} />
+      <div
+        className="roar-root"
+        style={{ minHeight: "100vh", background: "var(--bg-primary)" }}
+      />
     );
   }
 
@@ -5934,11 +6881,66 @@ export default function ROARApp() {
             zIndex: 0,
           }}
         >
-          <div style={{ position: "absolute", bottom: -10, left: "12%", width: 3, height: 3, borderRadius: "50%", background: "var(--accent-magenta)", animation: "roar-driftUp 14s linear infinite" }} />
-          <div style={{ position: "absolute", bottom: -10, left: "28%", width: 4, height: 4, borderRadius: "50%", background: "var(--accent-orange)", animation: "roar-driftUp 18s linear infinite 2s" }} />
-          <div style={{ position: "absolute", bottom: -10, left: "50%", width: 3, height: 3, borderRadius: "50%", background: "var(--teal)", animation: "roar-driftUp 15s linear infinite 5s" }} />
-          <div style={{ position: "absolute", bottom: -10, left: "72%", width: 4, height: 4, borderRadius: "50%", background: "var(--accent-magenta)", animation: "roar-driftUp 20s linear infinite 1s" }} />
-          <div style={{ position: "absolute", bottom: -10, left: "88%", width: 3, height: 3, borderRadius: "50%", background: "var(--accent-yellow)", animation: "roar-driftUp 16s linear infinite 7s" }} />
+          <div
+            style={{
+              position: "absolute",
+              bottom: -10,
+              left: "12%",
+              width: 3,
+              height: 3,
+              borderRadius: "50%",
+              background: "var(--accent-magenta)",
+              animation: "roar-driftUp 14s linear infinite",
+            }}
+          />
+          <div
+            style={{
+              position: "absolute",
+              bottom: -10,
+              left: "28%",
+              width: 4,
+              height: 4,
+              borderRadius: "50%",
+              background: "var(--accent-orange)",
+              animation: "roar-driftUp 18s linear infinite 2s",
+            }}
+          />
+          <div
+            style={{
+              position: "absolute",
+              bottom: -10,
+              left: "50%",
+              width: 3,
+              height: 3,
+              borderRadius: "50%",
+              background: "var(--teal)",
+              animation: "roar-driftUp 15s linear infinite 5s",
+            }}
+          />
+          <div
+            style={{
+              position: "absolute",
+              bottom: -10,
+              left: "72%",
+              width: 4,
+              height: 4,
+              borderRadius: "50%",
+              background: "var(--accent-magenta)",
+              animation: "roar-driftUp 20s linear infinite 1s",
+            }}
+          />
+          <div
+            style={{
+              position: "absolute",
+              bottom: -10,
+              left: "88%",
+              width: 3,
+              height: 3,
+              borderRadius: "50%",
+              background: "var(--accent-yellow)",
+              animation: "roar-driftUp 16s linear infinite 7s",
+            }}
+          />
         </div>
 
         {/* ROAR watermark */}
@@ -6051,6 +7053,7 @@ export default function ROARApp() {
                       dbPosts={dbPosts}
                       onPostClick={(post) => setSelectedPost(post)}
                       onVote={handleVote}
+                      userSports={userSports}
                     />
                   )}
                   {activeTab === "profile" && (

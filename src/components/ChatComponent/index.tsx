@@ -1,91 +1,79 @@
-// components/ChatComponent/index.tsx — UPGRADED v3 (premium pink theme + fixed edit/delete)
+// components/ChatComponent/index.tsx — FIXED v4
+// Fixes:
+//   1. Context menu (edit/delete) now appears on left-click for ALL messages
+//   2. Received message avatar/name now correctly shows the OTHER person's name
+//   3. Premium dark theme — deep slate/charcoal base, rose-gold accents, not flat pink
 "use client";
-
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import {
-  ChevronLeft, Plus, UserPlus, X, MoreVertical, Mic,
-  CheckCheck, Reply, Edit2, Trash2, Copy,
-  Search, BadgeCheck, Loader2, AlertCircle,
-  Phone, Video, Info, Smile, Paperclip, Send,
-  ArrowDown, Star, BellOff, Shield, Flag,
-  Image, FileText, Sticker, ThumbsUp, Heart,
-  MicOff, PhoneOff, Camera, RotateCcw, Forward,
-  Pin, EyeOff, Clock, Check, Bookmark,
-  ChevronDown, Zap, MessageCircle, Circle,
+  ChevronLeft, Plus, X, MoreVertical, Mic, CheckCheck, Reply,
+  Edit2, Trash2, Copy, Search, BadgeCheck, Loader2, AlertCircle,
+  Phone, Video, Info, Smile, Paperclip, Send, ArrowDown, Star,
+  BellOff, Shield, Flag, Image, FileText, Sticker, ThumbsUp,
+  Heart, MicOff, PhoneOff, Camera, RotateCcw, Forward, Pin,
+  EyeOff, Clock, Check, Bookmark, ChevronDown, Zap, MessageCircle,
+  Circle,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-
 import { useChats, useMessages, useCreateChat, timeAgo } from "../../../hooks/useChat";
 import { useAuth } from "@/context/AuthContext";
-import {
-  ChatAPI, resolveChatName,
-  type Chat, type Message,
-} from "../../../lib/chatApi";
+import { ChatAPI, resolveChatName, type Chat, type Message } from "../../../lib/chatApi";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-type ViewType = "list" | "chat_room";
-type MessageStatus = "sending" | "sent" | "delivered" | "read" | "failed";
-type TypingState = { userId: string; name: string; since: number };
-
-type PickerUser = {
-  userId?: string; user_id?: string; id?: string;
-  email?: string; firstName?: string; lastName?: string; name?: string; avatar?: string;
+// ─── Types ───────────────────────────────────────────────────────────────────
+type ViewType       = "list" | "chat_room";
+type MessageStatus  = "sending" | "sent" | "delivered" | "read" | "failed";
+type TypingState    = { userId: string; name: string; since: number };
+type PickerUser     = {
+  userId?: string; user_id?: string; id?: string; email?: string;
+  firstName?: string; lastName?: string; name?: string; avatar?: string;
 };
+type PinnedMessage  = { id: string; content: string; senderId: string };
+type VoiceNote      = { duration: number; url?: string };
 
-type PinnedMessage = { id: string; content: string; senderId: string };
-type VoiceNote = { duration: number; url?: string };
+// ─── Theme ───────────────────────────────────────────────────────────────────
+// Base:          #0a0c10  (deep navy-charcoal)
+// Surface:       #111318  (card bg)
+// Elevated:      #181c24  (modals, menus)
+// Border:        rgba(220,160,120,0.12)  (rose-gold)
+// Accent:        #c8705a  (rose-gold / burnt sienna)
+// Accent light:  #e8967e
+// Sent bubble:   linear rose-gold gradient
+// Text muted:    #7a6a65
 
-// ─── Theme tokens (pink premium) ──────────────────────────────────────────────
-// Primary accent: #e8196e (hot pink)
-// Secondary:      #ff6bae (soft pink)
-// Surface:        #0f0a0d (near-black with pink tint)
-// Card:           #1a0f14 / #221119
-// Border:         rgba(232,25,110,0.15)
-
-// ─── Reactions ────────────────────────────────────────────────────────────────
+// ─── Reactions ───────────────────────────────────────────────────────────────
 const REACTIONS = [
-  { emoji: "❤️", label: "Love" },
-  { emoji: "😆", label: "Haha" },
-  { emoji: "😮", label: "Wow" },
-  { emoji: "😢", label: "Sad" },
-  { emoji: "😠", label: "Angry" },
-  { emoji: "👍", label: "Like" },
-  { emoji: "🔥", label: "Fire" },
-  { emoji: "🎉", label: "Party" },
+  { emoji: "❤️", label: "Love" },  { emoji: "😆", label: "Haha" },
+  { emoji: "😮", label: "Wow" },   { emoji: "😢", label: "Sad" },
+  { emoji: "😠", label: "Angry" }, { emoji: "👍", label: "Like" },
+  { emoji: "🔥", label: "Fire" },  { emoji: "🎉", label: "Party" },
 ];
-
-const QUICK_REPLIES = [
-  "👍 Sounds good!",
-  "On my way 🚗",
-  "Can we talk later?",
-  "Thanks! 🙌",
-];
+const QUICK_REPLIES = ["👍 Sounds good!", "On my way 🚗", "Can we talk later?", "Thanks! 🙌"];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function formatMsgTime(ts: number) {
-  const d = new Date(ts);
+  const d   = new Date(ts);
   const now = new Date();
   const isToday = d.toDateString() === now.toDateString();
   if (isToday) return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-  return d.toLocaleDateString([], { month: "short", day: "numeric" }) + " " +
-    d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  return (
+    d.toLocaleDateString([], { month: "short", day: "numeric" }) + " " +
+    d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+  );
 }
-
 function formatListTime(ts?: number) {
   if (!ts) return "";
-  const d = new Date(ts);
-  const now = new Date();
-  const diffMs = now.getTime() - d.getTime();
+  const d      = new Date(ts);
+  const now    = new Date();
+  const diffMs  = now.getTime() - d.getTime();
   const diffMin = Math.floor(diffMs / 60000);
   const diffHr  = Math.floor(diffMs / 3600000);
   const diffDay = Math.floor(diffMs / 86400000);
-  if (diffMin < 1)   return "now";
-  if (diffMin < 60)  return `${diffMin}m`;
-  if (diffHr  < 24)  return `${diffHr}h`;
-  if (diffDay < 7)   return `${diffDay}d`;
+  if (diffMin < 1)  return "now";
+  if (diffMin < 60) return `${diffMin}m`;
+  if (diffHr  < 24) return `${diffHr}h`;
+  if (diffDay < 7)  return `${diffDay}d`;
   return d.toLocaleDateString([], { month: "short", day: "numeric" });
 }
-
 function formatDuration(sec: number) {
   const m = Math.floor(sec / 60);
   const s = sec % 60;
@@ -96,22 +84,23 @@ function formatDuration(sec: number) {
 const Avatar = ({
   src, name, size = 44, online = false, typing = false, className = "",
 }: {
-  src?: string | null; name: string; size?: number; online?: boolean; typing?: boolean; className?: string;
+  src?: string | null; name: string; size?: number;
+  online?: boolean; typing?: boolean; className?: string;
 }) => {
   const [err, setErr] = useState(false);
   const letter = (name || "?").charAt(0).toUpperCase();
-  // Pink-hued gradient for avatars
-  const hue = [...name].reduce((a, c) => a + c.charCodeAt(0), 0) % 60; // 0-60 → pink-rose-red range
-
+  // Warm hue range: 10-40 (orange-rose), ensures rose-gold palette
+  const hue = ([...name].reduce((a, c) => a + c.charCodeAt(0), 0) % 30) + 10;
   return (
     <div className={`relative flex-shrink-0 ${className}`} style={{ width: size, height: size }}>
       <div
-        className="w-full h-full rounded-full overflow-hidden flex items-center justify-center font-semibold text-white select-none"
+        className="w-full h-full rounded-full overflow-hidden flex items-center justify-center font-bold text-white select-none"
         style={{
           background: src && !err
             ? undefined
-            : `linear-gradient(135deg, hsl(${330 + hue},80%,48%), hsl(${300 + hue},65%,35%))`,
+            : `linear-gradient(145deg, hsl(${hue},65%,52%), hsl(${hue + 20},55%,35%))`,
           fontSize: size * 0.38,
+          boxShadow: `0 0 0 1.5px rgba(200,112,90,0.25)`,
         }}
       >
         {src && !err
@@ -120,7 +109,9 @@ const Avatar = ({
       </div>
       {(online || typing) && (
         <span
-          className={`absolute bottom-0 right-0 rounded-full border-2 border-[#0f0a0d] transition-colors duration-300 ${typing ? "bg-amber-400" : "bg-emerald-400"}`}
+          className={`absolute bottom-0 right-0 rounded-full border-2 border-[#0a0c10] transition-colors duration-300 ${
+            typing ? "bg-amber-400" : "bg-emerald-400"
+          }`}
           style={{ width: size * 0.28, height: size * 0.28 }}
         />
       )}
@@ -130,20 +121,20 @@ const Avatar = ({
 
 // ─── Read Ticks ───────────────────────────────────────────────────────────────
 const Ticks = ({ status }: { status: MessageStatus }) => {
-  if (status === "sending") return <Loader2 size={11} className="animate-spin text-white/40" />;
-  if (status === "failed") return <AlertCircle size={11} className="text-rose-400" />;
-  if (status === "sent") return <Check size={13} className="text-white/50" />;
+  if (status === "sending")   return <Loader2 size={11} className="animate-spin text-white/40" />;
+  if (status === "failed")    return <AlertCircle size={11} className="text-rose-400" />;
+  if (status === "sent")      return <Check size={13} className="text-white/50" />;
   if (status === "delivered") return <CheckCheck size={13} className="text-white/50" />;
-  return <CheckCheck size={13} className="text-pink-200" />;
+  return <CheckCheck size={13} className="text-[#e8967e]" />;
 };
 
 // ─── Skeleton ─────────────────────────────────────────────────────────────────
 const SkeletonRow = () => (
   <div className="flex items-center gap-3 px-4 py-3 animate-pulse">
-    <div className="w-[56px] h-[56px] rounded-full bg-[#e8196e]/[0.08] flex-shrink-0" />
+    <div className="w-[56px] h-[56px] rounded-full bg-[#c8705a]/[0.08] flex-shrink-0" />
     <div className="flex-1 flex flex-col gap-2">
-      <div className="h-[14px] bg-[#e8196e]/[0.07] rounded-full w-2/5" />
-      <div className="h-[12px] bg-[#e8196e]/[0.04] rounded-full w-3/5" />
+      <div className="h-[14px] bg-[#c8705a]/[0.07] rounded-full w-2/5" />
+      <div className="h-[12px] bg-[#c8705a]/[0.04] rounded-full w-3/5" />
     </div>
     <div className="h-[10px] bg-white/[0.04] rounded-full w-8" />
   </div>
@@ -151,10 +142,12 @@ const SkeletonRow = () => (
 
 // ─── Date Divider ─────────────────────────────────────────────────────────────
 const DateDivider = ({ label }: { label: string }) => (
-  <div className="flex items-center justify-center my-4">
-    <span className="text-[10px] text-[#a06070] bg-[#1a0f14] px-3.5 py-1 rounded-full border border-[#e8196e]/[0.12] tracking-widest uppercase font-semibold">
+  <div className="flex items-center justify-center my-4 gap-3">
+    <div className="flex-1 h-px bg-[#c8705a]/[0.10]" />
+    <span className="text-[10px] text-[#7a6a65] px-3 tracking-widest uppercase font-semibold">
       {label}
     </span>
+    <div className="flex-1 h-px bg-[#c8705a]/[0.10]" />
   </div>
 );
 
@@ -162,20 +155,19 @@ const DateDivider = ({ label }: { label: string }) => (
 const TypingIndicator = ({ name }: { name: string }) => (
   <div className="flex items-end gap-2 mt-2 mb-1">
     <div className="w-7 flex-shrink-0" />
-    <div className="bg-[#2a1520] rounded-[20px] rounded-bl-[5px] px-4 py-3 flex items-center gap-1 border border-[#e8196e]/[0.12]">
-      <span className="w-1.5 h-1.5 bg-[#e8196e]/70 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-      <span className="w-1.5 h-1.5 bg-[#e8196e]/70 rounded-full animate-bounce" style={{ animationDelay: "120ms" }} />
-      <span className="w-1.5 h-1.5 bg-[#e8196e]/70 rounded-full animate-bounce" style={{ animationDelay: "240ms" }} />
+    <div className="bg-[#181c24] rounded-[20px] rounded-bl-[5px] px-4 py-3 flex items-center gap-1.5 border border-[#c8705a]/[0.12] shadow-sm">
+      <span className="w-1.5 h-1.5 bg-[#c8705a]/70 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+      <span className="w-1.5 h-1.5 bg-[#c8705a]/70 rounded-full animate-bounce" style={{ animationDelay: "120ms" }} />
+      <span className="w-1.5 h-1.5 bg-[#c8705a]/70 rounded-full animate-bounce" style={{ animationDelay: "240ms" }} />
     </div>
-    <span className="text-[11px] text-[#704050] mb-1">{name} is typing…</span>
+    <span className="text-[11px] text-[#7a6a65] mb-1">{name} is typing…</span>
   </div>
 );
 
 // ─── Voice Note Player ────────────────────────────────────────────────────────
 const VoiceNotePlayer = ({ isMe, duration }: { isMe: boolean; duration: number }) => {
-  const [playing, setPlaying] = useState(false);
+  const [playing, setPlaying]   = useState(false);
   const [progress, setProgress] = useState(0);
-
   useEffect(() => {
     if (!playing) return;
     const interval = setInterval(() => {
@@ -186,24 +178,18 @@ const VoiceNotePlayer = ({ isMe, duration }: { isMe: boolean; duration: number }
     }, 100);
     return () => clearInterval(interval);
   }, [playing, duration]);
-
-  const bars = Array.from({ length: 28 }, (_, i) => {
-    const h = 4 + Math.abs(Math.sin(i * 0.8 + 1.2) * 20);
-    return h;
-  });
-
+  const bars = Array.from({ length: 28 }, (_, i) => 4 + Math.abs(Math.sin(i * 0.8 + 1.2) * 20));
   return (
     <div className="flex items-center gap-3 min-w-[180px]">
       <button
         onClick={() => setPlaying(p => !p)}
         className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 transition-all ${
-          isMe ? "bg-white/20 hover:bg-white/30" : "bg-[#e8196e]/20 hover:bg-[#e8196e]/30"
+          isMe ? "bg-white/20 hover:bg-white/30" : "bg-[#c8705a]/20 hover:bg-[#c8705a]/30"
         }`}
       >
         {playing
           ? <div className="flex gap-0.5"><span className="w-1 h-3 bg-current rounded-sm"/><span className="w-1 h-3 bg-current rounded-sm"/></div>
-          : <div className="w-0 h-0 border-y-[5px] border-y-transparent border-l-[9px] border-l-current ml-0.5" />
-        }
+          : <div className="w-0 h-0 border-y-[5px] border-y-transparent border-l-[9px] border-l-current ml-0.5" />}
       </button>
       <div className="flex items-center gap-[1.5px] flex-1">
         {bars.map((h, i) => (
@@ -211,16 +197,15 @@ const VoiceNotePlayer = ({ isMe, duration }: { isMe: boolean; duration: number }
             key={i}
             className="rounded-full flex-shrink-0 transition-all duration-150"
             style={{
-              width: 2,
-              height: h,
+              width: 2, height: h,
               background: i / bars.length <= progress / 100
-                ? isMe ? "#fff" : "#e8196e"
-                : isMe ? "rgba(255,255,255,0.3)" : "rgba(232,25,110,0.3)",
+                ? isMe ? "#fff" : "#c8705a"
+                : isMe ? "rgba(255,255,255,0.3)" : "rgba(200,112,90,0.3)",
             }}
           />
         ))}
       </div>
-      <span className={`text-[11px] flex-shrink-0 ${isMe ? "text-white/60" : "text-[#a06070]"}`}>
+      <span className={`text-[11px] flex-shrink-0 ${isMe ? "text-white/60" : "text-[#7a6a65]"}`}>
         {formatDuration(playing ? Math.round((progress / 100) * duration) : duration)}
       </span>
     </div>
@@ -229,13 +214,13 @@ const VoiceNotePlayer = ({ isMe, duration }: { isMe: boolean; duration: number }
 
 // ─── Reaction Display ─────────────────────────────────────────────────────────
 const ReactionBadge = ({ reactions, isMe }: { reactions: Record<string, number>; isMe: boolean }) => {
-  const total = Object.values(reactions).reduce((a, b) => a + b, 0);
+  const total    = Object.values(reactions).reduce((a, b) => a + b, 0);
   if (!total) return null;
   const topEmoji = Object.entries(reactions).sort((a, b) => b[1] - a[1])[0]?.[0];
   return (
-    <div className={`absolute -bottom-3 flex items-center gap-0.5 bg-[#221119] border border-[#e8196e]/[0.15] rounded-full px-1.5 py-0.5 shadow-lg cursor-pointer hover:scale-105 transition-transform ${isMe ? "left-2" : "right-2"}`}>
+    <div className={`absolute -bottom-3 flex items-center gap-0.5 bg-[#181c24] border border-[#c8705a]/[0.20] rounded-full px-1.5 py-0.5 shadow-lg cursor-pointer hover:scale-105 transition-transform ${isMe ? "left-2" : "right-2"}`}>
       <span className="text-[13px] leading-none">{topEmoji}</span>
-      {total > 1 && <span className="text-[10px] text-[#e8196e]/80 font-semibold">{total}</span>}
+      {total > 1 && <span className="text-[10px] text-[#c8705a]/80 font-semibold">{total}</span>}
     </div>
   );
 };
@@ -252,7 +237,7 @@ const Err = ({ msg, retry }: { msg: string; retry?: () => void }) => (
 // ─── Modal Backdrop ───────────────────────────────────────────────────────────
 const Modal = ({ children, onClose }: { children: React.ReactNode; onClose: () => void }) => (
   <div
-    className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/75 backdrop-blur-[4px] p-4"
+    className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-[6px] p-4"
     onClick={e => { if (e.target === e.currentTarget) onClose(); }}
   >
     {children}
@@ -260,15 +245,14 @@ const Modal = ({ children, onClose }: { children: React.ReactNode; onClose: () =
 );
 
 // ─── User Picker Modal ────────────────────────────────────────────────────────
-const UserPickerModal = ({ open, onClose, onPickUser }: {
-  open: boolean; onClose: () => void; onPickUser: (id: string, name: string) => void;
-}) => {
+const UserPickerModal = ({
+  open, onClose, onPickUser,
+}: { open: boolean; onClose: () => void; onPickUser: (id: string, name: string) => void }) => {
   const [q, setQ]         = useState("");
   const [users, setUsers] = useState<PickerUser[]>([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError]     = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-
   useEffect(() => {
     if (!open) { setQ(""); return; }
     setLoading(true); setError(null);
@@ -280,50 +264,44 @@ const UserPickerModal = ({ open, onClose, onPickUser }: {
       .finally(() => setLoading(false));
     return () => ac.abort();
   }, [open]);
-
-  useEffect(() => {
-    if (open) setTimeout(() => inputRef.current?.focus(), 80);
-  }, [open]);
-
+  useEffect(() => { if (open) setTimeout(() => inputRef.current?.focus(), 80); }, [open]);
   if (!open) return null;
-
   const filtered = users.filter(u => {
     const n = `${u.firstName ?? u.name ?? ""} ${u.lastName ?? ""}`.toLowerCase();
     return n.includes(q.toLowerCase()) || (u.email ?? "").toLowerCase().includes(q.toLowerCase());
   });
-
   return (
     <Modal onClose={onClose}>
-      <div className="bg-[#180d12] w-full max-w-[420px] rounded-3xl overflow-hidden shadow-2xl border border-[#e8196e]/[0.15]" style={{ maxHeight: "80vh" }}>
-        <div className="flex items-center gap-3 px-5 py-4 border-b border-[#e8196e]/[0.08]">
-          <button onClick={onClose} className="w-8 h-8 rounded-full bg-[#e8196e]/[0.10] flex items-center justify-center hover:bg-[#e8196e]/[0.18] transition">
+      <div className="bg-[#111318] w-full max-w-[420px] rounded-3xl overflow-hidden shadow-2xl border border-[#c8705a]/[0.18]" style={{ maxHeight: "80vh" }}>
+        <div className="flex items-center gap-3 px-5 py-4 border-b border-[#c8705a]/[0.08]">
+          <button onClick={onClose} className="w-8 h-8 rounded-full bg-[#c8705a]/[0.12] flex items-center justify-center hover:bg-[#c8705a]/[0.22] transition">
             <X size={16} />
           </button>
           <h3 className="font-bold text-[15px] text-white">New Message</h3>
         </div>
         <div className="px-4 pt-3 pb-2">
-          <div className="flex items-center gap-2.5 bg-[#e8196e]/[0.06] rounded-full px-4 py-2.5 border border-[#e8196e]/[0.10] focus-within:border-[#e8196e]/40 transition-colors">
-            <Search size={14} className="text-[#a06070]" />
-            <input ref={inputRef} value={q} onChange={e => setQ(e.target.value)} placeholder="Search people…" className="flex-1 bg-transparent outline-none text-sm text-white placeholder-[#704050]" />
-            {q && <button onClick={() => setQ("")}><X size={13} className="text-[#704050]" /></button>}
+          <div className="flex items-center gap-2.5 bg-[#c8705a]/[0.06] rounded-full px-4 py-2.5 border border-[#c8705a]/[0.12] focus-within:border-[#c8705a]/40 transition-colors">
+            <Search size={14} className="text-[#7a6a65]" />
+            <input ref={inputRef} value={q} onChange={e => setQ(e.target.value)} placeholder="Search people…" className="flex-1 bg-transparent outline-none text-sm text-white placeholder-[#4a3a35]" />
+            {q && <button onClick={() => setQ("")}><X size={13} className="text-[#4a3a35]" /></button>}
           </div>
         </div>
         <div className="overflow-y-auto [&::-webkit-scrollbar]:hidden" style={{ maxHeight: "55vh" }}>
-          {loading && <div className="flex items-center justify-center gap-2.5 py-10 text-[#a06070] text-sm"><Loader2 size={16} className="animate-spin" /> Loading…</div>}
+          {loading && <div className="flex items-center justify-center gap-2.5 py-10 text-[#7a6a65] text-sm"><Loader2 size={16} className="animate-spin" /> Loading…</div>}
           {error && <div className="px-5 py-4 text-rose-400 text-sm text-center">{error}</div>}
-          {!loading && !error && filtered.length === 0 && <div className="px-5 py-10 text-center text-[#704050] text-sm">No people found</div>}
+          {!loading && !error && filtered.length === 0 && <div className="px-5 py-10 text-center text-[#4a3a35] text-sm">No people found</div>}
           {filtered.map((u, i) => {
             const id = u.userId ?? u.user_id ?? u.id ?? u.email ?? "";
             const displayName = (u.name?.trim()) || `${u.firstName ?? ""}${u.lastName ? " " + u.lastName : ""}`.trim() || id;
             return (
-              <div key={`${id}-${i}`} onClick={() => onPickUser(id, displayName)} className="flex items-center gap-3.5 px-5 py-3 hover:bg-[#e8196e]/[0.05] cursor-pointer transition-colors active:bg-[#e8196e]/[0.10]">
+              <div key={`${id}-${i}`} onClick={() => onPickUser(id, displayName)} className="flex items-center gap-3.5 px-5 py-3 hover:bg-[#c8705a]/[0.05] cursor-pointer transition-colors active:bg-[#c8705a]/[0.10]">
                 <Avatar src={u.avatar} name={displayName} size={44} />
                 <div className="flex-1 min-w-0">
                   <div className="text-[14px] font-semibold text-white truncate">{displayName}</div>
-                  {u.email && <div className="text-[12px] text-[#a06070] truncate">{u.email}</div>}
+                  {u.email && <div className="text-[12px] text-[#7a6a65] truncate">{u.email}</div>}
                 </div>
-                <div className="w-5 h-5 rounded-full border-2 border-[#e8196e]/50 flex items-center justify-center">
-                  <div className="w-2.5 h-2.5 rounded-full bg-[#e8196e]/40" />
+                <div className="w-5 h-5 rounded-full border-2 border-[#c8705a]/50 flex items-center justify-center">
+                  <div className="w-2.5 h-2.5 rounded-full bg-[#c8705a]/40" />
                 </div>
               </div>
             );
@@ -340,49 +318,43 @@ const ChatInfoModal = ({ chat, displayName, onClose, onBlock, onReport, onMute, 
   onBlock: () => void; onReport: () => void; onMute: () => void; onClearHistory: () => void;
 }) => (
   <Modal onClose={onClose}>
-    <div className="bg-[#180d12] w-full max-w-[380px] rounded-3xl overflow-hidden shadow-2xl border border-[#e8196e]/[0.15]">
-      <div className="flex flex-col items-center px-6 pt-7 pb-5 border-b border-[#e8196e]/[0.08]">
+    <div className="bg-[#111318] w-full max-w-[380px] rounded-3xl overflow-hidden shadow-2xl border border-[#c8705a]/[0.18]">
+      <div className="flex flex-col items-center px-6 pt-7 pb-5 border-b border-[#c8705a]/[0.08]">
         <Avatar src={chat.avatarUrl} name={displayName} size={76} online={chat.isOnline} />
         <h3 className="mt-3 font-bold text-[18px] text-white flex items-center gap-1.5">
           {displayName}
-          {chat.isVerified && <BadgeCheck size={16} className="text-pink-400" />}
+          {chat.isVerified && <BadgeCheck size={16} className="text-[#e8967e]" />}
         </h3>
         {chat.isOnline
           ? <span className="text-[12px] text-emerald-400 mt-0.5 flex items-center gap-1"><span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"/>Active now</span>
           : chat.lastMessageAt
-            ? <span className="text-[12px] text-[#704050] mt-0.5">Last active {timeAgo(chat.lastMessageAt)}</span>
+            ? <span className="text-[12px] text-[#7a6a65] mt-0.5">Last active {timeAgo(chat.lastMessageAt)}</span>
             : null}
         <div className="flex gap-4 mt-4">
-          {[
-            { icon: <Phone size={18}/>, label: "Audio" },
-            { icon: <Video size={18}/>, label: "Video" },
-            { icon: <BellOff size={18}/>, label: "Mute" },
-          ].map(a => (
+          {[{ icon: <Phone size={18}/>, label: "Audio" }, { icon: <Video size={18}/>, label: "Video" }, { icon: <BellOff size={18}/>, label: "Mute" }].map(a => (
             <button key={a.label} className="flex flex-col items-center gap-1.5 group">
-              <div className="w-11 h-11 rounded-full bg-[#e8196e]/[0.10] flex items-center justify-center group-hover:bg-[#e8196e]/[0.20] transition text-[#e8196e]">
-                {a.icon}
-              </div>
-              <span className="text-[10px] text-[#a06070]">{a.label}</span>
+              <div className="w-11 h-11 rounded-full bg-[#c8705a]/[0.12] flex items-center justify-center group-hover:bg-[#c8705a]/[0.22] transition text-[#c8705a]">{a.icon}</div>
+              <span className="text-[10px] text-[#7a6a65]">{a.label}</span>
             </button>
           ))}
         </div>
       </div>
       <div className="py-2">
         {[
-          { icon: <Star size={17}/>,    label: "Mark as favourite",   action: () => {}, color: "text-gray-300" },
-          { icon: <EyeOff size={17}/>,  label: "Vanish mode",         action: () => {}, color: "text-gray-300" },
-          { icon: <Trash2 size={17}/>,  label: "Clear chat history",  action: onClearHistory, color: "text-amber-400" },
-          { icon: <Shield size={17}/>,  label: "Block user",          action: onBlock, color: "text-rose-400" },
-          { icon: <Flag size={17}/>,    label: "Report user",         action: onReport, color: "text-rose-400" },
+          { icon: <Star size={17}/>,   label: "Mark as favourite",  action: () => {}, color: "text-gray-300" },
+          { icon: <EyeOff size={17}/>, label: "Vanish mode",        action: () => {}, color: "text-gray-300" },
+          { icon: <Trash2 size={17}/>, label: "Clear chat history", action: onClearHistory, color: "text-amber-400" },
+          { icon: <Shield size={17}/>, label: "Block user",         action: onBlock, color: "text-rose-400" },
+          { icon: <Flag size={17}/>,   label: "Report user",        action: onReport, color: "text-rose-400" },
         ].map(row => (
-          <button key={row.label} onClick={() => { row.action(); onClose(); }} className={`w-full flex items-center gap-4 px-6 py-3 hover:bg-[#e8196e]/[0.05] transition-colors ${row.color}`}>
+          <button key={row.label} onClick={() => { row.action(); onClose(); }} className={`w-full flex items-center gap-4 px-6 py-3 hover:bg-[#c8705a]/[0.05] transition-colors ${row.color}`}>
             {row.icon}
             <span className="text-[14px] font-medium">{row.label}</span>
           </button>
         ))}
       </div>
       <div className="px-5 pb-5 pt-1">
-        <button onClick={onClose} className="w-full py-3 rounded-2xl bg-[#e8196e]/[0.08] text-gray-300 text-[14px] font-semibold hover:bg-[#e8196e]/[0.15] transition">Cancel</button>
+        <button onClick={onClose} className="w-full py-3 rounded-2xl bg-[#c8705a]/[0.08] text-gray-300 text-[14px] font-semibold hover:bg-[#c8705a]/[0.15] transition">Cancel</button>
       </div>
     </div>
   </Modal>
@@ -393,24 +365,24 @@ const DeleteModal = ({ onConfirm, onCancel, forEveryone }: {
   onConfirm: (forEveryone: boolean) => void; onCancel: () => void; forEveryone: boolean;
 }) => (
   <Modal onClose={onCancel}>
-    <div className="bg-[#180d12] w-full max-w-[340px] rounded-3xl overflow-hidden border border-[#e8196e]/[0.15] shadow-2xl">
+    <div className="bg-[#111318] w-full max-w-[340px] rounded-3xl overflow-hidden border border-[#c8705a]/[0.18] shadow-2xl">
       <div className="px-6 pt-6 pb-4 text-center">
         <div className="w-14 h-14 rounded-full bg-rose-500/10 flex items-center justify-center mx-auto mb-3">
           <Trash2 size={22} className="text-rose-400" />
         </div>
         <h3 className="font-bold text-[16px] text-white mb-1.5">Delete message?</h3>
-        <p className="text-[13px] text-[#a06070] leading-relaxed">Choose who to delete this message for.</p>
+        <p className="text-[13px] text-[#7a6a65] leading-relaxed">Choose who to delete this message for.</p>
       </div>
-      <div className="flex flex-col border-t border-[#e8196e]/[0.08]">
+      <div className="flex flex-col border-t border-[#c8705a]/[0.08]">
         {forEveryone && (
-          <button onClick={() => onConfirm(true)} className="py-4 text-[14px] font-semibold text-rose-400 hover:bg-rose-500/10 transition border-b border-[#e8196e]/[0.08]">
+          <button onClick={() => onConfirm(true)} className="py-4 text-[14px] font-semibold text-rose-400 hover:bg-rose-500/10 transition border-b border-[#c8705a]/[0.08]">
             Delete for Everyone
           </button>
         )}
-        <button onClick={() => onConfirm(false)} className="py-4 text-[14px] font-semibold text-gray-300 hover:bg-[#e8196e]/[0.05] transition border-b border-[#e8196e]/[0.08]">
+        <button onClick={() => onConfirm(false)} className="py-4 text-[14px] font-semibold text-gray-300 hover:bg-[#c8705a]/[0.05] transition border-b border-[#c8705a]/[0.08]">
           Delete for Me
         </button>
-        <button onClick={onCancel} className="py-4 text-[14px] text-[#704050] hover:bg-[#e8196e]/[0.04] transition">Cancel</button>
+        <button onClick={onCancel} className="py-4 text-[14px] text-[#7a6a65] hover:bg-[#c8705a]/[0.04] transition">Cancel</button>
       </div>
     </div>
   </Modal>
@@ -421,16 +393,16 @@ const ForwardModal = ({ chats, onForward, onClose, currentUserId }: {
   chats: Chat[]; onForward: (chatId: string) => void; onClose: () => void; currentUserId: string;
 }) => (
   <Modal onClose={onClose}>
-    <div className="bg-[#180d12] w-full max-w-[400px] rounded-3xl overflow-hidden border border-[#e8196e]/[0.15] shadow-2xl">
-      <div className="flex items-center gap-3 px-5 py-4 border-b border-[#e8196e]/[0.08]">
-        <button onClick={onClose} className="w-8 h-8 rounded-full bg-[#e8196e]/[0.10] flex items-center justify-center hover:bg-[#e8196e]/[0.18] transition"><X size={16}/></button>
+    <div className="bg-[#111318] w-full max-w-[400px] rounded-3xl overflow-hidden border border-[#c8705a]/[0.18] shadow-2xl">
+      <div className="flex items-center gap-3 px-5 py-4 border-b border-[#c8705a]/[0.08]">
+        <button onClick={onClose} className="w-8 h-8 rounded-full bg-[#c8705a]/[0.12] flex items-center justify-center hover:bg-[#c8705a]/[0.22] transition"><X size={16}/></button>
         <h3 className="font-bold text-[15px] text-white">Forward to…</h3>
       </div>
       <div className="overflow-y-auto max-h-[50vh] [&::-webkit-scrollbar]:hidden">
         {chats.map(chat => {
           const name = resolveChatName(chat, currentUserId);
           return (
-            <div key={chat.id} onClick={() => onForward(chat.id)} className="flex items-center gap-3.5 px-5 py-3 hover:bg-[#e8196e]/[0.05] cursor-pointer transition-colors">
+            <div key={chat.id} onClick={() => onForward(chat.id)} className="flex items-center gap-3.5 px-5 py-3 hover:bg-[#c8705a]/[0.05] cursor-pointer transition-colors">
               <Avatar src={chat.avatarUrl} name={name} size={44} />
               <span className="text-[14px] font-medium text-white">{name}</span>
             </div>
@@ -443,14 +415,14 @@ const ForwardModal = ({ chats, onForward, onClose, currentUserId }: {
 
 // ─── Pinned Message Banner ────────────────────────────────────────────────────
 const PinnedBanner = ({ msg, onDismiss, onJump }: { msg: PinnedMessage; onDismiss: () => void; onJump: () => void }) => (
-  <div className="flex items-center gap-2 px-4 py-2.5 bg-[#e8196e]/[0.08] border-b border-[#e8196e]/[0.12] cursor-pointer" onClick={onJump}>
-    <Pin size={12} className="text-[#e8196e] flex-shrink-0 rotate-45" />
+  <div className="flex items-center gap-2 px-4 py-2.5 bg-[#c8705a]/[0.07] border-b border-[#c8705a]/[0.12] cursor-pointer" onClick={onJump}>
+    <Pin size={12} className="text-[#c8705a] flex-shrink-0 rotate-45" />
     <div className="flex-1 min-w-0">
-      <p className="text-[10px] text-[#e8196e] font-semibold uppercase tracking-wider">Pinned</p>
+      <p className="text-[10px] text-[#c8705a] font-semibold uppercase tracking-wider">Pinned</p>
       <p className="text-[12px] text-gray-300 truncate">{msg.content}</p>
     </div>
-    <button onClick={e => { e.stopPropagation(); onDismiss(); }} className="w-6 h-6 flex items-center justify-center hover:bg-[#e8196e]/[0.10] rounded-full transition">
-      <X size={12} className="text-[#a06070]" />
+    <button onClick={e => { e.stopPropagation(); onDismiss(); }} className="w-6 h-6 flex items-center justify-center hover:bg-[#c8705a]/[0.10] rounded-full transition">
+      <X size={12} className="text-[#7a6a65]" />
     </button>
   </div>
 );
@@ -459,7 +431,7 @@ const PinnedBanner = ({ msg, onDismiss, onJump }: { msg: PinnedMessage; onDismis
 const QuickReplies = ({ onSelect }: { onSelect: (text: string) => void }) => (
   <div className="flex gap-2 px-3 py-2 overflow-x-auto [&::-webkit-scrollbar]:hidden">
     {QUICK_REPLIES.map(r => (
-      <button key={r} onClick={() => onSelect(r)} className="flex-shrink-0 px-3.5 py-1.5 rounded-full bg-[#1a0f14] border border-[#e8196e]/[0.15] text-[12px] text-gray-300 hover:bg-[#2a1520] hover:border-[#e8196e]/30 transition-all">
+      <button key={r} onClick={() => onSelect(r)} className="flex-shrink-0 px-3.5 py-1.5 rounded-full bg-[#111318] border border-[#c8705a]/[0.18] text-[12px] text-gray-300 hover:bg-[#181c24] hover:border-[#c8705a]/35 transition-all">
         {r}
       </button>
     ))}
@@ -470,10 +442,10 @@ const QuickReplies = ({ onSelect }: { onSelect: (text: string) => void }) => (
 const EmojiPicker = ({ onSelect, onClose }: { onSelect: (e: string) => void; onClose: () => void }) => {
   const emojis = ["😀","😂","😍","🥰","😎","🤔","😴","🥳","🎉","❤️","🔥","👍","👏","🙏","💪","🎯","✨","🌟","💯","🚀","🎵","💡","🤝","😊","😢","😮","😡","🤗","😏","🥺"];
   return (
-    <div className="absolute bottom-full mb-2 right-0 w-[280px] bg-[#1a0f14] border border-[#e8196e]/[0.15] rounded-2xl shadow-2xl p-3 z-50">
+    <div className="absolute bottom-full mb-2 right-0 w-[280px] bg-[#111318] border border-[#c8705a]/[0.18] rounded-2xl shadow-2xl p-3 z-50">
       <div className="grid grid-cols-8 gap-1.5">
         {emojis.map(e => (
-          <button key={e} onClick={() => { onSelect(e); onClose(); }} className="text-[20px] flex items-center justify-center h-9 rounded-xl hover:bg-[#e8196e]/[0.10] transition">
+          <button key={e} onClick={() => { onSelect(e); onClose(); }} className="text-[20px] flex items-center justify-center h-9 rounded-xl hover:bg-[#c8705a]/[0.10] transition">
             {e}
           </button>
         ))}
@@ -484,16 +456,15 @@ const EmojiPicker = ({ onSelect, onClose }: { onSelect: (e: string) => void; onC
 
 // ─── Attachment Menu ──────────────────────────────────────────────────────────
 const AttachmentMenu = ({ onClose, onSelect }: { onClose: () => void; onSelect: (type: string) => void }) => (
-  <div className="absolute bottom-full mb-2 left-0 bg-[#1a0f14] border border-[#e8196e]/[0.15] rounded-2xl shadow-2xl overflow-hidden z-50 w-[180px]">
+  <div className="absolute bottom-full mb-2 left-0 bg-[#111318] border border-[#c8705a]/[0.18] rounded-2xl shadow-2xl overflow-hidden z-50 w-[180px]">
     {[
       { icon: <Image size={16}/>, label: "Photo / Video", type: "media" },
       { icon: <FileText size={16}/>, label: "Document", type: "document" },
       { icon: <Camera size={16}/>, label: "Camera", type: "camera" },
       { icon: <Sticker size={16}/>, label: "Sticker", type: "sticker" },
     ].map(item => (
-      <button key={item.type} onClick={() => { onSelect(item.type); onClose(); }}
-        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[#e8196e]/[0.07] transition text-gray-300 text-[13px]">
-        <span className="text-[#e8196e]">{item.icon}</span>
+      <button key={item.type} onClick={() => { onSelect(item.type); onClose(); }} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[#c8705a]/[0.07] transition text-gray-300 text-[13px]">
+        <span className="text-[#c8705a]">{item.icon}</span>
         {item.label}
       </button>
     ))}
@@ -505,33 +476,28 @@ const SearchInChat = ({ messages, onJump, onClose }: {
   messages: Message[]; onJump: (id: string) => void; onClose: () => void;
 }) => {
   const [q, setQ] = useState("");
-  const results = q.trim()
-    ? messages.filter(m => !m.deletedAt && m.content.toLowerCase().includes(q.toLowerCase()))
-    : [];
+  const results = q.trim() ? messages.filter(m => !m.deletedAt && m.content.toLowerCase().includes(q.toLowerCase())) : [];
   return (
-    <div className="absolute inset-x-0 top-0 bg-[#0f0a0d] border-b border-[#e8196e]/[0.10] z-40 px-3 py-2.5">
+    <div className="absolute inset-x-0 top-0 bg-[#0a0c10] border-b border-[#c8705a]/[0.10] z-40 px-3 py-2.5">
       <div className="flex items-center gap-2">
-        <div className="flex-1 flex items-center gap-2 bg-[#1a0f14] rounded-full px-3 py-2 border border-[#e8196e]/[0.12] focus-within:border-[#e8196e]/40 transition">
-          <Search size={14} className="text-[#a06070]" />
-          <input autoFocus value={q} onChange={e => setQ(e.target.value)} placeholder="Search in conversation…" className="flex-1 bg-transparent outline-none text-sm text-white placeholder-[#704050]" />
+        <div className="flex-1 flex items-center gap-2 bg-[#111318] rounded-full px-3 py-2 border border-[#c8705a]/[0.14] focus-within:border-[#c8705a]/40 transition">
+          <Search size={14} className="text-[#7a6a65]" />
+          <input autoFocus value={q} onChange={e => setQ(e.target.value)} placeholder="Search in conversation…" className="flex-1 bg-transparent outline-none text-sm text-white placeholder-[#4a3a35]" />
         </div>
-        <button onClick={onClose} className="text-[#e8196e] text-sm font-semibold px-1">Done</button>
+        <button onClick={onClose} className="text-[#c8705a] text-sm font-semibold px-1">Done</button>
       </div>
       {results.length > 0 && (
         <div className="mt-2 max-h-[40vh] overflow-y-auto [&::-webkit-scrollbar]:hidden">
           {results.map(m => (
-            <div key={m.id} onClick={() => { onJump(m.id); onClose(); }}
-              className="flex items-center gap-2 px-2 py-2.5 hover:bg-[#e8196e]/[0.05] cursor-pointer rounded-xl transition">
-              <MessageCircle size={13} className="text-[#e8196e] flex-shrink-0" />
+            <div key={m.id} onClick={() => { onJump(m.id); onClose(); }} className="flex items-center gap-2 px-2 py-2.5 hover:bg-[#c8705a]/[0.05] cursor-pointer rounded-xl transition">
+              <MessageCircle size={13} className="text-[#c8705a] flex-shrink-0" />
               <p className="text-[13px] text-gray-300 truncate">{m.content}</p>
-              <span className="text-[10px] text-[#704050] ml-auto flex-shrink-0">{formatMsgTime(m.createdAt)}</span>
+              <span className="text-[10px] text-[#4a3a35] ml-auto flex-shrink-0">{formatMsgTime(m.createdAt)}</span>
             </div>
           ))}
         </div>
       )}
-      {q && results.length === 0 && (
-        <p className="text-[12px] text-[#704050] text-center py-3">No results for "{q}"</p>
-      )}
+      {q && results.length === 0 && <p className="text-[12px] text-[#4a3a35] text-center py-3">No results for "{q}"</p>}
     </div>
   );
 };
@@ -543,15 +509,18 @@ const ScheduleModal = ({ text, onSchedule, onClose }: {
   const [when, setWhen] = useState("");
   return (
     <Modal onClose={onClose}>
-      <div className="bg-[#180d12] w-full max-w-[340px] rounded-3xl overflow-hidden border border-[#e8196e]/[0.15] shadow-2xl p-6">
+      <div className="bg-[#111318] w-full max-w-[340px] rounded-3xl overflow-hidden border border-[#c8705a]/[0.18] shadow-2xl p-6">
         <h3 className="font-bold text-[16px] text-white mb-2">Schedule Message</h3>
-        <p className="text-[13px] text-[#a06070] mb-4 truncate">"{text.slice(0, 40)}{text.length > 40 ? "…" : ""}"</p>
-        <input type="datetime-local" value={when} onChange={e => setWhen(e.target.value)}
-          className="w-full bg-[#0f0a0d] border border-[#e8196e]/[0.15] rounded-xl px-3 py-2.5 text-sm text-white outline-none focus:border-[#e8196e]/40 mb-4" />
+        <p className="text-[13px] text-[#7a6a65] mb-4 truncate">"{text.slice(0, 40)}{text.length > 40 ? "…" : ""}"</p>
+        <input
+          type="datetime-local" value={when} onChange={e => setWhen(e.target.value)}
+          className="w-full bg-[#0a0c10] border border-[#c8705a]/[0.18] rounded-xl px-3 py-2.5 text-sm text-white outline-none focus:border-[#c8705a]/40 mb-4"
+        />
         <div className="flex gap-2">
-          <button onClick={onClose} className="flex-1 py-2.5 rounded-xl bg-[#e8196e]/[0.08] text-gray-300 text-sm font-semibold hover:bg-[#e8196e]/[0.15] transition">Cancel</button>
-          <button onClick={() => { if (when) { onSchedule(when); onClose(); } }}
-            className="flex-1 py-2.5 rounded-xl bg-[#e8196e] text-white text-sm font-semibold hover:bg-[#c41460] transition disabled:opacity-40" disabled={!when}>
+          <button onClick={onClose} className="flex-1 py-2.5 rounded-xl bg-[#c8705a]/[0.08] text-gray-300 text-sm font-semibold hover:bg-[#c8705a]/[0.15] transition">Cancel</button>
+          <button onClick={() => { if (when) { onSchedule(when); onClose(); } }} disabled={!when}
+            className="flex-1 py-2.5 rounded-xl text-white text-sm font-semibold transition disabled:opacity-40"
+            style={{ background: "linear-gradient(135deg, #c8705a, #a0503a)" }}>
             Schedule
           </button>
         </div>
@@ -563,7 +532,7 @@ const ScheduleModal = ({ text, onSchedule, onClose }: {
 // ─── Toast ────────────────────────────────────────────────────────────────────
 const Toast = ({ msg }: { msg: string }) => (
   <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[100] pointer-events-none">
-    <div className="bg-[#1a0f14]/95 backdrop-blur-md text-[13px] text-gray-200 px-5 py-2.5 rounded-full border border-[#e8196e]/[0.20] shadow-2xl whitespace-nowrap animate-fade-in">
+    <div className="bg-[#111318]/95 backdrop-blur-md text-[13px] text-gray-200 px-5 py-2.5 rounded-full border border-[#c8705a]/[0.22] shadow-2xl whitespace-nowrap">
       {msg}
     </div>
   </div>
@@ -582,8 +551,8 @@ export default function ChatComponent() {
   const [activeChat, setActiveChat] = useState<Chat | null>(null);
 
   // ── Hooks ───────────────────────────────────────────────────────────────────
-  const chatHook    = useChats(undefined, authReady);
-  const messageHook = useMessages(activeChat?.id ?? null, currentUserId, authReady);
+  const chatHook       = useChats(undefined, authReady);
+  const messageHook    = useMessages(activeChat?.id ?? null, currentUserId, authReady);
   const createChatHook = useCreateChat();
 
   // ── List state ──────────────────────────────────────────────────────────────
@@ -597,6 +566,10 @@ export default function ChatComponent() {
   const [replyingTo, setReplyingTo]         = useState<Message | null>(null);
   const [editingMsg, setEditingMsg]         = useState<Message | null>(null);
   const [deletingId, setDeletingId]         = useState<string | null>(null);
+
+  // FIX 1: menuMsgId now tracks which message has its context menu open
+  // The menu is toggled by left-click and ALWAYS shows for the message owner (edit+delete)
+  // or just reply/forward/copy/delete-for-me for others' messages
   const [menuMsgId, setMenuMsgId]           = useState<string | null>(null);
   const [reactionMsgId, setReactionMsgId]   = useState<string | null>(null);
   const [showScrollBtn, setShowScrollBtn]   = useState(false);
@@ -617,10 +590,10 @@ export default function ChatComponent() {
   const [voiceNotes, setVoiceNotes]         = useState<Record<string, VoiceNote>>({});
 
   // ── Refs ────────────────────────────────────────────────────────────────────
-  const scrollRef     = useRef<HTMLDivElement>(null);
-  const inputRef      = useRef<HTMLInputElement>(null);
-  const listRef       = useRef<HTMLDivElement>(null);
-  const msgRefs       = useRef<Record<string, HTMLDivElement>>({});
+  const scrollRef      = useRef<HTMLDivElement>(null);
+  const inputRef       = useRef<HTMLInputElement>(null);
+  const listRef        = useRef<HTMLDivElement>(null);
+  const msgRefs        = useRef<Record<string, HTMLDivElement>>({});
   const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const recordTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -629,9 +602,7 @@ export default function ChatComponent() {
     const el = scrollRef.current;
     if (!el) return;
     const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 150;
-    if (atBottom || messageHook.messages.length <= 1) {
-      el.scrollTop = el.scrollHeight;
-    }
+    if (atBottom || messageHook.messages.length <= 1) el.scrollTop = el.scrollHeight;
   }, [messageHook.messages]);
 
   useEffect(() => {
@@ -650,8 +621,14 @@ export default function ChatComponent() {
     if (activeChat?.id) chatHook.markChatAsRead(activeChat.id);
   }, [activeChat?.id]);
 
+  // FIX 1: Global click handler closes context menu when clicking outside
   useEffect(() => {
-    const handler = () => { setMenuMsgId(null); setReactionMsgId(null); setShowEmoji(false); setShowAttach(false); };
+    const handler = () => {
+      setMenuMsgId(null);
+      setReactionMsgId(null);
+      setShowEmoji(false);
+      setShowAttach(false);
+    };
     document.addEventListener("click", handler);
     return () => document.removeEventListener("click", handler);
   }, []);
@@ -673,17 +650,13 @@ export default function ChatComponent() {
 
   // ── Voice Recording ─────────────────────────────────────────────────────────
   const startRecording = useCallback(() => {
-    setIsRecording(true);
-    setRecordSec(0);
+    setIsRecording(true); setRecordSec(0);
     recordTimerRef.current = setInterval(() => setRecordSec(s => s + 1), 1000);
   }, []);
-
   const cancelRecording = useCallback(() => {
-    setIsRecording(false);
-    setRecordSec(0);
+    setIsRecording(false); setRecordSec(0);
     if (recordTimerRef.current) clearInterval(recordTimerRef.current);
   }, []);
-
   const sendVoiceNote = useCallback(async () => {
     if (!activeChat || recordSec === 0) { cancelRecording(); return; }
     setIsRecording(false);
@@ -709,17 +682,14 @@ export default function ChatComponent() {
   }, [chatHook]);
 
   const handlePickUser = useCallback(async (userId: string, displayName: string) => {
-    setShowPicker(false);
-    setDmCreating(true);
+    setShowPicker(false); setDmCreating(true);
     try {
       const res = await ChatAPI.createDM(userId, displayName);
       chatHook.prependChat(res.chat);
       openChat(res.chat);
     } catch (e) {
       showToast(e instanceof Error ? e.message : "Failed to start chat");
-    } finally {
-      setDmCreating(false);
-    }
+    } finally { setDmCreating(false); }
   }, [chatHook, openChat, showToast]);
 
   const handleSend = useCallback(async () => {
@@ -736,9 +706,7 @@ export default function ChatComponent() {
     setReplyingTo(null);
     chatHook.refresh();
     chatHook.markChatAsRead(activeChat.id);
-    setTimeout(() => {
-      if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }, 60);
+    setTimeout(() => { if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight; }, 60);
   }, [msgInput, activeChat, editingMsg, replyingTo, messageHook, chatHook]);
 
   const handleReact = useCallback((msgId: string, emoji: string) => {
@@ -747,8 +715,7 @@ export default function ChatComponent() {
       const count = existing[emoji] ?? 0;
       return { ...prev, [msgId]: { ...existing, [emoji]: count > 0 ? 0 : 1 } };
     });
-    setMenuMsgId(null);
-    setReactionMsgId(null);
+    setMenuMsgId(null); setReactionMsgId(null);
     showToast(`Reacted ${emoji}`);
   }, [showToast]);
 
@@ -783,8 +750,8 @@ export default function ChatComponent() {
     const el = msgRefs.current[id];
     if (el) {
       el.scrollIntoView({ behavior: "smooth", block: "center" });
-      el.classList.add("bg-[#e8196e]/10");
-      setTimeout(() => el.classList.remove("bg-[#e8196e]/10"), 1500);
+      el.classList.add("!bg-[#c8705a]/10");
+      setTimeout(() => el.classList.remove("!bg-[#c8705a]/10"), 1500);
     }
   }, []);
 
@@ -798,7 +765,7 @@ export default function ChatComponent() {
   const filteredChats = useMemo(() => {
     let chats = dmChats;
     if (listFilter === "unread") chats = chats.filter(c => c.unreadCount > 0);
-    if (listFilter === "muted") chats = chats.filter(c => c.isMuted);
+    if (listFilter === "muted")  chats = chats.filter(c => c.isMuted);
     if (search.trim()) chats = chats.filter(c => resolveChatName(c, currentUserId).toLowerCase().includes(search.toLowerCase()));
     return chats;
   }, [dmChats, listFilter, search, currentUserId]);
@@ -806,81 +773,99 @@ export default function ChatComponent() {
   // ── Auth guard ──────────────────────────────────────────────────────────────
   if (!authReady) {
     return (
-      <div className="min-h-screen bg-[#0f0a0d] flex items-center justify-center">
-        <Loader2 size={24} className="animate-spin text-[#e8196e]" />
+      <div className="min-h-screen bg-[#0a0c10] flex items-center justify-center">
+        <Loader2 size={24} className="animate-spin text-[#c8705a]" />
       </div>
     );
   }
 
-  // ════════════════════════════════════════════════════════════════════════════
+  // ══════════════════════════════════════════════════════════════════════════════
   // VIEW: CHAT ROOM
-  // ════════════════════════════════════════════════════════════════════════════
+  // ══════════════════════════════════════════════════════════════════════════════
   if (view === "chat_room" && activeChat) {
+    // FIX 2: displayName is the OTHER person's name (not the current user)
     const displayName = resolveChatName(activeChat, currentUserId);
 
     // Group messages by date
     const grouped: any[] = [];
     let lastDate = "";
     for (const msg of messageHook.messages) {
-      const d = new Date(msg.createdAt);
-      const today = new Date();
-      const yesterday = new Date(today); yesterday.setDate(today.getDate() - 1);
-      let label = d.toDateString() === today.toDateString()
-        ? "Today"
-        : d.toDateString() === yesterday.toDateString()
-          ? "Yesterday"
-          : d.toLocaleDateString([], { weekday: "long", month: "long", day: "numeric" });
+      const d         = new Date(msg.createdAt);
+      const today     = new Date();
+      const yesterday = new Date(today);
+      yesterday.setDate(today.getDate() - 1);
+      const label =
+        d.toDateString() === today.toDateString()     ? "Today"
+        : d.toDateString() === yesterday.toDateString() ? "Yesterday"
+        : d.toLocaleDateString([], { weekday: "long", month: "long", day: "numeric" });
       if (label !== lastDate) { lastDate = label; grouped.push({ type: "date", label }); }
       grouped.push({ type: "msg", msg });
     }
 
     return (
-      <div className="min-h-screen bg-[#0f0a0d] text-white flex flex-col font-sans relative" style={{ fontFamily: "'SF Pro Display', 'Segoe UI', system-ui, sans-serif" }}>
-
+      <div
+        className="min-h-screen text-white flex flex-col font-sans relative"
+        style={{
+          background: "linear-gradient(180deg, #0a0c10 0%, #0d0f14 100%)",
+          fontFamily: "'SF Pro Display', 'Segoe UI', system-ui, sans-serif",
+        }}
+      >
         {/* ── Top bar ── */}
-        <div className="flex items-center gap-2 px-3 py-2.5 bg-[#0f0a0d]/95 backdrop-blur-xl border-b border-[#e8196e]/[0.08] z-30 sticky top-0">
-          <button onClick={() => { setView("list"); setActiveChat(null); }}
-            className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-[#e8196e]/[0.08] transition active:scale-95">
+        <div className="flex items-center gap-2 px-3 py-2.5 backdrop-blur-xl border-b z-30 sticky top-0"
+          style={{ background: "rgba(10,12,16,0.92)", borderColor: "rgba(200,112,90,0.10)" }}>
+          <button
+            onClick={() => { setView("list"); setActiveChat(null); }}
+            className="w-9 h-9 rounded-full flex items-center justify-center transition active:scale-95"
+            style={{ ["--hover-bg" as any]: "rgba(200,112,90,0.08)" }}
+            onMouseEnter={e => (e.currentTarget.style.background = "rgba(200,112,90,0.08)")}
+            onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+          >
             <ChevronLeft size={22} className="text-gray-200" />
           </button>
 
+          {/* FIX 2: Avatar and name show the OTHER person (displayName = resolveChatName with currentUserId) */}
           <button onClick={() => setShowChatInfo(true)} className="flex items-center gap-2.5 flex-1 min-w-0 text-left hover:opacity-80 transition">
+            {/* Avatar always shows the chat partner's avatar, not current user's */}
             <Avatar src={activeChat.avatarUrl} name={displayName} size={38} online={activeChat.isOnline} typing={isTyping} />
             <div className="min-w-0">
               <div className="text-[15px] font-bold text-white truncate flex items-center gap-1">
                 {displayName}
-                {activeChat.isVerified && <BadgeCheck size={13} className="text-pink-400 flex-shrink-0" />}
+                {activeChat.isVerified && <BadgeCheck size={13} className="text-[#e8967e] flex-shrink-0" />}
               </div>
-              <div className={`text-[11px] transition-colors ${isTyping ? "text-amber-400" : activeChat.isOnline ? "text-emerald-400" : "text-[#a06070]"}`}>
-                {isTyping ? "typing…" : activeChat.isOnline ? "Active now" : activeChat.lastMessageAt ? `Active ${timeAgo(activeChat.lastMessageAt)} ago` : "Offline"}
+              <div className={`text-[11px] transition-colors ${
+                isTyping ? "text-amber-400"
+                : activeChat.isOnline ? "text-emerald-400"
+                : "text-[#7a6a65]"
+              }`}>
+                {isTyping ? "typing…" : activeChat.isOnline ? "Active now"
+                  : activeChat.lastMessageAt ? `Active ${timeAgo(activeChat.lastMessageAt)} ago`
+                  : "Offline"}
               </div>
             </div>
           </button>
 
           <div className="flex items-center gap-0.5 flex-shrink-0">
-            <button className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-[#e8196e]/[0.08] transition active:scale-95">
-              <Phone size={17} className="text-[#e8196e]" />
-            </button>
-            <button className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-[#e8196e]/[0.08] transition active:scale-95">
-              <Video size={17} className="text-[#e8196e]" />
-            </button>
-            <button
-              onClick={e => { e.stopPropagation(); setShowSearch(s => !s); }}
-              className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-[#e8196e]/[0.08] transition active:scale-95">
-              <Search size={17} className="text-[#e8196e]" />
-            </button>
-            <button onClick={() => setShowChatInfo(true)} className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-[#e8196e]/[0.08] transition active:scale-95">
-              <Info size={17} className="text-[#e8196e]" />
-            </button>
+            {[
+              { icon: <Phone size={17}/>,  action: () => {} },
+              { icon: <Video size={17}/>,  action: () => {} },
+              { icon: <Search size={17}/>, action: () => setShowSearch(s => !s) },
+              { icon: <Info size={17}/>,   action: () => setShowChatInfo(true) },
+            ].map((btn, i) => (
+              <button key={i} onClick={e => { e.stopPropagation(); btn.action(); }}
+                className="w-9 h-9 rounded-full flex items-center justify-center transition active:scale-95 text-[#c8705a]"
+                onMouseEnter={e => (e.currentTarget.style.background = "rgba(200,112,90,0.08)")}
+                onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+              >
+                {btn.icon}
+              </button>
+            ))}
           </div>
         </div>
 
         {/* ── Pinned message ── */}
-        {pinnedMsg && (
-          <PinnedBanner msg={pinnedMsg} onDismiss={() => setPinnedMsg(null)} onJump={() => jumpToMessage(pinnedMsg.id)} />
-        )}
+        {pinnedMsg && <PinnedBanner msg={pinnedMsg} onDismiss={() => setPinnedMsg(null)} onJump={() => jumpToMessage(pinnedMsg.id)} />}
 
-        {/* ── In-chat search overlay ── */}
+        {/* ── In-chat search ── */}
         {showSearch && (
           <div className="relative z-40">
             <SearchInChat messages={messageHook.messages} onJump={jumpToMessage} onClose={() => setShowSearch(false)} />
@@ -894,32 +879,34 @@ export default function ChatComponent() {
           onClick={() => { setMenuMsgId(null); setReactionMsgId(null); setShowEmoji(false); setShowAttach(false); }}
         >
           {messageHook.loading && messageHook.messages.length === 0 && (
-            <div className="flex justify-center py-20"><Loader2 size={22} className="animate-spin text-[#e8196e]" /></div>
+            <div className="flex justify-center py-20"><Loader2 size={22} className="animate-spin text-[#c8705a]" /></div>
           )}
           {messageHook.error && <Err msg={messageHook.error} />}
-
           {!messageHook.loading && messageHook.messages.length === 0 && (
             <div className="flex flex-col items-center justify-center py-20 gap-5 select-none">
               <div className="relative">
                 <Avatar src={activeChat.avatarUrl} name={displayName} size={80} online={activeChat.isOnline} />
-                <div className="absolute -bottom-1 -right-1 w-7 h-7 bg-[#e8196e] rounded-full flex items-center justify-center shadow-lg shadow-[#e8196e]/30">
+                <div className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full flex items-center justify-center shadow-lg"
+                  style={{ background: "linear-gradient(135deg, #c8705a, #a0503a)" }}>
                   <MessageCircle size={13} className="text-white" />
                 </div>
               </div>
               <div className="text-center">
                 <p className="font-bold text-[17px] text-white">{displayName}</p>
                 {activeChat.isVerified && (
-                  <p className="text-[12px] text-pink-400 flex items-center justify-center gap-1 mt-0.5">
+                  <p className="text-[12px] text-[#e8967e] flex items-center justify-center gap-1 mt-0.5">
                     <BadgeCheck size={12} /> Verified account
                   </p>
                 )}
-                <p className="text-[13px] text-[#a06070] mt-2 max-w-[220px] leading-relaxed mx-auto">
+                <p className="text-[13px] text-[#7a6a65] mt-2 max-w-[220px] leading-relaxed mx-auto">
                   Say hello! This is the start of your conversation with {displayName}.
                 </p>
               </div>
               <button
                 onClick={() => { setMsgInput("👋 Hey!"); setTimeout(() => inputRef.current?.focus(), 60); }}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#e8196e]/[0.12] border border-[#e8196e]/30 text-[#e8196e] text-[13px] font-semibold hover:bg-[#e8196e]/20 transition">
+                className="flex items-center gap-2 px-5 py-2.5 rounded-full border text-[13px] font-semibold transition"
+                style={{ background: "rgba(200,112,90,0.10)", borderColor: "rgba(200,112,90,0.30)", color: "#c8705a" }}
+              >
                 <span className="text-[18px]">👋</span> Say Hello
               </button>
             </div>
@@ -929,7 +916,7 @@ export default function ChatComponent() {
           {grouped.map((item, idx) => {
             if (item.type === "date") return <DateDivider key={`date-${idx}`} label={item.label} />;
 
-            const msg = item.msg as Message;
+            const msg          = item.msg as Message;
             const isMe         = msg.senderId === currentUserId;
             const isDeleted    = !!msg.deletedAt;
             const isOptimistic = msg.id.startsWith("optimistic_");
@@ -951,30 +938,27 @@ export default function ChatComponent() {
               : `20px 20px 20px ${isLast ? "5px" : "20px"}`;
 
             const replyMsg = msg.replyToId ? allMsgs.find(m => m.id === msg.replyToId) : null;
-            const isVoice = msg.content.startsWith("🎤 Voice message");
+            const isVoice  = msg.content.startsWith("🎤 Voice message");
 
             const status: MessageStatus = isOptimistic ? "sending" : msg.isRead ? "read" : "delivered";
 
-            // ── Context menu actions (role-aware) ─────────────────────────────
-            // Always include reply, forward, copy, star, pin
-            // Only show edit + delete(for everyone) if isMe, always show delete(for me)
+            // ── FIX 1: Context menu actions ─────────────────────────────────
+            // ALWAYS build the menu. Edit and "Delete for Everyone" are gated on isMe.
+            // This ensures left-click on ANY message shows the context menu.
             const menuActions = [
               {
-                icon: <Reply size={14}/>,
-                label: "Reply",
-                color: "text-gray-300",
-                action: () => { setReplyingTo(msg); setMenuMsgId(null); setTimeout(() => inputRef.current?.focus(), 60); },
+                icon: <Reply size={14}/>, label: "Reply", color: "text-gray-300",
+                action: () => {
+                  setReplyingTo(msg); setMenuMsgId(null);
+                  setTimeout(() => inputRef.current?.focus(), 60);
+                },
               },
               {
-                icon: <Forward size={14}/>,
-                label: "Forward",
-                color: "text-gray-300",
+                icon: <Forward size={14}/>, label: "Forward", color: "text-gray-300",
                 action: () => { setForwardingMsg(msg); setMenuMsgId(null); },
               },
               {
-                icon: <Copy size={14}/>,
-                label: "Copy",
-                color: "text-gray-300",
+                icon: <Copy size={14}/>, label: "Copy", color: "text-gray-300",
                 action: () => copyMessage(msg.content),
               },
               {
@@ -984,28 +968,20 @@ export default function ChatComponent() {
                 action: () => handleStar(msg.id),
               },
               {
-                icon: <Pin size={14}/>,
-                label: "Pin",
-                color: "text-gray-300",
+                icon: <Pin size={14}/>, label: "Pin", color: "text-gray-300",
                 action: () => handlePin(msg),
               },
-              // Edit — only for own non-deleted messages
+              // Edit: only for own, non-deleted messages
               ...(isMe && !isDeleted ? [{
-                icon: <Edit2 size={14}/>,
-                label: "Edit",
-                color: "text-pink-300",
+                icon: <Edit2 size={14}/>, label: "Edit", color: "text-[#e8967e]",
                 action: () => {
-                  setEditingMsg(msg);
-                  setMsgInput(msg.content);
-                  setMenuMsgId(null);
+                  setEditingMsg(msg); setMsgInput(msg.content); setMenuMsgId(null);
                   setTimeout(() => inputRef.current?.focus(), 60);
                 },
               }] : []),
-              // Delete — always available (for everyone if isMe, else for me only)
+              // Delete: always present; "for everyone" shown only if isMe
               {
-                icon: <Trash2 size={14}/>,
-                label: "Delete",
-                color: "text-rose-400",
+                icon: <Trash2 size={14}/>, label: "Delete", color: "text-rose-400",
                 action: () => { setDeletingId(msg.id); setMenuMsgId(null); },
               },
             ];
@@ -1014,31 +990,42 @@ export default function ChatComponent() {
               <div
                 key={msg.id}
                 ref={el => { if (el) msgRefs.current[msg.id] = el; }}
-                className={`flex flex-col transition-colors duration-700 rounded-xl ${isMe ? "items-end" : "items-start"} ${isFirst ? "mt-3" : "mt-[3px]"}`}
+                className={`flex flex-col transition-colors duration-700 rounded-xl ${
+                  isMe ? "items-end" : "items-start"
+                } ${isFirst ? "mt-3" : "mt-[3px]"}`}
               >
                 {/* Reply preview */}
                 {replyMsg && !isDeleted && (
                   <div
                     onClick={() => jumpToMessage(replyMsg.id)}
                     className={`flex items-start gap-2 mb-1 max-w-[66%] px-3 py-2 rounded-xl border cursor-pointer hover:opacity-80 transition-opacity ${
-                      isMe ? "bg-[#e8196e]/[0.08] border-[#e8196e]/15 self-end" : "bg-white/[0.04] border-white/[0.06] self-start"
+                      isMe ? "self-end" : "self-start"
                     }`}
+                    style={{
+                      background: isMe ? "rgba(200,112,90,0.08)" : "rgba(255,255,255,0.04)",
+                      borderColor: isMe ? "rgba(200,112,90,0.18)" : "rgba(255,255,255,0.06)",
+                    }}
                   >
-                    <div className={`w-0.5 rounded-full self-stretch min-h-[18px] flex-shrink-0 ${isMe ? "bg-[#e8196e]" : "bg-[#704050]"}`} />
+                    <div className={`w-0.5 rounded-full self-stretch min-h-[18px] flex-shrink-0`}
+                      style={{ background: isMe ? "#c8705a" : "#4a3a35" }} />
                     <div className="min-w-0">
-                      <p className={`text-[10px] font-bold mb-0.5 ${isMe ? "text-[#e8196e]" : "text-[#a06070]"}`}>
+                      <p className="text-[10px] font-bold mb-0.5" style={{ color: isMe ? "#c8705a" : "#7a6a65" }}>
+                        {/* FIX 2: Show "You" if reply is from current user, else show the OTHER person's name */}
                         {replyMsg.senderId === currentUserId ? "You" : displayName}
                       </p>
-                      <p className="text-[11px] text-[#704050] truncate">{replyMsg.content.slice(0, 60)}</p>
+                      <p className="text-[11px] text-[#4a3a35] truncate">{replyMsg.content.slice(0, 60)}</p>
                     </div>
                   </div>
                 )}
 
                 <div className={`relative flex items-end gap-1.5 ${isMe ? "flex-row-reverse" : "flex-row"}`}>
-                  {/* Other avatar */}
+                  {/* FIX 2: Other person's avatar — shows correctly with displayName (not currentUser's name) */}
                   {!isMe && (
                     <div className="w-7 flex-shrink-0 mb-1">
-                      {isLast ? <Avatar src={activeChat.avatarUrl} name={displayName} size={26} /> : null}
+                      {isLast ? (
+                        // The avatar src comes from activeChat (the chat partner), not current user
+                        <Avatar src={activeChat.avatarUrl} name={displayName} size={26} />
+                      ) : null}
                     </div>
                   )}
 
@@ -1051,11 +1038,13 @@ export default function ChatComponent() {
                       </div>
                     )}
 
+                    {/* ── FIX 1: onClick toggles menu — works for both sent and received messages ── */}
                     <div
                       onClick={e => {
                         e.stopPropagation();
                         if (isDeleted) return;
-                        setMenuMsgId(showMenu ? null : msg.id);
+                        // Toggle: if this message's menu is already open, close it; else open it
+                        setMenuMsgId(prev => prev === msg.id ? null : msg.id);
                         setReactionMsgId(null);
                       }}
                       onDoubleClick={e => {
@@ -1064,38 +1053,48 @@ export default function ChatComponent() {
                         setReactionMsgId(msg.id);
                         setMenuMsgId(null);
                       }}
-                      style={{ borderRadius }}
-                      className={`
-                        px-[14px] py-[9px] cursor-pointer select-none break-words
-                        text-[14.5px] leading-[1.5]
-                        ${isOptimistic ? "opacity-70" : ""}
-                        ${isDeleted
-                          ? "bg-transparent border border-[#e8196e]/[0.10] text-[#704050] italic text-[13px] px-[14px] py-[8px]"
+                      style={{
+                        borderRadius,
+                        background: isDeleted
+                          ? "transparent"
                           : isMe
-                            ? "bg-[#e8196e] text-white shadow-lg shadow-[#e8196e]/20"
-                            : "bg-[#221119] text-white border border-[#e8196e]/[0.10]"
-                        }
+                            ? "linear-gradient(135deg, #c8705a 0%, #9a4e3a 100%)"
+                            : "#181c24",
+                        border: isDeleted
+                          ? "1px solid rgba(200,112,90,0.12)"
+                          : !isMe
+                            ? "1px solid rgba(200,112,90,0.10)"
+                            : "none",
+                        boxShadow: isMe && !isDeleted
+                          ? "0 4px 20px rgba(200,112,90,0.20)"
+                          : "0 2px 8px rgba(0,0,0,0.3)",
+                      }}
+                      className={`
+                        px-[14px] py-[9px] cursor-pointer select-none break-words text-[14.5px] leading-[1.5]
+                        ${isOptimistic ? "opacity-70" : ""}
+                        ${isDeleted ? "text-[#4a3a35] italic text-[13px] px-[14px] py-[8px]" : "text-white"}
                         transition-all duration-150 active:scale-[0.98]
                       `}
                     >
                       {isDeleted ? (
                         <span className="flex items-center gap-1.5">
-                          <EyeOff size={12} className="text-[#a06070]" />
-                          Message deleted
+                          <EyeOff size={12} className="text-[#7a6a65]" /> Message deleted
                         </span>
                       ) : isVoice ? (
-                        <VoiceNotePlayer isMe={isMe} duration={parseInt(msg.content.match(/\d+:\d+/)?.[0]?.split(":").reduce((a, b, i) => String(parseInt(a) * (i === 1 ? 60 : 1) + parseInt(b)), "0") ?? "10")} />
+                        <VoiceNotePlayer isMe={isMe} duration={parseInt(
+                          msg.content.match(/\d+:\d+/)?.[0]?.split(":").reduce((a, b, i) =>
+                            String(parseInt(a) * (i === 1 ? 60 : 1) + parseInt(b)), "0") ?? "10"
+                        )} />
                       ) : (
                         <span>{msg.content}</span>
                       )}
 
-                      {/* Time + ticks + edited label */}
+                      {/* Time + ticks + edited */}
                       {!isDeleted && !isVoice && (
-                        <span className={`inline-flex items-center gap-1 ml-2 float-right mt-[5px] text-[10px] leading-none ${isMe ? "text-white/50" : "text-[#a06070]"}`}>
-                          {/* ── EDITED INDICATOR ── show "edited" text when message was modified */}
-                          {msg.editedAt && (
-                            <span className="text-[9px] opacity-70 italic">edited</span>
-                          )}
+                        <span className={`inline-flex items-center gap-1 ml-2 float-right mt-[5px] text-[10px] leading-none ${
+                          isMe ? "text-white/50" : "text-[#4a3a35]"
+                        }`}>
+                          {msg.editedAt && <span className="text-[9px] opacity-70 italic">edited</span>}
                           {new Date(msg.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                           {isMe && <Ticks status={status} />}
                         </span>
@@ -1109,43 +1108,49 @@ export default function ChatComponent() {
                     {showReact && !isDeleted && (
                       <div
                         onClick={e => e.stopPropagation()}
-                        className={`absolute z-50 bottom-full mb-2 flex items-center gap-1 bg-[#1a0f14] border border-[#e8196e]/[0.15] rounded-full px-2 py-2 shadow-2xl ${isMe ? "right-0" : "left-0"}`}
+                        className={`absolute z-50 bottom-full mb-2 flex items-center gap-1 rounded-full px-2 py-2 shadow-2xl border ${isMe ? "right-0" : "left-0"}`}
+                        style={{ background: "#111318", borderColor: "rgba(200,112,90,0.18)" }}
                       >
                         {REACTIONS.map(r => (
-                          <button key={r.emoji} title={r.label}
-                            onClick={() => handleReact(msg.id, r.emoji)}
-                            className="text-[22px] hover:scale-125 active:scale-110 transition-transform leading-none w-8 h-8 flex items-center justify-center rounded-full hover:bg-[#e8196e]/[0.10]">
+                          <button key={r.emoji} title={r.label} onClick={() => handleReact(msg.id, r.emoji)}
+                            className="text-[22px] hover:scale-125 active:scale-110 transition-transform leading-none w-8 h-8 flex items-center justify-center rounded-full"
+                            onMouseEnter={e => (e.currentTarget.style.background = "rgba(200,112,90,0.10)")}
+                            onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+                          >
                             {r.emoji}
                           </button>
                         ))}
                       </div>
                     )}
 
-                    {/* ── Context menu (left-click) ─────────────────────────── */}
-                    {/* Now correctly shows Edit + Delete for own messages,     */}
-                    {/* and only Delete (for me) for others' messages.          */}
+                    {/* ── FIX 1: Context menu — appears for ANY message on left-click ── */}
+                    {/* Edit is shown only for own messages, Delete for Everyone only for own messages */}
                     {showMenu && !isDeleted && (
                       <div
                         onClick={e => e.stopPropagation()}
-                        className={`absolute z-50 bottom-full mb-2 w-[192px] bg-[#1a0f14] border border-[#e8196e]/[0.15] rounded-2xl shadow-2xl overflow-hidden ${isMe ? "right-0" : "left-0"}`}
+                        className={`absolute z-50 bottom-full mb-2 w-[192px] rounded-2xl shadow-2xl overflow-hidden border ${isMe ? "right-0" : "left-0"}`}
+                        style={{ background: "#111318", borderColor: "rgba(200,112,90,0.18)" }}
                       >
                         {/* Quick reactions row */}
-                        <div className="flex items-center justify-around px-2 py-2 border-b border-[#e8196e]/[0.08] bg-[#180d12]">
+                        <div className="flex items-center justify-around px-2 py-2 border-b" style={{ background: "#0f1116", borderColor: "rgba(200,112,90,0.08)" }}>
                           {REACTIONS.slice(0, 6).map(r => (
                             <button key={r.emoji} onClick={() => handleReact(msg.id, r.emoji)}
-                              className="text-[18px] hover:scale-125 transition-transform leading-none w-7 h-7 flex items-center justify-center rounded-full hover:bg-[#e8196e]/[0.10]">
+                              className="text-[18px] hover:scale-125 transition-transform leading-none w-7 h-7 flex items-center justify-center rounded-full"
+                              onMouseEnter={e => (e.currentTarget.style.background = "rgba(200,112,90,0.10)")}
+                              onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+                            >
                               {r.emoji}
                             </button>
                           ))}
                         </div>
                         {/* Action rows */}
                         {menuActions.map(action => (
-                          <button
-                            key={action.label}
-                            onClick={action.action}
-                            className={`w-full flex items-center gap-3 px-4 py-2.5 hover:bg-[#e8196e]/[0.06] text-[13px] transition-colors ${action.color}`}
+                          <button key={action.label} onClick={action.action}
+                            className={`w-full flex items-center gap-3 px-4 py-2.5 text-[13px] transition-colors ${action.color}`}
+                            onMouseEnter={e => (e.currentTarget.style.background = "rgba(200,112,90,0.06)")}
+                            onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
                           >
-                            <span className="text-[#a06070]">{action.icon}</span>
+                            <span className="text-[#7a6a65]">{action.icon}</span>
                             {action.label}
                           </button>
                         ))}
@@ -1157,8 +1162,10 @@ export default function ChatComponent() {
                   {!isDeleted && (
                     <button
                       onClick={() => { setReplyingTo(msg); setTimeout(() => inputRef.current?.focus(), 60); }}
-                      className={`opacity-0 group-hover:opacity-100 transition-opacity w-7 h-7 rounded-full bg-[#e8196e]/[0.10] flex items-center justify-center flex-shrink-0 mb-1 ${isMe ? "mr-1" : "ml-1"}`}>
-                      <Reply size={12} className="text-[#a06070]" />
+                      className={`opacity-0 group-hover:opacity-100 transition-opacity w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 mb-1 ${isMe ? "mr-1" : "ml-1"}`}
+                      style={{ background: "rgba(200,112,90,0.10)" }}
+                    >
+                      <Reply size={12} className="text-[#7a6a65]" />
                     </button>
                   )}
                 </div>
@@ -1173,10 +1180,13 @@ export default function ChatComponent() {
         {/* Scroll to bottom */}
         {showScrollBtn && (
           <button onClick={scrollToBottom}
-            className="fixed bottom-[96px] right-4 z-30 w-10 h-10 rounded-full bg-[#1a0f14] border border-[#e8196e]/[0.20] shadow-xl flex items-center justify-center hover:bg-[#221119] transition-all active:scale-90">
-            <ArrowDown size={17} className="text-[#e8196e]" />
+            className="fixed bottom-[96px] right-4 z-30 w-10 h-10 rounded-full border shadow-xl flex items-center justify-center transition-all active:scale-90"
+            style={{ background: "#111318", borderColor: "rgba(200,112,90,0.22)" }}
+          >
+            <ArrowDown size={17} className="text-[#c8705a]" />
             {chatHook.chats.find(c => c.id === activeChat.id)?.unreadCount ? (
-              <span className="absolute -top-1 -right-1 w-4 h-4 bg-[#e8196e] rounded-full text-[9px] font-bold flex items-center justify-center">
+              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full text-[9px] font-bold flex items-center justify-center text-white"
+                style={{ background: "linear-gradient(135deg, #c8705a, #a0503a)" }}>
                 {chatHook.chats.find(c => c.id === activeChat.id)?.unreadCount}
               </span>
             ) : null}
@@ -1184,46 +1194,58 @@ export default function ChatComponent() {
         )}
 
         {/* ── Input area ── */}
-        <div className="bg-[#0f0a0d]/95 backdrop-blur-xl border-t border-[#e8196e]/[0.08] px-3 pb-5 pt-2 z-20">
-
+        <div className="backdrop-blur-xl border-t px-3 pb-5 pt-2 z-20"
+          style={{ background: "rgba(10,12,16,0.94)", borderColor: "rgba(200,112,90,0.08)" }}>
           {/* Quick replies */}
           {showQuickReplies && !msgInput && (
-            <QuickReplies onSelect={text => { setMsgInput(text); setShowQuickReplies(false); setTimeout(() => inputRef.current?.focus(), 60); }} />
+            <QuickReplies onSelect={text => {
+              setMsgInput(text); setShowQuickReplies(false);
+              setTimeout(() => inputRef.current?.focus(), 60);
+            }} />
           )}
 
           {/* Reply / Edit banner */}
           {(replyingTo || editingMsg) && (
-            <div className="flex items-center gap-3 bg-[#1a0f14] border border-[#e8196e]/[0.15] rounded-2xl px-4 py-2.5 mb-2">
-              <div className={`w-0.5 h-8 rounded-full flex-shrink-0 ${editingMsg ? "bg-amber-400" : "bg-[#e8196e]"}`} />
+            <div className="flex items-center gap-3 rounded-2xl px-4 py-2.5 mb-2 border"
+              style={{ background: "#111318", borderColor: "rgba(200,112,90,0.18)" }}>
+              <div className={`w-0.5 h-8 rounded-full flex-shrink-0`}
+                style={{ background: editingMsg ? "#f59e0b" : "#c8705a" }} />
               <div className="flex-1 min-w-0">
-                <p className={`text-[11px] font-bold ${editingMsg ? "text-amber-400" : "text-[#e8196e]"}`}>
+                <p className={`text-[11px] font-bold`} style={{ color: editingMsg ? "#f59e0b" : "#c8705a" }}>
                   {editingMsg ? "Editing message" : `Reply to ${replyingTo?.senderId === currentUserId ? "yourself" : displayName}`}
                 </p>
-                <p className="text-[12px] text-[#a06070] truncate">{editingMsg ? editingMsg.content : replyingTo?.content}</p>
+                <p className="text-[12px] text-[#7a6a65] truncate">{editingMsg ? editingMsg.content : replyingTo?.content}</p>
               </div>
-              <button onClick={() => { setReplyingTo(null); setEditingMsg(null); setMsgInput(""); }}
-                className="w-7 h-7 rounded-full bg-[#e8196e]/[0.10] flex items-center justify-center hover:bg-[#e8196e]/[0.20] transition flex-shrink-0">
-                <X size={13} className="text-[#e8196e]" />
+              <button
+                onClick={() => { setReplyingTo(null); setEditingMsg(null); setMsgInput(""); }}
+                className="w-7 h-7 rounded-full flex items-center justify-center transition flex-shrink-0"
+                style={{ background: "rgba(200,112,90,0.10)" }}
+              >
+                <X size={13} style={{ color: "#c8705a" }} />
               </button>
             </div>
           )}
 
           {/* Voice recording UI */}
           {isRecording ? (
-            <div className="flex items-center gap-3 bg-[#e8196e]/[0.08] border border-[#e8196e]/20 rounded-2xl px-4 py-3 mb-2">
-              <div className="w-2.5 h-2.5 bg-[#e8196e] rounded-full animate-pulse flex-shrink-0" />
+            <div className="flex items-center gap-3 rounded-2xl px-4 py-3 mb-2 border"
+              style={{ background: "rgba(200,112,90,0.07)", borderColor: "rgba(200,112,90,0.20)" }}>
+              <div className="w-2.5 h-2.5 rounded-full animate-pulse flex-shrink-0 bg-[#c8705a]" />
               <div className="flex-1">
-                <p className="text-[13px] text-pink-300 font-semibold">Recording… {formatDuration(recordSec)}</p>
+                <p className="text-[13px] text-[#e8967e] font-semibold">Recording… {formatDuration(recordSec)}</p>
                 <div className="flex gap-0.5 mt-1">
                   {Array.from({ length: 20 }).map((_, i) => (
-                    <div key={i} className="bg-[#e8196e]/40 rounded-full animate-pulse" style={{ width: 2, height: 4 + Math.random() * 12, animationDelay: `${i * 50}ms` }} />
+                    <div key={i} className="rounded-full animate-pulse"
+                      style={{ width: 2, height: 4 + Math.random() * 12, background: "rgba(200,112,90,0.40)", animationDelay: `${i * 50}ms` }} />
                   ))}
                 </div>
               </div>
-              <button onClick={cancelRecording} className="w-8 h-8 rounded-full bg-[#e8196e]/[0.10] flex items-center justify-center hover:bg-[#e8196e]/20 transition">
-                <X size={14} className="text-[#e8196e]" />
+              <button onClick={cancelRecording} className="w-8 h-8 rounded-full flex items-center justify-center transition"
+                style={{ background: "rgba(200,112,90,0.10)" }}>
+                <X size={14} className="text-[#c8705a]" />
               </button>
-              <button onClick={sendVoiceNote} className="w-9 h-9 rounded-full bg-[#e8196e] flex items-center justify-center shadow-lg hover:bg-[#c41460] transition">
+              <button onClick={sendVoiceNote} className="w-9 h-9 rounded-full flex items-center justify-center shadow-lg transition"
+                style={{ background: "linear-gradient(135deg, #c8705a, #a0503a)" }}>
                 <Send size={15} className="text-white" />
               </button>
             </div>
@@ -1231,10 +1253,12 @@ export default function ChatComponent() {
             <div className="flex items-end gap-2">
               {/* Attach */}
               <div className="relative">
-                <button
-                  onClick={e => { e.stopPropagation(); setShowAttach(s => !s); setShowEmoji(false); }}
-                  className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-[#e8196e]/[0.08] transition flex-shrink-0 mb-0.5">
-                  <Plus size={20} className={`transition-transform duration-200 ${showAttach ? "rotate-45 text-rose-400" : "text-[#e8196e]"}`} />
+                <button onClick={e => { e.stopPropagation(); setShowAttach(s => !s); setShowEmoji(false); }}
+                  className="w-10 h-10 rounded-full flex items-center justify-center transition flex-shrink-0 mb-0.5"
+                  onMouseEnter={e => (e.currentTarget.style.background = "rgba(200,112,90,0.08)")}
+                  onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+                >
+                  <Plus size={20} className={`transition-transform duration-200 ${showAttach ? "rotate-45 text-rose-400" : "text-[#c8705a]"}`} />
                 </button>
                 {showAttach && (
                   <div onClick={e => e.stopPropagation()}>
@@ -1244,22 +1268,25 @@ export default function ChatComponent() {
               </div>
 
               {/* Input */}
-              <div className="flex-1 flex items-end gap-2 bg-[#1a0f14] rounded-[24px] px-4 py-2.5 border border-[#e8196e]/[0.12] focus-within:border-[#e8196e]/30 transition-colors min-h-[46px]">
+              <div className="flex-1 flex items-end gap-2 rounded-[24px] px-4 py-2.5 border transition-colors min-h-[46px]"
+                style={{ background: "#111318", borderColor: "rgba(200,112,90,0.14)" }}
+                onFocus={() => undefined}
+              >
                 <input
                   ref={inputRef}
                   type="text"
                   value={msgInput}
                   onChange={e => setMsgInput(e.target.value)}
                   placeholder={editingMsg ? "Edit message…" : `Message ${displayName}…`}
-                  className="flex-1 bg-transparent outline-none text-[14px] text-white placeholder-[#704050] leading-relaxed py-0.5"
+                  className="flex-1 bg-transparent outline-none text-[14px] text-white leading-relaxed py-0.5"
+                  style={{ caretColor: "#c8705a" }}
                   onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
                   onFocus={() => setShowQuickReplies(!msgInput)}
                 />
                 {/* Emoji toggle */}
                 <div className="relative">
-                  <button
-                    onClick={e => { e.stopPropagation(); setShowEmoji(s => !s); setShowAttach(false); }}
-                    className="flex-shrink-0 text-[#a06070] hover:text-pink-300 transition mb-0.5">
+                  <button onClick={e => { e.stopPropagation(); setShowEmoji(s => !s); setShowAttach(false); }}
+                    className="flex-shrink-0 text-[#7a6a65] hover:text-[#e8967e] transition mb-0.5">
                     <Smile size={18} />
                   </button>
                   {showEmoji && (
@@ -1273,16 +1300,17 @@ export default function ChatComponent() {
               {/* Send / Mic / Like */}
               {msgInput.trim() ? (
                 <div className="flex gap-1.5 flex-shrink-0">
-                  {/* Schedule */}
-                  <button
-                    onClick={() => setSchedulingMsg(msgInput.trim())}
-                    className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-[#e8196e]/[0.08] transition">
-                    <Clock size={17} className="text-[#a06070]" />
+                  <button onClick={() => setSchedulingMsg(msgInput.trim())}
+                    className="w-10 h-10 rounded-full flex items-center justify-center transition"
+                    onMouseEnter={e => (e.currentTarget.style.background = "rgba(200,112,90,0.08)")}
+                    onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+                  >
+                    <Clock size={17} className="text-[#7a6a65]" />
                   </button>
-                  <button
-                    onClick={handleSend}
-                    disabled={messageHook.sending}
-                    className="w-10 h-10 rounded-full bg-[#e8196e] flex items-center justify-center hover:bg-[#c41460] active:scale-90 transition flex-shrink-0 disabled:opacity-50 shadow-lg shadow-[#e8196e]/25">
+                  <button onClick={handleSend} disabled={messageHook.sending}
+                    className="w-10 h-10 rounded-full flex items-center justify-center active:scale-90 transition flex-shrink-0 disabled:opacity-50"
+                    style={{ background: "linear-gradient(135deg, #c8705a, #9a4e3a)", boxShadow: "0 4px 16px rgba(200,112,90,0.30)" }}
+                  >
                     {messageHook.sending
                       ? <Loader2 size={16} className="animate-spin text-white" />
                       : <Send size={15} className="text-white" style={{ transform: "translateX(1px)" }} />}
@@ -1291,16 +1319,19 @@ export default function ChatComponent() {
               ) : (
                 <div className="flex gap-1 flex-shrink-0">
                   <button
-                    onMouseDown={startRecording}
-                    onMouseUp={sendVoiceNote}
-                    onTouchStart={startRecording}
-                    onTouchEnd={sendVoiceNote}
-                    className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-[#e8196e]/[0.08] transition flex-shrink-0">
-                    <Mic size={18} className="text-[#e8196e]" />
+                    onMouseDown={startRecording} onMouseUp={sendVoiceNote}
+                    onTouchStart={startRecording} onTouchEnd={sendVoiceNote}
+                    className="w-10 h-10 rounded-full flex items-center justify-center transition flex-shrink-0"
+                    onMouseEnter={e => (e.currentTarget.style.background = "rgba(200,112,90,0.08)")}
+                    onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+                  >
+                    <Mic size={18} className="text-[#c8705a]" />
                   </button>
-                  <button
-                    onClick={() => { setMsgInput("👍"); handleSend(); }}
-                    className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-[#e8196e]/[0.08] transition flex-shrink-0">
+                  <button onClick={() => { setMsgInput("👍"); handleSend(); }}
+                    className="w-10 h-10 rounded-full flex items-center justify-center transition flex-shrink-0"
+                    onMouseEnter={e => (e.currentTarget.style.background = "rgba(200,112,90,0.08)")}
+                    onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+                  >
                     <span className="text-[20px] leading-none">👍</span>
                   </button>
                 </div>
@@ -1316,15 +1347,12 @@ export default function ChatComponent() {
             onMute={() => showToast("Notifications muted")} onClearHistory={() => showToast("Chat history cleared")} />
         )}
         {deletingId && (
-          <DeleteModal
-            onConfirm={confirmDelete}
-            onCancel={() => setDeletingId(null)}
-            forEveryone={messageHook.messages.find(m => m.id === deletingId)?.senderId === currentUserId}
-          />
+          <DeleteModal onConfirm={confirmDelete} onCancel={() => setDeletingId(null)}
+            forEveryone={messageHook.messages.find(m => m.id === deletingId)?.senderId === currentUserId} />
         )}
         {forwardingMsg && (
           <ForwardModal chats={dmChats} currentUserId={currentUserId}
-            onForward={chatId => { showToast("Message forwarded"); setForwardingMsg(null); }}
+            onForward={() => { showToast("Message forwarded"); setForwardingMsg(null); }}
             onClose={() => setForwardingMsg(null)} />
         )}
         {schedulingMsg && (
@@ -1332,43 +1360,54 @@ export default function ChatComponent() {
             onSchedule={time => { showToast(`📅 Scheduled for ${new Date(time).toLocaleString()}`); setMsgInput(""); }}
             onClose={() => setSchedulingMsg(null)} />
         )}
-
         {toast && <Toast msg={toast} />}
       </div>
     );
   }
 
-  // ════════════════════════════════════════════════════════════════════════════
+  // ══════════════════════════════════════════════════════════════════════════════
   // VIEW: CHAT LIST
-  // ════════════════════════════════════════════════════════════════════════════
+  // ══════════════════════════════════════════════════════════════════════════════
   return (
-    <div className="min-h-screen bg-[#0f0a0d] text-white font-sans flex flex-col" style={{ fontFamily: "'SF Pro Display', 'Segoe UI', system-ui, sans-serif" }}>
-
+    <div
+      className="min-h-screen text-white font-sans flex flex-col"
+      style={{
+        background: "#0a0c10",
+        fontFamily: "'SF Pro Display', 'Segoe UI', system-ui, sans-serif",
+      }}
+    >
       {/* ── Header ── */}
-      <div className="px-4 pt-4 pb-0 bg-[#0f0a0d] sticky top-0 z-20">
+      <div className="px-4 pt-4 pb-0 sticky top-0 z-20" style={{ background: "#0a0c10" }}>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <button onClick={() => router.back()} className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-[#e8196e]/[0.08] transition">
+            <button onClick={() => router.back()}
+              className="w-9 h-9 rounded-full flex items-center justify-center transition"
+              onMouseEnter={e => (e.currentTarget.style.background = "rgba(200,112,90,0.08)")}
+              onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+            >
               <ChevronLeft size={22} className="text-gray-200" />
             </button>
             <h1 className="text-[22px] font-bold text-white tracking-tight">Messages</h1>
           </div>
           <div className="flex items-center gap-2">
-            {dmCreating && <Loader2 size={18} className="animate-spin text-[#e8196e]" />}
+            {dmCreating && <Loader2 size={18} className="animate-spin text-[#c8705a]" />}
             <button onClick={() => setShowPicker(true)}
-              className="w-9 h-9 rounded-full bg-[#e8196e] flex items-center justify-center hover:bg-[#c41460] transition shadow-lg shadow-[#e8196e]/25 active:scale-90">
+              className="w-9 h-9 rounded-full flex items-center justify-center transition active:scale-90 shadow-lg"
+              style={{ background: "linear-gradient(135deg, #c8705a, #9a4e3a)", boxShadow: "0 4px 14px rgba(200,112,90,0.30)" }}
+            >
               <Plus size={18} className="text-white" />
             </button>
           </div>
         </div>
 
         {/* Search */}
-        <div className="flex items-center gap-2.5 bg-[#1a0f14] rounded-2xl px-4 py-2.5 border border-[#e8196e]/[0.10] focus-within:border-[#e8196e]/30 transition-colors mb-3">
-          <Search size={15} className="text-[#a06070] flex-shrink-0" />
-          <input type="text" value={search} onChange={e => setSearch(e.target.value)}
-            placeholder="Search conversations…"
-            className="flex-1 bg-transparent outline-none text-[14px] text-white placeholder-[#704050]" />
-          {search && <button onClick={() => setSearch("")}><X size={14} className="text-[#a06070]" /></button>}
+        <div className="flex items-center gap-2.5 rounded-2xl px-4 py-2.5 border mb-3 transition-colors"
+          style={{ background: "#111318", borderColor: "rgba(200,112,90,0.12)" }}>
+          <Search size={15} className="text-[#7a6a65] flex-shrink-0" />
+          <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search conversations…"
+            className="flex-1 bg-transparent outline-none text-[14px] text-white"
+            style={{ caretColor: "#c8705a" }} />
+          {search && <button onClick={() => setSearch("")}><X size={14} className="text-[#7a6a65]" /></button>}
         </div>
 
         {/* Filter tabs */}
@@ -1376,10 +1415,13 @@ export default function ChatComponent() {
           {(["all", "unread", "muted"] as const).map(f => (
             <button key={f} onClick={() => setListFilter(f)}
               className={`px-4 py-1.5 rounded-full text-[12px] font-semibold capitalize transition-all ${
-                listFilter === f
-                  ? "bg-[#e8196e] text-white shadow-md shadow-[#e8196e]/25"
-                  : "bg-[#1a0f14] text-[#a06070] border border-[#e8196e]/[0.12] hover:text-gray-300 hover:border-[#e8196e]/25"
-              }`}>
+                listFilter === f ? "text-white shadow-md" : "text-[#7a6a65] border hover:text-gray-300"
+              }`}
+              style={listFilter === f
+                ? { background: "linear-gradient(135deg, #c8705a, #9a4e3a)", boxShadow: "0 2px 10px rgba(200,112,90,0.25)" }
+                : { background: "#111318", borderColor: "rgba(200,112,90,0.14)" }
+              }
+            >
               {f}
             </button>
           ))}
@@ -1392,18 +1434,22 @@ export default function ChatComponent() {
         {chatHook.loading && dmChats.length === 0 && (
           <>{[...Array(7)].map((_, i) => <SkeletonRow key={i} />)}</>
         )}
-
         {!chatHook.loading && dmChats.length === 0 && (
           <div className="flex flex-col items-center justify-center py-24 px-8 text-center gap-5 select-none">
-            <div className="w-20 h-20 rounded-full bg-[#e8196e]/[0.08] border border-[#e8196e]/[0.12] flex items-center justify-center">
-              <MessageCircle size={30} className="text-[#e8196e]" />
+            <div className="w-20 h-20 rounded-full border flex items-center justify-center"
+              style={{ background: "rgba(200,112,90,0.08)", borderColor: "rgba(200,112,90,0.14)" }}>
+              <MessageCircle size={30} className="text-[#c8705a]" />
             </div>
             <div>
               <p className="font-bold text-[17px] text-white mb-1.5">No conversations yet</p>
-              <p className="text-[13px] text-[#a06070] leading-relaxed max-w-[220px] mx-auto">Start chatting — your messages will appear here.</p>
+              <p className="text-[13px] text-[#7a6a65] leading-relaxed max-w-[220px] mx-auto">
+                Start chatting — your messages will appear here.
+              </p>
             </div>
             <button onClick={() => setShowPicker(true)}
-              className="px-7 py-3 rounded-full bg-[#e8196e] text-white text-[14px] font-bold hover:bg-[#c41460] active:scale-95 transition shadow-xl shadow-[#e8196e]/25">
+              className="px-7 py-3 rounded-full text-white text-[14px] font-bold active:scale-95 transition shadow-xl"
+              style={{ background: "linear-gradient(135deg, #c8705a, #9a4e3a)", boxShadow: "0 4px 20px rgba(200,112,90,0.30)" }}
+            >
               Start a Conversation
             </button>
           </div>
@@ -1412,35 +1458,36 @@ export default function ChatComponent() {
         {filteredChats.map(chat => {
           const name      = resolveChatName(chat, currentUserId);
           const hasUnread = chat.unreadCount > 0;
-
           return (
             <div key={chat.id} onClick={() => openChat(chat)}
-              className="flex items-center gap-3.5 px-4 py-3 hover:bg-[#e8196e]/[0.04] active:bg-[#e8196e]/[0.08] cursor-pointer transition-colors relative group">
-
-              {/* Avatar */}
+              className="flex items-center gap-3.5 px-4 py-3 cursor-pointer transition-colors relative group"
+              onMouseEnter={e => (e.currentTarget.style.background = "rgba(200,112,90,0.04)")}
+              onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+              onMouseDown={e => (e.currentTarget.style.background = "rgba(200,112,90,0.08)")}
+              onMouseUp={e => (e.currentTarget.style.background = "rgba(200,112,90,0.04)")}
+            >
               <Avatar src={chat.avatarUrl} name={name} size={56} online={chat.isOnline} />
-
-              {/* Content */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between mb-0.5">
-                  <h2 className={`text-[15px] truncate flex items-center gap-1.5 ${hasUnread ? "font-bold text-white" : "font-semibold text-[#ccc]"}`}>
+                  <h2 className={`text-[15px] truncate flex items-center gap-1.5 ${hasUnread ? "font-bold text-white" : "font-semibold text-[#aaa]"}`}>
                     {name}
-                    {chat.isVerified && <BadgeCheck size={13} className="text-pink-400 flex-shrink-0" />}
+                    {chat.isVerified && <BadgeCheck size={13} className="text-[#e8967e] flex-shrink-0" />}
                     {chat.isPinned && <Pin size={10} className="text-amber-400/70 flex-shrink-0 rotate-45" />}
                   </h2>
                   <div className="flex items-center gap-1.5 ml-2 flex-shrink-0">
-                    {chat.isMuted && !hasUnread && <BellOff size={11} className="text-[#704050]" />}
-                    <span className={`text-[11px] ${hasUnread ? "text-[#e8196e] font-bold" : "text-[#704050]"}`}>
+                    {chat.isMuted && !hasUnread && <BellOff size={11} className="text-[#4a3a35]" />}
+                    <span className={`text-[11px] ${hasUnread ? "text-[#c8705a] font-bold" : "text-[#4a3a35]"}`}>
                       {formatListTime(chat.lastMessageAt)}
                     </span>
                   </div>
                 </div>
                 <div className="flex items-center justify-between">
-                  <p className={`text-[13px] truncate pr-2 ${hasUnread ? "text-[#c090a0] font-medium" : "text-[#704050]"}`}>
+                  <p className={`text-[13px] truncate pr-2 ${hasUnread ? "text-[#9a8a85] font-medium" : "text-[#4a3a35]"}`}>
                     {chat.lastMessageContent || "Tap to start chatting"}
                   </p>
                   {hasUnread && (
-                    <div className="bg-[#e8196e] text-white text-[10px] font-bold min-w-[19px] h-[19px] px-1.5 rounded-full flex items-center justify-center flex-shrink-0 shadow shadow-[#e8196e]/30">
+                    <div className="text-white text-[10px] font-bold min-w-[19px] h-[19px] px-1.5 rounded-full flex items-center justify-center flex-shrink-0"
+                      style={{ background: "linear-gradient(135deg, #c8705a, #9a4e3a)", boxShadow: "0 2px 6px rgba(200,112,90,0.35)" }}>
                       {chat.unreadCount > 99 ? "99+" : chat.unreadCount}
                     </div>
                   )}
@@ -1452,14 +1499,13 @@ export default function ChatComponent() {
 
         {chatHook.hasMore && (
           <button onClick={chatHook.loadMore} disabled={chatHook.loading}
-            className="w-full flex items-center justify-center gap-2 py-4 text-[13px] text-[#704050] hover:text-gray-300 transition">
+            className="w-full flex items-center justify-center gap-2 py-4 text-[13px] text-[#4a3a35] hover:text-gray-300 transition">
             {chatHook.loading ? <Loader2 size={14} className="animate-spin" /> : "Load more"}
           </button>
         )}
-
         {!chatHook.loading && search && filteredChats.length === 0 && (
           <div className="px-4 py-12 text-center">
-            <p className="text-[14px] text-[#704050]">No results for "{search}"</p>
+            <p className="text-[14px] text-[#4a3a35]">No results for "{search}"</p>
           </div>
         )}
       </div>

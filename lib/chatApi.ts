@@ -344,6 +344,8 @@ export interface Message {
   deletedAt?: number;
   createdAt: number;
   updatedAt: number;
+  edited?: boolean;
+  deleted?: boolean;
 }
 
 export interface Group {

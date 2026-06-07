@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import ChatComponent from "@/components/ChatComponent";
+import ChatComponent from "../../../src/components/ChatComponent";
 
 export const metadata: Metadata = {
   title: "Chat | SportsFan360",

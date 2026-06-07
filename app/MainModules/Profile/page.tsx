@@ -357,20 +357,20 @@ function ProfilePageInner() {
 
     return e;
   }
-  async function uploadImageToCloudinary(file: File) {
-  const formData = new FormData();
+//   async function uploadImageToCloudinary(file: File) {
+//   const formData = new FormData();
 
-  formData.append("file", file);
+//   formData.append("file", file);
 
-  const res = await fetch("/api/upload-image", {
-    method: "POST",
-    body: formData,
-  });
+//   const res = await fetch("/api/upload-image", {
+//     method: "POST",
+//     body: formData,
+//   });
 
-  const data = await res.json();
+//   const data = await res.json();
 
-  return data.secure_url;
-}
+//   return data.secure_url;
+// }
   /* ══════════════════════════════════════════
      SAVE — validates, then persists to Firestore
      via POST /api/profile. On success, local
@@ -386,39 +386,83 @@ const save = async () => {
 
   setIsSaving(true);
   setApiError(null);
-  let avatarUrl = profile.avatar;
+//   let avatarUrl = profile.avatar;
 
-if (selectedImageFile) {
-  avatarUrl = await uploadImageToCloudinary(
-    selectedImageFile
-  );
-}
+// if (selectedImageFile) {
+//   avatarUrl = await uploadImageToCloudinary(
+//     selectedImageFile
+//   );
+// }
 
   try {
     // ✅ Read the token exactly as your other fetches do
     const stored = window.localStorage.getItem("auth_user");
     const token = stored ? JSON.parse(stored)?.token : null;
 
-    const headers: Record<string, string> = {
-      "Content-Type": "application/json",
-    };
-    if (token) {
-      headers["Authorization"] = `Bearer ${token}`;
-    }
+    const formData =
+  new FormData();
 
-    const res = await fetch("/api/profile", {
-  method: "POST",
-  headers,
-  credentials: "include",
-  body: JSON.stringify({
-    name: editForm.name,
-    subtitle: editForm.subtitle,
-    description: editForm.description,
-    location: editForm.location,
-    website: editForm.website,
-    avatarUrl,
-  }),
-});
+formData.append(
+  "name",
+  editForm.name
+);
+
+formData.append(
+  "subtitle",
+  editForm.subtitle
+);
+
+formData.append(
+  "description",
+  editForm.description
+);
+
+formData.append(
+  "location",
+  editForm.location
+);
+
+formData.append(
+  "website",
+  editForm.website
+);
+
+if (selectedImageFile) {
+  formData.append(
+    "profilePicture",
+    selectedImageFile
+  );
+}
+
+const headers: Record<
+  string,
+  string
+> = {};
+
+if (token) {
+  headers.Authorization =
+    `Bearer ${token}`;
+}
+
+const res = await fetch(
+  "/api/profile",
+  {
+    method: "POST",
+    headers,
+    credentials: "include",
+    body: formData,
+  }
+);
+ 
+  // body: JSON.stringify({
+  //   name: editForm.name,
+  //   subtitle: editForm.subtitle,
+  //   description: editForm.description,
+  //   location: editForm.location,
+  //   website: editForm.website,
+  //   avatarUrl,
+  // }),
+
 
     // ... rest of your code unchanged
 
@@ -452,7 +496,8 @@ if (selectedImageFile) {
   description: editForm.description,
   location: editForm.location,
   website: editForm.website,
-  avatar: avatarUrl,
+  // avatar: avatarUrl,
+  avatar: previewUrl || prev.avatar,
   handle: deriveHandle(editForm.name),
 }));
 

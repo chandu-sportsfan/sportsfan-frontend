@@ -248,6 +248,7 @@ export default function CreatePostDialog({ isOpen, onClose, onSubmit }: Props) {
           <textarea
             ref={textareaRef}
             value={content}
+            maxLength={300}
             onChange={handleContentChange}
             placeholder="What's on your mind?"
             rows={3}

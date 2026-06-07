@@ -455,14 +455,22 @@ export const ChatAPI = {
 
 // ─── Messages ─────────────────────────────────────────────────────────────────
 export const MessageAPI = {
-  edit: (messageId: string, content: string) =>
-    request<{ success: true; message: Message }>(`/messages/${messageId}`, {
+  edit: (chatId: string, messageId: string, content: string) =>
+  request<{ success: true; message: Message }>(
+    `/chats/${chatId}/messages/${messageId}`,
+    {
       method: "PATCH",
       body: JSON.stringify({ content }),
-    }),
+    }
+  ),
 
-  delete: (messageId: string) =>
-    request<{ success: true; message: string }>(`/messages/${messageId}`, { method: "DELETE" }),
+  delete: (chatId: string, messageId: string) =>
+  request<{ success: true; message: string }>(
+    `/chats/${chatId}/messages/${messageId}`,
+    {
+      method: "DELETE",
+    }
+  ),
 };
 
 // ─── Groups ───────────────────────────────────────────────────────────────────

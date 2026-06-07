@@ -357,7 +357,20 @@ function ProfilePageInner() {
 
     return e;
   }
+  async function uploadImageToCloudinary(file: File) {
+  const formData = new FormData();
 
+  formData.append("file", file);
+
+  const res = await fetch("/api/upload-image", {
+    method: "POST",
+    body: formData,
+  });
+
+  const data = await res.json();
+
+  return data.secure_url;
+}
   /* ══════════════════════════════════════════
      SAVE — validates, then persists to Firestore
      via POST /api/profile. On success, local
@@ -373,6 +386,13 @@ const save = async () => {
 
   setIsSaving(true);
   setApiError(null);
+  let avatarUrl = profile.avatar;
+
+if (selectedImageFile) {
+  avatarUrl = await uploadImageToCloudinary(
+    selectedImageFile
+  );
+}
 
   try {
     // ✅ Read the token exactly as your other fetches do
@@ -387,17 +407,18 @@ const save = async () => {
     }
 
     const res = await fetch("/api/profile", {
-      method: "POST",
-      headers,
-      credentials: "include", // also send cookies (Path A fallback)
-      body: JSON.stringify({
-        name:        editForm.name,
-        subtitle:    editForm.subtitle,
-        description: editForm.description,
-        location:    editForm.location,
-        website:     editForm.website,
-      }),
-    });
+  method: "POST",
+  headers,
+  credentials: "include",
+  body: JSON.stringify({
+    name: editForm.name,
+    subtitle: editForm.subtitle,
+    description: editForm.description,
+    location: editForm.location,
+    website: editForm.website,
+    avatarUrl,
+  }),
+});
 
     // ... rest of your code unchanged
 
@@ -425,15 +446,15 @@ const save = async () => {
 
       // 3️⃣ Update local state so the UI reflects saved values immediately
       setProfile(prev => ({
-        ...prev,
-        name:        editForm.name,
-        subtitle:    editForm.subtitle,
-        description: editForm.description,
-        location:    editForm.location,
-        website:     editForm.website,
-        handle:      deriveHandle(editForm.name),
-        // avatar: avatarUrl,  ← uncomment when Storage is enabled
-      }));
+  ...prev,
+  name: editForm.name,
+  subtitle: editForm.subtitle,
+  description: editForm.description,
+  location: editForm.location,
+  website: editForm.website,
+  avatar: avatarUrl,
+  handle: deriveHandle(editForm.name),
+}));
 
       setIsEditing(false);
       setFieldErrors({});

@@ -1040,13 +1040,6 @@ export default function ChatComponent() {
 
                     {/* ── FIX 1: onClick toggles menu — works for both sent and received messages ── */}
                     <div
-                      onClick={e => {
-                        e.stopPropagation();
-                        if (isDeleted) return;
-                        // Toggle: if this message's menu is already open, close it; else open it
-                        setMenuMsgId(prev => prev === msg.id ? null : msg.id);
-                        setReactionMsgId(null);
-                      }}
                       onDoubleClick={e => {
                         e.stopPropagation();
                         if (isDeleted) return;
@@ -1163,6 +1156,28 @@ export default function ChatComponent() {
                   </div>
 
                   {/* Swipe-to-reply indicator */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setMenuMsgId(prev => prev === msg.id ? null : msg.id);
+                      setReactionMsgId(null);
+                    }}
+                    className={`
+                      opacity-0 group-hover:opacity-100
+                      transition-opacity
+                      w-7 h-7
+                      rounded-full
+                      flex items-center justify-center
+                      flex-shrink-0
+                      mb-1
+                      ${isMe ? "mr-1" : "ml-1"}
+                    `}
+                    style={{
+                      background: "rgba(200,112,90,0.10)"
+                    }}
+                  >
+                    <MoreVertical size={13} className="text-[#7a6a65]" />
+                  </button>
                   {!isDeleted && (
                     <button
                       onClick={() => { setReplyingTo(msg); setTimeout(() => inputRef.current?.focus(), 60); }}

@@ -6906,15 +6906,49 @@ export default function ROARApp() {
   const containerRef = useRef<HTMLDivElement>(null);
 
   const [mounted, setMounted] = useState(false);
+  const [checkingProfile, setCheckingProfile] = useState(true);
   const [onboarded, setOnboarded] = useState(false);
   const [userBadge, setUserBadge] = useState("RISING_FAN");
+  const [userSports, setUserSports] = useState<string[]>([]);
 
   useEffect(() => {
     setMounted(true);
-    try {
-      setOnboarded(!!localStorage.getItem("roar_v2_complete"));
-      setUserBadge(localStorage.getItem("roar_badge") || "RISING_FAN");
-    } catch {}
+    const checkProfile = async () => {
+      try {
+        const res = await axios.get("/api/roar/profile");
+        if (res.data?.success) {
+          setOnboarded(true);
+          setUserBadge(res.data.user.badge || "RISING_FAN");
+          setUserSports(res.data.user.sports ?? []);
+          try {
+            localStorage.setItem("roar_v2_complete", "1");
+            localStorage.setItem("roar_badge", res.data.user.badge || "RISING_FAN");
+          } catch {}
+        } else {
+          setOnboarded(false);
+          try {
+            localStorage.removeItem("roar_v2_complete");
+            localStorage.removeItem("roar_badge");
+          } catch {}
+        }
+      } catch (err: any) {
+        if (err.response?.status === 404) {
+          setOnboarded(false);
+          try {
+            localStorage.removeItem("roar_v2_complete");
+            localStorage.removeItem("roar_badge");
+          } catch {}
+        } else {
+          // Fallback to local storage if API fails/offline
+          const hasLocal = !!localStorage.getItem("roar_v2_complete");
+          setOnboarded(hasLocal);
+          setUserBadge(localStorage.getItem("roar_badge") || "RISING_FAN");
+        }
+      } finally {
+        setCheckingProfile(false);
+      }
+    };
+    checkProfile();
   }, []);
 
   const [activeTab, setActiveTab] = useState("home");
@@ -6922,7 +6956,6 @@ export default function ROARApp() {
   const [composeOpen, setComposeOpen] = useState(false);
   const [composeType, setComposeType] = useState<string | null>(null);
   const [toast, setToast] = useState({ visible: false, message: "" });
-  const [userSports, setUserSports] = useState<string[]>([]);
 
   const [rooms, setRooms] = useState<any[]>([]);
   const [selectedRoom, setSelectedRoom] = useState<any | null>(null);
@@ -6969,9 +7002,17 @@ export default function ROARApp() {
       console.log("fetch user sports", res.data);
       if (res.data?.success) {
         setUserSports(res.data.user.sports ?? []);
+        setUserBadge(res.data.user.badge || "RISING_FAN");
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to fetch user sports:", err);
+      if (err.response?.status === 404) {
+        setOnboarded(false);
+        try {
+          localStorage.removeItem("roar_v2_complete");
+          localStorage.removeItem("roar_badge");
+        } catch {}
+      }
     }
   };
     if (onboarded) {
@@ -7101,12 +7142,42 @@ export default function ROARApp() {
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
-  if (!mounted) {
+  if (!mounted || checkingProfile) {
     return (
       <div
         className="roar-root"
-        style={{ minHeight: "100vh", background: "var(--bg-primary)" }}
-      />
+        style={{
+          minHeight: "100vh",
+          background: "var(--bg-primary)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <div style={{ textAlign: "center" }}>
+          <div
+            className="roar-spinner"
+            style={{
+              width: "40px",
+              height: "40px",
+              border: "3px solid rgba(255,255,255,0.1)",
+              borderTop: "3px solid var(--accent-magenta)",
+              borderRadius: "50%",
+              animation: "roar-spin 1s linear infinite",
+              margin: "0 auto 16px",
+            }}
+          />
+          <style>{`
+            @keyframes roar-spin {
+              0% { transform: rotate(0deg); }
+              100% { transform: rotate(360deg); }
+            }
+          `}</style>
+          <div style={{ color: "var(--text-secondary)", fontSize: "14px", fontFamily: "sans-serif" }}>
+            Loading ROAR...
+          </div>
+        </div>
+      </div>
     );
   }
 

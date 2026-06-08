@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useMemo, useEffect, useRef, useCallback } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
+import { type ActivityItem, useActivity } from "@/context/ActivityContext";
 import { useLeaderboard } from "@/context/LeaderboardContext";
 import {
   ChevronDown, Trophy, Share2, CheckCircle2,
@@ -11,17 +12,9 @@ import {
 } from "lucide-react";
 
 // ─────────────────────────────────────────────
-// CONSTANTS
-// ─────────────────────────────────────────────
-const AUDIO_DROP_POINTS  = 2;
-const POST_CREATION_POINTS = 12;
-const TRIVIA_POINTS      = 5;
-const FAN_BATTLE_POINTS  = 15;
-
-// ─────────────────────────────────────────────
 // TYPES
 // ─────────────────────────────────────────────
-type ActivityKey = "audioDrop" | "fanBattle" | "trivia" | "post" | "register" | "invite";
+type ActivityKey = "audioDrop" | "fanBattle" | "trivia" | "post" | "register" | "invite" | "watchDrop" | "like" | "share" | "other";
 type TrendPeriod = "7D" | "30D" | "90D";
 
 interface HistoryItem {
@@ -31,6 +24,7 @@ interface HistoryItem {
   details: string;
   points: number;
   type: string;
+  source: string;
   date: string;         // formatted display date  e.g. "Jun 7, 2026"
   timestamp: number;    // ms since epoch — used for all real calculations
   time: string;
@@ -91,27 +85,50 @@ const ACTIVITY_META: Record<ActivityKey, {
     color: "text-emerald-500", hexColor: "#10b981",
     typeColor: "text-emerald-500 border-emerald-500/30 bg-emerald-500/5",
   },
+  watchDrop: {
+    action: "Watch Drops", type: "Content", icon: Play,
+    color: "text-yellow-500", hexColor: "#eab308",
+    typeColor: "text-yellow-500 border-yellow-500/30 bg-yellow-500/5",
+  },
+  like: {
+    action: "Post Like", type: "Engagement", icon: ThumbsUp,
+    color: "text-rose-500", hexColor: "#f43f5e",
+    typeColor: "text-rose-500 border-rose-500/30 bg-rose-500/5",
+  },
+  share: {
+    action: "Post Share", type: "Engagement", icon: Share2,
+    color: "text-purple-500", hexColor: "#a855f7",
+    typeColor: "text-purple-500 border-purple-500/30 bg-purple-500/5",
+  },
+  other: {
+    action: "Activity", type: "Activity", icon: Trophy,
+    color: "text-gray-300", hexColor: "#d4d4d8",
+    typeColor: "text-gray-300 border-gray-400/30 bg-white/5",
+  },
 };
 
 // ─────────────────────────────────────────────
 // FACTORY — create a history item
 // ─────────────────────────────────────────────
-let _idCounter = 0;
 function makeHistoryItem(
   key: ActivityKey,
   details: string,
   points: number,
-  atDate?: Date
+  atDate?: Date,
+  id = `hi_${Date.now()}`,
+  action?: string,
+  source?: string
 ): HistoryItem {
   const d = atDate ?? new Date();
   const meta = ACTIVITY_META[key];
   return {
-    id: `hi_${++_idCounter}_${Date.now()}`,
+    id,
     key,
-    action: meta.action,
+    action: action || meta.action,
     details,
     points,
     type: meta.type,
+    source: source || meta.type,
     date: d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
     timestamp: d.getTime(),
     time: d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
@@ -123,27 +140,75 @@ function makeHistoryItem(
 }
 
 // ─────────────────────────────────────────────
-// SEED DATA — initial history so the dashboard
-// never looks empty on first load
-// ─────────────────────────────────────────────
-function buildSeedHistory(): HistoryItem[] {
-  const now = new Date();
-  const daysAgo = (n: number) => new Date(now.getTime() - n * 86400000);
-  return [
-    makeHistoryItem("fanBattle", "Played a Fan Battle",           FAN_BATTLE_POINTS,   daysAgo(0)),
-    makeHistoryItem("audioDrop", "Listened: Daily Sports Update", AUDIO_DROP_POINTS,   daysAgo(0)),
-    makeHistoryItem("trivia",    "Answered: IPL trivia",          TRIVIA_POINTS,        daysAgo(1)),
-    makeHistoryItem("post",      "Created a Fan Zone post",        POST_CREATION_POINTS, daysAgo(2)),
-    makeHistoryItem("fanBattle", "Played a Fan Battle",           FAN_BATTLE_POINTS,   daysAgo(3)),
-    makeHistoryItem("audioDrop", "Listened: Cricket Roundup",     AUDIO_DROP_POINTS,   daysAgo(4)),
-    makeHistoryItem("trivia",    "Answered: Football trivia",     TRIVIA_POINTS,        daysAgo(5)),
-    makeHistoryItem("fanBattle", "Played a Fan Battle",           FAN_BATTLE_POINTS,   daysAgo(6)),
-  ];
-}
-
-// ─────────────────────────────────────────────
 // HELPERS
 // ─────────────────────────────────────────────
+function normalizeActivityKey(type: string, label: string): ActivityKey {
+  const value = `${type} ${label}`.toLowerCase().replace(/[_-]+/g, " ");
+  if (value.includes("audio")) return "audioDrop";
+  if (value.includes("battle") || value.includes("fantasy")) return "fanBattle";
+  if (value.includes("trivia") || value.includes("quiz")) return "trivia";
+  if (value.includes("register") || value.includes("signup") || value.includes("sign up")) return "register";
+  if (value.includes("invite") || value.includes("referral")) return "invite";
+  if (value.includes("watch") || value.includes("video")) return "watchDrop";
+  if (value.includes("like")) return "like";
+  if (value.includes("share")) return "share";
+  if (value.includes("post") || value.includes("create post")) return "post";
+  return "other";
+}
+
+function normalizeTimestamp(createdAt: number): number {
+  if (!createdAt) return Date.now();
+  return createdAt < 1_000_000_000_000 ? createdAt * 1000 : createdAt;
+}
+
+function readableSource(source: string) {
+  return source
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function metadataText(metadata: ActivityItem["metadata"]) {
+  const keys = [
+    "title",
+    "postTitle",
+    "audioTitle",
+    "videoTitle",
+    "battleTitle",
+    "matchName",
+    "question",
+    "resourceName",
+    "name",
+    "transactionId",
+  ];
+
+  for (const key of keys) {
+    const value = metadata?.[key];
+    if (typeof value === "string" && value.trim()) return value.trim();
+    if (typeof value === "number") return String(value);
+  }
+
+  return "";
+}
+
+function activityToHistoryItem(activity: ActivityItem): HistoryItem {
+  const key = normalizeActivityKey(activity.type, activity.label);
+  const rawSource = activity.type || key;
+  const readable = readableSource(rawSource);
+  const details = metadataText(activity.metadata) || activity.label || readable;
+
+  return makeHistoryItem(
+    key,
+    details,
+    Number(activity.points) || 0,
+    new Date(normalizeTimestamp(activity.createdAt)),
+    activity.id,
+    activity.label || ACTIVITY_META[key].action,
+    readable
+  );
+}
+
 function calculateLevelData(totalXp: number) {
   let level = 1, xpForNextLevel = 1000, xpAccumulated = 0;
   while (totalXp >= xpAccumulated + xpForNextLevel) {
@@ -432,14 +497,17 @@ export default function FanZoneDashboard() {
   const contextData = useLeaderboard() as LeaderboardContextType | null;
   const currentUserPoints = contextData?.currentUserPoints ?? 0;
   const currentUserRank   = contextData?.currentUserRank   ?? 0;
+  const { activities, loading: activitiesLoading } = useActivity();
 
-  // ── History state — starts with seed data ───
-  const [history, setHistory] = useState<HistoryItem[]>(() => buildSeedHistory());
+  // ── History rows come from the backend activity ledger ──
+  const history = useMemo(
+    () => activities.map(activityToHistoryItem).sort((a, b) => b.timestamp - a.timestamp),
+    [activities]
+  );
 
   // ── Rank tracking — store previous rank in ref ──
   // We keep prevRank as a ref so it doesn't cause re-renders,
   // and we capture it the moment rank changes.
-  const prevRankRef = useRef<number>(0);
   const [rankSnapshot, setRankSnapshot] = useState({ prev: 0, current: 0 });
 
   useEffect(() => {
@@ -449,50 +517,6 @@ export default function FanZoneDashboard() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUserRank]);
-
-  // ── Points delta tracking ────────────────────
-  // We track the REAL points from context and append history items
-  // when the delta matches a known activity value.
-  const prevPointsRef = useRef<number | null>(null);
-
-  useEffect(() => {
-    if (prevPointsRef.current === null) {
-      prevPointsRef.current = currentUserPoints;
-      return;
-    }
-    const delta = currentUserPoints - prevPointsRef.current;
-    prevPointsRef.current = currentUserPoints;
-    if (delta <= 0) return;
-
-    // Map delta → activity key
-    let newItem: HistoryItem | null = null;
-    if (delta === POST_CREATION_POINTS) {
-      newItem = makeHistoryItem("post", "Created a Fan Zone post", POST_CREATION_POINTS);
-    } else if (delta === TRIVIA_POINTS) {
-      newItem = makeHistoryItem("trivia", "Answered a trivia question", TRIVIA_POINTS);
-    } else if (delta === AUDIO_DROP_POINTS) {
-      newItem = makeHistoryItem("audioDrop", "Listened to an Audio Drop", AUDIO_DROP_POINTS);
-    } else if (delta === FAN_BATTLE_POINTS) {
-      newItem = makeHistoryItem("fanBattle", "Played a Fan Battle", FAN_BATTLE_POINTS);
-    } else {
-      // Unknown delta — log as fan battle as catch-all
-      newItem = makeHistoryItem("fanBattle", `Activity (+${delta} pts)`, delta);
-    }
-    if (newItem) setHistory((prev) => [newItem!, ...prev]);
-  }, [currentUserPoints]);
-
-  // ── Expose helper so other components can push a specific activity ──
-  // Usage from anywhere: window.__fzAddActivity("audioDrop","Listened: X",2)
-  useEffect(() => {
-    (window as any).__fzAddActivity = (
-      key: ActivityKey,
-      details: string,
-      points: number
-    ) => {
-      setHistory((prev) => [makeHistoryItem(key, details, points), ...prev]);
-    };
-    return () => { delete (window as any).__fzAddActivity; };
-  }, []);
 
   // ─── Total points — use context if available, else sum history ─────
   // Context is the authoritative source; history is for display only.
@@ -521,9 +545,6 @@ export default function FanZoneDashboard() {
     ? Math.abs(rankSnapshot.prev - rankSnapshot.current) : 0;
   const isRankUp   = rankSnapshot.prev > 0 && rankSnapshot.current > 0
     && rankSnapshot.current < rankSnapshot.prev;
-  const isRankDown = rankSnapshot.prev > 0 && rankSnapshot.current > 0
-    && rankSnapshot.current > rankSnapshot.prev;
-
   // ─── Month labels — always dynamic ──────────
   const currentMonthLabel  = getCurrentMonthLabel();   // "June 2026"
   const previousMonthLabel = getPreviousMonthLabel();   // "May 2026"
@@ -637,11 +658,13 @@ export default function FanZoneDashboard() {
             <th className="py-4 px-2 text-[10px] font-black text-gray-500 uppercase tracking-widest">Activity</th>
             <th className="py-4 px-2 text-[10px] font-black text-gray-500 uppercase tracking-widest">Details</th>
             <th className="py-4 px-2 text-[10px] font-black text-gray-500 uppercase tracking-widest text-right">Points</th>
-            <th className="py-4 px-2 pl-8 text-[10px] font-black text-gray-500 uppercase tracking-widest w-32">Type</th>
+            <th className="py-4 px-2 pl-8 text-[10px] font-black text-gray-500 uppercase tracking-widest w-40">Source</th>
           </tr>
         </thead>
         <tbody>
-          {rows.length === 0 ? (
+          {activitiesLoading ? (
+            <tr><td colSpan={5} className="text-center text-gray-500 py-8 text-sm">Loading activity sources...</td></tr>
+          ) : rows.length === 0 ? (
             <tr><td colSpan={5} className="text-center text-gray-500 py-8 text-sm">No activity recorded yet.</td></tr>
           ) : (
             rows.map((row) => (
@@ -664,7 +687,7 @@ export default function FanZoneDashboard() {
                 </td>
                 <td className="py-3 px-2 pl-8">
                   <span className={`inline-flex items-center justify-center px-2.5 py-1 rounded-md text-[10px] font-bold border ${row.typeColor}`}>
-                    {row.type}
+                    {row.source}
                   </span>
                 </td>
               </tr>
@@ -1086,7 +1109,7 @@ export default function FanZoneDashboard() {
                           <item.icon className={`w-5 h-5 ${item.color}`} />
                         </div>
                         <div>
-                          <p className="text-[10px] font-black tracking-widest text-gray-500 uppercase mb-0.5">{item.type}</p>
+                          <p className="text-[10px] font-black tracking-widest text-gray-500 uppercase mb-0.5">{item.source}</p>
                           <p className="text-sm font-bold text-white group-hover:text-rose-100 transition-colors">{item.action}: {item.details}</p>
                         </div>
                       </div>

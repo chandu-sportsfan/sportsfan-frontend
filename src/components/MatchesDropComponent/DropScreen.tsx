@@ -709,10 +709,40 @@ const TEAM_ABBR_MAP: Record<string, string[]> = {
     "Gujarat Titans": ["GT", "Gujarat"],
 };
 
-function audioMatchesTeam(audioTitle: string, teamName: string): boolean {
-    const abbrs = TEAM_ABBR_MAP[teamName] || [teamName];
-    const title = audioTitle.toUpperCase();
-    return abbrs.some((abbr) => title.includes(abbr.toUpperCase()));
+function audioMatchesTeam(audio: AudioFile, teamName: string): boolean {
+    if (!audio || !teamName) return false;
+
+    const filter = teamName.toLowerCase().trim();
+    const folder = audio.folder.toLowerCase().trim();
+    const title = audio.title.toLowerCase();
+
+    console.log("FILTER:", filter);
+    console.log("FOLDER:", folder);
+
+    // FIFA
+    if (filter === "fifa") {
+        return folder.includes("fifa");
+    }
+
+    // WOMEN T20
+    if (
+        filter.includes("women") ||
+        filter.includes("womens")
+    ) {
+        return (
+            folder.includes("women") ||
+            folder.includes("womens_t20")
+        );
+    }
+
+    // IPL TEAMS
+    const abbrs = TEAM_ABBR_MAP[teamName] || [];
+
+    if (title.includes(filter)) return true;
+
+    return abbrs.some((abbr) =>
+        title.includes(abbr.toLowerCase())
+    );
 }
 
 interface MatchInfo {
@@ -1182,7 +1212,19 @@ export default function FullPlaylist() {
         setError(null);
 
         try {
-            const params = new URLSearchParams({ limit: "500" });
+            const params = new URLSearchParams({
+                limit: "500",
+            });
+
+            if (teamFilter === "FIFA") {
+                params.append("type", "fifa");
+            }
+
+            if (
+                teamFilter?.includes("Women")
+            ) {
+                params.append("type", "womens_t20");
+            }
             if (searchTerm) params.append("search", searchTerm);
 
             const [audioRes, videoRes] = await Promise.all([
@@ -1197,13 +1239,32 @@ export default function FullPlaylist() {
             if (audioRes.data.success) {
                 audioDrops = audioRes.data.audioFiles.map((audio: AudioFile) => audioFileToDrop(audio));
                 if (teamFilter) {
-                    audioDrops = audioDrops.filter((d) => audioMatchesTeam(d.title, teamFilter));
+                    audioDrops = audioRes.data.audioFiles
+                    .filter((audio: AudioFile) => audioMatchesTeam(audio, teamFilter))
+                    .map((audio: AudioFile) => audioFileToDrop(audio));
                 }
             }
 
             let videoDrops: Drop[] = [];
             if (videoRes.data.success) {
                 videoDrops = videoRes.data.videoFiles.map((video: VideoFile) => videoFileToDrop(video));
+                // 👇 ADD THIS FIX: Filter videos so they don't leak across categories!
+                if (teamFilter) {
+                    videoDrops = videoRes.data.videoFiles.filter((video: VideoFile) => {
+                    const filter = teamFilter.toLowerCase();
+                    const folder = video.folder.toLowerCase();
+
+    if (filter === "fifa") {
+        return folder.includes("/fifa");
+    }
+
+    if (filter.includes("women")) {
+        return folder.includes("/womens_t20");
+    }
+
+    return true;
+}).map((video: VideoFile) => videoFileToDrop(video));
+                }
             }
 
             setDateGroups(groupByDate(audioDrops, videoDrops));

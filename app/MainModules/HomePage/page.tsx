@@ -8,8 +8,6 @@
 // import Player360CardsSection from "@/src/components/HomeComponents/Player360Cards";
 // import Team360CardsSection from "@/src/components/HomeComponents/Team360Cards";
 
-
-
 // export default function HomePage() {
 //   return (
 //     <div className="flex flex-col w-full">
@@ -26,10 +24,6 @@
 //   );
 // }
 
-
-
-
-
 "use client";
 
 import ContinueListening from "@/src/components/HomeComponents/ContinueListening/index";
@@ -43,24 +37,36 @@ import NewsCenter from "@/src/components/HomeComponents/NewsCenter";
 import IPLSpotlight from "../IPLSpotlight/page";
 import SocialFeedSection from "@/src/components/CreatePost-Component/SocialFeedSection";
 import FifaWorldSection from "@/src/components/HomeComponents/FifaWorldSection";
+import NewHomePage from "@/src/components/NewHomePageComponent/newhomepage";
+
+import WPLPlayerPage from "../Wplplayer360/page";
+import FifaPlayerProfilePage from "../FifaPlayer360/page";
+import WomensT20Section from "@/src/components/HomeComponents/WomensT20Section";
 
 export default function HomePage() {
   return (
     <div className="flex flex-col w-full">
       {/* <Header /> -> REMOVED to prevent duplication with layout.tsx */}
       <div className="flex flex-col gap-6 px-4 lg:px-6 py-4 w-full">
-        <HomeBanners />
+        {/* <HomeBanners />
         <IPLSpotlight />
-        
+        <WomensT20Section/>
         <FifaWorldSection />
 
         <ContinueListening />
-        <HomeCardsSection />
-        <PollCardsPage />
-        <Team360CardsSection />
+      
+        <PollCardsPage /> */}
+         {/* <IPLSpotlight /> */}
+         
+        <NewHomePage />
+          {/* <HomeCardsSection /> */}
+        {/* <Team360CardsSection /> */}
+        {/* <PlayerProfilePage /> */}
+        <WPLPlayerPage />
+        <FifaPlayerProfilePage />
         {/* <Player360CardsSection /> */}
-        <SocialFeedSection />
-        <NewsCenter />
+         <SocialFeedSection />
+      {/*  <NewsCenter /> */}
       </div>
     </div>
   );

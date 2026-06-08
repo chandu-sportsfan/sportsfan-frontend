@@ -1,10 +1,247 @@
+
+
+// "use client";
+
+// import { createContext, useContext, useState, useCallback, ReactNode } from "react";
+// import { useRouter } from "next/navigation";
+// import axios from "axios";
+
+// // ── Types ─────────────────────────────────────────────────────────────────────
+
+// interface SearchResult {
+//     type: 'player' | 'team' | 'user';
+//     id: string;
+//     name: string;
+//     image?: string;
+//     logo?: string;
+//     playerProfilesId?: string;
+//     jerseyNumber?: number;
+//     category?: string[];
+//     tournament?: string;
+//     allTournaments?: string[];
+// }
+
+// interface GlobalSearchContextType {
+//     searchQuery: string;
+//     setSearchQuery: (query: string) => void;
+//     searchResults: SearchResult[];
+//     isSearching: boolean;
+//     performSearch: (query: string) => Promise<void>;
+//     clearSearch: () => void;
+//     navigateToResult: (result: SearchResult) => void;
+// }
+
+// // ── Tournament routing helpers ─────────────────────────────────────────────────
+
+// const WOMEN_TOURNAMENTS = ["womens_ipl", "womens_t20i"];
+// const FIFA_TOURNAMENTS  = ["mens_fifa_wc_2022", "mens_fifa_wc_2026", "womens_fifa_wc"];
+
+// function isWomenCricketPlayer(result: SearchResult): boolean {
+//     if (result.type !== "player") return false;
+//     const all = result.allTournaments ?? [result.tournament ?? ""];
+//     return all.some((t) => WOMEN_TOURNAMENTS.includes(t));
+// }
+
+// function isFifaPlayer(result: SearchResult): boolean {
+//     if (result.type !== "player") return false;
+//     const t = result.tournament ?? "";
+//     return FIFA_TOURNAMENTS.some((f) => t.startsWith(f.split("_wc")[0])) ||
+//            t.includes("fifa");
+// }
+
+// // ── Context ───────────────────────────────────────────────────────────────────
+
+// const GlobalSearchContext = createContext<GlobalSearchContextType | undefined>(undefined);
+
+// export function GlobalSearchProvider({ children }: { children: ReactNode }) {
+//     const [searchQuery, setSearchQuery] = useState("");
+//     const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+//     const [isSearching, setIsSearching] = useState(false);
+//     const router = useRouter();
+
+//     const performSearch = useCallback(async (query: string) => {
+//         if (!query.trim()) {
+//             setSearchResults([]);
+//             return;
+//         }
+
+//         setIsSearching(true);
+//         try {
+//             // Run three in parallel:
+//             // 1. existing global-search (teams, users, IPL players)
+//             // 2. player-stats cross-tournament search (womens_ipl + womens_t20i)
+//             // 3. fifa-player-stats search
+//             const [globalRes, playerStatsRes, fifaRes] = await Promise.allSettled([
+//                 axios.get(`/api/global-search?q=${encodeURIComponent(query)}`),
+//                 axios.get(`/api/player-stats?search=${encodeURIComponent(query)}&limit=10`),
+//                 axios.get(`/api/fifa-player-stats?search=${encodeURIComponent(query)}&limit=10`),
+//             ]);
+
+//             // ── Global results ─────────────────────────────────────────────────
+//             let globalResults: SearchResult[] = [];
+//             if (globalRes.status === "fulfilled") {
+//                 globalResults = globalRes.value.data.results || [];
+//             }
+
+//             // ── WPL / WT20I results ────────────────────────────────────────────
+//             let statsResults: SearchResult[] = [];
+//             if (playerStatsRes.status === "fulfilled" && playerStatsRes.value.data.success) {
+//                 const byPlayerId = new Map<string, { primary: SearchResult; tournaments: string[] }>();
+
+//                 for (const p of playerStatsRes.value.data.data ?? []) {
+//                     const t = p.tournament ?? "";
+//                     const existing = byPlayerId.get(p.player_id);
+//                     if (!existing) {
+//                         byPlayerId.set(p.player_id, {
+//                             primary: {
+//                                 type: "player" as const,
+//                                 id: p.player_id,
+//                                 name: p.player_name,
+//                                 playerProfilesId: p.player_id,
+//                                 jerseyNumber: p.jersey_no ?? undefined,
+//                                 tournament: t,
+//                                 category: [p.format ?? "T20"],
+//                             },
+//                             tournaments: [t],
+//                         });
+//                     } else {
+//                         if (t === "womens_ipl") existing.primary.tournament = t;
+//                         if (!existing.tournaments.includes(t)) existing.tournaments.push(t);
+//                     }
+//                 }
+
+//                 statsResults = Array.from(byPlayerId.values()).map(({ primary, tournaments }) => ({
+//                     ...primary,
+//                     allTournaments: tournaments.length > 1 ? tournaments : undefined,
+//                 }));
+//             }
+
+//             // ── FIFA results ───────────────────────────────────────────────────
+//             let fifaResults: SearchResult[] = [];
+//             if (fifaRes.status === "fulfilled" && fifaRes.value.data.success) {
+//                 fifaResults = (fifaRes.value.data.data ?? []).map(
+//                     (p: {
+//                         player_id: string;
+//                         player_name: string;
+//                         position?: string;
+//                         team?: string;
+//                         tournament?: string;
+//                         season?: number;
+//                     }) => ({
+//                         type: "player" as const,
+//                         id: p.player_id,
+//                         name: p.player_name,
+//                         playerProfilesId: p.player_id,
+//                         tournament: p.tournament ?? "",
+//                         category: [p.position ?? "Player", p.team ?? ""],
+//                     })
+//                 );
+//             }
+
+//             // ── Merge: deduplicate by player_id ────────────────────────────────
+//             const seenIds = new Set<string>(
+//                 globalResults.map((r) => r.playerProfilesId ?? r.id)
+//             );
+
+//             const newFromStats = statsResults.filter(
+//                 (r) => !seenIds.has(r.playerProfilesId ?? r.id)
+//             );
+//             newFromStats.forEach((r) => seenIds.add(r.playerProfilesId ?? r.id));
+
+//             const newFromFifa = fifaResults.filter(
+//                 (r) => !seenIds.has(r.playerProfilesId ?? r.id)
+//             );
+
+//             const merged: SearchResult[] = [...globalResults, ...newFromStats, ...newFromFifa];
+
+//             // ── Sort: Players → Users → Teams; IPL → Women → FIFA ─────────────
+//             const typeOrder: Record<string, number> = { player: 1, user: 2, team: 3 };
+//             merged.sort((a, b) => {
+//                 const ta = typeOrder[a.type] ?? 4;
+//                 const tb = typeOrder[b.type] ?? 4;
+//                 if (ta !== tb) return ta - tb;
+//                 // Within players: IPL (0) < Women Cricket (1) < FIFA (2)
+//                 const sportRank = (r: SearchResult) => {
+//                     if (isFifaPlayer(r))         return 2;
+//                     if (isWomenCricketPlayer(r)) return 1;
+//                     return 0;
+//                 };
+//                 return sportRank(a) - sportRank(b);
+//             });
+
+//             setSearchResults(merged);
+//         } catch (error) {
+//             console.error("Search failed:", error);
+//             setSearchResults([]);
+//         } finally {
+//             setIsSearching(false);
+//         }
+//     }, []);
+
+//     const clearSearch = useCallback(() => {
+//         setSearchQuery("");
+//         setSearchResults([]);
+//     }, []);
+
+//     const navigateToResult = useCallback((result: SearchResult) => {
+//         const profileId = result.playerProfilesId || result.id;
+
+//         if (result.type === "user") {
+//             router.push(`/MainModules/Profile?userId=${encodeURIComponent(profileId)}`);
+//         } else if (isFifaPlayer(result)) {
+//             router.push(
+//                 `/MainModules/FifaPlayersProfile?id=${encodeURIComponent(profileId)}&tournament=${encodeURIComponent(result.tournament ?? "")}`
+//             );
+//         } else if (isWomenCricketPlayer(result)) {
+//             router.push(
+//                 `/MainModules/WplPlayers?id=${encodeURIComponent(profileId)}&tournament=${encodeURIComponent(result.tournament ?? "womens_ipl")}`
+//             );
+//         } else if (result.type === "player" || result.type === "team") {
+//             router.push(
+//                 `/MainModules/PlayersProfile?id=${encodeURIComponent(profileId)}&tab=highlights`
+//             );
+//         }
+
+//         setTimeout(() => clearSearch(), 150);
+//     }, [clearSearch, router]);
+
+//     return (
+//         <GlobalSearchContext.Provider value={{
+//             searchQuery,
+//             setSearchQuery,
+//             searchResults,
+//             isSearching,
+//             performSearch,
+//             clearSearch,
+//             navigateToResult,
+//         }}>
+//             {children}
+//         </GlobalSearchContext.Provider>
+//     );
+// }
+
+// export function useGlobalSearch() {
+//     const context = useContext(GlobalSearchContext);
+//     if (!context) {
+//         throw new Error("useGlobalSearch must be used within GlobalSearchProvider");
+//     }
+//     return context;
+// }
+
+
+
+
+
+
+
+
 "use client";
 
 import { createContext, useContext, useState, useCallback, ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
 
-// ── Types ────────────────────────────────────────────────────────────────────
+// ── Types ─────────────────────────────────────────────────────────────────────
 
 interface SearchResult {
     type: 'player' | 'team' | 'user';
@@ -12,9 +249,11 @@ interface SearchResult {
     name: string;
     image?: string;
     logo?: string;
-    playerProfilesId?: string;   // optional – not all results have one
+    playerProfilesId?: string;
     jerseyNumber?: number;
     category?: string[];
+    tournament?: string;
+    allTournaments?: string[];
 }
 
 interface GlobalSearchContextType {
@@ -24,15 +263,30 @@ interface GlobalSearchContextType {
     isSearching: boolean;
     performSearch: (query: string) => Promise<void>;
     clearSearch: () => void;
-    /** Call this when the user clicks any result in the search dropdown. */
     navigateToResult: (result: SearchResult) => void;
+}
+
+// ── Tournament routing helpers ─────────────────────────────────────────────────
+
+const WOMEN_TOURNAMENTS = ["womens_ipl", "womens_t20i"];
+const FIFA_TOURNAMENTS  = ["mens_fifa_wc_2022", "mens_fifa_wc_2026", "womens_fifa_wc"];
+
+function isWomenCricketPlayer(result: SearchResult): boolean {
+    if (result.type !== "player") return false;
+    const all = result.allTournaments ?? [result.tournament ?? ""];
+    return all.some((t) => WOMEN_TOURNAMENTS.includes(t));
+}
+
+function isFifaPlayer(result: SearchResult): boolean {
+    if (result.type !== "player") return false;
+    const t = result.tournament ?? "";
+    return FIFA_TOURNAMENTS.some((f) => t.startsWith(f.split("_wc")[0])) ||
+           t.includes("fifa");
 }
 
 // ── Context ───────────────────────────────────────────────────────────────────
 
 const GlobalSearchContext = createContext<GlobalSearchContextType | undefined>(undefined);
-
-// ── Provider ──────────────────────────────────────────────────────────────────
 
 export function GlobalSearchProvider({ children }: { children: ReactNode }) {
     const [searchQuery, setSearchQuery] = useState("");
@@ -40,6 +294,9 @@ export function GlobalSearchProvider({ children }: { children: ReactNode }) {
     const [isSearching, setIsSearching] = useState(false);
     const router = useRouter();
 
+    // FIX: empty dep array [] makes this function stable across renders.
+    // The Header's debounce useEffect only depends on searchQuery now,
+    // so it won't re-fire just because the context re-rendered.
     const performSearch = useCallback(async (query: string) => {
         if (!query.trim()) {
             setSearchResults([]);
@@ -48,58 +305,137 @@ export function GlobalSearchProvider({ children }: { children: ReactNode }) {
 
         setIsSearching(true);
         try {
-            const response = await axios.get(`/api/global-search?q=${encodeURIComponent(query)}`);
-            const results: SearchResult[] = response.data.results || [];
+            const [globalRes, playerStatsRes, fifaRes] = await Promise.allSettled([
+                axios.get(`/api/global-search?q=${encodeURIComponent(query)}`),
+                axios.get(`/api/player-stats?search=${encodeURIComponent(query)}&limit=10`),
+                axios.get(`/api/fifa-player-stats?search=${encodeURIComponent(query)}&limit=10`),
+            ]);
 
-            // Sort: Players first → Users second → Teams third
-            const order: Record<string, number> = { player: 1, user: 2, team: 3 };
-            const sorted = [...results].sort((a, b) => {
-                const rankA = order[a.type] ?? 4;
-                const rankB = order[b.type] ?? 4;
-                return rankA - rankB;
+            // ── Global results ─────────────────────────────────────────────────
+            let globalResults: SearchResult[] = [];
+            if (globalRes.status === "fulfilled") {
+                globalResults = globalRes.value.data.results || [];
+            }
+
+            // ── WPL / WT20I results ────────────────────────────────────────────
+            let statsResults: SearchResult[] = [];
+            if (playerStatsRes.status === "fulfilled" && playerStatsRes.value.data.success) {
+                const byPlayerId = new Map<string, { primary: SearchResult; tournaments: string[] }>();
+
+                for (const p of playerStatsRes.value.data.data ?? []) {
+                    const t = p.tournament ?? "";
+                    const existing = byPlayerId.get(p.player_id);
+                    if (!existing) {
+                        byPlayerId.set(p.player_id, {
+                            primary: {
+                                type: "player" as const,
+                                id: p.player_id,
+                                name: p.player_name,
+                                playerProfilesId: p.player_id,
+                                jerseyNumber: p.jersey_no ?? undefined,
+                                tournament: t,
+                                category: [p.format ?? "T20"],
+                            },
+                            tournaments: [t],
+                        });
+                    } else {
+                        if (t === "womens_ipl") existing.primary.tournament = t;
+                        if (!existing.tournaments.includes(t)) existing.tournaments.push(t);
+                    }
+                }
+
+                statsResults = Array.from(byPlayerId.values()).map(({ primary, tournaments }) => ({
+                    ...primary,
+                    allTournaments: tournaments.length > 1 ? tournaments : undefined,
+                }));
+            }
+
+            // ── FIFA results ───────────────────────────────────────────────────
+            let fifaResults: SearchResult[] = [];
+            if (fifaRes.status === "fulfilled" && fifaRes.value.data.success) {
+                fifaResults = (fifaRes.value.data.data ?? []).map(
+                    (p: {
+                        player_id: string;
+                        player_name: string;
+                        position?: string;
+                        team?: string;
+                        tournament?: string;
+                        season?: number;
+                    }) => ({
+                        type: "player" as const,
+                        id: p.player_id,
+                        name: p.player_name,
+                        playerProfilesId: p.player_id,
+                        tournament: p.tournament ?? "",
+                        category: [p.position ?? "Player", p.team ?? ""],
+                    })
+                );
+            }
+
+            // ── Merge: deduplicate by player_id ────────────────────────────────
+            const seenIds = new Set<string>(
+                globalResults.map((r) => r.playerProfilesId ?? r.id)
+            );
+
+            const newFromStats = statsResults.filter(
+                (r) => !seenIds.has(r.playerProfilesId ?? r.id)
+            );
+            newFromStats.forEach((r) => seenIds.add(r.playerProfilesId ?? r.id));
+
+            const newFromFifa = fifaResults.filter(
+                (r) => !seenIds.has(r.playerProfilesId ?? r.id)
+            );
+
+            const merged: SearchResult[] = [...globalResults, ...newFromStats, ...newFromFifa];
+
+            // ── Sort: Players → Users → Teams; IPL → Women → FIFA ─────────────
+            const typeOrder: Record<string, number> = { player: 1, user: 2, team: 3 };
+            merged.sort((a, b) => {
+                const ta = typeOrder[a.type] ?? 4;
+                const tb = typeOrder[b.type] ?? 4;
+                if (ta !== tb) return ta - tb;
+                const sportRank = (r: SearchResult) => {
+                    if (isFifaPlayer(r))         return 2;
+                    if (isWomenCricketPlayer(r)) return 1;
+                    return 0;
+                };
+                return sportRank(a) - sportRank(b);
             });
 
-            setSearchResults(sorted);
+            setSearchResults(merged);
         } catch (error) {
             console.error("Search failed:", error);
             setSearchResults([]);
         } finally {
             setIsSearching(false);
         }
-    }, []);
+    }, []); // ← stable: no deps that change on every render
 
     const clearSearch = useCallback(() => {
         setSearchQuery("");
         setSearchResults([]);
     }, []);
 
-    /**
-     * Navigate to the correct profile page based on result type, then clear search.
-     *
-     * • type === "user"   → /MainModules/Profile?userId=<id>
-     *     The Profile page reads ?userId and, if it differs from the logged-in
-     *     user, renders "Add Friend" instead of "Edit Profile".
-     *
-     * • type === "player" → /MainModules/PlayersProfile?id=<playerProfilesId>
-     *
-     * • type === "team"   → /MainModules/PlayersProfile?id=<id>  (adjust if needed)
-     */
     const navigateToResult = useCallback((result: SearchResult) => {
-        // 1. Trigger the route change FIRST
+        const profileId = result.playerProfilesId || result.id;
+
         if (result.type === "user") {
-            const userId = result.playerProfilesId || result.id;
-            router.push(`/MainModules/Profile?userId=${encodeURIComponent(userId)}`);
-        } else {
-            const profileId = result.playerProfilesId || result.id;
+            router.push(`/MainModules/Profile?userId=${encodeURIComponent(profileId)}`);
+        } else if (isFifaPlayer(result)) {
+            router.push(
+                `/MainModules/FifaPlayersProfile?id=${encodeURIComponent(profileId)}&tournament=${encodeURIComponent(result.tournament ?? "")}`
+            );
+        } else if (isWomenCricketPlayer(result)) {
+            router.push(
+                `/MainModules/WplPlayers?id=${encodeURIComponent(profileId)}&tournament=${encodeURIComponent(result.tournament ?? "womens_ipl")}`
+            );
+        } else if (result.type === "player" || result.type === "team") {
             router.push(
                 `/MainModules/PlayersProfile?id=${encodeURIComponent(profileId)}&tab=highlights`
             );
         }
 
-        // 2. Delay the cleanup by 150ms so the router has time to execute
-        setTimeout(() => {
-            clearSearch();
-        }, 150);
+        setTimeout(() => clearSearch(), 150);
     }, [clearSearch, router]);
 
     return (
@@ -116,8 +452,6 @@ export function GlobalSearchProvider({ children }: { children: ReactNode }) {
         </GlobalSearchContext.Provider>
     );
 }
-
-// ── Hook ──────────────────────────────────────────────────────────────────────
 
 export function useGlobalSearch() {
     const context = useContext(GlobalSearchContext);

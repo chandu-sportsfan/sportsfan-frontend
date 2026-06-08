@@ -147,6 +147,17 @@ const nextConfig = {
           destination: `${apiTarget}/api/notifications/:path*`,
         },
 
+
+          //User-Activity
+        {
+          source: "/api/user-activity",
+          destination: `${apiTarget}/api/user-activity`,
+        },
+        {
+          source: "/api/user-activity/:path*",
+          destination: `${apiTarget}/api/user-activity/:path*`,
+        },
+
         // Cloudinary
         {
           source: "/api/cloudinary/drops/seen",

@@ -32,7 +32,7 @@ export default function FanBattlePage() {
 
   return (
     <div className="relative overflow-hidden min-h-screen bg-[#121212] flex items-start justify-center">
-      <div className="w-full max-w-6xl mx-auto pt-8 pb-15">
+      <div className="w-full max-w-8xl mx-auto pt-8 pb-15">
         <Link
           href="/MainModules/HomePage"
           className="inline-flex items-center gap-2 text-gray-400 hover:text-white transition px-4"

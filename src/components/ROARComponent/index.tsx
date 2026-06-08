@@ -2638,7 +2638,7 @@ function HomeFeed({
   const vote = (
     id: string,
     agree: boolean,
-    basePercent: number,
+    currentPct: number,
     isDbPost?: boolean,
   ) => {
     const prev = votes[id];
@@ -2647,13 +2647,11 @@ function HomeFeed({
       nextVote = null;
     }
     setVotes((v) => ({ ...v, [id]: nextVote }));
+    // Optimistic UI: shift bar by ±3 from the *current* displayed pct
+    const delta = nextVote === true ? 3 : nextVote === false ? -3 : (prev === true ? -3 : 3);
     setPcts((p) => ({
       ...p,
-      [id]: clamp(
-        basePercent + (nextVote === true ? 4 : nextVote === false ? -4 : 0),
-        5,
-        95,
-      ),
+      [id]: clamp(currentPct + delta, 1, 99),
     }));
 
     if (isDbPost && onVote) {
@@ -3408,7 +3406,7 @@ function HomeFeed({
                           vote(
                             item.id,
                             true,
-                            item.agreePercent ?? 50,
+                            pct,
                             item.isDbPost,
                           );
                         }}
@@ -3440,7 +3438,7 @@ function HomeFeed({
                           vote(
                             item.id,
                             false,
-                            item.agreePercent ?? 50,
+                            pct,
                             item.isDbPost,
                           );
                         }}
@@ -6835,7 +6833,9 @@ export default function ROARApp() {
     async (postId: string, voteType: "agree" | "disagree" | null) => {
       try {
         await axios.post(`/api/roar/posts/${postId}/vote`, { vote: voteType });
-        fetchPosts();
+        await fetchPosts();
+        // Clear local optimistic override — real server count now loaded
+        setPcts((p) => { const next = { ...p }; delete next[postId]; return next; });
       } catch (err) {
         console.error("Failed to submit vote:", err);
       }

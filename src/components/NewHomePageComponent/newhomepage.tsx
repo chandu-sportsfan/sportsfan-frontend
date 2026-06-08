@@ -247,7 +247,7 @@ export default function NewHomePage() {
 
   return (
     <div className="bg-black text-white">
-      <div className="max-w-6xl mx-auto px-0.5 pt-5">
+      <div className="max-w-8xl mx-auto px-0.5 pt-5">
 
         {/* Tab Bar */}
         {/* <div className="flex gap-2 overflow-x-auto pb-2 mb-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">

@@ -1126,15 +1126,7 @@ export default function PostCard({
         return top.length ? top : ["👍"];
     })();
 
-    /* ══════════════════════════════════════════════════════════════
-       RENDER
-       Card anatomy (collapsed = fixed 300px):
-         [56px] Header  — avatar · name · time · •••
-         [flex] Body    — image (fills all) OR gradient+text OR poll
-         [auto] Caption — text below image (2-line clamp) + show more
-         [auto] Reactions row
-         [44px] Action bar — ♡ · 💬 · ↩ · share
-    ══════════════════════════════════════════════════════════════ */
+   
 
     const CARD_H   = 300;  // collapsed total
     const HEAD_H   = 56;

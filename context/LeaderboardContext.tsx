@@ -27,6 +27,7 @@ interface LeaderboardContextType {
   currentUserPoints: number | null;
   loading: boolean;
   refreshLeaderboard: () => Promise<void>;
+  addLocalPoints: (points: number) => void;
 }
 
 // ── Module-level cache (survives re-renders, resets on page reload) ────────────
@@ -213,6 +214,42 @@ const refreshLeaderboard = useCallback(async () => {
   await fetchGlobalLeaderboard();
 }, [user?.userId, fetchGlobalLeaderboard]);
 
+const addLocalPoints = useCallback((points: number) => {
+  const userId = user?.userId || user?.uid || user?.email;
+  if (!userId || !points) return;
+  const delta = Number(points) || 0;
+
+  setCurrentUserPoints((prev) => {
+    const next = (Number(prev) || 0) + delta;
+    const cached = USER_CACHE.get(userId);
+    USER_CACHE.set(userId, {
+      ts: Date.now(),
+      points: next,
+      rank: cached?.rank ?? currentUserRank ?? 0,
+    });
+    return next;
+  });
+
+  setLeaderboard((prev) =>
+    prev.map((entry) =>
+      sameUserId(entry.userId, userId)
+        ? { ...entry, totalPoints: (Number(entry.totalPoints) || 0) + delta }
+        : entry
+    )
+  );
+
+  if (leaderboardCache) {
+    leaderboardCache = {
+      ts: Date.now(),
+      data: leaderboardCache.data.map((entry) =>
+        sameUserId(entry.userId, userId)
+          ? { ...entry, totalPoints: (Number(entry.totalPoints) || 0) + delta }
+          : entry
+      ),
+    };
+  }
+}, [currentUserRank, user?.email, user?.uid, user?.userId]);
+
   // Only fires when auth is confirmed ready — avoids spurious calls with
   // undefined userId during the initial auth hydration.
   useEffect(() => {
@@ -228,6 +265,7 @@ const refreshLeaderboard = useCallback(async () => {
         currentUserPoints,
         loading,
         refreshLeaderboard,
+        addLocalPoints,
       }}
     >
       {children}

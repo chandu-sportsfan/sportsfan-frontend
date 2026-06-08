@@ -2682,7 +2682,12 @@ function HomeFeed({
 
   const allPosts = [...mappedDbPosts, ...extraItems, ...FEED_POSTS];
   const filtered = allPosts.filter((p) => {
-    if (filter === "For You") return true;
+    if (filter === "For You") {
+      if (userSports && userSports.length > 0) {
+        return userSports.map(s => s.toLowerCase()).includes(p.sport?.toLowerCase());
+      }
+      return true;
+    }
     if (filter === "Cricket") return p.sport === "cricket";
     if (filter === "Football") return p.sport === "football";
     if (filter === "Live") return p.isLive || p.type === "match_room";

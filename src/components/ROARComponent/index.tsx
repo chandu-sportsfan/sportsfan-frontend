@@ -1907,39 +1907,42 @@ function ComposeModal({
   };
 
   const modalContent = (
-    <AnimatePresence>
-      {open && (
-        <>
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
-            style={{
-              position: "fixed",
-              inset: 0,
-              zIndex: 60,
-              background: "rgba(0,0,0,0.6)",
-              backdropFilter: "blur(4px)",
-            }}
-          />
-          <motion.div
-            initial={{ y: "100%" }}
-            animate={{ y: 0 }}
-            exit={{ y: "100%" }}
-            transition={{ type: "spring", damping: 28, stiffness: 300 }}
-            style={{
-              position: "fixed",
-              bottom: 0,
-              left: 0,
-              right: 0,
-              zIndex: 70,
-              background: "var(--bg-glass)",
-              backdropFilter: "blur(20px)",
-              borderRadius: "32px 32px 0 0",
-              border: "1px solid rgba(255,255,255,0.08)",
-            }}
-          >
+    <div className="roar-root">
+      <AnimatePresence>
+        {open && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={onClose}
+              style={{
+                position: "fixed",
+                inset: 0,
+                zIndex: 60,
+                background: "rgba(0,0,0,0.6)",
+                backdropFilter: "blur(4px)",
+              }}
+            />
+            <motion.div
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 28, stiffness: 300 }}
+              style={{
+                position: "fixed",
+                bottom: 0,
+                left: "50%",
+                transform: "translateX(-50%)",
+                width: "100%",
+                maxWidth: 420,
+                zIndex: 70,
+                background: "var(--bg-glass)",
+                backdropFilter: "blur(20px)",
+                borderRadius: "32px 32px 0 0",
+                border: "1px solid rgba(255,255,255,0.08)",
+              }}
+            >
             <div
               style={{
                 display: "flex",
@@ -2319,10 +2322,11 @@ function ComposeModal({
                 </motion.div>
               )}
             </div>
-          </motion.div>
-        </>
-      )}
-    </AnimatePresence>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+    </div>
   );
 
   if (!domReady) return null;
@@ -2397,63 +2401,65 @@ function BottomNav({
   };
 
   const radialMenuContent = (
-    <AnimatePresence>
-      {radial && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            style={{
-              position: "fixed",
-              inset: 0,
-              zIndex: 55,
-              pointerEvents: "auto",
-              background: "rgba(0,0,0,0.4)",
-            }}
-            onClick={() => setRadial(false)}
-          >
-            <div
+    <div className="roar-root">
+      <AnimatePresence>
+        {radial && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
               style={{
                 position: "fixed",
-                bottom: 100,
-                left: "50%",
-                transform: "translateX(-50%)",
-                display: "flex",
-                gap: 12,
+                inset: 0,
+                zIndex: 55,
+                pointerEvents: "auto",
+                background: "rgba(0,0,0,0.4)",
               }}
+              onClick={() => setRadial(false)}
             >
-              {RADIAL_OPTS.map((q, i) => (
-                <motion.button
-                  key={q.id}
-                  initial={{ scale: 0, y: 20 }}
-                  animate={{ scale: 1, y: 0 }}
-                  transition={{ delay: i * 0.05, type: "spring" }}
-                  onClick={() => {
-                    onQuickCompose(q.id);
-                    setRadial(false);
-                  }}
-                  className="glass-card"
-                  style={{
-                    width: 56,
-                    height: 56,
-                    borderRadius: "50%",
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: 20,
-                    cursor: "pointer",
-                    border: "none",
-                    gap: 2,
-                  }}
-                >
-                  {q.emoji}
-                </motion.button>
-              ))}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+              <div
+                style={{
+                  position: "fixed",
+                  bottom: 100,
+                  left: "50%",
+                  transform: "translateX(-50%)",
+                  display: "flex",
+                  gap: 12,
+                }}
+              >
+                {RADIAL_OPTS.map((q, i) => (
+                  <motion.button
+                    key={q.id}
+                    initial={{ scale: 0, y: 20 }}
+                    animate={{ scale: 1, y: 0 }}
+                    transition={{ delay: i * 0.05, type: "spring" }}
+                    onClick={() => {
+                      onQuickCompose(q.id);
+                      setRadial(false);
+                    }}
+                    className="glass-card"
+                    style={{
+                      width: 56,
+                      height: 56,
+                      borderRadius: "50%",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: 20,
+                      cursor: "pointer",
+                      border: "none",
+                      gap: 2,
+                    }}
+                  >
+                    {q.emoji}
+                  </motion.button>
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
   );
 
   return (

@@ -683,17 +683,21 @@ export function useMessages(chatId: string | null, currentUserId: string, authRe
   }
 }, [chatId]);
 
-  const deleteMessage = useCallback(async (messageId: string) => {
+  const deleteMessage = useCallback(async (messageId: string, forEveryone = true) => {
   if (!chatId) return false;
 
-  setMessages(prev => prev.map(m =>
-    m.id === messageId
-      ? { ...m, content: "This message was deleted.", deletedAt: Date.now() }
-      : m
-  ));
+  if (forEveryone) {
+    setMessages(prev => prev.map(m =>
+      m.id === messageId
+        ? { ...m, content: "This message was deleted.", deletedAt: Date.now() }
+        : m
+    ));
+  } else {
+    setMessages(prev => prev.filter(m => m.id !== messageId));
+  }
 
   try {
-    await MessageAPI.delete(chatId, messageId);
+    await MessageAPI.delete(chatId, messageId, forEveryone);
     return true;
   } catch (e) {
     setError(e instanceof Error ? e.message : "Failed to delete message");

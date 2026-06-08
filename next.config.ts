@@ -121,6 +121,14 @@ const nextConfig = {
           source: "/api/user-points/:path*",
           destination: `${apiTarget}/api/user-points/:path*`,
         },
+        {
+          source: "/api/user-activity",
+          destination: `${apiTarget}/api/user-activity`,
+        },
+        {
+          source: "/api/user-activity/:path*",
+          destination: `${apiTarget}/api/user-activity/:path*`,
+        },
 
         //Users
         { source: "/api/users", destination: `${apiTarget}/api/users` },

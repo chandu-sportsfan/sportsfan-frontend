@@ -5,6 +5,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { createPortal } from "react-dom";
 import axios from "axios";
 
 /* ─── STYLES ─────────────────────────────────────────────────────────────── */
@@ -56,7 +57,7 @@ const GLOBAL_CSS = `
   .roar-inner {
     width: 100%;
     position: relative;
-    overflow: visible;
+    overflow: hidden;
     background: var(--bg-primary);
   }
 }
@@ -66,7 +67,7 @@ const GLOBAL_CSS = `
   .roar-inner {
     width: 100%;
     position: relative;
-    overflow: visible;
+    overflow: hidden;
     background: var(--bg-primary);
   }
 }
@@ -1863,6 +1864,11 @@ function ComposeModal({
   const [audience, setAud] = useState("Everyone");
   const [sport, setSport] = useState("cricket");
 
+  const [domReady, setDomReady] = useState(false);
+  useEffect(() => {
+    setDomReady(true);
+  }, []);
+
   useEffect(() => {
     if (open && initialType) setSelected(initialType);
     if (!open) reset();
@@ -1896,7 +1902,7 @@ function ComposeModal({
     onClose();
   };
 
-  return (
+  const modalContent = (
     <AnimatePresence>
       {open && (
         <>
@@ -2314,6 +2320,9 @@ function ComposeModal({
       )}
     </AnimatePresence>
   );
+
+  if (!domReady) return null;
+  return createPortal(modalContent, document.body);
 }
 
 /* ─── BOTTOM NAV ─────────────────────────────────────────────────────────── */
@@ -2354,6 +2363,11 @@ function BottomNav({
   const touchStartY = useRef<number | null>(null);
   const didScroll = useRef(false);
 
+  const [domReady, setDomReady] = useState(false);
+  useEffect(() => {
+    setDomReady(true);
+  }, []);
+
   const down = (e: React.TouchEvent | React.MouseEvent) => {
     didScroll.current = false;
     if ("touches" in e) {
@@ -2378,10 +2392,9 @@ function BottomNav({
     didScroll.current = false;
   };
 
-  return (
-    <>
-      <AnimatePresence>
-        {radial && (
+  const radialMenuContent = (
+    <AnimatePresence>
+      {radial && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -2437,6 +2450,11 @@ function BottomNav({
           </motion.div>
         )}
       </AnimatePresence>
+  );
+
+  return (
+    <>
+      {domReady && createPortal(radialMenuContent, document.body)}
       <div
         style={{
           position: "fixed",
@@ -2636,17 +2654,27 @@ function HomeFeed({
   const [pcts, setPcts] = useState<Record<string, number>>({});
 
   // When fresh posts arrive from server, clear optimistic pct overrides
-  // so the real agreePercent from the DB is shown
+  // so the real agreePercent from the DB is shown, and sync vote states.
   useEffect(() => {
     if (dbPosts.length > 0) {
       setPcts({});
+      const synced: Record<string, boolean | null> = {};
+      dbPosts.forEach((p) => {
+        if (p.userVote) {
+          synced[p.postId] = p.userVote === "agree";
+        } else {
+          synced[p.postId] = null;
+        }
+      });
+      setVotes(synced);
     }
   }, [dbPosts]);
 
   const vote = (
     id: string,
     agree: boolean,
-    currentPct: number,
+    initialAgreePercent: number,
+    initialUserVote: "agree" | "disagree" | null,
     isDbPost?: boolean,
   ) => {
     const prev = votes[id];
@@ -2655,11 +2683,25 @@ function HomeFeed({
       nextVote = null;
     }
     setVotes((v) => ({ ...v, [id]: nextVote }));
-    // Optimistic UI: shift bar by ±3 from the *current* displayed pct
-    const delta = nextVote === true ? 3 : nextVote === false ? -3 : (prev === true ? -3 : 3);
+
+    let delta = 0;
+    if (initialUserVote === "agree") {
+      if (nextVote === true) delta = 0;
+      else if (nextVote === false) delta = -6;
+      else delta = -3;
+    } else if (initialUserVote === "disagree") {
+      if (nextVote === true) delta = 6;
+      else if (nextVote === false) delta = 0;
+      else delta = 3;
+    } else {
+      if (nextVote === true) delta = 3;
+      else if (nextVote === false) delta = -3;
+      else delta = 0;
+    }
+
     setPcts((p) => ({
       ...p,
-      [id]: clamp(currentPct + delta, 1, 99),
+      [id]: clamp(initialAgreePercent + delta, 1, 99),
     }));
 
     if (isDbPost && onVote) {
@@ -2703,6 +2745,7 @@ function HomeFeed({
       counterCount:
         p.type === "prediction" ? (p.disagreeCount ?? 0) : undefined,
       isDbPost: true,
+      userVote: p.userVote,
     };
   });
 
@@ -3414,7 +3457,8 @@ function HomeFeed({
                           vote(
                             item.id,
                             true,
-                            pct,
+                            item.agreePercent,
+                            item.userVote,
                             item.isDbPost,
                           );
                         }}
@@ -3446,7 +3490,8 @@ function HomeFeed({
                           vote(
                             item.id,
                             false,
-                            pct,
+                            item.agreePercent,
+                            item.userVote,
                             item.isDbPost,
                           );
                         }}
@@ -4906,15 +4951,16 @@ function Leaderboard({
 /* ─── SCREEN: PROFILE ────────────────────────────────────────────────────── */
 
 function AccuracyRing({ percent }: { percent: number }) {
+  const displayPercent = isNaN(percent) ? 0 : percent;
   const size = 52,
     stroke = 4,
     r = (size - stroke) / 2,
     circ = 2 * Math.PI * r;
   const [off, setOff] = useState(circ);
   useEffect(() => {
-    const t = setTimeout(() => setOff(circ - (percent / 100) * circ), 200);
+    const t = setTimeout(() => setOff(circ - (displayPercent / 100) * circ), 200);
     return () => clearTimeout(t);
-  }, [circ, percent]);
+  }, [circ, displayPercent]);
   return (
     <div style={{ position: "relative", width: size, height: size, margin: "0 auto" }}>
       <svg width={size} height={size}>
@@ -4961,7 +5007,7 @@ function AccuracyRing({ percent }: { percent: number }) {
           className="font-display"
           style={{ fontSize: 13, fontWeight: "bold", color: "#fff" }}
         >
-          {percent}%
+          {displayPercent}%
         </span>
         <span style={{ fontSize: 7, color: "var(--text-muted)", marginTop: 2 }}>
           Accuracy
@@ -6112,7 +6158,12 @@ function PostDetailsOverlay({
   const [loading, setLoading] = useState(false);
   const [userUsername, setUserUsername] = useState("RoarUser");
   const [userBadge, setUserBadge] = useState("RISING_FAN");
-  const [votes, setVotes] = useState<Record<string, boolean | null>>({});
+  const [votes, setVotes] = useState<Record<string, boolean | null>>(() => {
+    if (post.userVote) {
+      return { [post.id]: post.userVote === "agree" };
+    }
+    return {};
+  });
   const [pct, setPct] = useState(post.agreePercent ?? 50);
 
   useEffect(() => {
@@ -6233,9 +6284,23 @@ function PostDetailsOverlay({
       nextVote = null;
     }
     setVotes((v) => ({ ...v, [post.id]: nextVote }));
-    setPct(
-      post.agreePercent + (nextVote === true ? 4 : nextVote === false ? -4 : 0),
-    );
+
+    let delta = 0;
+    if (post.userVote === "agree") {
+      if (nextVote === true) delta = 0;
+      else if (nextVote === false) delta = -8;
+      else delta = -4;
+    } else if (post.userVote === "disagree") {
+      if (nextVote === true) delta = 8;
+      else if (nextVote === false) delta = 0;
+      else delta = 4;
+    } else {
+      if (nextVote === true) delta = 4;
+      else if (nextVote === false) delta = -4;
+      else delta = 0;
+    }
+
+    setPct(clamp(post.agreePercent + delta, 1, 99));
     onVote(
       post.id,
       nextVote === true ? "agree" : nextVote === false ? "disagree" : null,
@@ -7052,7 +7117,7 @@ export default function ROARApp() {
               zIndex: 1,
               flex: 1,
               minHeight: 0,
-              overflow: "visible",
+              overflow: "hidden",
             }}
           >
             <AnimatePresence mode="wait">

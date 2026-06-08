@@ -1906,7 +1906,7 @@ function ComposeModal({
             exit={{ opacity: 0 }}
             onClick={onClose}
             style={{
-              position: "absolute",
+              position: "fixed",
               inset: 0,
               zIndex: 60,
               background: "rgba(0,0,0,0.6)",
@@ -1919,7 +1919,7 @@ function ComposeModal({
             exit={{ y: "100%" }}
             transition={{ type: "spring", damping: 28, stiffness: 300 }}
             style={{
-              position: "absolute",
+              position: "fixed",
               bottom: 0,
               left: 0,
               right: 0,
@@ -2351,14 +2351,31 @@ function BottomNav({
 }) {
   const [radial, setRadial] = useState(false);
   const pressRef = useRef<any>(null);
+  const touchStartY = useRef<number | null>(null);
+  const didScroll = useRef(false);
 
-  const down = () => {
+  const down = (e: React.TouchEvent | React.MouseEvent) => {
+    didScroll.current = false;
+    if ("touches" in e) {
+      touchStartY.current = e.touches[0].clientY;
+    }
     pressRef.current = setTimeout(() => setRadial(true), 320);
+  };
+  const onTouchMove = (e: React.TouchEvent) => {
+    if (touchStartY.current !== null) {
+      const delta = Math.abs(e.touches[0].clientY - touchStartY.current);
+      if (delta > 10) {
+        didScroll.current = true;
+        clearTimeout(pressRef.current);
+      }
+    }
   };
   const up = () => {
     clearTimeout(pressRef.current);
-    if (!radial) onCompose();
+    if (!radial && !didScroll.current) onCompose();
     setRadial(false);
+    touchStartY.current = null;
+    didScroll.current = false;
   };
 
   return (
@@ -2453,6 +2470,7 @@ function BottomNav({
                   onMouseUp={up}
                   onMouseLeave={() => clearTimeout(pressRef.current)}
                   onTouchStart={down}
+                  onTouchMove={onTouchMove}
                   onTouchEnd={up}
                   style={{
                     position: "relative",
@@ -4882,9 +4900,9 @@ function Leaderboard({
 /* ─── SCREEN: PROFILE ────────────────────────────────────────────────────── */
 
 function AccuracyRing({ percent }: { percent: number }) {
-  const size = 88,
-    stroke = 7,
-    r = (size - stroke) / 4,
+  const size = 52,
+    stroke = 4,
+    r = (size - stroke) / 2,
     circ = 2 * Math.PI * r;
   const [off, setOff] = useState(circ);
   useEffect(() => {
@@ -4892,35 +4910,58 @@ function AccuracyRing({ percent }: { percent: number }) {
     return () => clearTimeout(t);
   }, [circ, percent]);
   return (
-    <svg width={size} height={size}>
-      <defs>
-        <linearGradient id="acc-g-roar">
-          <stop offset="0%" stopColor="#E91E8C" />
-          <stop offset="100%" stopColor="#FF6B35" />
-        </linearGradient>
-      </defs>
-      <circle
-        cx={size / 2 - 18}
-        cy={size / 2 - 18}
-        r={r}
-        fill="none"
-        stroke="rgba(255,255,255,0.08)"
-        strokeWidth={stroke}
-      />
-      <circle
-        cx={size / 2 + 18}
-        cy={size / 2 - 18}
-        r={r}
-        fill="none"
-        stroke="url(#acc-g-roar)"
-        strokeWidth={stroke}
-        strokeLinecap="round"
-        strokeDasharray={circ}
-        strokeDashoffset={off}
-        transform={`rotate(-90 ${size / 2} ${size / 2})`}
-        style={{ transition: "stroke-dashoffset 1s" }}
-      />
-    </svg>
+    <div style={{ position: "relative", width: size, height: size, margin: "0 auto" }}>
+      <svg width={size} height={size}>
+        <defs>
+          <linearGradient id="acc-g-roar">
+            <stop offset="0%" stopColor="#E91E8C" />
+            <stop offset="100%" stopColor="#FF6B35" />
+          </linearGradient>
+        </defs>
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          fill="none"
+          stroke="rgba(255,255,255,0.08)"
+          strokeWidth={stroke}
+        />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          fill="none"
+          stroke="url(#acc-g-roar)"
+          strokeWidth={stroke}
+          strokeLinecap="round"
+          strokeDasharray={circ}
+          strokeDashoffset={off}
+          transform={`rotate(-90 ${size / 2} ${size / 2})`}
+          style={{ transition: "stroke-dashoffset 1s" }}
+        />
+      </svg>
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          lineHeight: 1,
+        }}
+      >
+        <span
+          className="font-display"
+          style={{ fontSize: 13, fontWeight: "bold", color: "#fff" }}
+        >
+          {percent}%
+        </span>
+        <span style={{ fontSize: 7, color: "var(--text-muted)", marginTop: 2 }}>
+          Accuracy
+        </span>
+      </div>
+    </div>
   );
 }
 
@@ -5425,7 +5466,7 @@ function Profile({
           }}
         >
           {badges.map((b: any) => {
-            const cfg = BADGE_CONFIG[b.badgeId] || BADGE_CONFIG.RISING_FAN;
+            const cfg = BADGE_CONFIG[b.badgeId || b.id] || BADGE_CONFIG.RISING_FAN;
             const isUnlocked = b.unlocked;
             return (
               <div
@@ -5446,7 +5487,9 @@ function Profile({
                     width: 68,
                     height: 76,
                     background: isUnlocked
-                      ? cfg.color || "var(--accent-gradient)"
+                      ? (cfg.gradient
+                        ? `linear-gradient(135deg, ${cfg.gradient[0]}, ${cfg.gradient[1] || cfg.gradient[0]})`
+                        : "var(--accent-gradient)")
                       : "rgba(255,255,255,0.06)",
                     clipPath:
                       "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)",
@@ -5987,13 +6030,13 @@ function Profile({
               }}
             >
               <div style={{ fontSize: 48, marginBottom: 12 }}>
-                {BADGE_CONFIG[badgeModal.badgeId]?.icon}
+                {BADGE_CONFIG[badgeModal.badgeId || badgeModal.id]?.icon}
               </div>
               <h3
                 className="font-display"
                 style={{ fontSize: 26, marginBottom: 4 }}
               >
-                {BADGE_CONFIG[badgeModal.badgeId]?.name}
+                {BADGE_CONFIG[badgeModal.badgeId || badgeModal.id]?.name || BADGE_DETAIL[badgeModal.badgeId || badgeModal.id]?.name}
               </h3>
               <p
                 style={{
@@ -6013,7 +6056,8 @@ function Profile({
                   lineHeight: 1.4,
                 }}
               >
-                {BADGE_CONFIG[badgeModal.badgeId]?.sub ||
+                {BADGE_CONFIG[badgeModal.badgeId || badgeModal.id]?.sub ||
+                  BADGE_DETAIL[badgeModal.badgeId || badgeModal.id]?.description ||
                   "Unlock by building your legacy!"}
               </p>
               <div
@@ -7120,7 +7164,7 @@ export default function ROARApp() {
         )}
 
         {/* Bottom nav — Flex child sitting cleanly below the content area */}
-        {onboarded && (
+        {onboarded && !composeOpen && (
           <BottomNav
             activeTab={isRoom ? "discuss" : activeTab}
             onTabChange={handleTab}

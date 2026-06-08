@@ -2832,35 +2832,34 @@ function HomeFeed({
       <div
         style={{
           padding: "10px 16px",
-          display: "flex",
-          gap: 8,
-          overflowX: "auto",
+          overflow: "hidden",
         }}
       >
-        {FEED_FILTERS.map((f) => (
-          <motion.button
-            key={f}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setFilter(f)}
-            style={{
-              flexShrink: 0,
-              padding: "8px 16px",
-              borderRadius: 999,
-              fontSize: 12,
-              fontWeight: 700,
-              border: filter !== f ? "1px solid var(--border)" : "none",
-              cursor: "pointer",
-              background: filter === f ? "var(--accent-magenta)" : undefined,
-              color: filter === f ? "white" : "var(--text-secondary)",
-              boxShadow:
-                filter === f ? "0 4px 14px rgba(233,30,140,0.35)" : undefined,
-              backgroundImage:
-                filter === f ? "var(--accent-gradient)" : undefined,
-            }}
-          >
-            {f}
-          </motion.button>
-        ))}
+        <div
+          className="flex justify-start items-center gap-2 overflow-x-auto rounded-2xl border border-white/5 bg-[#1a1a1a]/80 p-1.5 shadow-xl [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          style={{ WebkitOverflowScrolling: "touch" }}
+        >
+          {FEED_FILTERS.map((f) => {
+            const isActive = filter === f;
+            return (
+              <motion.button
+                key={f}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setFilter(f)}
+                className={`relative flex min-w-max items-center justify-center gap-2 px-5 py-3 rounded-xl text-xs font-bold tracking-wide transition-all duration-300 text-center whitespace-nowrap shrink-0 group`}
+                style={{
+                  border: "none",
+                  cursor: "pointer",
+                  color: isActive ? "white" : "rgba(255,255,255,0.4)",
+                  background: isActive ? "linear-gradient(90deg, #e91e8c, #ff6b35)" : "transparent",
+                  boxShadow: isActive ? "0 4px 14px rgba(233,30,140,0.35)" : "none",
+                }}
+              >
+                <span className="block leading-tight">{f}</span>
+              </motion.button>
+            );
+          })}
+        </div>
       </div>
 
       <div
@@ -4662,31 +4661,33 @@ function Leaderboard({
       <div
         style={{
           padding: "12px 16px",
-          display: "flex",
-          gap: 8,
-          overflowX: "auto",
+          overflow: "hidden",
         }}
       >
-        {LB_TABS.map((t) => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            style={{
-              flexShrink: 0,
-              padding: "6px 14px",
-              borderRadius: 999,
-              fontSize: 12,
-              fontWeight: 700,
-              border: "none",
-              cursor: "pointer",
-              background:
-                tab === t ? "var(--accent-magenta)" : "var(--bg-tertiary)",
-              color: tab === t ? "white" : "var(--text-secondary)",
-            }}
-          >
-            {t}
-          </button>
-        ))}
+        <div
+          className="flex justify-start items-center gap-2 overflow-x-auto rounded-2xl border border-white/5 bg-[#1a1a1a]/80 p-1.5 shadow-xl [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          style={{ WebkitOverflowScrolling: "touch" }}
+        >
+          {LB_TABS.map((t) => {
+            const isActive = tab === t;
+            return (
+              <button
+                key={t}
+                onClick={() => setTab(t)}
+                className={`relative flex min-w-max items-center justify-center gap-2 px-5 py-3 rounded-xl text-xs font-bold tracking-wide transition-all duration-300 text-center whitespace-nowrap shrink-0 group`}
+                style={{
+                  border: "none",
+                  cursor: "pointer",
+                  color: isActive ? "white" : "rgba(255,255,255,0.4)",
+                  background: isActive ? "linear-gradient(90deg, #e91e8c, #ff6b35)" : "transparent",
+                  boxShadow: isActive ? "0 4px 14px rgba(233,30,140,0.35)" : "none",
+                }}
+              >
+                <span className="block leading-tight">{t}</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
       <div
         style={{
@@ -5513,36 +5514,34 @@ function Profile({
         {/* Filter buttons */}
         <div
           style={{
-            display: "flex",
-            gap: 6,
-            overflowX: "auto",
+            overflow: "hidden",
             paddingBottom: 10,
           }}
         >
-          {["All", "Correct", "Wrong", "Pending"].map((t) => {
-            const active = predTab === t;
-            return (
-              <button
-                key={t}
-                onClick={() => setPredTab(t)}
-                style={{
-                  padding: "6px 14px",
-                  borderRadius: 20,
-                  fontSize: 12,
-                  fontWeight: 700,
-                  border: active ? "none" : "1px solid var(--border)",
-                  background: active
-                    ? "var(--accent-gradient)"
-                    : "rgba(255,255,255,0.03)",
-                  color: "#fff",
-                  cursor: "pointer",
-                  transition: "all 0.2s",
-                }}
-              >
-                {t}
-              </button>
-            );
-          })}
+          <div
+            className="flex justify-start items-center gap-2 overflow-x-auto rounded-2xl border border-white/5 bg-[#1a1a1a]/80 p-1.5 shadow-xl [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            style={{ WebkitOverflowScrolling: "touch" }}
+          >
+            {["All", "Correct", "Wrong", "Pending"].map((t) => {
+              const isActive = predTab === t;
+              return (
+                <button
+                  key={t}
+                  onClick={() => setPredTab(t)}
+                  className={`relative flex min-w-max items-center justify-center gap-2 px-5 py-3 rounded-xl text-xs font-bold tracking-wide transition-all duration-300 text-center whitespace-nowrap shrink-0 group`}
+                  style={{
+                    border: "none",
+                    cursor: "pointer",
+                    color: isActive ? "white" : "rgba(255,255,255,0.4)",
+                    background: isActive ? "linear-gradient(90deg, #e91e8c, #ff6b35)" : "transparent",
+                    boxShadow: isActive ? "0 4px 14px rgba(233,30,140,0.35)" : "none",
+                  }}
+                >
+                  <span className="block leading-tight">{t}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         {/* Calls Cards */}

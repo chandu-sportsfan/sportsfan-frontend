@@ -235,25 +235,36 @@ export default function WatchAlongLobby({ onEnterRoom }: Props) {
     }
 
     return (
-        <div className="relative overflow-hidden min-h-screen bg-black text-white font-sans flex items-start justify-center w-full">
-            <div className="w-full max-w-6xl mx-auto pt-8 pb-24">
+        <div className="relative min-h-screen bg-black text-white font-sans flex justify-center w-full">
+            <div className="w-full max-w-7xl mx-auto pt-8 pb-24 px-4 lg:px-8">
 
                 {/* Back Button */}
-                <Link href="/MainModules/HomePage" className="inline-flex items-center gap-2 text-gray-400 hover:text-white mb-6 transition px-4">
-                    <button className="flex items-center gap-2 text-gray-400 hover:text-white transition cursor-pointer bg-transparent border-none p-0">
-                        <ArrowLeft size={18} />
-                        <span className="text-sm">Back</span>
-                    </button>
-                </Link>
+                <div className="mb-6">
+                    <Link href="/MainModules/HomePage" className="inline-flex items-center gap-2 text-gray-400 hover:text-white transition">
+                        <button className="flex items-center gap-2 text-gray-400 hover:text-white transition cursor-pointer bg-transparent border-none p-0">
+                            <ArrowLeft size={18} />
+                            <span className="text-sm">Back</span>
+                        </button>
+                    </Link>
+                </div>
 
                 {/* Header Section */}
-                <div className="px-4 mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                    <div>
-                        <h1 className="text-3xl font-black tracking-wide uppercase text-transparent bg-clip-text bg-gradient-to-r from-[#e91e8c] to-[#ff6b35]">
+                <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div className="flex flex-col items-start">
+                        <h1 className="text-3xl font-bold uppercase tracking-wider text-[#e5003d]" style={{ fontFamily: "'Bebas Neue', sans-serif" }}>
                             Watch Along
                         </h1>
-                        <div className="flex items-center gap-2 mt-2">
-                            <span className="w-2 h-2 rounded-full bg-pink-500 animate-pulse" />
+                        <div
+                            style={{
+                                height: "2px",
+                                width: "24px",
+                                borderRadius: "999px",
+                                marginTop: "3.5px",
+                                background: "#e5003d",
+                            }}
+                        />
+                        <div className="flex items-center gap-2 mt-4">
+                            <span className="w-2.5 h-2.5 rounded-full bg-[#e5003d] animate-pulse" />
                             <span className="text-sm font-semibold text-gray-400">Watch Along – IPL 2026</span>
                         </div>
                     </div>
@@ -261,15 +272,15 @@ export default function WatchAlongLobby({ onEnterRoom }: Props) {
                     {/* Host a Watchalong Button */}
                     <button
                         onClick={() => setShowCreateModal(true)}
-                        className="self-start sm:self-auto px-5 py-2.5 rounded-full text-xs font-bold text-white transition-all shadow-lg hover:shadow-pink-500/20 active:scale-95 cursor-pointer"
-                        style={{ background: "linear-gradient(90deg, #e91e8c, #ff6b35)" }}
+                        className="self-start sm:self-auto px-5 py-2.5 rounded-full text-xs font-bold text-white transition-all shadow-lg hover:shadow-pink-500/20 active:scale-95 cursor-pointer border border-[#e5003d] hover:bg-[#e5003d]/10"
+                        style={{ background: "transparent" }}
                     >
                         + Host a Watchalong
                     </button>
                 </div>
 
                 {/* Tabs Section */}
-                <div className="mb-8 px-4 overflow-hidden">
+                <div className="mb-8 overflow-hidden">
                     <div
                         className="flex justify-start items-center gap-2 overflow-x-auto rounded-2xl border border-white/5 bg-[#1a1a1a]/80 p-1.5 shadow-xl [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
                         style={{ WebkitOverflowScrolling: "touch" }}
@@ -353,7 +364,7 @@ export default function WatchAlongLobby({ onEnterRoom }: Props) {
                 )}
 
                 {/* ── Scrollable Content ── */}
-                <div className="w-full max-w-8xl mx-auto px-4 sm:px-6 lg:px-10 pt-6 pb-24">
+                <div className="w-full pt-6 pb-24">
                     {(() => {
                         const combinedRooms: Room[] = [
                             ...rooms

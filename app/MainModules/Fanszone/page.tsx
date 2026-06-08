@@ -161,21 +161,29 @@ function calculateLevelData(totalXp: number) {
   };
 }
 
-function getEarningBreakdown(history: HistoryItem[]): CategoryBreakdown[] {
+function getEarningBreakdown(history: HistoryItem[], authorativeTotal?: number): CategoryBreakdown[] {
   if (!history.length) return [];
-  const total = history.reduce((s, h) => s + h.points, 0);
+  const historyTotal = history.reduce((s, h) => s + h.points, 0);
+  // Use the authoritative total (from context/leaderboard) if provided,
+  // so that SXP values in the legend always match the displayed total points.
+  const scalingTotal = authorativeTotal && authorativeTotal > 0 ? authorativeTotal : historyTotal;
   const grouped: Record<string, { label: string; xpValue: number; color: string }> = {};
   history.forEach((h) => {
     if (!grouped[h.key]) grouped[h.key] = { label: h.action, xpValue: 0, color: h.hexColor };
     grouped[h.key].xpValue += h.points;
   });
-  return Object.values(grouped).map((g) => ({
-    label: g.label,
-    color: g.color,
-    xpValue: g.xpValue,
-    percent: total > 0 ? Math.round((g.xpValue / total) * 100) : 0,
-    xp: `+${g.xpValue.toLocaleString()} SXP`,
-  }));
+  return Object.values(grouped).map((g) => {
+    const pct = historyTotal > 0 ? Math.round((g.xpValue / historyTotal) * 100) : 0;
+    // Scale the displayed SXP to match the authoritative total proportionally
+    const scaledXp = Math.round((pct / 100) * scalingTotal);
+    return {
+      label: g.label,
+      color: g.color,
+      xpValue: scaledXp,
+      percent: pct,
+      xp: `+${scaledXp.toLocaleString()} SXP`,
+    };
+  });
 }
 
 // ─── Streak calculator ───────────────────────
@@ -436,17 +444,33 @@ export default function FanZoneDashboard() {
   // ── History state — starts with seed data ───
   const [history, setHistory] = useState<HistoryItem[]>(() => buildSeedHistory());
 
-  // ── Rank tracking — store previous rank in ref ──
-  // We keep prevRank as a ref so it doesn't cause re-renders,
-  // and we capture it the moment rank changes.
+  // ── Rank tracking — persist in localStorage so rank changes survive page refresh ──
+  const RANK_STORAGE_KEY = "fz_prev_rank";
   const prevRankRef = useRef<number>(0);
-  const [rankSnapshot, setRankSnapshot] = useState({ prev: 0, current: 0 });
+  const [rankSnapshot, setRankSnapshot] = useState<{ prev: number; current: number }>(() => {
+    // Initialise from localStorage on first render so we always have a real prev
+    if (typeof window !== "undefined") {
+      try {
+        const stored = localStorage.getItem(RANK_STORAGE_KEY);
+        if (stored) {
+          const parsed = parseInt(stored, 10);
+          if (!isNaN(parsed) && parsed > 0) {
+            return { prev: parsed, current: parsed };
+          }
+        }
+      } catch { /* ignore */ }
+    }
+    return { prev: 0, current: 0 };
+  });
 
   useEffect(() => {
     if (currentUserRank === 0) return;
-    if (rankSnapshot.current !== currentUserRank) {
-      setRankSnapshot({ prev: rankSnapshot.current, current: currentUserRank });
-    }
+    setRankSnapshot((prev) => {
+      if (prev.current === currentUserRank) return prev; // no change, skip re-render
+      // Save new rank as previous for next session
+      try { localStorage.setItem(RANK_STORAGE_KEY, String(prev.current || currentUserRank)); } catch { /* ignore */ }
+      return { prev: prev.current > 0 ? prev.current : currentUserRank, current: currentUserRank };
+    });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUserRank]);
 
@@ -503,7 +527,8 @@ export default function FanZoneDashboard() {
   const displayPoints = totalPoints.toLocaleString();
 
   // ─── Derived data ────────────────────────────
-  const earningBreakdown = useMemo(() => getEarningBreakdown(history), [history]);
+  // Pass totalPoints so legend SXP values always match the authoritative point total
+  const earningBreakdown = useMemo(() => getEarningBreakdown(history, totalPoints), [history, totalPoints]);
   const trendAnalytics   = useMemo(() => getTrendAnalytics(history, trendPeriod), [history, trendPeriod]);
   const levelData        = useMemo(() => calculateLevelData(totalPoints), [totalPoints]);
   const { streakMap, currentStreak } = useMemo(() => getDynamicStreakData(history), [history]);
@@ -751,7 +776,7 @@ export default function FanZoneDashboard() {
             </div>
           </div>
 
-          {/* Rank card — fully dynamic */}
+          {/* Rank card — fully dynamic with live up/down indicator */}
           <div className="bg-[#09090b] border border-white/10 rounded-2xl p-5 flex items-center gap-4">
             <div className="w-12 h-12 rounded-full bg-yellow-500/10 flex items-center justify-center border border-yellow-500/20">
               <Trophy className="w-6 h-6 text-yellow-500" />
@@ -761,12 +786,15 @@ export default function FanZoneDashboard() {
               <h3 className="text-2xl font-black text-white leading-tight">
                 {rankSnapshot.current > 0 ? `#${rankSnapshot.current}` : "—"}
               </h3>
-              {rankDiff > 0 ? (
+              {rankSnapshot.prev > 0 && rankSnapshot.current > 0 && rankSnapshot.prev !== rankSnapshot.current ? (
                 <p className={`text-xs font-bold flex items-center gap-1 mt-0.5 ${isRankUp ? "text-emerald-500" : "text-red-500"}`}>
-                  {isRankUp ? "↑" : "↓"} {rankDiff} <span className="text-gray-500 font-medium">This Month</span>
+                  <span className="text-base leading-none">{isRankUp ? "↑" : "↓"}</span>
+                  {rankDiff} <span className="text-gray-500 font-medium">This Month</span>
                 </p>
               ) : (
-                <p className="text-xs text-gray-500 font-medium mt-0.5">— No Change</p>
+                <p className="text-xs text-gray-500 font-medium mt-0.5 flex items-center gap-1">
+                  <span className="text-base leading-none">—</span> No Change
+                </p>
               )}
             </div>
           </div>

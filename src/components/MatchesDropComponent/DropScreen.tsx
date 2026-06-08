@@ -712,21 +712,30 @@ const TEAM_ABBR_MAP: Record<string, string[]> = {
 function audioMatchesTeam(audio: AudioFile, teamName: string): boolean {
     if (!audio || !teamName) return false;
 
-    const filter = teamName.toLowerCase();
-    const folder = audio.folder.toLowerCase();
+    const filter = teamName.toLowerCase().trim();
+    const folder = audio.folder.toLowerCase().trim();
     const title = audio.title.toLowerCase();
+
+    console.log("FILTER:", filter);
+    console.log("FOLDER:", folder);
 
     // FIFA
     if (filter === "fifa") {
-        return folder.includes("/fifa");
+        return folder.includes("fifa");
     }
 
     // WOMEN T20
-    if (filter.includes("women")) {
-        return folder.includes("/womens_t20");
+    if (
+        filter.includes("women") ||
+        filter.includes("womens")
+    ) {
+        return (
+            folder.includes("women") ||
+            folder.includes("womens_t20")
+        );
     }
 
-    // IPL TEAM FILTERS
+    // IPL TEAMS
     const abbrs = TEAM_ABBR_MAP[teamName] || [];
 
     if (title.includes(filter)) return true;

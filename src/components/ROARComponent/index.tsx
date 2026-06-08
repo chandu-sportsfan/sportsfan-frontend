@@ -7195,7 +7195,7 @@ export default function ROARApp() {
   return (
     <div className="roar-root">
       {/* Scoped styles */}
-      <style>{GLOBAL_CSS}</style>
+      <style dangerouslySetInnerHTML={{ __html: GLOBAL_CSS }} />
 
       <div
         className="roar-inner"

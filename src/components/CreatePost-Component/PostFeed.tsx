@@ -148,7 +148,8 @@
 "use client";
 
 import { useEffect, useRef, useCallback } from "react";
-import { Loader2 } from "lucide-react";
+import { Loader2, ArrowRight } from "lucide-react";
+import { useRouter } from "next/navigation";
 import PostCard from "./PostCard";
 import type { Post } from "@/types/PostPolls";
 import NewsFeedWidget from "./NewsFeedWidget";
@@ -190,6 +191,7 @@ export default function PostFeed({
   filterType = "recent",
   onFilterChange,
 }: Props) {
+  const router = useRouter();
   // Sentinel at the END of the horizontal scroll row
   const sentinelRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -232,13 +234,31 @@ export default function PostFeed({
   return (
     <div className="w-full flex flex-col gap-3">
 
+      <div className="flex justify-between items-center px-4">
+        <div>
+          <h1 className="text-[18px] sm:text-[20px] font-semibold text-white whitespace-nowrap">
+            Fan Posts
+          </h1>
+        </div>
+
+        <div>
+          <button
+            type="button"
+            onClick={() => router.push("/MainModules/AllPosts")}
+            className="flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-3 py-2 text-[10px] lg:text-[13px] text-white/80 hover:bg-white/10 transition-colors"
+          >
+            View all <ArrowRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      </div>
       {/* Filter Bar */}
-      <div className="flex gap-2 px-4 py-3 rounded-lg ml-auto">
+      <div className="flex items-center gap-2 px-4 py-3 rounded-lg ml-auto">
+
         <button
           onClick={() => onFilterChange?.("recent")}
           className={`px-4 py-2 rounded-lg font-medium transition-all ${filterType === "recent"
-              ? "bg-[#C9115F] text-white text-[10px] lg:text-[15px]"
-              : "bg-white/10 text-white/70 text-[10px] lg:text-[15px] hover:bg-white/20"
+            ? "bg-[#C9115F] text-white text-[10px] lg:text-[15px]"
+            : "bg-white/10 text-white/70 text-[10px] lg:text-[15px] hover:bg-white/20"
             }`}
         >
           Recent
@@ -246,13 +266,15 @@ export default function PostFeed({
         <button
           onClick={() => onFilterChange?.("top")}
           className={`px-4 py-2 rounded-lg font-medium transition-all ${filterType === "top"
-              ? "bg-[#C9115F] text-[10px] lg:text-[15px] text-white"
-              : "bg-white/10 text-white/70 text-[10px] lg:text-[15px] hover:bg-white/20"
+            ? "bg-[#C9115F] text-[10px] lg:text-[15px] text-white"
+            : "bg-white/10 text-white/70 text-[10px] lg:text-[15px] hover:bg-white/20"
             }`}
         >
           Top
         </button>
       </div>
+
+
 
       {/* ── Horizontal swipeable row ── */}
       <div
@@ -274,7 +296,7 @@ export default function PostFeed({
         {posts.map((post, index) => (
           <div
             key={post.id ?? index}
-            className="flex-shrink-0 w-[85vw] sm:w-[420px] lg:w-[460px]"
+            className="flex-shrink-0 w-[280px] sm:w-[320px] max-w-[320px]"
             style={{ scrollSnapAlign: "start" }}
           >
             <PostCard

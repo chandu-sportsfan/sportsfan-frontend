@@ -55,9 +55,9 @@ export default function HomePage() {
 
         <ContinueListening />
       
-        <PollCardsPage /> */}
+         */}
          {/* <IPLSpotlight /> */}
-         
+         {/* <PollCardsPage /> */}
         <NewHomePage />
           {/* <HomeCardsSection /> */}
         {/* <Team360CardsSection /> */}

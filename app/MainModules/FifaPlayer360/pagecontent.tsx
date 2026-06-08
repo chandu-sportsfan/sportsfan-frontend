@@ -175,7 +175,8 @@ function FifaPlayerCard({ player }: { player: FifaPlayer }) {
             <Link href={href}>
                 <div className="px-3 pt-2 pb-1">
                     <h4 className="font-semibold text-white text-sm leading-snug">
-                        {player.player_name} · {posLabel} · FIFA WC {player.season}
+                        {player.player_name}  
+                        {/* {posLabel} · FIFA WC {player.season} */}
                     </h4>
                 </div>
             </Link>
@@ -195,7 +196,7 @@ function FifaPlayerCard({ player }: { player: FifaPlayer }) {
             </div>
 
             {/* Stats row */}
-            <div className="px-3 pb-3 flex items-center gap-2 flex-wrap">
+            <div className="px-3 pb-3 flex items-center gap-2 flex-nowrap">
                 <span className="rounded-2xl px-2 py-1 flex items-center gap-1.5 bg-gray-950">
                     <img src="/images/profile.png" alt="followers" className="w-5 h-5 object-cover"
                         onError={(e) => { e.currentTarget.src = "/fallback-share.png"; }} />

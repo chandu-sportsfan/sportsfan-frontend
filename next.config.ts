@@ -545,8 +545,8 @@ const nextConfig = {
         // roar apis
         {
           source: "/api/roar/:path*",
-          // destination: `${apiTarget}/api/roar/:path*`,
-          destination: `http://localhost:3001/api/roar/:path*`,
+          destination: `${apiTarget}/api/roar/:path*`,
+          // destination: `http://localhost:3001/api/roar/:path*`,
         },
       ],
     };

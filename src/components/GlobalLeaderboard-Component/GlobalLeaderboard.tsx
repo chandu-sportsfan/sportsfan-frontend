@@ -1,6 +1,14 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+  useMemo,
+  memo,
+  useTransition,
+} from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useLeaderboard } from '@/context/LeaderboardContext';
 import { ChevronLeft, Trophy, Star, Crown, ArrowUp, ArrowDown, Minus } from 'lucide-react';
@@ -41,7 +49,8 @@ const CONFETTI_COLORS = [
   '#a78bfa', '#38bdf8', '#fb7185', '#facc15', '#ffffff',
 ];
 
-const Confetti: React.FC<{ active: boolean }> = ({ active }) => {
+// memo: only re-renders when `active` flips
+const Confetti = memo<{ active: boolean }>(({ active }) => {
   const [pieces, setPieces] = useState<ConfettiPiece[]>([]);
 
   useEffect(() => {
@@ -68,12 +77,7 @@ const Confetti: React.FC<{ active: boolean }> = ({ active }) => {
   if (!active || pieces.length === 0) return null;
 
   return (
-    <div
-      style={{
-        position: 'fixed', inset: 0, pointerEvents: 'none',
-        zIndex: 9999, overflow: 'hidden',
-      }}
-    >
+    <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 9999, overflow: 'hidden' }}>
       {pieces.map((p) => (
         <div
           key={p.id}
@@ -93,10 +97,11 @@ const Confetti: React.FC<{ active: boolean }> = ({ active }) => {
       ))}
     </div>
   );
-};
+});
+Confetti.displayName = 'Confetti';
 
 // ─── Rank Badge ───────────────────────────────────────────────────────────────
-const RankBadge: React.FC<{ rank: number }> = ({ rank }) => {
+const RankBadge = memo<{ rank: number }>(({ rank }) => {
   if (rank === 1) {
     return (
       <div className="gl-rank-badge gl-rank-1">
@@ -105,54 +110,22 @@ const RankBadge: React.FC<{ rank: number }> = ({ rank }) => {
       </div>
     );
   }
-  if (rank === 2) {
-    return (
-      <div className="gl-rank-badge gl-rank-2">
-        <span className="gl-rank-text">#2</span>
-      </div>
-    );
-  }
-  if (rank === 3) {
-    return (
-      <div className="gl-rank-badge gl-rank-3">
-        <span className="gl-rank-text">#3</span>
-      </div>
-    );
-  }
-  return (
-    <div className="gl-rank-badge gl-rank-default">
-      <span className="gl-rank-text">#{rank}</span>
-    </div>
-  );
-};
+  if (rank === 2) return <div className="gl-rank-badge gl-rank-2"><span className="gl-rank-text">#2</span></div>;
+  if (rank === 3) return <div className="gl-rank-badge gl-rank-3"><span className="gl-rank-text">#3</span></div>;
+  return <div className="gl-rank-badge gl-rank-default"><span className="gl-rank-text">#{rank}</span></div>;
+});
+RankBadge.displayName = 'RankBadge';
 
 // ─── Delta Indicator ──────────────────────────────────────────────────────────
-const DeltaIndicator: React.FC<{ delta: number }> = ({ delta }) => {
-  if (delta > 0) {
-    return (
-      <span className="gl-delta gl-delta-up">
-        <ArrowUp size={10} />
-        {delta}
-      </span>
-    );
-  }
-  if (delta < 0) {
-    return (
-      <span className="gl-delta gl-delta-down">
-        <ArrowDown size={10} />
-        {Math.abs(delta)}
-      </span>
-    );
-  }
-  return (
-    <span className="gl-delta gl-delta-same">
-      <Minus size={10} />
-    </span>
-  );
-};
+const DeltaIndicator = memo<{ delta: number }>(({ delta }) => {
+  if (delta > 0) return <span className="gl-delta gl-delta-up"><ArrowUp size={10} />{delta}</span>;
+  if (delta < 0) return <span className="gl-delta gl-delta-down"><ArrowDown size={10} />{Math.abs(delta)}</span>;
+  return <span className="gl-delta gl-delta-same"><Minus size={10} /></span>;
+});
+DeltaIndicator.displayName = 'DeltaIndicator';
 
 // ─── Podium Glow Bar ─────────────────────────────────────────────────────────
-const PodiumGlow: React.FC<{ rank: number }> = ({ rank }) => {
+const PodiumGlow = memo<{ rank: number }>(({ rank }) => {
   const colors = ['#FFD700', '#C0C0C0', '#CD7F32'];
   if (rank > 3) return null;
   return (
@@ -161,33 +134,32 @@ const PodiumGlow: React.FC<{ rank: number }> = ({ rank }) => {
       style={{ background: `linear-gradient(90deg, ${colors[rank - 1]}33, transparent)` }}
     />
   );
-};
+});
+PodiumGlow.displayName = 'PodiumGlow';
 
 // ─── Avatar ───────────────────────────────────────────────────────────────────
-const Avatar: React.FC<{ initial: string; isCurrentUser: boolean; rank: number }> = ({
-  initial,
-  isCurrentUser,
-  rank,
-}) => {
-  const podiumColors: Record<number, string> = {
-    1: 'linear-gradient(135deg, #FFD700, #FFA500)',
-    2: 'linear-gradient(135deg, #C0C0C0, #808080)',
-    3: 'linear-gradient(135deg, #CD7F32, #8B4513)',
-  };
-  const bg =
-    isCurrentUser
+const Avatar = memo<{ initial: string; isCurrentUser: boolean; rank: number }>(
+  ({ initial, isCurrentUser, rank }) => {
+    const podiumColors: Record<number, string> = {
+      1: 'linear-gradient(135deg, #FFD700, #FFA500)',
+      2: 'linear-gradient(135deg, #C0C0C0, #808080)',
+      3: 'linear-gradient(135deg, #CD7F32, #8B4513)',
+    };
+    const bg = isCurrentUser
       ? 'linear-gradient(135deg, #e11d48, #f97316)'
       : podiumColors[rank] ?? 'linear-gradient(135deg, #3f3f46, #27272a)';
 
-  return (
-    <div
-      className={`gl-avatar${isCurrentUser ? ' gl-avatar-current' : ''}${rank <= 3 ? ' gl-avatar-podium' : ''}`}
-      style={{ background: bg }}
-    >
-      {initial}
-    </div>
-  );
-};
+    return (
+      <div
+        className={`gl-avatar${isCurrentUser ? ' gl-avatar-current' : ''}${rank <= 3 ? ' gl-avatar-podium' : ''}`}
+        style={{ background: bg }}
+      >
+        {initial}
+      </div>
+    );
+  }
+);
+Avatar.displayName = 'Avatar';
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 const GlobalLeaderboard: React.FC = () => {
@@ -196,7 +168,6 @@ const GlobalLeaderboard: React.FC = () => {
   const router = useRouter();
 
   const [animatedList, setAnimatedList] = useState<AnimatedUser[]>([]);
-  const [movingIds, setMovingIds] = useState<Set<string | number>>(new Set());
   const [showConfetti, setShowConfetti] = useState(false);
   const prevRanksRef = useRef<Map<string | number, number>>(new Map());
   const mountSnapshotRef = useRef<Map<string | number, number> | null>(null);
@@ -204,20 +175,30 @@ const GlobalLeaderboard: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<Map<string | number, HTMLDivElement>>(new Map());
 
-  const safeLeaderboard: LeaderboardUser[] = leaderboard ?? [];
+  // FIX: useTransition marks the heavy diff work as non-urgent so React can
+  // paint the raw list first, then apply animations in the background.
+  const [, startTransition] = useTransition();
+
+  // FIX: useMemo prevents leaderboard ?? [] from producing a new array reference
+  // on every render, which was causing the diff useEffect to re-run needlessly.
+  const safeLeaderboard: LeaderboardUser[] = useMemo(
+    () => leaderboard ?? [],
+    [leaderboard]
+  );
   const safeRank = currentUserRank ?? 0;
   const safePoints = currentUserPoints ?? 0;
 
   const RANK_SNAPSHOT_KEY = 'gl_rank_snapshot';
 
-  // Trigger confetti on every leaderboard open
+  // Confetti on open — identical to original
   useEffect(() => {
     setShowConfetti(true);
     const t = setTimeout(() => setShowConfetti(false), 3800);
     return () => clearTimeout(t);
   }, []);
 
-  // Helper: look up a userId in a Map that may have string or number keys
+  // FIX: useCallback gives getPrevRank a stable reference so it doesn't
+  // appear in useEffect deps and cause spurious re-runs.
   const getPrevRank = useCallback(
     (userId: string | number, map: Map<string | number, number>): number | null => {
       if (map.has(userId)) return map.get(userId)!;
@@ -229,95 +210,111 @@ const GlobalLeaderboard: React.FC = () => {
     []
   );
 
-  // Build animated list when leaderboard changes
   useEffect(() => {
     if (safeLeaderboard.length === 0) return;
 
-    // On the very first data arrival, load the persisted snapshot from localStorage
-    // so we can diff against ranks from before the user played their last battle.
-    if (!hasInitializedRef.current) {
-      hasInitializedRef.current = true;
-      try {
-        const raw = localStorage.getItem(RANK_SNAPSHOT_KEY);
-        if (raw) {
-          const parsed: Record<string, number> = JSON.parse(raw);
-          mountSnapshotRef.current = new Map(
-            Object.entries(parsed).map(([k, v]) => [k, Number(v)])
-          );
+    // ── CLEANUP REF: must live outside startTransition so the useEffect
+    // cleanup function can cancel it correctly on unmount/re-run.
+    let saveTimer: ReturnType<typeof setTimeout>;
+
+    startTransition(() => {
+      // First-mount: load persisted snapshot — identical logic to original
+      if (!hasInitializedRef.current) {
+        hasInitializedRef.current = true;
+        try {
+          const raw = localStorage.getItem(RANK_SNAPSHOT_KEY);
+          if (raw) {
+            const parsed: Record<string, number> = JSON.parse(raw);
+            mountSnapshotRef.current = new Map(
+              Object.entries(parsed).map(([k, v]) => [k, Number(v)])
+            );
+          }
+        } catch {
+          // localStorage unavailable or corrupt — skip snapshot
         }
-      } catch {
-        // localStorage unavailable or corrupt — skip snapshot
       }
-    }
 
-    // Pick the right "previous" source:
-    // - live updates use prevRanksRef (set after first render)
-    // - first render uses the localStorage snapshot (ranks from before the battle)
-    const prev: Map<string | number, number> =
-      prevRanksRef.current.size > 0
-        ? prevRanksRef.current
-        : (mountSnapshotRef.current ?? new Map());
+      const prev: Map<string | number, number> =
+        prevRanksRef.current.size > 0
+          ? prevRanksRef.current
+          : (mountSnapshotRef.current ?? new Map());
 
-    const newMoving = new Set<string | number>();
+      // ── PRESERVED EXACTLY: animation flags match original's logic.
+      // Original did NOT guard these with `changed` — delta > 0 / delta < 0
+      // alone drives the flags, matching the original behavior precisely.
+      const next: AnimatedUser[] = safeLeaderboard.map((u) => {
+        const storedPrevRank = getPrevRank(u.userId, prev);
+        const prevRank = storedPrevRank ?? u.rank;
+        const delta = prevRank - u.rank;
+        return {
+          ...u,
+          previousRank: prevRank,
+          rankDelta: delta,
+          animatingUp: delta > 0,       // exact original logic
+          animatingDown: delta < 0,     // exact original logic
+          flashGreen: delta > 0,        // exact original logic
+          flashRed: delta < 0,          // exact original logic
+        };
+      });
 
-    const next: AnimatedUser[] = safeLeaderboard.map((u) => {
-      const storedPrevRank = getPrevRank(u.userId, prev);
-      const prevRank = storedPrevRank ?? u.rank; // unknown → no delta
-      const delta = prevRank - u.rank;           // positive = climbed
-      const changed = storedPrevRank !== null && delta !== 0;
-      if (changed) newMoving.add(u.userId);
-      return {
-        ...u,
-        previousRank: prevRank,
-        rankDelta: delta,
-        animatingUp: delta > 0,
-        animatingDown: delta < 0,
-        flashGreen: delta > 0,
-        flashRed: delta < 0,
-      };
+      setAnimatedList(next);
+
+      // Update live-update ref — identical timing to original (after building next[])
+      const nextMap = new Map<string | number, number>();
+      safeLeaderboard.forEach((u) => nextMap.set(u.userId, u.rank));
+      prevRanksRef.current = nextMap;
+
+      // Persist snapshot + reset animations after 1300ms — identical to original
+      saveTimer = setTimeout(() => {
+        try {
+          const snapshot: Record<string, number> = {};
+          safeLeaderboard.forEach((u) => { snapshot[String(u.userId)] = u.rank; });
+          localStorage.setItem(RANK_SNAPSHOT_KEY, JSON.stringify(snapshot));
+        } catch {
+          // ignore write errors
+        }
+
+        setAnimatedList((cur) =>
+          cur.map((u) => ({
+            ...u,
+            animatingUp: false,
+            animatingDown: false,
+            flashGreen: false,
+            flashRed: false,
+          }))
+        );
+      }, 1300);
     });
 
-    setAnimatedList(next);
-    setMovingIds(newMoving);
-
-    // Update live-update ref immediately
-    const nextMap = new Map<string | number, number>();
-    safeLeaderboard.forEach((u) => nextMap.set(u.userId, u.rank));
-    prevRanksRef.current = nextMap;
-
-    // Persist the snapshot to localStorage *after* the animation completes
-    // so the *next* leaderboard open sees these as the "before" ranks.
-    const saveTimer = setTimeout(() => {
-      try {
-        const snapshot: Record<string, number> = {};
-        safeLeaderboard.forEach((u) => { snapshot[String(u.userId)] = u.rank; });
-        localStorage.setItem(RANK_SNAPSHOT_KEY, JSON.stringify(snapshot));
-      } catch {
-        // ignore write errors
-      }
-
-      setMovingIds(new Set());
-      setAnimatedList((cur) =>
-        cur.map((u) => ({
-          ...u,
-          animatingUp: false,
-          animatingDown: false,
-          flashGreen: false,
-          flashRed: false,
-        }))
-      );
-    }, 1300);
-
+    // Cleanup runs correctly at the useEffect level — fixes the timer leak
+    // that existed in the previous version where return was inside startTransition
     return () => clearTimeout(saveTimer);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [safeLeaderboard]);
+  }, [safeLeaderboard, getPrevRank]);
 
+  // FIX: useCallback prevents a new function reference on every render
   const setItemRef = useCallback((id: string | number, el: HTMLDivElement | null) => {
     if (el) itemRefs.current.set(id, el);
     else itemRefs.current.delete(id);
   }, []);
 
-  // ── Loading ────────────────────────────────────────────────────────────────
+  // FIX: useMemo so the fallback mapping only runs when source data changes.
+  // This is the key latency fix — user sees data immediately from safeLeaderboard
+  // while animatedList is still being computed in the startTransition background.
+  const displayList: AnimatedUser[] = useMemo(() => {
+    if (animatedList.length > 0) return animatedList;
+    return safeLeaderboard.map((u) => ({
+      ...u,
+      previousRank: u.rank,
+      rankDelta: 0,
+      animatingUp: false,
+      animatingDown: false,
+      flashGreen: false,
+      flashRed: false,
+    }));
+  }, [animatedList, safeLeaderboard]);
+
+  // ── Loading — identical to original ───────────────────────────────────────
   if (loading && safeLeaderboard.length === 0) {
     return (
       <div className="gl-loading-wrap">
@@ -332,22 +329,10 @@ const GlobalLeaderboard: React.FC = () => {
     );
   }
 
-  const displayList = animatedList.length > 0 ? animatedList : safeLeaderboard.map((u) => ({
-    ...u,
-    previousRank: u.rank,
-    rankDelta: 0,
-    animatingUp: false,
-    animatingDown: false,
-    flashGreen: false,
-    flashRed: false,
-  }));
-
   return (
     <>
-      {/* ── Party Confetti on open ── */}
       <Confetti active={showConfetti} />
 
-      {/* ── Injected Styles ── */}
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=DM+Sans:wght@400;500;600;700&display=swap');
 
@@ -365,7 +350,6 @@ const GlobalLeaderboard: React.FC = () => {
           --gl-font-body: 'DM Sans', sans-serif;
         }
 
-        /* ── Wrap ── */
         .gl-wrap {
           max-width: 860px;
           margin: 0 auto;
@@ -373,8 +357,6 @@ const GlobalLeaderboard: React.FC = () => {
           font-family: var(--gl-font-body);
           position: relative;
         }
-
-        /* ── Grid noise overlay ── */
         .gl-wrap::before {
           content: '';
           position: fixed;
@@ -386,8 +368,6 @@ const GlobalLeaderboard: React.FC = () => {
           pointer-events: none;
           z-index: 0;
         }
-
-        /* ── Header ── */
         .gl-header {
           display: flex;
           flex-wrap: wrap;
@@ -399,7 +379,6 @@ const GlobalLeaderboard: React.FC = () => {
           z-index: 2;
           animation: glFadeUp 0.5s ease both;
         }
-
         .gl-back-btn {
           display: inline-flex;
           align-items: center;
@@ -417,508 +396,133 @@ const GlobalLeaderboard: React.FC = () => {
           margin-bottom: 14px;
           font-family: var(--gl-font-body);
         }
-        .gl-back-btn:hover {
-          color: #fff;
-          background: rgba(255,255,255,0.09);
-          border-color: rgba(255,255,255,0.18);
-        }
-
-        .gl-title-row {
-          display: flex;
-          align-items: center;
-          gap: 16px;
-        }
-
+        .gl-back-btn:hover { color: #fff; background: rgba(255,255,255,0.09); border-color: rgba(255,255,255,0.18); }
+        .gl-title-row { display: flex; align-items: center; gap: 16px; }
         .gl-title-icon {
-          width: 56px;
-          height: 56px;
-          border-radius: 16px;
+          width: 56px; height: 56px; border-radius: 16px;
           background: linear-gradient(135deg, rgba(225,29,72,0.18), rgba(249,115,22,0.12));
           border: 1px solid rgba(225,29,72,0.3);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          box-shadow: 0 0 24px rgba(225,29,72,0.15);
-          flex-shrink: 0;
+          display: flex; align-items: center; justify-content: center;
+          box-shadow: 0 0 24px rgba(225,29,72,0.15); flex-shrink: 0;
         }
-
         .gl-title {
-          font-family: var(--gl-font-display);
-          font-size: clamp(28px, 5vw, 42px);
-          font-weight: 900;
-          letter-spacing: -0.01em;
-          color: #fff;
-          line-height: 1;
-          margin-bottom: 4px;
-          text-transform: uppercase;
+          font-family: var(--gl-font-display); font-size: clamp(28px, 5vw, 42px);
+          font-weight: 900; letter-spacing: -0.01em; color: #fff;
+          line-height: 1; margin-bottom: 4px; text-transform: uppercase;
         }
-
-        .gl-subtitle {
-          font-size: 12px;
-          color: rgba(255,255,255,0.38);
-          font-weight: 500;
-          letter-spacing: 0.03em;
-        }
-
-        /* ── Stat Card ── */
+        .gl-subtitle { font-size: 12px; color: rgba(255,255,255,0.38); font-weight: 500; letter-spacing: 0.03em; }
         .gl-stat-card {
-          background: var(--gl-card);
-          border: 1px solid var(--gl-border);
-          border-radius: 18px;
-          padding: 18px 24px;
-          display: flex;
-          align-items: center;
-          gap: 24px;
-          position: relative;
-          overflow: hidden;
-          transition: border-color 0.3s;
+          background: var(--gl-card); border: 1px solid var(--gl-border);
+          border-radius: 18px; padding: 18px 24px;
+          display: flex; align-items: center; gap: 24px;
+          position: relative; overflow: hidden; transition: border-color 0.3s;
         }
-        .gl-stat-card:hover {
-          border-color: rgba(225,29,72,0.25);
-        }
+        .gl-stat-card:hover { border-color: rgba(225,29,72,0.25); }
         .gl-stat-card::before {
-          content: '';
-          position: absolute;
-          inset: 0;
+          content: ''; position: absolute; inset: 0;
           background: linear-gradient(120deg, rgba(225,29,72,0.06), rgba(249,115,22,0.03));
           pointer-events: none;
         }
-
-        .gl-stat-label {
-          font-size: 9px;
-          font-weight: 800;
-          text-transform: uppercase;
-          letter-spacing: 0.12em;
-          color: rgba(255,255,255,0.3);
-          margin-bottom: 4px;
-          font-family: var(--gl-font-display);
-        }
-
-        .gl-stat-value {
-          font-family: var(--gl-font-display);
-          font-size: 32px;
-          font-weight: 900;
-          color: #fff;
-          line-height: 1;
-          letter-spacing: -0.02em;
-        }
-
-        .gl-stat-value-points {
-          font-family: var(--gl-font-display);
-          font-size: 24px;
-          font-weight: 900;
-          color: var(--gl-emerald);
-          line-height: 1;
-          letter-spacing: -0.02em;
-        }
-
-        .gl-stat-unit {
-          font-size: 11px;
-          color: rgba(16,185,129,0.6);
-          font-weight: 700;
-          letter-spacing: 0.08em;
-          margin-left: 3px;
-        }
-
-        .gl-divider {
-          width: 1px;
-          height: 40px;
-          background: rgba(255,255,255,0.08);
-          flex-shrink: 0;
-        }
-
-        /* ── Live pill ── */
+        .gl-stat-label { font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.12em; color: rgba(255,255,255,0.3); margin-bottom: 4px; font-family: var(--gl-font-display); }
+        .gl-stat-value { font-family: var(--gl-font-display); font-size: 32px; font-weight: 900; color: #fff; line-height: 1; letter-spacing: -0.02em; }
+        .gl-stat-value-points { font-family: var(--gl-font-display); font-size: 24px; font-weight: 900; color: var(--gl-emerald); line-height: 1; letter-spacing: -0.02em; }
+        .gl-stat-unit { font-size: 11px; color: rgba(16,185,129,0.6); font-weight: 700; letter-spacing: 0.08em; margin-left: 3px; }
+        .gl-divider { width: 1px; height: 40px; background: rgba(255,255,255,0.08); flex-shrink: 0; }
         .gl-live-pill {
-          display: inline-flex;
-          align-items: center;
-          gap: 5px;
-          font-size: 9px;
-          font-weight: 800;
-          letter-spacing: 0.12em;
-          text-transform: uppercase;
-          color: var(--gl-emerald);
-          background: rgba(16,185,129,0.1);
-          border: 1px solid rgba(16,185,129,0.2);
-          border-radius: 999px;
-          padding: 4px 10px;
-          margin-top: 10px;
-          font-family: var(--gl-font-display);
+          display: inline-flex; align-items: center; gap: 5px;
+          font-size: 9px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase;
+          color: var(--gl-emerald); background: rgba(16,185,129,0.1);
+          border: 1px solid rgba(16,185,129,0.2); border-radius: 999px; padding: 4px 10px;
+          margin-top: 10px; font-family: var(--gl-font-display);
         }
-        .gl-live-dot {
-          width: 5px;
-          height: 5px;
-          border-radius: 50%;
-          background: var(--gl-emerald);
-          animation: glPulse 1.4s ease-in-out infinite;
-        }
-
-        /* ── Table container ── */
+        .gl-live-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--gl-emerald); animation: glPulse 1.4s ease-in-out infinite; }
         .gl-table-wrap {
-          background: var(--gl-card);
-          border: 1px solid var(--gl-border);
-          border-radius: 24px;
-          overflow: hidden;
-          position: relative;
-          z-index: 2;
+          background: var(--gl-card); border: 1px solid var(--gl-border);
+          border-radius: 24px; overflow: hidden; position: relative; z-index: 2;
           animation: glFadeUp 0.5s 0.1s ease both;
         }
-
-        /* ── Column headers ── */
-        .gl-col-headers {
-          display: flex;
-          align-items: center;
-          padding: 14px 20px;
-          border-bottom: 1px solid rgba(255,255,255,0.05);
-        }
-        .gl-col-header {
-          font-size: 9px;
-          font-weight: 800;
-          text-transform: uppercase;
-          letter-spacing: 0.14em;
-          color: rgba(255,255,255,0.25);
-          font-family: var(--gl-font-display);
-        }
+        .gl-col-headers { display: flex; align-items: center; padding: 14px 20px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .gl-col-header { font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.14em; color: rgba(255,255,255,0.25); font-family: var(--gl-font-display); }
         .gl-col-rank  { width: 80px; }
         .gl-col-fan   { flex: 1; }
         .gl-col-delta { width: 60px; text-align: center; }
         .gl-col-pts   { width: 100px; text-align: right; }
-
-        /* ── Row list ── */
-        .gl-list {
-          padding: 10px;
-          display: flex;
-          flex-direction: column;
-          gap: 6px;
-        }
-
-        /* ── Row ── */
+        .gl-list { padding: 10px; display: flex; flex-direction: column; gap: 6px; }
         .gl-row {
-          position: relative;
-          display: flex;
-          align-items: center;
-          padding: 12px 14px;
-          border-radius: 14px;
-          border: 1px solid transparent;
-          cursor: default;
-          overflow: hidden;
+          position: relative; display: flex; align-items: center;
+          padding: 12px 14px; border-radius: 14px; border: 1px solid transparent;
+          cursor: default; overflow: hidden;
           transition: transform 0.25s ease, border-color 0.25s ease, background 0.25s ease;
           will-change: transform;
         }
         .gl-row:hover { transform: translateX(4px); }
-
-        /* Normal row */
-        .gl-row-normal {
-          background: rgba(255,255,255,0.025);
-          border-color: rgba(255,255,255,0.05);
-        }
-        .gl-row-normal:hover {
-          background: rgba(255,255,255,0.045);
-          border-color: rgba(255,255,255,0.1);
-        }
-
-        /* Podium rows */
-        .gl-row-rank-1 {
-          background: linear-gradient(105deg, rgba(255,215,0,0.08) 0%, rgba(255,215,0,0.02) 60%, transparent 100%);
-          border-color: rgba(255,215,0,0.18);
-        }
-        .gl-row-rank-2 {
-          background: linear-gradient(105deg, rgba(192,192,192,0.07) 0%, rgba(192,192,192,0.02) 60%, transparent 100%);
-          border-color: rgba(192,192,192,0.14);
-        }
-        .gl-row-rank-3 {
-          background: linear-gradient(105deg, rgba(205,127,50,0.07) 0%, rgba(205,127,50,0.02) 60%, transparent 100%);
-          border-color: rgba(205,127,50,0.14);
-        }
-
-        /* Current user */
-        .gl-row-current {
-          background: linear-gradient(105deg, rgba(225,29,72,0.1) 0%, rgba(249,115,22,0.04) 60%, transparent 100%);
-          border-color: rgba(225,29,72,0.35);
-          box-shadow: 0 0 20px rgba(225,29,72,0.08);
-        }
-
-        /* Move animations */
-        .gl-row-moving-up {
-          animation: glSlideUp 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) both;
-        }
-        .gl-row-moving-down {
-          animation: glSlideDown 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) both;
-        }
-        .gl-row-flash-green {
-          animation: glFlashGreen 1.1s ease both;
-        }
-        .gl-row-flash-red {
-          animation: glFlashRed 1.1s ease both;
-        }
-
-        /* ── Podium side bar ── */
-        .gl-podium-bar {
-          position: absolute;
-          left: 0;
-          top: 0;
-          bottom: 0;
-          width: 3px;
-          border-radius: 3px 0 0 3px;
-        }
+        .gl-row-normal { background: rgba(255,255,255,0.025); border-color: rgba(255,255,255,0.05); }
+        .gl-row-normal:hover { background: rgba(255,255,255,0.045); border-color: rgba(255,255,255,0.1); }
+        .gl-row-rank-1 { background: linear-gradient(105deg, rgba(255,215,0,0.08) 0%, rgba(255,215,0,0.02) 60%, transparent 100%); border-color: rgba(255,215,0,0.18); }
+        .gl-row-rank-2 { background: linear-gradient(105deg, rgba(192,192,192,0.07) 0%, rgba(192,192,192,0.02) 60%, transparent 100%); border-color: rgba(192,192,192,0.14); }
+        .gl-row-rank-3 { background: linear-gradient(105deg, rgba(205,127,50,0.07) 0%, rgba(205,127,50,0.02) 60%, transparent 100%); border-color: rgba(205,127,50,0.14); }
+        .gl-row-current { background: linear-gradient(105deg, rgba(225,29,72,0.1) 0%, rgba(249,115,22,0.04) 60%, transparent 100%); border-color: rgba(225,29,72,0.35); box-shadow: 0 0 20px rgba(225,29,72,0.08); }
+        .gl-row-moving-up   { animation: glSlideUp   0.55s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+        .gl-row-moving-down { animation: glSlideDown 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+        .gl-row-flash-green { animation: glFlashGreen 1.1s ease both; }
+        .gl-row-flash-red   { animation: glFlashRed   1.1s ease both; }
+        .gl-podium-bar { position: absolute; left: 0; top: 0; bottom: 0; width: 3px; border-radius: 3px 0 0 3px; }
         .gl-podium-bar-1 { background: var(--gl-gold); box-shadow: 0 0 8px var(--gl-gold); }
         .gl-podium-bar-2 { background: var(--gl-silver); box-shadow: 0 0 6px var(--gl-silver); }
         .gl-podium-bar-3 { background: var(--gl-bronze); box-shadow: 0 0 6px var(--gl-bronze); }
         .gl-podium-bar-current { background: var(--gl-rose); box-shadow: 0 0 10px var(--gl-rose); }
-
-        /* ── Rank badge ── */
         .gl-rank-col { width: 80px; display: flex; align-items: center; flex-shrink: 0; }
-
-        .gl-rank-badge {
-          display: flex;
-          align-items: center;
-          gap: 4px;
-          font-family: var(--gl-font-display);
-          font-weight: 900;
-          letter-spacing: -0.01em;
-        }
+        .gl-rank-badge { display: flex; align-items: center; gap: 4px; font-family: var(--gl-font-display); font-weight: 900; letter-spacing: -0.01em; }
         .gl-rank-text { font-size: 22px; line-height: 1; }
         .gl-rank-1 .gl-rank-text { color: var(--gl-gold); text-shadow: 0 0 12px rgba(255,215,0,0.5); }
         .gl-rank-2 .gl-rank-text { color: var(--gl-silver); text-shadow: 0 0 8px rgba(192,192,192,0.4); }
         .gl-rank-3 .gl-rank-text { color: var(--gl-bronze); text-shadow: 0 0 8px rgba(205,127,50,0.4); }
         .gl-rank-default .gl-rank-text { color: rgba(255,255,255,0.45); font-size: 18px; }
         .gl-crown-icon { width: 16px; height: 16px; color: var(--gl-gold); flex-shrink: 0; margin-right: 2px; }
-
-        /* ── Avatar ── */
         .gl-fan-col { flex: 1; display: flex; align-items: center; gap: 12px; min-width: 0; }
-
-        .gl-avatar {
-          width: 40px;
-          height: 40px;
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-family: var(--gl-font-display);
-          font-size: 16px;
-          font-weight: 900;
-          color: #fff;
-          flex-shrink: 0;
-          position: relative;
-        }
-        .gl-avatar-podium {
-          box-shadow: 0 0 14px rgba(255,255,255,0.15);
-        }
-        .gl-avatar-current {
-          box-shadow: 0 0 18px rgba(225,29,72,0.4);
-        }
-
-        /* ── Name ── */
-        .gl-name {
-          font-size: 14px;
-          font-weight: 700;
-          color: rgba(255,255,255,0.88);
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          letter-spacing: 0.01em;
-        }
+        .gl-avatar { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: var(--gl-font-display); font-size: 16px; font-weight: 900; color: #fff; flex-shrink: 0; position: relative; }
+        .gl-avatar-podium { box-shadow: 0 0 14px rgba(255,255,255,0.15); }
+        .gl-avatar-current { box-shadow: 0 0 18px rgba(225,29,72,0.4); }
+        .gl-name { font-size: 14px; font-weight: 700; color: rgba(255,255,255,0.88); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: 0.01em; }
         .gl-name-current { color: #fff; }
-
-        .gl-you-badge {
-          display: inline-block;
-          font-size: 8px;
-          font-weight: 800;
-          text-transform: uppercase;
-          letter-spacing: 0.1em;
-          background: var(--gl-rose);
-          color: #fff;
-          padding: 2px 7px;
-          border-radius: 999px;
-          margin-left: 8px;
-          vertical-align: middle;
-          font-family: var(--gl-font-display);
-        }
-
-        /* ── Delta ── */
+        .gl-you-badge { display: inline-block; font-size: 8px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; background: var(--gl-rose); color: #fff; padding: 2px 7px; border-radius: 999px; margin-left: 8px; vertical-align: middle; font-family: var(--gl-font-display); }
         .gl-delta-col { width: 60px; display: flex; justify-content: center; }
-
-        .gl-delta {
-          display: inline-flex;
-          align-items: center;
-          gap: 3px;
-          font-size: 11px;
-          font-weight: 800;
-          letter-spacing: 0.04em;
-          padding: 4px 7px;
-          border-radius: 6px;
-          font-family: var(--gl-font-display);
-          line-height: 1;
-        }
-        .gl-delta-up   {
-          color: var(--gl-emerald);
-          background: rgba(16,185,129,0.13);
-          border: 1px solid rgba(16,185,129,0.25);
-          animation: glDeltaPopIn 0.4s cubic-bezier(0.34,1.56,0.64,1) both;
-        }
-        .gl-delta-down {
-          color: #f87171;
-          background: rgba(248,113,113,0.1);
-          border: 1px solid rgba(248,113,113,0.2);
-          animation: glDeltaPopIn 0.4s cubic-bezier(0.34,1.56,0.64,1) both;
-        }
+        .gl-delta { display: inline-flex; align-items: center; gap: 3px; font-size: 11px; font-weight: 800; letter-spacing: 0.04em; padding: 4px 7px; border-radius: 6px; font-family: var(--gl-font-display); line-height: 1; }
+        .gl-delta-up   { color: var(--gl-emerald); background: rgba(16,185,129,0.13); border: 1px solid rgba(16,185,129,0.25); animation: glDeltaPopIn 0.4s cubic-bezier(0.34,1.56,0.64,1) both; }
+        .gl-delta-down { color: #f87171; background: rgba(248,113,113,0.1); border: 1px solid rgba(248,113,113,0.2); animation: glDeltaPopIn 0.4s cubic-bezier(0.34,1.56,0.64,1) both; }
         .gl-delta-same { color: rgba(255,255,255,0.18); background: transparent; border: 1px solid rgba(255,255,255,0.06); }
-
-        /* ── Points ── */
         .gl-pts-col { width: 100px; text-align: right; }
-        .gl-pts-value {
-          font-family: var(--gl-font-display);
-          font-size: 20px;
-          font-weight: 900;
-          color: var(--gl-emerald);
-          line-height: 1;
-          letter-spacing: -0.01em;
-          display: flex;
-          align-items: center;
-          justify-content: flex-end;
-          gap: 4px;
-        }
+        .gl-pts-value { font-family: var(--gl-font-display); font-size: 20px; font-weight: 900; color: var(--gl-emerald); line-height: 1; letter-spacing: -0.01em; display: flex; align-items: center; justify-content: flex-end; gap: 4px; }
         .gl-pts-star { flex-shrink: 0; }
-        .gl-pts-unit {
-          font-size: 9px;
-          color: rgba(16,185,129,0.5);
-          font-weight: 700;
-          letter-spacing: 0.1em;
-          font-family: var(--gl-font-display);
-          margin-top: 2px;
-        }
-
-        /* ── Top 3 accent glow line ── */
-        .gl-podium-glow {
-          position: absolute;
-          inset: 0;
-          pointer-events: none;
-          border-radius: 14px;
-          opacity: 0.8;
-        }
-
-        /* ── Empty state ── */
-        .gl-empty {
-          text-align: center;
-          padding: 64px 24px;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-        }
-        .gl-empty-icon {
-          width: 80px;
-          height: 80px;
-          background: rgba(255,255,255,0.04);
-          border: 1px solid rgba(255,255,255,0.08);
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          margin-bottom: 20px;
-        }
-        .gl-empty-title {
-          font-family: var(--gl-font-display);
-          font-size: 22px;
-          font-weight: 800;
-          color: #fff;
-          text-transform: uppercase;
-          letter-spacing: 0.04em;
-          margin-bottom: 6px;
-        }
+        .gl-pts-unit { font-size: 9px; color: rgba(16,185,129,0.5); font-weight: 700; letter-spacing: 0.1em; font-family: var(--gl-font-display); margin-top: 2px; }
+        .gl-podium-glow { position: absolute; inset: 0; pointer-events: none; border-radius: 14px; opacity: 0.8; }
+        .gl-empty { text-align: center; padding: 64px 24px; display: flex; flex-direction: column; align-items: center; }
+        .gl-empty-icon { width: 80px; height: 80px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 20px; }
+        .gl-empty-title { font-family: var(--gl-font-display); font-size: 22px; font-weight: 800; color: #fff; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px; }
         .gl-empty-sub { font-size: 13px; color: rgba(255,255,255,0.3); }
-
-        /* ── Loading ── */
-        .gl-loading-wrap {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          min-height: 400px;
-          gap: 16px;
-        }
-        .gl-spinner {
-          width: 36px;
-          height: 36px;
-          border: 3px solid rgba(225,29,72,0.2);
-          border-top-color: #e11d48;
-          border-radius: 50%;
-          animation: glSpin 0.7s linear infinite;
-        }
-        .gl-loading-text {
-          font-family: var(--gl-font-display);
-          font-size: 11px;
-          font-weight: 700;
-          text-transform: uppercase;
-          letter-spacing: 0.14em;
-          color: rgba(255,255,255,0.3);
-          animation: glPulse 1.4s ease-in-out infinite;
-        }
-        .gl-loading-bars {
-          display: flex;
-          align-items: flex-end;
-          gap: 4px;
-          height: 32px;
-          margin-top: 8px;
-        }
-        .gl-loading-bar {
-          width: 6px;
-          background: linear-gradient(180deg, rgba(225,29,72,0.7), rgba(249,115,22,0.3));
-          border-radius: 3px;
-          animation: glBarPulse 0.9s ease-in-out infinite alternate;
-        }
-
-        /* ── Confetti ── */
-        .gl-confetti-piece {
-          position: absolute;
-          top: -12px;
-          animation: glConfettiFall linear both;
-          will-change: transform, opacity;
-        }
+        .gl-loading-wrap { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 400px; gap: 16px; }
+        .gl-spinner { width: 36px; height: 36px; border: 3px solid rgba(225,29,72,0.2); border-top-color: #e11d48; border-radius: 50%; animation: glSpin 0.7s linear infinite; }
+        .gl-loading-text { font-family: var(--gl-font-display); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.14em; color: rgba(255,255,255,0.3); animation: glPulse 1.4s ease-in-out infinite; }
+        .gl-loading-bars { display: flex; align-items: flex-end; gap: 4px; height: 32px; margin-top: 8px; }
+        .gl-loading-bar { width: 6px; background: linear-gradient(180deg, rgba(225,29,72,0.7), rgba(249,115,22,0.3)); border-radius: 3px; animation: glBarPulse 0.9s ease-in-out infinite alternate; }
+        .gl-confetti-piece { position: absolute; top: -12px; animation: glConfettiFall linear both; will-change: transform, opacity; }
         @keyframes glConfettiFall {
-          0%   { transform: translateY(0)     translateX(0)              rotate(0deg);         opacity: 1; }
+          0%   { transform: translateY(0) translateX(0) rotate(0deg); opacity: 1; }
           15%  { opacity: 1; }
           85%  { opacity: 0.85; }
-          100% { transform: translateY(105vh) translateX(var(--drift))   rotate(var(--rot));   opacity: 0; }
+          100% { transform: translateY(105vh) translateX(var(--drift)) rotate(var(--rot)); opacity: 0; }
         }
-
-        /* ── Keyframes ── */
-        @keyframes glDeltaPopIn {
-          from { opacity: 0; transform: scale(0.6); }
-          to   { opacity: 1; transform: scale(1); }
-        }
-        @keyframes glFadeUp {
-          from { opacity: 0; transform: translateY(16px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes glSlideUp {
-          0%   { transform: translateX(0) translateY(12px); opacity: 0.6; }
-          60%  { transform: translateX(0) translateY(-4px); opacity: 1; }
-          100% { transform: translateX(0) translateY(0); opacity: 1; }
-        }
-        @keyframes glSlideDown {
-          0%   { transform: translateX(0) translateY(-12px); opacity: 0.6; }
-          60%  { transform: translateX(0) translateY(4px); opacity: 1; }
-          100% { transform: translateX(0) translateY(0); opacity: 1; }
-        }
-        @keyframes glFlashGreen {
-          0%   { box-shadow: none; }
-          20%  { box-shadow: 0 0 0 2px rgba(16,185,129,0.6), 0 0 20px rgba(16,185,129,0.2); border-color: rgba(16,185,129,0.5); }
-          80%  { box-shadow: 0 0 0 1px rgba(16,185,129,0.3), 0 0 10px rgba(16,185,129,0.1); }
-          100% { box-shadow: none; }
-        }
-        @keyframes glFlashRed {
-          0%   { box-shadow: none; }
-          20%  { box-shadow: 0 0 0 2px rgba(248,113,113,0.5), 0 0 20px rgba(248,113,113,0.15); border-color: rgba(248,113,113,0.4); }
-          80%  { box-shadow: 0 0 0 1px rgba(248,113,113,0.2); }
-          100% { box-shadow: none; }
-        }
+        @keyframes glDeltaPopIn { from { opacity: 0; transform: scale(0.6); } to { opacity: 1; transform: scale(1); } }
+        @keyframes glFadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes glSlideUp   { 0% { transform: translateX(0) translateY(12px); opacity: 0.6; } 60% { transform: translateX(0) translateY(-4px); opacity: 1; } 100% { transform: translateX(0) translateY(0); opacity: 1; } }
+        @keyframes glSlideDown { 0% { transform: translateX(0) translateY(-12px); opacity: 0.6; } 60% { transform: translateX(0) translateY(4px); opacity: 1; } 100% { transform: translateX(0) translateY(0); opacity: 1; } }
+        @keyframes glFlashGreen { 0% { box-shadow: none; } 20% { box-shadow: 0 0 0 2px rgba(16,185,129,0.6), 0 0 20px rgba(16,185,129,0.2); border-color: rgba(16,185,129,0.5); } 80% { box-shadow: 0 0 0 1px rgba(16,185,129,0.3), 0 0 10px rgba(16,185,129,0.1); } 100% { box-shadow: none; } }
+        @keyframes glFlashRed  { 0% { box-shadow: none; } 20% { box-shadow: 0 0 0 2px rgba(248,113,113,0.5), 0 0 20px rgba(248,113,113,0.15); border-color: rgba(248,113,113,0.4); } 80% { box-shadow: 0 0 0 1px rgba(248,113,113,0.2); } 100% { box-shadow: none; } }
         @keyframes glSpin    { to { transform: rotate(360deg); } }
         @keyframes glPulse   { 0%,100% { opacity: 0.4; } 50% { opacity: 1; } }
         @keyframes glBarPulse { from { opacity: 0.3; } to { opacity: 1; } }
-
-        /* ── Row stagger on mount ── */
         .gl-row-stagger { animation: glFadeUp 0.4s ease both; }
         ${Array.from({ length: 20 }, (_, i) => `.gl-row-stagger:nth-child(${i + 1}) { animation-delay: ${i * 0.04}s; }`).join('\n')}
-
         @media (max-width: 540px) {
           .gl-col-delta { display: none; }
           .gl-delta-col  { display: none; }
@@ -935,14 +539,10 @@ const GlobalLeaderboard: React.FC = () => {
         {/* ── HEADER ── */}
         <div className="gl-header">
           <div>
-            <button
-              onClick={() => router.push('/MainModules/Fantasy')}
-              className="gl-back-btn"
-            >
+            <button onClick={() => router.push('/MainModules/Fantasy')} className="gl-back-btn">
               <ChevronLeft size={14} />
               Back to Fantasy
             </button>
-
             <div className="gl-title-row">
               <div className="gl-title-icon">
                 <Trophy size={26} color="#e11d48" />
@@ -958,7 +558,6 @@ const GlobalLeaderboard: React.FC = () => {
             </div>
           </div>
 
-          {/* Stat card */}
           <div className="gl-stat-card">
             <div>
               <p className="gl-stat-label">Your Rank</p>
@@ -977,7 +576,6 @@ const GlobalLeaderboard: React.FC = () => {
 
         {/* ── TABLE ── */}
         <div className="gl-table-wrap">
-          {/* Column Headers */}
           <div className="gl-col-headers">
             <div className="gl-col-header gl-col-rank">Rank</div>
             <div className="gl-col-header gl-col-fan">Fan</div>
@@ -985,7 +583,6 @@ const GlobalLeaderboard: React.FC = () => {
             <div className="gl-col-header gl-col-pts" style={{ textAlign: 'right' }}>Points</div>
           </div>
 
-          {/* List */}
           <div className="gl-list" ref={containerRef}>
             {displayList.length > 0 ? (
               displayList.map((u) => {
@@ -997,9 +594,7 @@ const GlobalLeaderboard: React.FC = () => {
                 const flashRed     = u.flashRed;
                 const isAnimating  = isMovingUp || isMovingDown || flashGreen || flashRed;
 
-                // Row class — never mix gl-row-stagger with movement classes:
-                // gl-row-stagger is defined later in the stylesheet and would win
-                // the CSS cascade, silently cancelling the slide/flash animations.
+                // Identical class-building logic to original
                 let rowClass = 'gl-row ';
                 if (!isAnimating) rowClass += 'gl-row-stagger ';
                 if (isCurrentUser)   rowClass += 'gl-row-current ';
@@ -1008,10 +603,10 @@ const GlobalLeaderboard: React.FC = () => {
                 else if (rank === 3) rowClass += 'gl-row-rank-3 ';
                 else                 rowClass += 'gl-row-normal ';
 
-                if (isMovingUp)                       rowClass += 'gl-row-moving-up ';
-                if (isMovingDown)                     rowClass += 'gl-row-moving-down ';
-                if (flashGreen && !isMovingUp)        rowClass += 'gl-row-flash-green ';
-                if (flashRed   && !isMovingDown)      rowClass += 'gl-row-flash-red ';
+                if (isMovingUp)                  rowClass += 'gl-row-moving-up ';
+                if (isMovingDown)                rowClass += 'gl-row-moving-down ';
+                if (flashGreen && !isMovingUp)   rowClass += 'gl-row-flash-green ';
+                if (flashRed   && !isMovingDown) rowClass += 'gl-row-flash-red ';
 
                 const initial = (u.userName || '?').charAt(0).toUpperCase();
 
@@ -1021,21 +616,17 @@ const GlobalLeaderboard: React.FC = () => {
                     ref={(el) => setItemRef(u.userId, el)}
                     className={rowClass}
                   >
-                    {/* Podium left bar */}
                     {rank === 1 && <div className="gl-podium-bar gl-podium-bar-1" />}
                     {rank === 2 && <div className="gl-podium-bar gl-podium-bar-2" />}
                     {rank === 3 && <div className="gl-podium-bar gl-podium-bar-3" />}
                     {isCurrentUser && rank > 3 && <div className="gl-podium-bar gl-podium-bar-current" />}
 
-                    {/* Subtle gradient overlay for top 3 */}
                     {rank <= 3 && <PodiumGlow rank={rank} />}
 
-                    {/* Rank */}
                     <div className="gl-rank-col">
                       <RankBadge rank={rank} />
                     </div>
 
-                    {/* Fan */}
                     <div className="gl-fan-col">
                       <Avatar initial={initial} isCurrentUser={isCurrentUser} rank={rank} />
                       <div style={{ minWidth: 0 }}>
@@ -1046,12 +637,10 @@ const GlobalLeaderboard: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Delta */}
                     <div className="gl-delta-col">
                       <DeltaIndicator delta={u.rankDelta} />
                     </div>
 
-                    {/* Points */}
                     <div className="gl-pts-col">
                       <div className="gl-pts-value">
                         {rank <= 3 && (

@@ -7178,12 +7178,12 @@ export default function ROARApp() {
               margin: "0 auto 16px",
             }}
           />
-          <style>{`
+          <style dangerouslySetInnerHTML={{ __html: `
             @keyframes roar-spin {
               0% { transform: rotate(0deg); }
               100% { transform: rotate(360deg); }
             }
-          `}</style>
+          ` }} />
           <div style={{ color: "#9494AD", fontSize: "14px", fontFamily: "sans-serif", fontWeight: 500 }}>
             Loading ROAR...
           </div>

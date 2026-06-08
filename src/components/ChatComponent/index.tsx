@@ -596,6 +596,7 @@ export default function ChatComponent() {
   const msgRefs        = useRef<Record<string, HTMLDivElement>>({});
   const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const recordTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // ── Effects ─────────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -1040,14 +1041,38 @@ export default function ChatComponent() {
 
                     {/* ── FIX 1: onClick toggles menu — works for both sent and received messages ── */}
                     <div
-                      onClick={e => {
-                        e.stopPropagation();
+                        onContextMenu={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+
+                          if (isDeleted) return;
+
+                          setMenuMsgId(msg.id);
+                          setReactionMsgId(null);
+                        }}
+
+                        onTouchStart={() => {
                         if (isDeleted) return;
-                        // Toggle: if this message's menu is already open, close it; else open it
-                        setMenuMsgId(prev => prev === msg.id ? null : msg.id);
-                        setReactionMsgId(null);
+
+                        longPressTimerRef.current = setTimeout(() => {
+                          setMenuMsgId(msg.id);
+                          setReactionMsgId(null);
+                        }, 500);
                       }}
-                      onDoubleClick={e => {
+
+                      onTouchEnd={() => {
+                        if (longPressTimerRef.current) {
+                          clearTimeout(longPressTimerRef.current);
+                        }
+                      }}
+
+                      onTouchMove={() => {
+                        if (longPressTimerRef.current) {
+                          clearTimeout(longPressTimerRef.current);
+                        }
+                      }}
+
+                        onDoubleClick={e => {
                         e.stopPropagation();
                         if (isDeleted) return;
                         setReactionMsgId(msg.id);
@@ -1094,7 +1119,11 @@ export default function ChatComponent() {
                         <span className={`inline-flex items-center gap-1 ml-2 float-right mt-[5px] text-[10px] leading-none ${
                           isMe ? "text-white/50" : "text-[#4a3a35]"
                         }`}>
-                          {msg.editedAt && <span className="text-[9px] opacity-70 italic">edited</span>}
+                          {msg.edited && (
+                            <span className="text-[9px] opacity-70 italic">
+                              edited
+                            </span>
+                          )}
                           {new Date(msg.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                           {isMe && <Ticks status={status} />}
                         </span>

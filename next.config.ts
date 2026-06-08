@@ -129,6 +129,14 @@ const nextConfig = {
           destination: `${apiTarget}/api/users/:path*`,
         },
 
+
+          //Profile Settings
+        { source: "/api/profile", destination: `${apiTarget}/api/profile` },
+        {
+          source: "/api/profile/:path*",
+          destination: `${apiTarget}/api/profile/:path*`,
+        },
+
         //Notifications
         {
           source: "/api/notifications",

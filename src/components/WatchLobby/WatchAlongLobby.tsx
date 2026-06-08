@@ -249,34 +249,23 @@ export default function WatchAlongLobby({ onEnterRoom }: Props) {
                 </div>
 
                 {/* Header Section */}
-                <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                    <div className="flex flex-col items-start">
-                        <h1 className="text-3xl font-bold uppercase tracking-wider text-[#e5003d]" style={{ fontFamily: "'Bebas Neue', sans-serif" }}>
-                            Watch Along
-                        </h1>
-                        <div
-                            style={{
-                                height: "2px",
-                                width: "24px",
-                                borderRadius: "999px",
-                                marginTop: "3.5px",
-                                background: "#e5003d",
-                            }}
-                        />
-                        <div className="flex items-center gap-2 mt-4">
-                            <span className="w-2.5 h-2.5 rounded-full bg-[#e5003d] animate-pulse" />
-                            <span className="text-sm font-semibold text-gray-400">Watch Along – IPL 2026</span>
-                        </div>
+                <div className="mb-6 flex flex-col items-start">
+                    <h1 className="text-3xl font-bold uppercase tracking-wider text-[#e5003d]" style={{ fontFamily: "'Bebas Neue', sans-serif" }}>
+                        Watch Along
+                    </h1>
+                    <div
+                        style={{
+                            height: "2px",
+                            width: "24px",
+                            borderRadius: "999px",
+                            marginTop: "3.5px",
+                            background: "#e5003d",
+                        }}
+                    />
+                    <div className="flex items-center gap-2 mt-4">
+                        <span className="w-2.5 h-2.5 rounded-full bg-[#e5003d] animate-pulse" />
+                        <span className="text-sm font-semibold text-gray-400">Watch Along – IPL 2026</span>
                     </div>
-
-                    {/* Host a Watchalong Button */}
-                    <button
-                        onClick={() => setShowCreateModal(true)}
-                        className="self-start sm:self-auto px-5 py-2.5 rounded-full text-xs font-bold text-white transition-all shadow-lg hover:shadow-pink-500/20 active:scale-95 cursor-pointer border border-[#e5003d] hover:bg-[#e5003d]/10"
-                        style={{ background: "transparent" }}
-                    >
-                        + Host a Watchalong
-                    </button>
                 </div>
 
                 {/* Tabs Section */}

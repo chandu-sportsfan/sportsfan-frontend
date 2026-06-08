@@ -893,10 +893,12 @@ function AvatarWithBadge({
   username,
   badge = "RISING_FAN",
   size = "md",
+  onClick,
 }: {
   username: string;
   badge?: string;
   size?: "sm" | "md" | "lg";
+  onClick?: () => void;
 }) {
   const SIZES: Record<string, any> = {
     sm: { outer: 38, avatar: 28, ring: 34, icon: 16, stroke: 3 },
@@ -912,6 +914,7 @@ function AvatarWithBadge({
 
   return (
     <div
+      onClick={onClick}
       style={{
         width: s.outer,
         height: s.outer,
@@ -920,6 +923,7 @@ function AvatarWithBadge({
         alignItems: "center",
         justifyContent: "center",
         flexShrink: 0,
+        cursor: onClick ? "pointer" : undefined,
       }}
     >
       <svg
@@ -5036,6 +5040,7 @@ function Profile({
   const [badgeModal, setBadgeModal] = useState<any>(null);
   const [editOpen, setEditOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
+  const [fanMatchOpen, setFanMatchOpen] = useState(false);
   const [rivalFollowed, setRivalFollowed] = useState(false);
   const [editName, setEditName] = useState("");
 
@@ -5384,7 +5389,7 @@ function Profile({
               fontWeight: 600,
               cursor: "pointer",
             }}
-            onClick={() => onToast("Feature coming soon!")}
+            onClick={() => setFanMatchOpen(true)}
           >
             See Fan Match →
           </span>
@@ -6132,6 +6137,127 @@ function Profile({
               <p style={{ fontSize: 11, color: "var(--text-muted)" }}>
                 Progress: {badgeModal.progress}%
               </p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* See Fan Match Modal */}
+      <AnimatePresence>
+        {fanMatchOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setFanMatchOpen(false)}
+            style={{
+              position: "absolute",
+              inset: 0,
+              zIndex: 110,
+              background: "rgba(0,0,0,0.85)",
+              backdropFilter: "blur(8px)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: 20,
+            }}
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
+              className="glass-card"
+              style={{
+                width: "100%",
+                maxWidth: 320,
+                padding: 20,
+                background: "var(--bg-secondary)",
+              }}
+            >
+              <h3
+                className="font-display"
+                style={{ fontSize: 24, marginBottom: 4, textAlign: "center", color: "#fff" }}
+              >
+                YOUR FAN MATCH TRIBE
+              </h3>
+              <p
+                style={{
+                  fontSize: 11,
+                  color: "var(--text-secondary)",
+                  textAlign: "center",
+                  lineHeight: 1.4,
+                  marginBottom: 16,
+                }}
+              >
+                We analyzed your takes & predictions to find similar fans in the community.
+              </p>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {[
+                  { username: 'Rahul_77', badge: 'BOLD_CALLER', similarity: 72 },
+                  { username: 'StatsKing_99', badge: 'ORACLE', similarity: 68 },
+                  { username: 'MumbaiMagic', badge: 'RISING_FAN', similarity: 61 },
+                ].map((fan) => (
+                  <div
+                    key={fan.username}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      padding: "10px 12px",
+                      borderRadius: 16,
+                      background: "rgba(255,255,255,0.03)",
+                      border: "1px solid rgba(255,255,255,0.04)",
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <AvatarWithBadge username={fan.username} badge={fan.badge} size="sm" />
+                      <div>
+                        <h4
+                          className="font-display"
+                          style={{ fontSize: 14, color: "#fff", letterSpacing: "0.02em" }}
+                        >
+                          {fan.username.toUpperCase()}
+                        </h4>
+                        <p style={{ fontSize: 10, color: "var(--text-muted)" }}>
+                          {BADGE_LABELS[fan.badge] || fan.badge}
+                        </p>
+                      </div>
+                    </div>
+                    <div style={{ textAlign: "right" }}>
+                      <span
+                        style={{
+                          background: "var(--accent-gradient)",
+                          WebkitBackgroundClip: "text",
+                          WebkitTextFillColor: "transparent",
+                          fontSize: 16,
+                          fontWeight: 800,
+                        }}
+                      >
+                        {fan.similarity}%
+                      </span>
+                      <p style={{ fontSize: 8, color: "var(--text-muted)" }}>Match</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <button
+                onClick={() => setFanMatchOpen(false)}
+                className="btn-gradient"
+                style={{
+                  width: "100%",
+                  marginTop: 18,
+                  padding: "12px 0",
+                  border: "none",
+                  borderRadius: 12,
+                  cursor: "pointer",
+                  fontSize: 13,
+                }}
+              >
+                Close Tribe
+              </button>
             </motion.div>
           </motion.div>
         )}

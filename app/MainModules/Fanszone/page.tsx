@@ -11,9 +11,9 @@ import {
   Download, ChevronLeft, ChevronRight, MoreHorizontal, X, Headphones
 } from "lucide-react";
 
-// ─────────────────────────────────────────────
+// 
 // TYPES
-// ─────────────────────────────────────────────
+// 
 type ActivityKey = "audioDrop" | "fanBattle" | "trivia" | "post" | "register" | "invite" | "watchDrop" | "like" | "share" | "other";
 type TrendPeriod = "7D" | "30D" | "90D";
 

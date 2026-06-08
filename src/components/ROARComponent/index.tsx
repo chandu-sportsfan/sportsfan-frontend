@@ -2635,6 +2635,14 @@ function HomeFeed({
   const [votes, setVotes] = useState<Record<string, boolean | null>>({});
   const [pcts, setPcts] = useState<Record<string, number>>({});
 
+  // When fresh posts arrive from server, clear optimistic pct overrides
+  // so the real agreePercent from the DB is shown
+  useEffect(() => {
+    if (dbPosts.length > 0) {
+      setPcts({});
+    }
+  }, [dbPosts]);
+
   const vote = (
     id: string,
     agree: boolean,
@@ -6834,8 +6842,6 @@ export default function ROARApp() {
       try {
         await axios.post(`/api/roar/posts/${postId}/vote`, { vote: voteType });
         await fetchPosts();
-        // Clear local optimistic override — real server count now loaded
-        setPcts((p) => { const next = { ...p }; delete next[postId]; return next; });
       } catch (err) {
         console.error("Failed to submit vote:", err);
       }

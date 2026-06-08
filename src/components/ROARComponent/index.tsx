@@ -2370,17 +2370,18 @@ function BottomNav({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             style={{
-              position: "absolute",
+              position: "fixed",
               inset: 0,
               zIndex: 55,
               pointerEvents: "auto",
+              background: "rgba(0,0,0,0.4)",
             }}
             onClick={() => setRadial(false)}
           >
             <div
               style={{
-                position: "absolute",
-                bottom: 90,
+                position: "fixed",
+                bottom: 100,
                 left: "50%",
                 transform: "translateX(-50%)",
                 display: "flex",
@@ -2421,11 +2422,14 @@ function BottomNav({
       </AnimatePresence>
       <div
         style={{
-          flexShrink: 0,
+          position: "fixed",
+          bottom: 24,
+          left: "50%",
+          transform: "translateX(-50%)",
+          width: "100%",
+          maxWidth: 420,
           zIndex: 50,
           pointerEvents: "none",
-          paddingBottom: 16,
-          paddingTop: 12,
           background: "transparent",
         }}
       >
@@ -2435,9 +2439,8 @@ function BottomNav({
             display: "flex",
             alignItems: "center",
             justifyContent: "space-around",
-            margin: "0 auto",
-            maxWidth: 420,
             width: "calc(100% - 24px)",
+            margin: "0 auto",
             pointerEvents: "auto",
           }}
         >

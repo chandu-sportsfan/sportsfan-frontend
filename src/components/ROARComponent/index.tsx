@@ -6932,17 +6932,24 @@ export default function ROARApp() {
           } catch {}
         }
       } catch (err: any) {
-        if (err.response?.status === 404) {
+        console.error("ROAR checking profile failed:", err);
+        const status = err.response?.status;
+        if (status === 404 || status === 401) {
           setOnboarded(false);
           try {
             localStorage.removeItem("roar_v2_complete");
             localStorage.removeItem("roar_badge");
           } catch {}
         } else {
-          // Fallback to local storage if API fails/offline
-          const hasLocal = !!localStorage.getItem("roar_v2_complete");
+          // Fallback to local storage if API fails/offline (e.g. 500 or Network Error)
+          let hasLocal = false;
+          let badge = "RISING_FAN";
+          try {
+            hasLocal = !!localStorage.getItem("roar_v2_complete");
+            badge = localStorage.getItem("roar_badge") || "RISING_FAN";
+          } catch (storageErr) {}
           setOnboarded(hasLocal);
-          setUserBadge(localStorage.getItem("roar_badge") || "RISING_FAN");
+          setUserBadge(badge);
         }
       } finally {
         setCheckingProfile(false);
@@ -7147,21 +7154,25 @@ export default function ROARApp() {
       <div
         className="roar-root"
         style={{
-          minHeight: "100vh",
-          background: "var(--bg-primary)",
+          minHeight: "600px",
+          height: "100%",
+          background: "#050508",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
+          position: "relative",
+          borderRadius: "24px",
+          border: "1px solid #252538",
         }}
       >
-        <div style={{ textAlign: "center" }}>
+        <div style={{ textAlign: "center", zIndex: 10 }}>
           <div
             className="roar-spinner"
             style={{
               width: "40px",
               height: "40px",
               border: "3px solid rgba(255,255,255,0.1)",
-              borderTop: "3px solid var(--accent-magenta)",
+              borderTop: "3px solid #E91E8C",
               borderRadius: "50%",
               animation: "roar-spin 1s linear infinite",
               margin: "0 auto 16px",
@@ -7173,7 +7184,7 @@ export default function ROARApp() {
               100% { transform: rotate(360deg); }
             }
           `}</style>
-          <div style={{ color: "var(--text-secondary)", fontSize: "14px", fontFamily: "sans-serif" }}>
+          <div style={{ color: "#9494AD", fontSize: "14px", fontFamily: "sans-serif", fontWeight: 500 }}>
             Loading ROAR...
           </div>
         </div>

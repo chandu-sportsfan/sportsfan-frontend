@@ -2707,41 +2707,19 @@ function HomeFeed({
           borderRadius: 20,
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <button
-            onClick={() => window.location.href = "/MainModules/HomePage"}
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
+          <h1 className="logotype" style={{ fontSize: 26, margin: 0, lineHeight: 1 }}>
+            ROAR
+          </h1>
+          <div
             style={{
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              color: "#e0e0e0",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              padding: 4,
+              height: "2px",
+              width: "24px",
+              borderRadius: "999px",
+              marginTop: "3px",
+              background: "#e5003d",
             }}
-            className="hover:text-white transition-colors"
-          >
-            <svg width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
-              <path d="M19 12H5" />
-              <path d="M12 5l-7 7 7 7" />
-            </svg>
-          </button>
-          
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
-            <h1 className="logotype" style={{ fontSize: 26, margin: 0, lineHeight: 1 }}>
-              ROAR
-            </h1>
-            <div
-              style={{
-                height: "2px",
-                width: "24px",
-                borderRadius: "999px",
-                marginTop: "3px",
-                background: "#e5003d",
-              }}
-            />
-          </div>
+          />
         </div>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           <motion.button

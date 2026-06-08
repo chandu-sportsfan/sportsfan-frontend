@@ -56,7 +56,7 @@ const GLOBAL_CSS = `
   .roar-inner {
     width: 100%;
     position: relative;
-    overflow: hidden;
+    overflow: visible;
     background: var(--bg-primary);
   }
 }
@@ -66,7 +66,7 @@ const GLOBAL_CSS = `
   .roar-inner {
     width: 100%;
     position: relative;
-    overflow: hidden;
+    overflow: visible;
     background: var(--bg-primary);
   }
 }
@@ -7046,7 +7046,7 @@ export default function ROARApp() {
               zIndex: 1,
               flex: 1,
               minHeight: 0,
-              overflow: "hidden",
+              overflow: "visible",
             }}
           >
             <AnimatePresence mode="wait">

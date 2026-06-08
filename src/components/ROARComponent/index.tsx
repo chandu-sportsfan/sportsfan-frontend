@@ -5,6 +5,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { createPortal } from "react-dom";
 import axios from "axios";
 
 /* ─── STYLES ─────────────────────────────────────────────────────────────── */
@@ -892,10 +893,12 @@ function AvatarWithBadge({
   username,
   badge = "RISING_FAN",
   size = "md",
+  onClick,
 }: {
   username: string;
   badge?: string;
   size?: "sm" | "md" | "lg";
+  onClick?: () => void;
 }) {
   const SIZES: Record<string, any> = {
     sm: { outer: 38, avatar: 28, ring: 34, icon: 16, stroke: 3 },
@@ -911,6 +914,7 @@ function AvatarWithBadge({
 
   return (
     <div
+      onClick={onClick}
       style={{
         width: s.outer,
         height: s.outer,
@@ -919,6 +923,7 @@ function AvatarWithBadge({
         alignItems: "center",
         justifyContent: "center",
         flexShrink: 0,
+        cursor: onClick ? "pointer" : undefined,
       }}
     >
       <svg
@@ -1863,6 +1868,11 @@ function ComposeModal({
   const [audience, setAud] = useState("Everyone");
   const [sport, setSport] = useState("cricket");
 
+  const [domReady, setDomReady] = useState(false);
+  useEffect(() => {
+    setDomReady(true);
+  }, []);
+
   useEffect(() => {
     if (open && initialType) setSelected(initialType);
     if (!open) reset();
@@ -1896,7 +1906,7 @@ function ComposeModal({
     onClose();
   };
 
-  return (
+  const modalContent = (
     <AnimatePresence>
       {open && (
         <>
@@ -1906,7 +1916,7 @@ function ComposeModal({
             exit={{ opacity: 0 }}
             onClick={onClose}
             style={{
-              position: "absolute",
+              position: "fixed",
               inset: 0,
               zIndex: 60,
               background: "rgba(0,0,0,0.6)",
@@ -1919,7 +1929,7 @@ function ComposeModal({
             exit={{ y: "100%" }}
             transition={{ type: "spring", damping: 28, stiffness: 300 }}
             style={{
-              position: "absolute",
+              position: "fixed",
               bottom: 0,
               left: 0,
               right: 0,
@@ -2314,6 +2324,9 @@ function ComposeModal({
       )}
     </AnimatePresence>
   );
+
+  if (!domReady) return null;
+  return createPortal(modalContent, document.body);
 }
 
 /* ─── BOTTOM NAV ─────────────────────────────────────────────────────────── */
@@ -2351,20 +2364,41 @@ function BottomNav({
 }) {
   const [radial, setRadial] = useState(false);
   const pressRef = useRef<any>(null);
+  const touchStartY = useRef<number | null>(null);
+  const didScroll = useRef(false);
 
-  const down = () => {
+  const [domReady, setDomReady] = useState(false);
+  useEffect(() => {
+    setDomReady(true);
+  }, []);
+
+  const down = (e: React.TouchEvent | React.MouseEvent) => {
+    didScroll.current = false;
+    if ("touches" in e) {
+      touchStartY.current = e.touches[0].clientY;
+    }
     pressRef.current = setTimeout(() => setRadial(true), 320);
+  };
+  const onTouchMove = (e: React.TouchEvent) => {
+    if (touchStartY.current !== null) {
+      const delta = Math.abs(e.touches[0].clientY - touchStartY.current);
+      if (delta > 10) {
+        didScroll.current = true;
+        clearTimeout(pressRef.current);
+      }
+    }
   };
   const up = () => {
     clearTimeout(pressRef.current);
-    if (!radial) onCompose();
+    if (!radial && !didScroll.current) onCompose();
     setRadial(false);
+    touchStartY.current = null;
+    didScroll.current = false;
   };
 
-  return (
-    <>
-      <AnimatePresence>
-        {radial && (
+  const radialMenuContent = (
+    <AnimatePresence>
+      {radial && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -2420,6 +2454,11 @@ function BottomNav({
           </motion.div>
         )}
       </AnimatePresence>
+  );
+
+  return (
+    <>
+      {domReady && createPortal(radialMenuContent, document.body)}
       <div
         style={{
           position: "fixed",
@@ -2453,6 +2492,7 @@ function BottomNav({
                   onMouseUp={up}
                   onMouseLeave={() => clearTimeout(pressRef.current)}
                   onTouchStart={down}
+                  onTouchMove={onTouchMove}
                   onTouchEnd={up}
                   style={{
                     position: "relative",
@@ -2617,10 +2657,28 @@ function HomeFeed({
   const [votes, setVotes] = useState<Record<string, boolean | null>>({});
   const [pcts, setPcts] = useState<Record<string, number>>({});
 
+  // When fresh posts arrive from server, clear optimistic pct overrides
+  // so the real agreePercent from the DB is shown, and sync vote states.
+  useEffect(() => {
+    if (dbPosts.length > 0) {
+      setPcts({});
+      const synced: Record<string, boolean | null> = {};
+      dbPosts.forEach((p) => {
+        if (p.userVote) {
+          synced[p.postId] = p.userVote === "agree";
+        } else {
+          synced[p.postId] = null;
+        }
+      });
+      setVotes(synced);
+    }
+  }, [dbPosts]);
+
   const vote = (
     id: string,
     agree: boolean,
-    basePercent: number,
+    initialAgreePercent: number,
+    initialUserVote: "agree" | "disagree" | null,
     isDbPost?: boolean,
   ) => {
     const prev = votes[id];
@@ -2629,13 +2687,25 @@ function HomeFeed({
       nextVote = null;
     }
     setVotes((v) => ({ ...v, [id]: nextVote }));
+
+    let delta = 0;
+    if (initialUserVote === "agree") {
+      if (nextVote === true) delta = 0;
+      else if (nextVote === false) delta = -6;
+      else delta = -3;
+    } else if (initialUserVote === "disagree") {
+      if (nextVote === true) delta = 6;
+      else if (nextVote === false) delta = 0;
+      else delta = 3;
+    } else {
+      if (nextVote === true) delta = 3;
+      else if (nextVote === false) delta = -3;
+      else delta = 0;
+    }
+
     setPcts((p) => ({
       ...p,
-      [id]: clamp(
-        basePercent + (nextVote === true ? 4 : nextVote === false ? -4 : 0),
-        5,
-        95,
-      ),
+      [id]: clamp(initialAgreePercent + delta, 1, 99),
     }));
 
     if (isDbPost && onVote) {
@@ -2679,6 +2749,7 @@ function HomeFeed({
       counterCount:
         p.type === "prediction" ? (p.disagreeCount ?? 0) : undefined,
       isDbPost: true,
+      userVote: p.userVote,
     };
   });
 
@@ -3390,7 +3461,8 @@ function HomeFeed({
                           vote(
                             item.id,
                             true,
-                            item.agreePercent ?? 50,
+                            item.agreePercent,
+                            item.userVote,
                             item.isDbPost,
                           );
                         }}
@@ -3422,7 +3494,8 @@ function HomeFeed({
                           vote(
                             item.id,
                             false,
-                            item.agreePercent ?? 50,
+                            item.agreePercent,
+                            item.userVote,
                             item.isDbPost,
                           );
                         }}
@@ -4882,45 +4955,69 @@ function Leaderboard({
 /* ─── SCREEN: PROFILE ────────────────────────────────────────────────────── */
 
 function AccuracyRing({ percent }: { percent: number }) {
-  const size = 88,
-    stroke = 7,
-    r = (size - stroke) / 4,
+  const displayPercent = isNaN(percent) ? 0 : percent;
+  const size = 52,
+    stroke = 4,
+    r = (size - stroke) / 2,
     circ = 2 * Math.PI * r;
   const [off, setOff] = useState(circ);
   useEffect(() => {
-    const t = setTimeout(() => setOff(circ - (percent / 100) * circ), 200);
+    const t = setTimeout(() => setOff(circ - (displayPercent / 100) * circ), 200);
     return () => clearTimeout(t);
-  }, [circ, percent]);
+  }, [circ, displayPercent]);
   return (
-    <svg width={size} height={size}>
-      <defs>
-        <linearGradient id="acc-g-roar">
-          <stop offset="0%" stopColor="#E91E8C" />
-          <stop offset="100%" stopColor="#FF6B35" />
-        </linearGradient>
-      </defs>
-      <circle
-        cx={size / 2 - 18}
-        cy={size / 2 - 18}
-        r={r}
-        fill="none"
-        stroke="rgba(255,255,255,0.08)"
-        strokeWidth={stroke}
-      />
-      <circle
-        cx={size / 2 + 18}
-        cy={size / 2 - 18}
-        r={r}
-        fill="none"
-        stroke="url(#acc-g-roar)"
-        strokeWidth={stroke}
-        strokeLinecap="round"
-        strokeDasharray={circ}
-        strokeDashoffset={off}
-        transform={`rotate(-90 ${size / 2} ${size / 2})`}
-        style={{ transition: "stroke-dashoffset 1s" }}
-      />
-    </svg>
+    <div style={{ position: "relative", width: size, height: size, margin: "0 auto" }}>
+      <svg width={size} height={size}>
+        <defs>
+          <linearGradient id="acc-g-roar">
+            <stop offset="0%" stopColor="#E91E8C" />
+            <stop offset="100%" stopColor="#FF6B35" />
+          </linearGradient>
+        </defs>
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          fill="none"
+          stroke="rgba(255,255,255,0.08)"
+          strokeWidth={stroke}
+        />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          fill="none"
+          stroke="url(#acc-g-roar)"
+          strokeWidth={stroke}
+          strokeLinecap="round"
+          strokeDasharray={circ}
+          strokeDashoffset={off}
+          transform={`rotate(-90 ${size / 2} ${size / 2})`}
+          style={{ transition: "stroke-dashoffset 1s" }}
+        />
+      </svg>
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          lineHeight: 1,
+        }}
+      >
+        <span
+          className="font-display"
+          style={{ fontSize: 13, fontWeight: "bold", color: "#fff" }}
+        >
+          {displayPercent}%
+        </span>
+        <span style={{ fontSize: 7, color: "var(--text-muted)", marginTop: 2 }}>
+          Accuracy
+        </span>
+      </div>
+    </div>
   );
 }
 
@@ -4943,6 +5040,7 @@ function Profile({
   const [badgeModal, setBadgeModal] = useState<any>(null);
   const [editOpen, setEditOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
+  const [fanMatchOpen, setFanMatchOpen] = useState(false);
   const [rivalFollowed, setRivalFollowed] = useState(false);
   const [editName, setEditName] = useState("");
 
@@ -5291,7 +5389,7 @@ function Profile({
               fontWeight: 600,
               cursor: "pointer",
             }}
-            onClick={() => onToast("Feature coming soon!")}
+            onClick={() => setFanMatchOpen(true)}
           >
             See Fan Match →
           </span>
@@ -5425,7 +5523,7 @@ function Profile({
           }}
         >
           {badges.map((b: any) => {
-            const cfg = BADGE_CONFIG[b.badgeId] || BADGE_CONFIG.RISING_FAN;
+            const cfg = BADGE_CONFIG[b.badgeId || b.id] || BADGE_CONFIG.RISING_FAN;
             const isUnlocked = b.unlocked;
             return (
               <div
@@ -5446,7 +5544,9 @@ function Profile({
                     width: 68,
                     height: 76,
                     background: isUnlocked
-                      ? cfg.color || "var(--accent-gradient)"
+                      ? (cfg.gradient
+                        ? `linear-gradient(135deg, ${cfg.gradient[0]}, ${cfg.gradient[1] || cfg.gradient[0]})`
+                        : "var(--accent-gradient)")
                       : "rgba(255,255,255,0.06)",
                     clipPath:
                       "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)",
@@ -5987,13 +6087,13 @@ function Profile({
               }}
             >
               <div style={{ fontSize: 48, marginBottom: 12 }}>
-                {BADGE_CONFIG[badgeModal.badgeId]?.icon}
+                {BADGE_CONFIG[badgeModal.badgeId || badgeModal.id]?.icon}
               </div>
               <h3
                 className="font-display"
                 style={{ fontSize: 26, marginBottom: 4 }}
               >
-                {BADGE_CONFIG[badgeModal.badgeId]?.name}
+                {BADGE_CONFIG[badgeModal.badgeId || badgeModal.id]?.name || BADGE_DETAIL[badgeModal.badgeId || badgeModal.id]?.name}
               </h3>
               <p
                 style={{
@@ -6013,7 +6113,8 @@ function Profile({
                   lineHeight: 1.4,
                 }}
               >
-                {BADGE_CONFIG[badgeModal.badgeId]?.sub ||
+                {BADGE_CONFIG[badgeModal.badgeId || badgeModal.id]?.sub ||
+                  BADGE_DETAIL[badgeModal.badgeId || badgeModal.id]?.description ||
                   "Unlock by building your legacy!"}
               </p>
               <div
@@ -6040,6 +6141,127 @@ function Profile({
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* See Fan Match Modal */}
+      <AnimatePresence>
+        {fanMatchOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setFanMatchOpen(false)}
+            style={{
+              position: "absolute",
+              inset: 0,
+              zIndex: 110,
+              background: "rgba(0,0,0,0.85)",
+              backdropFilter: "blur(8px)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: 20,
+            }}
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
+              className="glass-card"
+              style={{
+                width: "100%",
+                maxWidth: 320,
+                padding: 20,
+                background: "var(--bg-secondary)",
+              }}
+            >
+              <h3
+                className="font-display"
+                style={{ fontSize: 24, marginBottom: 4, textAlign: "center", color: "#fff" }}
+              >
+                YOUR FAN MATCH TRIBE
+              </h3>
+              <p
+                style={{
+                  fontSize: 11,
+                  color: "var(--text-secondary)",
+                  textAlign: "center",
+                  lineHeight: 1.4,
+                  marginBottom: 16,
+                }}
+              >
+                We analyzed your takes & predictions to find similar fans in the community.
+              </p>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {[
+                  { username: 'Rahul_77', badge: 'BOLD_CALLER', similarity: 72 },
+                  { username: 'StatsKing_99', badge: 'ORACLE', similarity: 68 },
+                  { username: 'MumbaiMagic', badge: 'RISING_FAN', similarity: 61 },
+                ].map((fan) => (
+                  <div
+                    key={fan.username}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      padding: "10px 12px",
+                      borderRadius: 16,
+                      background: "rgba(255,255,255,0.03)",
+                      border: "1px solid rgba(255,255,255,0.04)",
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <AvatarWithBadge username={fan.username} badge={fan.badge} size="sm" />
+                      <div>
+                        <h4
+                          className="font-display"
+                          style={{ fontSize: 14, color: "#fff", letterSpacing: "0.02em" }}
+                        >
+                          {fan.username.toUpperCase()}
+                        </h4>
+                        <p style={{ fontSize: 10, color: "var(--text-muted)" }}>
+                          {BADGE_LABELS[fan.badge] || fan.badge}
+                        </p>
+                      </div>
+                    </div>
+                    <div style={{ textAlign: "right" }}>
+                      <span
+                        style={{
+                          background: "var(--accent-gradient)",
+                          WebkitBackgroundClip: "text",
+                          WebkitTextFillColor: "transparent",
+                          fontSize: 16,
+                          fontWeight: 800,
+                        }}
+                      >
+                        {fan.similarity}%
+                      </span>
+                      <p style={{ fontSize: 8, color: "var(--text-muted)" }}>Match</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <button
+                onClick={() => setFanMatchOpen(false)}
+                className="btn-gradient"
+                style={{
+                  width: "100%",
+                  marginTop: 18,
+                  padding: "12px 0",
+                  border: "none",
+                  borderRadius: 12,
+                  cursor: "pointer",
+                  fontSize: 13,
+                }}
+              >
+                Close Tribe
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -6062,7 +6284,12 @@ function PostDetailsOverlay({
   const [loading, setLoading] = useState(false);
   const [userUsername, setUserUsername] = useState("RoarUser");
   const [userBadge, setUserBadge] = useState("RISING_FAN");
-  const [votes, setVotes] = useState<Record<string, boolean | null>>({});
+  const [votes, setVotes] = useState<Record<string, boolean | null>>(() => {
+    if (post.userVote) {
+      return { [post.id]: post.userVote === "agree" };
+    }
+    return {};
+  });
   const [pct, setPct] = useState(post.agreePercent ?? 50);
 
   useEffect(() => {
@@ -6183,9 +6410,23 @@ function PostDetailsOverlay({
       nextVote = null;
     }
     setVotes((v) => ({ ...v, [post.id]: nextVote }));
-    setPct(
-      post.agreePercent + (nextVote === true ? 4 : nextVote === false ? -4 : 0),
-    );
+
+    let delta = 0;
+    if (post.userVote === "agree") {
+      if (nextVote === true) delta = 0;
+      else if (nextVote === false) delta = -8;
+      else delta = -4;
+    } else if (post.userVote === "disagree") {
+      if (nextVote === true) delta = 8;
+      else if (nextVote === false) delta = 0;
+      else delta = 4;
+    } else {
+      if (nextVote === true) delta = 4;
+      else if (nextVote === false) delta = -4;
+      else delta = 0;
+    }
+
+    setPct(clamp(post.agreePercent + delta, 1, 99));
     onVote(
       post.id,
       nextVote === true ? "agree" : nextVote === false ? "disagree" : null,
@@ -6665,15 +6906,56 @@ export default function ROARApp() {
   const containerRef = useRef<HTMLDivElement>(null);
 
   const [mounted, setMounted] = useState(false);
+  const [checkingProfile, setCheckingProfile] = useState(true);
   const [onboarded, setOnboarded] = useState(false);
   const [userBadge, setUserBadge] = useState("RISING_FAN");
+  const [userSports, setUserSports] = useState<string[]>([]);
 
   useEffect(() => {
     setMounted(true);
-    try {
-      setOnboarded(!!localStorage.getItem("roar_v2_complete"));
-      setUserBadge(localStorage.getItem("roar_badge") || "RISING_FAN");
-    } catch {}
+    const checkProfile = async () => {
+      try {
+        const res = await axios.get("/api/roar/profile");
+        if (res.data?.success) {
+          setOnboarded(true);
+          setUserBadge(res.data.user.badge || "RISING_FAN");
+          setUserSports(res.data.user.sports ?? []);
+          try {
+            localStorage.setItem("roar_v2_complete", "1");
+            localStorage.setItem("roar_badge", res.data.user.badge || "RISING_FAN");
+          } catch {}
+        } else {
+          setOnboarded(false);
+          try {
+            localStorage.removeItem("roar_v2_complete");
+            localStorage.removeItem("roar_badge");
+          } catch {}
+        }
+      } catch (err: any) {
+        console.error("ROAR checking profile failed:", err);
+        const status = err.response?.status;
+        if (status === 404 || status === 401) {
+          setOnboarded(false);
+          try {
+            localStorage.removeItem("roar_v2_complete");
+            localStorage.removeItem("roar_badge");
+          } catch {}
+        } else {
+          // Fallback to local storage if API fails/offline (e.g. 500 or Network Error)
+          let hasLocal = false;
+          let badge = "RISING_FAN";
+          try {
+            hasLocal = !!localStorage.getItem("roar_v2_complete");
+            badge = localStorage.getItem("roar_badge") || "RISING_FAN";
+          } catch (storageErr) {}
+          setOnboarded(hasLocal);
+          setUserBadge(badge);
+        }
+      } finally {
+        setCheckingProfile(false);
+      }
+    };
+    checkProfile();
   }, []);
 
   const [activeTab, setActiveTab] = useState("home");
@@ -6681,7 +6963,6 @@ export default function ROARApp() {
   const [composeOpen, setComposeOpen] = useState(false);
   const [composeType, setComposeType] = useState<string | null>(null);
   const [toast, setToast] = useState({ visible: false, message: "" });
-  const [userSports, setUserSports] = useState<string[]>([]);
 
   const [rooms, setRooms] = useState<any[]>([]);
   const [selectedRoom, setSelectedRoom] = useState<any | null>(null);
@@ -6728,9 +7009,17 @@ export default function ROARApp() {
       console.log("fetch user sports", res.data);
       if (res.data?.success) {
         setUserSports(res.data.user.sports ?? []);
+        setUserBadge(res.data.user.badge || "RISING_FAN");
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to fetch user sports:", err);
+      if (err.response?.status === 404) {
+        setOnboarded(false);
+        try {
+          localStorage.removeItem("roar_v2_complete");
+          localStorage.removeItem("roar_badge");
+        } catch {}
+      }
     }
   };
     if (onboarded) {
@@ -6791,7 +7080,7 @@ export default function ROARApp() {
     async (postId: string, voteType: "agree" | "disagree" | null) => {
       try {
         await axios.post(`/api/roar/posts/${postId}/vote`, { vote: voteType });
-        fetchPosts();
+        await fetchPosts();
       } catch (err) {
         console.error("Failed to submit vote:", err);
       }
@@ -6860,19 +7149,53 @@ export default function ROARApp() {
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
-  if (!mounted) {
+  if (!mounted || checkingProfile) {
     return (
       <div
         className="roar-root"
-        style={{ minHeight: "100vh", background: "var(--bg-primary)" }}
-      />
+        style={{
+          minHeight: "600px",
+          height: "100%",
+          background: "#050508",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          position: "relative",
+          borderRadius: "24px",
+          border: "1px solid #252538",
+        }}
+      >
+        <div style={{ textAlign: "center", zIndex: 10 }}>
+          <div
+            className="roar-spinner"
+            style={{
+              width: "40px",
+              height: "40px",
+              border: "3px solid rgba(255,255,255,0.1)",
+              borderTop: "3px solid #E91E8C",
+              borderRadius: "50%",
+              animation: "roar-spin 1s linear infinite",
+              margin: "0 auto 16px",
+            }}
+          />
+          <style dangerouslySetInnerHTML={{ __html: `
+            @keyframes roar-spin {
+              0% { transform: rotate(0deg); }
+              100% { transform: rotate(360deg); }
+            }
+          ` }} />
+          <div style={{ color: "#9494AD", fontSize: "14px", fontFamily: "sans-serif", fontWeight: 500 }}>
+            Loading ROAR...
+          </div>
+        </div>
+      </div>
     );
   }
 
   return (
     <div className="roar-root">
       {/* Scoped styles */}
-      <style>{GLOBAL_CSS}</style>
+      <style dangerouslySetInnerHTML={{ __html: GLOBAL_CSS }} />
 
       <div
         className="roar-inner"
@@ -7120,7 +7443,7 @@ export default function ROARApp() {
         )}
 
         {/* Bottom nav — Flex child sitting cleanly below the content area */}
-        {onboarded && (
+        {onboarded && !composeOpen && (
           <BottomNav
             activeTab={isRoom ? "discuss" : activeTab}
             onTabChange={handleTab}

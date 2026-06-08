@@ -22,12 +22,43 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Server misconfiguration" }, { status: 500 });
     }
 
+    let dbUserId = u.userId;
+    let dbRole = u.role ?? "user";
+
+    if (!dbUserId) {
+      try {
+        const apiTarget = process.env.NEXT_PUBLIC_BACKEND_URL || "https://sportsfan360.vercel.app";
+        const signupRes = await fetch(`${apiTarget}/api/auth/google-signup`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: u.email,
+            name: u.name ?? "",
+            avatar: "",
+          }),
+        });
+        if (signupRes.ok) {
+          const signupData = await signupRes.json();
+          if (signupData.success && signupData.userId) {
+            dbUserId = signupData.userId;
+            if (signupData.role) dbRole = signupData.role;
+          }
+        }
+      } catch (e) {
+        console.error("Failed to fetch userId from google-signup backend during set-token:", e);
+      }
+    }
+
+    if (!dbUserId) {
+      dbUserId = u.email.toLowerCase().replace(/[^a-zA-Z0-9]/g, "_");
+    }
+
     const token = jwt.sign(
       {
         email:  u.email,
-        userId: u.userId ?? u.email.toLowerCase().replace(/[^a-zA-Z0-9]/g, "_"),
+        userId: dbUserId,
         name:   u.name  ?? "",
-        role:   u.role  ?? "user",
+        role:   dbRole,
       },
       secret,
       { expiresIn: "7d" }

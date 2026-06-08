@@ -202,6 +202,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
             // ── 1. Google/NextAuth session ───────────────────────────────────
             if (session?.user?.email) {
+                try {
+                    await axios.post("/api/auth/set-token");
+                } catch (e) {
+                    console.error("Failed to set token for Google user:", e);
+                }
+
+                // Now fetch the actual backend profile to get the correct, normalized userId
+                try {
+                    const response = await axios.get("/api/auth/host/me");
+                    if (response.data.success && response.data.user) {
+                        const u = response.data.user;
+                        const fullName = u.name || session.user.name || u.email.split("@")[0];
+                        const normalised: User = {
+                            email: u.email,
+                            name: fullName,
+                            role: u.role || "user",
+                            userId: u.userId || session.user.email,
+                        };
+                        setUser(normalised);
+                        console.log("Google user verified via backend, user set:", normalised);
+                        localStorage.setItem("auth_user", JSON.stringify(normalised));
+                        setLoading(false);
+                        setAuthReady(true);
+                        return;
+                    }
+                } catch (e) {
+                    console.error("Failed to fetch backend profile for Google user:", e);
+                }
+
+                // Fallback if backend fetch fails
                 const googleUser: User = {
                     email: session.user.email,
                     name: session.user.name || session.user.email.split("@")[0],
@@ -209,18 +239,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                     userId: (session.user as { userId?: string }).userId ?? session.user.email,
                 };
                 setUser(googleUser);
-                console.log("Google session detected, user set:", googleUser);
+                console.log("Google session detected (fallback), user set:", googleUser);
                 localStorage.setItem("auth_user", JSON.stringify(googleUser));
 
-                try {
-                    await axios.post("/api/auth/set-token");
-                    // Cookie is now set on frontend domain — no sessionStorage needed
-                } catch {
-                    // Non-fatal
-                }
-
                 setLoading(false);
-                setAuthReady(true);   // ← token is now in sessionStorage
+                setAuthReady(true);
                 return;
             }
 

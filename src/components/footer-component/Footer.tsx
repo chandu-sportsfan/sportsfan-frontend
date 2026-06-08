@@ -17,7 +17,7 @@ const RocketIcon = () => (
 );
 
 const LinkedInIcon = () => (
-  <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+  <svg viewBox="0 0 24 24" fill="currentColor" className="w-3 h-3">
     <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z" />
     <rect x="2" y="9" width="4" height="12" />
     <circle cx="4" cy="4" r="2" />
@@ -25,13 +25,13 @@ const LinkedInIcon = () => (
 );
 
 const XIcon = () => (
-  <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+  <svg viewBox="0 0 24 24" fill="currentColor" className="w-3 h-3">
     <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.737-8.835L2.25 2.25h6.919l4.259 5.632 4.816-5.632zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
   </svg>
 );
 
 const InstagramIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-5 h-5">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-3 h-3">
     <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
     <circle cx="12" cy="12" r="4" />
     <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none" />
@@ -39,7 +39,7 @@ const InstagramIcon = () => (
 );
 
 const YouTubeIcon = () => (
-  <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+  <svg viewBox="0 0 24 24" fill="currentColor" className="w-3 h-3">
     <path d="M22.54 6.42a2.78 2.78 0 0 0-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46A2.78 2.78 0 0 0 1.46 6.42 29 29 0 0 0 1 12a29 29 0 0 0 .46 5.58 2.78 2.78 0 0 0 1.95 1.96C5.12 20 12 20 12 20s6.88 0 8.59-.46a2.78 2.78 0 0 0 1.96-1.96A29 29 0 0 0 23 12a29 29 0 0 0-.46-5.58z" />
     <polygon points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02" fill="white" />
   </svg>
@@ -78,7 +78,7 @@ const SocialBtn: React.FC<SocialBtnProps> = ({ href, label, color, children }) =
     rel="noopener noreferrer"
     className={`
       group relative flex items-center justify-center
-      w-12 h-12 md:w-14 md:h-14
+      w-8 h-8 md:w-14 md:h-14 lg:w-10 lg:h-10
       rounded-full border border-zinc-700 bg-zinc-900
       transition-all duration-300
       hover:scale-110 hover:border-pink-500
@@ -108,7 +108,7 @@ const SportsFan360Footer: React.FC = () => {
     { label: "X (Twitter)", href: "https://x.com/sportsfan_360", icon: <XIcon /> },
     { label: "Instagram", href: "https://www.instagram.com/sportsfan_360/", icon: <InstagramIcon /> },
     { label: "YouTube", href: "https://www.youtube.com/@sportsfan_360", icon: <YouTubeIcon /> },
-    { label: "Website", href: "https://www.sportsfan360.com", icon: <Globe /> },
+    { label: "Website", href: "https://www.sportsfan360.com", icon: <Globe size={12} /> },
   ];
 
   return (
@@ -165,7 +165,7 @@ const SportsFan360Footer: React.FC = () => {
         {/* <GlowDivider /> */}
 
         {/* ── Bottom Bar ──────────────────────────────────── */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between lg:justify-center gap-4 lg:gap-6 px-5 mb-2 mt-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between lg:justify-center gap-4 md:gap-8 lg:gap-6 px-5">
 
           {/* <div>
             <Link href="/MainModules/Feedback">
@@ -184,11 +184,11 @@ const SportsFan360Footer: React.FC = () => {
             </Link>
           </div> */}
 
-          <div className="flex flex-row justify-center items-center">
-            <div className="flex items-center gap-2.5">
-              <RocketIcon />
+          <div className="flex flex-row justify-center items-center mt-4 md:mt-0 lg:mt-4 gap-10">
+            <div className="flex items-center gap-2.5 mt-4 md:mt-0">
+              {/* <RocketIcon /> */}
               <div>
-                <p className="text-xs font-medium text-zinc-300 leading-snug">
+                <p className="text-xs font-medium text-zinc-300 whitespace-nowrap">
                   Beta Build v0.0.02
                 </p>
                 <p className="text-[11px] text-zinc-600">We&apos;re improving every day.</p>
@@ -197,12 +197,12 @@ const SportsFan360Footer: React.FC = () => {
 
             {/* Left: copyright */}
             <div className="flex items-center gap-2.5">
-              <div className="w-4 h-4">
+              {/* <div className="w-4 h-4">
                   <ShieldIcon  />
-              </div>
+              </div> */}
              
               <div>
-                <p className="text-xs font-medium text-zinc-300 leading-snug">
+                <p className="flex whitespace-nowrap text-xs font-medium text-zinc-300">
                   © 2026 SportsFan360
                 </p>
                 <p className="text-[11px] text-zinc-600">All rights reserved.</p>

@@ -925,6 +925,7 @@ export default function PostCard({
     const [showRepost,      setShowRepost]      = useState(false);
     const [showEmoji,       setShowEmoji]       = useState(false);
     const [showReport,      setShowReport]      = useState(false);
+    const [expandedQuoted,   setExpandedQuoted]   = useState(false);
     const [reportReason,    setReportReason]    = useState<ReportReason | null>(null);
     const [reporting,       setReporting]       = useState(false);
     const [reportDone,      setReportDone]      = useState(false);
@@ -1129,12 +1130,12 @@ export default function PostCard({
    
 
     const CARD_H   = 300;  // collapsed total
-    const HEAD_H   = 56;
+    const HEAD_H   = 46;
     const ACT_H    = 34;
     const BODY_H   = CARD_H - HEAD_H - ACT_H; // 200px
 
     return (
-        <div className="rounded-2xl border border-white/10 bg-[#1c1c1f] flex flex-col transition-all duration-300"
+        <div className="w-full min-w-[280px] sm:min-w-[320px] max-w-[320px] rounded-2xl border border-white/10 bg-[#1c1c1f] flex flex-col transition-all duration-300"
             style={{ height: expanded ? "auto" : `${CARD_H}px`, overflow: "hidden" }}>
 
             {/* repost / quote banners */}
@@ -1153,7 +1154,7 @@ export default function PostCard({
             {/* ── HEADER 56px ─────────────────────────────────────────── */}
             <div className="flex items-center justify-between px-3 flex-shrink-0" style={{ height: HEAD_H }}>
                 <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="rounded-full border-2 border-white/20 flex-shrink-0 overflow-hidden" style={{ width: 38, height: 38 }}>
+                    <div className="rounded-full flex items-center justify-center border-2 border-white/20 flex-shrink-0 overflow-hidden" style={{ width: 38, height: 38 }}>
                         <Avatar size={38} />
                     </div>
                     <div className="min-w-0">
@@ -1234,7 +1235,11 @@ export default function PostCard({
                 {post.quotedPost && post.isQuoteRepost && (
                     <div className="w-full h-full flex flex-col gap-2 overflow-hidden">
                         {content && <p className="text-white text-[13px] leading-relaxed flex-shrink-0 line-clamp-2">{linkify(content)}</p>}
-                        <div className="rounded-xl border border-white/10 bg-white/5 p-2.5 flex-1 overflow-hidden">
+                        <button
+                            type="button"
+                            onClick={() => setExpandedQuoted(v => !v)}
+                            className="w-full rounded-xl border border-white/10 bg-white/5 p-2.5 flex-1 overflow-hidden text-left hover:bg-white/8 transition-colors"
+                        >
                             <div className="flex items-center gap-1.5 mb-1.5">
                                 <Avatar size={18} />
                                 <span className="text-white/70 text-[11px] font-medium">{post.quotedPost.userName}</span>
@@ -1242,14 +1247,17 @@ export default function PostCard({
                                 <span className="text-white/25 text-[11px]">{fmtTime(post.quotedPost.createdAt)}</span>
                             </div>
                             {post.quotedPost.content && (
-                                <p className="text-white/55 text-[11px] leading-relaxed line-clamp-3">{linkify(post.quotedPost.content)}</p>
+                                <p className={`text-white/55 text-[11px] leading-relaxed ${expandedQuoted ? "line-clamp-none" : "line-clamp-1"}`}>
+                                    {linkify(post.quotedPost.content)}
+                                </p>
                             )}
                             {post.quotedPost.media?.[0] && (
                                 <div className="mt-1.5 rounded-lg overflow-hidden bg-black/30 h-14">
                                     <img src={post.quotedPost.media[0].url} alt="quoted" className="w-full h-full object-cover" />
                                 </div>
                             )}
-                        </div>
+                            <span className="mt-2 inline-flex text-[10px] text-[#C9115F]">{expandedQuoted ? "Show less" : "View original post"}</span>
+                        </button>
                     </div>
                 )}
 
@@ -1327,7 +1335,7 @@ export default function PostCard({
 
             {/* ── ACTION BAR 44px — always visible at bottom ─────────── */}
             <div className="flex items-center justify-between px-4 flex-shrink-0 border-t border-white/[0.07]"
-                style={{ height: ACT_H }}>
+                style={{ height: ACT_H, minHeight: ACT_H }}>
 
                 {/* LIKE + emoji hover picker */}
                 <div className="relative"
@@ -1383,7 +1391,7 @@ export default function PostCard({
 
             {/* ── COMMENTS ── */}
             {showComments && post.id && (
-                <div className="px-3 pb-3 pt-1 border-t border-white/[0.07]">
+                <div className="px-3 pb-3 pt-1 border-t border-white/[0.07] bg-black/10">
                     <CommentsSection contentId={post.id} contentType="post"
                         contentTitle={post.content?.slice(0,100) || "Post"}
                         onCommentAdded={onCommentAdd} onCommentDeleted={onCommentDel} onCommentCountLoaded={onCountLoad} />

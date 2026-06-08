@@ -322,7 +322,7 @@ const ChatInfoModal = ({ chat, displayName, onClose, onBlock, onReport, onMute, 
       <div className="flex flex-col items-center px-6 pt-7 pb-5 border-b border-[#c8705a]/[0.08]">
         <Avatar src={chat.avatarUrl} name={displayName} size={76} online={chat.isOnline} />
         <h3 className="mt-3 font-bold text-[18px] text-white flex items-center gap-1.5">
-          {displayName}
+         {displayName}
           {chat.isVerified && <BadgeCheck size={16} className="text-[#e8967e]" />}
         </h3>
         {chat.isOnline
@@ -545,6 +545,13 @@ export default function ChatComponent() {
   const router = useRouter();
   const { user, authReady } = useAuth();
   const currentUserId = user?.userId ?? user?.uid ?? user?.email ?? "";
+  const normalizeId = (id: string) => id.toLowerCase().replace(/[^a-zA-Z0-9]/g, "_");
+  const normCurrentUserId = normalizeId(currentUserId);
+  const isUserMe = (id: string) => {
+    const nId = normalizeId(id);
+    if (!normCurrentUserId) return false;
+    return nId === normCurrentUserId || nId.endsWith(normCurrentUserId) || normCurrentUserId.endsWith(nId);
+  };
 
   // ── Navigation ──────────────────────────────────────────────────────────────
   const [view, setView]             = useState<ViewType>("list");
@@ -738,8 +745,9 @@ export default function ChatComponent() {
 
   const confirmDelete = useCallback(async (forEveryone: boolean) => {
     if (!deletingId) return;
-    await messageHook.deleteMessage(deletingId);
+    const targetId = deletingId;
     setDeletingId(null);
+    await messageHook.deleteMessage(targetId, forEveryone);
     showToast(forEveryone ? "Deleted for everyone" : "Deleted for you");
   }, [deletingId, messageHook, showToast]);
 
@@ -847,8 +855,8 @@ export default function ChatComponent() {
 
           <div className="flex items-center gap-0.5 flex-shrink-0">
             {[
-              { icon: <Phone size={17}/>,  action: () => {} },
-              { icon: <Video size={17}/>,  action: () => {} },
+              // { icon: <Phone size={17}/>,  action: () => {} },
+              // { icon: <Video size={17}/>,  action: () => {} },
               { icon: <Search size={17}/>, action: () => setShowSearch(s => !s) },
               { icon: <Info size={17}/>,   action: () => setShowChatInfo(true) },
             ].map((btn, i) => (
@@ -918,7 +926,7 @@ export default function ChatComponent() {
             if (item.type === "date") return <DateDivider key={`date-${idx}`} label={item.label} />;
 
             const msg          = item.msg as Message;
-            const isMe         = msg.senderId === currentUserId;
+            const isMe         = isUserMe(msg.senderId);
             const isDeleted    = !!msg.deletedAt;
             const isOptimistic = msg.id.startsWith("optimistic_");
             const showMenu     = menuMsgId === msg.id;
@@ -983,7 +991,15 @@ export default function ChatComponent() {
               // Delete: always present; "for everyone" shown only if isMe
               {
                 icon: <Trash2 size={14}/>, label: "Delete", color: "text-rose-400",
-                action: () => { setDeletingId(msg.id); setMenuMsgId(null); },
+                action: () => {
+                  if (isMe) {
+                    setDeletingId(msg.id);
+                  } else {
+                    messageHook.deleteMessage(msg.id, false);
+                    showToast("Deleted for you");
+                  }
+                  setMenuMsgId(null);
+                },
               },
             ];
 
@@ -1012,7 +1028,7 @@ export default function ChatComponent() {
                     <div className="min-w-0">
                       <p className="text-[10px] font-bold mb-0.5" style={{ color: isMe ? "#c8705a" : "#7a6a65" }}>
                         {/* FIX 2: Show "You" if reply is from current user, else show the OTHER person's name */}
-                        {replyMsg.senderId === currentUserId ? "You" : displayName}
+                        {isUserMe(replyMsg.senderId) ? "You" : displayName}
                       </p>
                       <p className="text-[11px] text-[#4a3a35] truncate">{replyMsg.content.slice(0, 60)}</p>
                     </div>
@@ -1241,7 +1257,7 @@ export default function ChatComponent() {
                 style={{ background: editingMsg ? "#f59e0b" : "#c8705a" }} />
               <div className="flex-1 min-w-0">
                 <p className={`text-[11px] font-bold`} style={{ color: editingMsg ? "#f59e0b" : "#c8705a" }}>
-                  {editingMsg ? "Editing message" : `Reply to ${replyingTo?.senderId === currentUserId ? "yourself" : displayName}`}
+                  {editingMsg ? "Editing message" : `Reply to ${isUserMe(replyingTo?.senderId || "") ? "yourself" : displayName}`}
                 </p>
                 <p className="text-[12px] text-[#7a6a65] truncate">{editingMsg ? editingMsg.content : replyingTo?.content}</p>
               </div>
@@ -1377,7 +1393,7 @@ export default function ChatComponent() {
         )}
         {deletingId && (
           <DeleteModal onConfirm={confirmDelete} onCancel={() => setDeletingId(null)}
-            forEveryone={messageHook.messages.find(m => m.id === deletingId)?.senderId === currentUserId} />
+             forEveryone={isUserMe(messageHook.messages.find(m => m.id === deletingId)?.senderId || "")} />
         )}
         {forwardingMsg && (
           <ForwardModal chats={dmChats} currentUserId={currentUserId}

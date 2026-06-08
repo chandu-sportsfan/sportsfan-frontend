@@ -567,11 +567,11 @@ export default function CommentsSection({
     };
 
     return (
-        <div className={`flex flex-col gap-4 ${className}`}>
+        <div className={`flex w-full max-w-full flex-col gap-4 overflow-visible ${className}`}>
             {/* ── Input Row ─────────────────────────────────────────────────── */}
-            <div className="flex items-start gap-2">
+            <div className="flex items-start gap-2 w-full min-w-0">
                 <Avatar name={displayName} size={8} />
-                <div className="flex-1 relative">
+                <div className="flex-1 min-w-0 relative">
                     {replyTo && (
                         <div className="flex items-center gap-1 mb-1 text-xs text-[#C9115F]">
                             <Reply className="w-3 h-3" />
@@ -585,7 +585,7 @@ export default function CommentsSection({
                         </div>
                     )}
 
-                    <div className="flex items-center bg-white/8 rounded-2xl border border-white/10 focus-within:border-[#C9115F]/50 transition-colors overflow-hidden pr-1">
+                    <div className="flex items-center gap-1 bg-white/8 rounded-2xl border border-white/10 focus-within:border-[#C9115F]/50 transition-colors overflow-visible pr-1 w-full min-w-0">
                         <input
                             ref={inputRef}
                             value={text}
@@ -600,7 +600,7 @@ export default function CommentsSection({
                             }}
                             placeholder={user ? "Add a comment…" : "Sign in to comment"}
                             disabled={!user || submitting}
-                            className="flex-1 bg-transparent px-3 py-2.5 text-sm text-white placeholder-white/25 outline-none disabled:opacity-50"
+                            className="min-w-0 flex-1 bg-transparent px-3 py-2.5 text-sm text-white placeholder-white/25 outline-none disabled:opacity-50"
                         />
 
                         {/* Emoji Trigger */}
@@ -608,7 +608,7 @@ export default function CommentsSection({
                             type="button"
                             onClick={() => setShowEmojiPicker((v) => !v)}
                             disabled={!user}
-                            className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all disabled:opacity-30 ${
+                            className={`w-8 h-8 shrink-0 rounded-xl flex items-center justify-center transition-all disabled:opacity-30 ${
                                 showEmojiPicker
                                     ? "bg-[#C9115F]/20 text-[#C9115F]"
                                     : "hover:bg-white/10 text-white/30 hover:text-white/60"
@@ -622,7 +622,7 @@ export default function CommentsSection({
                         <button
                             onClick={handleSubmit}
                             disabled={!text.trim() || !user || submitting}
-                            className="w-8 h-8 rounded-xl flex items-center justify-center transition-all disabled:opacity-30 enabled:hover:bg-[#C9115F]/20 enabled:text-[#C9115F] text-white/30"
+                            className="w-8 h-8 shrink-0 rounded-xl flex items-center justify-center transition-all disabled:opacity-30 enabled:hover:bg-[#C9115F]/20 enabled:text-[#C9115F] text-white/30"
                         >
                             {submitting ? (
                                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -650,7 +650,7 @@ export default function CommentsSection({
             ) : comments.length === 0 ? (
                 <p className="text-white/25 text-sm text-center py-2">No comments yet. Be the first!</p>
             ) : (
-                <div className="flex flex-col gap-4">
+                <div className="flex flex-col gap-4 w-full max-w-full overflow-visible">
                     {comments.map((comment) => (
                         <CommentThread
                             key={comment.id}

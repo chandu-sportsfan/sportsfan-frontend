@@ -1383,7 +1383,7 @@ const ChallengesSection: React.FC = () => {
       )}
 
       {/* Daily Challenge Banner */}
-      <div className="w-full rounded-2xl bg-[#1a1a1a] border border-[#252525] p-4 flex items-center justify-between mb-5">
+      {/* <div className="w-full rounded-2xl bg-[#1a1a1a] border border-[#252525] p-4 flex items-center justify-between mb-5">
         <div>
           <p className="text-white text-[13px] font-semibold">Daily Challenge</p>
           <p className="text-[#666] text-[11px] mt-0.5">Complete to earn 2x points</p>
@@ -1397,10 +1397,10 @@ const ChallengesSection: React.FC = () => {
             Start
           </button>
         </div>
-      </div>
+      </div> */}
 
       {/* Recent Performance */}
-      <div className="w-full rounded-2xl bg-[#1a1a1a] border border-[#222222] p-4">
+      {/* <div className="w-full rounded-2xl bg-[#1a1a1a] border border-[#222222] p-4">
         <h3 className="text-white text-[14px] font-bold mb-3">Your Recent Performance</h3>
         <div className="flex flex-col gap-0">
           {[
@@ -1421,7 +1421,7 @@ const ChallengesSection: React.FC = () => {
             </div>
           ))}
         </div>
-      </div>
+      </div> */}
     </div>
   );
 };

@@ -1212,7 +1212,19 @@ export default function FullPlaylist() {
         setError(null);
 
         try {
-            const params = new URLSearchParams({ limit: "500" });
+            const params = new URLSearchParams({
+                limit: "500",
+            });
+
+            if (teamFilter === "FIFA") {
+                params.append("type", "fifa");
+            }
+
+            if (
+                teamFilter?.includes("Women")
+            ) {
+                params.append("type", "womens_t20");
+            }
             if (searchTerm) params.append("search", searchTerm);
 
             const [audioRes, videoRes] = await Promise.all([

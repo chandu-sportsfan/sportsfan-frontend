@@ -235,158 +235,127 @@ export default function WatchAlongLobby({ onEnterRoom }: Props) {
     }
 
     return (
-        <div className="h-screen bg-[#111] text-white font-sans flex flex-col overflow-hidden">
+        <div className="relative overflow-hidden min-h-screen bg-black text-white font-sans flex items-start justify-center w-full">
+            <div className="w-full max-w-6xl mx-auto pt-8 pb-24">
 
-            {/* ── Sticky Header + Tabs ── */}
-            <div className="flex-shrink-0 bg-[#111] border-b border-[#222] z-50">
-                <div className="w-full max-w-8xl mx-auto px-4 sm:px-6 lg:px-10 pt-6 pb-4">
+                {/* Back Button */}
+                <Link href="/MainModules/HomePage" className="inline-flex items-center gap-2 text-gray-400 hover:text-white mb-6 transition px-4">
+                    <button className="flex items-center gap-2 text-gray-400 hover:text-white transition cursor-pointer bg-transparent border-none p-0">
+                        <ArrowLeft size={18} />
+                        <span className="text-sm">Back</span>
+                    </button>
+                </Link>
 
-                    {/* Back + Title */}
-                    <div className="flex items-center justify-between mb-6">
-                        <div className="flex items-center gap-3">
-                            <Link href="/MainModules/HomePage">
-                            <button
-                                className="text-white hover:text-pink-500 transition cursor-pointer"
-                            >
-                                <ArrowLeft size={20} />
-                            </button>
-                            </Link>
-                            <h1 className="text-xl font-bold">Watch Along</h1>
+                {/* Header Section */}
+                <div className="px-4 mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div>
+                        <h1 className="text-3xl font-black tracking-wide uppercase text-transparent bg-clip-text bg-gradient-to-r from-[#e91e8c] to-[#ff6b35]">
+                            Watch Along
+                        </h1>
+                        <div className="flex items-center gap-2 mt-2">
+                            <span className="w-2 h-2 rounded-full bg-pink-500 animate-pulse" />
+                            <span className="text-sm font-semibold text-gray-400">Watch Along – IPL 2026</span>
                         </div>
                     </div>
 
-                    {/* Live badge + Tab pills */}
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                        <div className="flex items-center gap-2 flex-shrink-0">
-                            <span className="w-2 h-2 rounded-full bg-pink-500 animate-pulse" />
-                            <span className="text-base font-bold">Watch Along – IPL 2026</span>
-                        </div>
+                    {/* Host a Watchalong Button */}
+                    <button
+                        onClick={() => setShowCreateModal(true)}
+                        className="self-start sm:self-auto px-5 py-2.5 rounded-full text-xs font-bold text-white transition-all shadow-lg hover:shadow-pink-500/20 active:scale-95 cursor-pointer"
+                        style={{ background: "linear-gradient(90deg, #e91e8c, #ff6b35)" }}
+                    >
+                        + Host a Watchalong
+                    </button>
+                </div>
 
-                        <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                            {tabs.map((tab, i) => (
+                {/* Tabs Section */}
+                <div className="mb-8 px-4 overflow-hidden">
+                    <div
+                        className="flex justify-start items-center gap-2 overflow-x-auto rounded-2xl border border-white/5 bg-[#1a1a1a]/80 p-1.5 shadow-xl [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                        style={{ WebkitOverflowScrolling: "touch" }}
+                    >
+                        {tabs.map((tab, i) => {
+                            const isActive = activeTab === i;
+                            return (
                                 <button
                                     key={tab}
                                     onClick={() => setActiveTab(i)}
-                                    className={`flex-shrink-0 text-xs px-3 py-1.5 rounded-full border transition-all ${
-                                        activeTab === i
-                                            ? "bg-pink-600 border-pink-600 text-white"
-                                            : "bg-[#1e1e1e] border-[#333] text-gray-400 hover:border-gray-500"
-                                    }`}
+                                    className={`relative flex min-w-max items-center justify-center gap-2 px-5 py-3 rounded-xl text-xs sm:px-6 sm:py-3.5 sm:text-sm font-bold tracking-wide transition-all duration-300 text-center whitespace-nowrap shrink-0 group min-h-[44px] cursor-pointer
+                                        ${isActive
+                                            ? "text-white shadow-lg shadow-pink-500/20"
+                                            : "text-white/40 hover:text-white/70 hover:bg-white/5"
+                                        }`}
+                                    style={isActive ? { background: "linear-gradient(90deg, #e91e8c, #ff6b35)" } : {}}
                                 >
-                                    {tab}
+                                    <span className="block leading-tight">{tab}</span>
                                 </button>
-                            ))}
-                        </div>
-                    </div>
-
-                </div>
-            </div>
-
-            {/* CREATE ROOM MODAL */}
-            {showCreateModal && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4">
-                    <div className="bg-[#1a1a1a] border border-[#333] rounded-2xl p-6 w-full max-w-md shadow-2xl">
-                        <h2 className="text-2xl font-bold text-white mb-2">Host a Watchalong</h2>
-                        <p className="text-gray-400 text-sm mb-6">Create a room and instantly become the Host.</p>
-                        
-                        <div className="mb-6">
-                            <label className="block text-sm font-medium text-gray-300 mb-2">Room Name</label>
-                            <input 
-                                type="text" 
-                                value={newRoomName}
-                                onChange={(e) => setNewRoomName(e.target.value)}
-                                placeholder="e.g. MS Dhoni Fan Club"
-                                className="w-full bg-[#222] border border-[#444] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-pink-500"
-                            />
-                        </div>
-
-                        <div className="flex gap-3">
-                            <button 
-                                onClick={() => setShowCreateModal(false)}
-                                className="flex-1 py-3 px-4 rounded-lg bg-[#333] hover:bg-[#444] text-white font-medium transition"
-                            >
-                                Cancel
-                            </button>
-                            <button 
-                                onClick={async () => {
-                                    if(!newRoomName.trim()) return;
-                                    setIsCreating(true);
-                                    const formData = new FormData();
-                                    formData.append("name", newRoomName);
-                                    const currentUserId = authUser?.userId || (session?.user as { userId?: string })?.userId || session?.user?.id;
-                                    if (currentUserId) {
-                                        formData.append("hostUserId", currentUserId);
-                                    }
-                                    const hostName = authUser?.name || session?.user?.name;
-                                    if (hostName) {
-                                        formData.append("role", `Hosted by ${hostName}`);
-                                    } else {
-                                        formData.append("role", "Fan Host");
-                                    }
-                                    const newRoom = await createRoom(formData);
-                                    if(newRoom) {
-                                        onEnterRoom(newRoom.id);
-                                    }
-                                    setIsCreating(false);
-                                    setShowCreateModal(false);
-                                }}
-                                disabled={isCreating}
-                                className="flex-1 py-3 px-4 rounded-lg bg-pink-600 hover:bg-pink-700 text-white font-bold shadow-lg shadow-pink-500/20 transition flex items-center justify-center gap-2"
-                            >
-                                {isCreating ? "Creating..." : "Create Room"}
-                            </button>
-                        </div>
+                            );
+                        })}
                     </div>
                 </div>
-            )}
 
-            {/* ── Scrollable Content ── */}
-            <div className="flex-1 overflow-y-auto [scrollbar-width:none]">
+                {/* CREATE ROOM MODAL */}
+                {showCreateModal && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4">
+                        <div className="bg-[#1a1a1a] border border-[#333] rounded-2xl p-6 w-full max-w-md shadow-2xl">
+                            <h2 className="text-2xl font-bold text-white mb-2">Host a Watchalong</h2>
+                            <p className="text-gray-400 text-sm mb-6">Create a room and instantly become the Host.</p>
+                            
+                            <div className="mb-6">
+                                <label className="block text-sm font-medium text-gray-300 mb-2">Room Name</label>
+                                <input 
+                                    type="text" 
+                                    value={newRoomName}
+                                    onChange={(e) => setNewRoomName(e.target.value)}
+                                    placeholder="e.g. MS Dhoni Fan Club"
+                                    className="w-full bg-[#222] border border-[#444] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-pink-500"
+                                />
+                            </div>
+
+                            <div className="flex gap-3">
+                                <button 
+                                    onClick={() => setShowCreateModal(false)}
+                                    className="flex-1 py-3 px-4 rounded-lg bg-[#333] hover:bg-[#444] text-white font-medium transition"
+                                >
+                                    Cancel
+                                </button>
+                                <button 
+                                    onClick={async () => {
+                                        if(!newRoomName.trim()) return;
+                                        setIsCreating(true);
+                                        const formData = new FormData();
+                                        formData.append("name", newRoomName);
+                                        const currentUserId = authUser?.userId || (session?.user as { userId?: string })?.userId || session?.user?.id;
+                                        if (currentUserId) {
+                                            formData.append("hostUserId", currentUserId);
+                                        }
+                                        const hostName = authUser?.name || session?.user?.name;
+                                        if (hostName) {
+                                            formData.append("role", `Hosted by ${hostName}`);
+                                        } else {
+                                            formData.append("role", "Fan Host");
+                                        }
+                                        const newRoom = await createRoom(formData);
+                                        if(newRoom) {
+                                            onEnterRoom(newRoom.id);
+                                        }
+                                        setIsCreating(false);
+                                        setShowCreateModal(false);
+                                    }}
+                                    disabled={isCreating}
+                                    className="flex-1 py-3 px-4 rounded-lg bg-pink-600 hover:bg-pink-700 text-white font-bold shadow-lg shadow-pink-500/20 transition flex items-center justify-center gap-2"
+                                >
+                                    {isCreating ? "Creating..." : "Create Room"}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* ── Scrollable Content ── */}
                 <div className="w-full max-w-8xl mx-auto px-4 sm:px-6 lg:px-10 pt-6 pb-24">
                     {(() => {
                         const combinedRooms: Room[] = [
-                            // {
-                            //     id: "abhinav-bindra",
-                            //     name: "Abhinav Bindra",
-                            //     role: "Olympic Gold Medalist & Shooting Legend",
-                            //     badge: "Olympic Gold",
-                            //     badgeColor: "bg-yellow-500",
-                            //     borderColor: "border-yellow-500/50",
-                            //     watching: "142",
-                            //     engagement: "98",
-                            //     active: "9.5",
-                            //     isLive: true,
-                            //     liveMatchId: rooms[0]?.liveMatchId || "663f22ac71d9d95f87bdf51a",
-                            //     displayPicture: ""
-                            // },
-                            // {
-                            //     id: "pullela-gopichand",
-                            //     name: "Pullela Gopichand",
-                            //     role: "All England Champion & Badminton Coach",
-                            //     badge: "Legend",
-                            //     badgeColor: "bg-blue-600",
-                            //     borderColor: "border-blue-500/50",
-                            //     watching: "98",
-                            //     engagement: "96",
-                            //     active: "8.8",
-                            //     isLive: true,
-                            //     liveMatchId: rooms[0]?.liveMatchId || "663f22ac71d9d95f87bdf51a",
-                            //     displayPicture: ""
-                            // },
-                            // {
-                            //     id: "rajaraman-g",
-                            //     name: "Rajaraman G",
-                            //     role: "Senior Sports Journalist & Analyst",
-                            //     badge: "Pro Analyst",
-                            //     badgeColor: "bg-pink-600",
-                            //     borderColor: "border-pink-500/50",
-                            //     watching: "56",
-                            //     engagement: "92",
-                            //     active: "7.4",
-                            //     isLive: true,
-                            //     liveMatchId: rooms[0]?.liveMatchId || "663f22ac71d9d95f87bdf51a",
-                            //     displayPicture: ""
-                            // },
                             ...rooms
                         ];
 
@@ -410,85 +379,84 @@ export default function WatchAlongLobby({ onEnterRoom }: Props) {
                         );
                     })()}
                 </div>
-            </div>
 
-            {shareRoom && (
-                <div
-                    className="fixed inset-0 z-[70] bg-black/60 backdrop-blur-[1px] flex items-end sm:items-center justify-center p-4"
-                    onClick={closeShare}
-                >
+                {shareRoom && (
                     <div
-                        className="w-full max-w-md rounded-3xl border border-white/15 bg-[#3c434f] text-white p-5 shadow-2xl"
-                        onClick={(e) => e.stopPropagation()}
+                        className="fixed inset-0 z-[70] bg-black/60 backdrop-blur-[1px] flex items-end sm:items-center justify-center p-4"
+                        onClick={closeShare}
                     >
-                        <div className="flex items-start justify-between mb-4">
-                            <div className="pr-4">
-                                <p className="text-2xl font-bold leading-tight">Share Expert Room</p>
-                                <p className="text-lg font-semibold mt-2">{shareRoom.name}</p>
-                                <p className="text-white/70 text-sm">{shareRoom.role}</p>
+                        <div
+                            className="w-full max-w-md rounded-3xl border border-white/15 bg-[#3c434f] text-white p-5 shadow-2xl"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="flex items-start justify-between mb-4">
+                                <div className="pr-4">
+                                    <p className="text-2xl font-bold leading-tight">Share Expert Room</p>
+                                    <p className="text-lg font-semibold mt-2">{shareRoom.name}</p>
+                                    <p className="text-white/70 text-sm">{shareRoom.role}</p>
+                                </div>
+                                <button
+                                    onClick={closeShare}
+                                    className="w-8 h-8 rounded-full flex items-center justify-center text-white/80 hover:text-white hover:bg-white/10"
+                                    aria-label="Close share dialog"
+                                >
+                                    <X size={20} />
+                                </button>
                             </div>
-                            <button
-                                onClick={closeShare}
-                                className="w-8 h-8 rounded-full flex items-center justify-center text-white/80 hover:text-white hover:bg-white/10"
-                                aria-label="Close share dialog"
-                            >
-                                <X size={20} />
-                            </button>
-                        </div>
 
-                        <div className="mb-4 rounded-2xl border border-white/10 bg-white/5 p-3 flex items-center gap-3">
-                            <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-white/20 bg-white/10 shrink-0">
-                                <img
-                                    src={shareRoom.displayPicture || "/images/share.png"}
-                                    alt={shareRoom.name}
-                                    className="w-full h-full object-cover"
-                                />
+                            <div className="mb-4 rounded-2xl border border-white/10 bg-white/5 p-3 flex items-center gap-3">
+                                <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-white/20 bg-white/10 shrink-0">
+                                    <img
+                                        src={shareRoom.displayPicture || "/images/share.png"}
+                                        alt={shareRoom.name}
+                                        className="w-full h-full object-cover"
+                                    />
+                                </div>
+                                <div className="min-w-0">
+                                    <p className="font-semibold text-sm">Watch Along preview</p>
+                                    <p className="text-xs text-white/70 line-clamp-2">
+                                        Join this room, see live match context, and share the link with the room preview image.
+                                    </p>
+                                </div>
                             </div>
-                            <div className="min-w-0">
-                                <p className="font-semibold text-sm">Watch Along preview</p>
-                                <p className="text-xs text-white/70 line-clamp-2">
-                                    Join this room, see live match context, and share the link with the room preview image.
-                                </p>
+
+                            <div className="space-y-3">
+                                <button
+                                    onClick={handleShareToWhatsApp}
+                                    className="w-full rounded-2xl px-4 py-3 bg-[#5b6472] hover:bg-[#6a7483] transition-colors flex items-center gap-3 text-left"
+                                >
+                                    <img src="/images/share_whatsapp.png" alt="WhatsApp" className="w-9 h-9 rounded-full object-cover" />
+                                    <span className="font-semibold">Share on WhatsApp</span>
+                                </button>
+
+                                <button
+                                    onClick={handleShareToThreads}
+                                    className="w-full rounded-2xl px-4 py-3 bg-[#5b6472] hover:bg-[#6a7483] transition-colors flex items-center gap-3 text-left"
+                                >
+                                    <img src="/images/share_thread.png" alt="Threads" className="w-9 h-9 rounded-full object-cover" />
+                                    <span className="font-semibold">Share on Threads</span>
+                                </button>
+
+                                <button
+                                    onClick={handleShareToInstagram}
+                                    className="w-full rounded-2xl px-4 py-3 bg-[#5b6472] hover:bg-[#6a7483] transition-colors flex items-center gap-3 text-left"
+                                >
+                                    <img src="/images/share_insta.png" alt="Instagram" className="w-9 h-9 rounded-full object-cover" />
+                                    <span className="font-semibold">Share on Instagram</span>
+                                </button>
+
+                                <button
+                                    onClick={handleCopyLink}
+                                    className="w-full rounded-2xl px-4 py-3 bg-[#5b6472] hover:bg-[#6a7483] transition-colors flex items-center gap-3 text-left"
+                                >
+                                    <img src="/images/share_copy_link.png" alt="Copy Link" className="w-9 h-9 rounded-full object-cover" />
+                                    <span className="font-semibold">{copied ? "Copied" : "Copy Link"}</span>
+                                </button>
                             </div>
-                        </div>
-
-                        <div className="space-y-3">
-                            <button
-                                onClick={handleShareToWhatsApp}
-                                className="w-full rounded-2xl px-4 py-3 bg-[#5b6472] hover:bg-[#6a7483] transition-colors flex items-center gap-3 text-left"
-                            >
-                                <img src="/images/share_whatsapp.png" alt="WhatsApp" className="w-9 h-9 rounded-full object-cover" />
-                                <span className="font-semibold">Share on WhatsApp</span>
-                            </button>
-
-                            <button
-                                onClick={handleShareToThreads}
-                                className="w-full rounded-2xl px-4 py-3 bg-[#5b6472] hover:bg-[#6a7483] transition-colors flex items-center gap-3 text-left"
-                            >
-                                <img src="/images/share_thread.png" alt="Threads" className="w-9 h-9 rounded-full object-cover" />
-                                <span className="font-semibold">Share on Threads</span>
-                            </button>
-
-                            <button
-                                onClick={handleShareToInstagram}
-                                className="w-full rounded-2xl px-4 py-3 bg-[#5b6472] hover:bg-[#6a7483] transition-colors flex items-center gap-3 text-left"
-                            >
-                                <img src="/images/share_insta.png" alt="Instagram" className="w-9 h-9 rounded-full object-cover" />
-                                <span className="font-semibold">Share on Instagram</span>
-                            </button>
-
-                            <button
-                                onClick={handleCopyLink}
-                                className="w-full rounded-2xl px-4 py-3 bg-[#5b6472] hover:bg-[#6a7483] transition-colors flex items-center gap-3 text-left"
-                            >
-                                <img src="/images/share_copy_link.png" alt="Copy Link" className="w-9 h-9 rounded-full object-cover" />
-                                <span className="font-semibold">{copied ? "Copied" : "Copy Link"}</span>
-                            </button>
                         </div>
                     </div>
-                </div>
-            )}
-
+                )}
+            </div>
         </div>
     );
 }

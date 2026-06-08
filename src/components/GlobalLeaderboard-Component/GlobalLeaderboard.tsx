@@ -116,6 +116,9 @@ const RankBadge = memo<{ rank: number }>(({ rank }) => {
 });
 RankBadge.displayName = 'RankBadge';
 
+const sameUserId = (a: string | number | undefined, b: string | number | undefined) =>
+  a !== undefined && b !== undefined && String(a) === String(b);
+
 // ─── Delta Indicator ──────────────────────────────────────────────────────────
 const DeltaIndicator = memo<{ delta: number }>(({ delta }) => {
   if (delta > 0) return <span className="gl-delta gl-delta-up"><ArrowUp size={10} />{delta}</span>;
@@ -539,9 +542,9 @@ const GlobalLeaderboard: React.FC = () => {
         {/* ── HEADER ── */}
         <div className="gl-header">
           <div>
-            <button onClick={() => router.push('/MainModules/Fantasy')} className="gl-back-btn">
+            <button onClick={() => router.push('/MainModules/Fanszone')} className="gl-back-btn">
               <ChevronLeft size={14} />
-              Back to Fantasy
+              Back to Fanzone
             </button>
             <div className="gl-title-row">
               <div className="gl-title-icon">
@@ -586,7 +589,7 @@ const GlobalLeaderboard: React.FC = () => {
           <div className="gl-list" ref={containerRef}>
             {displayList.length > 0 ? (
               displayList.map((u) => {
-                const isCurrentUser = Boolean(user?.userId && u.userId === user.userId);
+                const isCurrentUser = sameUserId(u.userId, user?.userId);
                 const rank = u.rank;
                 const isMovingUp   = u.animatingUp;
                 const isMovingDown = u.animatingDown;

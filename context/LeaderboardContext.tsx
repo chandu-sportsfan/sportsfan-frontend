@@ -42,6 +42,25 @@ const USER_CACHE_TTL = 60_000; // 1 minute
 let leaderboardCache: { ts: number; data: LeaderboardUser[] } | null = null;
 const LEADERBOARD_CACHE_TTL = 120_000; // 2 minutes
 
+const normalizeLeaderboard = (rows: LeaderboardUser[]): LeaderboardUser[] =>
+  [...rows]
+    .sort((a, b) => {
+      const pointDiff = (Number(b.totalPoints) || 0) - (Number(a.totalPoints) || 0);
+      if (pointDiff !== 0) return pointDiff;
+
+      const aRank = Number(a.rank) || Number.MAX_SAFE_INTEGER;
+      const bRank = Number(b.rank) || Number.MAX_SAFE_INTEGER;
+      return aRank - bRank;
+    })
+    .map((user, index) => ({
+      ...user,
+      totalPoints: Number(user.totalPoints) || 0,
+      rank: index + 1,
+    }));
+
+const sameUserId = (a: string | number | undefined, b: string | number | undefined) =>
+  a !== undefined && b !== undefined && String(a) === String(b);
+
 // ─────────────────────────────────────────────────────────────────────────────
 
 const LeaderboardContext = createContext<LeaderboardContextType | undefined>(
@@ -113,6 +132,16 @@ export const LeaderboardProvider: React.FC<{ children: React.ReactNode }> = ({
         Date.now() - leaderboardCache.ts < LEADERBOARD_CACHE_TTL
       ) {
         setLeaderboard(leaderboardCache.data);
+        const found = leaderboardCache.data.find((u) => sameUserId(u.userId, userId));
+        if (found) {
+          USER_CACHE.set(userId, {
+            ts: Date.now(),
+            points: found.totalPoints,
+            rank: found.rank,
+          });
+          setCurrentUserPoints(found.totalPoints);
+          setCurrentUserRank(found.rank);
+        }
         return leaderboardCache.data;
       }
 
@@ -122,23 +151,19 @@ export const LeaderboardProvider: React.FC<{ children: React.ReactNode }> = ({
       try {
         const res = await axios.get(`/api/user-points?limit=100`);
         if (res.data.success && res.data.leaderboard) {
-          const data: LeaderboardUser[] = res.data.leaderboard;
+          const data = normalizeLeaderboard(res.data.leaderboard);
           leaderboardCache = { ts: Date.now(), data };
           setLeaderboard(data);
 
-          // Fallback: populate user points from leaderboard if the fast-path failed
-          const userCached = USER_CACHE.get(userId);
-          if (!userCached) {
-            const found = data.find((u) => u.userId === userId);
-            if (found) {
-              USER_CACHE.set(userId, {
-                ts: Date.now(),
-                points: found.totalPoints,
-                rank: found.rank,
-              });
-              setCurrentUserPoints(found.totalPoints);
-              setCurrentUserRank(found.rank);
-            }
+          const found = data.find((u) => sameUserId(u.userId, userId));
+          if (found) {
+            USER_CACHE.set(userId, {
+              ts: Date.now(),
+              points: found.totalPoints,
+              rank: found.rank,
+            });
+            setCurrentUserPoints(found.totalPoints);
+            setCurrentUserRank(found.rank);
           }
 
           return data;

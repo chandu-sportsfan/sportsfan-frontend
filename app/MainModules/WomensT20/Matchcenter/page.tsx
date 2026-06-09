@@ -1,4 +1,5 @@
 "use client";
+import Image from "next/image";
 import { useState, useEffect, useRef } from "react";
 import {
   ArrowLeft,
@@ -259,6 +260,24 @@ function FlagAvatar({ flag, size = "md" }: { flag: string; size?: "sm" | "md" | 
   );
 }
 
+// ─── Team Logo ────────────────────────────────────────────────────────────────
+
+function TeamLogo({ team, size = 40 }: { team: string; size?: number }) {
+  return (
+    <div
+      style={{ width: size, height: size, position: "relative", flexShrink: 0 }}
+    >
+      <Image
+        src={`/images/${team.toLowerCase()}.png`}
+        alt={team}
+        fill
+        className="object-contain"
+        style={{ objectFit: "contain" }}
+      />
+    </div>
+  );
+}
+
 // ─── Hero Banner ──────────────────────────────────────────────────────────────
 
 function HeroBanner() {
@@ -266,7 +285,10 @@ function HeroBanner() {
     <div
       className="relative rounded-2xl overflow-hidden mb-5"
       style={{
-        background: "linear-gradient(135deg, #0d0520 0%, #1a0535 40%, #0d0d2b 100%)",
+        backgroundImage:
+          "linear-gradient(rgba(0,0,0,.6),rgba(0,0,0,.6)),url('/images/womens_t20_hero.jpg')",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
         border: "1px solid rgba(233,30,140,0.25)",
         minHeight: 200,
       }}
@@ -278,21 +300,14 @@ function HeroBanner() {
       <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between px-5 pt-5 pb-4 gap-4">
         {/* Left: logo + text */}
         <div className="flex items-center gap-4">
-          {/* ICC T20 Womens logo block */}
-          <div
-            className="w-20 h-20 rounded-2xl flex items-center justify-center flex-shrink-0 p-1"
-            style={{
-              background: "linear-gradient(135deg, rgba(233,30,140,0.3) 0%, rgba(100,30,200,0.3) 100%)",
-              border: "1.5px solid rgba(233,30,140,0.5)",
-            }}
-          >
-            <div className="text-center leading-none">
-              <p className="text-[8px] font-black text-[#e91e8c] tracking-widest uppercase">ICC</p>
-              <p className="text-[22px] font-black text-white leading-none">T20</p>
-              <p className="text-[6px] font-bold text-white/70 tracking-widest uppercase">WOMEN'S</p>
-              <p className="text-[6px] font-bold text-[#e91e8c] tracking-widest uppercase">WORLD CUP</p>
-              <p className="text-[9px] font-black text-white">2026</p>
-            </div>
+          {/* ICC T20 Womens logo */}
+          <div className="relative w-32 h-32 flex-shrink-0">
+            <Image
+              src="/images/womens_t20_logo.png"
+              alt="logo"
+              fill
+              className="object-contain"
+            />
           </div>
 
           <div>
@@ -321,8 +336,15 @@ function HeroBanner() {
         </div>
 
         {/* Right: Trophy illustration */}
-        <div className="flex-shrink-0 hidden sm:flex items-center justify-center w-28 h-28">
-          <div className="text-8xl select-none" style={{ filter: "drop-shadow(0 0 24px rgba(233,30,140,0.6))" }}>🏆</div>
+        <div className="flex-shrink-0 hidden sm:flex items-center justify-center w-44 h-44">
+          <div className="relative w-44 h-44">
+            <Image
+              src="/images/trophy.png"
+              alt="trophy"
+              fill
+              className="object-contain"
+            />
+          </div>
         </div>
       </div>
 
@@ -387,7 +409,7 @@ function NextMatchAndGlance() {
           <div className="flex items-center justify-between gap-2 mb-3">
             {/* Team A */}
             <div className="flex flex-col items-center gap-1.5 flex-1">
-              <FlagAvatar flag={NEXT_MATCH.teamAFlag} size="lg" />
+              <TeamLogo team={NEXT_MATCH.teamA} size={60} />
               <span className="text-white font-black text-sm tracking-wide">{NEXT_MATCH.teamA}</span>
             </div>
 
@@ -400,7 +422,7 @@ function NextMatchAndGlance() {
 
             {/* Team B */}
             <div className="flex flex-col items-center gap-1.5 flex-1">
-              <FlagAvatar flag={NEXT_MATCH.teamBFlag} size="lg" />
+              <TeamLogo team={NEXT_MATCH.teamB} size={60} />
               <span className="text-white font-black text-sm tracking-wide">{NEXT_MATCH.teamB}</span>
             </div>
           </div>
@@ -505,7 +527,7 @@ function PointsTableTab() {
                 <td className="py-3 px-3 text-gray-500 font-bold">{row.rank}</td>
                 <td className="py-3 px-3">
                   <div className="flex items-center gap-2">
-                    <span className="text-xl">{row.flag}</span>
+                    <TeamLogo team={row.abbr} size={35} />
                     <div>
                       <p className="text-white font-bold whitespace-nowrap">{row.abbr}</p>
                       <p className="text-gray-600 text-[9px] truncate max-w-[120px]">{row.name}</p>
@@ -662,7 +684,7 @@ function MatchesTab() {
           {/* Teams */}
           <div className="flex items-center px-3 py-3 gap-3">
             <div className="flex items-center gap-2 flex-1 min-w-0">
-              <span className="text-2xl">{m.teamAFlag}</span>
+              <TeamLogo team={m.teamA} size={40} />
               <span className="text-white font-bold text-sm">{m.teamA}</span>
             </div>
             <span
@@ -673,7 +695,7 @@ function MatchesTab() {
             </span>
             <div className="flex items-center gap-2 flex-1 min-w-0 justify-end">
               <span className="text-white font-bold text-sm">{m.teamB}</span>
-              <span className="text-2xl">{m.teamBFlag}</span>
+              <TeamLogo team={m.teamB} size={40} />
             </div>
           </div>
 
@@ -895,10 +917,10 @@ function BottomSection() {
           {PARTICIPATING_TEAMS.map((t) => (
             <div key={t.abbr} className="flex flex-col items-center gap-1">
               <div
-                className="w-10 h-10 rounded-full flex items-center justify-center text-xl"
+                className="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden"
                 style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}
               >
-                {t.flag}
+                <TeamLogo team={t.abbr} size={40} />
               </div>
               <span className="text-white/50 text-[8px] font-bold text-center leading-none">{t.abbr}</span>
             </div>

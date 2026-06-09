@@ -1,23 +1,32 @@
 "use client";
 
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
+import { type ActivityItem, useActivity } from "@/context/ActivityContext";
 import { useLeaderboard } from "@/context/LeaderboardContext";
-import { 
-  ChevronDown, Trophy, Share2, CheckCircle2, 
-  Award, TrendingUp, Play, ThumbsUp, FileText, 
-  Gamepad2, UserPlus, LayoutGrid, Calendar, Filter ,
+import {
+  ChevronDown, Trophy, Share2, CheckCircle2,
+  Award, TrendingUp, Play, ThumbsUp, FileText,
+  Gamepad2, UserPlus, LayoutGrid, Calendar, Filter,
   Download, ChevronLeft, ChevronRight, MoreHorizontal, X, Headphones
 } from "lucide-react";
 
-// --- MOCK DATA ---
+// 
+// TYPES
+// 
+type ActivityKey = "audioDrop" | "fanBattle" | "trivia" | "post" | "register" | "invite" | "watchDrop" | "like" | "share" | "other";
+type TrendPeriod = "7D" | "30D" | "90D";
 
 interface HistoryItem {
+  id: string;
+  key: ActivityKey;
   action: string;
   details: string;
   points: number;
   type: string;
-  date: string;
+  source: string;
+  date: string;         // formatted display date  e.g. "Jun 7, 2026"
+  timestamp: number;    // ms since epoch — used for all real calculations
   time: string;
   icon: React.ElementType;
   color: string;
@@ -30,510 +39,684 @@ interface CategoryBreakdown {
   percent: number;
   color: string;
   xp: string;
-  icon?: React.ElementType;
-  type?: string;
-  xpValue?: number;
-}
-
-// Points awarded per audio drop listen (must match AudioDrop.tsx backend value)
-const AUDIO_DROP_POINTS = 2;
-
-// Points awarded per post creation (must match CreatePostDialog.tsx dispatch value)
-const POST_CREATION_POINTS = 12;
-
-// Points awarded per correct trivia answer (must match Triviaquestion.tsx dispatch value)
-const TRIVIA_POINTS = 5;
-
-// 1. YOUR EXACT ACTIVITY LEDGER
-const exactUserHistory: HistoryItem[] = [
-  {
-    action: "Audio Drops",
-    details: "Listened: Daily Sports Update",
-    points: AUDIO_DROP_POINTS,
-    type: "Content",
-    date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-    time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
-    icon: Headphones,
-    color: "text-sky-400",
-    hexColor: "#38bdf8",
-    typeColor: "text-sky-400 border-white/10 bg-white/5"
-  },
-  {
-    action: "Fan Battles",
-    details: "Played a Fan Battle",
-    points: 15, 
-    type: "Fantasy",
-    date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-    time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
-    icon: Gamepad2,
-    color: "text-yellow-500",
-    hexColor: "#eab308",      
-    typeColor: "text-yellow-500 border-white/10 bg-white/5"
-  }
-];
-
-// Factory for creating an Audio Drop history entry when points are awarded
-const createAudioDropHistoryItem = (title: string): HistoryItem => ({
-  action: "Audio Drops",
-  details: `Listened: ${title || "Audio Drop"}`,
-  points: AUDIO_DROP_POINTS,
-  type: "Content",
-  date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-  time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
-  icon: Headphones,
-  color: "text-sky-400",
-  hexColor: "#38bdf8",
-  typeColor: "text-sky-400 border-white/10 bg-white/5"
-});
-
-// Factory for creating a Post Creation history entry when points are awarded
-const createPostHistoryItem = (): HistoryItem => ({
-  action: "Post Created",
-  details: "Created a Fan Zone post",
-  points: POST_CREATION_POINTS,
-  type: "Engagement",
-  date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-  time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
-  icon: FileText,
-  color: "text-rose-400",
-  hexColor: "#fb7185",
-  typeColor: "text-rose-400 border-white/10 bg-white/5"
-});
-
-// Factory for creating a Trivia history entry when a correct answer awards points
-const createTriviaHistoryItem = (question: string): HistoryItem => ({
-  action: "Trivia",
-  details: `Answered: ${question || "Trivia Question"}`,
-  points: TRIVIA_POINTS,
-  type: "Trivia",
-  date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-  time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
-  icon: CheckCircle2,
-  color: "text-violet-400",
-  hexColor: "#a78bfa",
-  typeColor: "text-violet-400 border-white/10 bg-white/5"
-});
-
-interface GroupedCategory {
-  label: string;
   xpValue: number;
-  color: string;
-  icon: React.ElementType;
 }
 
-const getExactEarningBreakdown = (history: HistoryItem[]): CategoryBreakdown[] => {
-  if (history.length === 0) return [];
+interface LeaderboardContextType {
+  currentUserPoints: number;
+  currentUserRank: number;
+  previousUserRank?: number;
+}
 
-  const historyTotal = history.reduce((sum, item) => sum + item.points, 0);
-
-  const grouped = history.reduce((acc, curr) => {
-    if (!acc[curr.action]) {
-      acc[curr.action] = { 
-        label: curr.action, 
-        xpValue: 0, 
-        color: curr.hexColor, 
-        icon: curr.icon 
-      };
-    }
-    acc[curr.action].xpValue += curr.points;
-    return acc;
-  }, {} as Record<string, GroupedCategory>);
-
-  return Object.values(grouped).map(cat => ({
-    label: cat.label,
-    color: cat.color,
-    icon: cat.icon,
-    xpValue: cat.xpValue,
-    percent: Math.round((cat.xpValue / historyTotal) * 100),
-    xp: `+${cat.xpValue.toLocaleString()} SXP`,
-  }));
+// ─────────────────────────────────────────────
+// ACTIVITY META — single source of truth
+// ─────────────────────────────────────────────
+const ACTIVITY_META: Record<ActivityKey, {
+  action: string; type: string; icon: React.ElementType;
+  color: string; hexColor: string; typeColor: string;
+}> = {
+  audioDrop: {
+    action: "Audio Drops", type: "Content", icon: Headphones,
+    color: "text-sky-400", hexColor: "#38bdf8",
+    typeColor: "text-sky-400 border-sky-400/30 bg-sky-400/5",
+  },
+  fanBattle: {
+    action: "Fan Battles", type: "Fantasy", icon: Gamepad2,
+    color: "text-yellow-500", hexColor: "#eab308",
+    typeColor: "text-yellow-500 border-yellow-500/30 bg-yellow-500/5",
+  },
+  trivia: {
+    action: "Trivia", type: "Trivia", icon: CheckCircle2,
+    color: "text-violet-400", hexColor: "#a78bfa",
+    typeColor: "text-violet-400 border-violet-400/30 bg-violet-400/5",
+  },
+  post: {
+    action: "Post Created", type: "Engagement", icon: FileText,
+    color: "text-rose-400", hexColor: "#fb7185",
+    typeColor: "text-rose-400 border-rose-400/30 bg-rose-400/5",
+  },
+  register: {
+    action: "Registration", type: "Registration", icon: UserPlus,
+    color: "text-emerald-500", hexColor: "#10b981",
+    typeColor: "text-emerald-500 border-emerald-500/30 bg-emerald-500/5",
+  },
+  invite: {
+    action: "Invite Friend", type: "Referral", icon: UserPlus,
+    color: "text-emerald-500", hexColor: "#10b981",
+    typeColor: "text-emerald-500 border-emerald-500/30 bg-emerald-500/5",
+  },
+  watchDrop: {
+    action: "Watch Drops", type: "Content", icon: Play,
+    color: "text-yellow-500", hexColor: "#eab308",
+    typeColor: "text-yellow-500 border-yellow-500/30 bg-yellow-500/5",
+  },
+  like: {
+    action: "Post Like", type: "Engagement", icon: ThumbsUp,
+    color: "text-rose-500", hexColor: "#f43f5e",
+    typeColor: "text-rose-500 border-rose-500/30 bg-rose-500/5",
+  },
+  share: {
+    action: "Post Share", type: "Engagement", icon: Share2,
+    color: "text-purple-500", hexColor: "#a855f7",
+    typeColor: "text-purple-500 border-purple-500/30 bg-purple-500/5",
+  },
+  other: {
+    action: "Activity", type: "Activity", icon: Trophy,
+    color: "text-gray-300", hexColor: "#d4d4d8",
+    typeColor: "text-gray-300 border-gray-400/30 bg-white/5",
+  },
 };
 
-const trendData = [30, 45, 40, 60, 55, 75, 70, 90, 85, 100];
-const staticTopActivitiesData = [
-  { icon: UserPlus, title: "Register on SportsFan360", xp: "+100 SXP", desc: "1 time", color: "text-emerald-500", bg: "bg-emerald-500/10 border-emerald-500/20" },
-  { icon: UserPlus, title: "Invite Friends", xp: "+100 SXP", desc: "3 invites", color: "text-emerald-500", bg: "bg-emerald-500/10 border-emerald-500/20" },
-  { icon: Gamepad2, title: "Fantasy - Fan Battle", xp: "+50 SXP", desc: "7 battles", color: "text-yellow-500", bg: "bg-yellow-500/10 border-yellow-500/20" },
-  { icon: CheckCircle2, title: "Answer Trivia Questions", xp: "+5 SXP", desc: "Per correct answer", color: "text-violet-400", bg: "bg-violet-400/10 border-violet-400/20" },
-  { icon: Headphones, title: "Listen Audio Drops", xp: "+2 SXP", desc: "Per drop (90% listened)", color: "text-sky-400", bg: "bg-sky-400/10 border-sky-400/20" },
-  { icon: FileText, title: "Create a Post", xp: "+12 SXP", desc: "Per post created", color: "text-rose-400", bg: "bg-rose-400/10 border-rose-400/20" },
-];
+// ─────────────────────────────────────────────
+// FACTORY — create a history item
+// ─────────────────────────────────────────────
+function makeHistoryItem(
+  key: ActivityKey,
+  details: string,
+  points: number,
+  atDate?: Date,
+  id = `hi_${Date.now()}`,
+  action?: string,
+  source?: string
+): HistoryItem {
+  const d = atDate ?? new Date();
+  const meta = ACTIVITY_META[key];
+  return {
+    id,
+    key,
+    action: action || meta.action,
+    details,
+    points,
+    type: meta.type,
+    source: source || meta.type,
+    date: d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+    timestamp: d.getTime(),
+    time: d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
+    icon: meta.icon,
+    color: meta.color,
+    hexColor: meta.hexColor,
+    typeColor: meta.typeColor,
+  };
+}
 
-const activityFeedData = [
-  { category: "CONTENT", action: "Read: IPL 2026 Dispatch", points: "+25 SXP", time: "2m ago", icon: FileText, color: "text-yellow-500", bg: "bg-yellow-500/10" },
-  { category: "ENGAGEMENT", action: "Voted in Poll", points: "+15 SXP", time: "15m ago", icon: CheckCircle2, color: "text-indigo-400", bg: "bg-indigo-500/10" },
-];
+// ─────────────────────────────────────────────
+// HELPERS
+// ─────────────────────────────────────────────
+function normalizeActivityKey(type: string, label: string): ActivityKey {
+  const value = `${type} ${label}`.toLowerCase().replace(/[_-]+/g, " ");
+  if (value.includes("audio")) return "audioDrop";
+  if (value.includes("battle") || value.includes("fantasy")) return "fanBattle";
+  if (value.includes("trivia") || value.includes("quiz")) return "trivia";
+  if (value.includes("register") || value.includes("signup") || value.includes("sign up")) return "register";
+  if (value.includes("invite") || value.includes("referral")) return "invite";
+  if (value.includes("watch") || value.includes("video")) return "watchDrop";
+  if (value.includes("like")) return "like";
+  if (value.includes("share")) return "share";
+  if (value.includes("post") || value.includes("create post")) return "post";
+  return "other";
+}
 
-const earnPointsActions = [
-  { icon: Headphones, title: "Listen Audio Drops", xp: "+2 SXP", desc: "Per drop (90% listened)", color: "text-sky-400", bg: "bg-sky-400/10" },
-  { icon: CheckCircle2, title: "Answer Trivia", xp: "+5 SXP", desc: "Per correct answer", color: "text-violet-400", bg: "bg-violet-400/10" },
-  { icon: Play, title: "Watch / Listen to Drops", xp: "+20 SXP", desc: "12 Actions", color: "text-yellow-500", bg: "bg-yellow-500/10" },
-  { icon: ThumbsUp, title: "Like a Post", xp: "+10 SXP", desc: "28 Actions", color: "text-rose-500", bg: "bg-rose-500/10" },
-  { icon: Share2, title: "Share a Post", xp: "+15 SXP", desc: "18 Actions", color: "text-purple-500", bg: "bg-purple-500/10" },
-  { icon: FileText, title: "Create a Post", xp: "+12 SXP", desc: "Per post created", color: "text-rose-400", bg: "bg-rose-400/10" },
-];
+function normalizeTimestamp(createdAt: number): number {
+  if (!createdAt) return Date.now();
+  return createdAt < 1_000_000_000_000 ? createdAt * 1000 : createdAt;
+}
 
-// --- REUSABLE COMPONENTS ---
+function readableSource(source: string) {
+  return source
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
 
-function DonutChart({ data, totalPoints }: { data: CategoryBreakdown[], totalPoints?: string }) {
-  const isEmpty = data.length === 0;
+function metadataText(metadata: ActivityItem["metadata"]) {
+  const keys = [
+    "title",
+    "postTitle",
+    "audioTitle",
+    "videoTitle",
+    "battleTitle",
+    "matchName",
+    "question",
+    "resourceName",
+    "name",
+    "transactionId",
+  ];
 
-  let currentOffset = 0;
-  const slices = data.map((slice) => {
-    const dasharray = `${slice.percent} 100`;
-    const dashoffset = -currentOffset;
-    currentOffset += slice.percent;
-    return { ...slice, dasharray, dashoffset };
+  for (const key of keys) {
+    const value = metadata?.[key];
+    if (typeof value === "string" && value.trim()) return value.trim();
+    if (typeof value === "number") return String(value);
+  }
+
+  return "";
+}
+
+function activityToHistoryItem(activity: ActivityItem): HistoryItem {
+  const key = normalizeActivityKey(activity.type, activity.label);
+  const rawSource = activity.type || key;
+  const readable = readableSource(rawSource);
+  const details = metadataText(activity.metadata) || activity.label || readable;
+
+  return makeHistoryItem(
+    key,
+    details,
+    Number(activity.points) || 0,
+    new Date(normalizeTimestamp(activity.createdAt)),
+    activity.id,
+    activity.label || ACTIVITY_META[key].action,
+    readable
+  );
+}
+
+function calculateLevelData(totalXp: number) {
+  let level = 1, xpForNextLevel = 1000, xpAccumulated = 0;
+  while (totalXp >= xpAccumulated + xpForNextLevel) {
+    xpAccumulated += xpForNextLevel;
+    level++;
+    xpForNextLevel = level * 1000;
+  }
+  const currentLevelXp = totalXp - xpAccumulated;
+  return {
+    level,
+    currentLevelXp,
+    xpForNextLevel,
+    xpRemaining: xpForNextLevel - currentLevelXp,
+    progressPercentage: Math.min(100, Math.round((currentLevelXp / xpForNextLevel) * 100)),
+  };
+}
+
+function getEarningBreakdown(history: HistoryItem[]): CategoryBreakdown[] {
+  if (!history.length) return [];
+  const total = history.reduce((s, h) => s + h.points, 0);
+  const grouped: Record<string, { label: string; xpValue: number; color: string }> = {};
+  history.forEach((h) => {
+    if (!grouped[h.key]) grouped[h.key] = { label: h.action, xpValue: 0, color: h.hexColor };
+    grouped[h.key].xpValue += h.points;
+  });
+  return Object.values(grouped).map((g) => ({
+    label: g.label,
+    color: g.color,
+    xpValue: g.xpValue,
+    percent: total > 0 ? Math.round((g.xpValue / total) * 100) : 0,
+    xp: `+${g.xpValue.toLocaleString()} SXP`,
+  }));
+}
+
+// ─── Streak calculator ───────────────────────
+function getDynamicStreakData(history: HistoryItem[]) {
+  const today = new Date();
+  const todayMid = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+  const weekday = today.getDay();
+  const adjustedDay = weekday === 0 ? 6 : weekday - 1;
+  const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  const historyDates = new Set(
+    history.map((h) => {
+      const d = new Date(h.timestamp);
+      return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+    })
+  );
+  let currentStreak = 0;
+  const streakMap = days.map((day, i) => {
+    const dayMid = todayMid + (i - adjustedDay) * 86400000;
+    const hasActivity = historyDates.has(dayMid);
+    const isPast = dayMid < todayMid;
+    const isToday = dayMid === todayMid;
+    if (hasActivity) currentStreak++;
+    return {
+      day,
+      isActive: hasActivity,
+      isMissed: !hasActivity && isPast,
+      isFuture: dayMid > todayMid,
+      isToday,
+    };
+  });
+  return { streakMap, currentStreak };
+}
+
+// ─── Trend analytics ────────────────────────
+function getTrendAnalytics(history: HistoryItem[], period: TrendPeriod) {
+  const now = Date.now();
+  const daysMap: Record<TrendPeriod, number> = { "7D": 7, "30D": 30, "90D": 90 };
+  const days = daysMap[period];
+  const msPerDay = 86400000;
+  const currentStart = now - days * msPerDay;
+  const previousStart = currentStart - days * msPerDay;
+
+  // Bucket data for chart (10 evenly spaced points)
+  const BUCKETS = 10;
+  const bucketSize = (days * msPerDay) / BUCKETS;
+  const buckets = new Array(BUCKETS).fill(0);
+
+  let currentPts = 0;
+  let previousPts = 0;
+
+  history.forEach((item) => {
+    const t = item.timestamp;
+    if (t >= currentStart && t <= now) {
+      currentPts += item.points;
+      const idx = Math.min(BUCKETS - 1, Math.floor((t - currentStart) / bucketSize));
+      buckets[idx] += item.points;
+    } else if (t >= previousStart && t < currentStart) {
+      previousPts += item.points;
+    }
   });
 
+  // Cumulative for a rising line
+  let cum = 0;
+  const chartData = buckets.map((v) => { cum += v; return cum; });
+
+  // If no data yet, flat zero line
+  const finalChart = currentPts > 0 ? chartData : new Array(BUCKETS).fill(0);
+
+  const percentChange =
+    previousPts > 0
+      ? Math.round(((currentPts - previousPts) / previousPts) * 100)
+      : currentPts > 0 ? 100 : 0;
+
+  const fmt = (d: Date, opts: Intl.DateTimeFormatOptions) =>
+    d.toLocaleDateString("en-US", opts);
+  const nowDate = new Date(now);
+
+  const labelsMap: Record<TrendPeriod, string[]> = {
+    "7D": [
+      fmt(new Date(now - 6 * msPerDay), { weekday: "short" }),
+      fmt(new Date(now - 4 * msPerDay), { weekday: "short" }),
+      fmt(new Date(now - 2 * msPerDay), { weekday: "short" }),
+      "Today",
+    ],
+    "30D": [
+      fmt(new Date(now - 30 * msPerDay), { month: "short", day: "numeric" }),
+      fmt(new Date(now - 20 * msPerDay), { month: "short", day: "numeric" }),
+      fmt(new Date(now - 10 * msPerDay), { month: "short", day: "numeric" }),
+      "Today",
+    ],
+    "90D": [
+      fmt(new Date(now - 90 * msPerDay), { month: "short" }),
+      fmt(new Date(now - 60 * msPerDay), { month: "short" }),
+      fmt(new Date(now - 30 * msPerDay), { month: "short" }),
+      fmt(nowDate, { month: "short" }),
+    ],
+  };
+  const vsMap: Record<TrendPeriod, string> = {
+    "7D": "vs last week",
+    "30D": "vs last month",
+    "90D": "vs last 90 days",
+  };
+  return {
+    chartData: finalChart,
+    percentChange,
+    isPositive: percentChange >= 0,
+    labels: labelsMap[period],
+    vsText: vsMap[period],
+    currentPts,
+  };
+}
+
+// ─────────────────────────────────────────────
+// DONUT CHART
+// ─────────────────────────────────────────────
+function DonutChart({
+  data,
+  centerPoints,
+}: {
+  data: CategoryBreakdown[];
+  centerPoints: string;
+}) {
+  const RADIUS = 15.91549430918954;
+  const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
+  let offsetPercent = 0;
+
+  const slices = data.map((slice) => {
+    const dashLength = (slice.percent / 100) * CIRCUMFERENCE;
+    const gapLength = CIRCUMFERENCE - dashLength;
+    // rotate by current offset
+    const rotation = (offsetPercent / 100) * 360 - 90;
+    offsetPercent += slice.percent;
+    return { ...slice, dashLength, gapLength, rotation };
+  });
+
+  const isEmpty = data.length === 0;
+
   return (
-    <div className="relative w-72 h-72 md:w-80 md:h-80 shrink-0">
-      <svg viewBox="0 0 100 100" className="w-full h-full transform -rotate-90">
+    <div className="relative w-64 h-64 shrink-0">
+      <svg viewBox="0 0 100 100" className="w-full h-full">
         {isEmpty ? (
           <circle
-            cx="50" cy="50" r="15.91549430918954"
+            cx="50" cy="50" r={RADIUS}
             fill="transparent"
             stroke="#27272a"
-            strokeWidth="6"
-            strokeDasharray="100 0"
+            strokeWidth="8"
           />
         ) : (
           slices.map((slice, i) => (
             <circle
               key={i}
-              cx="50" cy="50" r="15.91549430918954"
+              cx="50" cy="50" r={RADIUS}
               fill="transparent"
               stroke={slice.color}
-              strokeWidth="6"
-              strokeDasharray={slice.dasharray}
-              strokeDashoffset={slice.dashoffset}
+              strokeWidth="8"
+              strokeDasharray={`${slice.dashLength} ${slice.gapLength}`}
+              strokeDashoffset={0}
+              transform={`rotate(${slice.rotation} 50 50)`}
               className="transition-all duration-1000 ease-out"
             />
           ))
         )}
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-        <span className="text-3xl md:text-4xl font-black text-white">{isEmpty ? "0" : (totalPoints || "0")}</span>
-        <span className="text-xs md:text-sm text-gray-400 font-bold uppercase tracking-wider mt-1">SXP</span>
-        {isEmpty && <span className="text-[10px] text-gray-600 mt-1 font-medium">No activity yet</span>}
+        <span className="text-3xl font-black text-white">
+          {isEmpty ? "0" : centerPoints}
+        </span>
+        <span className="text-xs text-gray-400 font-bold uppercase tracking-wider mt-1">SXP</span>
+        {isEmpty && (
+          <span className="text-[10px] text-gray-600 mt-1 font-medium">No activity yet</span>
+        )}
       </div>
     </div>
   );
 }
 
-function MiniTrendLine({ data }: { data: number[] }) {
-  const maxVal = Math.max(...data);
-  const minVal = Math.min(...data) - 10; 
-  const range = maxVal - minVal;
-
+// ─────────────────────────────────────────────
+// MINI TREND LINE (SVG — no dependencies)
+// ─────────────────────────────────────────────
+function MiniTrendLine({ data, color = "#f43f5e" }: { data: number[]; color?: string }) {
+  if (!data.length) return null;
+  const maxVal = Math.max(...data, 1);
+  const minVal = Math.min(...data);
+  const range = maxVal - minVal || 1;
+  const W = 240, H = 80;
+  const pts = data.map((v, i) => ({
+    x: (i / (data.length - 1)) * W,
+    y: H - ((v - minVal) / range) * H,
+  }));
+  const d = pts.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x},${p.y}`).join(" ");
   return (
-    <svg viewBox="0 -10 240 120" className="w-full h-24 overflow-visible">
-      <path 
-        d={`M ${data.map((val, idx) => `${(idx / (data.length - 1)) * 240},${100 - ((val - minVal) / range) * 100}`).join(" L ")}`} 
-        fill="none" 
-        stroke="#f43f5e" 
-        strokeWidth="4" 
-        className="drop-shadow-[0_4px_12px_rgba(244,63,94,0.8)]"
-      />
-      {data.map((val, idx) => {
-        const x = (idx / (data.length - 1)) * 240;
-        const y = 100 - ((val - minVal) / range) * 100;
-        return <circle key={idx} cx={x} cy={y} r="4" fill="#fff" />;
-      })}
+    <svg viewBox={`0 0 ${W} ${H + 10}`} className="w-full h-20 overflow-visible">
+      <path d={d} fill="none" stroke={color} strokeWidth="3" />
+      {pts.map((p, i) => (
+        <circle key={i} cx={p.x} cy={p.y} r="3.5" fill="#fff" />
+      ))}
     </svg>
   );
 }
 
-const getDynamicStreakData = (historyData: HistoryItem[]) => {
-  const today = new Date();
-  const currentDayOfWeek = today.getDay(); 
-  const adjustedDay = currentDayOfWeek === 0 ? 6 : currentDayOfWeek - 1; 
-  const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-  
-  let currentStreak = 0;
-  
-  const streakMap = days.map((dayName, index) => {
-    const dateOfThisDay = new Date(today);
-    dateOfThisDay.setDate(today.getDate() - adjustedDay + index);
-    const formattedDate = dateOfThisDay.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-    
-    const hasActivity = historyData.some(item => item.date === formattedDate);
-    const todayAtMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
-    const thisDayAtMidnight = new Date(dateOfThisDay.getFullYear(), dateOfThisDay.getMonth(), dateOfThisDay.getDate()).getTime();
-    
-    const isPast = thisDayAtMidnight < todayAtMidnight;
-    const isToday = thisDayAtMidnight === todayAtMidnight;
-    
-    if (hasActivity) currentStreak++;
-
-    return {
-      day: dayName,
-      isActive: hasActivity,
-      isMissed: !hasActivity && isPast,
-      isFutureOrEmptyToday: (!hasActivity && isToday) || thisDayAtMidnight > todayAtMidnight
-    };
-  });
-
-  return { streakMap, currentStreak };
-};
-
-const calculateLevelData = (totalXp: number) => {
-  let level = 1;
-  let xpForNextLevel = 1000;
-  let xpAccumulated = 0;
-
-  while (totalXp >= xpAccumulated + xpForNextLevel) {
-    xpAccumulated += xpForNextLevel;
-    level++;
-    xpForNextLevel = level * 1000; 
-  }
-
-  const currentLevelXp = totalXp - xpAccumulated;
-  const xpRemaining = xpForNextLevel - currentLevelXp;
-  const progressPercentage = Math.min(100, Math.max(0, (currentLevelXp / xpForNextLevel) * 100));
-
-  return {
-    level,
-    currentLevelXp,
-    xpForNextLevel,
-    xpRemaining,
-    progressPercentage,
-  };
-};
-
-// Define the expected context type
-interface LeaderboardContextType {
-  currentUserPoints: number;
-  currentUserRank: number;
-  previousUserRank?: number; // Make it optional
+// ─────────────────────────────────────────────
+// INFO ICON
+// ─────────────────────────────────────────────
+function InfoIcon() {
+  return (
+    <span className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full border border-gray-600 text-[9px] text-gray-500 cursor-help hover:text-gray-300 hover:border-gray-400 transition-colors">
+      i
+    </span>
+  );
 }
 
+// ─────────────────────────────────────────────
+// STATIC DATA
+// ─────────────────────────────────────────────
+const earnPointsActions = [
+  { icon: Headphones,   title: "Listen Audio Drops", xp: "+2 SXP",   desc: "Per drop (90% listened)",    color: "text-sky-400",    bg: "bg-sky-400/10" },
+  { icon: CheckCircle2, title: "Answer Trivia",       xp: "+5 SXP",   desc: "Per correct answer",         color: "text-violet-400", bg: "bg-violet-400/10" },
+  { icon: Play,         title: "Watch Drops",         xp: "+20 SXP",  desc: "12 Actions",                 color: "text-yellow-500", bg: "bg-yellow-500/10" },
+  { icon: ThumbsUp,     title: "Like a Post",         xp: "+10 SXP",  desc: "28 Actions",                 color: "text-rose-500",   bg: "bg-rose-500/10" },
+  { icon: Share2,       title: "Share a Post",        xp: "+15 SXP",  desc: "18 Actions",                 color: "text-purple-500", bg: "bg-purple-500/10" },
+  { icon: FileText,     title: "Create a Post",       xp: "+12 SXP",  desc: "Per post created",           color: "text-rose-400",   bg: "bg-rose-400/10" },
+];
+
+const staticTopActivities = [
+  { icon: UserPlus,    title: "Register on SportsFan360", xp: "+100 SXP", desc: "1 time",              color: "text-emerald-500", bg: "bg-emerald-500/10 border-emerald-500/20" },
+  { icon: UserPlus,    title: "Invite Friends",            xp: "+100 SXP", desc: "3 invites",           color: "text-emerald-500", bg: "bg-emerald-500/10 border-emerald-500/20" },
+  { icon: Gamepad2,    title: "Fantasy - Fan Battle",      xp: "+15 SXP",  desc: "Per battle",          color: "text-yellow-500",  bg: "bg-yellow-500/10 border-yellow-500/20" },
+  { icon: CheckCircle2,title: "Answer Trivia",             xp: "+5 SXP",   desc: "Per correct answer",  color: "text-violet-400",  bg: "bg-violet-400/10 border-violet-400/20" },
+  { icon: Headphones,  title: "Listen Audio Drops",        xp: "+2 SXP",   desc: "Per drop (90%)",      color: "text-sky-400",     bg: "bg-sky-400/10 border-sky-400/20" },
+  { icon: FileText,    title: "Create a Post",             xp: "+12 SXP",  desc: "Per post created",    color: "text-rose-400",    bg: "bg-rose-400/10 border-rose-400/20" },
+];
+
+// ─────────────────────────────────────────────
+// CURRENT MONTH LABEL — always correct
+// ─────────────────────────────────────────────
+function getCurrentMonthLabel() {
+  return new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" });
+}
+function getPreviousMonthLabel() {
+  const d = new Date();
+  d.setDate(1);
+  d.setMonth(d.getMonth() - 1);
+  return d.toLocaleDateString("en-US", { month: "short", year: "numeric" });
+}
+
+// ─────────────────────────────────────────────
+// MAIN DASHBOARD
+// ─────────────────────────────────────────────
 export default function FanZoneDashboard() {
   const [activeTab, setActiveTab] = useState("My Analytics");
-  const [selectedMonth, setSelectedMonth] = useState("May 2026");
-  
+  const [trendPeriod, setTrendPeriod] = useState<TrendPeriod>("30D");
+
+  // ── Leaderboard context ──────────────────────
   const contextData = useLeaderboard() as LeaderboardContextType | null;
   const currentUserPoints = contextData?.currentUserPoints ?? 0;
-  const currentUserRank = contextData?.currentUserRank ?? 0;
-  const previousUserRank = contextData?.previousUserRank ?? 0;
-  
-  const displayPoints = currentUserPoints.toLocaleString();
+  const currentUserRank   = contextData?.currentUserRank   ?? 0;
+  const { activities, loading: activitiesLoading } = useActivity();
 
-  // ── Activity tracking via currentUserPoints delta ─────────────────────────
-  // Window events (audioDropPointsAwarded, postCreatedPointsAwarded,
-  // triviaAnsweredPointsAwarded) are unreliable when activities happen on OTHER
-  // routes where FanZoneDashboard is not mounted — the events fire into nothing.
-  // Instead we watch currentUserPoints (from LeaderboardContext, always mounted
-  // at the app root) and attribute each increase to the right category based on
-  // the known fixed point values for each activity type.
-  const [audioDropHistory, setAudioDropHistory] = useState<HistoryItem[]>([]);
-  const [postHistory, setPostHistory]           = useState<HistoryItem[]>([]);
-  const [triviaHistory, setTriviaHistory]       = useState<HistoryItem[]>([]);
+  // ── History rows come from the backend activity ledger ──
+  const history = useMemo(
+    () => activities.map(activityToHistoryItem).sort((a, b) => b.timestamp - a.timestamp),
+    [activities]
+  );
 
-  // null = component just mounted, baseline not yet recorded
-  const prevPointsRef = useRef<number | null>(null);
+  // ── Rank tracking — store previous rank in ref ──
+  // We keep prevRank as a ref so it doesn't cause re-renders,
+  // and we capture it the moment rank changes.
+  const [rankSnapshot, setRankSnapshot] = useState({ prev: 0, current: 0 });
 
   useEffect(() => {
-    // First render: record the baseline so we don't misattribute historical points
-    if (prevPointsRef.current === null) {
-      prevPointsRef.current = currentUserPoints;
-      return;
+    if (currentUserRank === 0) return;
+    if (rankSnapshot.current !== currentUserRank) {
+      setRankSnapshot({ prev: rankSnapshot.current, current: currentUserRank });
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUserRank]);
 
-    const delta = currentUserPoints - prevPointsRef.current;
-    prevPointsRef.current = currentUserPoints;
+  // ─── Total points — use context if available, else sum history ─────
+  // Context is the authoritative source; history is for display only.
+  const totalPoints = currentUserPoints > 0
+    ? currentUserPoints
+    : history.reduce((s, h) => s + h.points, 0);
 
-    // Only react to increases; decreases / zero changes are ignored
-    if (delta <= 0) return;
+  const displayPoints = totalPoints.toLocaleString();
 
-    // Attribute the delta to the matching known activity type.
-    // Fan Battle points are NOT attributed here — they become the remainder
-    // in fanBattleHistory below, so they automatically appear in the chart.
-    if (delta === POST_CREATION_POINTS) {
-      setPostHistory(prev => [createPostHistoryItem(), ...prev]);
-    } else if (delta === TRIVIA_POINTS) {
-      setTriviaHistory(prev => [createTriviaHistoryItem("Trivia Question"), ...prev]);
-    } else if (delta === AUDIO_DROP_POINTS) {
-      setAudioDropHistory(prev => [createAudioDropHistoryItem("Audio Drop"), ...prev]);
-    }
-    // Any other delta (e.g. Fan Battle, registration bonus, invite reward)
-    // flows through as the Fan Battles remainder — no explicit entry needed.
-  }, [currentUserPoints]);
-  
-  // Sync the ledger dynamically with the live user points!
-  // Fan Battle points = total context points minus all locally-tracked activity points.
-  // This ensures each activity appears as its own slice in the donut chart.
-  const fanBattleHistory = useMemo((): HistoryItem[] => {
-    // Sum all locally-tracked activity points
-    const totalAudioPoints = audioDropHistory.reduce((sum, item) => sum + item.points, 0)
-      + exactUserHistory.filter(item => item.action === "Audio Drops").reduce((sum, item) => sum + item.points, 0);
-    const totalPostPoints = postHistory.reduce((sum, item) => sum + item.points, 0);
-    const totalTriviaPoints = triviaHistory.reduce((sum, item) => sum + item.points, 0);
+  // ─── Derived data ────────────────────────────
+  const earningBreakdown = useMemo(() => getEarningBreakdown(history), [history]);
+  const trendAnalytics   = useMemo(() => getTrendAnalytics(history, trendPeriod), [history, trendPeriod]);
+  const levelData        = useMemo(() => calculateLevelData(totalPoints), [totalPoints]);
+  const { streakMap, currentStreak } = useMemo(() => getDynamicStreakData(history), [history]);
 
-    // Fan Battle points are the remainder from the LeaderboardContext total
-    const fanBattlePoints = currentUserPoints > 0
-      ? Math.max(0, currentUserPoints - totalAudioPoints - totalPostPoints - totalTriviaPoints)
-      : 0;
+  const recentActivityList = useMemo(
+    () => history.slice(0, 5).map((h) => ({
+      icon: h.icon, action: h.action, detail: h.details,
+      xp: h.points, time: h.time, color: h.color, hexColor: h.hexColor,
+    })),
+    [history]
+  );
 
-    // Only include a Fan Battles entry when there are actual fan battle points
-    if (fanBattlePoints <= 0) return [];
+  // ─── Rank display ────────────────────────────
+  const rankDiff   = rankSnapshot.prev > 0 && rankSnapshot.current > 0
+    ? Math.abs(rankSnapshot.prev - rankSnapshot.current) : 0;
+  const isRankUp   = rankSnapshot.prev > 0 && rankSnapshot.current > 0
+    && rankSnapshot.current < rankSnapshot.prev;
+  // ─── Month labels — always dynamic ──────────
+  const currentMonthLabel  = getCurrentMonthLabel();   // "June 2026"
+  const previousMonthLabel = getPreviousMonthLabel();   // "May 2026"
 
-    return [{
-      action: "Fan Battles",
-      details: "Played a Fan Battle",
-      points: fanBattlePoints,
-      type: "Fantasy",
-      date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-      time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
-      icon: Gamepad2,
-      color: "text-yellow-500",
-      hexColor: "#eab308",
-      typeColor: "text-yellow-500 border-white/10 bg-white/5"
-    }];
-  }, [currentUserPoints, audioDropHistory, postHistory, triviaHistory]);
+  // ─── Points this month vs last month ─────────
+  const now = new Date();
+  const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+  const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1).getTime();
 
-  // Build the initial audio history from exactUserHistory seed data (non-Fan Battle entries)
-  const seedAudioHistory = useMemo((): HistoryItem[] => {
-    return exactUserHistory.filter(item => item.action === "Audio Drops");
-  }, []);
+  const thisMonthPoints = useMemo(
+    () => history.filter((h) => h.timestamp >= thisMonthStart).reduce((s, h) => s + h.points, 0),
+    [history, thisMonthStart]
+  );
+  const lastMonthPoints = useMemo(
+    () => history.filter((h) => h.timestamp >= lastMonthStart && h.timestamp < thisMonthStart).reduce((s, h) => s + h.points, 0),
+    [history, lastMonthStart, thisMonthStart]
+  );
+  const monthDiff = thisMonthPoints - lastMonthPoints;
+  const monthPctChange = lastMonthPoints > 0
+    ? Math.round((monthDiff / lastMonthPoints) * 100)
+    : thisMonthPoints > 0 ? 100 : 0;
+  const displayMonthlyPoints = thisMonthPoints.toLocaleString();
 
-  const earningHistoryData = useMemo(() => {
-    return [...triviaHistory, ...postHistory, ...audioDropHistory, ...seedAudioHistory, ...fanBattleHistory];
-  }, [triviaHistory, postHistory, audioDropHistory, seedAudioHistory, fanBattleHistory]);
-  const dynamicEarningBreakdown = getExactEarningBreakdown(earningHistoryData);
-  
-  // 1. Add state for the active tab (7D, 30D, 90D)
-  const [trendPeriod, setTrendPeriod] = useState("30D");
+  // ─── Shared sub-components ───────────────────
+  const StreakWidget = () => (
+    <div className="bg-[#09090b] border border-white/10 rounded-2xl p-6">
+      <h3 className="text-xs font-black tracking-widest text-gray-400 uppercase mb-4 flex items-center gap-1.5">
+        Your Streak <InfoIcon />
+      </h3>
+      <div className="flex items-baseline gap-2 mb-1">
+        <h2 className="text-4xl font-black text-white">{currentStreak}</h2>
+        <span className="text-xl font-medium text-gray-400">Days</span>
+      </div>
+      <p className="text-sm text-gray-400 mb-6">Keep it going, don&apos;t break your streak!</p>
+      <div className="flex justify-between items-center">
+        {streakMap.map((data) => (
+          <div key={data.day} className="flex flex-col items-center gap-2">
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all ${
+              data.isActive
+                ? "bg-rose-600 border-rose-500 text-white shadow-[0_0_10px_rgba(225,29,72,0.5)]"
+                : data.isMissed
+                  ? "bg-[#0f0a0a] border-red-500/30 text-red-500"
+                  : "bg-[#18181b] border-white/10 text-gray-600"
+            }`}>
+              {data.isActive ? <CheckCircle2 className="w-5 h-5" /> : data.isMissed ? <X className="w-5 h-5 opacity-80" /> : null}
+            </div>
+            <span className={`text-xs font-bold ${data.isActive || data.isMissed ? "text-white" : "text-gray-500"}`}>
+              {data.day}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 
-  // 2. Add the dynamic trend calculator
-  const trendAnalytics = useMemo(() => {
-    const today = new Date();
-    
-    // Map periods to days without if/else
-    const daysMap: Record<string, number> = { "7D": 7, "30D": 30, "90D": 90 };
-    const days = daysMap[trendPeriod] || 30;
+  const InviteWidget = () => (
+    <div className="bg-[#09090b] border border-rose-500/20 rounded-2xl p-6 flex items-center justify-between overflow-hidden relative group cursor-pointer hover:border-rose-500/50 transition-colors">
+      <div className="absolute right-0 top-1/2 -translate-y-1/2 opacity-30 group-hover:scale-110 transition-transform duration-500 translate-x-4">
+        <UserPlus className="w-32 h-32 text-rose-500" />
+      </div>
+      <div className="relative z-10">
+        <h3 className="text-lg font-black text-white mb-1">Invite Friends & Earn</h3>
+        <p className="text-sm text-gray-400 mb-4">Earn 100 SXP for each friend who joins!</p>
+        <button className="bg-gradient-to-r from-rose-600 to-orange-500 text-white text-sm font-bold py-2.5 px-6 rounded-full hover:shadow-[0_0_15px_rgba(225,29,72,0.4)] transition-all">
+          Invite Now
+        </button>
+      </div>
+    </div>
+  );
 
-    const currentPeriodStart = new Date(today.getTime() - days * 24 * 60 * 60 * 1000);
-    const previousPeriodStart = new Date(currentPeriodStart.getTime() - days * 24 * 60 * 60 * 1000);
+  const RecentActivityWidget = () => (
+    <div className="bg-[#09090b] border border-white/10 rounded-2xl p-6 flex flex-col">
+      <h3 className="text-xs font-black tracking-widest text-gray-400 uppercase mb-6">Recent Activity</h3>
+      <div className="flex-1 space-y-5">
+        {recentActivityList.length === 0 ? (
+          <p className="text-sm text-gray-500 text-center py-4">No activity yet — start earning!</p>
+        ) : (
+          recentActivityList.map((item, i) => (
+            <div key={i} className="flex items-center justify-between group">
+              <div className="flex items-center gap-4">
+                <div className={`w-8 h-8 rounded-full bg-[#18181b] border border-white/5 flex items-center justify-center ${item.color}`}>
+                  <item.icon className="w-4 h-4" />
+                </div>
+                <p className="text-sm">
+                  <span className="font-bold text-white mr-1">{item.action}</span>
+                  <span className="text-gray-400">{item.detail}</span>
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="text-sm font-black" style={{ color: item.hexColor }}>+{item.xp} SXP</p>
+                <p className="text-[10px] text-gray-500 font-medium">{item.time}</p>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+      <button
+        onClick={() => setActiveTab("Earning History")}
+        className="text-xs font-bold text-rose-500 hover:text-rose-400 text-center w-full mt-6 py-2 border border-rose-500/20 rounded-lg hover:bg-rose-500/5 transition-colors uppercase tracking-widest"
+      >
+        View All Activity →
+      </button>
+    </div>
+  );
 
-    let currentPeriodPoints = 0;
-    let previousPeriodPoints = 0;
+  const HistoryTable = ({ rows }: { rows: HistoryItem[] }) => (
+    <div className="overflow-x-auto">
+      <table className="w-full text-left border-collapse">
+        <thead>
+          <tr className="border-b border-white/10">
+            <th className="py-4 px-2 text-[10px] font-black text-gray-500 uppercase tracking-widest w-40">Date</th>
+            <th className="py-4 px-2 text-[10px] font-black text-gray-500 uppercase tracking-widest">Activity</th>
+            <th className="py-4 px-2 text-[10px] font-black text-gray-500 uppercase tracking-widest">Details</th>
+            <th className="py-4 px-2 text-[10px] font-black text-gray-500 uppercase tracking-widest text-right">Points</th>
+            <th className="py-4 px-2 pl-8 text-[10px] font-black text-gray-500 uppercase tracking-widest w-40">Source</th>
+          </tr>
+        </thead>
+        <tbody>
+          {activitiesLoading ? (
+            <tr><td colSpan={5} className="text-center text-gray-500 py-8 text-sm">Loading activity sources...</td></tr>
+          ) : rows.length === 0 ? (
+            <tr><td colSpan={5} className="text-center text-gray-500 py-8 text-sm">No activity recorded yet.</td></tr>
+          ) : (
+            rows.map((row) => (
+              <tr key={row.id} className="border-b border-white/5 hover:bg-white/5 transition-colors group">
+                <td className="py-3 px-2">
+                  <p className="text-xs text-gray-300 font-medium">{row.date}</p>
+                  <p className="text-[10px] text-gray-500">{row.time}</p>
+                </td>
+                <td className="py-3 px-2">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-[#18181b] border border-white/10 flex items-center justify-center flex-shrink-0 group-hover:border-white/20 transition-colors">
+                      <row.icon className="w-4 h-4 text-gray-400" />
+                    </div>
+                    <span className="text-xs font-bold text-white">{row.action}</span>
+                  </div>
+                </td>
+                <td className="py-3 px-2 text-xs text-gray-400 font-medium">{row.details}</td>
+                <td className="py-3 px-2 text-right">
+                  <span className="text-xs font-black text-emerald-500">+{row.points}</span>
+                </td>
+                <td className="py-3 px-2 pl-8">
+                  <span className={`inline-flex items-center justify-center px-2.5 py-1 rounded-md text-[10px] font-bold border ${row.typeColor}`}>
+                    {row.source}
+                  </span>
+                </td>
+              </tr>
+            ))
+          )}
+        </tbody>
+      </table>
+    </div>
+  );
 
-    const buckets = new Array(10).fill(0);
-    const bucketSize = (today.getTime() - currentPeriodStart.getTime()) / 10;
-
-    earningHistoryData.forEach((item) => {
-      const itemDate = new Date(item.date);
-      const isCurrent = itemDate >= currentPeriodStart && itemDate <= today;
-      const isPrevious = itemDate >= previousPeriodStart && itemDate < currentPeriodStart;
-
-      // Ternary accumulation to avoid if/else
-      currentPeriodPoints += isCurrent ? item.points : 0;
-      previousPeriodPoints += isPrevious ? item.points : 0;
-
-      const bucketIndex = Math.floor((itemDate.getTime() - currentPeriodStart.getTime()) / bucketSize);
-      const isValidBucket = isCurrent && bucketIndex >= 0 && bucketIndex < 10;
-      
-      // Logical AND evaluation to avoid if statements
-      isValidBucket && (buckets[bucketIndex] += item.points);
-    });
-
-    let cumulative = 0;
-    const calculatedChartData = buckets.map((val) => {
-      cumulative += val;
-      return cumulative;
-    });
-
-    // Fallback data so it doesn't flatline gracefully
-    // Fallback data so it doesn't flatline gracefully
-const defaultChartData = [0, 0, 0, 0, 0, 0, 0];
-
-const chartData = currentPeriodPoints > 0
-  ? calculatedChartData
-  : defaultChartData;
-
-    const percentChange = previousPeriodPoints > 0
-      ? Math.round(((currentPeriodPoints - previousPeriodPoints) / previousPeriodPoints) * 100)
-      : (currentPeriodPoints > 0 ? 100 : 0);
-
-    const formatLabel = (date: Date, options: Intl.DateTimeFormatOptions) => date.toLocaleDateString('en-US', options);
-
-    // Object mapping for dynamic labels without if/else
-    const labelGenerators: Record<string, () => string[]> = {
-      "7D": () => [
-        formatLabel(new Date(today.getTime() - 6 * 86400000), { weekday: 'short' }),
-        formatLabel(new Date(today.getTime() - 4 * 86400000), { weekday: 'short' }),
-        formatLabel(new Date(today.getTime() - 2 * 86400000), { weekday: 'short' }),
-        'Today'
-      ],
-      "30D": () => [
-        formatLabel(new Date(today.getTime() - 30 * 86400000), { month: 'short', day: 'numeric' }),
-        formatLabel(new Date(today.getTime() - 20 * 86400000), { month: 'short', day: 'numeric' }),
-        formatLabel(new Date(today.getTime() - 10 * 86400000), { month: 'short', day: 'numeric' }),
-        'Today'
-      ],
-      "90D": () => [
-        formatLabel(new Date(today.getTime() - 90 * 86400000), { month: 'short' }),
-        formatLabel(new Date(today.getTime() - 60 * 86400000), { month: 'short' }),
-        formatLabel(new Date(today.getTime() - 30 * 86400000), { month: 'short' }),
-        'This Month'
-      ]
-    };
-
-    const vsTexts: Record<string, string> = {
-      "7D": "vs last week",
-      "30D": "vs last month",
-      "90D": "vs last 90 days"
-    };
-
-    return {
-      percentChange,
-      isPositive: percentChange >= 0,
-      chartData,
-      labels: (labelGenerators[trendPeriod] || labelGenerators["30D"])(),
-      vsText: vsTexts[trendPeriod] || vsTexts["30D"]
-    };
-  }, [earningHistoryData, trendPeriod]);
-  
-  const monthDisplayPoints = selectedMonth === "May 2026" ? displayPoints : "0";
-  const vsMonthText = selectedMonth === "May 2026" ? "vs Apr 2026" : "vs Mar 2026";
-
-  const rankDiff = previousUserRank > 0 ? Math.abs(previousUserRank - currentUserRank) : 0;
-  const isRankUp = previousUserRank > 0 && currentUserRank < previousUserRank;
-  // const isRankDown = previousUserRank > 0 && currentUserRank > previousUserRank;
-  const levelData = calculateLevelData(currentUserPoints);
-  const { streakMap, currentStreak } = getDynamicStreakData(earningHistoryData);
-  
-  const recentActivityList = earningHistoryData.slice(0, 5).map(item => ({
-    icon: item.icon, 
-    action: item.action,
-    detail: item.details,
-    xp: item.points,
-    time: item.time,
-    color: item.color
-  }));
-  
+  // ─────────────────────────────────────────────────────────────────
+  // RENDER
+  // ─────────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-[#050505] text-white font-sans selection:bg-rose-500/30 pb-20">
-      
       <main className="max-w-[1400px] mx-auto p-6 space-y-6">
-        
-        {/* HERO SECTION */}
+
+        {/* ── HERO ── */}
         <div className="relative rounded-2xl overflow-hidden border border-white/10 bg-[#09090b] flex items-center min-h-[220px]">
-          <div 
+          <div
             className="absolute inset-0 bg-cover bg-center opacity-40 mix-blend-screen"
             style={{ backgroundImage: "url('https://images.unsplash.com/photo-1504450758481-7338eba7524a?q=80&w=1200&auto=format&fit=crop')" }}
           />
           <div className="absolute inset-0 bg-gradient-to-r from-black via-rose-950/80 to-transparent" />
-          
           <div className="relative z-10 p-8 w-full flex flex-col md:flex-row items-center justify-between gap-8">
             <div>
-              <h1 className="text-5xl md:text-6xl font-black tracking-tighter text-white mb-2 drop-shadow-lg">
-                FAN ZONE
-              </h1>
-              <p className="text-lg md:text-xl font-medium text-gray-300 mb-6">
-                Connect. Engage. Belong.
-              </p>
+              <h1 className="text-5xl md:text-6xl font-black tracking-tighter text-white mb-2 drop-shadow-lg">FAN ZONE</h1>
+              <p className="text-lg md:text-xl font-medium text-gray-300 mb-6">Connect. Engage. Belong.</p>
               <div className="flex gap-4">
                 <button className="px-6 py-2.5 rounded-full text-sm font-bold text-white bg-rose-600 hover:bg-rose-500 transition-colors shadow-[0_0_20px_rgba(225,29,72,0.4)]">
                   Connect with Fans
@@ -544,30 +727,29 @@ const chartData = currentPeriodPoints > 0
               </div>
             </div>
 
+            {/* Hero Points Card */}
             <div className="bg-[#09090b] border border-white/5 rounded-2xl p-6 w-full md:w-[320px] shadow-2xl relative z-10 hidden md:block">
               <div className="flex justify-between items-center mb-4">
                 <p className="text-[10px] font-black uppercase tracking-widest text-gray-500">Total Points</p>
-                <button className="text-xs text-gray-400 flex items-center gap-1 hover:text-white">
-                  May 2026 <ChevronDown className="w-3 h-3" />
-                </button>
+                {/* Dynamic month label */}
+                <span className="text-xs text-gray-400 font-semibold">{currentMonthLabel}</span>
               </div>
-              
               <h2 className="text-4xl font-black text-white mb-2">{displayPoints} SXP</h2>
-              
-              <p className="text-xs text-emerald-500 font-bold flex items-center gap-1 mb-6">
-                <TrendingUp className="w-3 h-3" /> +{displayPoints} <span className="text-gray-500 font-medium ml-1">Current Points</span>
+              <p className="text-xs font-bold flex items-center gap-1 mb-6"
+                style={{ color: monthPctChange >= 0 ? "#10b981" : "#f43f5e" }}>
+                <TrendingUp className="w-3 h-3" />
+                {monthPctChange >= 0 ? "+" : ""}{monthPctChange}%
+                <span className="text-gray-500 font-medium ml-1">vs {previousMonthLabel}</span>
               </p>
-              
-              <div className="h-24">
-                 <MiniTrendLine data={[20, 30, 25, 40, 35, 50, 45, 60, 55, 70, 80]} />
-              </div>
+              <MiniTrendLine data={trendAnalytics.chartData} />
             </div>
           </div>
         </div>
-        
-        {/* STATS ROW */}
+
+        {/* ── STATS ROW ── */}
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-          
+
+          {/* Level progress */}
           <div className="md:col-span-2 bg-[#09090b] border border-white/10 rounded-2xl p-5 flex items-center gap-5">
             <div className="w-14 h-14 rounded-xl border-2 border-rose-500 flex items-center justify-center font-black text-2xl text-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.3)]">
               {levelData.level}
@@ -575,70 +757,77 @@ const chartData = currentPeriodPoints > 0
             <div className="flex-1">
               <h3 className="text-base font-bold text-white mb-1">You&apos;re doing great!</h3>
               <div className="flex justify-between items-end mb-2">
-                <p className="text-xs text-gray-400">{levelData.xpRemaining.toLocaleString()} SXP to reach Level {levelData.level + 1}</p>
-                <p className="text-xs font-bold text-gray-400">{levelData.currentLevelXp.toLocaleString()} / {levelData.xpForNextLevel.toLocaleString()} SXP</p>
+                <p className="text-xs text-gray-400">
+                  {levelData.xpRemaining.toLocaleString()} SXP to Level {levelData.level + 1}
+                </p>
+                <p className="text-xs font-bold text-gray-400">
+                  {levelData.currentLevelXp.toLocaleString()} / {levelData.xpForNextLevel.toLocaleString()} SXP
+                </p>
               </div>
               <div className="w-full h-1.5 bg-zinc-800 rounded-full overflow-hidden">
-                <div 
+                <div
                   className="h-full bg-gradient-to-r from-rose-600 to-orange-500 rounded-full relative transition-all duration-1000 ease-in-out"
                   style={{ width: `${levelData.progressPercentage}%` }}
                 >
-                   <div className="absolute right-0 top-0 bottom-0 w-2 bg-white rounded-full shadow-[0_0_10px_rgba(255,255,255,1)]" />
+                  <div className="absolute right-0 top-0 bottom-0 w-2 bg-white rounded-full shadow-[0_0_10px_rgba(255,255,255,1)]" />
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="bg-[#09090b] border border-white/10 rounded-2xl p-5 flex items-center justify-between group cursor-pointer hover:border-white/20 transition-colors">
-             <div className="flex items-center gap-4">
-               <div className="w-12 h-12 rounded-full bg-yellow-500/10 flex items-center justify-center border border-yellow-500/20">
-                 <Trophy className="w-6 h-6 text-yellow-500" />
-               </div>
-               <div>
-                 <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Your Rank</p>
-                 <h3 className="text-2xl font-black text-white leading-tight">{currentUserRank > 0 ? currentUserRank : "-"}</h3>
-                 {rankDiff > 0 ? (
-                   <p className={`text-xs font-bold flex items-center gap-1 mt-0.5 ${isRankUp ? 'text-emerald-500' : 'text-red-500'}`}>
-                     {isRankUp ? '↑' : '↓'} {rankDiff} <span className="text-gray-500 font-medium">This Month</span>
-                   </p>
-                 ) : (
-                   <p className="text-xs text-gray-500 font-medium mt-0.5 flex items-center gap-1">
-                     - <span className="text-gray-500 font-medium">No Change</span>
-                   </p>
-                 )}
-               </div>
-             </div>
+          {/* Rank card — fully dynamic */}
+          <div className="bg-[#09090b] border border-white/10 rounded-2xl p-5 flex items-center gap-4">
+            <div className="w-12 h-12 rounded-full bg-yellow-500/10 flex items-center justify-center border border-yellow-500/20">
+              <Trophy className="w-6 h-6 text-yellow-500" />
+            </div>
+            <div>
+              <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Your Rank</p>
+              <h3 className="text-2xl font-black text-white leading-tight">
+                {rankSnapshot.current > 0 ? `#${rankSnapshot.current}` : "—"}
+              </h3>
+              {rankDiff > 0 ? (
+                <p className={`text-xs font-bold flex items-center gap-1 mt-0.5 ${isRankUp ? "text-emerald-500" : "text-red-500"}`}>
+                  {isRankUp ? "↑" : "↓"} {rankDiff} <span className="text-gray-500 font-medium">This Month</span>
+                </p>
+              ) : (
+                <p className="text-xs text-gray-500 font-medium mt-0.5">— No Change</p>
+              )}
+            </div>
           </div>
 
-          <div className="bg-[#09090b] border border-white/10 rounded-2xl p-5 flex items-center justify-between group cursor-pointer hover:border-white/20 transition-colors">
+          {/* Badges */}
+          <div className="bg-[#09090b] border border-white/10 rounded-2xl p-5 flex items-center justify-between">
             <div className="flex items-center gap-4">
-               <div className="w-12 h-12 rounded-full bg-purple-500/10 flex items-center justify-center border border-purple-500/20">
-                 <Award className="w-6 h-6 text-purple-500" />
-               </div>
-               <div>
-                 <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Top 10%</p>
-                 <h3 className="text-base font-bold text-white leading-tight">Elite Fan</h3>
-                 <p className="text-xs text-gray-500 font-medium mt-0.5">Keep Going!</p>
-               </div>
-             </div>
-             <div className="text-right flex flex-col justify-center h-full">
-                <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Badges</p>
-                <h3 className="text-xl font-black text-white">12</h3>
-                <span className="text-[10px] text-rose-500 font-bold mt-1 block group-hover:text-rose-400">View All →</span>
-             </div>
+              <div className="w-12 h-12 rounded-full bg-purple-500/10 flex items-center justify-center border border-purple-500/20">
+                <Award className="w-6 h-6 text-purple-500" />
+              </div>
+              <div>
+                <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Top 10%</p>
+                <h3 className="text-base font-bold text-white">Elite Fan</h3>
+                <p className="text-xs text-gray-500 font-medium mt-0.5">Keep Going!</p>
+              </div>
+            </div>
+            <div className="text-right">
+              <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Badges</p>
+              <h3 className="text-xl font-black text-white">12</h3>
+            </div>
           </div>
 
-          <Link href="/MainModules/Leaderboard" className="bg-[#09090b] border border-white/10 hover:border-rose-500/50 rounded-2xl p-5 flex flex-col items-center justify-center group hover:scale-[1.02] transition-all cursor-pointer shadow-[0_0_15px_rgba(225,29,72,0.05)] hover:shadow-[0_0_25px_rgba(225,29,72,0.15)] relative overflow-hidden">
-             <div className="absolute inset-0 bg-rose-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-             
-             <Trophy className="w-7 h-7 text-rose-500 mb-1.5 group-hover:scale-110 group-hover:-translate-y-1 transition-all duration-300 drop-shadow-md relative z-10" />
-             <h3 className="text-sm font-black text-white text-center leading-tight tracking-wide drop-shadow-sm group-hover:text-rose-100 transition-colors relative z-10">Live<br/>Leaderboard</h3>
+          {/* Leaderboard link */}
+          <Link
+            href="/MainModules/Leaderboard"
+            className="bg-[#09090b] border border-white/10 hover:border-rose-500/50 rounded-2xl p-5 flex flex-col items-center justify-center group hover:scale-[1.02] transition-all cursor-pointer relative overflow-hidden"
+          >
+            <div className="absolute inset-0 bg-rose-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+            <Trophy className="w-7 h-7 text-rose-500 mb-1.5 group-hover:scale-110 group-hover:-translate-y-1 transition-all duration-300 relative z-10" />
+            <h3 className="text-sm font-black text-white text-center leading-tight tracking-wide relative z-10">
+              Live<br />Leaderboard
+            </h3>
           </Link>
-
         </div>
 
-        {/* TABS NAVIGATION */}
-        <div className="border-b border-white/10 flex gap-8 px-2 overflow-x-auto custom-scrollbar">
+        {/* ── TABS ── */}
+        <div className="border-b border-white/10 flex gap-8 px-2 overflow-x-auto">
           {["My Analytics", "Earning History", "Activity Feed", "All Activities"].map((tab) => (
             <button
               key={tab}
@@ -655,36 +844,40 @@ const chartData = currentPeriodPoints > 0
           ))}
         </div>
 
-        {/* TAB CONTENT - MY ANALYTICS */}
+        {/* ══════════════════════════════════════
+            TAB: MY ANALYTICS
+        ══════════════════════════════════════ */}
         {activeTab === "My Analytics" && (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            
+
+            {/* OVERVIEW CARD */}
             <div className="bg-[#09090b] border border-white/10 rounded-2xl p-6 md:p-8">
               <h3 className="text-[10px] font-black tracking-widest text-gray-500 uppercase mb-8 flex items-center gap-1.5">
                 Overview <InfoIcon />
               </h3>
-              
+
               <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 lg:gap-12 items-center">
-                
+
+                {/* Left: month stats */}
                 <div className="xl:col-span-3 w-full">
-                  <div className="relative w-40 mb-8 hidden sm:block">
-                    <select 
-                      value={selectedMonth}
-                      onChange={(e) => setSelectedMonth(e.target.value)}
-                      className="w-full bg-[#18181b] border border-white/10 text-sm font-bold rounded-xl pl-4 pr-8 py-2.5 text-white focus:outline-none focus:border-rose-500 appearance-none cursor-pointer"
-                    >
-                      <option value="May 2026">May 2026</option>
-                      <option value="Apr 2026">Apr 2026</option>
-                    </select>
-                    <ChevronDown className="w-4 h-4 text-gray-500 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  {/* Dynamic month label — no hardcoding */}
+                  <div className="inline-block bg-[#18181b] border border-white/10 text-sm font-bold rounded-xl px-4 py-2 text-white mb-6">
+                    {currentMonthLabel}
                   </div>
-                  
-                  <div className="space-y-8">
+                  <div className="space-y-6">
                     <div>
                       <p className="text-xs text-gray-400 font-medium mb-1">This Month</p>
                       <div className="flex items-end gap-3">
-                        <h4 className="text-3xl font-black text-white leading-none">{monthDisplayPoints} SXP</h4>
-                       <span className="text-xs text-emerald-500 font-bold mb-0.5">↑ {monthDisplayPoints} <span className="text-gray-500 font-medium">{vsMonthText}</span></span>
+                        <h4 className="text-3xl font-black text-white leading-none">
+                          {thisMonthPoints.toLocaleString()} SXP
+                        </h4>
+                        <span
+                          className="text-xs font-bold mb-0.5"
+                          style={{ color: monthPctChange >= 0 ? "#10b981" : "#f43f5e" }}
+                        >
+                          {monthPctChange >= 0 ? "↑" : "↓"} {Math.abs(monthPctChange)}%{" "}
+                          <span className="text-gray-500 font-medium">vs {previousMonthLabel}</span>
+                        </span>
                       </div>
                     </div>
                     <div>
@@ -697,19 +890,20 @@ const chartData = currentPeriodPoints > 0
                   </div>
                 </div>
 
+                {/* Middle: donut + legend */}
                 <div className="xl:col-span-5 flex flex-col sm:flex-row items-center justify-center gap-6 lg:gap-10 w-full py-6 xl:py-0 border-t border-white/10 xl:border-t-0 xl:border-l xl:pl-8">
-                  <DonutChart data={dynamicEarningBreakdown} totalPoints={displayPoints} />
+                  <DonutChart data={earningBreakdown} centerPoints={displayMonthlyPoints} />
                   <div className="space-y-4 w-full sm:w-auto">
-                    {dynamicEarningBreakdown.length > 0 ? (
-                      dynamicEarningBreakdown.map((item, i) => (
+                    {earningBreakdown.length > 0 ? (
+                      earningBreakdown.map((item, i) => (
                         <div key={i} className="flex items-center justify-between sm:justify-start gap-4 text-sm whitespace-nowrap">
                           <div className="flex items-center gap-3 w-40">
                             <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
                             <span className="text-gray-300">{item.label}</span>
                           </div>
-                         <div className="flex items-center justify-end gap-3 pr-4">
-                            <span className="font-bold text-white text-right">{item.percent}%</span>
-                            <span className="text-gray-400 text-right">{item.xp}</span>
+                          <div className="flex items-center justify-end gap-3 pr-4">
+                            <span className="font-bold text-white">{item.percent}%</span>
+                            <span className="text-gray-400">{item.xp}</span>
                           </div>
                         </div>
                       ))
@@ -727,56 +921,59 @@ const chartData = currentPeriodPoints > 0
                   </div>
                 </div>
 
-                {/* Col 3: Recent Trend (Span 4) */}
-<div className="xl:col-span-4 border-t xl:border-t-0 xl:border-l border-white/10 pt-8 xl:pt-0 xl:pl-8 h-full flex flex-col justify-center w-full">
-  <div className="flex justify-between items-start mb-6">
-     <h3 className="text-[10px] font-black tracking-widest text-gray-500 uppercase flex items-center gap-1.5">
-       Recent Trend <InfoIcon />
-     </h3>
-     <div className="flex gap-1 bg-[#18181b] p-1 rounded-lg border border-white/5">
-       {["7D", "30D", "90D"].map((range) => (
-         <button 
-           key={range} 
-           onClick={() => setTrendPeriod(range)}
-           className={`px-3 py-1 rounded-md text-xs font-bold transition-colors ${trendPeriod === range ? "bg-[#27272a] text-white shadow-sm" : "text-gray-500 hover:text-white"}`}
-         >
-           {range}
-         </button>
-       ))}
-     </div>
-  </div>
-  
-  {/* Dynamic Points and SSXP Label */}
-  <h4 className="text-4xl font-black text-emerald-500 mb-2">
-    +{currentUserPoints.toLocaleString()} SXP
-  </h4>
-  
-  {/* Dynamic Percentage Change */}
-  <p className={`text-xs font-bold mb-6 ${trendAnalytics.isPositive ? 'text-emerald-500' : 'text-red-500'}`}>
-    {trendAnalytics.isPositive ? '↑' : '↓'} {Math.abs(trendAnalytics.percentChange)}% 
-    <span className="text-gray-500 font-medium ml-1">{trendAnalytics.vsText}</span>
-  </p>
-  
-  {/* Dynamic Trend Line */}
-  <div className="w-full h-24 mt-auto">
-     <MiniTrendLine data={trendAnalytics.chartData} />
-  </div>
-  
-  {/* Dynamic Labels */}
-  <div className="flex justify-between text-[10px] text-gray-500 font-bold mt-3 px-2">
-    {trendAnalytics.labels.map((label, index) => (
-      <span key={index}>{label}</span>
-    ))}
-  </div>
-</div>
+                {/* Right: trend */}
+                <div className="xl:col-span-4 border-t xl:border-t-0 xl:border-l border-white/10 pt-8 xl:pt-0 xl:pl-8 h-full flex flex-col justify-center w-full">
+                  <div className="flex justify-between items-start mb-6">
+                    <h3 className="text-[10px] font-black tracking-widest text-gray-500 uppercase flex items-center gap-1.5">
+                      Recent Trend <InfoIcon />
+                    </h3>
+                    <div className="flex gap-1 bg-[#18181b] p-1 rounded-lg border border-white/5">
+                      {(["7D", "30D", "90D"] as TrendPeriod[]).map((range) => (
+                        <button
+                          key={range}
+                          onClick={() => setTrendPeriod(range)}
+                          className={`px-3 py-1 rounded-md text-xs font-bold transition-colors ${
+                            trendPeriod === range ? "bg-[#27272a] text-white shadow-sm" : "text-gray-500 hover:text-white"
+                          }`}
+                        >
+                          {range}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Dynamic total */}
+                  <h4 className="text-4xl font-black text-emerald-500 mb-2">
+                    +{trendAnalytics.currentPts.toLocaleString()} SXP
+                  </h4>
+
+                  {/* Dynamic % change */}
+                  <p className={`text-xs font-bold mb-6 ${trendAnalytics.isPositive ? "text-emerald-500" : "text-red-500"}`}>
+                    {trendAnalytics.isPositive ? "↑" : "↓"} {Math.abs(trendAnalytics.percentChange)}%{" "}
+                    <span className="text-gray-500 font-medium ml-1">{trendAnalytics.vsText}</span>
+                  </p>
+
+                  {/* Dynamic trend line */}
+                  <div className="w-full h-24 mt-auto">
+                    <MiniTrendLine data={trendAnalytics.chartData} />
+                  </div>
+
+                  {/* Dynamic axis labels */}
+                  <div className="flex justify-between text-[10px] text-gray-500 font-bold mt-3 px-2">
+                    {trendAnalytics.labels.map((label, index) => (
+                      <span key={index}>{label}</span>
+                    ))}
+                  </div>
+                </div>
+
               </div>
             </div>
 
+            {/* HOW YOU EARN */}
             <div className="bg-[#09090b] border border-white/10 rounded-2xl p-6">
               <h3 className="text-xs font-black tracking-widest text-gray-400 uppercase mb-6 flex items-center gap-1.5">
                 How You Earn Points <InfoIcon />
               </h3>
-              
               <div className="flex flex-col lg:flex-row gap-6">
                 <div className="flex-1 grid grid-cols-2 md:grid-cols-4 gap-4">
                   {earnPointsActions.map((action, i) => (
@@ -790,7 +987,6 @@ const chartData = currentPeriodPoints > 0
                     </div>
                   ))}
                 </div>
-
                 <div className="w-full lg:w-72 rounded-xl bg-gradient-to-br from-rose-900 to-black border border-rose-500/30 p-6 flex flex-col justify-center relative overflow-hidden group cursor-pointer">
                   <div className="absolute -right-6 -bottom-6 opacity-20 group-hover:scale-110 transition-transform duration-500">
                     <Trophy className="w-40 h-40 text-rose-500" />
@@ -798,7 +994,10 @@ const chartData = currentPeriodPoints > 0
                   <div className="relative z-10">
                     <h3 className="text-xl font-black text-white mb-2 leading-tight">Maximize Your Points</h3>
                     <p className="text-xs text-gray-300 mb-6 font-medium">Engage more, climb higher!</p>
-                    <button className="bg-rose-600 hover:bg-rose-500 text-white text-sm font-bold py-2.5 px-6 rounded-full w-max shadow-[0_0_15px_rgba(225,29,72,0.4)] transition-colors">
+                    <button
+                      onClick={() => setActiveTab("All Activities")}
+                      className="bg-rose-600 hover:bg-rose-500 text-white text-sm font-bold py-2.5 px-6 rounded-full w-max shadow-[0_0_15px_rgba(225,29,72,0.4)] transition-colors"
+                    >
                       View All Activities →
                     </button>
                   </div>
@@ -806,89 +1005,22 @@ const chartData = currentPeriodPoints > 0
               </div>
             </div>
 
+            {/* RECENT + STREAK */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              
-              <div className="bg-[#09090b] border border-white/10 rounded-2xl p-6 flex flex-col">
-                <h3 className="text-xs font-black tracking-widest text-gray-400 uppercase mb-6">Recent Activity</h3>
-                <div className="flex-1 space-y-5">
-                  {recentActivityList.map((item, i) => (
-                    <div key={i} className="flex items-center justify-between group">
-                      <div className="flex items-center gap-4">
-                        <div className={`w-8 h-8 rounded-full bg-[#18181b] border border-white/5 flex items-center justify-center ${item.color}`}>
-                          <item.icon className="w-4 h-4" />
-                        </div>
-                        <p className="text-sm">
-                          <span className="font-bold text-white mr-1">{item.action}</span>
-                          <span className="text-gray-400">{item.detail}</span>
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className={`text-sm font-black ${item.color}`}>{item.xp}</p>
-                        <p className="text-[10px] text-gray-500 font-medium">{item.time}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <button className="text-xs font-bold text-rose-500 hover:text-rose-400 text-center w-full mt-6 py-2 border border-rose-500/20 rounded-lg hover:bg-rose-500/5 transition-colors uppercase tracking-widest">
-                  View All Activity →
-                </button>
-              </div>
-
+              <RecentActivityWidget />
               <div className="space-y-6">
-                
-                <div className="bg-[#09090b] border border-white/10 rounded-2xl p-6">
-                  <h3 className="text-xs font-black tracking-widest text-gray-400 uppercase mb-4 flex items-center gap-1.5">
-                    Your Streak <InfoIcon />
-                  </h3>
-                  <div className="flex items-baseline gap-2 mb-1">
-                    <h2 className="text-4xl font-black text-white">{currentStreak}</h2>
-                    <span className="text-xl font-medium text-gray-400">Days</span>
-                  </div>
-                  <p className="text-sm text-gray-400 mb-6">Keep it going, don&apos;t break your streak!</p>
-                  
-                  <div className="flex justify-between items-center">
-                    {streakMap.map((data) => {
-                      return (
-                        <div key={data.day} className="flex flex-col items-center gap-2">
-                          <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all ${
-                            data.isActive 
-                              ? 'bg-rose-600 border-rose-500 text-white shadow-[0_0_10px_rgba(225,29,72,0.5)]' 
-                              : data.isMissed 
-                                ? 'bg-[#0f0a0a] border-red-500/30 text-red-500 shadow-[0_0_10px_rgba(239,68,68,0.15)]'
-                                : 'bg-[#18181b] border-white/10 text-gray-600'
-                          }`}>
-                            {data.isActive ? <CheckCircle2 className="w-5 h-5" /> : data.isMissed ? <X className="w-5 h-5 opacity-80" /> : null}
-                          </div>
-                          <span className={`text-xs font-bold ${data.isActive || data.isMissed ? 'text-white' : 'text-gray-500'}`}>{data.day}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div className="bg-[#09090b] border border-rose-500/20 rounded-2xl p-6 flex items-center justify-between overflow-hidden relative group cursor-pointer hover:border-rose-500/50 transition-colors">
-                  <div className="absolute right-0 top-1/2 -translate-y-1/2 opacity-30 group-hover:scale-110 transition-transform duration-500 translate-x-4">
-                    <UserPlus className="w-32 h-32 text-rose-500" />
-                  </div>
-                  <div className="relative z-10">
-                    <h3 className="text-lg font-black text-white mb-1">Invite Friends & Earn</h3>
-                    <p className="text-sm text-gray-400 mb-4">Earn 100 SXP for each friend who joins!</p>
-                    <button className="bg-gradient-to-r from-rose-600 to-orange-500 text-white text-sm font-bold py-2.5 px-6 rounded-full hover:shadow-[0_0_15px_rgba(225,29,72,0.4)] transition-all">
-                      Invite Now
-                    </button>
-                  </div>
-                </div>
-
+                <StreakWidget />
+                <InviteWidget />
               </div>
             </div>
-
           </div>
         )}
 
-        {/* TAB CONTENT - EARNING HISTORY */}
+        {/* ══════════════════════════════════════
+            TAB: EARNING HISTORY
+        ══════════════════════════════════════ */}
         {activeTab === "Earning History" && (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            
             <div className="bg-[#09090b] border border-white/10 rounded-2xl p-6">
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                 <div>
@@ -912,7 +1044,6 @@ const chartData = currentPeriodPoints > 0
                   </select>
                   <ChevronDown className="w-4 h-4 text-gray-500 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" />
                 </div>
-                
                 <div className="relative w-48">
                   <Calendar className="w-4 h-4 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2 z-10 pointer-events-none" />
                   <select className="w-full bg-[#18181b] border border-white/10 text-xs font-bold rounded-xl pl-10 pr-8 py-3 text-white focus:outline-none focus:border-rose-500 appearance-none cursor-pointer">
@@ -924,48 +1055,7 @@ const chartData = currentPeriodPoints > 0
                 </div>
               </div>
 
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="border-b border-white/10">
-                      <th className="py-4 px-2 text-[10px] font-black text-gray-500 uppercase tracking-widest w-40">Date</th>
-                      <th className="py-4 px-2 text-[10px] font-black text-gray-500 uppercase tracking-widest">Activity</th>
-                      <th className="py-4 px-2 text-[10px] font-black text-gray-500 uppercase tracking-widest">Details</th>
-                      <th className="py-4 px-2 text-[10px] font-black text-gray-500 uppercase tracking-widest text-right">Points</th>
-                      <th className="py-4 px-2 pl-8 text-[10px] font-black text-gray-500 uppercase tracking-widest w-32">Type</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {earningHistoryData.map((row, idx) => (
-                      <tr key={idx} className="border-b border-white/5 hover:bg-white/5 transition-colors group">
-                        <td className="py-3 px-2">
-                          <p className="text-xs text-gray-300 font-medium">{row.date}</p>
-                          <p className="text-[10px] text-gray-500">{row.time}</p>
-                        </td>
-                        <td className="py-3 px-2">
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-lg bg-[#18181b] border border-white/10 flex items-center justify-center flex-shrink-0 group-hover:border-white/20 transition-colors">
-                              <row.icon className="w-4 h-4 text-gray-400" />
-                            </div>
-                            <span className="text-xs font-bold text-white">{row.action}</span>
-                          </div>
-                        </td>
-                        <td className="py-3 px-2 text-xs text-gray-400 font-medium">
-                          {row.details}
-                        </td>
-                        <td className="py-3 px-2 text-right">
-                          <span className="text-xs font-black text-emerald-500">{row.points}</span>
-                        </td>
-                        <td className="py-3 px-2 pl-8">
-                          <span className={`inline-flex items-center justify-center px-2.5 py-1 rounded-md text-[10px] font-bold border ${row.typeColor}`}>
-                            {row.type}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <HistoryTable rows={history} />
 
               <div className="mt-6 text-center">
                 <button className="bg-[#18181b] border border-white/10 text-xs font-bold text-white px-6 py-2.5 rounded-full hover:bg-white/10 transition-colors inline-flex items-center gap-2">
@@ -975,88 +1065,23 @@ const chartData = currentPeriodPoints > 0
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="bg-[#09090b] border border-white/10 rounded-2xl p-6 flex flex-col">
-                <h3 className="text-xs font-black tracking-widest text-gray-400 uppercase mb-6">Recent Activity</h3>
-                <div className="flex-1 space-y-5">
-                  {recentActivityList.map((item, i) => (
-                    <div key={i} className="flex items-center justify-between group">
-                      <div className="flex items-center gap-4">
-                        <div className={`w-8 h-8 rounded-full bg-[#18181b] border border-white/5 flex items-center justify-center ${item.color}`}>
-                          <item.icon className="w-4 h-4" />
-                        </div>
-                        <p className="text-sm">
-                          <span className="font-bold text-white mr-1">{item.action}</span>
-                          <span className="text-gray-400">{item.detail}</span>
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className={`text-sm font-black ${item.color}`}>{item.xp}</p>
-                        <p className="text-[10px] text-gray-500 font-medium">{item.time}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <button className="text-xs font-bold text-rose-500 hover:text-rose-400 text-center w-full mt-6 py-2 border border-rose-500/20 rounded-lg hover:bg-rose-500/5 transition-colors uppercase tracking-widest">
-                  View All Activity →
-                </button>
-              </div>
-
+              <RecentActivityWidget />
               <div className="space-y-6">
-                <div className="bg-[#09090b] border border-white/10 rounded-2xl p-6">
-                  <h3 className="text-xs font-black tracking-widest text-gray-400 uppercase mb-4 flex items-center gap-1.5">
-                    Your Streak <InfoIcon />
-                  </h3>
-                  <div className="flex items-baseline gap-2 mb-1">
-                    <h2 className="text-4xl font-black text-white">{currentStreak}</h2>
-                    <span className="text-xl font-medium text-gray-400">Days</span>
-                  </div>
-                  <p className="text-sm text-gray-400 mb-6">Keep it going, don&apos;t break your streak!</p>
-                  
-                  <div className="flex justify-between items-center">
-                    {streakMap.map((data) => {
-                      return (
-                        <div key={data.day} className="flex flex-col items-center gap-2">
-                          <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all ${
-                            data.isActive 
-                              ? 'bg-rose-600 border-rose-500 text-white shadow-[0_0_10px_rgba(225,29,72,0.5)]' 
-                              : data.isMissed 
-                                ? 'bg-[#0f0a0a] border-red-500/30 text-red-500 shadow-[0_0_10px_rgba(239,68,68,0.15)]'
-                                : 'bg-[#18181b] border-white/10 text-gray-600'
-                          }`}>
-                            {data.isActive ? <CheckCircle2 className="w-5 h-5" /> : data.isMissed ? <X className="w-5 h-5 opacity-80" /> : null}
-                          </div>
-                          <span className={`text-xs font-bold ${data.isActive || data.isMissed ? 'text-white' : 'text-gray-500'}`}>{data.day}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div className="bg-[#09090b] border border-rose-500/20 rounded-2xl p-6 flex items-center justify-between overflow-hidden relative group cursor-pointer hover:border-rose-500/50 transition-colors">
-                  <div className="absolute right-0 top-1/2 -translate-y-1/2 opacity-30 group-hover:scale-110 transition-transform duration-500 translate-x-4">
-                    <UserPlus className="w-32 h-32 text-rose-500" />
-                  </div>
-                  <div className="relative z-10">
-                    <h3 className="text-lg font-black text-white mb-1">Invite Friends & Earn</h3>
-                    <p className="text-sm text-gray-400 mb-4">Earn 100 SXP for each friend who joins!</p>
-                    <button className="bg-gradient-to-r from-rose-600 to-orange-500 text-white text-sm font-bold py-2.5 px-6 rounded-full hover:shadow-[0_0_15px_rgba(225,29,72,0.4)] transition-all">
-                      Invite Now
-                    </button>
-                  </div>
-                </div>
+                <StreakWidget />
+                <InviteWidget />
               </div>
             </div>
-
           </div>
         )}
 
-        {/* TAB CONTENT - ACTIVITY FEED */}
+        {/* ══════════════════════════════════════
+            TAB: ACTIVITY FEED
+        ══════════════════════════════════════ */}
         {activeTab === "Activity Feed" && (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
               <div className="lg:col-span-2 bg-[#09090b] border border-white/10 rounded-2xl p-6">
-                
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
                   <div>
                     <h3 className="text-lg font-black text-white mb-1">Activity Feed</h3>
@@ -1078,19 +1103,19 @@ const chartData = currentPeriodPoints > 0
                 </div>
 
                 <div className="space-y-1">
-                  {activityFeedData.map((item, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-3 rounded-xl hover:bg-white/5 transition-colors group">
+                  {history.slice(0, 10).map((item) => (
+                    <div key={item.id} className="flex items-center justify-between p-3 rounded-xl hover:bg-white/5 transition-colors group">
                       <div className="flex items-center gap-4">
-                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 border ${item.bg}`}>
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 border bg-white/5 border-white/10">
                           <item.icon className={`w-5 h-5 ${item.color}`} />
                         </div>
                         <div>
-                          <p className="text-[10px] font-black tracking-widest text-gray-500 uppercase mb-0.5">{item.category}</p>
-                          <p className="text-sm font-bold text-white group-hover:text-rose-100 transition-colors">{item.action}</p>
+                          <p className="text-[10px] font-black tracking-widest text-gray-500 uppercase mb-0.5">{item.source}</p>
+                          <p className="text-sm font-bold text-white group-hover:text-rose-100 transition-colors">{item.action}: {item.details}</p>
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className={`text-sm font-black ${item.color}`}>{item.points}</p>
+                        <p className="text-sm font-black" style={{ color: item.hexColor }}>+{item.points} SXP</p>
                         <p className="text-[10px] text-gray-500 font-medium mt-0.5">{item.time}</p>
                       </div>
                     </div>
@@ -1104,11 +1129,11 @@ const chartData = currentPeriodPoints > 0
                 </div>
               </div>
 
+              {/* Sidebar: earn points */}
               <div className="bg-[#09090b] border border-white/10 rounded-2xl p-6 h-max sticky top-24">
                 <h3 className="text-base font-black text-white mb-1">How to Earn Points</h3>
                 <p className="text-xs text-gray-400 font-medium mb-6">More actions, more points!</p>
-                
-                <div className="flex flex-col gap-4 mb-8 h-[500px] overflow-y-auto custom-scrollbar pr-2">
+                <div className="flex flex-col gap-4 mb-8 max-h-[500px] overflow-y-auto pr-2">
                   {earnPointsActions.map((action, i) => (
                     <div key={i} className="flex items-center justify-between hover:bg-white/5 p-2 -mx-2 rounded-lg transition-colors">
                       <div className="flex items-center gap-3">
@@ -1121,205 +1146,76 @@ const chartData = currentPeriodPoints > 0
                     </div>
                   ))}
                 </div>
-
-                <button className="w-full bg-rose-600 hover:bg-rose-500 text-white text-sm font-bold py-3.5 rounded-xl transition-colors shadow-[0_0_15px_rgba(225,29,72,0.3)] hover:shadow-[0_0_25px_rgba(225,29,72,0.5)]">
+                <button
+                  onClick={() => setActiveTab("All Activities")}
+                  className="w-full bg-rose-600 hover:bg-rose-500 text-white text-sm font-bold py-3.5 rounded-xl transition-colors"
+                >
                   View All Activities →
                 </button>
               </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="bg-[#09090b] border border-white/10 rounded-2xl p-6 flex flex-col">
-                <h3 className="text-xs font-black tracking-widest text-gray-400 uppercase mb-6">Recent Activity</h3>
-                <div className="flex-1 space-y-5">
-                  {recentActivityList.map((item, i) => (
-                    <div key={i} className="flex items-center justify-between group">
-                      <div className="flex items-center gap-4">
-                        <div className={`w-8 h-8 rounded-full bg-[#18181b] border border-white/5 flex items-center justify-center ${item.color}`}>
-                          <item.icon className="w-4 h-4" />
-                        </div>
-                        <p className="text-sm">
-                          <span className="font-bold text-white mr-1">{item.action}</span>
-                          <span className="text-gray-400">{item.detail}</span>
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className={`text-sm font-black ${item.color}`}>{item.xp}</p>
-                        <p className="text-[10px] text-gray-500 font-medium">{item.time}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <button className="text-xs font-bold text-rose-500 hover:text-rose-400 text-center w-full mt-6 py-2 border border-rose-500/20 rounded-lg hover:bg-rose-500/5 transition-colors uppercase tracking-widest">
-                  View All Activity →
-                </button>
-              </div>
-
+              <RecentActivityWidget />
               <div className="space-y-6">
-                <div className="bg-[#09090b] border border-white/10 rounded-2xl p-6">
-                  <h3 className="text-xs font-black tracking-widest text-gray-400 uppercase mb-4 flex items-center gap-1.5">
-                    Your Streak <InfoIcon />
-                  </h3>
-                  <div className="flex items-baseline gap-2 mb-1">
-                    <h2 className="text-4xl font-black text-white">{currentStreak}</h2>
-                    <span className="text-xl font-medium text-gray-400">Days</span>
-                  </div>
-                  <p className="text-sm text-gray-400 mb-6">Keep it going, don&apos;t break your streak!</p>
-                  
-                  <div className="flex justify-between items-center">
-                    {streakMap.map((data) => {
-                      return (
-                        <div key={data.day} className="flex flex-col items-center gap-2">
-                          <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all ${
-                            data.isActive 
-                              ? 'bg-rose-600 border-rose-500 text-white shadow-[0_0_10px_rgba(225,29,72,0.5)]' 
-                              : data.isMissed 
-                                ? 'bg-[#0f0a0a] border-red-500/30 text-red-500 shadow-[0_0_10px_rgba(239,68,68,0.15)]'
-                                : 'bg-[#18181b] border-white/10 text-gray-600'
-                          }`}>
-                            {data.isActive ? <CheckCircle2 className="w-5 h-5" /> : data.isMissed ? <X className="w-5 h-5 opacity-80" /> : null}
-                          </div>
-                          <span className={`text-xs font-bold ${data.isActive || data.isMissed ? 'text-white' : 'text-gray-500'}`}>{data.day}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div className="bg-[#09090b] border border-rose-500/20 rounded-2xl p-6 flex items-center justify-between overflow-hidden relative group cursor-pointer hover:border-rose-500/50 transition-colors">
-                  <div className="absolute right-0 top-1/2 -translate-y-1/2 opacity-30 group-hover:scale-110 transition-transform duration-500 translate-x-4">
-                    <UserPlus className="w-32 h-32 text-rose-500" />
-                  </div>
-                  <div className="relative z-10">
-                    <h3 className="text-lg font-black text-white mb-1">Invite Friends & Earn</h3>
-                    <p className="text-sm text-gray-400 mb-4">Earn 100 SXP for each friend who joins!</p>
-                    <button className="bg-gradient-to-r from-rose-600 to-orange-500 text-white text-sm font-bold py-2.5 px-6 rounded-full hover:shadow-[0_0_15px_rgba(225,29,72,0.4)] transition-all">
-                      Invite Now
-                    </button>
-                  </div>
-                </div>
+                <StreakWidget />
+                <InviteWidget />
               </div>
             </div>
-
           </div>
         )}
 
-        {/* TAB CONTENT - ALL ACTIVITIES */}
+        {/* ══════════════════════════════════════
+            TAB: ALL ACTIVITIES
+        ══════════════════════════════════════ */}
         {activeTab === "All Activities" && (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-              
+
               <div className="xl:col-span-2 space-y-6">
-                
-                <div className="flex flex-col gap-4 mb-2">
-                  <div>
-                    <h3 className="text-xl font-black text-white mb-1">All Activities</h3>
-                    <p className="text-sm text-gray-400 font-medium">A complete log of everything you&apos;ve done to earn points.</p>
+                <div>
+                  <h3 className="text-xl font-black text-white mb-1">All Activities</h3>
+                  <p className="text-sm text-gray-400 font-medium">A complete log of everything you&apos;ve done to earn points.</p>
+                </div>
+
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                  <div className="flex flex-wrap items-center gap-3">
+                    {[
+                      { icon: LayoutGrid, label: "All Activities" },
+                      { icon: Filter,     label: "All Categories" },
+                      { icon: Filter,     label: "All Types" },
+                      { icon: Calendar,   label: currentMonthLabel },
+                    ].map(({ icon: Icon, label }, i) => (
+                      <div key={i} className="relative w-48">
+                        <Icon className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 z-10" />
+                        <select className="w-full bg-[#18181b] border border-white/10 text-xs font-bold rounded-xl pl-9 pr-8 py-2.5 text-white focus:border-rose-500 appearance-none cursor-pointer">
+                          <option>{label}</option>
+                        </select>
+                        <ChevronDown className="w-4 h-4 text-gray-500 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      </div>
+                    ))}
                   </div>
-                  
-                  <div className="flex flex-wrap items-center justify-between gap-4">
-                    <div className="flex flex-wrap items-center gap-3">
-                      <div className="relative w-40">
-                        <LayoutGrid className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 z-10" />
-                        <select className="w-full bg-[#18181b] border border-white/10 text-xs font-bold rounded-xl pl-9 pr-8 py-2.5 text-white focus:border-rose-500 appearance-none cursor-pointer">
-                          <option>All Activities</option>
-                        </select>
-                        <ChevronDown className="w-4 h-4 text-gray-500 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                      </div>
-                      <div className="relative w-40">
-                        <Filter className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 z-10" />
-                        <select className="w-full bg-[#18181b] border border-white/10 text-xs font-bold rounded-xl pl-9 pr-8 py-2.5 text-white focus:border-rose-500 appearance-none cursor-pointer">
-                          <option>All Categories</option>
-                        </select>
-                        <ChevronDown className="w-4 h-4 text-gray-500 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                      </div>
-                      <div className="relative w-36">
-                        <Filter className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 z-10" />
-                        <select className="w-full bg-[#18181b] border border-white/10 text-xs font-bold rounded-xl pl-9 pr-8 py-2.5 text-white focus:border-rose-500 appearance-none cursor-pointer">
-                          <option>All Types</option>
-                        </select>
-                        <ChevronDown className="w-4 h-4 text-gray-500 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                      </div>
-                      <div className="relative w-48">
-                        <Calendar className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 z-10" />
-                        <select className="w-full bg-[#18181b] border border-white/10 text-xs font-bold rounded-xl pl-9 pr-8 py-2.5 text-white focus:border-rose-500 appearance-none cursor-pointer">
-                          <option>May 1 - May 31, 2026</option>
-                        </select>
-                        <ChevronDown className="w-4 h-4 text-gray-500 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                      </div>
-                    </div>
-                    
-                    <button className="flex items-center gap-2 px-4 py-2.5 border border-white/10 rounded-xl text-xs font-bold text-white hover:bg-white/5 transition-colors bg-[#18181b]">
-                      <Download className="w-4 h-4" /> Export
-                    </button>
-                  </div>
+                  <button className="flex items-center gap-2 px-4 py-2.5 border border-white/10 rounded-xl text-xs font-bold text-white hover:bg-white/5 transition-colors bg-[#18181b]">
+                    <Download className="w-4 h-4" /> Export
+                  </button>
                 </div>
 
                 <div className="bg-[#09090b] border border-white/10 rounded-2xl p-6 overflow-x-auto">
-                  <table className="w-full text-left border-collapse">
-                    <thead>
-                      <tr className="border-b border-white/10">
-                        <th className="py-4 px-2 text-[10px] font-black text-gray-500 uppercase tracking-widest w-40">Date & Time</th>
-                        <th className="py-4 px-2 text-[10px] font-black text-gray-500 uppercase tracking-widest">Activity</th>
-                        <th className="py-4 px-2 text-[10px] font-black text-gray-500 uppercase tracking-widest">Details</th>
-                        <th className="py-4 px-2 text-[10px] font-black text-gray-500 uppercase tracking-widest text-right">Points</th>
-                        <th className="py-4 px-2 pl-8 text-[10px] font-black text-gray-500 uppercase tracking-widest w-32">Type</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {earningHistoryData.slice(0, 10).map((row, idx) => (
-                        <tr key={idx} className="border-b border-white/5 hover:bg-white/5 transition-colors group">
-                          <td className="py-3 px-2">
-                            <p className="text-xs text-gray-300 font-medium">{row.date}</p>
-                            <p className="text-[10px] text-gray-500">{row.time}</p>
-                          </td>
-                          <td className="py-3 px-2">
-                            <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 rounded-lg bg-[#18181b] border border-white/10 flex items-center justify-center flex-shrink-0 group-hover:border-white/20 transition-colors">
-                                <row.icon className="w-4 h-4 text-gray-400" />
-                              </div>
-                              <span className="text-xs font-bold text-white">{row.action}</span>
-                            </div>
-                          </td>
-                          <td className="py-3 px-2 text-xs text-gray-400 font-medium">
-                            {row.details}
-                          </td>
-                          <td className="py-3 px-2 text-right">
-                            <span className="text-xs font-black text-emerald-500">{row.points}</span>
-                          </td>
-                          <td className="py-3 px-2 pl-8">
-                            <span className={`inline-flex items-center justify-center px-2.5 py-1 rounded-md text-[10px] font-bold border ${row.typeColor}`}>
-                              {row.type}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                  <HistoryTable rows={history} />
 
                   <div className="mt-6 pt-6 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4">
                     <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">
-                      Showing 1 – 10 of 142 activities
+                      Showing 1 – {Math.min(history.length, 10)} of {history.length} activities
                     </p>
                     <div className="flex items-center gap-1">
-                      <button className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-500 hover:bg-white/5 hover:text-white transition-colors border border-transparent">
+                      <button className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-500 hover:bg-white/5 hover:text-white transition-colors">
                         <ChevronLeft className="w-4 h-4" />
                       </button>
-                      <button className="w-8 h-8 rounded-lg flex items-center justify-center bg-rose-600 text-white font-bold text-xs shadow-[0_0_10px_rgba(225,29,72,0.5)]">
-                        1
-                      </button>
-                      <button className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-white/5 hover:text-white transition-colors font-bold text-xs">
-                        2
-                      </button>
-                      <button className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-white/5 hover:text-white transition-colors font-bold text-xs">
-                        3
-                      </button>
+                      <button className="w-8 h-8 rounded-lg flex items-center justify-center bg-rose-600 text-white font-bold text-xs">1</button>
+                      <button className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-white/5 hover:text-white transition-colors font-bold text-xs">2</button>
+                      <button className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-white/5 hover:text-white transition-colors font-bold text-xs">3</button>
                       <button className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-500 pointer-events-none">
                         <MoreHorizontal className="w-4 h-4" />
-                      </button>
-                      <button className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-white/5 hover:text-white transition-colors font-bold text-xs">
-                        8
                       </button>
                       <button className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 border border-white/10 hover:bg-white/5 hover:text-white transition-colors">
                         <ChevronRight className="w-4 h-4" />
@@ -1328,22 +1224,27 @@ const chartData = currentPeriodPoints > 0
                   </div>
                 </div>
 
+                {/* Motivational banner */}
                 <div className="bg-gradient-to-r from-rose-950 via-rose-900 to-orange-950 border border-rose-500/30 rounded-2xl p-6 flex items-center justify-between overflow-hidden relative">
-                   <div className="flex items-center gap-6 relative z-10">
-                     <Trophy className="w-16 h-16 text-yellow-500 drop-shadow-[0_0_15px_rgba(234,179,8,0.5)]" />
-                     <div>
-                       <h3 className="text-xl font-black text-white mb-1">Keep Going, You&apos;re on Fire!</h3>
-                       <p className="text-sm text-gray-300 font-medium">You&apos;ve earned 24% more points this month.</p>
-                     </div>
-                   </div>
-                   <button className="relative z-10 bg-gradient-to-r from-rose-600 to-orange-500 text-white text-sm font-bold py-3 px-6 rounded-full shadow-[0_0_15px_rgba(225,29,72,0.4)] hover:scale-105 transition-transform">
-                     Explore More Ways to Earn →
-                   </button>
+                  <div className="flex items-center gap-6 relative z-10">
+                    <Trophy className="w-16 h-16 text-yellow-500 drop-shadow-[0_0_15px_rgba(234,179,8,0.5)]" />
+                    <div>
+                      <h3 className="text-xl font-black text-white mb-1">Keep Going, You&apos;re on Fire!</h3>
+                      <p className="text-sm text-gray-300 font-medium">
+                        You&apos;ve earned {displayPoints} SXP so far this {currentMonthLabel}.
+                      </p>
+                    </div>
+                  </div>
+                  <button className="relative z-10 bg-gradient-to-r from-rose-600 to-orange-500 text-white text-sm font-bold py-3 px-6 rounded-full hover:scale-105 transition-transform">
+                    Explore More Ways to Earn →
+                  </button>
                 </div>
               </div>
 
+              {/* Right sidebar */}
               <div className="space-y-6">
-                
+
+                {/* Total earned */}
                 <div className="bg-[#09090b] border border-white/10 rounded-2xl p-6 relative overflow-hidden group">
                   <div className="absolute right-[-20%] top-[-20%] opacity-10 group-hover:scale-110 transition-transform duration-700">
                     <Trophy className="w-48 h-48 text-rose-500" />
@@ -1352,30 +1253,30 @@ const chartData = currentPeriodPoints > 0
                     <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Total Points Earned</p>
                     <h3 className="text-3xl font-black text-emerald-500 mb-2">{displayPoints} SXP</h3>
                     <p className="text-xs font-bold text-emerald-500 flex items-center gap-1">
-                      This Period ↑ 100% <span className="text-gray-500 ml-1">vs Apr 2026</span>
+                      {monthPctChange >= 0 ? "↑" : "↓"} {Math.abs(monthPctChange)}%{" "}
+                      <span className="text-gray-500 ml-1">vs {previousMonthLabel}</span>
                     </p>
                   </div>
                 </div>
 
+                {/* Donut journey */}
                 <div className="bg-[#09090b] border border-white/10 rounded-2xl p-6">
                   <h3 className="text-base font-black text-white mb-1">Your Points Journey</h3>
                   <p className="text-xs text-gray-400 font-medium mb-6">See how you&apos;re growing</p>
-                  
                   <div className="flex justify-center mb-8">
-                    <DonutChart data={dynamicEarningBreakdown} totalPoints={displayPoints} />
+                    <DonutChart data={earningBreakdown} centerPoints={displayMonthlyPoints} />
                   </div>
-
                   <div className="space-y-4">
-                    {dynamicEarningBreakdown.length > 0 ? (
-                      dynamicEarningBreakdown.map((item, i) => (
+                    {earningBreakdown.length > 0 ? (
+                      earningBreakdown.map((item, i) => (
                         <div key={i} className="flex items-center justify-between text-sm">
                           <div className="flex items-center gap-3">
                             <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }} />
                             <span className="text-gray-300">{item.label}</span>
                           </div>
-                         <div className="flex justify-end gap-3 pr-2">
-                            <span className="font-bold text-white text-right">{item.percent}%</span>
-                            <span className="text-gray-400 text-right">({item.xp})</span>
+                          <div className="flex justify-end gap-3 pr-2">
+                            <span className="font-bold text-white">{item.percent}%</span>
+                            <span className="text-gray-400">({item.xp})</span>
                           </div>
                         </div>
                       ))
@@ -1385,12 +1286,12 @@ const chartData = currentPeriodPoints > 0
                   </div>
                 </div>
 
+                {/* Top activities */}
                 <div className="bg-[#09090b] border border-white/10 rounded-2xl p-6">
                   <h3 className="text-base font-black text-white mb-1">Top Activities</h3>
                   <p className="text-xs text-gray-400 font-medium mb-6">By points earned</p>
-                  
                   <div className="flex flex-col gap-5 mb-6">
-                    {staticTopActivitiesData.map((action, i) => (
+                    {staticTopActivities.map((action, i) => (
                       <div key={i} className="flex items-start gap-4">
                         <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 border ${action.bg}`}>
                           <action.icon className={`w-5 h-5 ${action.color}`} />
@@ -1403,8 +1304,10 @@ const chartData = currentPeriodPoints > 0
                       </div>
                     ))}
                   </div>
-
-                  <button className="w-full bg-rose-600/10 hover:bg-rose-600/20 text-rose-500 border border-rose-500/20 text-sm font-bold py-3 rounded-xl transition-colors tracking-wide">
+                  <button
+                    onClick={() => setActiveTab("Activity Feed")}
+                    className="w-full bg-rose-600/10 hover:bg-rose-600/20 text-rose-500 border border-rose-500/20 text-sm font-bold py-3 rounded-xl transition-colors tracking-wide"
+                  >
                     View All Activities →
                   </button>
                 </div>
@@ -1416,13 +1319,5 @@ const chartData = currentPeriodPoints > 0
 
       </main>
     </div>
-  );
-}
-
-function InfoIcon() {
-  return (
-    <span className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full border border-gray-600 text-[9px] text-gray-500 cursor-help hover:text-gray-300 hover:border-gray-400 transition-colors">
-      i
-    </span>
   );
 }

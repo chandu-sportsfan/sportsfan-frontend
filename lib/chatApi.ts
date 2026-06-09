@@ -344,6 +344,8 @@ export interface Message {
   deletedAt?: number;
   createdAt: number;
   updatedAt: number;
+  edited?: boolean;
+  deleted?: boolean;
 }
 
 export interface Group {
@@ -396,9 +398,29 @@ export interface Pagination {
 export function resolveChatName(chat: Chat, currentUserId: string): string {
   if (chat.type === "group") return chat.name || "Unnamed Group";
   if (chat.name && chat.name.trim()) return chat.name;
-  const otherId = chat.participantIds.find(id => id !== currentUserId);
+  const normalize = (id: string) => id.toLowerCase().replace(/[^a-zA-Z0-9]/g, "_");
+  const normCurrent = normalize(currentUserId);
+  const otherId = chat.participantIds.find(id => {
+    const normId = normalize(id);
+    if (!normCurrent) return true;
+    return !normId.endsWith(normCurrent) && !normCurrent.endsWith(normId);
+  });
   if (!otherId) return "Unknown User";
-  return otherId.replace(/_gmail_com$|_sportsfan360_com$/, "").replace(/_/g, " ");
+  
+  let cleaned = otherId;
+  cleaned = cleaned.replace(/^google_/, "");
+  cleaned = cleaned.replace(/_[0-9]+$/, ""); // Remove trailing timestamps
+  cleaned = cleaned.replace(/_gmail_com$|_sportsfan360_com$/, "");
+  
+  // Remove numbers or duplicate handles if possible (e.g. guptaraghav1375 -> gupta)
+  cleaned = cleaned.replace(/[0-9]+/g, ""); 
+  cleaned = cleaned.replace(/(.+)\1/g, "$1"); // Deduplicate if word repeat patterns exist
+
+  return cleaned
+    .split("_")
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ")
+    .trim();
 }
 
 // ─── Chats ────────────────────────────────────────────────────────────────────
@@ -453,14 +475,25 @@ export const ChatAPI = {
 
 // ─── Messages ─────────────────────────────────────────────────────────────────
 export const MessageAPI = {
-  edit: (messageId: string, content: string) =>
-    request<{ success: true; message: Message }>(`/messages/${messageId}`, {
+  edit: (chatId: string, messageId: string, content: string) =>
+  request<{ success: true; message: Message }>(
+    `/chats/${chatId}/messages/${messageId}`,
+    {
       method: "PATCH",
       body: JSON.stringify({ content }),
-    }),
+    }
+  ),
 
-  delete: (messageId: string) =>
-    request<{ success: true; message: string }>(`/messages/${messageId}`, { method: "DELETE" }),
+  delete: (chatId: string, messageId: string, forEveryone = true) => {
+    const q = new URLSearchParams();
+    if (!forEveryone) q.set("forEveryone", "false");
+    return request<{ success: true; message: string }>(
+      `/chats/${chatId}/messages/${messageId}?${q}`,
+      {
+        method: "DELETE",
+      }
+    );
+  },
 };
 
 // ─── Groups ───────────────────────────────────────────────────────────────────

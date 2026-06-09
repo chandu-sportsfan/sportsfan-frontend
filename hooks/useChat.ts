@@ -664,30 +664,46 @@ export function useMessages(chatId: string | null, currentUserId: string, authRe
   }, [chatId, currentUserId]);
 
   const editMessage = useCallback(async (messageId: string, content: string) => {
-    setMessages(prev => prev.map(m => m.id === messageId ? { ...m, content, updatedAt: Date.now() } : m));
-    try {
-      await MessageAPI.edit(messageId, content);
-      return true;
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to edit message");
-      return false;
-    }
-  }, []);
+  if (!chatId) return false;
 
-  const deleteMessage = useCallback(async (messageId: string) => {
+  setMessages(prev =>
+    prev.map(m =>
+      m.id === messageId
+        ? { ...m, content, updatedAt: Date.now() }
+        : m
+    )
+  );
+
+  try {
+    await MessageAPI.edit(chatId, messageId, content);
+    return true;
+  } catch (e) {
+    setError(e instanceof Error ? e.message : "Failed to edit message");
+    return false;
+  }
+}, [chatId]);
+
+  const deleteMessage = useCallback(async (messageId: string, forEveryone = true) => {
+  if (!chatId) return false;
+
+  if (forEveryone) {
     setMessages(prev => prev.map(m =>
       m.id === messageId
         ? { ...m, content: "This message was deleted.", deletedAt: Date.now() }
         : m
     ));
-    try {
-      await MessageAPI.delete(messageId);
-      return true;
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to delete message");
-      return false;
-    }
-  }, []);
+  } else {
+    setMessages(prev => prev.filter(m => m.id !== messageId));
+  }
+
+  try {
+    await MessageAPI.delete(chatId, messageId, forEveryone);
+    return true;
+  } catch (e) {
+    setError(e instanceof Error ? e.message : "Failed to delete message");
+    return false;
+  }
+}, [chatId]);
 
   return { messages, loading, loadingOlder, sending, error, hasMore, loadMore, send, editMessage, deleteMessage };
 }

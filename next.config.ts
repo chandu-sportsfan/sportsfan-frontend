@@ -155,7 +155,27 @@ const nextConfig = {
           destination: `${apiTarget}/api/notifications/:path*`,
         },
 
-
+        // Follow Requests
+{
+  source: "/api/follow-request",
+  destination: `${apiTarget}/api/follow-request`,
+},
+{
+  source: "/api/follow-request/:path*",
+  destination: `${apiTarget}/api/follow-request/:path*`,
+},
+{
+  source: "/api/follow-request/status",
+  destination: `${apiTarget}/api/follow-request/status`,
+},
+{
+  source: "/api/follow-request/accept",
+  destination: `${apiTarget}/api/follow-request/accept`,
+},
+{
+  source: "/api/follow-request/reject",
+  destination: `${apiTarget}/api/follow-request/reject`,
+},
           //User-Activity
         {
           source: "/api/user-activity",

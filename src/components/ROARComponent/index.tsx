@@ -56,9 +56,13 @@ const GLOBAL_CSS = `
   }
   .roar-inner {
     width: 100%;
+    height: 100%;
+    min-height: 600px;
     position: relative;
     overflow: hidden;
     background: var(--bg-primary);
+    display: flex;
+    flex-direction: column;
   }
 }
 
@@ -7122,7 +7126,7 @@ export default function ROARApp() {
     [showToast, fetchPosts],
   );
 
-  const completeOnboarding = useCallback((prefs: any) => {
+  const completeOnboarding = useCallback(async (prefs: any) => {
     const badge = prefs.badge || "RISING_FAN";
     setUserSports(prefs.sports ?? []);
     setUserBadge(badge);
@@ -7131,6 +7135,18 @@ export default function ROARApp() {
       localStorage.setItem("roar_v2_complete", "1");
       localStorage.setItem("roar_badge", badge);
     } catch {}
+    // Save to backend so any device/browser works for this user
+    try {
+      await axios.post("/api/roar/onboarding", {
+        sports: prefs.sports || ["cricket"],
+        teams: prefs.teams || [],
+        tenure: prefs.tenure || "rising",
+        badge,
+        firstContribution: prefs.firstContribution || null,
+      });
+    } catch (err) {
+      console.error("Failed to save onboarding to backend:", err);
+    }
   }, []);
 
   const handleTab = (tab: string) => {

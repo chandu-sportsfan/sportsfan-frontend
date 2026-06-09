@@ -358,10 +358,10 @@ function getTrendAnalytics(history: HistoryItem[], period: TrendPeriod) {
 // ─────────────────────────────────────────────
 function DonutChart({
   data,
-  totalPoints,
+  centerPoints,
 }: {
   data: CategoryBreakdown[];
-  totalPoints: string;
+  centerPoints: string;
 }) {
   const RADIUS = 15.91549430918954;
   const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
@@ -406,7 +406,7 @@ function DonutChart({
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
         <span className="text-3xl font-black text-white">
-          {isEmpty ? "0" : totalPoints}
+          {isEmpty ? "0" : centerPoints}
         </span>
         <span className="text-xs text-gray-400 font-bold uppercase tracking-wider mt-1">SXP</span>
         {isEmpty && (
@@ -566,6 +566,7 @@ export default function FanZoneDashboard() {
   const monthPctChange = lastMonthPoints > 0
     ? Math.round((monthDiff / lastMonthPoints) * 100)
     : thisMonthPoints > 0 ? 100 : 0;
+  const displayMonthlyPoints = thisMonthPoints.toLocaleString();
 
   // ─── Shared sub-components ───────────────────
   const StreakWidget = () => (
@@ -891,7 +892,7 @@ export default function FanZoneDashboard() {
 
                 {/* Middle: donut + legend */}
                 <div className="xl:col-span-5 flex flex-col sm:flex-row items-center justify-center gap-6 lg:gap-10 w-full py-6 xl:py-0 border-t border-white/10 xl:border-t-0 xl:border-l xl:pl-8">
-                  <DonutChart data={earningBreakdown} totalPoints={displayPoints} />
+                  <DonutChart data={earningBreakdown} centerPoints={displayMonthlyPoints} />
                   <div className="space-y-4 w-full sm:w-auto">
                     {earningBreakdown.length > 0 ? (
                       earningBreakdown.map((item, i) => (
@@ -1263,7 +1264,7 @@ export default function FanZoneDashboard() {
                   <h3 className="text-base font-black text-white mb-1">Your Points Journey</h3>
                   <p className="text-xs text-gray-400 font-medium mb-6">See how you&apos;re growing</p>
                   <div className="flex justify-center mb-8">
-                    <DonutChart data={earningBreakdown} totalPoints={displayPoints} />
+                    <DonutChart data={earningBreakdown} centerPoints={displayMonthlyPoints} />
                   </div>
                   <div className="space-y-4">
                     {earningBreakdown.length > 0 ? (

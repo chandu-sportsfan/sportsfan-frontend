@@ -913,6 +913,8 @@ import { useSearchParams } from "next/navigation";
 import { useRouter } from "next/navigation";
 import axios from "axios";
 import { useAuth } from "@/context/AuthContext";
+import { useActivity } from "@/context/ActivityContext";
+import { useLeaderboard } from "@/context/LeaderboardContext";
 import { useScripts } from "@/context/ScriptsContext";
 import CommentsSection from "@/src/components/CommentsSection";
 import PlaylistDialog from "../playlistdialog-component/playlistdialog";
@@ -1091,7 +1093,7 @@ function PointsToast({ onDone }: { onDone: () => void }) {
                 whiteSpace: "nowrap",
             }}
         >
-            🎧 +2 pts — thanks for listening!
+            🎧 +2 SXP - thanks for listening!
             <style>{`
                 @keyframes pointsToastIn {
                     from { opacity: 0; transform: translateX(-50%) translateY(-14px) scale(0.9); }
@@ -1230,6 +1232,8 @@ function ScriptIcon() {
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function AudioDropCard() {
     const { user, getUserName } = useAuth();
+    const { refreshActivities, addLocalActivity } = useActivity();
+    const { addLocalPoints } = useLeaderboard();
     const router = useRouter();
     const searchParams = useSearchParams();
     const idParam = searchParams.get("id");
@@ -1266,6 +1270,7 @@ export default function AudioDropCard() {
     // in this browser session (server is the source of truth via transactionId,
     // but this prevents firing the toast more than once per track load).
     const hasAwardedPointsRef = useRef(false);
+    const awardingPointsRef = useRef(false);
 
     const audioRef = useRef<HTMLAudioElement | null>(null);
     const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -1287,7 +1292,7 @@ export default function AudioDropCard() {
     useEffect(() => { currentIndexRef.current = currentIndex; }, [currentIndex]);
     useEffect(() => { allAudioFilesRef.current = allAudioFiles; }, [allAudioFiles]);
 
-    const getUserId = () => user?.userId || null;
+    const getUserId = () => user?.userId || user?.uid || user?.email || null;
 
     const handleBack = () => {
         if (fromPlaylist && playlistId) {
@@ -1298,6 +1303,65 @@ export default function AudioDropCard() {
     };
 
     // ── Save progress + trigger points award at 90% ───────────────────────────
+    const awardAudioDropPoints = async (drop: AudioDrop) => {
+        const userId = getUserId();
+        if (!userId || !drop.id || hasAwardedPointsRef.current || awardingPointsRef.current) return false;
+
+        awardingPointsRef.current = true;
+        const transactionId = `${userId}_${drop.id}_${Date.now()}_LISTEN_AUDIO_DROP`;
+        const applyLocalAward = () => {
+            if (hasAwardedPointsRef.current) return;
+            hasAwardedPointsRef.current = true;
+            addLocalPoints(2);
+            addLocalActivity({
+                id: transactionId,
+                type: "LISTEN_AUDIO_DROP",
+                points: 2,
+                label: "Listen Audio Drops",
+                metadata: {
+                    audioId: drop.id,
+                    audioTitle: drop.title,
+                    title: drop.title,
+                    subtitle: drop.subtitle || "Audio Drop",
+                    url: drop.audioUrl || "",
+                    transactionId,
+                },
+                createdAt: Date.now(),
+            });
+            setShowPointsToast(true);
+        };
+
+        try {
+            await axios.post("/api/user-points", {
+                actualUserId: userId,
+                userId,
+                userName: getUserName() || user?.name || user?.email || "User",
+                userEmail: user?.email || "",
+                points: 2,
+                reason: "LISTEN_AUDIO_DROP",
+                transactionId,
+                metadata: {
+                    audioId: drop.id,
+                    audioTitle: drop.title,
+                    title: drop.title,
+                    subtitle: drop.subtitle || "Audio Drop",
+                    url: drop.audioUrl || "",
+                    transactionId,
+                },
+            });
+
+            applyLocalAward();
+            await refreshActivities();
+            return true;
+        } catch (err) {
+            console.error("[audio-points] award error:", err);
+            applyLocalAward();
+            return true;
+        } finally {
+            awardingPointsRef.current = false;
+        }
+    };
+
     const saveProgressToApi = async (elapsedSecs: number, drop: AudioDrop) => {
         const userId = getUserId();
         if (!userId || !drop.id) return;
@@ -1306,7 +1370,7 @@ export default function AudioDropCard() {
         const pct = totalSecs > 0 ? Math.round((elapsedSecs / totalSecs) * 100) : 0;
 
         try {
-            const res = await axios.post("/api/audio-progress", {
+            await axios.post("/api/audio-progress", {
                 userId,
                 audioId: drop.id,
                 title: drop.title,
@@ -1320,16 +1384,14 @@ export default function AudioDropCard() {
                 userEmail: user?.email || "",
             });
 
-            // Show the toast exactly once per track when the backend awards points
-            if (
-                res.data.pointsAwarded > 0 &&
-                !hasAwardedPointsRef.current
-            ) {
-                hasAwardedPointsRef.current = true;
-                setShowPointsToast(true);
+            if (pct >= 90) {
+                await awardAudioDropPoints(drop);
             }
         } catch (err) {
             console.error("[audio-progress] save error:", err);
+            if (pct >= 90) {
+                await awardAudioDropPoints(drop);
+            }
         }
     };
 
@@ -1359,6 +1421,8 @@ export default function AudioDropCard() {
                 setAudioDrop((prev) => prev ? { ...prev, listens: res.data.plays } : prev);
             }
         } catch (err) { console.error("[listens] error:", err); }
+        hasCountedListen.current = false;
+        hasAwardedPointsRef.current = false;
     };
 
     useEffect(() => { incrementListensRef.current = incrementListens; });
@@ -1378,6 +1442,7 @@ export default function AudioDropCard() {
 
         // Reset the points-awarded guard for the new track
         hasAwardedPointsRef.current = false;
+        awardingPointsRef.current = false;
 
         audioIdRef.current = target.id;
         const drop = audioFileToAudioDrop(target);
@@ -1438,6 +1503,7 @@ export default function AudioDropCard() {
             hasCountedListen.current = false;
             // Reset points guard on new fetch
             hasAwardedPointsRef.current = false;
+            awardingPointsRef.current = false;
 
             if (urlParam && !idParam) {
                 const decodedUrl = decodeURIComponent(urlParam);
@@ -1544,7 +1610,9 @@ export default function AudioDropCard() {
         if (audioRef.current) { audioRef.current.pause(); audioRef.current.src = ""; }
         const audio = new Audio(url);
         audioRef.current = audio;
-        audio.addEventListener("play", () => setPlaying(true));
+        audio.addEventListener("play", () => {
+            setPlaying(true);
+        });
         audio.addEventListener("pause", () => setPlaying(false));
         audio.addEventListener("loadedmetadata", () => {
             const secs = audio.duration;

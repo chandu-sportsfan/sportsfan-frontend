@@ -27,6 +27,7 @@ interface LeaderboardContextType {
   currentUserPoints: number | null;
   loading: boolean;
   refreshLeaderboard: () => Promise<void>;
+  addLocalPoints: (points: number) => void;
 }
 
 // ── Module-level cache (survives re-renders, resets on page reload) ────────────
@@ -41,6 +42,25 @@ const USER_CACHE_TTL = 60_000; // 1 minute
 
 let leaderboardCache: { ts: number; data: LeaderboardUser[] } | null = null;
 const LEADERBOARD_CACHE_TTL = 120_000; // 2 minutes
+
+const normalizeLeaderboard = (rows: LeaderboardUser[]): LeaderboardUser[] =>
+  [...rows]
+    .sort((a, b) => {
+      const pointDiff = (Number(b.totalPoints) || 0) - (Number(a.totalPoints) || 0);
+      if (pointDiff !== 0) return pointDiff;
+
+      const aRank = Number(a.rank) || Number.MAX_SAFE_INTEGER;
+      const bRank = Number(b.rank) || Number.MAX_SAFE_INTEGER;
+      return aRank - bRank;
+    })
+    .map((user, index) => ({
+      ...user,
+      totalPoints: Number(user.totalPoints) || 0,
+      rank: index + 1,
+    }));
+
+const sameUserId = (a: string | number | undefined, b: string | number | undefined) =>
+  a !== undefined && b !== undefined && String(a) === String(b);
 
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -113,6 +133,16 @@ export const LeaderboardProvider: React.FC<{ children: React.ReactNode }> = ({
         Date.now() - leaderboardCache.ts < LEADERBOARD_CACHE_TTL
       ) {
         setLeaderboard(leaderboardCache.data);
+        const found = leaderboardCache.data.find((u) => sameUserId(u.userId, userId));
+        if (found) {
+          USER_CACHE.set(userId, {
+            ts: Date.now(),
+            points: found.totalPoints,
+            rank: found.rank,
+          });
+          setCurrentUserPoints(found.totalPoints);
+          setCurrentUserRank(found.rank);
+        }
         return leaderboardCache.data;
       }
 
@@ -122,23 +152,19 @@ export const LeaderboardProvider: React.FC<{ children: React.ReactNode }> = ({
       try {
         const res = await axios.get(`/api/user-points?limit=100`);
         if (res.data.success && res.data.leaderboard) {
-          const data: LeaderboardUser[] = res.data.leaderboard;
+          const data = normalizeLeaderboard(res.data.leaderboard);
           leaderboardCache = { ts: Date.now(), data };
           setLeaderboard(data);
 
-          // Fallback: populate user points from leaderboard if the fast-path failed
-          const userCached = USER_CACHE.get(userId);
-          if (!userCached) {
-            const found = data.find((u) => u.userId === userId);
-            if (found) {
-              USER_CACHE.set(userId, {
-                ts: Date.now(),
-                points: found.totalPoints,
-                rank: found.rank,
-              });
-              setCurrentUserPoints(found.totalPoints);
-              setCurrentUserRank(found.rank);
-            }
+          const found = data.find((u) => sameUserId(u.userId, userId));
+          if (found) {
+            USER_CACHE.set(userId, {
+              ts: Date.now(),
+              points: found.totalPoints,
+              rank: found.rank,
+            });
+            setCurrentUserPoints(found.totalPoints);
+            setCurrentUserRank(found.rank);
           }
 
           return data;
@@ -188,6 +214,42 @@ const refreshLeaderboard = useCallback(async () => {
   await fetchGlobalLeaderboard();
 }, [user?.userId, fetchGlobalLeaderboard]);
 
+const addLocalPoints = useCallback((points: number) => {
+  const userId = user?.userId || user?.uid || user?.email;
+  if (!userId || !points) return;
+  const delta = Number(points) || 0;
+
+  setCurrentUserPoints((prev) => {
+    const next = (Number(prev) || 0) + delta;
+    const cached = USER_CACHE.get(userId);
+    USER_CACHE.set(userId, {
+      ts: Date.now(),
+      points: next,
+      rank: cached?.rank ?? currentUserRank ?? 0,
+    });
+    return next;
+  });
+
+  setLeaderboard((prev) =>
+    prev.map((entry) =>
+      sameUserId(entry.userId, userId)
+        ? { ...entry, totalPoints: (Number(entry.totalPoints) || 0) + delta }
+        : entry
+    )
+  );
+
+  if (leaderboardCache) {
+    leaderboardCache = {
+      ts: Date.now(),
+      data: leaderboardCache.data.map((entry) =>
+        sameUserId(entry.userId, userId)
+          ? { ...entry, totalPoints: (Number(entry.totalPoints) || 0) + delta }
+          : entry
+      ),
+    };
+  }
+}, [currentUserRank, user?.email, user?.uid, user?.userId]);
+
   // Only fires when auth is confirmed ready — avoids spurious calls with
   // undefined userId during the initial auth hydration.
   useEffect(() => {
@@ -203,6 +265,7 @@ const refreshLeaderboard = useCallback(async () => {
         currentUserPoints,
         loading,
         refreshLeaderboard,
+        addLocalPoints,
       }}
     >
       {children}

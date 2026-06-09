@@ -2117,7 +2117,11 @@ function ComposeModal({
                           fontSize: 13,
                         }}
                       >
-                        {UPCOMING_MATCHES.map((m) => (
+                        {UPCOMING_MATCHES.filter((m) =>
+                          sport === "football"
+                            ? m.toLowerCase().includes("isl")
+                            : !m.toLowerCase().includes("isl")
+                        ).map((m) => (
                           <option key={m} value={m}>
                             {m}
                           </option>
@@ -2194,7 +2198,7 @@ function ComposeModal({
                       />
                     </div>
                   )}
-                  {(selected === "hot_take" || selected === "prediction") && (
+                  {(selected === "hot_take" || selected === "prediction" || selected === "debate" || selected === "memory") && (
                     <>
                       <label
                         style={{
@@ -2354,119 +2358,18 @@ const RADIAL_OPTS = [
 function BottomNav({
   activeTab,
   onTabChange,
-  onCompose,
-  onQuickCompose,
   unreadCount,
   matchLive,
   badgeNearUnlock,
 }: {
   activeTab: string;
   onTabChange: (t: string) => void;
-  onCompose: () => void;
-  onQuickCompose: (t: string) => void;
   unreadCount: number;
   matchLive: boolean;
   badgeNearUnlock: boolean;
 }) {
-  const [radial, setRadial] = useState(false);
-  const pressRef = useRef<any>(null);
-  const touchStartY = useRef<number | null>(null);
-  const didScroll = useRef(false);
-
-  const [domReady, setDomReady] = useState(false);
-  useEffect(() => {
-    setDomReady(true);
-  }, []);
-
-  const down = (e: React.TouchEvent | React.MouseEvent) => {
-    didScroll.current = false;
-    if ("touches" in e) {
-      touchStartY.current = e.touches[0].clientY;
-    }
-    pressRef.current = setTimeout(() => setRadial(true), 320);
-  };
-  const onTouchMove = (e: React.TouchEvent) => {
-    if (touchStartY.current !== null) {
-      const delta = Math.abs(e.touches[0].clientY - touchStartY.current);
-      if (delta > 10) {
-        didScroll.current = true;
-        clearTimeout(pressRef.current);
-      }
-    }
-  };
-  const up = () => {
-    clearTimeout(pressRef.current);
-    if (!radial && !didScroll.current) onCompose();
-    setRadial(false);
-    touchStartY.current = null;
-    didScroll.current = false;
-  };
-
-  const radialMenuContent = (
-    <div className="roar-root">
-      <AnimatePresence>
-        {radial && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              style={{
-                position: "fixed",
-                inset: 0,
-                zIndex: 55,
-                pointerEvents: "auto",
-                background: "rgba(0,0,0,0.4)",
-              }}
-              onClick={() => setRadial(false)}
-            >
-              <div
-                style={{
-                  position: "fixed",
-                  bottom: 100,
-                  left: "50%",
-                  transform: "translateX(-50%)",
-                  display: "flex",
-                  gap: 12,
-                }}
-              >
-                {RADIAL_OPTS.map((q, i) => (
-                  <motion.button
-                    key={q.id}
-                    initial={{ scale: 0, y: 20 }}
-                    animate={{ scale: 1, y: 0 }}
-                    transition={{ delay: i * 0.05, type: "spring" }}
-                    onClick={() => {
-                      onQuickCompose(q.id);
-                      setRadial(false);
-                    }}
-                    className="glass-card"
-                    style={{
-                      width: 56,
-                      height: 56,
-                      borderRadius: "50%",
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontSize: 20,
-                      cursor: "pointer",
-                      border: "none",
-                      gap: 2,
-                    }}
-                  >
-                    {q.emoji}
-                  </motion.button>
-                ))}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-  );
-
   return (
     <>
-      {domReady && createPortal(radialMenuContent, document.body)}
       <div
         style={{
           position: "fixed",
@@ -2493,44 +2396,7 @@ function BottomNav({
         >
           {NAV_TABS.map((tab) => {
             if (tab.id === "compose") {
-              return (
-                <button
-                  key="compose"
-                  onMouseDown={down}
-                  onMouseUp={up}
-                  onMouseLeave={() => clearTimeout(pressRef.current)}
-                  onTouchStart={down}
-                  onTouchMove={onTouchMove}
-                  onTouchEnd={up}
-                  style={{
-                    position: "relative",
-                    marginTop: -32,
-                    zIndex: 10,
-                    background: "none",
-                    border: "none",
-                    cursor: "pointer",
-                  }}
-                >
-                  <motion.div
-                    whileTap={{ scale: 0.92 }}
-                    className="btn-gradient"
-                    style={{
-                      width: 52,
-                      height: 52,
-                      borderRadius: "50%",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      boxShadow: "0 6px 28px rgba(233,30,140,0.5)",
-                    }}
-                  >
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                      <line x1="12" y1="5" x2="12" y2="19"></line>
-                      <line x1="5" y1="12" x2="19" y2="12"></line>
-                    </svg>
-                  </motion.div>
-                </button>
-              );
+              return null;
             }
             const isActive = activeTab === tab.id;
             return (
@@ -2644,6 +2510,7 @@ function HomeFeed({
   onPostClick,
   onVote,
   userSports = [],
+  onQuickCompose,
 }: {
   unreadCount: number;
   onNavigateAlerts: () => void;
@@ -2660,8 +2527,10 @@ function HomeFeed({
   onPostClick?: (post: any) => void;
   onVote?: (id: string, vote: "agree" | "disagree" | null) => void;
   userSports?: string[];
+  onQuickCompose?: (t: string) => void;
 }) {
   const [filter, setFilter] = useState("For You");
+  const [postMenuOpen, setPostMenuOpen] = useState(false);
   const [votes, setVotes] = useState<Record<string, boolean | null>>({});
   const [pcts, setPcts] = useState<Record<string, number>>({});
 
@@ -2758,6 +2627,9 @@ function HomeFeed({
         p.type === "prediction" ? (p.disagreeCount ?? 0) : undefined,
       isDbPost: true,
       userVote: p.userVote,
+      sideA: p.sideA,
+      sideB: p.sideB,
+      memCtx: p.memCtx,
     };
   });
 
@@ -2914,13 +2786,58 @@ function HomeFeed({
         </div>
       )}
 
-      {/* Filters */}
-      <div
-        style={{
-          padding: "10px 16px",
-          overflow: "hidden",
-        }}
-      >
+      {/* Filters + Post on ROAR */}
+      <div style={{ padding: "10px 16px", overflow: "hidden", position: "relative" }}>
+        {/* Quick-post popup — slides in just above the filter bar */}
+        <AnimatePresence>
+          {postMenuOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 8 }}
+              transition={{ duration: 0.18, type: "spring", stiffness: 320, damping: 28 }}
+              style={{
+                display: "flex",
+                gap: 8,
+                justifyContent: "center",
+                marginBottom: 8,
+                flexWrap: "nowrap",
+              }}
+            >
+              {RADIAL_OPTS.map((q, i) => (
+                <motion.button
+                  key={q.id}
+                  initial={{ scale: 0.8, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ delay: i * 0.04, type: "spring", stiffness: 350 }}
+                  onClick={() => {
+                    setPostMenuOpen(false);
+                    onQuickCompose && onQuickCompose(q.id);
+                  }}
+                  style={{
+                    flex: 1,
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 4,
+                    padding: "8px 4px",
+                    borderRadius: 14,
+                    background: "rgba(22,22,31,0.92)",
+                    border: "1px solid rgba(233,30,140,0.3)",
+                    cursor: "pointer",
+                    boxShadow: "0 4px 16px rgba(0,0,0,0.5)",
+                    minWidth: 0,
+                  }}
+                >
+                  <span style={{ fontSize: 18 }}>{q.emoji}</span>
+                  <span style={{ fontSize: 9, fontWeight: 700, color: "rgba(255,255,255,0.7)", whiteSpace: "nowrap" }}>{q.label}</span>
+                </motion.button>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         <div
           className="flex justify-start items-center gap-2 overflow-x-auto rounded-2xl border border-white/5 bg-[#1a1a1a]/80 p-1.5 shadow-xl [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           style={{ WebkitOverflowScrolling: "touch" }}
@@ -2931,7 +2848,7 @@ function HomeFeed({
               <motion.button
                 key={f}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => setFilter(f)}
+                onClick={() => { setFilter(f); setPostMenuOpen(false); }}
                 className={`relative flex min-w-max items-center justify-center gap-2 px-5 py-3 rounded-xl text-xs font-bold tracking-wide transition-all duration-300 text-center whitespace-nowrap shrink-0 group`}
                 style={{
                   border: "none",
@@ -2945,6 +2862,26 @@ function HomeFeed({
               </motion.button>
             );
           })}
+
+          {/* Post on ROAR (+) tab */}
+          <motion.button
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setPostMenuOpen((prev) => !prev)}
+            className="relative flex min-w-max items-center justify-center gap-1.5 px-4 py-3 rounded-xl text-xs font-bold tracking-wide whitespace-nowrap shrink-0"
+            style={{
+              border: postMenuOpen ? "1px solid rgba(233,30,140,0.6)" : "1px solid rgba(233,30,140,0.25)",
+              cursor: "pointer",
+              color: postMenuOpen ? "white" : "rgba(233,30,140,0.9)",
+              background: postMenuOpen
+                ? "linear-gradient(90deg,#e91e8c,#ff6b35)"
+                : "rgba(233,30,140,0.08)",
+              boxShadow: postMenuOpen ? "0 4px 14px rgba(233,30,140,0.35)" : "none",
+              transition: "all 0.2s",
+            }}
+          >
+            <span style={{ fontSize: 13, fontWeight: 900, lineHeight: 1 }}>+</span>
+            <span className="block leading-tight">Post on ROAR</span>
+          </motion.button>
         </div>
       </div>
 
@@ -3552,6 +3489,127 @@ function HomeFeed({
               </motion.div>
             );
           }
+
+          if (item.type === "debate") {
+            return (
+              <motion.div
+                key={item.id}
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.04 }}
+                className="glass-card"
+                style={{ padding: "16px", cursor: "pointer" }}
+                onClick={() => onPostClick && onPostClick(item)}
+              >
+                <div style={{ display: "flex", gap: 6, marginBottom: 8, flexWrap: "wrap" }}>
+                  <span style={{
+                    fontSize: 10, fontWeight: 800, letterSpacing: "0.06em",
+                    padding: "3px 8px", borderRadius: 4, textTransform: "uppercase",
+                    background: "rgba(233,30,140,0.12)", color: "var(--accent-magenta)",
+                    border: "1px solid rgba(233,30,140,0.25)",
+                  }}>⚡ Debate</span>
+                  <span style={{
+                    fontSize: 10, fontWeight: 800, padding: "3px 8px", borderRadius: 4,
+                    background: item.sport === "cricket" ? "rgba(34,197,94,0.1)" : "rgba(59,130,246,0.1)",
+                    color: item.sport === "cricket" ? "#22c55e" : "#60a5fa",
+                    border: `1px solid ${item.sport === "cricket" ? "rgba(34,197,94,0.2)" : "rgba(59,130,246,0.2)"}`,
+                    textTransform: "uppercase",
+                  }}>{item.sport === "cricket" ? "🏏 Cricket" : "⚽ Football"}</span>
+                </div>
+                <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 12 }}>
+                  <AvatarWithBadge username={item.fan.username} badge={item.fan.badge} size="sm" />
+                  <div>
+                    <p style={{ fontWeight: 700, fontSize: 13 }}>{item.fan.username}</p>
+                    <p style={{ fontSize: 10, color: "var(--text-secondary)" }}>
+                      {BADGE_LABELS[item.fan.badge]} · {item.fan.team}
+                    </p>
+                  </div>
+                </div>
+                <div style={{ display: "flex", gap: 8, alignItems: "stretch" }}>
+                  <div style={{
+                    flex: 1, padding: "12px", borderRadius: 14, textAlign: "center",
+                    background: "rgba(233,30,140,0.1)", border: "1px solid rgba(233,30,140,0.3)",
+                  }}>
+                    <p style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)" }}>
+                      {item.sideA || (item.text?.split(" VS ")[0]) || "Side A"}
+                    </p>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", padding: "0 4px" }}>
+                    <span className="font-display" style={{ fontSize: 16, color: "var(--text-muted)" }}>VS</span>
+                  </div>
+                  <div style={{
+                    flex: 1, padding: "12px", borderRadius: 14, textAlign: "center",
+                    background: "rgba(59,130,246,0.1)", border: "1px solid rgba(59,130,246,0.3)",
+                  }}>
+                    <p style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)" }}>
+                      {item.sideB || (item.text?.split(" VS ")[1]) || "Side B"}
+                    </p>
+                  </div>
+                </div>
+                <p style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 10 }}>
+                  {fmt(item.fanCount ?? 0)} fans · {item.replies ?? 0} replies
+                </p>
+              </motion.div>
+            );
+          }
+
+          if (item.type === "memory") {
+            return (
+              <motion.div
+                key={item.id}
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.04 }}
+                className="glass-card"
+                style={{ padding: "16px", cursor: "pointer" }}
+                onClick={() => onPostClick && onPostClick(item)}
+              >
+                <div style={{ display: "flex", gap: 6, marginBottom: 8, flexWrap: "wrap" }}>
+                  <span style={{
+                    fontSize: 10, fontWeight: 800, letterSpacing: "0.06em",
+                    padding: "3px 8px", borderRadius: 4, textTransform: "uppercase",
+                    background: "rgba(0,232,198,0.1)", color: "var(--teal)",
+                    border: "1px solid rgba(0,232,198,0.25)",
+                  }}>🕰 Memory</span>
+                  <span style={{
+                    fontSize: 10, fontWeight: 800, padding: "3px 8px", borderRadius: 4,
+                    background: item.sport === "cricket" ? "rgba(34,197,94,0.1)" : "rgba(59,130,246,0.1)",
+                    color: item.sport === "cricket" ? "#22c55e" : "#60a5fa",
+                    border: `1px solid ${item.sport === "cricket" ? "rgba(34,197,94,0.2)" : "rgba(59,130,246,0.2)"}`,
+                    textTransform: "uppercase",
+                  }}>{item.sport === "cricket" ? "🏏 Cricket" : "⚽ Football"}</span>
+                </div>
+                <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 12 }}>
+                  <AvatarWithBadge username={item.fan.username} badge={item.fan.badge} size="sm" />
+                  <div>
+                    <p style={{ fontWeight: 700, fontSize: 13 }}>{item.fan.username}</p>
+                    <p style={{ fontSize: 10, color: "var(--text-secondary)" }}>
+                      {BADGE_LABELS[item.fan.badge]} · {item.fan.team}
+                    </p>
+                  </div>
+                </div>
+                <p style={{
+                  fontWeight: 600, fontSize: 15, lineHeight: 1.55,
+                  marginBottom: item.memCtx ? 8 : 0,
+                  color: "var(--text-primary)",
+                }}>
+                  {item.text}
+                </p>
+                {item.memCtx && (
+                  <p style={{
+                    fontSize: 12, color: "var(--teal)", fontStyle: "italic",
+                    borderLeft: "2px solid var(--teal)", paddingLeft: 10, marginTop: 6,
+                  }}>
+                    {item.memCtx}
+                  </p>
+                )}
+                <p style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 10 }}>
+                  {fmt(item.fanCount ?? 0)} fans · {item.replies ?? 0} replies
+                </p>
+              </motion.div>
+            );
+          }
+
           return null;
         })}
       </div>
@@ -7105,16 +7163,30 @@ export default function ROARApp() {
   const handlePost = useCallback(
     async (payload: any) => {
       try {
+        const postType = ["hot_take", "prediction", "debate", "memory"].includes(payload.type)
+          ? payload.type
+          : "hot_take";
         const res = await axios.post("/api/roar/posts", {
-          type: payload.type === "hot_take" ? "hot_take" : "prediction",
-          text: payload.text,
+          type: postType,
+          text: payload.type === "debate"
+            ? `${payload.sideA} VS ${payload.sideB}`
+            : payload.text,
+          sideA: payload.sideA,
+          sideB: payload.sideB,
+          memCtx: payload.memCtx,
           sport: payload.sport || "cricket",
           matchId: payload.match,
           confidence: payload.confidence,
           audience: payload.audience,
         });
         if (res.data?.success) {
-          showToast("🔥 Your take is live · 47 fans may see it");
+          const toastMap: Record<string, string> = {
+            hot_take: "🔥 Hot Take is live · 47 fans may see it",
+            prediction: "📊 Prediction posted · Let's see if you're right",
+            debate: "⚡ Debate started · Get the fans talking",
+            memory: "🕰 Memory shared · OG fans will feel this",
+          };
+          showToast(toastMap[postType] || "🔥 Your take is live");
           fetchPosts();
         }
       } catch (err) {
@@ -7417,6 +7489,7 @@ export default function ROARApp() {
                       onPostClick={(post) => setSelectedPost(post)}
                       onVote={handleVote}
                       userSports={userSports}
+                      onQuickCompose={(t) => openCompose(t)}
                     />
                   )}
                   {activeTab === "profile" && (
@@ -7467,8 +7540,6 @@ export default function ROARApp() {
           <BottomNav
             activeTab={isRoom ? "discuss" : activeTab}
             onTabChange={handleTab}
-            onCompose={() => openCompose()}
-            onQuickCompose={(t) => openCompose(t)}
             unreadCount={unreadCount}
             matchLive
             badgeNearUnlock

@@ -67,7 +67,7 @@ export default function HomePage() {
         <FifaPlayerProfilePage />
         <FifaClub360Page />
         {/* <Player360CardsSection /> */}
-         <SocialFeedSection />
+         {/* <SocialFeedSection /> */}
         <NewsCenter /> 
       </div>
     </div>

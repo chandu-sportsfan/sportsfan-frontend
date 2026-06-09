@@ -63,7 +63,7 @@ export default function LoginCard() {
                     if (response.data.user?.role === "host") {
                         router.push("/MainModules/HostDashboard");
                     } else {
-                        router.push("/MainModules/HomePage");
+                        router.push("/MainModules/ROAR");
                     }
                 }
             }
@@ -266,16 +266,22 @@ export default function LoginCard() {
                     <span className="text-gray-500 text-xs tracking-widest">OR</span>
                     <div className="flex-1 h-[1px] bg-gray-700" />
                 </div>
-                <button
-                    // onClick={() => signIn("google", {
-                    //     callbackUrl: process.env.NEXT_PUBLIC_APP_URL + "/MainModules/HomePage"
-                    // })}
+                {/* <button
                     onClick={() => {
                         const redirect = searchParams.get("redirect") || "/MainModules/HomePage";
                         signIn("google", { callbackUrl: redirect });
                     }}
                     className="w-full bg-white text-black py-3 rounded-full font-medium flex items-center justify-center gap-2 mb-6 hover:bg-gray-100 transition"
-                >
+                > */}
+                <button
+    onClick={() => {
+        const MASTER_URL = 'https://sportsfan-frontend-git-master-chandu-sportsfans-projects.vercel.app';
+        signIn("google", { 
+            callbackUrl: `${MASTER_URL}/MainModules/ROAR`
+        });
+    }}
+    className="w-full bg-white text-black py-3 rounded-full font-medium flex items-center justify-center gap-2 mb-6 hover:bg-gray-100 transition"
+>
                     <svg width="18" height="18" viewBox="0 0 18 18">
                         <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" />
                         <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z" />

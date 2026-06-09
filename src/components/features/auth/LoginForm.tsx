@@ -63,7 +63,7 @@ export default function LoginCard() {
                     if (response.data.user?.role === "host") {
                         router.push("/MainModules/HostDashboard");
                     } else {
-                        router.push("/MainModules/HomePage");
+                        router.push("/MainModules/ROAR");
                     }
                 }
             }
@@ -277,7 +277,7 @@ export default function LoginCard() {
     onClick={() => {
         const MASTER_URL = 'https://sportsfan-frontend-git-master-chandu-sportsfans-projects.vercel.app';
         signIn("google", { 
-            callbackUrl: `${MASTER_URL}/MainModules/HomePage`
+            callbackUrl: `${MASTER_URL}/MainModules/ROAR`
         });
     }}
     className="w-full bg-white text-black py-3 rounded-full font-medium flex items-center justify-center gap-2 mb-6 hover:bg-gray-100 transition"

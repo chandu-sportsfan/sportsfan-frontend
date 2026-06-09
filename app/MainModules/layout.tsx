@@ -142,9 +142,9 @@ function UserSidebar() {
   // const isMatchIntelligence = user?.email?.endsWith("@sportsfan360.com");
 
   const sidebarItems: SidebarItem[] = [
-    { name: "Feed", icon: "/images/feed.png", href: "/MainModules/HomePage" },
-    { name: "Watch Along", icon: "/images/live.png", href: "/MainModules/WatchAlong" },
-    { name: "Fantasy", icon: "/images/battle.png", href: "/MainModules/Fantasy" },
+    // { name: "Feed", icon: "/images/feed.png", href: "/MainModules/HomePage" },
+    // { name: "Watch Along", icon: "/images/live.png", href: "/MainModules/WatchAlong" },
+    // { name: "Fantasy", icon: "/images/battle.png", href: "/MainModules/Fantasy" },
     {
       name: "ROAR",
       icon: (

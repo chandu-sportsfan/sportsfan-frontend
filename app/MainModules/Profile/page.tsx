@@ -1053,7 +1053,7 @@ const res = await fetch(
     "—",
 
   l: "Following"
-}
+},
                     { v: profile.stats.followers ?? "—", l: "Followers" },
                     { v: profile.stats.connections ?? "—", l: "Connections" },
                   ].map((s, i) => (

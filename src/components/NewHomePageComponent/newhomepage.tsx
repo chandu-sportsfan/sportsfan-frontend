@@ -189,7 +189,7 @@ type QuickLink = {
 
 const quickLinks: QuickLink[] = [
   { label: "Match Centre", icon: "🏟️", badge: "LIVE", badgeColor: "bg-red-500", href: "/MainModules/Matchcenter" },
-  // { label: "Predictions",      icon: "🎯", badge: "New",  badgeColor: "bg-orange-500", href: "/MainModules/Pollcards"     },
+  { label: "Polls & Predictions",      icon: "🎯", badge: "New",  badgeColor: "bg-orange-500", href: "/MainModules/PollCards" },
   { label: "Community Groups", icon: "👥", badge: null, badgeColor: "", href: "/MainModules/Chat" },
   { label: "Fan Battle", icon: "⚔️", badge: null, badgeColor: "", href: "/MainModules/Fantasy" },
 ];
@@ -320,7 +320,7 @@ export default function NewHomePage() {
               href={link.href}
               className="flex-shrink-0 lg:flex-shrink-[unset] block pt-3"
             >
-              <div className="relative bg-[#1a0800] border border-orange-200 rounded-2xl flex flex-col items-center justify-center gap-2 lg:gap-3 hover:bg-[#261000] transition-colors cursor-pointer w-[120px] h-[105px] lg:w-full lg:h-[110px] lg:p-5">
+              <div className="relative bg-[#5C250A] border border-orange-200 rounded-2xl flex flex-col items-center justify-center gap-2 lg:gap-3 hover:bg-[#261000] transition-colors cursor-pointer w-[120px] h-[105px] lg:w-full lg:h-[110px] lg:p-5">
                 {link.badge && (
                   <span className={`absolute -top-3 left-1/2 -translate-x-1/2 ${link.badgeColor} text-white text-[9px] lg:text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap z-10`}>
                     {link.badge}
@@ -339,7 +339,7 @@ export default function NewHomePage() {
         <div className="flex flex-row gap-3 mt-2 md:mt-6 w-full">
           <Link href="/MainModules/WatchAlong" className="flex-1">
             {/* Live Fan Rooms Card */}
-            <div className="flex-1 bg-[#2D1B2E] rounded-2xl p-3 sm:p-4 flex flex-col justify-between min-h-[150px] sm:min-h-[120px]">
+            <div className="flex-1 bg-[#3C0922] rounded-2xl p-3 sm:p-4 flex flex-col justify-between min-h-[150px] sm:min-h-[120px]">
               {/* Top Row */}
               <div className="flex items-center justify-between">
                 <span className="bg-[#3D2B3E] text-white text-[10px] sm:text-xs font-medium px-2.5 sm:px-4 py-1 sm:py-1.5 rounded-full">
@@ -375,14 +375,14 @@ export default function NewHomePage() {
 
           {/* New Prediction Card */}
             <Link href="/MainModules/ROAR" className="flex-1">
-          <div className="flex-1 bg-[#5C2010] rounded-2xl p-3 sm:p-4 flex flex-col justify-between min-h-[150px] sm:min-h-[120px]">
+          <div className="flex-1 bg-[#230855] rounded-2xl p-3 sm:p-4 flex flex-col justify-between min-h-[150px] sm:min-h-[120px]">
           
               {/* Top Row */}
               <div className="flex items-center justify-between">
-                <span className="bg-[#6C3020] text-white text-[10px] sm:text-xs font-medium px-2.5 sm:px-4 py-1 sm:py-1.5 rounded-full">
+                <span className="bg-[#3D2B3E] text-white text-[10px] sm:text-xs font-medium px-2.5 sm:px-4 py-1 sm:py-1.5 rounded-full">
                   ROAR
                 </span>
-                <button className="bg-[#6C3020] hover:bg-[#7C4030] text-white rounded-full w-7 h-7 sm:w-9 sm:h-9 flex items-center justify-center transition-colors">
+                <button className="bg-[#3D2B3E] hover:bg-[#4D3B4E] text-white rounded-full w-7 h-7 sm:w-9 sm:h-9 flex items-center justify-center transition-colors">
                   <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3 sm:w-4 sm:h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
                     <polyline points="17 6 23 6 23 12" />
@@ -399,7 +399,7 @@ export default function NewHomePage() {
               {/* Bottom Row */}
               <div className="flex items-center justify-between mt-3 sm:mt-4">
                 <span className="text-gray-400 text-[10px] sm:text-sm font-medium">156K active</span>
-                <button className="bg-[#6C3020] hover:bg-[#7C4030] text-white rounded-full w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center transition-colors">
+                <button className="bg-[#3D2B3E] hover:bg-[#4D3B4E] text-white rounded-full w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center transition-colors">
                   <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3 sm:w-4 sm:h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="9 18 15 12 9 6" />
                   </svg>

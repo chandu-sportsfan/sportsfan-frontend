@@ -1,133 +1,5 @@
 
 
-
-// "use client";
-
-// import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
-// import axios from "axios";
-// import { useAuth } from "@/context/AuthContext";
-
-// export interface LeaderboardUser {
-//   userId: string;
-//   userName: string;
-//   userEmail: string;
-//   totalPoints: number;
-//   rank: number;
-// }
-
-// interface LeaderboardContextType {
-//   leaderboard: LeaderboardUser[];
-//   currentUserRank: number | null;
-//   currentUserPoints: number | null;
-//   loading: boolean;
-//   refreshLeaderboard: () => Promise<void>;
-// }
-
-// const LeaderboardContext = createContext<LeaderboardContextType | undefined>(undefined);
-
-// export const LeaderboardProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-//   const { user, authReady } = useAuth();
-//   const [leaderboard, setLeaderboard] = useState<LeaderboardUser[]>([]);
-//   const [currentUserRank, setCurrentUserRank] = useState<number | null>(null);
-//   const [currentUserPoints, setCurrentUserPoints] = useState<number | null>(null);
-//   const [loading, setLoading] = useState(false);
-
-//   const fetchFullLeaderboard = useCallback(async () => {
-//     try {
-//       const res = await axios.get(`/api/user-points?limit=100`);
-//       if (res.data.success && res.data.leaderboard) {
-//         setLeaderboard(res.data.leaderboard);
-//         return res.data.leaderboard;
-//       }
-//     } catch (error) {
-//       console.error("Error fetching full leaderboard:", error);
-//     }
-//     return [];
-//   }, []);
-
-//   const fetchCurrentUser = useCallback(async (userId: string) => {
-//     try {
-//       const res = await axios.get(`/api/user-points?userId=${encodeURIComponent(userId)}`);
-
-//       if (res.data.success && res.data.user) {
-//         setCurrentUserRank(res.data.user.rank);
-//         setCurrentUserPoints(res.data.user.totalPoints);
-//         console.log("Current user points:", res.data.user.totalPoints);
-//         return res.data.user;
-//       }
-//     } catch (error) {
-//       console.error("Error fetching current user points:", error);
-//     }
-//     return null;
-//   }, []);
-
-//   const fetchGlobalLeaderboard = useCallback(async () => {
-//     const userId = user?.userId;
-//     console.log("userId for leaderboard fetch:", userId);
-//     if (!userId) {
-//       setLeaderboard([]);
-//       setCurrentUserRank(null);
-//       setCurrentUserPoints(null);
-//       return;
-//     }
-
-//     setLoading(true);
-//     try {
-//       const [leaderboardData, userData] = await Promise.all([
-//         fetchFullLeaderboard(),
-//         fetchCurrentUser(userId),
-//       ]);
-
-//       // Fallback: find user in leaderboard if individual fetch failed
-//       if (!userData && leaderboardData.length > 0) {
-//         const found = leaderboardData.find((u: LeaderboardUser) => u.userId === userId);
-//         if (found) {
-//           setCurrentUserRank(found.rank);
-//           setCurrentUserPoints(found.totalPoints);
-//         }
-//       }
-//     } catch (error) {
-//       console.error("Error fetching leaderboard data:", error);
-//     } finally {
-//       setLoading(false);
-//     }
-//   }, [user?.userId, fetchFullLeaderboard, fetchCurrentUser]);
-
-//   // Wait for auth to be ready before fetching — prevents firing with undefined userId
-//   useEffect(() => {
-//     if (!authReady) return;
-//     fetchGlobalLeaderboard();
-//   }, [authReady, fetchGlobalLeaderboard]);
-
-//   return (
-//     <LeaderboardContext.Provider
-//       value={{
-//         leaderboard,
-//         currentUserRank,
-//         currentUserPoints,
-//         loading,
-//         refreshLeaderboard: fetchGlobalLeaderboard,
-//       }}
-//     >
-//       {children}
-//     </LeaderboardContext.Provider>
-//   );
-// };
-
-// export const useLeaderboard = () => {
-//   const context = useContext(LeaderboardContext);
-//   if (context === undefined) {
-//     throw new Error("useLeaderboard must be used within a LeaderboardProvider");
-//   }
-//   return context;
-// };
-
-
-
-
-
-
-
 "use client";
 
 import React, {
@@ -155,6 +27,7 @@ interface LeaderboardContextType {
   currentUserPoints: number | null;
   loading: boolean;
   refreshLeaderboard: () => Promise<void>;
+  addLocalPoints: (points: number) => void;
 }
 
 // ── Module-level cache (survives re-renders, resets on page reload) ────────────
@@ -169,6 +42,25 @@ const USER_CACHE_TTL = 60_000; // 1 minute
 
 let leaderboardCache: { ts: number; data: LeaderboardUser[] } | null = null;
 const LEADERBOARD_CACHE_TTL = 120_000; // 2 minutes
+
+const normalizeLeaderboard = (rows: LeaderboardUser[]): LeaderboardUser[] =>
+  [...rows]
+    .sort((a, b) => {
+      const pointDiff = (Number(b.totalPoints) || 0) - (Number(a.totalPoints) || 0);
+      if (pointDiff !== 0) return pointDiff;
+
+      const aRank = Number(a.rank) || Number.MAX_SAFE_INTEGER;
+      const bRank = Number(b.rank) || Number.MAX_SAFE_INTEGER;
+      return aRank - bRank;
+    })
+    .map((user, index) => ({
+      ...user,
+      totalPoints: Number(user.totalPoints) || 0,
+      rank: index + 1,
+    }));
+
+const sameUserId = (a: string | number | undefined, b: string | number | undefined) =>
+  a !== undefined && b !== undefined && String(a) === String(b);
 
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -241,6 +133,16 @@ export const LeaderboardProvider: React.FC<{ children: React.ReactNode }> = ({
         Date.now() - leaderboardCache.ts < LEADERBOARD_CACHE_TTL
       ) {
         setLeaderboard(leaderboardCache.data);
+        const found = leaderboardCache.data.find((u) => sameUserId(u.userId, userId));
+        if (found) {
+          USER_CACHE.set(userId, {
+            ts: Date.now(),
+            points: found.totalPoints,
+            rank: found.rank,
+          });
+          setCurrentUserPoints(found.totalPoints);
+          setCurrentUserRank(found.rank);
+        }
         return leaderboardCache.data;
       }
 
@@ -250,23 +152,19 @@ export const LeaderboardProvider: React.FC<{ children: React.ReactNode }> = ({
       try {
         const res = await axios.get(`/api/user-points?limit=100`);
         if (res.data.success && res.data.leaderboard) {
-          const data: LeaderboardUser[] = res.data.leaderboard;
+          const data = normalizeLeaderboard(res.data.leaderboard);
           leaderboardCache = { ts: Date.now(), data };
           setLeaderboard(data);
 
-          // Fallback: populate user points from leaderboard if the fast-path failed
-          const userCached = USER_CACHE.get(userId);
-          if (!userCached) {
-            const found = data.find((u) => u.userId === userId);
-            if (found) {
-              USER_CACHE.set(userId, {
-                ts: Date.now(),
-                points: found.totalPoints,
-                rank: found.rank,
-              });
-              setCurrentUserPoints(found.totalPoints);
-              setCurrentUserRank(found.rank);
-            }
+          const found = data.find((u) => sameUserId(u.userId, userId));
+          if (found) {
+            USER_CACHE.set(userId, {
+              ts: Date.now(),
+              points: found.totalPoints,
+              rank: found.rank,
+            });
+            setCurrentUserPoints(found.totalPoints);
+            setCurrentUserRank(found.rank);
           }
 
           return data;
@@ -281,6 +179,7 @@ export const LeaderboardProvider: React.FC<{ children: React.ReactNode }> = ({
     [] // stable
   );
 
+  
   // ── Main orchestrator ───────────────────────────────────────────────────────
   const fetchGlobalLeaderboard = useCallback(async () => {
     const userId = user?.userId;
@@ -306,6 +205,51 @@ export const LeaderboardProvider: React.FC<{ children: React.ReactNode }> = ({
     fetchFullLeaderboard(userId);
   }, [user?.userId, fetchCurrentUser, fetchFullLeaderboard]);
 
+  
+const refreshLeaderboard = useCallback(async () => {
+  // Clear both caches so the next fetch always hits the network
+  leaderboardCache = null;
+  if (user?.userId) USER_CACHE.delete(user.userId);
+  
+  await fetchGlobalLeaderboard();
+}, [user?.userId, fetchGlobalLeaderboard]);
+
+const addLocalPoints = useCallback((points: number) => {
+  const userId = user?.userId || user?.uid || user?.email;
+  if (!userId || !points) return;
+  const delta = Number(points) || 0;
+
+  setCurrentUserPoints((prev) => {
+    const next = (Number(prev) || 0) + delta;
+    const cached = USER_CACHE.get(userId);
+    USER_CACHE.set(userId, {
+      ts: Date.now(),
+      points: next,
+      rank: cached?.rank ?? currentUserRank ?? 0,
+    });
+    return next;
+  });
+
+  setLeaderboard((prev) =>
+    prev.map((entry) =>
+      sameUserId(entry.userId, userId)
+        ? { ...entry, totalPoints: (Number(entry.totalPoints) || 0) + delta }
+        : entry
+    )
+  );
+
+  if (leaderboardCache) {
+    leaderboardCache = {
+      ts: Date.now(),
+      data: leaderboardCache.data.map((entry) =>
+        sameUserId(entry.userId, userId)
+          ? { ...entry, totalPoints: (Number(entry.totalPoints) || 0) + delta }
+          : entry
+      ),
+    };
+  }
+}, [currentUserRank, user?.email, user?.uid, user?.userId]);
+
   // Only fires when auth is confirmed ready — avoids spurious calls with
   // undefined userId during the initial auth hydration.
   useEffect(() => {
@@ -320,7 +264,8 @@ export const LeaderboardProvider: React.FC<{ children: React.ReactNode }> = ({
         currentUserRank,
         currentUserPoints,
         loading,
-        refreshLeaderboard: fetchGlobalLeaderboard,
+        refreshLeaderboard,
+        addLocalPoints,
       }}
     >
       {children}

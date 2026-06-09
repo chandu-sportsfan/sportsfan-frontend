@@ -42,6 +42,7 @@ import NewHomePage from "@/src/components/NewHomePageComponent/newhomepage";
 import WPLPlayerPage from "../Wplplayer360/page";
 import FifaPlayerProfilePage from "../FifaPlayer360/page";
 import WomensT20Section from "@/src/components/HomeComponents/WomensT20Section";
+import FifaClub360Page from "../FifaClub360/page";
 
 export default function HomePage() {
   return (
@@ -55,18 +56,19 @@ export default function HomePage() {
 
         <ContinueListening />
       
-        <PollCardsPage /> */}
+         */}
          {/* <IPLSpotlight /> */}
-         
+         {/* <PollCardsPage /> */}
         <NewHomePage />
           {/* <HomeCardsSection /> */}
         {/* <Team360CardsSection /> */}
         {/* <PlayerProfilePage /> */}
         <WPLPlayerPage />
         <FifaPlayerProfilePage />
+        <FifaClub360Page />
         {/* <Player360CardsSection /> */}
          <SocialFeedSection />
-      {/*  <NewsCenter /> */}
+        <NewsCenter /> 
       </div>
     </div>
   );

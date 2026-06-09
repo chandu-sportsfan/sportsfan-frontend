@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Poll, PollOption } from "@/types/Polls";
 
 // ─── Props 
+//__
 interface PollCardProps {
   poll: Poll;
   onVote?: (pollId: string, optionId: string, userId?: string) => Promise<void>;

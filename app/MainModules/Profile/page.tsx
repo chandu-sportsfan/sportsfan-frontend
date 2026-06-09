@@ -184,12 +184,112 @@ function ProfilePageInner() {
   const isOwnProfile   = !viewedUserId || viewedUserId === loggedInUserId;
 
   const [friendStatus, setFriendStatus] = useState<"none" | "pending" | "friends">("none");
+  useEffect(() => {
+  if (
+    !loggedInUserId ||
+    !viewedUserId
+  ) {
+    return;
+  }
 
+  const loadStatus =
+    async () => {
+      try {
+        const response =
+          await fetch(
+            `/api/follow-request/status?senderUserId=${encodeURIComponent(
+              loggedInUserId
+            )}&receiverUserId=${encodeURIComponent(
+              viewedUserId
+            )}`
+          );
+
+        const data =
+          await response.json();
+
+        if (
+          data.success
+        ) {
+          if (
+            data.status ===
+            "accepted"
+          ) {
+            setFriendStatus(
+              "friends"
+            );
+          } else if (
+            data.status ===
+            "pending"
+          ) {
+            setFriendStatus(
+              "pending"
+            );
+          } else {
+            setFriendStatus(
+              "none"
+            );
+          }
+        }
+      } catch (
+        error
+      ) {
+        console.error(
+          error
+        );
+      }
+    };
+
+  loadStatus();
+}, [
+  loggedInUserId,
+  viewedUserId,
+]);
+ const sendFollowRequest = async () => {
+  if (!viewedUserId) {
+    console.error("No viewed user id found");
+    return;
+  }
+
+  try {
+    const response = await fetch(
+      "/api/follow-request",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          senderUserId: loggedInUserId,
+          receiverUserId: viewedUserId,
+          senderName:
+            user?.firstName ||
+            user?.name ||
+            getUserDisplayName?.(),
+          receiverName: profile.name,
+        }),
+      }
+    );
+
+    const data = await response.json();
+
+   if (data.success) {
+  setFriendStatus("pending");
+} else {
+  alert(data.message || "Failed to send request");
+}
+  } catch (error) {
+    console.error(
+      "Follow request failed",
+      error
+    );
+  }
+};
   /* ── Responsive ── */
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
     check();
     window.addEventListener("resize", check);
+    
     return () => window.removeEventListener("resize", check);
   }, []);
 
@@ -246,16 +346,54 @@ function ProfilePageInner() {
       .then((data: Record<string, string | null>) => {
         if (data && !data.error) {
           setProfile(prev => ({
-            ...prev,
-            name:        data.name        || prev.name,
-            description: data.description || prev.description,
-            location:    data.location    || prev.location,
-            avatar:      data.avatarUrl   || prev.avatar,
-            website:     data.website     || prev.website,
-            subtitle:    data.subtitle    || prev.subtitle,
-            joinedDate:  data.joinedDate  || prev.joinedDate,
-            handle:      data.name        ? deriveHandle(data.name) : prev.handle,
-          }));
+  ...prev,
+
+  name: data.name || prev.name,
+  description:
+    data.description ||
+    prev.description,
+
+  location:
+    data.location ||
+    prev.location,
+
+  avatar:
+    data.avatarUrl ||
+    prev.avatar,
+
+  website:
+    data.website ||
+    prev.website,
+
+  subtitle:
+    data.subtitle ||
+    prev.subtitle,
+
+  joinedDate:
+    data.joinedDate ||
+    prev.joinedDate,
+
+  handle:
+    data.name
+      ? deriveHandle(data.name)
+      : prev.handle,
+
+  stats: {
+    ...prev.stats,
+
+    followers:
+      typeof data.followers ===
+      "number"
+        ? data.followers
+        : prev.stats.followers,
+
+    following:
+      typeof data.following ===
+      "number"
+        ? data.following
+        : prev.stats.following,
+  },
+}));
 
           if (isOwnProfile) {
             setEditForm(prev => ({
@@ -908,7 +1046,14 @@ const res = await fetch(
                 {/* Stats */}
                 <div style={{ display: "flex", justifyContent: "space-around", width: "100%", marginBottom: 16, paddingBottom: 14, borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
                   {[
-                    { v: followingLoading ? "…" : followingCount === null ? "—" : followingCount, l: "Following" },
+                    // { v: followingLoading ? "…" : followingCount === null ? "—" : followingCount, l: "Following" },
+                    {
+  v:
+    profile.stats.following ??
+    "—",
+
+  l: "Following"
+},
                     { v: profile.stats.followers ?? "—", l: "Followers" },
                     { v: profile.stats.connections ?? "—", l: "Connections" },
                   ].map((s, i) => (
@@ -954,12 +1099,17 @@ const res = await fetch(
                 ) : (
                   <div style={{ display: "flex", flexDirection: "column", gap: 8, width: "100%" }}>
                     <button
-                      onClick={() => { if (friendStatus === "none") setFriendStatus("pending"); }}
+                    disabled={friendStatus !== "none"}
+                      onClick={() => {
+  if (friendStatus === "none") {
+    sendFollowRequest();
+  }
+}}
                       style={{ width: "100%", padding: "9px 0", borderRadius: 50, fontSize: 13, fontWeight: 700, background: friendStatus === "none" ? GRAD : friendStatus === "pending" ? "transparent" : "rgba(34,197,94,0.15)", border: friendStatus === "none" ? "none" : friendStatus === "pending" ? `1px solid rgba(232,67,122,0.35)` : "1px solid rgba(34,197,94,0.35)", color: friendStatus === "friends" ? "#22c55e" : "#fff", cursor: friendStatus === "friends" ? "default" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, transition: "all .2s ease" }}
                     >
-                      {friendStatus === "none"    && <><UserPlus size={13} /> Add Friend</>}
+                      {friendStatus === "none"    && <><UserPlus size={13} /> Follow</>}
                       {friendStatus === "pending" && <><Check size={13} /> Request Sent</>}
-                      {friendStatus === "friends" && <><Check size={13} /> Friends</>}
+                      {friendStatus === "friends" && <><Check size={13} /> Following</>}
                     </button>
                   </div>
                 )}

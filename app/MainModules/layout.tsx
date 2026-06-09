@@ -12,6 +12,7 @@ import { useEffect, useState } from "react";
 import SportsFan360Footer from "@/src/components/footer-component/Footer";
 import { useAuth } from "@/context/AuthContext";
 import GlobalActionBar from "@/src/components/GlobalActionBar";
+import { Sparkles} from "lucide-react";
 
 // ─── Types 
 interface UserProfile {
@@ -138,7 +139,7 @@ function HostSidebar({ user }: { user: UserProfile }) {
 function UserSidebar() {
   const pathname = usePathname();
   const { user } = useAuth();
-  const isMatchIntelligence = user?.email?.endsWith("@sportsfan360.com");
+  // const isMatchIntelligence = user?.email?.endsWith("@sportsfan360.com");
 
   const sidebarItems: SidebarItem[] = [
     { name: "Feed", icon: "/images/feed.png", href: "/MainModules/HomePage" },
@@ -155,10 +156,15 @@ function UserSidebar() {
       ),
       href: "/MainModules/ROAR",
     },
-    { 
-      name: isMatchIntelligence ? "Match Intelligence" : "Store", 
-      icon: "/images/store.png", 
-      href: "/MainModules/Store" 
+    // { 
+    //   name: isMatchIntelligence ? "Match Intelligence" : "Store", 
+    //   icon: "/images/store.png", 
+    //   href: "/MainModules/Store" 
+    // },
+     { 
+      name: "Ask AI", 
+      icon: <Sparkles className="w-5 h-5 text-gradient" />,
+      href: "/MainModules/AskAI" 
     },
     { name: "Fan Zone", icon: "/images/profile.png", href: "/MainModules/Fanszone" },
   ];

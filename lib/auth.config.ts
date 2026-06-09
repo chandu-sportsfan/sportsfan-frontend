@@ -214,8 +214,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         // ADD THIS REDIRECT CALLBACK
         async redirect({ url, baseUrl }) {
             // Force redirect to master branch homepage
-            console.log('Redirecting to:', `${MASTER_URL}/MainModules/HomePage`);
-            return `${MASTER_URL}/MainModules/HomePage`;
+            console.log('Redirecting to:', `${MASTER_URL}/MainModules/ROAR`);
+            return `${MASTER_URL}/MainModules/ROAR`;
         },
     },
 

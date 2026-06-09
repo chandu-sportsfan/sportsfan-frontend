@@ -2863,19 +2863,16 @@ function HomeFeed({
             );
           })}
 
-          {/* Post on ROAR (+) tab */}
+          {/* Post on ROAR (+) tab — opens same CreatePost dialog as pencil button */}
           <motion.button
             whileTap={{ scale: 0.95 }}
-            onClick={() => setPostMenuOpen((prev) => !prev)}
+            onClick={() => window.dispatchEvent(new Event("openCreatePost"))}
             className="relative flex min-w-max items-center justify-center gap-1.5 px-4 py-3 rounded-xl text-xs font-bold tracking-wide whitespace-nowrap shrink-0"
             style={{
-              border: postMenuOpen ? "1px solid rgba(233,30,140,0.6)" : "1px solid rgba(233,30,140,0.25)",
               cursor: "pointer",
-              color: postMenuOpen ? "white" : "rgba(233,30,140,0.9)",
-              background: postMenuOpen
-                ? "linear-gradient(90deg,#e91e8c,#ff6b35)"
-                : "rgba(233,30,140,0.08)",
-              boxShadow: postMenuOpen ? "0 4px 14px rgba(233,30,140,0.35)" : "none",
+              border: "1px solid rgba(233,30,140,0.25)",
+              color: "rgba(233,30,140,0.9)",
+              background: "rgba(233,30,140,0.08)",
               transition: "all 0.2s",
             }}
           >

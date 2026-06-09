@@ -2644,6 +2644,7 @@ function HomeFeed({
   onPostClick,
   onVote,
   userSports = [],
+  onQuickCompose,
 }: {
   unreadCount: number;
   onNavigateAlerts: () => void;
@@ -2660,8 +2661,10 @@ function HomeFeed({
   onPostClick?: (post: any) => void;
   onVote?: (id: string, vote: "agree" | "disagree" | null) => void;
   userSports?: string[];
+  onQuickCompose?: (t: string) => void;
 }) {
   const [filter, setFilter] = useState("For You");
+  const [postMenuOpen, setPostMenuOpen] = useState(false);
   const [votes, setVotes] = useState<Record<string, boolean | null>>({});
   const [pcts, setPcts] = useState<Record<string, number>>({});
 
@@ -2914,13 +2917,61 @@ function HomeFeed({
         </div>
       )}
 
-      {/* Filters */}
-      <div
-        style={{
-          padding: "10px 16px",
-          overflow: "hidden",
-        }}
-      >
+      {/* Filters + Post on ROAR */}
+      <div style={{ padding: "10px 16px", overflow: "hidden", position: "relative" }}>
+        {/* Quick-post popup — slides in just above the filter bar */}
+        <AnimatePresence>
+          {postMenuOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 10 }}
+              style={{
+                position: "absolute",
+                bottom: "calc(100% - 4px)",
+                right: 16,
+                zIndex: 30,
+                display: "flex",
+                gap: 8,
+                padding: "8px",
+                borderRadius: 16,
+                background: "rgba(20,20,30,0.95)",
+                border: "1px solid rgba(233,30,140,0.25)",
+                boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
+              }}
+            >
+              {RADIAL_OPTS.map((q, i) => (
+                <motion.button
+                  key={q.id}
+                  initial={{ scale: 0, y: 10 }}
+                  animate={{ scale: 1, y: 0 }}
+                  transition={{ delay: i * 0.05, type: "spring" }}
+                  onClick={() => {
+                    setPostMenuOpen(false);
+                    onQuickCompose && onQuickCompose(q.id);
+                  }}
+                  className="glass-card"
+                  style={{
+                    width: 56,
+                    height: 56,
+                    borderRadius: "50%",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: 20,
+                    cursor: "pointer",
+                    border: "none",
+                    gap: 2,
+                  }}
+                >
+                  {q.emoji}
+                </motion.button>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         <div
           className="flex justify-start items-center gap-2 overflow-x-auto rounded-2xl border border-white/5 bg-[#1a1a1a]/80 p-1.5 shadow-xl [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           style={{ WebkitOverflowScrolling: "touch" }}
@@ -2931,7 +2982,7 @@ function HomeFeed({
               <motion.button
                 key={f}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => setFilter(f)}
+                onClick={() => { setFilter(f); setPostMenuOpen(false); }}
                 className={`relative flex min-w-max items-center justify-center gap-2 px-5 py-3 rounded-xl text-xs font-bold tracking-wide transition-all duration-300 text-center whitespace-nowrap shrink-0 group`}
                 style={{
                   border: "none",
@@ -2945,6 +2996,26 @@ function HomeFeed({
               </motion.button>
             );
           })}
+
+          {/* Post on ROAR (+) tab */}
+          <motion.button
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setPostMenuOpen((prev) => !prev)}
+            className="relative flex min-w-max items-center justify-center gap-1.5 px-4 py-3 rounded-xl text-xs font-bold tracking-wide whitespace-nowrap shrink-0"
+            style={{
+              cursor: "pointer",
+              border: postMenuOpen ? "1px solid rgba(233,30,140,0.6)" : "1px solid rgba(233,30,140,0.25)",
+              color: postMenuOpen ? "white" : "rgba(233,30,140,0.9)",
+              background: postMenuOpen
+                ? "linear-gradient(90deg, #e91e8c, #ff6b35)"
+                : "rgba(233,30,140,0.08)",
+              boxShadow: postMenuOpen ? "0 4px 14px rgba(233,30,140,0.35)" : "none",
+              transition: "all 0.2s",
+            }}
+          >
+            <span style={{ fontSize: 13, fontWeight: 900, lineHeight: 1 }}>+</span>
+            <span className="block leading-tight">Post on ROAR</span>
+          </motion.button>
         </div>
       </div>
 
@@ -7417,6 +7488,7 @@ export default function ROARApp() {
                       onPostClick={(post) => setSelectedPost(post)}
                       onVote={handleVote}
                       userSports={userSports}
+                      onQuickCompose={(t) => openCompose(t)}
                     />
                   )}
                   {activeTab === "profile" && (

@@ -56,9 +56,13 @@ const GLOBAL_CSS = `
   }
   .roar-inner {
     width: 100%;
+    height: 100%;
+    min-height: 600px;
     position: relative;
     overflow: hidden;
     background: var(--bg-primary);
+    display: flex;
+    flex-direction: column;
   }
 }
 

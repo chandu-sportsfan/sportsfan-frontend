@@ -561,6 +561,15 @@ const nextConfig = {
           source: "/api/fifa-player-stats/:path*",
           destination: `${apiTarget}/api/fifa-player-stats/:path*`,
         },
+         // Fifa Clus
+        {
+          source: "/api/fifa-clubs",
+          destination: `${apiTarget}/api/fifa-clubs`,
+        },
+        {
+          source: "/api/fifa-clubs/:path*",
+          destination: `${apiTarget}/api/fifa-clubs/:path*`,
+        },
         // roar apis
         {
           source: "/api/roar/:path*",

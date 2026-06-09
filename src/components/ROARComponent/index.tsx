@@ -1849,6 +1849,12 @@ const COMPOSE_OPTIONS = [
     title: "Share a Memory",
     desc: "Flashback moment",
   },
+  {
+    id: "post",
+    emoji: "✏️",
+    title: "Post",
+    desc: "Write something + add media",
+  },
 ];
 
 function ComposeModal({
@@ -1871,6 +1877,8 @@ function ComposeModal({
   const [confidence, setConf] = useState(7);
   const [audience, setAud] = useState("Everyone");
   const [sport, setSport] = useState("cricket");
+  const [postText, setPostText] = useState("");
+  const [mediaFiles, setMediaFiles] = useState<File[]>([]);
 
   const [domReady, setDomReady] = useState(false);
   useEffect(() => {
@@ -1889,16 +1897,21 @@ function ComposeModal({
     setSideB("");
     setMemCtx("");
     setSport("cricket");
+    setPostText("");
+    setMediaFiles([]);
   };
+
   const canPost =
     (selected === "hot_take" && text.trim()) ||
     (selected === "prediction" && text.trim()) ||
     (selected === "debate" && sideA.trim() && sideB.trim()) ||
-    (selected === "memory" && text.trim());
+    (selected === "memory" && text.trim()) ||
+    (selected === "post" && postText.trim());
+
   const handlePost = () => {
     onPost({
       type: selected,
-      text,
+      text: selected === "post" ? postText : text,
       sideA,
       sideB,
       match,
@@ -1906,6 +1919,7 @@ function ComposeModal({
       audience,
       memCtx,
       sport,
+      mediaFiles: selected === "post" ? mediaFiles : [],
     });
     onClose();
   };
@@ -1980,7 +1994,13 @@ function ComposeModal({
               </h2>
               {!selected ? (
                 <div
-                  style={{ display: "flex", flexDirection: "column", gap: 12 }}
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(5, minmax(120px, 1fr))",
+                    gap: 12,
+                    overflowX: "auto",
+                    paddingBottom: 4,
+                  }}
                 >
                   {COMPOSE_OPTIONS.map((opt) => (
                     <motion.button
@@ -1994,6 +2014,7 @@ function ComposeModal({
                         border: "1px solid var(--border)",
                         textAlign: "left",
                         cursor: "pointer",
+                        minHeight: 104,
                         width: "100%",
                       }}
                     >

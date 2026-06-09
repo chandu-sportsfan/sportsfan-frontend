@@ -16,6 +16,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import axios from 'axios'
 
 /* ─── STYLES ─────────────────────────────────────────────────────────────── */
 const GLOBAL_CSS = `
@@ -1584,12 +1585,10 @@ function Profile({ userBadge, setUserBadge, onCompose }: { userBadge:string; set
 /* ─── ROOT APP ────────────────────────────────────────────────────────────── */
 
 export default function ROARApp() {
-  const [onboarded, setOnboarded] = useState(() => {
-    try { return !!localStorage.getItem('roar_v2_complete') } catch { return false }
-  })
-  const [userBadge, setUserBadge] = useState(() => {
-    try { return localStorage.getItem('roar_badge') || 'RISING_FAN' } catch { return 'RISING_FAN' }
-  })
+  const [mounted, setMounted] = useState(false)
+  const [checkingProfile, setCheckingProfile] = useState(true)
+  const [onboarded, setOnboarded] = useState(false)
+  const [userBadge, setUserBadge] = useState('RISING_FAN')
   const [activeTab, setActiveTab]     = useState('home')
   const [overlay, setOverlay]         = useState<string|null>(null)
   const [composeOpen, setComposeOpen] = useState(false)
@@ -1598,6 +1597,40 @@ export default function ROARApp() {
   const [unread, setUnread]           = useState(NOTIFICATIONS_DATA.filter(n=>!n.read).length)
   const [extraItems, setExtraItems]   = useState<any[]>([])
   const [showBanner, setShowBanner]   = useState(true)
+
+  useEffect(() => {
+    setMounted(true)
+    const checkProfile = async () => {
+      try {
+        const res = await axios.get('/api/roar/profile')
+        if (res.data?.success) {
+          setOnboarded(true)
+          setUserBadge(res.data.user?.badge || 'RISING_FAN')
+          try { localStorage.setItem('roar_v2_complete', '1'); localStorage.setItem('roar_badge', res.data.user?.badge || 'RISING_FAN') } catch {}
+        } else {
+          setOnboarded(false)
+          try { localStorage.removeItem('roar_v2_complete'); localStorage.removeItem('roar_badge') } catch {}
+        }
+      } catch (err: any) {
+        const status = err?.response?.status
+        if (status === 404 || status === 401) {
+          setOnboarded(false)
+          try { localStorage.removeItem('roar_v2_complete'); localStorage.removeItem('roar_badge') } catch {}
+        } else {
+          // Network error or 500: fall back to localStorage
+          try {
+            const hasLocal = !!localStorage.getItem('roar_v2_complete')
+            const badge = localStorage.getItem('roar_badge') || 'RISING_FAN'
+            setOnboarded(hasLocal)
+            setUserBadge(badge)
+          } catch {}
+        }
+      } finally {
+        setCheckingProfile(false)
+      }
+    }
+    checkProfile()
+  }, [])
 
   const showToast = useCallback((msg: string) => {
     setToast({ visible:true, message:msg })
@@ -1617,8 +1650,20 @@ export default function ROARApp() {
     showToast('🔥 Your take is live · 47 fans may see it')
   }, [showToast, userBadge])
 
-  const completeOnboarding = useCallback((prefs: any) => {
+  const completeOnboarding = useCallback(async (prefs: any) => {
     const badge = prefs.badge || 'RISING_FAN'
+    // Save to backend first
+    try {
+      await axios.post('/api/roar/onboarding', {
+        sports: prefs.sports || ['cricket'],
+        teams: prefs.teams || [],
+        tenure: prefs.tenure || 'rising',
+        badge,
+        firstContribution: prefs.firstContribution || null,
+      })
+    } catch (err) {
+      console.error('Failed to save onboarding to backend:', err)
+    }
     setUserBadge(badge)
     setOnboarded(true)
     try { localStorage.setItem('roar_v2_complete','1'); localStorage.setItem('roar_badge',badge) } catch {}
@@ -1632,11 +1677,26 @@ export default function ROARApp() {
 
   const openCompose = (type: string|null = null) => { setComposeType(type); setComposeOpen(true) }
 
+  if (!mounted || checkingProfile) {
+    return (
+      <>
+        <style>{GLOBAL_CSS}</style>
+        <div style={{ position:'relative', minHeight:'600px', height:'100%', width:'100%', background:'#050508', display:'flex', alignItems:'center', justifyContent:'center' }}>
+          <div style={{ textAlign:'center' }}>
+            <div style={{ width:40, height:40, border:'3px solid rgba(255,255,255,0.1)', borderTop:'3px solid #E91E8C', borderRadius:'50%', animation:'spin 1s linear infinite', margin:'0 auto 16px' }} />
+            <style>{`@keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}`}</style>
+            <div style={{ color:'#9494AD', fontSize:14, fontFamily:'sans-serif' }}>Loading ROAR...</div>
+          </div>
+        </div>
+      </>
+    )
+  }
+
   if (!onboarded) {
     return (
       <>
         <style>{GLOBAL_CSS}</style>
-        <div style={{ position:'relative', minHeight:'100vh', height:'100%', width:'100%', background:'var(--bg-primary)', overflow:'hidden' }}>
+        <div style={{ position:'relative', minHeight:'600px', height:'100%', width:'100%', background:'var(--bg-primary)', overflow:'hidden' }}>
           <div style={{ position:'absolute', inset:0, width:'100%', pointerEvents:'none', zIndex:0,
             background:'radial-gradient(ellipse 90% 55% at 50% -15%,rgba(233,30,140,0.14),transparent 55%),radial-gradient(ellipse 70% 45% at 100% 80%,rgba(255,107,53,0.1),transparent 50%),var(--bg-primary)' }} />
           <Onboarding onComplete={completeOnboarding} />

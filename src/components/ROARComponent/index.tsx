@@ -1849,6 +1849,12 @@ const COMPOSE_OPTIONS = [
     title: "Share a Memory",
     desc: "Flashback moment",
   },
+  {
+    id: "post",
+    emoji: "✏️",
+    title: "Post",
+    desc: "Write something + add media",
+  },
 ];
 
 function ComposeModal({
@@ -1871,6 +1877,8 @@ function ComposeModal({
   const [confidence, setConf] = useState(7);
   const [audience, setAud] = useState("Everyone");
   const [sport, setSport] = useState("cricket");
+  const [postText, setPostText] = useState("");
+  const [mediaFiles, setMediaFiles] = useState<File[]>([]);
 
   const [domReady, setDomReady] = useState(false);
   useEffect(() => {
@@ -1889,16 +1897,21 @@ function ComposeModal({
     setSideB("");
     setMemCtx("");
     setSport("cricket");
+    setPostText("");
+    setMediaFiles([]);
   };
+
   const canPost =
     (selected === "hot_take" && text.trim()) ||
     (selected === "prediction" && text.trim()) ||
     (selected === "debate" && sideA.trim() && sideB.trim()) ||
-    (selected === "memory" && text.trim());
+    (selected === "memory" && text.trim()) ||
+    (selected === "post" && postText.trim());
+
   const handlePost = () => {
     onPost({
       type: selected,
-      text,
+      text: selected === "post" ? postText : text,
       sideA,
       sideB,
       match,
@@ -1906,6 +1919,7 @@ function ComposeModal({
       audience,
       memCtx,
       sport,
+      mediaFiles: selected === "post" ? mediaFiles : [],
     });
     onClose();
   };
@@ -1980,7 +1994,13 @@ function ComposeModal({
               </h2>
               {!selected ? (
                 <div
-                  style={{ display: "flex", flexDirection: "column", gap: 12 }}
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(5, minmax(120px, 1fr))",
+                    gap: 12,
+                    overflowX: "auto",
+                    paddingBottom: 4,
+                  }}
                 >
                   {COMPOSE_OPTIONS.map((opt) => (
                     <motion.button
@@ -1994,6 +2014,7 @@ function ComposeModal({
                         border: "1px solid var(--border)",
                         textAlign: "left",
                         cursor: "pointer",
+                        minHeight: 104,
                         width: "100%",
                       }}
                     >
@@ -2194,6 +2215,130 @@ function ComposeModal({
                       />
                     </div>
                   )}
+
+                  {selected === "post" && (
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 10,
+                      }}
+                    >
+                      <textarea
+                        value={postText}
+                        onChange={(e) => setPostText(e.target.value)}
+                        rows={5}
+                        placeholder="What's on your mind?"
+                        style={{
+                          width: "100%",
+                          padding: "14px",
+                          borderRadius: 16,
+                          background: "rgba(0,0,0,0.4)",
+                          border: "1px solid var(--border)",
+                          resize: "none",
+                          outline: "none",
+                          color: "var(--text-primary)",
+                          fontSize: 14,
+                        }}
+                      />
+                      {mediaFiles.length > 0 && (
+                        <div
+                          style={{ display: "flex", flexWrap: "wrap", gap: 8 }}
+                        >
+                          {mediaFiles.map((file, i) => (
+                            <div
+                              key={`${file.name}-${file.lastModified}-${i}`}
+                              style={{
+                                position: "relative",
+                                width: 72,
+                                height: 72,
+                                borderRadius: 10,
+                                overflow: "hidden",
+                                background: "rgba(255,255,255,0.06)",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                color: "var(--text-secondary)",
+                                fontSize: 11,
+                                textAlign: "center",
+                              }}
+                            >
+                              {file.type.startsWith("image/") ? (
+                                <span
+                                  aria-label={file.name}
+                                  style={{
+                                    position: "absolute",
+                                    inset: 0,
+                                    backgroundImage: `url(${URL.createObjectURL(file)})`,
+                                    backgroundSize: "cover",
+                                    backgroundPosition: "center",
+                                  }}
+                                />
+                              ) : (
+                                <span>Video</span>
+                              )}
+                              <button
+                                onClick={() =>
+                                  setMediaFiles((f) =>
+                                    f.filter((_, j) => j !== i),
+                                  )
+                                }
+                                style={{
+                                  position: "absolute",
+                                  top: 3,
+                                  right: 3,
+                                  width: 18,
+                                  height: 18,
+                                  borderRadius: "50%",
+                                  background: "rgba(0,0,0,0.7)",
+                                  border: "none",
+                                  color: "white",
+                                  fontSize: 11,
+                                  cursor: "pointer",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                }}
+                              >
+                                ×
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      <label
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 8,
+                          fontSize: 13,
+                          color: "var(--text-secondary)",
+                          cursor: "pointer",
+                          width: "fit-content",
+                          padding: "8px 14px",
+                          borderRadius: 999,
+                          border: "1px solid var(--border)",
+                          background: "rgba(255,255,255,0.03)",
+                        }}
+                      >
+                        <input
+                          type="file"
+                          accept="image/*,video/mp4,.gif"
+                          multiple
+                          style={{ display: "none" }}
+                          onChange={(e) => {
+                            if (e.target.files)
+                              setMediaFiles((f) => [
+                                ...f,
+                                ...Array.from(e.target.files!),
+                              ]);
+                          }}
+                        />
+                        📎 Add photo / GIF / video
+                      </label>
+                    </div>
+                  )}
+
                   {(selected === "hot_take" || selected === "prediction") && (
                     <>
                       <label
@@ -7105,6 +7250,26 @@ export default function ROARApp() {
   const handlePost = useCallback(
     async (payload: any) => {
       try {
+        // "post" type with media: use FormData so files upload correctly
+        if (payload.type === "post") {
+          const formData = new FormData();
+          formData.append("type", "post");
+          formData.append("text", payload.text || "");
+          formData.append("audience", payload.audience || "Everyone");
+          (payload.mediaFiles || []).forEach((file: File) =>
+            formData.append("media", file),
+          );
+          const res = await axios.post("/api/roar/posts", formData, {
+            headers: { "Content-Type": "multipart/form-data" },
+          });
+          if (res.data?.success) {
+            showToast("✏️ Post is live!");
+            fetchPosts();
+          }
+          setShowBanner(false);
+          return;
+        }
+
         const res = await axios.post("/api/roar/posts", {
           type: payload.type === "hot_take" ? "hot_take" : "prediction",
           text: payload.text,

@@ -50,10 +50,12 @@ async function proxyRoar(
   const forwarded = req.headers.get("x-forwarded-for");
   if (forwarded) headers["X-Forwarded-For"] = forwarded;
 
-  let body: string | undefined;
+  let body: string | ArrayBuffer | undefined;
   if (req.method !== "GET" && req.method !== "HEAD") {
     try {
-      body = await req.text();
+      body = ct?.includes("multipart/form-data")
+        ? await req.arrayBuffer()
+        : await req.text();
     } catch {
       body = undefined;
     }

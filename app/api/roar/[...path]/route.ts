@@ -2,26 +2,22 @@
  * ROAR API Proxy — frontend/app/api/roar/[...path]/route.ts
  *
  * WHY THIS EXISTS:
- * The frontend runs on :3001, the backend on :3000.
- * Next.js "rewrites" are server-to-server fetches — they do NOT forward
- * the browser's httpOnly cookies. So when /api/roar/* was proxied via
- * next.config.ts rewrites, the backend's getUser() received no "token"
- * cookie and returned 401 for everyone except users whose cookie happened
- * to be set directly on :3000.
+ * Next.js "rewrites" are server-to-server fetches and do NOT forward the
+ * browser's httpOnly cookies. So the backend's getUser() received no "token"
+ * cookie and returned 401 for all users.
  *
- * FIX: We intercept /api/roar/* here (this file takes priority over the
- * afterFiles rewrite because actual route files always win). We read the
- * "token" cookie — which IS available on :3001 — and forward it as an
- * Authorization: Bearer header. The backend's getUser() already handles
- * Bearer tokens (lines 39-64 in lib/getUser.ts).
+ * FIX: We intercept /api/roar/* here. We read the "token" cookie — which IS
+ * available since it was set on this domain — and forward it as an
+ * Authorization: Bearer header. The backend's getUser() already handles Bearer.
  */
 
 import { NextRequest, NextResponse } from "next/server";
 
+// Use the exact same backend URL that next.config.ts uses
 const BACKEND_URL =
   process.env.NEXT_PUBLIC_BACKEND_URL ||
   process.env.NEXT_PUBLIC_ADMIN_URL ||
-  "http://localhost:3000";
+  "https://sportsfan360.vercel.app";
 
 async function proxyRoar(
   req: NextRequest,

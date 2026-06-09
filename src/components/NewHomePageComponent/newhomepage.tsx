@@ -209,27 +209,27 @@ const cards: CardItem[] = [
     image: "/images/womens_t20.jpg",
     url: "/MainModules/MatchesDropContent?team=Women%20T20",
   },
-  {
-    id: 3,
-    title: "SportsFan360",
-    subtitle: "Your ultimate sports companion",
-    image: "/images/sportsfan360.jpeg",
-    url: "/MainModules/CricketArticles",
-  },
-  {
-    id: 4,
-    title: "My Playlists",
-    subtitle: "All your favorite sports content in one place",
-    image: "/images/cricketarticlessecond.jpg",
-    url: "/MainModules/Playlists",
-  },
-  {
-    id: 5,
-    title: "IPL T20 2026 360World",
-    subtitle: "Exclusive content from all 10 teams",
-    image: "/images/ipl360.jpg",
-    url: "/MainModules/MatchesDropContent",
-  },
+  // {
+  //   id: 3,
+  //   title: "SportsFan360",
+  //   subtitle: "Your ultimate sports companion",
+  //   image: "/images/sportsfan360.jpeg",
+  //   url: "/MainModules/CricketArticles",
+  // },
+  // {
+  //   id: 4,
+  //   title: "My Playlists",
+  //   subtitle: "All your favorite sports content in one place",
+  //   image: "/images/cricketarticlessecond.jpg",
+  //   url: "/MainModules/Playlists",
+  // },
+  // {
+  //   id: 5,
+  //   title: "IPL T20 2026 360World",
+  //   subtitle: "Exclusive content from all 10 teams",
+  //   image: "/images/ipl360.jpg",
+  //   url: "/MainModules/MatchesDropContent",
+  // },
 ];
 
 export default function NewHomePage() {
@@ -313,7 +313,7 @@ export default function NewHomePage() {
         </div>
 
         {/* Quick Links Row — swipeable on mobile, grid on desktop */}
-        <div className="flex gap-3 overflow-x-auto mt-4 pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:grid lg:grid-cols-4 lg:overflow-visible lg:pb-0">
+        {/* <div className="flex gap-3 overflow-x-auto mt-4 pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:grid lg:grid-cols-4 lg:overflow-visible lg:pb-0">
           {quickLinks.map((link) => (
             <Link
               key={link.label}
@@ -333,14 +333,14 @@ export default function NewHomePage() {
               </div>
             </Link>
           ))}
-        </div>
+        </div> */}
 
 
-        <div className="flex flex-row gap-3 mt-2 md:mt-6 w-full">
+        {/* <div className="flex flex-row gap-3 mt-2 md:mt-6 w-full">
           <Link href="/MainModules/WatchAlong" className="flex-1">
-            {/* Live Fan Rooms Card */}
+            
             <div className="flex-1 bg-[#3C0922] rounded-2xl p-3 sm:p-4 flex flex-col justify-between min-h-[150px] sm:min-h-[120px]">
-              {/* Top Row */}
+              
               <div className="flex items-center justify-between">
                 <span className="bg-[#3D2B3E] text-white text-[10px] sm:text-xs font-medium px-2.5 sm:px-4 py-1 sm:py-1.5 rounded-full">
                   Watch Along
@@ -355,13 +355,13 @@ export default function NewHomePage() {
                 </button>
               </div>
 
-              {/* Content */}
+              
               <div className="mt-3 sm:mt-4">
                 <h3 className="text-white font-bold text-sm sm:text-lg leading-tight">Live Fan Rooms</h3>
                 <p className="text-gray-400 text-[10px] sm:text-sm mt-0.5">Join now</p>
               </div>
 
-              {/* Bottom Row */}
+              
               <div className="flex items-center justify-between mt-3 sm:mt-4">
                 <span className="text-gray-400 text-[10px] sm:text-sm font-medium">2.4K watching</span>
                 <button className="bg-[#3D2B3E] hover:bg-[#4D3B4E] text-white rounded-full w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center transition-colors">
@@ -373,11 +373,11 @@ export default function NewHomePage() {
             </div>
           </Link>
 
-          {/* New Prediction Card */}
+          
             <Link href="/MainModules/ROAR" className="flex-1">
           <div className="flex-1 bg-[#230855] rounded-2xl p-3 sm:p-4 flex flex-col justify-between min-h-[150px] sm:min-h-[120px]">
           
-              {/* Top Row */}
+             
               <div className="flex items-center justify-between">
                 <span className="bg-[#3D2B3E] text-white text-[10px] sm:text-xs font-medium px-2.5 sm:px-4 py-1 sm:py-1.5 rounded-full">
                   ROAR
@@ -390,13 +390,13 @@ export default function NewHomePage() {
                 </button>
               </div>
 
-              {/* Content */}
+              
               <div className="mt-3 sm:mt-4">
                 <h3 className="text-white font-bold text-sm sm:text-lg leading-tight">New prediction</h3>
                 <p className="text-gray-400 text-[10px] sm:text-sm mt-0.5">Hot Takes</p>
               </div>
 
-              {/* Bottom Row */}
+              
               <div className="flex items-center justify-between mt-3 sm:mt-4">
                 <span className="text-gray-400 text-[10px] sm:text-sm font-medium">156K active</span>
                 <button className="bg-[#3D2B3E] hover:bg-[#4D3B4E] text-white rounded-full w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center transition-colors">
@@ -408,7 +408,7 @@ export default function NewHomePage() {
           </div>
           </Link>
 
-        </div>
+        </div> */}
 
       </div>
     </div>

@@ -7,6 +7,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { createPortal } from "react-dom";
 import axios from "axios";
+import NewHomePage from "../NewHomePageComponent/newhomepage";
 
 /* ─── STYLES ─────────────────────────────────────────────────────────────── */
 const GLOBAL_CSS = `
@@ -2002,6 +2003,9 @@ function ComposeModal({
                     paddingBottom: 4,
                   }}
                 >
+
+                  
+
                   {COMPOSE_OPTIONS.map((opt) => (
                     <motion.button
                       key={opt.id}
@@ -2219,6 +2223,8 @@ function ComposeModal({
                       />
                     </div>
                   )}
+
+
                   {(selected === "hot_take" || selected === "prediction" || selected === "debate" || selected === "memory") && (
                     <>
                       <label
@@ -2374,6 +2380,7 @@ const RADIAL_OPTS = [
   { id: "prediction", label: "Predict", emoji: "📊" },
   { id: "debate", label: "Debate", emoji: "⚡" },
   { id: "memory", label: "Memory", emoji: "🕰" },
+  { id: "post", label: "Post", emoji: "✏️" },
 ];
 
 function BottomNav({
@@ -2551,7 +2558,7 @@ function HomeFeed({
   onQuickCompose?: (t: string) => void;
 }) {
   const [filter, setFilter] = useState("For You");
-
+  const [postMenuOpen, setPostMenuOpen] = useState(false);
   const [votes, setVotes] = useState<Record<string, boolean | null>>({});
   const [pcts, setPcts] = useState<Record<string, number>>({});
 
@@ -2705,36 +2712,7 @@ function HomeFeed({
         </div>
 
         {/* Quick-compose pills — between ROAR logo and icons */}
-        <div style={{ display: "flex", gap: 5, alignItems: "center", flex: 1, justifyContent: "center", padding: "0 8px", overflow: "hidden" }}>
-          {RADIAL_OPTS.map((q) => (
-            <motion.button
-              key={q.id}
-              whileTap={{ scale: 0.9 }}
-              whileHover={{ scale: 1.05 }}
-              onClick={() => onQuickCompose && onQuickCompose(q.id)}
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 2,
-                padding: "6px 7px",
-                borderRadius: 12,
-                background: "linear-gradient(145deg, rgba(233,30,140,0.18), rgba(255,107,53,0.10))",
-                border: "1px solid rgba(233,30,140,0.35)",
-                cursor: "pointer",
-                flexShrink: 1,
-                minWidth: 0,
-                boxShadow: "0 2px 10px rgba(233,30,140,0.2), inset 0 1px 0 rgba(255,255,255,0.07)",
-                backdropFilter: "blur(8px)",
-                transition: "box-shadow 0.2s",
-              }}
-            >
-              <span style={{ fontSize: 14, lineHeight: 1 }}>{q.emoji}</span>
-              <span style={{ fontSize: 8.5, fontWeight: 700, color: "rgba(255,255,255,0.85)", whiteSpace: "nowrap", lineHeight: 1, letterSpacing: "0.03em" }}>{q.label}</span>
-            </motion.button>
-          ))}
-        </div>
+        
 
         <div style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
           <motion.button
@@ -2840,8 +2818,58 @@ function HomeFeed({
         </div>
       )}
 
-      {/* Filters */}
+      {/* Filters + Post on ROAR */}
       <div style={{ padding: "10px 16px", overflow: "hidden", position: "relative" }}>
+        {/* Quick-post popup — slides in just above the filter bar */}
+        <AnimatePresence>
+          {postMenuOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 8 }}
+              transition={{ duration: 0.18, type: "spring", stiffness: 320, damping: 28 }}
+              style={{
+                display: "flex",
+                gap: 8,
+                justifyContent: "center",
+                marginBottom: 8,
+                flexWrap: "nowrap",
+              }}
+            >
+              {RADIAL_OPTS.map((q, i) => (
+                <motion.button
+                  key={q.id}
+                  initial={{ scale: 0.8, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ delay: i * 0.04, type: "spring", stiffness: 350 }}
+                  onClick={() => {
+                    setPostMenuOpen(false);
+                    onQuickCompose && onQuickCompose(q.id);
+                  }}
+                  style={{
+                    flex: 1,
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 4,
+                    padding: "8px 4px",
+                    borderRadius: 14,
+                    background: "rgba(22,22,31,0.92)",
+                    border: "1px solid rgba(233,30,140,0.3)",
+                    cursor: "pointer",
+                    boxShadow: "0 4px 16px rgba(0,0,0,0.5)",
+                    minWidth: 0,
+                  }}
+                >
+                  <span style={{ fontSize: 18 }}>{q.emoji}</span>
+                  <span style={{ fontSize: 9, fontWeight: 700, color: "rgba(255,255,255,0.7)", whiteSpace: "nowrap" }}>{q.label}</span>
+                </motion.button>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         <div
           className="flex justify-start items-center gap-2 overflow-x-auto rounded-2xl border border-white/5 bg-[#1a1a1a]/80 p-1.5 shadow-xl [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           style={{ WebkitOverflowScrolling: "touch" }}
@@ -2852,7 +2880,7 @@ function HomeFeed({
               <motion.button
                 key={f}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => setFilter(f)}
+                onClick={() => { setFilter(f); setPostMenuOpen(false); }}
                 className={`relative flex min-w-max items-center justify-center gap-2 px-5 py-3 rounded-xl text-xs font-bold tracking-wide transition-all duration-300 text-center whitespace-nowrap shrink-0 group`}
                 style={{
                   border: "none",
@@ -2866,6 +2894,26 @@ function HomeFeed({
               </motion.button>
             );
           })}
+
+          {/* Post on ROAR (+) tab */}
+          <motion.button
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setPostMenuOpen((prev) => !prev)}
+            className="relative flex min-w-max items-center justify-center gap-1.5 px-4 py-3 rounded-xl text-xs font-bold tracking-wide whitespace-nowrap shrink-0"
+            style={{
+              border: postMenuOpen ? "1px solid rgba(233,30,140,0.6)" : "1px solid rgba(233,30,140,0.25)",
+              cursor: "pointer",
+              color: postMenuOpen ? "white" : "rgba(233,30,140,0.9)",
+              background: postMenuOpen
+                ? "linear-gradient(90deg,#e91e8c,#ff6b35)"
+                : "rgba(233,30,140,0.08)",
+              boxShadow: postMenuOpen ? "0 4px 14px rgba(233,30,140,0.35)" : "none",
+              transition: "all 0.2s",
+            }}
+          >
+            <span style={{ fontSize: 13, fontWeight: 900, lineHeight: 1 }}>+</span>
+            <span className="block leading-tight">Post on ROAR</span>
+          </motion.button>
         </div>
       </div>
 
@@ -3248,7 +3296,7 @@ function HomeFeed({
                 </motion.div>
               );
             })}
-
+<NewHomePage/>
         {filtered.map((item, i) => {
           if (item.type === "hot_take" || item.type === "prediction") {
             const pct = pcts[item.id] ?? item.agreePercent ?? 50;
@@ -7196,7 +7244,7 @@ export default function ROARApp() {
   const handlePost = useCallback(
     async (payload: any) => {
       try {
-        const postType = ["hot_take", "prediction", "debate", "memory"].includes(payload.type)
+        const postType = ["hot_take", "prediction", "debate", "memory","post"].includes(payload.type)
           ? payload.type
           : "hot_take";
         const res = await axios.post("/api/roar/posts", {
@@ -7568,16 +7616,7 @@ export default function ROARApp() {
           </div>
         )}
 
-        {/* Bottom nav — Flex child sitting cleanly below the content area */}
-        {onboarded && !composeOpen && (
-          <BottomNav
-            activeTab={isRoom ? "discuss" : activeTab}
-            onTabChange={handleTab}
-            unreadCount={unreadCount}
-            matchLive
-            badgeNearUnlock
-          />
-        )}
+        
 
         {/* Post details overlay */}
         {onboarded && selectedPost && (

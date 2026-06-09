@@ -1023,7 +1023,7 @@ export default function Header() {
         </Link>
         <div className="h-px bg-white/5 mx-4" />
         <Link
-          href="/MainModules/Preferences"
+          href="/MainModules/RoarPreference"
           onClick={onClose}
           className="flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors group"
         >
@@ -1034,7 +1034,7 @@ export default function Header() {
           </span>
         </Link>
         <div className="h-px bg-white/5 mx-4" />
-        <Link
+        {/* <Link
           href="/MainModules/Settings"
           onClick={onClose}
           className="flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors group"
@@ -1044,7 +1044,7 @@ export default function Header() {
             className="text-gray-400 group-hover:text-white transition-colors"
           />
           <span className="text-white text-sm font-medium">Settings</span>
-        </Link>
+        </Link> */}
         <div className="h-px bg-white/5 mx-4" />
         <LogoutButton className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors group">
           <LogOut
@@ -1116,10 +1116,10 @@ export default function Header() {
         </div>
 
         <div className="flex items-center gap-3 ml-auto">
-          <button className="flex items-center gap-2 bg-transparent hover:bg-pink-500/10 border border-pink-500 text-pink-400 text-sm font-medium px-5 py-2.5 rounded-full transition-colors">
+          {/* <button className="flex items-center gap-2 bg-transparent hover:bg-pink-500/10 border border-pink-500 text-pink-400 text-sm font-medium px-5 py-2.5 rounded-full transition-colors">
             <SlidersHorizontal size={15} />
             Preferences
-          </button>
+          </button> */}
           <ChatButton unreadCount={totalUnreadChats} />
           {/* PointsPill only re-renders when points/loading changes */}
           <PointsPill points={currentUserPoints} loading={pointsLoading} />
@@ -1205,10 +1205,10 @@ export default function Header() {
           )}
         </div>
 
-        <button className="flex items-center gap-2 border border-pink-500 text-pink-400 text-xs font-medium px-4 py-2 rounded-full hover:bg-pink-500/10 transition-colors whitespace-nowrap">
+        {/* <button className="flex items-center gap-2 border border-pink-500 text-pink-400 text-xs font-medium px-4 py-2 rounded-full hover:bg-pink-500/10 transition-colors whitespace-nowrap">
           <SlidersHorizontal size={13} />
           Preferences
-        </button>
+        </button> */}
         <ChatButton unreadCount={totalUnreadChats} />
         {/* Tablet pill is slightly smaller */}
         <div className="flex items-center gap-2 bg-[#111] border border-white/10 rounded-full px-3 py-2">

@@ -43,7 +43,23 @@ type PostNotification = {
   createdAt: number;
 };
 
-type Notification = BattleNotification | AudioNotification | PostNotification;
+// type Notification = BattleNotification | AudioNotification | PostNotification;
+type FollowRequestNotification = {
+  id: string;
+  type: "FOLLOW_REQUEST";
+  message: string;
+  isRead: boolean;
+  createdAt: number;
+  senderName: string;
+  senderUserId: string;
+  requestId: string;
+};
+
+type Notification =
+BattleNotification |
+AudioNotification |
+PostNotification |
+FollowRequestNotification;
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 
@@ -564,9 +580,92 @@ function PostNotificationCard({
     </div>
   );
 }
+function FollowRequestCard({
+  notif,
+}: {
+  notif: FollowRequestNotification;
+}) {
+  const acceptRequest =
+    async () => {
+      await fetch(
+        "/api/follow-request/accept",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type":
+              "application/json",
+          },
+          body: JSON.stringify({
+            requestId:
+              notif.requestId,
+          }),
+        }
+      );
 
+      window.location.reload();
+    };
+
+  const rejectRequest =
+    async () => {
+      await fetch(
+        "/api/follow-request/reject",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type":
+              "application/json",
+          },
+          body: JSON.stringify({
+            requestId:
+              notif.requestId,
+          }),
+        }
+      );
+
+      window.location.reload();
+    };
+
+  return (
+    <div className="rounded-2xl border border-pink-500/30 p-4">
+      <p>
+        {notif.message}
+      </p>
+
+      <div className="flex gap-2 mt-3">
+        <button
+          onClick={
+            acceptRequest
+          }
+        >
+          Accept
+        </button>
+
+        <button
+          onClick={
+            rejectRequest
+          }
+        >
+          Reject
+        </button>
+      </div>
+    </div>
+  );
+}
 
 function NotificationCard(props: CardProps) {
+  if (
+  props.notif.type ===
+  "FOLLOW_REQUEST"
+) {
+  return (
+    <FollowRequestCard
+      notif={
+        props.notif as
+        FollowRequestNotification
+      }
+    />
+  );
+}
   if (props.notif.type === "NEW_AUDIO") {
     return (
       <AudioNotificationCard

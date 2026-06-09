@@ -299,7 +299,7 @@ export default function MainModulesLayout({
     <div className="h-screen w-full bg-black text-white flex flex-col lg:flex-row overflow-x-hidden">
       {renderSidebar()}
 
-      <main className="flex-1 min-w-0 w-full h-full flex flex-col overflow-hidden pb-[50px] lg:pb-0">
+      <main className="flex-1 min-w-0 w-full h-full flex flex-col overflow-hidden lg:pb-0">
         <div className="relative z-20">
           <Header />
         </div>
@@ -323,9 +323,10 @@ export default function MainModulesLayout({
           <GlobalActionBar />
         </div>
 
-        <div className="lg:hidden">
+        {/* BottomNav hidden — You/Alerts will integrate into global app later */}
+        {/* <div className="lg:hidden">
           <BottomNav />
-        </div>
+        </div> */}
       </main>
 
       {/* <InviteFriendModal

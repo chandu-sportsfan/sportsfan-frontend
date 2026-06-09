@@ -7535,8 +7535,8 @@ export default function ROARApp() {
           </div>
         )}
 
-        {/* Bottom nav — Flex child sitting cleanly below the content area */}
-        {onboarded && !composeOpen && (
+        {/* Bottom nav hidden — You/Alerts will integrate into global app later */}
+        {/* {onboarded && !composeOpen && (
           <BottomNav
             activeTab={isRoom ? "discuss" : activeTab}
             onTabChange={handleTab}
@@ -7544,7 +7544,7 @@ export default function ROARApp() {
             matchLive
             badgeNearUnlock
           />
-        )}
+        )} */}
 
         {/* Post details overlay */}
         {onboarded && selectedPost && (

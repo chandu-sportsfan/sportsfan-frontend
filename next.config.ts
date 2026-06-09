@@ -590,6 +590,15 @@ const nextConfig = {
           source: "/api/fifa-clubs/:path*",
           destination: `${apiTarget}/api/fifa-clubs/:path*`,
         },
+          // WT2O WC Clus
+        {
+          source: "/api/wt20-clubs",
+          destination: `${apiTarget}/api/wt20-clubs`,
+        },
+        {
+          source: "/api/wt20-clubs/:path*",
+          destination: `${apiTarget}/api/wt20-clubs/:path*`,
+        },
         // roar apis
         {
           source: "/api/roar/:path*",

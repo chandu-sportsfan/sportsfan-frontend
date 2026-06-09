@@ -78,7 +78,7 @@ const buildNewsShareText = (article: NewsArticle) => {
     shareUrl,
   ].filter(Boolean).join('\n');
 };
-const ARCHIVE_DATES = ['2026-06-04','2026-06-02'];
+// const ARCHIVE_DATES = ['2026-06-04','2026-06-02'];
 export default function DetailedNewsCenter() {
   const [articles, setArticles] = useState<NewsArticle[]>([]);
   const [sortOption, setSortOption] = useState<'latest' | 'oldest' | 'most-liked'>('latest');

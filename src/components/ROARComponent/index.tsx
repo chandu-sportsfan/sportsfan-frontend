@@ -2971,7 +2971,7 @@ function HomeFeed({
             </motion.div>
           )}
         </AnimatePresence>
-
+//done
         <div
           className="flex justify-start items-center gap-2 overflow-x-auto rounded-2xl border border-white/5 bg-[#1a1a1a]/80 p-1.5 shadow-xl [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           style={{ WebkitOverflowScrolling: "touch" }}

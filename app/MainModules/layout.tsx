@@ -336,9 +336,9 @@ export default function MainModulesLayout({
         </div>
 
         {/* BottomNav hidden for now — You and Alerts will integrate into global app profile/alerts */}
-        {/* <div className="lg:hidden">
+        <div className="lg:hidden">
           <BottomNav />
-        </div> */}
+        </div>
       </main>
 
       {/* <InviteFriendModal

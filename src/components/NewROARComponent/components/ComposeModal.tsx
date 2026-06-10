@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { createPortal } from "react-dom";
 import { COMPOSE_OPTIONS, UPCOMING_MATCHES } from "../constants";
 import type { ComposePayload } from "../types";
+import axios from "axios";
 
 interface Props {
   open: boolean;
@@ -17,7 +18,8 @@ export default function ComposeModal({ open, onClose, onPost, initialType }: Pro
   const [sideA, setSideA] = useState("");
   const [sideB, setSideB] = useState("");
   const [memCtx, setMemCtx] = useState("");
-  const [match, setMatch] = useState(UPCOMING_MATCHES[0]);
+  const [dbMatches, setDbMatches] = useState<string[]>([]);
+  const [match, setMatch] = useState("None / General");
   const [confidence, setConf] = useState(7);
   const [audience, setAud] = useState("Everyone");
   const [sport, setSport] = useState("cricket");
@@ -26,6 +28,40 @@ export default function ComposeModal({ open, onClose, onPost, initialType }: Pro
   const [domReady, setDomReady] = useState(false);
 
   useEffect(() => { setDomReady(true); }, []);
+
+  useEffect(() => {
+    const fetchMatches = async () => {
+      try {
+        const res = await axios.get("/api/watch-along/matches");
+        if (res.data?.success && Array.isArray(res.data.matches)) {
+          const formatted = res.data.matches.map((m: any) => {
+            const t1 = m.team1?.name || "Team 1";
+            const t2 = m.team2?.name || "Team 2";
+            const tourney = m.tournament || "";
+            return tourney ? `${t1} vs ${t2} · ${tourney}` : `${t1} vs ${t2}`;
+          });
+          setDbMatches(formatted);
+        }
+      } catch (err) {
+        console.error("Failed to fetch matches for compose:", err);
+      }
+    };
+    fetchMatches();
+  }, []);
+
+  const matchesList = dbMatches.length > 0 ? ["None / General", ...dbMatches] : ["None / General", ...UPCOMING_MATCHES];
+  const filteredMatches = matchesList.filter((m) => {
+    if (m === "None / General") return true;
+    return sport === "football"
+      ? (m.toLowerCase().includes("isl") || m.toLowerCase().includes("fc") || m.toLowerCase().includes("fifa") || m.toLowerCase().includes("worldcup"))
+      : !(m.toLowerCase().includes("isl") || m.toLowerCase().includes("fc") || m.toLowerCase().includes("fifa") || m.toLowerCase().includes("worldcup"));
+  });
+
+  useEffect(() => {
+    if (filteredMatches.length > 0 && !filteredMatches.includes(match)) {
+      setMatch(filteredMatches[0]);
+    }
+  }, [sport, dbMatches, match]);
 
   useEffect(() => {
     if (open && initialType) setSelected(initialType);
@@ -41,6 +77,7 @@ export default function ComposeModal({ open, onClose, onPost, initialType }: Pro
     setSport("cricket");
     setPostText("");
     setMediaFiles([]);
+    setMatch("None / General");
   };
 
   const canPost =
@@ -175,16 +212,6 @@ export default function ComposeModal({ open, onClose, onPost, initialType }: Pro
                           placeholder="Your prediction..."
                           style={{ ...inputStyle, fontStyle: "italic" }}
                         />
-                        <label style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 12, display: "block" }}>Match</label>
-                        <select
-                          value={match}
-                          onChange={(e) => setMatch(e.target.value)}
-                          style={{ width: "100%", marginTop: 4, padding: "10px 12px", borderRadius: 14, background: "rgba(0,0,0,0.4)", border: "1px solid var(--border)", color: "var(--text-primary)", fontSize: 13 }}
-                        >
-                          {UPCOMING_MATCHES.filter((m) =>
-                            sport === "football" ? m.toLowerCase().includes("isl") : !m.toLowerCase().includes("isl")
-                          ).map((m) => <option key={m} value={m}>{m}</option>)}
-                        </select>
                         <label style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 12, display: "block" }}>
                           Confidence: {confidence}/10
                         </label>
@@ -268,7 +295,7 @@ export default function ComposeModal({ open, onClose, onPost, initialType }: Pro
                       </>
                     )}
 
-                    {/* Sport selector (not for post type) */}
+                    {/* Sport and Match selector (not for post type) */}
                     {(selected === "hot_take" || selected === "prediction" || selected === "debate" || selected === "memory") && (
                       <>
                         <label style={{ fontSize: 11, color: "var(--text-muted)", display: "block", marginTop: 16, marginBottom: 4 }}>Sport</label>
@@ -295,6 +322,17 @@ export default function ComposeModal({ open, onClose, onPost, initialType }: Pro
                             );
                           })}
                         </div>
+
+                        <label style={{ fontSize: 11, color: "var(--text-muted)", display: "block", marginTop: 12, marginBottom: 4 }}>Match Context</label>
+                        <select
+                          value={match}
+                          onChange={(e) => setMatch(e.target.value)}
+                          style={{ width: "100%", marginTop: 4, padding: "10px 12px", borderRadius: 14, background: "rgba(0,0,0,0.4)", border: "1px solid var(--border)", color: "var(--text-primary)", fontSize: 13 }}
+                        >
+                          {filteredMatches.map((m) => (
+                            <option key={m} value={m}>{m}</option>
+                          ))}
+                        </select>
                       </>
                     )}
 

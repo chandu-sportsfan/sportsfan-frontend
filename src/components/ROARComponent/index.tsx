@@ -7,7 +7,6 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { createPortal } from "react-dom";
 import axios from "axios";
-import NewHomePage from "../NewHomePageComponent/newhomepage";
 
 /* ─── STYLES ─────────────────────────────────────────────────────────────── */
 const GLOBAL_CSS = `
@@ -1850,12 +1849,6 @@ const COMPOSE_OPTIONS = [
     title: "Share a Memory",
     desc: "Flashback moment",
   },
-  {
-    id: "post",
-    emoji: "✏️",
-    title: "Post",
-    desc: "Write something + add media",
-  },
 ];
 
 function ComposeModal({
@@ -1878,8 +1871,6 @@ function ComposeModal({
   const [confidence, setConf] = useState(7);
   const [audience, setAud] = useState("Everyone");
   const [sport, setSport] = useState("cricket");
-  const [postText, setPostText] = useState("");
-  const [mediaFiles, setMediaFiles] = useState<File[]>([]);
 
   const [domReady, setDomReady] = useState(false);
   useEffect(() => {
@@ -1898,21 +1889,16 @@ function ComposeModal({
     setSideB("");
     setMemCtx("");
     setSport("cricket");
-    setPostText("");
-    setMediaFiles([]);
   };
-
   const canPost =
     (selected === "hot_take" && text.trim()) ||
     (selected === "prediction" && text.trim()) ||
     (selected === "debate" && sideA.trim() && sideB.trim()) ||
-    (selected === "memory" && text.trim()) ||
-    (selected === "post" && postText.trim());
-
+    (selected === "memory" && text.trim());
   const handlePost = () => {
     onPost({
       type: selected,
-      text: selected === "post" ? postText : text,
+      text,
       sideA,
       sideB,
       match,
@@ -1920,7 +1906,6 @@ function ComposeModal({
       audience,
       memCtx,
       sport,
-      mediaFiles: selected === "post" ? mediaFiles : [],
     });
     onClose();
   };
@@ -1995,17 +1980,8 @@ function ComposeModal({
               </h2>
               {!selected ? (
                 <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(5, minmax(120px, 1fr))",
-                    gap: 12,
-                    overflowX: "auto",
-                    paddingBottom: 4,
-                  }}
+                  style={{ display: "flex", flexDirection: "column", gap: 12 }}
                 >
-
-                  
-
                   {COMPOSE_OPTIONS.map((opt) => (
                     <motion.button
                       key={opt.id}
@@ -2018,7 +1994,6 @@ function ComposeModal({
                         border: "1px solid var(--border)",
                         textAlign: "left",
                         cursor: "pointer",
-                        minHeight: 104,
                         width: "100%",
                       }}
                     >
@@ -2142,11 +2117,7 @@ function ComposeModal({
                           fontSize: 13,
                         }}
                       >
-                        {UPCOMING_MATCHES.filter((m) =>
-                          sport === "football"
-                            ? m.toLowerCase().includes("isl")
-                            : !m.toLowerCase().includes("isl")
-                        ).map((m) => (
+                        {UPCOMING_MATCHES.map((m) => (
                           <option key={m} value={m}>
                             {m}
                           </option>
@@ -2223,9 +2194,7 @@ function ComposeModal({
                       />
                     </div>
                   )}
-
-
-                  {(selected === "hot_take" || selected === "prediction" || selected === "debate" || selected === "memory") && (
+                  {(selected === "hot_take" || selected === "prediction") && (
                     <>
                       <label
                         style={{
@@ -2380,24 +2349,124 @@ const RADIAL_OPTS = [
   { id: "prediction", label: "Predict", emoji: "📊" },
   { id: "debate", label: "Debate", emoji: "⚡" },
   { id: "memory", label: "Memory", emoji: "🕰" },
-  { id: "post", label: "Post", emoji: "✏️" },
 ];
 
 function BottomNav({
   activeTab,
   onTabChange,
+  onCompose,
+  onQuickCompose,
   unreadCount,
   matchLive,
   badgeNearUnlock,
 }: {
   activeTab: string;
   onTabChange: (t: string) => void;
+  onCompose: () => void;
+  onQuickCompose: (t: string) => void;
   unreadCount: number;
   matchLive: boolean;
   badgeNearUnlock: boolean;
 }) {
+  const [radial, setRadial] = useState(false);
+  const pressRef = useRef<any>(null);
+  const touchStartY = useRef<number | null>(null);
+  const didScroll = useRef(false);
+
+  const [domReady, setDomReady] = useState(false);
+  useEffect(() => {
+    setDomReady(true);
+  }, []);
+
+  const down = (e: React.TouchEvent | React.MouseEvent) => {
+    didScroll.current = false;
+    if ("touches" in e) {
+      touchStartY.current = e.touches[0].clientY;
+    }
+    pressRef.current = setTimeout(() => setRadial(true), 320);
+  };
+  const onTouchMove = (e: React.TouchEvent) => {
+    if (touchStartY.current !== null) {
+      const delta = Math.abs(e.touches[0].clientY - touchStartY.current);
+      if (delta > 10) {
+        didScroll.current = true;
+        clearTimeout(pressRef.current);
+      }
+    }
+  };
+  const up = () => {
+    clearTimeout(pressRef.current);
+    if (!radial && !didScroll.current) onCompose();
+    setRadial(false);
+    touchStartY.current = null;
+    didScroll.current = false;
+  };
+
+  const radialMenuContent = (
+    <div className="roar-root">
+      <AnimatePresence>
+        {radial && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              style={{
+                position: "fixed",
+                inset: 0,
+                zIndex: 55,
+                pointerEvents: "auto",
+                background: "rgba(0,0,0,0.4)",
+              }}
+              onClick={() => setRadial(false)}
+            >
+              <div
+                style={{
+                  position: "fixed",
+                  bottom: 100,
+                  left: "50%",
+                  transform: "translateX(-50%)",
+                  display: "flex",
+                  gap: 12,
+                }}
+              >
+                {RADIAL_OPTS.map((q, i) => (
+                  <motion.button
+                    key={q.id}
+                    initial={{ scale: 0, y: 20 }}
+                    animate={{ scale: 1, y: 0 }}
+                    transition={{ delay: i * 0.05, type: "spring" }}
+                    onClick={() => {
+                      onQuickCompose(q.id);
+                      setRadial(false);
+                    }}
+                    className="glass-card"
+                    style={{
+                      width: 56,
+                      height: 56,
+                      borderRadius: "50%",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: 20,
+                      cursor: "pointer",
+                      border: "none",
+                      gap: 2,
+                    }}
+                  >
+                    {q.emoji}
+                  </motion.button>
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+  );
+
   return (
     <>
+      {domReady && createPortal(radialMenuContent, document.body)}
       <div
         style={{
           position: "fixed",
@@ -2424,7 +2493,44 @@ function BottomNav({
         >
           {NAV_TABS.map((tab) => {
             if (tab.id === "compose") {
-              return null;
+              return (
+                <button
+                  key="compose"
+                  onMouseDown={down}
+                  onMouseUp={up}
+                  onMouseLeave={() => clearTimeout(pressRef.current)}
+                  onTouchStart={down}
+                  onTouchMove={onTouchMove}
+                  onTouchEnd={up}
+                  style={{
+                    position: "relative",
+                    marginTop: -32,
+                    zIndex: 10,
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                  }}
+                >
+                  <motion.div
+                    whileTap={{ scale: 0.92 }}
+                    className="btn-gradient"
+                    style={{
+                      width: 52,
+                      height: 52,
+                      borderRadius: "50%",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      boxShadow: "0 6px 28px rgba(233,30,140,0.5)",
+                    }}
+                  >
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="12" y1="5" x2="12" y2="19"></line>
+                      <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                  </motion.div>
+                </button>
+              );
             }
             const isActive = activeTab === tab.id;
             return (
@@ -2655,9 +2761,6 @@ function HomeFeed({
         p.type === "prediction" ? (p.disagreeCount ?? 0) : undefined,
       isDbPost: true,
       userVote: p.userVote,
-      sideA: p.sideA,
-      sideB: p.sideB,
-      memCtx: p.memCtx,
     };
   });
 
@@ -2696,7 +2799,7 @@ function HomeFeed({
           borderRadius: 20,
         }}
       >
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", flexShrink: 0 }}>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
           <h1 className="logotype" style={{ fontSize: 26, margin: 0, lineHeight: 1 }}>
             ROAR
           </h1>
@@ -2710,11 +2813,7 @@ function HomeFeed({
             }}
           />
         </div>
-
-        {/* Quick-compose pills — between ROAR logo and icons */}
-        
-
-        <div style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           <motion.button
             whileTap={{ scale: 0.93 }}
             onClick={onLeaderboard}
@@ -2824,46 +2923,49 @@ function HomeFeed({
         <AnimatePresence>
           {postMenuOpen && (
             <motion.div
-              initial={{ opacity: 0, y: 8 }}
+              initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 8 }}
-              transition={{ duration: 0.18, type: "spring", stiffness: 320, damping: 28 }}
+              exit={{ opacity: 0, y: 10 }}
               style={{
+                position: "absolute",
+                bottom: "calc(100% - 4px)",
+                right: 16,
+                zIndex: 30,
                 display: "flex",
                 gap: 8,
-                justifyContent: "center",
-                marginBottom: 8,
-                flexWrap: "nowrap",
+                padding: "8px",
+                borderRadius: 16,
+                background: "rgba(20,20,30,0.95)",
+                border: "1px solid rgba(233,30,140,0.25)",
+                boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
               }}
             >
               {RADIAL_OPTS.map((q, i) => (
                 <motion.button
                   key={q.id}
-                  initial={{ scale: 0.8, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={{ delay: i * 0.04, type: "spring", stiffness: 350 }}
+                  initial={{ scale: 0, y: 10 }}
+                  animate={{ scale: 1, y: 0 }}
+                  transition={{ delay: i * 0.05, type: "spring" }}
                   onClick={() => {
                     setPostMenuOpen(false);
                     onQuickCompose && onQuickCompose(q.id);
                   }}
+                  className="glass-card"
                   style={{
-                    flex: 1,
+                    width: 56,
+                    height: 56,
+                    borderRadius: "50%",
                     display: "flex",
                     flexDirection: "column",
                     alignItems: "center",
                     justifyContent: "center",
-                    gap: 4,
-                    padding: "8px 4px",
-                    borderRadius: 14,
-                    background: "rgba(22,22,31,0.92)",
-                    border: "1px solid rgba(233,30,140,0.3)",
+                    fontSize: 20,
                     cursor: "pointer",
-                    boxShadow: "0 4px 16px rgba(0,0,0,0.5)",
-                    minWidth: 0,
+                    border: "none",
+                    gap: 2,
                   }}
                 >
-                  <span style={{ fontSize: 18 }}>{q.emoji}</span>
-                  <span style={{ fontSize: 9, fontWeight: 700, color: "rgba(255,255,255,0.7)", whiteSpace: "nowrap" }}>{q.label}</span>
+                  {q.emoji}
                 </motion.button>
               ))}
             </motion.div>
@@ -2901,11 +3003,11 @@ function HomeFeed({
             onClick={() => setPostMenuOpen((prev) => !prev)}
             className="relative flex min-w-max items-center justify-center gap-1.5 px-4 py-3 rounded-xl text-xs font-bold tracking-wide whitespace-nowrap shrink-0"
             style={{
-              border: postMenuOpen ? "1px solid rgba(233,30,140,0.6)" : "1px solid rgba(233,30,140,0.25)",
               cursor: "pointer",
+              border: postMenuOpen ? "1px solid rgba(233,30,140,0.6)" : "1px solid rgba(233,30,140,0.25)",
               color: postMenuOpen ? "white" : "rgba(233,30,140,0.9)",
               background: postMenuOpen
-                ? "linear-gradient(90deg,#e91e8c,#ff6b35)"
+                ? "linear-gradient(90deg, #e91e8c, #ff6b35)"
                 : "rgba(233,30,140,0.08)",
               boxShadow: postMenuOpen ? "0 4px 14px rgba(233,30,140,0.35)" : "none",
               transition: "all 0.2s",
@@ -3296,7 +3398,7 @@ function HomeFeed({
                 </motion.div>
               );
             })}
-<NewHomePage/>
+
         {filtered.map((item, i) => {
           if (item.type === "hot_take" || item.type === "prediction") {
             const pct = pcts[item.id] ?? item.agreePercent ?? 50;
@@ -3521,127 +3623,6 @@ function HomeFeed({
               </motion.div>
             );
           }
-
-          if (item.type === "debate") {
-            return (
-              <motion.div
-                key={item.id}
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.04 }}
-                className="glass-card"
-                style={{ padding: "16px", cursor: "pointer" }}
-                onClick={() => onPostClick && onPostClick(item)}
-              >
-                <div style={{ display: "flex", gap: 6, marginBottom: 8, flexWrap: "wrap" }}>
-                  <span style={{
-                    fontSize: 10, fontWeight: 800, letterSpacing: "0.06em",
-                    padding: "3px 8px", borderRadius: 4, textTransform: "uppercase",
-                    background: "rgba(233,30,140,0.12)", color: "var(--accent-magenta)",
-                    border: "1px solid rgba(233,30,140,0.25)",
-                  }}>⚡ Debate</span>
-                  <span style={{
-                    fontSize: 10, fontWeight: 800, padding: "3px 8px", borderRadius: 4,
-                    background: item.sport === "cricket" ? "rgba(34,197,94,0.1)" : "rgba(59,130,246,0.1)",
-                    color: item.sport === "cricket" ? "#22c55e" : "#60a5fa",
-                    border: `1px solid ${item.sport === "cricket" ? "rgba(34,197,94,0.2)" : "rgba(59,130,246,0.2)"}`,
-                    textTransform: "uppercase",
-                  }}>{item.sport === "cricket" ? "🏏 Cricket" : "⚽ Football"}</span>
-                </div>
-                <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 12 }}>
-                  <AvatarWithBadge username={item.fan.username} badge={item.fan.badge} size="sm" />
-                  <div>
-                    <p style={{ fontWeight: 700, fontSize: 13 }}>{item.fan.username}</p>
-                    <p style={{ fontSize: 10, color: "var(--text-secondary)" }}>
-                      {BADGE_LABELS[item.fan.badge]} · {item.fan.team}
-                    </p>
-                  </div>
-                </div>
-                <div style={{ display: "flex", gap: 8, alignItems: "stretch" }}>
-                  <div style={{
-                    flex: 1, padding: "12px", borderRadius: 14, textAlign: "center",
-                    background: "rgba(233,30,140,0.1)", border: "1px solid rgba(233,30,140,0.3)",
-                  }}>
-                    <p style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)" }}>
-                      {item.sideA || (item.text?.split(" VS ")[0]) || "Side A"}
-                    </p>
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", padding: "0 4px" }}>
-                    <span className="font-display" style={{ fontSize: 16, color: "var(--text-muted)" }}>VS</span>
-                  </div>
-                  <div style={{
-                    flex: 1, padding: "12px", borderRadius: 14, textAlign: "center",
-                    background: "rgba(59,130,246,0.1)", border: "1px solid rgba(59,130,246,0.3)",
-                  }}>
-                    <p style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)" }}>
-                      {item.sideB || (item.text?.split(" VS ")[1]) || "Side B"}
-                    </p>
-                  </div>
-                </div>
-                <p style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 10 }}>
-                  {fmt(item.fanCount ?? 0)} fans · {item.replies ?? 0} replies
-                </p>
-              </motion.div>
-            );
-          }
-
-          if (item.type === "memory") {
-            return (
-              <motion.div
-                key={item.id}
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.04 }}
-                className="glass-card"
-                style={{ padding: "16px", cursor: "pointer" }}
-                onClick={() => onPostClick && onPostClick(item)}
-              >
-                <div style={{ display: "flex", gap: 6, marginBottom: 8, flexWrap: "wrap" }}>
-                  <span style={{
-                    fontSize: 10, fontWeight: 800, letterSpacing: "0.06em",
-                    padding: "3px 8px", borderRadius: 4, textTransform: "uppercase",
-                    background: "rgba(0,232,198,0.1)", color: "var(--teal)",
-                    border: "1px solid rgba(0,232,198,0.25)",
-                  }}>🕰 Memory</span>
-                  <span style={{
-                    fontSize: 10, fontWeight: 800, padding: "3px 8px", borderRadius: 4,
-                    background: item.sport === "cricket" ? "rgba(34,197,94,0.1)" : "rgba(59,130,246,0.1)",
-                    color: item.sport === "cricket" ? "#22c55e" : "#60a5fa",
-                    border: `1px solid ${item.sport === "cricket" ? "rgba(34,197,94,0.2)" : "rgba(59,130,246,0.2)"}`,
-                    textTransform: "uppercase",
-                  }}>{item.sport === "cricket" ? "🏏 Cricket" : "⚽ Football"}</span>
-                </div>
-                <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 12 }}>
-                  <AvatarWithBadge username={item.fan.username} badge={item.fan.badge} size="sm" />
-                  <div>
-                    <p style={{ fontWeight: 700, fontSize: 13 }}>{item.fan.username}</p>
-                    <p style={{ fontSize: 10, color: "var(--text-secondary)" }}>
-                      {BADGE_LABELS[item.fan.badge]} · {item.fan.team}
-                    </p>
-                  </div>
-                </div>
-                <p style={{
-                  fontWeight: 600, fontSize: 15, lineHeight: 1.55,
-                  marginBottom: item.memCtx ? 8 : 0,
-                  color: "var(--text-primary)",
-                }}>
-                  {item.text}
-                </p>
-                {item.memCtx && (
-                  <p style={{
-                    fontSize: 12, color: "var(--teal)", fontStyle: "italic",
-                    borderLeft: "2px solid var(--teal)", paddingLeft: 10, marginTop: 6,
-                  }}>
-                    {item.memCtx}
-                  </p>
-                )}
-                <p style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 10 }}>
-                  {fmt(item.fanCount ?? 0)} fans · {item.replies ?? 0} replies
-                </p>
-              </motion.div>
-            );
-          }
-
           return null;
         })}
       </div>
@@ -5140,10 +5121,10 @@ function Profile({
   const [shareOpen, setShareOpen] = useState(false);
   const [fanMatchOpen, setFanMatchOpen] = useState(false);
   const [rivalFollowed, setRivalFollowed] = useState(false);
-  const [editName, setEditName] = useState("");
-  const [editFavPlayer, setEditFavPlayer] = useState("");
-  const [editAbout, setEditAbout] = useState("");
-  const [editShowPredHistory, setEditShowPredHistory] = useState(true);
+    const [editName, setEditName] = useState("");
+  const [editDisplayName, setEditDisplayName] = useState("");
+  const [editFavouritePlayer, setEditFavouritePlayer] = useState("");
+  const [editAboutMe, setEditAboutMe] = useState("");
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -5154,17 +5135,17 @@ function Profile({
           if (res.data.user?.badge) {
             setUserBadge(res.data.user.badge);
           }
-          if (res.data.user?.username) {
+           if (res.data.user?.username) {
             setEditName(res.data.user.username);
           }
-          if (res.data.user?.favPlayer !== undefined) {
-            setEditFavPlayer(res.data.user.favPlayer || "");
+          if (res.data.user?.displayName != null) {
+            setEditDisplayName(res.data.user.displayName);
           }
-          if (res.data.user?.about !== undefined) {
-            setEditAbout(res.data.user.about || "");
+          if (res.data.user?.favouritePlayer != null) {
+            setEditFavouritePlayer(res.data.user.favouritePlayer);
           }
-          if (res.data.user?.showPredHistory !== undefined) {
-            setEditShowPredHistory(res.data.user.showPredHistory !== false);
+          if (res.data.user?.aboutMe != null) {
+            setEditAboutMe(res.data.user.aboutMe);
           }
         }
       } catch (err: any) {
@@ -5982,129 +5963,151 @@ function Profile({
               position: "absolute",
               inset: 0,
               zIndex: 110,
-              background: "rgba(0,0,0,0.75)",
-              backdropFilter: "blur(6px)",
+              background: "rgba(0,0,0,0.85)",
+              backdropFilter: "blur(8px)",
               display: "flex",
-              alignItems: "flex-end",
+              alignItems: "center",
               justifyContent: "center",
+              padding: 20,
             }}
-            onClick={() => setEditOpen(false)}
           >
             <motion.div
-              initial={{ y: "100%" }}
-              animate={{ y: 0 }}
-              exit={{ y: "100%" }}
-              transition={{ type: "spring", damping: 28, stiffness: 300 }}
-              onClick={(e) => e.stopPropagation()}
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              className="glass-card animate-glow"
               style={{
                 width: "100%",
-                background: "rgba(18,18,28,0.98)",
-                borderRadius: "28px 28px 0 0",
-                border: "1px solid rgba(255,255,255,0.08)",
-                padding: "20px 20px 36px",
-                maxHeight: "90vh",
+                maxWidth: 340,
+                padding: 24,
+                background: "var(--bg-secondary)",
+                maxHeight: "80vh",
                 overflowY: "auto",
               }}
             >
-              {/* drag handle */}
-              <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}>
-                <div style={{ width: 36, height: 4, borderRadius: 2, background: "rgba(255,255,255,0.18)" }} />
-              </div>
-
-              <h3 className="font-display" style={{ fontSize: 22, marginBottom: 20, letterSpacing: "0.05em" }}>
+              <h3
+                className="font-display"
+                style={{ fontSize: 24, marginBottom: 20 }}
+              >
                 EDIT PROFILE
               </h3>
-
-              {/* Display name */}
-              <label style={{ fontSize: 12, color: "var(--text-secondary)", fontWeight: 600, display: "block", marginBottom: 6 }}>
-                Display name
+ 
+              {/* Username */}
+              <label style={{ fontSize: 11, color: "var(--text-secondary)", fontWeight: 700 }}>
+                USERNAME
               </label>
               <input
                 type="text"
                 value={editName}
                 onChange={(e) => setEditName(e.target.value)}
+                placeholder="e.g. RoarFan99"
                 style={{
-                  width: "100%", height: 48, borderRadius: 14,
-                  background: "rgba(0,0,0,0.5)", border: "1px solid rgba(255,255,255,0.1)",
-                  padding: "0 14px", color: "white", fontSize: 15, marginBottom: 16, outline: "none",
-                  boxSizing: "border-box",
+                  width: "100%", height: 40, borderRadius: 10,
+                  background: "var(--bg-tertiary)", border: "1px solid var(--border)",
+                  padding: "0 12px", color: "white", fontSize: 14,
+                  marginTop: 6, marginBottom: 16, outline: "none",
                 }}
               />
-
-              {/* Favourite player */}
-              <label style={{ fontSize: 12, color: "var(--text-secondary)", fontWeight: 600, display: "block", marginBottom: 6 }}>
-                Favourite player
+ 
+              {/* Display Name */}
+              <label style={{ fontSize: 11, color: "var(--text-secondary)", fontWeight: 700 }}>
+                DISPLAY NAME
               </label>
               <input
                 type="text"
-                value={editFavPlayer}
-                onChange={(e) => setEditFavPlayer(e.target.value)}
-                placeholder="e.g. Rohit Sharma"
+                value={editDisplayName}
+                onChange={(e) => setEditDisplayName(e.target.value)}
+                placeholder="Your full name (optional)"
                 style={{
-                  width: "100%", height: 48, borderRadius: 14,
-                  background: "rgba(0,0,0,0.5)", border: "1px solid rgba(255,255,255,0.1)",
-                  padding: "0 14px", color: "white", fontSize: 15, marginBottom: 16, outline: "none",
-                  boxSizing: "border-box",
+                  width: "100%", height: 40, borderRadius: 10,
+                  background: "var(--bg-tertiary)", border: "1px solid var(--border)",
+                  padding: "0 12px", color: "white", fontSize: 14,
+                  marginTop: 6, marginBottom: 16, outline: "none",
                 }}
               />
-
-              {/* About me */}
-              <label style={{ fontSize: 12, color: "var(--text-secondary)", fontWeight: 600, display: "block", marginBottom: 6 }}>
-                About me (140 chars)
+ 
+              {/* Favourite Player */}
+              <label style={{ fontSize: 11, color: "var(--text-secondary)", fontWeight: 700 }}>
+                FAVOURITE PLAYER
+              </label>
+              <input
+                type="text"
+                value={editFavouritePlayer}
+                onChange={(e) => setEditFavouritePlayer(e.target.value)}
+                placeholder="e.g. Virat Kohli"
+                style={{
+                  width: "100%", height: 40, borderRadius: 10,
+                  background: "var(--bg-tertiary)", border: "1px solid var(--border)",
+                  padding: "0 12px", color: "white", fontSize: 14,
+                  marginTop: 6, marginBottom: 16, outline: "none",
+                }}
+              />
+ 
+              {/* About Me */}
+              <label style={{ fontSize: 11, color: "var(--text-secondary)", fontWeight: 700 }}>
+                ABOUT ME
               </label>
               <textarea
-                value={editAbout}
-                onChange={(e) => setEditAbout(e.target.value.slice(0, 140))}
-                rows={4}
+                value={editAboutMe}
+                onChange={(e) => setEditAboutMe(e.target.value)}
+                placeholder="Tell other fans who you are... (max 300 chars)"
+                maxLength={300}
+                rows={3}
                 style={{
-                  width: "100%", borderRadius: 14,
-                  background: "rgba(0,0,0,0.5)", border: "1px solid rgba(255,255,255,0.1)",
-                  padding: "12px 14px", color: "white", fontSize: 14, marginBottom: 16,
-                  outline: "none", resize: "vertical", fontFamily: "inherit", lineHeight: 1.5,
-                  boxSizing: "border-box",
+                  width: "100%", borderRadius: 10,
+                  background: "var(--bg-tertiary)", border: "1px solid var(--border)",
+                  padding: "10px 12px", color: "white", fontSize: 14,
+                  marginTop: 6, marginBottom: 4, outline: "none",
+                  resize: "none", fontFamily: "inherit",
                 }}
               />
-
-              {/* Show prediction history checkbox */}
-              <label style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 24, cursor: "pointer" }}>
-                <input
-                  type="checkbox"
-                  checked={editShowPredHistory}
-                  onChange={(e) => setEditShowPredHistory(e.target.checked)}
-                  style={{ width: 18, height: 18, accentColor: "var(--accent-magenta)", cursor: "pointer", flexShrink: 0 }}
-                />
-                <span style={{ fontSize: 13, color: "var(--text-primary)", fontWeight: 500 }}>
-                  Show prediction history to other fans
-                </span>
-              </label>
-
-              {/* SAVE */}
-              <motion.button
-                whileTap={{ scale: 0.97 }}
-                className="btn-gradient"
-                onClick={async () => {
-                  try {
-                    await axios.patch("/api/roar/profile", {
-                      username: editName,
-                      favPlayer: editFavPlayer,
-                      about: editAbout,
-                      showPredHistory: editShowPredHistory,
-                    });
-                    setEditOpen(false);
-                    onToast("Profile updated successfully");
-                  } catch (err) {
-                    console.error(err);
-                    onToast("Failed to update profile");
-                  }
-                }}
-                style={{
-                  width: "100%", padding: "16px 0", borderRadius: 999,
-                  fontSize: 16, fontWeight: 800, border: "none", cursor: "pointer",
-                  letterSpacing: "0.06em",
-                }}
-              >
-                SAVE
-              </motion.button>
+              <div style={{ fontSize: 11, color: "var(--text-muted)", textAlign: "right", marginBottom: 16 }}>
+                {editAboutMe.length}/300
+              </div>
+ 
+              {/* Buttons */}
+              <div style={{ display: "flex", gap: 10 }}>
+                <button
+                  onClick={() => setEditOpen(false)}
+                  className="btn-pill"
+                  style={{ flex: 1, padding: "10px 0" }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={async () => {
+                    try {
+                      await axios.patch("/api/roar/profile", {
+                        username: editName,
+                        displayName: editDisplayName,
+                        favouritePlayer: editFavouritePlayer,
+                        aboutMe: editAboutMe,
+                      });
+                      // Refresh profileData so the page shows updated values
+                      const res = await axios.get("/api/roar/profile");
+                      if (res.data?.success) {
+                        setProfileData(res.data);
+                      }
+                      setEditOpen(false);
+                      onToast("Profile updated! 🎉");
+                    } catch (err: any) {
+                      console.error(err);
+                      const msg =
+                        err.response?.data?.fields
+                          ? Object.values(err.response.data.fields).join(", ")
+                          : "Failed to update profile";
+                      onToast(msg as string);
+                    }
+                  }}
+                  className="btn-gradient"
+                  style={{
+                    flex: 1, padding: "10px 0",
+                    border: "none", borderRadius: 10, cursor: "pointer",
+                  }}
+                >
+                  Save
+                </button>
+              </div>
             </motion.div>
           </motion.div>
         )}
@@ -7244,30 +7247,16 @@ export default function ROARApp() {
   const handlePost = useCallback(
     async (payload: any) => {
       try {
-        const postType = ["hot_take", "prediction", "debate", "memory","post"].includes(payload.type)
-          ? payload.type
-          : "hot_take";
         const res = await axios.post("/api/roar/posts", {
-          type: postType,
-          text: payload.type === "debate"
-            ? `${payload.sideA} VS ${payload.sideB}`
-            : payload.text,
-          sideA: payload.sideA,
-          sideB: payload.sideB,
-          memCtx: payload.memCtx,
+          type: payload.type === "hot_take" ? "hot_take" : "prediction",
+          text: payload.text,
           sport: payload.sport || "cricket",
           matchId: payload.match,
           confidence: payload.confidence,
           audience: payload.audience,
         });
         if (res.data?.success) {
-          const toastMap: Record<string, string> = {
-            hot_take: "🔥 Hot Take is live · 47 fans may see it",
-            prediction: "📊 Prediction posted · Let's see if you're right",
-            debate: "⚡ Debate started · Get the fans talking",
-            memory: "🕰 Memory shared · OG fans will feel this",
-          };
-          showToast(toastMap[postType] || "🔥 Your take is live");
+          showToast("🔥 Your take is live · 47 fans may see it");
           fetchPosts();
         }
       } catch (err) {
@@ -7616,7 +7605,18 @@ export default function ROARApp() {
           </div>
         )}
 
-        
+        {/* Bottom nav — Flex child sitting cleanly below the content area */}
+        {onboarded && !composeOpen && (
+          <BottomNav
+            activeTab={isRoom ? "discuss" : activeTab}
+            onTabChange={handleTab}
+            onCompose={() => openCompose()}
+            onQuickCompose={(t) => openCompose(t)}
+            unreadCount={unreadCount}
+            matchLive
+            badgeNearUnlock
+          />
+        )}
 
         {/* Post details overlay */}
         {onboarded && selectedPost && (

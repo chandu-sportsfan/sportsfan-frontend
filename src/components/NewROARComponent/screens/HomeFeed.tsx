@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import AvatarWithBadge from "../components/AvatarWithBadge";
+import NewHomePage from "../../NewHomePageComponent/newhomepage";
 import { SplitBar, FilterPills } from "../components/shared";
 import { FEED_POSTS, FEED_FILTERS, BADGE_LABELS, RADIAL_OPTS, CURRENT_USER } from "../constants";
 import { fmt, clamp } from "../utils";
@@ -253,6 +254,8 @@ export default function HomeFeed({
               </motion.div>
             );
           })}
+
+        <NewHomePage />
 
         {/* Feed posts */}
         {filtered.map((item, i) => {

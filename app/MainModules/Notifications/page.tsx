@@ -1,5 +1,5 @@
 "use client";
-
+import { useRoarNotifications } from "@/context/RoarNotificationsContext";
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
@@ -608,7 +608,7 @@ function NotificationCard(props: CardProps) {
 export default function NotificationsPage() {
   const { user } = useAuth();
   const router = useRouter();
-
+  const { roarNotifications, markRoarRead, markAllRoarRead, roarUnreadCount } = useRoarNotifications();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "unread" | "audio">("all");
@@ -817,8 +817,68 @@ export default function NotificationsPage() {
       </div>
 
       {/* ── Content ── */}
-      <div className="mx-auto max-w-6xl px-4 pt-4 space-y-3">
-        {loading ? (
+<div className="mx-auto max-w-6xl px-4 pt-4 space-y-3">
+
+  {roarNotifications.length > 0 && (
+    <div className="mb-2">
+      <div className="flex items-center justify-between mb-3 px-1">
+        <div className="flex items-center gap-2">
+          <span className="text-[11px] font-bold tracking-[0.12em] uppercase text-[#e91e8c]">ROAR Alerts</span>
+          {roarUnreadCount > 0 && (
+            <span className="rounded-full bg-[#e91e8c] px-2 py-0.5 text-[10px] font-bold text-white leading-none">
+              {roarUnreadCount} new
+            </span>
+          )}
+        </div>
+        {roarUnreadCount > 0 && (
+          <button onClick={markAllRoarRead} className="text-xs text-[#555] hover:text-[#aaa] transition-colors">
+            Mark all read
+          </button>
+        )}
+      </div>
+      <div className="space-y-2">
+        {roarNotifications.map((n) => {
+          const TYPE_COLORS: Record<string, string> = {
+            PREDICTION_OK: "#22c55e", PREDICTION_FAIL: "#ef4444",
+            CHALLENGE: "#e91e8c", HEATING_UP: "#f97316",
+            MATCH_LIVE: "#22c55e", BADGE: "#eab308",
+            RIVAL: "#e91e8c", FAN_OF_WEEK: "#eab308", WEEKLY: "#9333ea",
+          };
+          const color = TYPE_COLORS[n.type] || "#e91e8c";
+          return (
+            <div
+              key={n.id}
+              onClick={() => markRoarRead(n.id)}
+              className="relative cursor-pointer rounded-2xl border transition-all duration-300"
+              style={{
+                borderColor: n.read ? "rgba(255,255,255,0.08)" : `${color}40`,
+                background: n.read ? "#111116" : `linear-gradient(135deg, ${color}0d 0%, #0a0a12 100%)`,
+                borderLeft: `3px solid ${n.read ? "rgba(255,255,255,0.08)" : color}`,
+                padding: "14px 16px",
+              }}
+            >
+              {!n.read && (
+                <span className="absolute right-3 top-3 flex h-2.5 w-2.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-60" style={{ background: color }} />
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5" style={{ background: color }} />
+                </span>
+              )}
+              <span className="text-[9px] font-bold tracking-widest uppercase px-2 py-0.5 rounded-full" style={{ color, background: `${color}20` }}>
+                {n.type.replace(/_/g, " ")}
+              </span>
+              <p className="mt-2 text-sm font-semibold text-white leading-snug">{n.title}</p>
+              <p className="mt-0.5 text-xs text-[#888] leading-snug">{n.subtitle}</p>
+              {n.cta && <p className="mt-1.5 text-xs font-bold" style={{ color }}>{n.cta} →</p>}
+              <p className="mt-1 text-[10px] text-[#444]">{n.time}</p>
+            </div>
+          );
+        })}
+      </div>
+      <div className="my-5 border-t border-white/8" />
+    </div>
+  )}
+
+  {loading ? (
           Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)
         ) : displayed.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 text-center select-none">

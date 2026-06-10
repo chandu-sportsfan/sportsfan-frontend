@@ -8,8 +8,8 @@ import { fmt, clamp } from "../utils";
 import type { FeedPost, Room } from "../types";
 
 interface Props {
-  unreadCount: number;
-  onNavigateAlerts: () => void;
+  // ── unreadCount and onNavigateAlerts REMOVED ──
+  // Notifications now live in the global bell (Header). No separate ROAR bell needed.
   onJoinRoom: (room?: any) => void;
   onLeaderboard: () => void;
   onFanProfile: () => void;
@@ -27,8 +27,6 @@ interface Props {
 }
 
 export default function HomeFeed({
-  unreadCount,
-  onNavigateAlerts,
   onJoinRoom,
   onLeaderboard,
   onFanProfile,
@@ -147,20 +145,8 @@ export default function HomeFeed({
           <div style={{ height: "2px", width: "24px", borderRadius: "999px", marginTop: "3px", background: "#e5003d" }} />
         </div>
 
-        {/* Notif, Profile, and Quick-compose pills — aligned to the right */}
+        {/* Profile avatar + Quick-compose pills — gold bell REMOVED */}
         <div style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
-          <motion.button
-            whileTap={{ scale: 0.93 }}
-            onClick={onNavigateAlerts}
-            style={{ position: "relative", width: 38, height: 38, borderRadius: "50%", background: "rgba(255,255,255,0.06)", border: "none", cursor: "pointer", fontSize: 16, display: "flex", alignItems: "center", justifyContent: "center" }}
-          >
-            🔔
-            {unreadCount > 0 && (
-              <span style={{ position: "absolute", top: -2, right: -2, minWidth: 16, height: 16, borderRadius: 999, background: "var(--accent-magenta)", fontSize: 9, display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontWeight: 700 }}>
-                {unreadCount}
-              </span>
-            )}
-          </motion.button>
           <motion.button whileTap={{ scale: 0.93 }} onClick={onFanProfile} style={{ background: "none", border: "none", cursor: "pointer", marginRight: 4 }}>
             <AvatarWithBadge username={CURRENT_USER.username} badge={userBadge} size="sm" />
           </motion.button>
@@ -203,6 +189,8 @@ export default function HomeFeed({
       </div>
 
       <div style={{ padding: "0 16px", display: "flex", flexDirection: "column", gap: 14 }}>
+        <NewHomePage sportFilter={filter === "Cricket" ? "cricket" : filter === "Football" ? "football" : undefined} />
+
         {/* Live room banners */}
         {rooms
           .filter((r) => r.roomId !== "mock-cricket" && r.roomId !== "mock-football")
@@ -254,8 +242,6 @@ export default function HomeFeed({
               </motion.div>
             );
           })}
-
-        <NewHomePage />
 
         {/* Feed posts */}
         {filtered.map((item, i) => {

@@ -10,6 +10,7 @@ interface Props {
   onToast: (m: string) => void;
   roomId?: string;
   roomName?: string;
+  onPostClick?: (post: any) => void;
 }
 
 const TABS = ["Debate", "Predictions", "Hot Takes", "Post-Match 🔒"];
@@ -26,7 +27,7 @@ const MODE_LABEL: Record<string, string> = {
   hottake: "⚡ Bold Take",
 };
 
-export default function DiscussionRoom({ onBack, onToast, roomId, roomName }: Props) {
+export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPostClick }: Props) {
   const [tab, setTab] = useState("Debate");
   const [posts, setPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -75,6 +76,7 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName }: Pr
             text: m.text,
             fireCount: m.fireCount || 0,
             nochanceCount: m.noChanceCount || 0,
+            heartCount: m.heartCount || 0,
             timeAgo: new Date(m.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
             type: m.type,
           }));
@@ -99,7 +101,7 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName }: Pr
       const res = await axios.post(`/api/roar/rooms/${roomId}/messages`, { text, type: mode });
       if (res.data?.success) {
         const m = res.data.message;
-        setPosts((p) => [{ id: m.msgId, fan: { username: m.authorUsername, badge: m.authorBadge }, text: m.text, fireCount: 0, nochanceCount: 0, timeAgo: "now", type: m.type }, ...p]);
+        setPosts((p) => [{ id: m.msgId, fan: { username: m.authorUsername, badge: m.authorBadge }, text: m.text, fireCount: 0, nochanceCount: 0, heartCount: 0, timeAgo: "now", type: m.type }, ...p]);
         setInput("");
         setComposerPre("");
         setTimeout(() => listRef.current?.scrollTo({ top: 0, behavior: "smooth" }), 50);
@@ -110,7 +112,7 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName }: Pr
     }
   };
 
-  const react = async (id: string, reaction: "fire" | "noChance") => {
+  const react = async (id: string, reaction: "fire" | "noChance" | "heart") => {
     if (!roomId) return;
     try {
       await axios.post(`/api/roar/rooms/${roomId}/messages/${id}/react`, { reaction });
@@ -119,6 +121,8 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName }: Pr
           x.id === id
             ? reaction === "fire"
               ? { ...x, fireCount: x.fireCount + 1 }
+              : reaction === "heart"
+              ? { ...x, heartCount: (x.heartCount || 0) + 1 }
               : { ...x, nochanceCount: x.nochanceCount + 1 }
             : x,
         ),
@@ -207,7 +211,26 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName }: Pr
                 const border = p.type === "prediction" ? "1px solid rgba(255,215,0,0.18)" : p.type === "hottake" ? "1px solid rgba(239,68,68,0.18)" : undefined;
 
                 return (
-                  <motion.div key={p.id} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22 }} className="glass-card" style={{ padding: 12, background: bg, border }}>
+                  <motion.div
+                    key={p.id}
+                    initial={{ opacity: 0, y: 16 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.22 }}
+                    className="glass-card"
+                    style={{ padding: 12, background: bg, border, cursor: "pointer" }}
+                    onClick={() => {
+                      if (onPostClick) {
+                        onPostClick({
+                          id: p.id,
+                          text: p.text,
+                          fan: p.fan,
+                          timeAgo: p.timeAgo,
+                          type: p.type || "chat",
+                          isDbPost: true,
+                        });
+                      }
+                    }}
+                  >
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                         <AvatarWithBadge username={p.fan.username} badge={p.fan.badge} size="sm" />
@@ -216,7 +239,7 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName }: Pr
                           <p style={{ fontSize: 10, color: "var(--text-muted)" }}>{p.timeAgo}</p>
                         </div>
                       </div>
-                      {p.type !== "chat" && (
+                      {p.type !== "chat" && p.type && (
                         <span style={{ fontSize: 9, fontWeight: 800, padding: "2px 6px", borderRadius: 4, background: p.type === "prediction" ? "rgba(255,215,0,0.15)" : "rgba(239,68,68,0.15)", color: p.type === "prediction" ? "#fbbf24" : "#f87171", border: p.type === "prediction" ? "1px solid rgba(255,215,0,0.25)" : "1px solid rgba(239,68,68,0.25)" }}>
                           {p.type === "prediction" ? "PREDICTION" : "HOT TAKE"}
                         </span>
@@ -224,10 +247,13 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName }: Pr
                     </div>
                     <p style={{ fontSize: 14, lineHeight: 1.4, marginTop: 8, color: MODE_COLOR[p.type] || "white" }}>{p.text}</p>
                     <div style={{ display: "flex", gap: 8, marginTop: 10, justifyContent: "flex-end" }}>
-                      <motion.button whileTap={{ scale: 0.9 }} onClick={() => react(p.id, "fire")} style={{ padding: "6px 14px", fontSize: 12, fontWeight: 600, background: "rgba(255,255,255,0.05)", borderRadius: 999, border: "1px solid rgba(255,255,255,0.08)", color: "var(--text-primary)", cursor: "pointer" }}>
+                      <motion.button whileTap={{ scale: 0.9 }} onClick={(e) => { e.stopPropagation(); react(p.id, "fire"); }} style={{ padding: "6px 14px", fontSize: 12, fontWeight: 600, background: "rgba(255,255,255,0.05)", borderRadius: 999, border: "1px solid rgba(255,255,255,0.08)", color: "var(--text-primary)", cursor: "pointer" }}>
                         🔥 {p.fireCount}
                       </motion.button>
-                      <motion.button whileTap={{ scale: 0.9 }} onClick={() => react(p.id, "noChance")} style={{ padding: "6px 14px", fontSize: 12, fontWeight: 600, background: "rgba(255,255,255,0.05)", borderRadius: 999, border: "1px solid rgba(255,255,255,0.08)", color: "var(--text-primary)", cursor: "pointer" }}>
+                      <motion.button whileTap={{ scale: 0.9 }} onClick={(e) => { e.stopPropagation(); react(p.id, "heart"); }} style={{ padding: "6px 14px", fontSize: 12, fontWeight: 600, background: "rgba(255,255,255,0.05)", borderRadius: 999, border: "1px solid rgba(255,255,255,0.08)", color: "var(--text-primary)", cursor: "pointer" }}>
+                        ❤️ {p.heartCount || 0}
+                      </motion.button>
+                      <motion.button whileTap={{ scale: 0.9 }} onClick={(e) => { e.stopPropagation(); react(p.id, "noChance"); }} style={{ padding: "6px 14px", fontSize: 12, fontWeight: 600, background: "rgba(255,255,255,0.05)", borderRadius: 999, border: "1px solid rgba(255,255,255,0.08)", color: "var(--text-primary)", cursor: "pointer" }}>
                         No chance {p.nochanceCount}
                       </motion.button>
                     </div>

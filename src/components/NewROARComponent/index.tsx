@@ -375,6 +375,7 @@ export default function ROARApp() {
                     roomName={selectedRoom?.name}
                     onBack={() => { setOverlay(null); setActiveTab("home"); }}
                     onToast={showToast}
+                    onPostClick={(post) => setSelectedPost(post)}
                   />
                 </motion.div>
               ) : (

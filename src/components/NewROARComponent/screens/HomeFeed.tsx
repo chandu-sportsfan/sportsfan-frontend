@@ -5,7 +5,7 @@ import NewHomePage from "../../NewHomePageComponent/newhomepage";
 import { SplitBar, FilterPills } from "../components/shared";
 import { FEED_POSTS, FEED_FILTERS, BADGE_LABELS, RADIAL_OPTS, CURRENT_USER } from "../constants";
 import { fmt, clamp } from "../utils";
-import { Heart, Share2 } from "lucide-react";
+import { Heart, Share2, Flame, BarChart2, Zap, History, PenTool } from "lucide-react";
 import type { FeedPost, Room } from "../types";
 
 interface Props {
@@ -146,36 +146,79 @@ export default function HomeFeed({
         style={{ position: "sticky", top: 0, zIndex: 20, margin: "8px 12px 0", padding: "10px 16px", display: "flex", justifyContent: "space-between", alignItems: "center", borderRadius: 20 }}
       >
         <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", flexShrink: 0 }}>
-          <h1 className="logotype" style={{ fontSize: 26, margin: 0, lineHeight: 1 }}>ROAR</h1>
-          <div style={{ height: "2px", width: "24px", borderRadius: "999px", marginTop: "3px", background: "#e5003d" }} />
+          <h1 className="logotype" style={{ fontSize: 34, margin: 0, lineHeight: 1 }}>ROAR</h1>
+          <div style={{ height: "2px", width: "32px", borderRadius: "999px", marginTop: "3px", background: "#e5003d" }} />
         </div>
 
-        {/* Profile avatar + Quick-compose pills — gold bell REMOVED */}
+        {/* Quick-compose pills — profile button and gold bell REMOVED */}
         <div style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
-          <motion.button whileTap={{ scale: 0.93 }} onClick={onFanProfile} style={{ background: "none", border: "none", cursor: "pointer", marginRight: 4 }}>
-            <AvatarWithBadge username={CURRENT_USER.username} badge={userBadge} size="sm" />
-          </motion.button>
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            {RADIAL_OPTS.map((q) => {
+              const styles: Record<string, { border: string; bg: string; icon: React.ReactNode }> = {
+                hot_take: {
+                  border: "1px solid rgba(255, 74, 125, 0.35)",
+                  bg: "linear-gradient(145deg, rgba(255, 74, 125, 0.15), rgba(255, 74, 125, 0.05))",
+                  icon: <Flame size={16} color="#ff4a7d" fill="#ff4a7d" />,
+                },
+                prediction: {
+                  border: "1px solid rgba(255, 176, 32, 0.35)",
+                  bg: "linear-gradient(145deg, rgba(255, 176, 32, 0.15), rgba(255, 176, 32, 0.05))",
+                  icon: <BarChart2 size={16} color="#ffb020" />,
+                },
+                debate: {
+                  border: "1px solid rgba(0, 229, 255, 0.35)",
+                  bg: "linear-gradient(145deg, rgba(0, 229, 255, 0.15), rgba(0, 229, 255, 0.05))",
+                  icon: <Zap size={16} color="#00e5ff" fill="#00e5ff" />,
+                },
+                memory: {
+                  border: "1px solid rgba(168, 85, 247, 0.35)",
+                  bg: "linear-gradient(145deg, rgba(168, 85, 247, 0.15), rgba(168, 85, 247, 0.05))",
+                  icon: <History size={16} color="#a855f7" />,
+                },
+                post: {
+                  border: "1px solid rgba(34, 197, 94, 0.35)",
+                  bg: "linear-gradient(145deg, rgba(34, 197, 94, 0.15), rgba(34, 197, 94, 0.05))",
+                  icon: <PenTool size={16} color="#22c55e" />,
+                },
+              };
 
-          <div style={{ display: "flex", gap: 5, alignItems: "center" }}>
-            {RADIAL_OPTS.map((q) => (
-              <motion.button
-                key={q.id}
-                whileTap={{ scale: 0.9 }}
-                whileHover={{ scale: 1.05 }}
-                onClick={() => onQuickCompose && onQuickCompose(q.id)}
-                style={{
-                  display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-                  gap: 2, padding: "6px 7px", borderRadius: 12,
-                  background: "linear-gradient(145deg, rgba(233,30,140,0.18), rgba(255,107,53,0.10))",
-                  border: "1px solid rgba(233,30,140,0.35)", cursor: "pointer", flexShrink: 1, minWidth: 0,
-                  boxShadow: "0 2px 10px rgba(233,30,140,0.2), inset 0 1px 0 rgba(255,255,255,0.07)",
-                  backdropFilter: "blur(8px)", transition: "box-shadow 0.2s",
-                }}
-              >
-                <span style={{ fontSize: 14, lineHeight: 1 }}>{q.emoji}</span>
-                <span style={{ fontSize: 8.5, fontWeight: 700, color: "rgba(255,255,255,0.85)", whiteSpace: "nowrap", lineHeight: 1, letterSpacing: "0.03em" }}>{q.label}</span>
-              </motion.button>
-            ))}
+              const styleCfg = styles[q.id] || {
+                border: "1px solid rgba(255,255,255,0.1)",
+                bg: "rgba(255,255,255,0.03)",
+                icon: <span>{q.emoji}</span>,
+              };
+
+              return (
+                <motion.button
+                  key={q.id}
+                  whileTap={{ scale: 0.93 }}
+                  whileHover={{ scale: 1.05 }}
+                  onClick={() => onQuickCompose && onQuickCompose(q.id)}
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 4,
+                    padding: "8px 12px",
+                    borderRadius: 14,
+                    background: styleCfg.bg,
+                    border: styleCfg.border,
+                    cursor: "pointer",
+                    flexShrink: 1,
+                    minWidth: 0,
+                    boxShadow: "0 4px 15px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.05)",
+                    backdropFilter: "blur(8px)",
+                    transition: "all 0.2s",
+                  }}
+                >
+                  {styleCfg.icon}
+                  <span style={{ fontSize: 9.5, fontWeight: 700, color: "rgba(255,255,255,0.9)", whiteSpace: "nowrap", lineHeight: 1, letterSpacing: "0.03em" }}>
+                    {q.label}
+                  </span>
+                </motion.button>
+              );
+            })}
           </div>
         </div>
       </div>

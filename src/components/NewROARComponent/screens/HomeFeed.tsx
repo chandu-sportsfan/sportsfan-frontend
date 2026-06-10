@@ -5,6 +5,7 @@ import NewHomePage from "../../NewHomePageComponent/newhomepage";
 import { SplitBar, FilterPills } from "../components/shared";
 import { FEED_POSTS, FEED_FILTERS, BADGE_LABELS, RADIAL_OPTS, CURRENT_USER } from "../constants";
 import { fmt, clamp } from "../utils";
+import { Heart, Share2 } from "lucide-react";
 import type { FeedPost, Room } from "../types";
 
 interface Props {
@@ -22,6 +23,7 @@ interface Props {
   dbPosts?: any[];
   onPostClick?: (post: any) => void;
   onVote?: (id: string, vote: "agree" | "disagree" | null) => void;
+  onLike?: (id: string) => void;
   userSports?: string[];
   onQuickCompose?: (t: string) => void;
 }
@@ -39,6 +41,7 @@ export default function HomeFeed({
   dbPosts = [],
   onPostClick,
   onVote,
+  onLike,
   userSports = [],
   onQuickCompose,
 }: Props) {
@@ -117,6 +120,8 @@ export default function HomeFeed({
       sideB: p.sideB,
       memCtx: p.memCtx,
       mediaUrls: p.mediaUrls,
+      likeCount: p.likeCount ?? 0,
+      userLiked: p.userLiked ?? false,
     };
   });
 
@@ -366,6 +371,54 @@ export default function HomeFeed({
                   <div>
                     <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>{item.samePredictionCount} fans made the same prediction</p>
                     {(item.counterCount ?? 0) > 0 && <p style={{ fontSize: 12, color: "var(--accent-magenta)", marginTop: 4 }}>{item.counterCount} fans think otherwise →</p>}
+                  </div>
+                )}
+
+                {item.type === "post" && (
+                  <div style={{ display: "flex", gap: 16, marginTop: 12, borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 12 }}>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (onLike) onLike(item.id);
+                      }}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 6,
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
+                        color: item.userLiked ? "#ff4a7d" : "#9494ad",
+                        fontSize: 13,
+                        fontWeight: 600,
+                        transition: "color 0.2s",
+                      }}
+                    >
+                      <Heart size={16} fill={item.userLiked ? "#ff4a7d" : "none"} />
+                      <span>{item.likeCount || 0}</span>
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigator.clipboard.writeText(window.location.origin + "/MainModules/ROAR?post=" + item.id);
+                        onToast("Link copied to clipboard!");
+                      }}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 6,
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
+                        color: "#9494ad",
+                        fontSize: 13,
+                        fontWeight: 600,
+                        transition: "color 0.2s",
+                      }}
+                    >
+                      <Share2 size={16} />
+                      <span>Share</span>
+                    </button>
                   </div>
                 )}
               </motion.div>

@@ -209,6 +209,18 @@ export default function ROARApp() {
     [fetchPosts],
   );
 
+  const handleLike = useCallback(
+    async (postId: string) => {
+      try {
+        await axios.post(`/api/roar/posts/${postId}/like`);
+        await fetchPosts();
+      } catch (err) {
+        console.error("Failed to submit like:", err);
+      }
+    },
+    [fetchPosts],
+  );
+
   const handlePost = useCallback(
     async (payload: any) => {
       try {
@@ -365,6 +377,7 @@ export default function ROARApp() {
                       dbPosts={dbPosts}
                       onPostClick={(post) => setSelectedPost(post)}
                       onVote={handleVote}
+                      onLike={handleLike}
                       userSports={userSports}
                       onQuickCompose={(t) => openCompose(t)}
                     />

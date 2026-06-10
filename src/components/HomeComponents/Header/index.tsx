@@ -30,6 +30,7 @@ import { useLeaderboard } from "@/context/LeaderboardContext";
 import { useAuth } from "@/context/AuthContext";
 import { useChats } from "@/hooks/useChat";
 import LogoutButton from "../LogoutButton";
+import axios from "axios";
 import { useRoarNotifications } from "@/context/RoarNotificationsContext";
 
 // ── Tournament badge config ───────────────────────────────────────────────────
@@ -234,6 +235,28 @@ export default function Header() {
     [chats]
   );
   const { roarUnreadCount } = useRoarNotifications();
+  const [mainUnreadCount, setMainUnreadCount] = useState(0);
+
+  useEffect(() => {
+    if (!user?.email) return;
+    const fetchMainUnread = async () => {
+      try {
+        const res = await axios.get<{ success: boolean; unreadCount: number }>("/api/notifications", {
+          params: { email: user.email, countOnly: true },
+        });
+        if (res.data?.success) {
+          setMainUnreadCount(res.data.unreadCount || 0);
+        }
+      } catch (err) {
+        console.error("Failed to fetch main unread count:", err);
+      }
+    };
+    fetchMainUnread();
+    const interval = setInterval(fetchMainUnread, 30000);
+    return () => clearInterval(interval);
+  }, [user?.email]);
+
+  const totalUnreadNotifications = mainUnreadCount + roarUnreadCount;
 
   const [showDropdown, setShowDropdown] = useState(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
@@ -560,7 +583,7 @@ export default function Header() {
           <ChatButton unreadCount={totalUnreadChats} />
           {/* PointsPill only re-renders when points/loading changes */}
           <PointsPill points={currentUserPoints} loading={pointsLoading} />
-          <BellButton unreadCount={roarUnreadCount} />
+          <BellButton unreadCount={totalUnreadNotifications} />
           <div className="relative" ref={profileDropdownRef}>
             <button
               onClick={() => setShowProfileDropdown((v) => !v)}
@@ -661,7 +684,7 @@ export default function Header() {
             </span>
           )}
         </div>
-        <BellButton unreadCount={roarUnreadCount} />
+        <BellButton unreadCount={totalUnreadNotifications} />
         <div className="relative" ref={profileDropdownRef}>
           <button
             onClick={() => setShowProfileDropdown((v) => !v)}
@@ -744,7 +767,7 @@ export default function Header() {
           <ChatButton unreadCount={totalUnreadChats} />
           {/* Mobile compact points pill */}
           <PointsPill points={currentUserPoints} loading={pointsLoading} small />
-          <BellButton unreadCount={roarUnreadCount} />
+          <BellButton unreadCount={totalUnreadNotifications} />
           <div className="relative" ref={mobileProfileDropdownRef}>
             <button onClick={() => setShowProfileDropdown((v) => !v)}>
               <Avatar src="" name={displayName} size={36} ring />

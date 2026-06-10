@@ -203,7 +203,7 @@ export default function HomeFeed({
       </div>
 
       <div style={{ padding: "0 16px", display: "flex", flexDirection: "column", gap: 14 }}>
-        <NewHomePage />
+        <NewHomePage sportFilter={filter === "Cricket" ? "cricket" : filter === "Football" ? "football" : undefined} />
 
         {/* Live room banners */}
         {rooms

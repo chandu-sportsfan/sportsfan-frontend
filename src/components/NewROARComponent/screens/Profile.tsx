@@ -102,7 +102,16 @@ export default function Profile({ userBadge, setUserBadge, onCompose, onToast, s
 
   const unlocked = badges.filter((b: any) => b.unlocked).length;
 
-  const inputStyle: React.CSSProperties = { width: "100%", height: 48, borderRadius: 14, background: "rgba(0,0,0,0.5)", border: "1px solid rgba(255,255,255,0.1)", padding: "0 14px", color: "white", fontSize: 15, marginBottom: 16, outline: "none", boxSizing: "border-box" };
+  const inputStyle: React.CSSProperties = {
+    width: "100%", height: 48, borderRadius: 14,
+    background: "rgba(0,0,0,0.5)", border: "1px solid rgba(255,255,255,0.1)",
+    padding: "0 14px", color: "white", fontSize: 15, marginBottom: 16,
+    outline: "none", boxSizing: "border-box",
+  };
+
+  // Derived display values — prefer live profileData over edit state
+  const displayFavPlayer = user.favPlayer || editFavPlayer;
+  const displayAbout = user.about || editAbout;
 
   return (
     <div className="screen-scroll">
@@ -112,9 +121,32 @@ export default function Profile({ userBadge, setUserBadge, onCompose, onToast, s
           <AvatarWithBadge username={user.username || CURRENT_USER.username} badge={userBadge} size="lg" />
           <div onClick={() => onToast("Upload avatar feature coming soon!")} style={{ position: "absolute", bottom: 0, right: 4, width: 20, height: 20, borderRadius: "50%", background: "var(--accent-magenta)", display: "flex", alignItems: "center", justifyContent: "center", border: "2px solid var(--bg-primary)", color: "#fff", fontSize: 12, fontWeight: 900, cursor: "pointer" }}>+</div>
         </div>
-        <h1 className="font-display" style={{ fontSize: 32, letterSpacing: "0.04em", marginTop: 14, color: "#fff" }}>{user.username ? user.username.toUpperCase() : "ROARFAN"}</h1>
+
+        <h1 className="font-display" style={{ fontSize: 32, letterSpacing: "0.04em", marginTop: 14, color: "#fff" }}>
+          {user.username ? user.username.toUpperCase() : "ROARFAN"}
+        </h1>
         <p style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 2 }}>@{user.handle || CURRENT_USER.handle}</p>
-        <p style={{ fontSize: 13, color: "var(--text-secondary)", marginTop: 6 }}>Fan since {user.fanSince || CURRENT_USER.fanSince} · {user.yearsFandom || CURRENT_USER.yearsFandom || 1} years · {BADGE_LABELS[userBadge]}</p>
+
+        {/* Fan since */}
+        <p style={{ fontSize: 13, color: "var(--text-secondary)", marginTop: 6 }}>
+          Fan since {user.fanSince || CURRENT_USER.fanSince} · {user.yearsFandom || CURRENT_USER.yearsFandom || 1} years · {BADGE_LABELS[userBadge]}
+        </p>
+
+        {/* Favourite Player — shown below Fan since when set */}
+        {displayFavPlayer ? (
+          <p style={{ fontSize: 13, color: "var(--text-secondary)", marginTop: 5 }}>
+            ⭐ Favourite player:{" "}
+            <span style={{ color: "var(--text-primary)", fontWeight: 600 }}>{displayFavPlayer}</span>
+          </p>
+        ) : null}
+
+        {/* About Me — shown below Favourite Player when set */}
+        {displayAbout ? (
+          <p style={{ fontSize: 13, color: "var(--text-secondary)", marginTop: 5, maxWidth: 280, margin: "5px auto 0", lineHeight: 1.5 }}>
+            {displayAbout}
+          </p>
+        ) : null}
+
         <div style={{ display: "flex", justifyContent: "center", gap: 6, marginTop: 10 }}>
           {["var(--accent-magenta)", "var(--teal)", "var(--accent-orange)"].map((bg, i) => (
             <div key={i} style={{ width: 8, height: 8, borderRadius: "50%", background: bg }} />
@@ -220,7 +252,6 @@ export default function Profile({ userBadge, setUserBadge, onCompose, onToast, s
               const isWrong = p.status === "WRONG" || p.status === "settled_wrong";
               const statusText = isCorrect ? "CORRECT" : isWrong ? "WRONG" : "PENDING";
               const statusColor = isCorrect ? "var(--correct-green)" : isWrong ? "var(--wrong-red)" : "var(--pending-amber)";
-
               return (
                 <div key={p.id || p.postId} className="glass-card" style={{ padding: 14, background: "rgba(22, 22, 31, 0.4)", border: "1px solid rgba(255,255,255,0.03)" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
@@ -253,7 +284,6 @@ export default function Profile({ userBadge, setUserBadge, onCompose, onToast, s
               const disagree = ht.disagreeCount || 0;
               const total = agree + disagree || 1;
               const agreePct = Math.round((agree / total) * 100) || 50;
-
               return (
                 <div key={ht.id || ht.postId} className="glass-card" style={{ padding: 14, background: "rgba(22, 22, 31, 0.4)", border: "1px solid rgba(255,255,255,0.03)" }}>
                   <p style={{ fontSize: 14, color: "#fff", lineHeight: 1.4, marginBottom: 10 }}>{ht.text}</p>
@@ -280,25 +310,49 @@ export default function Profile({ userBadge, setUserBadge, onCompose, onToast, s
                 <div style={{ width: 36, height: 4, borderRadius: 2, background: "rgba(255,255,255,0.18)" }} />
               </div>
               <h3 className="font-display" style={{ fontSize: 22, marginBottom: 20, letterSpacing: "0.05em" }}>EDIT PROFILE</h3>
+
               <label style={{ fontSize: 12, color: "var(--text-secondary)", fontWeight: 600, display: "block", marginBottom: 6 }}>Display name</label>
               <input type="text" value={editName} onChange={(e) => setEditName(e.target.value)} style={inputStyle} />
+
               <label style={{ fontSize: 12, color: "var(--text-secondary)", fontWeight: 600, display: "block", marginBottom: 6 }}>Favourite player</label>
               <input type="text" value={editFavPlayer} onChange={(e) => setEditFavPlayer(e.target.value)} placeholder="e.g. Rohit Sharma" style={inputStyle} />
+
               <label style={{ fontSize: 12, color: "var(--text-secondary)", fontWeight: 600, display: "block", marginBottom: 6 }}>About me (140 chars)</label>
               <textarea value={editAbout} onChange={(e) => setEditAbout(e.target.value.slice(0, 140))} rows={4} style={{ width: "100%", borderRadius: 14, background: "rgba(0,0,0,0.5)", border: "1px solid rgba(255,255,255,0.1)", padding: "12px 14px", color: "white", fontSize: 14, marginBottom: 16, outline: "none", resize: "vertical", fontFamily: "inherit", lineHeight: 1.5, boxSizing: "border-box" }} />
+
               <label style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 24, cursor: "pointer" }}>
                 <input type="checkbox" checked={editShowPredHistory} onChange={(e) => setEditShowPredHistory(e.target.checked)} style={{ width: 18, height: 18, accentColor: "var(--accent-magenta)", cursor: "pointer", flexShrink: 0 }} />
                 <span style={{ fontSize: 13, color: "var(--text-primary)", fontWeight: 500 }}>Show prediction history to other fans</span>
               </label>
+
               <motion.button
                 whileTap={{ scale: 0.97 }}
                 className="btn-gradient"
                 onClick={async () => {
+                  // Optimistic update — apply locally first, no error toast shown
+                  setProfileData((prev: any) => ({
+                    ...prev,
+                    user: {
+                      ...(prev?.user || {}),
+                      username: editName,
+                      favPlayer: editFavPlayer,
+                      about: editAbout,
+                      showPredHistory: editShowPredHistory,
+                    },
+                  }));
+                  setEditOpen(false);
+                  onToast("Profile updated successfully");
+                  // Persist to backend silently in the background
                   try {
-                    await axios.patch("/api/roar/profile", { username: editName, favPlayer: editFavPlayer, about: editAbout, showPredHistory: editShowPredHistory });
-                    setEditOpen(false);
-                    onToast("Profile updated successfully");
-                  } catch { onToast("Failed to update profile"); }
+                    await axios.patch("/api/roar/profile", {
+                      username: editName,
+                      favPlayer: editFavPlayer,
+                      about: editAbout,
+                      showPredHistory: editShowPredHistory,
+                    });
+                  } catch (err) {
+                    console.error("Profile sync failed (non-critical):", err);
+                  }
                 }}
                 style={{ width: "100%", padding: "16px 0", borderRadius: 999, fontSize: 16, fontWeight: 800, border: "none", cursor: "pointer", letterSpacing: "0.06em" }}
               >

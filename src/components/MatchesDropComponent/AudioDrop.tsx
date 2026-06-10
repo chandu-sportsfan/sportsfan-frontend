@@ -1277,6 +1277,7 @@ export default function AudioDropCard() {
     const elapsedRef = useRef(0);
     const audioDropRef = useRef<AudioDrop | null>(null);
     const audioReadyToPlayRef = useRef(false);
+    const requestedPointsRef = useRef(false);
 
     useEffect(() => { elapsedRef.current = elapsed; }, [elapsed]);
     useEffect(() => { audioDropRef.current = audioDrop; }, [audioDrop]);
@@ -1334,6 +1335,8 @@ export default function AudioDropCard() {
 
         const totalSecs = drop.durationSeconds || parseDurationToSeconds(duration);
         const pct = totalSecs > 0 ? Math.round((elapsedSecs / totalSecs) * 100) : 0;
+        if (pct >= 90 && requestedPointsRef.current) return;
+        if (pct >= 90) requestedPointsRef.current = true;
 
         try {
             const res = await axios.post("/api/audio-progress", {
@@ -1356,6 +1359,7 @@ export default function AudioDropCard() {
             }
         } catch (err) {
             console.error("[audio-progress] save error:", err);
+            if (pct >= 90) requestedPointsRef.current = false;
         }
     };
 
@@ -1406,6 +1410,7 @@ export default function AudioDropCard() {
 
         // Reset the points-awarded guard for the new track
         hasAwardedPointsRef.current = false;
+        requestedPointsRef.current = false;
 
         audioIdRef.current = target.id;
         const drop = audioFileToAudioDrop(target);
@@ -1466,6 +1471,7 @@ export default function AudioDropCard() {
             hasCountedListen.current = false;
             // Reset points guard on new fetch
             hasAwardedPointsRef.current = false;
+            requestedPointsRef.current = false;
 
             if (urlParam && !idParam) {
                 const decodedUrl = decodeURIComponent(urlParam);
@@ -1617,7 +1623,15 @@ export default function AudioDropCard() {
         if (!audio || !audioDrop) return;
         if (playing) {
             audio.play().catch(console.error);
-            timerRef.current = setInterval(() => setElapsed(audio.currentTime), 1000);
+            timerRef.current = setInterval(() => {
+                const currentTime = audio.currentTime;
+                setElapsed(currentTime);
+                const totalSecs = audio.duration || audioDrop.durationSeconds || parseDurationToSeconds(duration);
+                const currentPct = totalSecs > 0 ? Math.round((currentTime / totalSecs) * 100) : 0;
+                if (currentPct >= 90 && !requestedPointsRef.current) {
+                    saveProgressToApi(currentTime, audioDrop);
+                }
+            }, 1000);
             startProgressSaving(audioDrop);
         } else {
             audio.pause();

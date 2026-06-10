@@ -359,6 +359,7 @@ export default function ROARApp() {
                       onCompose={() => openCompose("prediction")}
                       onToast={showToast}
                       setOnboarded={setOnboarded}
+                      onNavigateTab={handleTab}
                     />
                   )}
                   {activeTab === "alerts" && (

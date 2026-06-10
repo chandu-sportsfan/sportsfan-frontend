@@ -12,6 +12,7 @@ interface Props {
   onCompose: () => void;
   onToast: (m: string) => void;
   setOnboarded?: (b: boolean) => void;
+  onNavigateTab?: (tab: string) => void;
 }
 
 function AccuracyRing({ percent }: { percent: number }) {
@@ -44,7 +45,7 @@ function AccuracyRing({ percent }: { percent: number }) {
   );
 }
 
-export default function Profile({ userBadge, setUserBadge, onCompose, onToast, setOnboarded }: Props) {
+export default function Profile({ userBadge, setUserBadge, onCompose, onToast, setOnboarded, onNavigateTab }: Props) {
   const [profileData, setProfileData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [predTab, setPredTab] = useState("All");
@@ -117,6 +118,23 @@ export default function Profile({ userBadge, setUserBadge, onCompose, onToast, s
     <div className="screen-scroll">
       {/* ── Header ── */}
       <div style={{ padding: "24px 16px 0", textAlign: "center", position: "relative" }}>
+        {onNavigateTab && (
+          <button
+            onClick={() => onNavigateTab("home")}
+            style={{
+              position: "absolute",
+              top: 24,
+              left: 16,
+              fontSize: 22,
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              color: "var(--text-primary)",
+            }}
+          >
+            ←
+          </button>
+        )}
         <div style={{ display: "flex", justifyContent: "center", position: "relative", width: 96, margin: "0 auto" }}>
           <AvatarWithBadge username={user.username || CURRENT_USER.username} badge={userBadge} size="lg" />
           <div onClick={() => onToast("Upload avatar feature coming soon!")} style={{ position: "absolute", bottom: 0, right: 4, width: 20, height: 20, borderRadius: "50%", background: "var(--accent-magenta)", display: "flex", alignItems: "center", justifyContent: "center", border: "2px solid var(--bg-primary)", color: "#fff", fontSize: 12, fontWeight: 900, cursor: "pointer" }}>+</div>

@@ -5,7 +5,7 @@ import NewHomePage from "../../NewHomePageComponent/newhomepage";
 import { SplitBar, FilterPills } from "../components/shared";
 import { FEED_POSTS, FEED_FILTERS, BADGE_LABELS, RADIAL_OPTS, CURRENT_USER } from "../constants";
 import { fmt, clamp } from "../utils";
-import { Heart, Share2, Flame, BarChart2, Zap, History, PenTool } from "lucide-react";
+import { Heart, Share2, Flame, TrendingUp, Zap, History, PenTool } from "lucide-react";
 import type { FeedPost, Room } from "../types";
 
 interface Props {
@@ -140,6 +140,14 @@ export default function HomeFeed({
 
   return (
     <div className="screen-scroll">
+      {/* SVG Gradient Definition */}
+      <svg width="0" height="0" style={{ position: "absolute" }}>
+        <linearGradient id="pink-orange-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#e91e8c" />
+          <stop offset="100%" stopColor="#ff6b35" />
+        </linearGradient>
+      </svg>
+
       {/* ── Header ── */}
       <div
         className="glass-card"
@@ -154,39 +162,15 @@ export default function HomeFeed({
         <div style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
             {RADIAL_OPTS.map((q) => {
-              const styles: Record<string, { border: string; bg: string; icon: React.ReactNode }> = {
-                hot_take: {
-                  border: "1px solid rgba(255, 74, 125, 0.35)",
-                  bg: "linear-gradient(145deg, rgba(255, 74, 125, 0.15), rgba(255, 74, 125, 0.05))",
-                  icon: <Flame size={16} color="#ff4a7d" fill="#ff4a7d" />,
-                },
-                prediction: {
-                  border: "1px solid rgba(255, 176, 32, 0.35)",
-                  bg: "linear-gradient(145deg, rgba(255, 176, 32, 0.15), rgba(255, 176, 32, 0.05))",
-                  icon: <BarChart2 size={16} color="#ffb020" />,
-                },
-                debate: {
-                  border: "1px solid rgba(0, 229, 255, 0.35)",
-                  bg: "linear-gradient(145deg, rgba(0, 229, 255, 0.15), rgba(0, 229, 255, 0.05))",
-                  icon: <Zap size={16} color="#00e5ff" fill="#00e5ff" />,
-                },
-                memory: {
-                  border: "1px solid rgba(168, 85, 247, 0.35)",
-                  bg: "linear-gradient(145deg, rgba(168, 85, 247, 0.15), rgba(168, 85, 247, 0.05))",
-                  icon: <History size={16} color="#a855f7" />,
-                },
-                post: {
-                  border: "1px solid rgba(34, 197, 94, 0.35)",
-                  bg: "linear-gradient(145deg, rgba(34, 197, 94, 0.15), rgba(34, 197, 94, 0.05))",
-                  icon: <PenTool size={16} color="#22c55e" />,
-                },
+              const icons: Record<string, React.ReactNode> = {
+                hot_take: <Flame size={16} stroke="url(#pink-orange-grad)" fill="url(#pink-orange-grad)" />,
+                prediction: <TrendingUp size={16} stroke="url(#pink-orange-grad)" />,
+                debate: <Zap size={16} stroke="url(#pink-orange-grad)" fill="url(#pink-orange-grad)" />,
+                memory: <History size={16} stroke="url(#pink-orange-grad)" />,
+                post: <PenTool size={16} stroke="url(#pink-orange-grad)" />,
               };
 
-              const styleCfg = styles[q.id] || {
-                border: "1px solid rgba(255,255,255,0.1)",
-                bg: "rgba(255,255,255,0.03)",
-                icon: <span>{q.emoji}</span>,
-              };
+              const icon = icons[q.id] || <span>{q.emoji}</span>;
 
               return (
                 <motion.button
@@ -202,8 +186,8 @@ export default function HomeFeed({
                     gap: 4,
                     padding: "8px 12px",
                     borderRadius: 14,
-                    background: styleCfg.bg,
-                    border: styleCfg.border,
+                    background: "linear-gradient(145deg, rgba(233,30,140,0.18), rgba(255,107,53,0.10))",
+                    border: "1px solid rgba(233,30,140,0.35)",
                     cursor: "pointer",
                     flexShrink: 1,
                     minWidth: 0,
@@ -212,7 +196,7 @@ export default function HomeFeed({
                     transition: "all 0.2s",
                   }}
                 >
-                  {styleCfg.icon}
+                  {icon}
                   <span style={{ fontSize: 9.5, fontWeight: 700, color: "rgba(255,255,255,0.9)", whiteSpace: "nowrap", lineHeight: 1, letterSpacing: "0.03em" }}>
                     {q.label}
                   </span>

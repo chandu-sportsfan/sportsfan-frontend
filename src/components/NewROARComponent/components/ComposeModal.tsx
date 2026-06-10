@@ -149,8 +149,13 @@ export default function ComposeModal({ open, onClose, onPost, initialType }: Pro
                 <div style={{ width: 40, height: 4, borderRadius: 2, background: "var(--border)" }} />
               </div>
               <div style={{ padding: "0 20px 40px", maxHeight: "75vh", overflowY: "auto" }}>
-                <h2 className="font-display" style={{ fontSize: 28, letterSpacing: "0.04em", marginBottom: 16 }}>
-                  Create
+                <h2 className="font-display" style={{ fontSize: 28, letterSpacing: "0.04em", marginBottom: 16, textTransform: "uppercase" }}>
+                  {selected === "hot_take" && "Create Hot Take"}
+                  {selected === "prediction" && "Create Prediction"}
+                  {selected === "debate" && "Create Debate"}
+                  {selected === "memory" && "Create Memory"}
+                  {selected === "post" && "Create Post"}
+                  {!selected && "Create"}
                 </h2>
                 {!selected ? (
                   <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>

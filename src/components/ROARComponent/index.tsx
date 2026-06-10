@@ -1849,6 +1849,12 @@ const COMPOSE_OPTIONS = [
     title: "Share a Memory",
     desc: "Flashback moment",
   },
+  {
+    id: "post",
+    emoji: "✏️",
+    title: "Post",
+    desc: "Share photos, videos or GIFs",
+  },
 ];
 
 function ComposeModal({
@@ -1871,6 +1877,8 @@ function ComposeModal({
   const [confidence, setConf] = useState(7);
   const [audience, setAud] = useState("Everyone");
   const [sport, setSport] = useState("cricket");
+  const [postText, setPostText] = useState("");
+  const [mediaFiles, setMediaFiles] = useState<File[]>([]);
 
   const [domReady, setDomReady] = useState(false);
   useEffect(() => {
@@ -1889,16 +1897,19 @@ function ComposeModal({
     setSideB("");
     setMemCtx("");
     setSport("cricket");
+    setPostText("");
+    setMediaFiles([]);
   };
   const canPost =
     (selected === "hot_take" && text.trim()) ||
     (selected === "prediction" && text.trim()) ||
     (selected === "debate" && sideA.trim() && sideB.trim()) ||
-    (selected === "memory" && text.trim());
+    (selected === "memory" && text.trim()) ||
+    (selected === "post" && (postText.trim() || mediaFiles.length > 0));
   const handlePost = () => {
     onPost({
       type: selected,
-      text,
+      text: selected === "post" ? postText : text,
       sideA,
       sideB,
       match,
@@ -1906,6 +1917,7 @@ function ComposeModal({
       audience,
       memCtx,
       sport,
+      mediaFiles: selected === "post" ? mediaFiles : [],
     });
     onClose();
   };
@@ -2198,6 +2210,87 @@ function ComposeModal({
                       />
                     </div>
                   )}
+                  {selected === "post" && (
+                    <>
+                      <textarea
+                        value={postText}
+                        onChange={(e) => setPostText(e.target.value)}
+                        rows={4}
+                        placeholder="Share anything with your fellow fans..."
+                        style={{
+                          width: "100%",
+                          padding: "14px",
+                          borderRadius: 16,
+                          background: "rgba(0,0,0,0.4)",
+                          border: "1px solid var(--border)",
+                          resize: "none",
+                          outline: "none",
+                          color: "var(--text-primary)",
+                          fontSize: 14,
+                        }}
+                      />
+                      <div
+                        style={{
+                          marginTop: 12,
+                          border: "2px dashed rgba(233,30,140,0.35)",
+                          borderRadius: 16,
+                          padding: "20px",
+                          textAlign: "center",
+                          cursor: "pointer",
+                          background: "rgba(233,30,140,0.04)",
+                        }}
+                        onClick={() => document.getElementById("roar-media-upload")?.click()}
+                      >
+                        <input
+                          id="roar-media-upload"
+                          type="file"
+                          accept="image/*,video/*,.gif"
+                          multiple
+                          style={{ display: "none" }}
+                          onChange={(e) => setMediaFiles(Array.from(e.target.files || []))}
+                        />
+                        {mediaFiles.length === 0 ? (
+                          <>
+                            <p style={{ fontSize: 28, marginBottom: 8 }}>🖼️</p>
+                            <p style={{ fontSize: 13, color: "var(--accent-magenta)", fontWeight: 700 }}>
+                              Tap to add Photo / Video / GIF
+                            </p>
+                            <p style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>
+                              Supports JPG, PNG, GIF, MP4
+                            </p>
+                          </>
+                        ) : (
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "center" }}>
+                            {mediaFiles.map((file, i) => (
+                              <div key={i} style={{
+                                padding: "6px 12px",
+                                borderRadius: 999,
+                                background: "rgba(233,30,140,0.15)",
+                                border: "1px solid rgba(233,30,140,0.3)",
+                                fontSize: 12,
+                                color: "var(--accent-magenta)",
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 6,
+                              }}>
+                                {file.type.startsWith("video") ? "🎥" : "🖼️"} {file.name.slice(0, 20)}
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setMediaFiles(prev => prev.filter((_, idx) => idx !== i));
+                                  }}
+                                  style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", fontSize: 12, padding: 0 }}
+                                >✕</button>
+                              </div>
+                            ))}
+                            <p style={{ width: "100%", fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>
+                              Tap to add more
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  )}
                   {(selected === "hot_take" || selected === "prediction" || selected === "debate" || selected === "memory") && (
                     <>
                       <label
@@ -2353,6 +2446,7 @@ const RADIAL_OPTS = [
   { id: "prediction", label: "Predict", emoji: "📊" },
   { id: "debate", label: "Debate", emoji: "⚡" },
   { id: "memory", label: "Memory", emoji: "🕰" },
+  { id: "post", label: "Post", emoji: "✏️" },
 ];
 
 function BottomNav({

@@ -7641,17 +7641,6 @@ export default function ROARApp() {
           </div>
         )}
 
-        {/* Bottom nav — Flex child sitting cleanly below the content area */}
-        {onboarded && !composeOpen && (
-          <BottomNav
-            activeTab={isRoom ? "discuss" : activeTab}
-            onTabChange={handleTab}
-            unreadCount={unreadCount}
-            matchLive
-            badgeNearUnlock
-          />
-        )}
-
         {/* Post details overlay */}
         {onboarded && selectedPost && (
           <PostDetailsOverlay

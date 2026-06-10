@@ -52,13 +52,21 @@ export default function Notifications({
   return (
     <div className="screen-scroll">
       <div style={{ padding: "16px 16px 0", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-        <div>
-          <h1 className="font-display" style={{ fontSize: 40, letterSpacing: "0.04em" }}>Alerts</h1>
-          {unread > 0 && (
-            <span style={{ display: "inline-block", marginTop: 4, padding: "2px 10px", borderRadius: 999, background: "var(--accent-magenta)", fontSize: 11, fontWeight: 700 }}>
-              {unread} unread
-            </span>
-          )}
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <button
+            onClick={() => onNavigateTab("home")}
+            style={{ fontSize: 22, background: "none", border: "none", cursor: "pointer", color: "var(--text-primary)" }}
+          >
+            ←
+          </button>
+          <div>
+            <h1 className="font-display" style={{ fontSize: 40, letterSpacing: "0.04em" }}>Alerts</h1>
+            {unread > 0 && (
+              <span style={{ display: "inline-block", marginTop: 4, padding: "2px 10px", borderRadius: 999, background: "var(--accent-magenta)", fontSize: 11, fontWeight: 700 }}>
+                {unread} unread
+              </span>
+            )}
+          </div>
         </div>
         <motion.button
           whileTap={{ scale: 0.95 }}

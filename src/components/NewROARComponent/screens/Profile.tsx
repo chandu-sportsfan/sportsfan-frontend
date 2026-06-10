@@ -32,6 +32,7 @@ interface Props {
   onCompose: () => void;
   onToast: (m: string) => void;
   setOnboarded?: (b: boolean) => void;
+  onNavigateTab?: (tab: string) => void;
 }
 
 function AccuracyRing({ percent }: { percent: number }) {
@@ -74,7 +75,7 @@ function PencilIcon() {
   );
 }
 
-export default function Profile({ userBadge, setUserBadge, onCompose, onToast, setOnboarded }: Props) {
+export default function Profile({ userBadge, setUserBadge, onCompose, onToast, setOnboarded, onNavigateTab }: Props) {
   const [profileData, setProfileData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [predTab, setPredTab] = useState("All");

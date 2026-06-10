@@ -359,6 +359,7 @@ export default function ROARApp() {
                       onCompose={() => openCompose("prediction")}
                       onToast={showToast}
                       setOnboarded={setOnboarded}
+                      onNavigateTab={handleTab}
                     />
                   )}
                   {activeTab === "alerts" && (
@@ -393,18 +394,6 @@ export default function ROARApp() {
           />
         )}
 
-        {/* Bottom nav — always visible when onboarded and not in overlay */}
-        {onboarded && !isRoom && !isLB && (
-          <BottomNav
-            activeTab={activeTab}
-            onTabChange={handleTab}
-            unreadCount={unreadCount}
-            matchLive={rooms.some((r) => r.isActive)}
-            badgeNearUnlock={false}
-            userBadge={userBadge}
-            onQuickCompose={openCompose}
-          />
-        )}
       </div>
     </div>
   );

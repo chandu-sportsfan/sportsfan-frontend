@@ -224,7 +224,25 @@ const GLOBAL_CSS = `
 `;
 
 /* ─── MOCK DATA ──────────────────────────────────────────────────────────── */
-
+const TEAMS = [
+  // Row 1: National Teams
+  { id: "India", label: "India", color: "#1565C0", logo: "/images/Container.png" },
+  { id: "Pak", label: "Pakistan", color: "#2E7D32", logo: "/images/Container (1).png" },
+  { id: "Aus", label: "Aus", color: "#FFB300", logo: "/images/Container (2).png" },
+  { id: "Eng", label: "England", color: "#C62828", logo: "/images/Container (3).png" },
+  
+  // Row 2: IPL Teams
+  { id: "MI", label: "MI", color: "#0277BD", logo: "/images/Container (4).png" },
+  { id: "CSK", label: "CSK", color: "#FBC02D", logo: "/images/Container (5).png" },
+  { id: "RCB", label: "RCB", color: "#D32F2F", logo: "/images/Container (6).png" },
+  { id: "KKR", label: "KKR", color: "#4527A0", logo: "/images/Container (7).png" },
+  
+  // Row 3: ISL Teams
+  { id: "MCFC", label: "MCFC", color: "#0288D1", logo: "/images/Container (11).png" },
+  { id: "BFC", label: "BFC", color: "#D32F2F", logo: "/images/Container (10).png" },
+  { id: "Mohun B", label: "Mohun B", color: "#1B5E20", logo: "/images/Container (9).png" },
+  { id: "Kerala", label: "Kerala", color: "#FDD835", logo: "/images/Container (8).png" },
+];
 const avatarUrl = (u: string) =>
   `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(u)}&backgroundColor=0E0E14`;
 
@@ -371,56 +389,7 @@ const TENURE_OPTIONS = [
   },
 ];
 
-const TEAMS = [
-  {
-    id: "India",
-    emoji: "🇮🇳",
-    label: "India",
-    color: "#FF9800",
-    sport: "cricket",
-  },
-  {
-    id: "Pak",
-    emoji: "🇵🇰",
-    label: "Pakistan",
-    color: "#4CAF50",
-    sport: "cricket",
-  },
-  { id: "Aus", emoji: "🇦🇺", label: "Aus", color: "#FFEB3B", sport: "cricket" },
-  {
-    id: "Eng",
-    emoji: "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
-    label: "England",
-    color: "#F44336",
-    sport: "cricket",
-  },
-  { id: "MI", emoji: "💙", label: "MI", color: "#1565C0", sport: "cricket" },
-  { id: "CSK", emoji: "💛", label: "CSK", color: "#FFCC00", sport: "cricket" },
-  { id: "RCB", emoji: "❤️", label: "RCB", color: "#B71C1C", sport: "cricket" },
-  { id: "KKR", emoji: "💜", label: "KKR", color: "#6A1B9A", sport: "cricket" },
-  {
-    id: "MCFC",
-    emoji: "🔵",
-    label: "MCFC",
-    color: "#1E88E5",
-    sport: "football",
-  },
-  { id: "BFC", emoji: "🔴", label: "BFC", color: "#E53935", sport: "football" },
-  {
-    id: "MohanB",
-    emoji: "🟢",
-    label: "Mohun B",
-    color: "#43A047",
-    sport: "football",
-  },
-  {
-    id: "Kerala",
-    emoji: "🟡",
-    label: "Kerala",
-    color: "#FDD835",
-    sport: "football",
-  },
-];
+
 
 const FEED_POSTS = [
   {
@@ -1395,19 +1364,23 @@ function Onboarding({ onComplete }: { onComplete: (prefs: any) => void }) {
                       }}
                     >
                       <span
-                        style={{
-                          width: 52,
-                          height: 52,
-                          borderRadius: "50%",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          fontSize: 22,
-                          background: `${t.color}44`,
-                        }}
-                      >
-                        {t.emoji}
-                      </span>
+  style={{
+    width: 52,
+    height: 52,
+    borderRadius: "50%",
+    overflow: "hidden",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    background: `${t.color}44`,
+  }}
+>
+  <img
+    src={t.logo}
+    alt={t.label}
+    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+  />
+</span>
                       <span
                         style={{ fontSize: 10, color: "var(--text-secondary)" }}
                       >

@@ -182,7 +182,6 @@ const GLOBAL_CSS = `
   overflow-y: auto;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
-  scroll-behavior: smooth;
   padding-bottom: 24px;
 }
 .roar-root .gradient-border {
@@ -1850,12 +1849,6 @@ const COMPOSE_OPTIONS = [
     title: "Share a Memory",
     desc: "Flashback moment",
   },
-  {
-    id: "post",
-    emoji: "✏️",
-    title: "Post",
-    desc: "Share photos, videos or GIFs",
-  },
 ];
 
 function ComposeModal({
@@ -1878,8 +1871,6 @@ function ComposeModal({
   const [confidence, setConf] = useState(7);
   const [audience, setAud] = useState("Everyone");
   const [sport, setSport] = useState("cricket");
-  const [postText, setPostText] = useState("");
-  const [mediaFiles, setMediaFiles] = useState<File[]>([]);
 
   const [domReady, setDomReady] = useState(false);
   useEffect(() => {
@@ -1898,19 +1889,16 @@ function ComposeModal({
     setSideB("");
     setMemCtx("");
     setSport("cricket");
-    setPostText("");
-    setMediaFiles([]);
   };
   const canPost =
     (selected === "hot_take" && text.trim()) ||
     (selected === "prediction" && text.trim()) ||
     (selected === "debate" && sideA.trim() && sideB.trim()) ||
-    (selected === "memory" && text.trim()) ||
-    (selected === "post" && (postText.trim() || mediaFiles.length > 0));
+    (selected === "memory" && text.trim());
   const handlePost = () => {
     onPost({
       type: selected,
-      text: selected === "post" ? postText : text,
+      text,
       sideA,
       sideB,
       match,
@@ -1918,7 +1906,6 @@ function ComposeModal({
       audience,
       memCtx,
       sport,
-      mediaFiles: selected === "post" ? mediaFiles : [],
     });
     onClose();
   };
@@ -2031,10 +2018,7 @@ function ComposeModal({
                   animate={{ opacity: 1, y: 0 }}
                 >
                   <button
-                    onClick={() => {
-                      setSelected(null);
-                      onClose();
-                    }}
+                    onClick={() => setSelected(null)}
                     style={{
                       fontSize: 13,
                       color: "var(--accent-magenta)",
@@ -2214,87 +2198,6 @@ function ComposeModal({
                       />
                     </div>
                   )}
-                  {selected === "post" && (
-                    <>
-                      <textarea
-                        value={postText}
-                        onChange={(e) => setPostText(e.target.value)}
-                        rows={4}
-                        placeholder="Share anything with your fellow fans..."
-                        style={{
-                          width: "100%",
-                          padding: "14px",
-                          borderRadius: 16,
-                          background: "rgba(0,0,0,0.4)",
-                          border: "1px solid var(--border)",
-                          resize: "none",
-                          outline: "none",
-                          color: "var(--text-primary)",
-                          fontSize: 14,
-                        }}
-                      />
-                      <div
-                        style={{
-                          marginTop: 12,
-                          border: "2px dashed rgba(233,30,140,0.35)",
-                          borderRadius: 16,
-                          padding: "20px",
-                          textAlign: "center",
-                          cursor: "pointer",
-                          background: "rgba(233,30,140,0.04)",
-                        }}
-                        onClick={() => document.getElementById("roar-media-upload")?.click()}
-                      >
-                        <input
-                          id="roar-media-upload"
-                          type="file"
-                          accept="image/*,video/*,.gif"
-                          multiple
-                          style={{ display: "none" }}
-                          onChange={(e) => setMediaFiles(Array.from(e.target.files || []))}
-                        />
-                        {mediaFiles.length === 0 ? (
-                          <>
-                            <p style={{ fontSize: 28, marginBottom: 8 }}>🖼️</p>
-                            <p style={{ fontSize: 13, color: "var(--accent-magenta)", fontWeight: 700 }}>
-                              Tap to add Photo / Video / GIF
-                            </p>
-                            <p style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>
-                              Supports JPG, PNG, GIF, MP4
-                            </p>
-                          </>
-                        ) : (
-                          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "center" }}>
-                            {mediaFiles.map((file, i) => (
-                              <div key={i} style={{
-                                padding: "6px 12px",
-                                borderRadius: 999,
-                                background: "rgba(233,30,140,0.15)",
-                                border: "1px solid rgba(233,30,140,0.3)",
-                                fontSize: 12,
-                                color: "var(--accent-magenta)",
-                                display: "flex",
-                                alignItems: "center",
-                                gap: 6,
-                              }}>
-                                {file.type.startsWith("video") ? "🎥" : "🖼️"} {file.name.slice(0, 20)}
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setMediaFiles(prev => prev.filter((_, idx) => idx !== i));
-                                  }}
-                                  style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", fontSize: 12, padding: 0 }}
-                                >✕</button>
-                              </div>
-                            ))}
-                            <p style={{ width: "100%", fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>
-                              Tap to add more
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    </>
-                  )}
                   {(selected === "hot_take" || selected === "prediction" || selected === "debate" || selected === "memory") && (
                     <>
                       <label
@@ -2450,7 +2353,6 @@ const RADIAL_OPTS = [
   { id: "prediction", label: "Predict", emoji: "📊" },
   { id: "debate", label: "Debate", emoji: "⚡" },
   { id: "memory", label: "Memory", emoji: "🕰" },
-  { id: "post", label: "Post", emoji: "✏️" },
 ];
 
 function BottomNav({
@@ -2728,7 +2630,6 @@ function HomeFeed({
       sideA: p.sideA,
       sideB: p.sideB,
       memCtx: p.memCtx,
-      mediaUrls: p.mediaUrls,
     };
   });
 
@@ -2782,8 +2683,8 @@ function HomeFeed({
           />
         </div>
 
-        {/* Quick-compose pills — aligned to the right */}
-        <div style={{ display: "flex", gap: 5, alignItems: "center", flexShrink: 0 }}>
+        {/* Quick-compose pills — between ROAR logo and icons */}
+        <div style={{ display: "flex", gap: 5, alignItems: "center", flex: 1, justifyContent: "center", padding: "0 8px", overflow: "hidden" }}>
           {RADIAL_OPTS.map((q) => (
             <motion.button
               key={q.id}
@@ -2812,6 +2713,78 @@ function HomeFeed({
               <span style={{ fontSize: 8.5, fontWeight: 700, color: "rgba(255,255,255,0.85)", whiteSpace: "nowrap", lineHeight: 1, letterSpacing: "0.03em" }}>{q.label}</span>
             </motion.button>
           ))}
+        </div>
+
+        <div style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
+          <motion.button
+            whileTap={{ scale: 0.93 }}
+            onClick={onLeaderboard}
+            style={{
+              width: 38,
+              height: 38,
+              borderRadius: "50%",
+              background: "rgba(255,255,255,0.06)",
+              border: "none",
+              cursor: "pointer",
+              fontSize: 16,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            🏆
+          </motion.button>
+          <motion.button
+            whileTap={{ scale: 0.93 }}
+            onClick={onNavigateAlerts}
+            style={{
+              position: "relative",
+              width: 38,
+              height: 38,
+              borderRadius: "50%",
+              background: "rgba(255,255,255,0.06)",
+              border: "none",
+              cursor: "pointer",
+              fontSize: 16,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            🔔
+            {unreadCount > 0 && (
+              <span
+                style={{
+                  position: "absolute",
+                  top: -2,
+                  right: -2,
+                  minWidth: 16,
+                  height: 16,
+                  borderRadius: 999,
+                  background: "var(--accent-magenta)",
+                  fontSize: 9,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "white",
+                  fontWeight: 700,
+                }}
+              >
+                {unreadCount}
+              </span>
+            )}
+          </motion.button>
+          <motion.button
+            whileTap={{ scale: 0.93 }}
+            onClick={onFanProfile}
+            style={{ background: "none", border: "none", cursor: "pointer" }}
+          >
+            <AvatarWithBadge
+              username={CURRENT_USER.username}
+              badge={userBadge}
+              size="sm"
+            />
+          </motion.button>
         </div>
       </div>
 
@@ -3256,7 +3229,7 @@ function HomeFeed({
             })}
 
         {filtered.map((item, i) => {
-          if (item.type === "hot_take" || item.type === "prediction" || item.type === "post") {
+          if (item.type === "hot_take" || item.type === "prediction") {
             const pct = pcts[item.id] ?? item.agreePercent ?? 50;
             const userVote = votes[item.id];
             return (
@@ -3287,30 +3260,16 @@ function HomeFeed({
                       background:
                         item.type === "hot_take"
                           ? "rgba(239,68,68,0.12)"
-                          : item.type === "post"
-                            ? "rgba(233,30,140,0.12)"
-                            : "rgba(255,107,53,0.12)",
+                          : "rgba(255,107,53,0.12)",
                       color:
                         item.type === "hot_take"
                           ? "#f87171"
-                          : item.type === "post"
-                            ? "var(--accent-magenta)"
-                            : "var(--accent-orange)",
-                      border: `1px solid ${
-                        item.type === "hot_take"
-                          ? "rgba(239,68,68,0.2)"
-                          : item.type === "post"
-                            ? "rgba(233,30,140,0.2)"
-                            : "rgba(255,107,53,0.2)"
-                      }`,
+                          : "var(--accent-orange)",
+                      border: `1px solid ${item.type === "hot_take" ? "rgba(239,68,68,0.2)" : "rgba(255,107,53,0.2)"}`,
                       textTransform: "uppercase",
                     }}
                   >
-                    {item.type === "hot_take"
-                      ? "🔥 Hot Take"
-                      : item.type === "post"
-                        ? "✏️ Post"
-                        : "📊 Prediction"}
+                    {item.type === "hot_take" ? "🔥 Hot Take" : "📊 Prediction"}
                   </span>
                   <span
                     style={{
@@ -3376,32 +3335,6 @@ function HomeFeed({
                 >
                   {item.text}
                 </p>
-                {item.mediaUrls && item.mediaUrls.length > 0 && (
-                  <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
-                    {item.mediaUrls.map((url: string, idx: number) => {
-                      const isVideo = url.endsWith(".mp4") || url.includes("/video/upload/");
-                      if (isVideo) {
-                        return (
-                          <video
-                            key={idx}
-                            src={url}
-                            controls
-                            style={{ width: "100%", maxHeight: 300, borderRadius: 12, objectFit: "cover" }}
-                            onClick={(e) => e.stopPropagation()}
-                          />
-                        );
-                      }
-                      return (
-                        <img
-                          key={idx}
-                          src={url}
-                          alt="Post Media"
-                          style={{ width: "100%", maxHeight: 300, borderRadius: 12, objectFit: "cover" }}
-                        />
-                      );
-                    })}
-                  </div>
-                )}
                 {item.match && (
                   <p
                     style={{
@@ -6768,31 +6701,6 @@ function PostDetailsOverlay({
             >
               {post.text}
             </p>
-            {post.mediaUrls && post.mediaUrls.length > 0 && (
-              <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
-                {post.mediaUrls.map((url: string, idx: number) => {
-                  const isVideo = url.endsWith(".mp4") || url.includes("/video/upload/");
-                  if (isVideo) {
-                    return (
-                      <video
-                        key={idx}
-                        src={url}
-                        controls
-                        style={{ width: "100%", maxHeight: 300, borderRadius: 12, objectFit: "cover" }}
-                      />
-                    );
-                  }
-                  return (
-                    <img
-                      key={idx}
-                      src={url}
-                      alt="Post Media"
-                      style={{ width: "100%", maxHeight: 300, borderRadius: 12, objectFit: "cover" }}
-                    />
-                  );
-                })}
-              </div>
-            )}
 
             {post.type === "hot_take" && (
               <>
@@ -7298,24 +7206,9 @@ export default function ROARApp() {
   const handlePost = useCallback(
     async (payload: any) => {
       try {
-        const postType = ["hot_take", "prediction", "debate", "memory", "post"].includes(payload.type)
+        const postType = ["hot_take", "prediction", "debate", "memory"].includes(payload.type)
           ? payload.type
           : "hot_take";
-
-        let mediaUrls: string[] = [];
-        if (payload.mediaFiles && payload.mediaFiles.length > 0) {
-          showToast("Uploading media...");
-          const uploadPromises = payload.mediaFiles.map(async (file: File) => {
-            const formData = new FormData();
-            formData.append("file", file);
-            const uploadRes = await axios.post("/api/upload", formData, {
-              headers: { "Content-Type": "multipart/form-data" },
-            });
-            return uploadRes.data.url;
-          });
-          mediaUrls = await Promise.all(uploadPromises);
-        }
-
         const res = await axios.post("/api/roar/posts", {
           type: postType,
           text: payload.type === "debate"
@@ -7328,7 +7221,6 @@ export default function ROARApp() {
           matchId: payload.match,
           confidence: payload.confidence,
           audience: payload.audience,
-          mediaUrls,
         });
         if (res.data?.success) {
           const toastMap: Record<string, string> = {
@@ -7336,7 +7228,6 @@ export default function ROARApp() {
             prediction: "📊 Prediction posted · Let's see if you're right",
             debate: "⚡ Debate started · Get the fans talking",
             memory: "🕰 Memory shared · OG fans will feel this",
-            post: "✏️ Post is live · Fans can see it now",
           };
           showToast(toastMap[postType] || "🔥 Your take is live");
           fetchPosts();
@@ -7685,6 +7576,17 @@ export default function ROARApp() {
               ) : null}
             </AnimatePresence>
           </div>
+        )}
+
+        {/* Bottom nav — Flex child sitting cleanly below the content area */}
+        {onboarded && !composeOpen && (
+          <BottomNav
+            activeTab={isRoom ? "discuss" : activeTab}
+            onTabChange={handleTab}
+            unreadCount={unreadCount}
+            matchLive
+            badgeNearUnlock
+          />
         )}
 
         {/* Post details overlay */}

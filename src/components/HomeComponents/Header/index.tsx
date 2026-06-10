@@ -30,6 +30,7 @@ import { useLeaderboard } from "@/context/LeaderboardContext";
 import { useAuth } from "@/context/AuthContext";
 import { useChats } from "@/hooks/useChat";
 import LogoutButton from "../LogoutButton";
+import { useRoarNotifications } from "@/context/RoarNotificationsContext";
 
 // ── Tournament badge config ───────────────────────────────────────────────────
 
@@ -232,6 +233,7 @@ export default function Header() {
     () => chats.reduce((sum, chat) => sum + (chat.unreadCount || 0), 0),
     [chats]
   );
+  const { roarUnreadCount } = useRoarNotifications();
 
   const [showDropdown, setShowDropdown] = useState(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
@@ -558,7 +560,7 @@ export default function Header() {
           <ChatButton unreadCount={totalUnreadChats} />
           {/* PointsPill only re-renders when points/loading changes */}
           <PointsPill points={currentUserPoints} loading={pointsLoading} />
-          <BellButton unreadCount={0} />
+          <BellButton unreadCount={roarUnreadCount} />
           <div className="relative" ref={profileDropdownRef}>
             <button
               onClick={() => setShowProfileDropdown((v) => !v)}
@@ -659,7 +661,7 @@ export default function Header() {
             </span>
           )}
         </div>
-        <BellButton unreadCount={0} />
+        <BellButton unreadCount={roarUnreadCount} />
         <div className="relative" ref={profileDropdownRef}>
           <button
             onClick={() => setShowProfileDropdown((v) => !v)}
@@ -742,7 +744,7 @@ export default function Header() {
           <ChatButton unreadCount={totalUnreadChats} />
           {/* Mobile compact points pill */}
           <PointsPill points={currentUserPoints} loading={pointsLoading} small />
-          <BellButton unreadCount={0} />
+          <BellButton unreadCount={roarUnreadCount} />
           <div className="relative" ref={mobileProfileDropdownRef}>
             <button onClick={() => setShowProfileDropdown((v) => !v)}>
               <Avatar src="" name={displayName} size={36} ring />

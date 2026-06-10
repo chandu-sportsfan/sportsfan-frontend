@@ -1270,7 +1270,6 @@ export default function AudioDropCard() {
     // in this browser session (server is the source of truth via transactionId,
     // but this prevents firing the toast more than once per track load).
     const hasAwardedPointsRef = useRef(false);
-    const awardingPointsRef = useRef(false);
 
     const audioRef = useRef<HTMLAudioElement | null>(null);
     const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -1278,6 +1277,7 @@ export default function AudioDropCard() {
     const elapsedRef = useRef(0);
     const audioDropRef = useRef<AudioDrop | null>(null);
     const audioReadyToPlayRef = useRef(false);
+    const requestedPointsRef = useRef(false);
 
     useEffect(() => { elapsedRef.current = elapsed; }, [elapsed]);
     useEffect(() => { audioDropRef.current = audioDrop; }, [audioDrop]);
@@ -1303,63 +1303,30 @@ export default function AudioDropCard() {
     };
 
     // ── Save progress + trigger points award at 90% ───────────────────────────
-    const awardAudioDropPoints = async (drop: AudioDrop) => {
+    const applyPersistedAudioPoints = async (drop: AudioDrop, pointsAwarded: number) => {
         const userId = getUserId();
-        if (!userId || !drop.id || hasAwardedPointsRef.current || awardingPointsRef.current) return false;
+        if (!userId || !drop.id || pointsAwarded <= 0 || hasAwardedPointsRef.current) return;
 
-        awardingPointsRef.current = true;
-        const transactionId = `${userId}_${drop.id}_${Date.now()}_LISTEN_AUDIO_DROP`;
-        const applyLocalAward = () => {
-            if (hasAwardedPointsRef.current) return;
-            hasAwardedPointsRef.current = true;
-            addLocalPoints(2);
-            addLocalActivity({
-                id: transactionId,
-                type: "LISTEN_AUDIO_DROP",
-                points: 2,
-                label: "Listen Audio Drops",
-                metadata: {
-                    audioId: drop.id,
-                    audioTitle: drop.title,
-                    title: drop.title,
-                    subtitle: drop.subtitle || "Audio Drop",
-                    url: drop.audioUrl || "",
-                    transactionId,
-                },
-                createdAt: Date.now(),
-            });
-            setShowPointsToast(true);
-        };
-
-        try {
-            await axios.post("/api/user-points", {
-                actualUserId: userId,
-                userId,
-                userName: getUserName() || user?.name || user?.email || "User",
-                userEmail: user?.email || "",
-                points: 2,
-                reason: "LISTEN_AUDIO_DROP",
+        const transactionId = `${userId}_${encodeURIComponent(drop.id)}_LISTEN_COMPLETE`;
+        hasAwardedPointsRef.current = true;
+        addLocalPoints(pointsAwarded);
+        addLocalActivity({
+            id: transactionId,
+            type: "LISTEN_AUDIO_DROP",
+            points: pointsAwarded,
+            label: "Listen Audio Drops",
+            metadata: {
+                audioId: drop.id,
+                audioTitle: drop.title,
+                title: drop.title,
+                subtitle: drop.subtitle || "Audio Drop",
+                url: drop.audioUrl || "",
                 transactionId,
-                metadata: {
-                    audioId: drop.id,
-                    audioTitle: drop.title,
-                    title: drop.title,
-                    subtitle: drop.subtitle || "Audio Drop",
-                    url: drop.audioUrl || "",
-                    transactionId,
-                },
-            });
-
-            applyLocalAward();
-            await refreshActivities();
-            return true;
-        } catch (err) {
-            console.error("[audio-points] award error:", err);
-            applyLocalAward();
-            return true;
-        } finally {
-            awardingPointsRef.current = false;
-        }
+            },
+            createdAt: Date.now(),
+        });
+        setShowPointsToast(true);
+        await refreshActivities();
     };
 
     const saveProgressToApi = async (elapsedSecs: number, drop: AudioDrop) => {
@@ -1368,9 +1335,11 @@ export default function AudioDropCard() {
 
         const totalSecs = drop.durationSeconds || parseDurationToSeconds(duration);
         const pct = totalSecs > 0 ? Math.round((elapsedSecs / totalSecs) * 100) : 0;
+        if (pct >= 90 && requestedPointsRef.current) return;
+        if (pct >= 90) requestedPointsRef.current = true;
 
         try {
-            await axios.post("/api/audio-progress", {
+            const res = await axios.post("/api/audio-progress", {
                 userId,
                 audioId: drop.id,
                 title: drop.title,
@@ -1384,14 +1353,13 @@ export default function AudioDropCard() {
                 userEmail: user?.email || "",
             });
 
-            if (pct >= 90) {
-                await awardAudioDropPoints(drop);
+            const pointsAwarded = Number(res.data?.pointsAwarded) || 0;
+            if (pointsAwarded > 0) {
+                await applyPersistedAudioPoints(drop, pointsAwarded);
             }
         } catch (err) {
             console.error("[audio-progress] save error:", err);
-            if (pct >= 90) {
-                await awardAudioDropPoints(drop);
-            }
+            if (pct >= 90) requestedPointsRef.current = false;
         }
     };
 
@@ -1442,7 +1410,7 @@ export default function AudioDropCard() {
 
         // Reset the points-awarded guard for the new track
         hasAwardedPointsRef.current = false;
-        awardingPointsRef.current = false;
+        requestedPointsRef.current = false;
 
         audioIdRef.current = target.id;
         const drop = audioFileToAudioDrop(target);
@@ -1503,7 +1471,7 @@ export default function AudioDropCard() {
             hasCountedListen.current = false;
             // Reset points guard on new fetch
             hasAwardedPointsRef.current = false;
-            awardingPointsRef.current = false;
+            requestedPointsRef.current = false;
 
             if (urlParam && !idParam) {
                 const decodedUrl = decodeURIComponent(urlParam);
@@ -1655,7 +1623,15 @@ export default function AudioDropCard() {
         if (!audio || !audioDrop) return;
         if (playing) {
             audio.play().catch(console.error);
-            timerRef.current = setInterval(() => setElapsed(audio.currentTime), 1000);
+            timerRef.current = setInterval(() => {
+                const currentTime = audio.currentTime;
+                setElapsed(currentTime);
+                const totalSecs = audio.duration || audioDrop.durationSeconds || parseDurationToSeconds(duration);
+                const currentPct = totalSecs > 0 ? Math.round((currentTime / totalSecs) * 100) : 0;
+                if (currentPct >= 90 && !requestedPointsRef.current) {
+                    saveProgressToApi(currentTime, audioDrop);
+                }
+            }, 1000);
             startProgressSaving(audioDrop);
         } else {
             audio.pause();

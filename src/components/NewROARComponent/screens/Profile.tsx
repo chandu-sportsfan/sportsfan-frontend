@@ -116,33 +116,29 @@ export default function Profile({ userBadge, setUserBadge, onCompose, onToast, s
 
   return (
     <div className="screen-scroll">
-      {/* ── Header ── */}
-      <div style={{ padding: "24px 16px 0", textAlign: "center", position: "relative" }}>
+      {/* ── Header Top Bar ── */}
+      <div style={{ padding: "16px 16px 0", display: "flex", alignItems: "center", gap: 12 }}>
         {onNavigateTab && (
           <button
             onClick={() => onNavigateTab("home")}
-            style={{
-              position: "absolute",
-              top: 24,
-              left: 16,
-              fontSize: 22,
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              color: "var(--text-primary)",
-            }}
+            style={{ fontSize: 22, background: "none", border: "none", cursor: "pointer", color: "var(--text-primary)" }}
           >
             ←
           </button>
         )}
+        <h1 className="font-display" style={{ fontSize: 40, letterSpacing: "0.04em", color: "#fff" }}>Profile</h1>
+      </div>
+
+      {/* ── User Card Info ── */}
+      <div style={{ padding: "12px 16px 0", textAlign: "center", position: "relative" }}>
         <div style={{ display: "flex", justifyContent: "center", position: "relative", width: 96, margin: "0 auto" }}>
           <AvatarWithBadge username={user.username || CURRENT_USER.username} badge={userBadge} size="lg" />
           <div onClick={() => onToast("Upload avatar feature coming soon!")} style={{ position: "absolute", bottom: 0, right: 4, width: 20, height: 20, borderRadius: "50%", background: "var(--accent-magenta)", display: "flex", alignItems: "center", justifyContent: "center", border: "2px solid var(--bg-primary)", color: "#fff", fontSize: 12, fontWeight: 900, cursor: "pointer" }}>+</div>
         </div>
 
-        <h1 className="font-display" style={{ fontSize: 32, letterSpacing: "0.04em", marginTop: 14, color: "#fff" }}>
+        <h2 className="font-display" style={{ fontSize: 32, letterSpacing: "0.04em", marginTop: 14, color: "#fff" }}>
           {user.username ? user.username.toUpperCase() : "ROARFAN"}
-        </h1>
+        </h2>
         <p style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 2 }}>@{user.handle || CURRENT_USER.handle}</p>
 
         {/* Fan since */}

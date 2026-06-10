@@ -2030,7 +2030,10 @@ function ComposeModal({
                   animate={{ opacity: 1, y: 0 }}
                 >
                   <button
-                    onClick={() => setSelected(null)}
+                    onClick={() => {
+                      setSelected(null);
+                      onClose();
+                    }}
                     style={{
                       fontSize: 13,
                       color: "var(--accent-magenta)",
@@ -2778,8 +2781,8 @@ function HomeFeed({
           />
         </div>
 
-        {/* Quick-compose pills — between ROAR logo and icons */}
-        <div style={{ display: "flex", gap: 5, alignItems: "center", flex: 1, justifyContent: "center", padding: "0 8px", overflow: "hidden" }}>
+        {/* Quick-compose pills — aligned to the right */}
+        <div style={{ display: "flex", gap: 5, alignItems: "center", flexShrink: 0 }}>
           {RADIAL_OPTS.map((q) => (
             <motion.button
               key={q.id}
@@ -2808,78 +2811,6 @@ function HomeFeed({
               <span style={{ fontSize: 8.5, fontWeight: 700, color: "rgba(255,255,255,0.85)", whiteSpace: "nowrap", lineHeight: 1, letterSpacing: "0.03em" }}>{q.label}</span>
             </motion.button>
           ))}
-        </div>
-
-        <div style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
-          <motion.button
-            whileTap={{ scale: 0.93 }}
-            onClick={onLeaderboard}
-            style={{
-              width: 38,
-              height: 38,
-              borderRadius: "50%",
-              background: "rgba(255,255,255,0.06)",
-              border: "none",
-              cursor: "pointer",
-              fontSize: 16,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            🏆
-          </motion.button>
-          <motion.button
-            whileTap={{ scale: 0.93 }}
-            onClick={onNavigateAlerts}
-            style={{
-              position: "relative",
-              width: 38,
-              height: 38,
-              borderRadius: "50%",
-              background: "rgba(255,255,255,0.06)",
-              border: "none",
-              cursor: "pointer",
-              fontSize: 16,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            🔔
-            {unreadCount > 0 && (
-              <span
-                style={{
-                  position: "absolute",
-                  top: -2,
-                  right: -2,
-                  minWidth: 16,
-                  height: 16,
-                  borderRadius: 999,
-                  background: "var(--accent-magenta)",
-                  fontSize: 9,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: "white",
-                  fontWeight: 700,
-                }}
-              >
-                {unreadCount}
-              </span>
-            )}
-          </motion.button>
-          <motion.button
-            whileTap={{ scale: 0.93 }}
-            onClick={onFanProfile}
-            style={{ background: "none", border: "none", cursor: "pointer" }}
-          >
-            <AvatarWithBadge
-              username={CURRENT_USER.username}
-              badge={userBadge}
-              size="sm"
-            />
-          </motion.button>
         </div>
       </div>
 

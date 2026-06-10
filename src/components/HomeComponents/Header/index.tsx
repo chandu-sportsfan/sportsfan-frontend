@@ -15,7 +15,7 @@
 // import { useAuth } from "@/context/AuthContext";
 // import { useChats } from "@/hooks/useChat";
 // import LogoutButton from "../LogoutButton";
-import { useRoarNotifications } from "@/context/RoarNotificationsContext";
+//import { useRoarNotifications } from "@/context/RoarNotificationsContext";
 
 // // ── Tournament badge config ───────────────────────────────────────────────────
 
@@ -590,6 +590,7 @@ import { useLeaderboard } from "@/context/LeaderboardContext";
 import { useAuth } from "@/context/AuthContext";
 import { useChats } from "@/hooks/useChat";
 import LogoutButton from "../LogoutButton";
+import { useRoarNotifications } from "@/context/RoarNotificationsContext";
 
 // ── Tournament badge config ───────────────────────────────────────────────────
 

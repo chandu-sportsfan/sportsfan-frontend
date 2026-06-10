@@ -1,6 +1,6 @@
 "use client";
 
-import ROARApp from "@/src/components/ROARComponent";
+import ROARApp from "@/src/components/NewROARComponent";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 

@@ -194,7 +194,22 @@ export default function ROARApp() {
   const handlePost = useCallback(
     async (payload: any) => {
       try {
-        const postType = ["hot_take", "prediction", "debate", "memory"].includes(payload.type) ? payload.type : "hot_take";
+        const postType = ["hot_take", "prediction", "debate", "memory", "post"].includes(payload.type) ? payload.type : "hot_take";
+        
+        let mediaUrls: string[] = [];
+        if (payload.mediaFiles && payload.mediaFiles.length > 0) {
+          showToast("Uploading media...");
+          const uploadPromises = payload.mediaFiles.map(async (file: File) => {
+            const formData = new FormData();
+            formData.append("file", file);
+            const uploadRes = await axios.post("/api/upload", formData, {
+              headers: { "Content-Type": "multipart/form-data" },
+            });
+            return uploadRes.data.url;
+          });
+          mediaUrls = await Promise.all(uploadPromises);
+        }
+
         const res = await axios.post("/api/roar/posts", {
           type: postType,
           text: payload.type === "debate" ? `${payload.sideA} VS ${payload.sideB}` : payload.text,
@@ -205,6 +220,7 @@ export default function ROARApp() {
           matchId: payload.match,
           confidence: payload.confidence,
           audience: payload.audience,
+          mediaUrls,
         });
         if (res.data?.success) {
           const toastMap: Record<string, string> = {
@@ -212,6 +228,7 @@ export default function ROARApp() {
             prediction: "📊 Prediction posted · Let's see if you're right",
             debate: "⚡ Debate started · Get the fans talking",
             memory: "🕰 Memory shared · OG fans will feel this",
+            post: "✏️ Post is live · Fans can see it now",
           };
           showToast(toastMap[postType] || "🔥 Your take is live");
           fetchPosts();

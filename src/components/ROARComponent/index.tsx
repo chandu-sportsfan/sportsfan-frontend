@@ -3,7 +3,7 @@
  * Render <ROARApp /> from main.jsx / main.tsx
  */
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { createPortal } from "react-dom";
 import axios from "axios";
@@ -182,6 +182,7 @@ const GLOBAL_CSS = `
   overflow-y: auto;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
   padding-bottom: 24px;
 }
 .roar-root .gradient-border {
@@ -2030,7 +2031,10 @@ function ComposeModal({
                   animate={{ opacity: 1, y: 0 }}
                 >
                   <button
-                    onClick={() => setSelected(null)}
+                    onClick={() => {
+                      setSelected(null);
+                      onClose();
+                    }}
                     style={{
                       fontSize: 13,
                       color: "var(--accent-magenta)",
@@ -2724,6 +2728,7 @@ function HomeFeed({
       sideA: p.sideA,
       sideB: p.sideB,
       memCtx: p.memCtx,
+      mediaUrls: p.mediaUrls,
     };
   });
 
@@ -2777,8 +2782,8 @@ function HomeFeed({
           />
         </div>
 
-        {/* Quick-compose pills — between ROAR logo and icons */}
-        <div style={{ display: "flex", gap: 5, alignItems: "center", flex: 1, justifyContent: "center", padding: "0 8px", overflow: "hidden" }}>
+        {/* Quick-compose pills — aligned to the right */}
+        <div style={{ display: "flex", gap: 5, alignItems: "center", flexShrink: 0 }}>
           {RADIAL_OPTS.map((q) => (
             <motion.button
               key={q.id}
@@ -2807,78 +2812,6 @@ function HomeFeed({
               <span style={{ fontSize: 8.5, fontWeight: 700, color: "rgba(255,255,255,0.85)", whiteSpace: "nowrap", lineHeight: 1, letterSpacing: "0.03em" }}>{q.label}</span>
             </motion.button>
           ))}
-        </div>
-
-        <div style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
-          <motion.button
-            whileTap={{ scale: 0.93 }}
-            onClick={onLeaderboard}
-            style={{
-              width: 38,
-              height: 38,
-              borderRadius: "50%",
-              background: "rgba(255,255,255,0.06)",
-              border: "none",
-              cursor: "pointer",
-              fontSize: 16,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            🏆
-          </motion.button>
-          <motion.button
-            whileTap={{ scale: 0.93 }}
-            onClick={onNavigateAlerts}
-            style={{
-              position: "relative",
-              width: 38,
-              height: 38,
-              borderRadius: "50%",
-              background: "rgba(255,255,255,0.06)",
-              border: "none",
-              cursor: "pointer",
-              fontSize: 16,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            🔔
-            {unreadCount > 0 && (
-              <span
-                style={{
-                  position: "absolute",
-                  top: -2,
-                  right: -2,
-                  minWidth: 16,
-                  height: 16,
-                  borderRadius: 999,
-                  background: "var(--accent-magenta)",
-                  fontSize: 9,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: "white",
-                  fontWeight: 700,
-                }}
-              >
-                {unreadCount}
-              </span>
-            )}
-          </motion.button>
-          <motion.button
-            whileTap={{ scale: 0.93 }}
-            onClick={onFanProfile}
-            style={{ background: "none", border: "none", cursor: "pointer" }}
-          >
-            <AvatarWithBadge
-              username={CURRENT_USER.username}
-              badge={userBadge}
-              size="sm"
-            />
-          </motion.button>
         </div>
       </div>
 
@@ -3323,7 +3256,7 @@ function HomeFeed({
             })}
 
         {filtered.map((item, i) => {
-          if (item.type === "hot_take" || item.type === "prediction") {
+          if (item.type === "hot_take" || item.type === "prediction" || item.type === "post") {
             const pct = pcts[item.id] ?? item.agreePercent ?? 50;
             const userVote = votes[item.id];
             return (
@@ -3354,16 +3287,30 @@ function HomeFeed({
                       background:
                         item.type === "hot_take"
                           ? "rgba(239,68,68,0.12)"
-                          : "rgba(255,107,53,0.12)",
+                          : item.type === "post"
+                            ? "rgba(233,30,140,0.12)"
+                            : "rgba(255,107,53,0.12)",
                       color:
                         item.type === "hot_take"
                           ? "#f87171"
-                          : "var(--accent-orange)",
-                      border: `1px solid ${item.type === "hot_take" ? "rgba(239,68,68,0.2)" : "rgba(255,107,53,0.2)"}`,
+                          : item.type === "post"
+                            ? "var(--accent-magenta)"
+                            : "var(--accent-orange)",
+                      border: `1px solid ${
+                        item.type === "hot_take"
+                          ? "rgba(239,68,68,0.2)"
+                          : item.type === "post"
+                            ? "rgba(233,30,140,0.2)"
+                            : "rgba(255,107,53,0.2)"
+                      }`,
                       textTransform: "uppercase",
                     }}
                   >
-                    {item.type === "hot_take" ? "🔥 Hot Take" : "📊 Prediction"}
+                    {item.type === "hot_take"
+                      ? "🔥 Hot Take"
+                      : item.type === "post"
+                        ? "✏️ Post"
+                        : "📊 Prediction"}
                   </span>
                   <span
                     style={{
@@ -3429,6 +3376,32 @@ function HomeFeed({
                 >
                   {item.text}
                 </p>
+                {item.mediaUrls && item.mediaUrls.length > 0 && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
+                    {item.mediaUrls.map((url: string, idx: number) => {
+                      const isVideo = url.endsWith(".mp4") || url.includes("/video/upload/");
+                      if (isVideo) {
+                        return (
+                          <video
+                            key={idx}
+                            src={url}
+                            controls
+                            style={{ width: "100%", maxHeight: 300, borderRadius: 12, objectFit: "cover" }}
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        );
+                      }
+                      return (
+                        <img
+                          key={idx}
+                          src={url}
+                          alt="Post Media"
+                          style={{ width: "100%", maxHeight: 300, borderRadius: 12, objectFit: "cover" }}
+                        />
+                      );
+                    })}
+                  </div>
+                )}
                 {item.match && (
                   <p
                     style={{
@@ -5315,6 +5288,32 @@ function Profile({
           {BADGE_LABELS[userBadge]}
         </p>
 
+        {/* Favourite Player */}
+        {(user.favPlayer || editFavPlayer) && (
+          <p style={{ fontSize: 13, color: "var(--text-secondary)", marginTop: 6 }}>
+            ⭐ Favourite player:{" "}
+            <span style={{ color: "var(--text-primary)", fontWeight: 600 }}>
+              {user.favPlayer || editFavPlayer}
+            </span>
+          </p>
+        )}
+
+        {/* About Me */}
+        {(user.about || editAbout) && (
+          <p
+            style={{
+              fontSize: 13,
+              color: "var(--text-secondary)",
+              marginTop: 6,
+              maxWidth: 280,
+              margin: "6px auto 0",
+              lineHeight: 1.5,
+            }}
+          >
+            {user.about || editAbout}
+          </p>
+        )}
+
         {/* 3 dots/circles underneath */}
         <div
           style={{
@@ -6108,6 +6107,14 @@ function Profile({
                 whileTap={{ scale: 0.97 }}
                 className="btn-gradient"
                 onClick={async () => {
+                  // Update local state immediately so UI reflects changes
+                  setProfileData((prev: any) => ({
+                    ...prev,
+                    user: { ...(prev?.user || {}), username: editName, favPlayer: editFavPlayer, about: editAbout, showPredHistory: editShowPredHistory },
+                  }));
+                  setEditOpen(false);
+                  onToast("Profile updated successfully");
+                  // Persist to backend in the background (non-blocking)
                   try {
                     await axios.patch("/api/roar/profile", {
                       username: editName,
@@ -6115,11 +6122,8 @@ function Profile({
                       about: editAbout,
                       showPredHistory: editShowPredHistory,
                     });
-                    setEditOpen(false);
-                    onToast("Profile updated successfully");
                   } catch (err) {
-                    console.error(err);
-                    onToast("Failed to update profile");
+                    console.error("Profile sync failed (non-critical):", err);
                   }
                 }}
                 style={{
@@ -6764,6 +6768,31 @@ function PostDetailsOverlay({
             >
               {post.text}
             </p>
+            {post.mediaUrls && post.mediaUrls.length > 0 && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
+                {post.mediaUrls.map((url: string, idx: number) => {
+                  const isVideo = url.endsWith(".mp4") || url.includes("/video/upload/");
+                  if (isVideo) {
+                    return (
+                      <video
+                        key={idx}
+                        src={url}
+                        controls
+                        style={{ width: "100%", maxHeight: 300, borderRadius: 12, objectFit: "cover" }}
+                      />
+                    );
+                  }
+                  return (
+                    <img
+                      key={idx}
+                      src={url}
+                      alt="Post Media"
+                      style={{ width: "100%", maxHeight: 300, borderRadius: 12, objectFit: "cover" }}
+                    />
+                  );
+                })}
+              </div>
+            )}
 
             {post.type === "hot_take" && (
               <>
@@ -7269,9 +7298,24 @@ export default function ROARApp() {
   const handlePost = useCallback(
     async (payload: any) => {
       try {
-        const postType = ["hot_take", "prediction", "debate", "memory"].includes(payload.type)
+        const postType = ["hot_take", "prediction", "debate", "memory", "post"].includes(payload.type)
           ? payload.type
           : "hot_take";
+
+        let mediaUrls: string[] = [];
+        if (payload.mediaFiles && payload.mediaFiles.length > 0) {
+          showToast("Uploading media...");
+          const uploadPromises = payload.mediaFiles.map(async (file: File) => {
+            const formData = new FormData();
+            formData.append("file", file);
+            const uploadRes = await axios.post("/api/upload", formData, {
+              headers: { "Content-Type": "multipart/form-data" },
+            });
+            return uploadRes.data.url;
+          });
+          mediaUrls = await Promise.all(uploadPromises);
+        }
+
         const res = await axios.post("/api/roar/posts", {
           type: postType,
           text: payload.type === "debate"
@@ -7284,6 +7328,7 @@ export default function ROARApp() {
           matchId: payload.match,
           confidence: payload.confidence,
           audience: payload.audience,
+          mediaUrls,
         });
         if (res.data?.success) {
           const toastMap: Record<string, string> = {
@@ -7291,6 +7336,7 @@ export default function ROARApp() {
             prediction: "📊 Prediction posted · Let's see if you're right",
             debate: "⚡ Debate started · Get the fans talking",
             memory: "🕰 Memory shared · OG fans will feel this",
+            post: "✏️ Post is live · Fans can see it now",
           };
           showToast(toastMap[postType] || "🔥 Your take is live");
           fetchPosts();

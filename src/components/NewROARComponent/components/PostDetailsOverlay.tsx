@@ -40,7 +40,9 @@ export default function PostDetailsOverlay({ post, onClose, onToast, onVote }: P
         ]);
         return;
       }
-      const res = await axios.get(`/api/roar/posts/${post.id}/comments`);
+      const res = await axios.get(`/api/roar/posts/${post.id}/comments`, {
+        params: { roomId: post.roomId }
+      });
       if (res.data?.success) setComments(res.data.comments);
     } catch (err) {
       console.error("Failed to fetch comments:", err);
@@ -59,7 +61,10 @@ export default function PostDetailsOverlay({ post, onClose, onToast, onVote }: P
         onToast("Comment posted!");
         return;
       }
-      const res = await axios.post(`/api/roar/posts/${post.id}/comments`, { text: commentText.trim() });
+      const res = await axios.post(`/api/roar/posts/${post.id}/comments`, {
+        text: commentText.trim(),
+        roomId: post.roomId
+      });
       if (res.data?.success) { setCommentText(""); fetchComments(); onToast("Comment posted successfully!"); }
     } catch (err) {
       console.error("Failed to submit comment:", err);

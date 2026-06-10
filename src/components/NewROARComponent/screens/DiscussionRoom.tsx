@@ -227,6 +227,7 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
                           timeAgo: p.timeAgo,
                           type: p.type || "chat",
                           isDbPost: true,
+                          roomId: roomId,
                         });
                       }
                     }}

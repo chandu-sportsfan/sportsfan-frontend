@@ -1,6 +1,5 @@
 
 
-
 "use client";
 
 import {
@@ -89,11 +88,10 @@ const BellButton = memo(function BellButton({
         <Bell size={15} className="text-pink-400" />
         {capped > 0 && (
           <span
-            className={`absolute -top-1 -right-1 flex items-center justify-center rounded-full bg-[#e91e8c] text-white font-bold leading-none border border-[#07070f] ${
-              capped > 9
-                ? "min-w-[18px] px-[3px] text-[9px] h-[18px]"
-                : "w-4 h-4 text-[9px]"
-            }`}
+            className={`absolute -top-1 -right-1 flex items-center justify-center rounded-full bg-[#e91e8c] text-white font-bold leading-none border border-[#07070f] ${capped > 9
+              ? "min-w-[18px] px-[3px] text-[9px] h-[18px]"
+              : "w-4 h-4 text-[9px]"
+              }`}
           >
             {capped}
           </span>
@@ -115,11 +113,10 @@ const ChatButton = memo(function ChatButton({
         <MessageCircle size={15} className="text-pink-400" />
         {capped > 0 && (
           <span
-            className={`absolute -top-1 -right-1 flex items-center justify-center rounded-full bg-[#e91e8c] text-white font-bold leading-none border border-[#07070f] ${
-              capped > 9
-                ? "min-w-[18px] px-[3px] text-[9px] h-[18px]"
-                : "w-4 h-4 text-[9px]"
-            }`}
+            className={`absolute -top-1 -right-1 flex items-center justify-center rounded-full bg-[#e91e8c] text-white font-bold leading-none border border-[#07070f] ${capped > 9
+              ? "min-w-[18px] px-[3px] text-[9px] h-[18px]"
+              : "w-4 h-4 text-[9px]"
+              }`}
           >
             {capped}
           </span>
@@ -143,9 +140,8 @@ const Avatar = memo(function Avatar({
   return (
     <div
       style={{ width: size, height: size }}
-      className={`rounded-full overflow-hidden flex-shrink-0 bg-gradient-to-br from-pink-500 to-orange-500 ${
-        ring ? "ring-2 ring-pink-500/40" : ""
-      }`}
+      className={`rounded-full overflow-hidden flex-shrink-0 bg-gradient-to-br from-pink-500 to-orange-500 ${ring ? "ring-2 ring-pink-500/40" : ""
+        }`}
     >
       {src ? (
         <img src={src} alt={name} className="w-full h-full object-cover" />
@@ -357,11 +353,10 @@ export default function Header() {
                         />
                       ) : (
                         <div
-                          className={`w-full h-full flex items-center justify-center text-white font-bold bg-gradient-to-br ${
-                            womenMeta
-                              ? `${womenMeta.avatarFrom} ${womenMeta.avatarTo}`
-                              : "from-pink-500 to-orange-500"
-                          }`}
+                          className={`w-full h-full flex items-center justify-center text-white font-bold bg-gradient-to-br ${womenMeta
+                            ? `${womenMeta.avatarFrom} ${womenMeta.avatarTo}`
+                            : "from-pink-500 to-orange-500"
+                            }`}
                         >
                           {result.name.charAt(0)}
                         </div>
@@ -388,11 +383,10 @@ export default function Header() {
 
                       {result.type === "player" && result.jerseyNumber && (
                         <span
-                          className={`text-xs px-1.5 py-0.5 rounded-full flex-shrink-0 ${
-                            womenMeta
-                              ? `${womenMeta.jerseyBg} ${womenMeta.jerseyText}`
-                              : "bg-pink-500/20 text-pink-400"
-                          }`}
+                          className={`text-xs px-1.5 py-0.5 rounded-full flex-shrink-0 ${womenMeta
+                            ? `${womenMeta.jerseyBg} ${womenMeta.jerseyText}`
+                            : "bg-pink-500/20 text-pink-400"
+                            }`}
                         >
                           #{result.jerseyNumber}
                         </span>
@@ -407,21 +401,20 @@ export default function Header() {
                       )}
 
                       <span
-                        className={`text-xs font-semibold uppercase px-1.5 py-0.5 rounded-full flex-shrink-0 ${
-                          result.type === "user"
-                            ? "bg-blue-500/20 text-blue-400"
-                            : result.type === "player"
+                        className={`text-xs font-semibold uppercase px-1.5 py-0.5 rounded-full flex-shrink-0 ${result.type === "user"
+                          ? "bg-blue-500/20 text-blue-400"
+                          : result.type === "player"
                             ? womenMeta
                               ? `${womenMeta.jerseyBg} ${womenMeta.jerseyText}`
                               : "bg-pink-500/10 text-gray-400"
                             : "bg-purple-500/10 text-gray-400"
-                        }`}
+                          }`}
                       >
                         {result.type === "user"
                           ? "User"
                           : result.type === "player"
-                          ? "Player"
-                          : "Team"}
+                            ? "Player"
+                            : "Team"}
                       </span>
                     </div>
 
@@ -508,8 +501,8 @@ export default function Header() {
     () =>
       searchQuery.trim()
         ? `/MainModules/AskAI?q=${encodeURIComponent(
-            searchQuery.trim().slice(0, 100)
-          )}`
+          searchQuery.trim().slice(0, 100)
+        )}`
         : "/MainModules/AskAI",
     [searchQuery]
   );
@@ -582,9 +575,8 @@ export default function Header() {
               </div>
               <ChevronDown
                 size={14}
-                className={`text-gray-400 ml-1 transition-transform duration-200 ${
-                  showProfileDropdown ? "rotate-180" : ""
-                }`}
+                className={`text-gray-400 ml-1 transition-transform duration-200 ${showProfileDropdown ? "rotate-180" : ""
+                  }`}
               />
             </button>
             {showProfileDropdown && (

@@ -203,6 +203,8 @@ export default function HomeFeed({
       </div>
 
       <div style={{ padding: "0 16px", display: "flex", flexDirection: "column", gap: 14 }}>
+        <NewHomePage />
+
         {/* Live room banners */}
         {rooms
           .filter((r) => r.roomId !== "mock-cricket" && r.roomId !== "mock-football")
@@ -254,8 +256,6 @@ export default function HomeFeed({
               </motion.div>
             );
           })}
-
-        <NewHomePage />
 
         {/* Feed posts */}
         {filtered.map((item, i) => {

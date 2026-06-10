@@ -197,7 +197,8 @@ export default function HomeFeed({
           .map((room, idx) => {
             const showThisRoom =
               filter === "Live" ||
-              (filter === "For You" && (userSports.length === 0 || userSports.includes(room.sport?.toLowerCase()))) ||
+              //(filter === "For You" && (userSports.length === 0 || userSports.includes(room.sport?.toLowerCase()))) ||
+              (filter === "For You" && (userSports.length === 0 || userSports.includes(room.sport?.toLowerCase() ?? ''))) ||
               (filter === "Cricket" && room.sport?.toLowerCase() === "cricket") ||
               (filter === "Football" && room.sport?.toLowerCase() === "football");
             if (!showThisRoom) return null;

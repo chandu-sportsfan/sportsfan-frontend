@@ -17,6 +17,7 @@ import { AIChatProvider } from "@/context/AskAIChatContext";
 import { WPLPlayerProfileProvider } from "@/context/Wplplayerprofilecontext";
 import { FifaPlayerProfileProvider } from "@/context/FifaPlayerProfileContext";
 import { RoarNotificationsProvider } from "@/context/RoarNotificationsContext"; // Import your Activity Context
+import { ActivityProvider } from "@/context/ActivityContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -71,7 +72,7 @@ export default function RootLayout({
                   <GlobalSearchProvider>
                     <AudioProvider>
                       <LeaderboardProvider>
-                        <ActivityProvider> {/* Placed here so it has access to Auth, session data, and logs correctly */}
+                        <ActivityProvider> 
                           <VideoProvider>
                             <PlaysProvider>
                               <ScriptsProvider>

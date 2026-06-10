@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useCallback } from "react";
+import React, { createContext, useContext, useState } from "react";
 
 export type RoarNotification = {
   id: string;
@@ -13,6 +13,16 @@ export type RoarNotification = {
   cta: string | null;
 };
 
+const INITIAL_NOTIFICATIONS: RoarNotification[] = [
+  { id: "n1", type: "PREDICTION_OK", title: "You called it! 🎯", subtitle: "Your prediction 'Kohli 80+' vs Australia was CORRECT. +50 rep points.", time: "2m", read: false, fan: { username: "StatsKing_99", badge: "ORACLE" }, cta: "See your accuracy" },
+  { id: "n2", type: "CHALLENGE", title: "StatsKing_99 challenged your take.", subtitle: "They said Rohit is more consistent than Kohli in tests. Reply now.", time: "8m", read: false, fan: { username: "StatsKing_99", badge: "ORACLE" }, cta: null },
+  { id: "n5", type: "BADGE", title: "Badge Unlocked: Bold Caller ⚡", subtitle: "You called 3 unexpected outcomes correctly. Rare badge earned.", time: "2h", read: false, fan: null, cta: null },
+  { id: "n6", type: "PREDICTION_FAIL", title: "Wrong call — but a bold one 💪", subtitle: "Your prediction 'Jadeja 4 wickets' was incorrect. It stays on profile.", time: "3h", read: true, fan: null, cta: null },
+  { id: "n7", type: "RIVAL", title: "Your rival won a debate.", subtitle: "Arjun_80s was right about Kohli vs AUS. Your score: 2 wins, 5 losses.", time: "5h", read: true, fan: { username: "Arjun_80s", badge: "OG_FAN" }, cta: "Challenge them" },
+  { id: "n8", type: "FAN_OF_WEEK", title: "Fan of the Week: Arjun_80s 🏆", subtitle: "82% accuracy this week. 47 correct predictions.", time: "1d", read: true, fan: { username: "Arjun_80s", badge: "OG_FAN" }, cta: null },
+  { id: "n9", type: "WEEKLY", title: "Monday Bold Call is live!", subtitle: "This week: Will India win the series vs AUS? 3,200 fans voted.", time: "1d", read: true, fan: null, cta: "Cast your call" },
+];
+
 type RoarNotifContextType = {
   roarNotifications: RoarNotification[];
   setRoarNotifications: React.Dispatch<React.SetStateAction<RoarNotification[]>>;
@@ -22,25 +32,25 @@ type RoarNotifContextType = {
 };
 
 const RoarNotifContext = createContext<RoarNotifContextType>({
-  roarNotifications: [],
+  roarNotifications: INITIAL_NOTIFICATIONS,
   setRoarNotifications: () => {},
   markRoarRead: () => {},
   markAllRoarRead: () => {},
-  roarUnreadCount: 0,
+  roarUnreadCount: 3,
 });
 
 export function RoarNotificationsProvider({ children }: { children: React.ReactNode }) {
-  const [roarNotifications, setRoarNotifications] = useState<RoarNotification[]>([]);
+  const [roarNotifications, setRoarNotifications] = useState<RoarNotification[]>(INITIAL_NOTIFICATIONS);
 
-  const markRoarRead = useCallback((id: string) => {
-    setRoarNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
-  }, []);
+  const markRoarRead = (id: string) => {
+    setRoarNotifications((prev: RoarNotification[]) => prev.map((n: RoarNotification) => (n.id === id ? { ...n, read: true } : n)));
+  };
 
-  const markAllRoarRead = useCallback(() => {
-    setRoarNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-  }, []);
+  const markAllRoarRead = () => {
+    setRoarNotifications((prev: RoarNotification[]) => prev.map((n: RoarNotification) => ({ ...n, read: true })));
+  };
 
-  const roarUnreadCount = roarNotifications.filter((n) => !n.read).length;
+  const roarUnreadCount = roarNotifications.filter((n: RoarNotification) => !n.read).length;
 
   return (
     <RoarNotifContext.Provider value={{ roarNotifications, setRoarNotifications, markRoarRead, markAllRoarRead, roarUnreadCount }}>

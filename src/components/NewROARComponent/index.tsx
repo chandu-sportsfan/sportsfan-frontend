@@ -20,6 +20,8 @@ import Notifications from "./screens/Notifications";
 import Leaderboard from "./screens/Leaderboard";
 import Profile from "./screens/Profile";
 import type { Notification, Room } from "./types";
+// ── NEW: shared context so Header's bell can show ROAR unread count ───────────
+import { useRoarNotifications } from "@/context/RoarNotificationsContext";
 
 export default function ROARApp() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -93,9 +95,25 @@ export default function ROARApp() {
     setTimeout(() => setToast({ visible: false, message: "" }), 3700);
   }, []);
 
+  // ── Notifications — now shared via context so global Header bell can read it
+  const {
+    roarNotifications: notifications,
+    setRoarNotifications: setNotifications,
+    markRoarRead,
+    markAllRoarRead,
+  } = useRoarNotifications();
+
+  // Seed the initial static notifications once on mount
+  const [notifSeeded, setNotifSeeded] = useState(false);
+  useEffect(() => {
+    if (!notifSeeded) {
+      setNotifications(NOTIFICATIONS_DATA.map((n) => ({ ...n })));
+      setNotifSeeded(true);
+    }
+  }, [notifSeeded, setNotifications]);
+
   // ── Remote data ────────────────────────────────────────────────────────────
   const [rooms, setRooms] = useState<Room[]>([]);
-  const [notifications, setNotifications] = useState<Notification[]>(NOTIFICATIONS_DATA.map((n) => ({ ...n })));
   const [dbPosts, setDbPosts] = useState<any[]>([]);
   const [showBanner, setShowBanner] = useState(true);
 
@@ -176,7 +194,7 @@ export default function ROARApp() {
       });
       return [...matchNotifs, ...nonMatch];
     });
-  }, [rooms]);
+  }, [rooms]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Actions ────────────────────────────────────────────────────────────────
   const handleVote = useCallback(
@@ -195,7 +213,7 @@ export default function ROARApp() {
     async (payload: any) => {
       try {
         const postType = ["hot_take", "prediction", "debate", "memory", "post"].includes(payload.type) ? payload.type : "hot_take";
-        
+
         let mediaUrls: string[] = [];
         if (payload.mediaFiles && payload.mediaFiles.length > 0) {
           showToast("Uploading media...");
@@ -265,6 +283,7 @@ export default function ROARApp() {
   }, []);
 
   // ── Derived ────────────────────────────────────────────────────────────────
+  // unreadCount is still used for HomeFeed's internal bell (now removed), kept for safety
   const unreadCount = notifications.filter((n) => !n.read).length;
   const isRoom = overlay === "room";
   const isLB = overlay === "leaderboard";
@@ -334,8 +353,6 @@ export default function ROARApp() {
                 <motion.div key={activeTab} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }} style={{ height: "100%" }}>
                   {activeTab === "home" && (
                     <HomeFeed
-                      unreadCount={unreadCount}
-                      onNavigateAlerts={() => setActiveTab("alerts")}
                       onJoinRoom={(room) => { if (room) setSelectedRoom(room); else if (rooms.length) setSelectedRoom(rooms[0]); setOverlay("room"); }}
                       onLeaderboard={() => setOverlay("leaderboard")}
                       onFanProfile={() => setActiveTab("profile")}
@@ -365,8 +382,8 @@ export default function ROARApp() {
                   {activeTab === "alerts" && (
                     <Notifications
                       notifications={notifications}
-                      onMarkRead={(id) => setNotifications((p) => p.map((n) => n.id === id ? { ...n, read: true } : n))}
-                      onMarkAllRead={() => setNotifications((p) => p.map((n) => ({ ...n, read: true })))}
+                      onMarkRead={(id) => markRoarRead(id)}
+                      onMarkAllRead={markAllRoarRead}
                       onCompose={() => openCompose()}
                       onJoinRoom={(room) => { if (room) setSelectedRoom(room); else if (rooms.length) setSelectedRoom(rooms[0]); setOverlay("room"); }}
                       onNavigateTab={handleTab}

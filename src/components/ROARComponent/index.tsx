@@ -5122,6 +5122,7 @@ function Profile({
   const [fanMatchOpen, setFanMatchOpen] = useState(false);
   const [rivalFollowed, setRivalFollowed] = useState(false);
   const [editName, setEditName] = useState("");
+  const [editDisplayName, setEditDisplayName] = useState("");
   const [editFavouritePlayer, setEditFavouritePlayer] = useState("");
   const [editAboutMe, setEditAboutMe] = useState("");
 
@@ -5136,6 +5137,9 @@ function Profile({
           }
           if (res.data.user?.username) {
             setEditName(res.data.user.username);
+          }
+          if (res.data.user?.displayName != null) {
+            setEditDisplayName(res.data.user.displayName);
           }
           if (res.data.user?.favouritePlayer != null) {
             setEditFavouritePlayer(res.data.user.favouritePlayer);
@@ -5254,7 +5258,7 @@ function Profile({
             color: "#fff",
           }}
         >
-          {user.username ? user.username.toUpperCase() : "ROARFAN"}
+          {(user.displayName || user.username || "ROARFAN").toUpperCase()}
         </h1>
         <p style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 2 }}>
           @{user.handle || CURRENT_USER.handle}
@@ -6008,15 +6012,15 @@ function Profile({
                 EDIT PROFILE
               </h3>
 
-              {/* Username */}
+              {/* Display Name */}
               <label style={{ fontSize: 11, color: "var(--text-secondary)", fontWeight: 700 }}>
-                USERNAME
+                DISPLAY NAME
               </label>
               <input
                 type="text"
-                value={editName}
-                onChange={(e) => setEditName(e.target.value)}
-                placeholder="e.g. RoarFan99"
+                value={editDisplayName}
+                onChange={(e) => setEditDisplayName(e.target.value)}
+                placeholder="e.g. Raghav"
                 style={{
                   width: "100%", height: 40, borderRadius: 10,
                   background: "var(--bg-tertiary)", border: "1px solid var(--border)",
@@ -6081,12 +6085,16 @@ function Profile({
                     try {
                       await axios.patch("/api/roar/profile", {
                         username: editName,
+                        displayName: editDisplayName,
                         favouritePlayer: editFavouritePlayer,
                         aboutMe: editAboutMe,
                       });
                       const res = await axios.get("/api/roar/profile");
                       if (res.data?.success) {
                         setProfileData(res.data);
+                        if (res.data.user?.displayName != null) {
+                          setEditDisplayName(res.data.user.displayName);
+                        }
                         if (res.data.user?.favouritePlayer != null) {
                           setEditFavouritePlayer(res.data.user.favouritePlayer);
                         }

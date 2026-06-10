@@ -4,7 +4,7 @@ import Link from "next/link";
 export default function Sidebar() {
   return (
     <div className="absolute inset-0 w-full h-full border-r border-pink-500/20 p-4 overflow-y-auto">
-      <Link href="/MainModules/HomePage" className="block w-full">
+      <Link href="/MainModules/ROAR" className="block w-full">
         <div className="text-xl font-bold mb-6 cursor-pointer hover:text-pink-500 transition text-white">
           SportsFan360
         </div>

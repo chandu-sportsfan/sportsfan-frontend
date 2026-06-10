@@ -211,11 +211,27 @@ export default function ROARApp() {
 
   const handleLike = useCallback(
     async (postId: string) => {
+      // Optimistic update
+      setDbPosts((prev) =>
+        prev.map((post) => {
+          if (post.id === postId || post._id === postId) {
+            const userLiked = post.userLiked ?? false;
+            return {
+              ...post,
+              userLiked: !userLiked,
+              likeCount: Math.max(0, (post.likeCount ?? 0) + (userLiked ? -1 : 1)),
+            };
+          }
+          return post;
+        })
+      );
+
       try {
         await axios.post(`/api/roar/posts/${postId}/like`);
         await fetchPosts();
       } catch (err) {
         console.error("Failed to submit like:", err);
+        await fetchPosts(); // Rollback to actual db state on error
       }
     },
     [fetchPosts],

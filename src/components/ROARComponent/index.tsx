@@ -3,7 +3,7 @@
  * Render <ROARApp /> from main.jsx / main.tsx
  */
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { createPortal } from "react-dom";
 import axios from "axios";
@@ -5221,6 +5221,32 @@ function Profile({
           {BADGE_LABELS[userBadge]}
         </p>
 
+        {/* Favourite Player */}
+        {(user.favPlayer || editFavPlayer) && (
+          <p style={{ fontSize: 13, color: "var(--text-secondary)", marginTop: 6 }}>
+            ⭐ Favourite player:{" "}
+            <span style={{ color: "var(--text-primary)", fontWeight: 600 }}>
+              {user.favPlayer || editFavPlayer}
+            </span>
+          </p>
+        )}
+
+        {/* About Me */}
+        {(user.about || editAbout) && (
+          <p
+            style={{
+              fontSize: 13,
+              color: "var(--text-secondary)",
+              marginTop: 6,
+              maxWidth: 280,
+              margin: "6px auto 0",
+              lineHeight: 1.5,
+            }}
+          >
+            {user.about || editAbout}
+          </p>
+        )}
+
         {/* 3 dots/circles underneath */}
         <div
           style={{
@@ -6014,6 +6040,14 @@ function Profile({
                 whileTap={{ scale: 0.97 }}
                 className="btn-gradient"
                 onClick={async () => {
+                  // Update local state immediately so UI reflects changes
+                  setProfileData((prev: any) => ({
+                    ...prev,
+                    user: { ...(prev?.user || {}), username: editName, favPlayer: editFavPlayer, about: editAbout, showPredHistory: editShowPredHistory },
+                  }));
+                  setEditOpen(false);
+                  onToast("Profile updated successfully");
+                  // Persist to backend in the background (non-blocking)
                   try {
                     await axios.patch("/api/roar/profile", {
                       username: editName,
@@ -6021,11 +6055,8 @@ function Profile({
                       about: editAbout,
                       showPredHistory: editShowPredHistory,
                     });
-                    setEditOpen(false);
-                    onToast("Profile updated successfully");
                   } catch (err) {
-                    console.error(err);
-                    onToast("Failed to update profile");
+                    console.error("Profile sync failed (non-critical):", err);
                   }
                 }}
                 style={{

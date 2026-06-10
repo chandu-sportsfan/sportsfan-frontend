@@ -1,6 +1,6 @@
 "use client";
 
-import ROARApp from "@/src/components/ROARComponent";
+import ROARApp from "@/src/components/NewROARComponent";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 
@@ -13,7 +13,6 @@ export default function ROARPage() {
           <span className="text-sm">Back</span>
         </button>
       </Link>
-      {/* Give ROARApp a fixed viewport height so its internal absolute/flex children don't collapse */}
       <div style={{ height: "calc(100vh - 140px)", minHeight: "600px", borderRadius: "24px", overflow: "hidden" }}>
         <ROARApp />
       </div>

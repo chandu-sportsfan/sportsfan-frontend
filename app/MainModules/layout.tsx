@@ -142,9 +142,9 @@ function UserSidebar() {
   // const isMatchIntelligence = user?.email?.endsWith("@sportsfan360.com");
 
   const sidebarItems: SidebarItem[] = [
-    { name: "Feed", icon: "/images/feed.png", href: "/MainModules/HomePage" },
-    { name: "Watch Along", icon: "/images/live.png", href: "/MainModules/WatchAlong" },
-    { name: "Fantasy", icon: "/images/battle.png", href: "/MainModules/Fantasy" },
+    // { name: "Feed", icon: "/images/feed.png", href: "/MainModules/HomePage" },
+    // { name: "Watch Along", icon: "/images/live.png", href: "/MainModules/WatchAlong" },
+    // { name: "Fantasy", icon: "/images/battle.png", href: "/MainModules/Fantasy" },
     {
       name: "ROAR",
       icon: (
@@ -166,13 +166,25 @@ function UserSidebar() {
       icon: <Sparkles className="w-5 h-5 text-gradient" />,
       href: "/MainModules/AskAI" 
     },
-    { name: "Fan Zone", icon: "/images/profile.png", href: "/MainModules/Fanszone" },
+    // { name: "Fan Zone", icon: "/images/profile.png", href: "/MainModules/Fanszone" },
+    { 
+  name: "Fan Zone", 
+  icon: (
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+      <circle cx="9" cy="7" r="4"/>
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+      <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+    </svg>
+  ),
+  href: "/MainModules/Fanszone" 
+}
   ];
 
   return (
     <aside className="group hidden lg:flex lg:flex-col w-[84px] hover:w-[248px] shrink-0 border-r border-pink-500/20 sticky top-0 h-screen transition-all duration-300 ease-out bg-gradient-to-b from-zinc-950 via-black to-zinc-950">
       <div className="h-full overflow-y-auto px-3 py-4">
-        <Link href="/MainModules/HomePage" className="mb-8 h-10 flex items-center justify-center group-hover:justify-start transition-all duration-300 rounded-xl hover:bg-white/5 px-0 group-hover:px-3">
+        <Link href="/MainModules/ROAR" className="mb-8 h-10 flex items-center justify-center group-hover:justify-start transition-all duration-300 rounded-xl hover:bg-white/5 px-0 group-hover:px-3">
           <Image src="/images/Logo.png" alt="SportsFan360 logo" width={34} height={40} className="shrink-0" />
           <span className="ml-3 text-lg font-bold whitespace-nowrap opacity-0 -translate-x-2 max-w-0 overflow-hidden group-hover:opacity-100 group-hover:translate-x-0 group-hover:max-w-[160px] transition-all duration-300">
             SportsFan360
@@ -299,7 +311,7 @@ export default function MainModulesLayout({
     <div className="h-screen w-full bg-black text-white flex flex-col lg:flex-row overflow-x-hidden">
       {renderSidebar()}
 
-      <main className="flex-1 min-w-0 w-full h-full flex flex-col overflow-hidden pb-[50px] lg:pb-0">
+      <main className="flex-1 min-w-0 w-full h-full flex flex-col overflow-hidden lg:pb-0">
         <div className="relative z-20">
           <Header />
         </div>
@@ -323,6 +335,7 @@ export default function MainModulesLayout({
           <GlobalActionBar />
         </div>
 
+        {/* BottomNav hidden for now — You and Alerts will integrate into global app profile/alerts */}
         <div className="lg:hidden">
           <BottomNav />
         </div>

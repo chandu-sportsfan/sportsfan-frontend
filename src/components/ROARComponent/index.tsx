@@ -224,7 +224,25 @@ const GLOBAL_CSS = `
 `;
 
 /* ─── MOCK DATA ──────────────────────────────────────────────────────────── */
-
+const TEAMS = [
+  // Row 1: National Teams
+  { id: "India", label: "India", color: "#1565C0", logo: "/images/Container.png" },
+  { id: "Pak", label: "Pakistan", color: "#2E7D32", logo: "/images/Container (1).png" },
+  { id: "Aus", label: "Aus", color: "#FFB300", logo: "/images/Container (2).png" },
+  { id: "Eng", label: "England", color: "#C62828", logo: "/images/Container (3).png" },
+  
+  // Row 2: IPL Teams
+  { id: "MI", label: "MI", color: "#0277BD", logo: "/images/Container (4).png" },
+  { id: "CSK", label: "CSK", color: "#FBC02D", logo: "/images/Container (5).png" },
+  { id: "RCB", label: "RCB", color: "#D32F2F", logo: "/images/Container (6).png" },
+  { id: "KKR", label: "KKR", color: "#4527A0", logo: "/images/Container (7).png" },
+  
+  // Row 3: ISL Teams
+  { id: "MCFC", label: "MCFC", color: "#0288D1", logo: "/images/Container (11).png" },
+  { id: "BFC", label: "BFC", color: "#D32F2F", logo: "/images/Container (10).png" },
+  { id: "Mohun B", label: "Mohun B", color: "#1B5E20", logo: "/images/Container (9).png" },
+  { id: "Kerala", label: "Kerala", color: "#FDD835", logo: "/images/Container (8).png" },
+];
 const avatarUrl = (u: string) =>
   `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(u)}&backgroundColor=0E0E14`;
 
@@ -371,56 +389,7 @@ const TENURE_OPTIONS = [
   },
 ];
 
-const TEAMS = [
-  {
-    id: "India",
-    emoji: "🇮🇳",
-    label: "India",
-    color: "#FF9800",
-    sport: "cricket",
-  },
-  {
-    id: "Pak",
-    emoji: "🇵🇰",
-    label: "Pakistan",
-    color: "#4CAF50",
-    sport: "cricket",
-  },
-  { id: "Aus", emoji: "🇦🇺", label: "Aus", color: "#FFEB3B", sport: "cricket" },
-  {
-    id: "Eng",
-    emoji: "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
-    label: "England",
-    color: "#F44336",
-    sport: "cricket",
-  },
-  { id: "MI", emoji: "💙", label: "MI", color: "#1565C0", sport: "cricket" },
-  { id: "CSK", emoji: "💛", label: "CSK", color: "#FFCC00", sport: "cricket" },
-  { id: "RCB", emoji: "❤️", label: "RCB", color: "#B71C1C", sport: "cricket" },
-  { id: "KKR", emoji: "💜", label: "KKR", color: "#6A1B9A", sport: "cricket" },
-  {
-    id: "MCFC",
-    emoji: "🔵",
-    label: "MCFC",
-    color: "#1E88E5",
-    sport: "football",
-  },
-  { id: "BFC", emoji: "🔴", label: "BFC", color: "#E53935", sport: "football" },
-  {
-    id: "MohanB",
-    emoji: "🟢",
-    label: "Mohun B",
-    color: "#43A047",
-    sport: "football",
-  },
-  {
-    id: "Kerala",
-    emoji: "🟡",
-    label: "Kerala",
-    color: "#FDD835",
-    sport: "football",
-  },
-];
+
 
 const FEED_POSTS = [
   {
@@ -1395,19 +1364,23 @@ function Onboarding({ onComplete }: { onComplete: (prefs: any) => void }) {
                       }}
                     >
                       <span
-                        style={{
-                          width: 52,
-                          height: 52,
-                          borderRadius: "50%",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          fontSize: 22,
-                          background: `${t.color}44`,
-                        }}
-                      >
-                        {t.emoji}
-                      </span>
+  style={{
+    width: 52,
+    height: 52,
+    borderRadius: "50%",
+    overflow: "hidden",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    background: `${t.color}44`,
+  }}
+>
+  <img
+    src={t.logo}
+    alt={t.label}
+    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+  />
+</span>
                       <span
                         style={{ fontSize: 10, color: "var(--text-secondary)" }}
                       >
@@ -2792,46 +2765,49 @@ function HomeFeed({
         <AnimatePresence>
           {postMenuOpen && (
             <motion.div
-              initial={{ opacity: 0, y: 8 }}
+              initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 8 }}
-              transition={{ duration: 0.18, type: "spring", stiffness: 320, damping: 28 }}
+              exit={{ opacity: 0, y: 10 }}
               style={{
+                position: "absolute",
+                bottom: "calc(100% - 4px)",
+                right: 16,
+                zIndex: 30,
                 display: "flex",
                 gap: 8,
-                justifyContent: "center",
-                marginBottom: 8,
-                flexWrap: "nowrap",
+                padding: "8px",
+                borderRadius: 16,
+                background: "rgba(20,20,30,0.95)",
+                border: "1px solid rgba(233,30,140,0.25)",
+                boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
               }}
             >
               {RADIAL_OPTS.map((q, i) => (
                 <motion.button
                   key={q.id}
-                  initial={{ scale: 0.8, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={{ delay: i * 0.04, type: "spring", stiffness: 350 }}
+                  initial={{ scale: 0, y: 10 }}
+                  animate={{ scale: 1, y: 0 }}
+                  transition={{ delay: i * 0.05, type: "spring" }}
                   onClick={() => {
                     setPostMenuOpen(false);
                     onQuickCompose && onQuickCompose(q.id);
                   }}
+                  className="glass-card"
                   style={{
-                    flex: 1,
+                    width: 56,
+                    height: 56,
+                    borderRadius: "50%",
                     display: "flex",
                     flexDirection: "column",
                     alignItems: "center",
                     justifyContent: "center",
-                    gap: 4,
-                    padding: "8px 4px",
-                    borderRadius: 14,
-                    background: "rgba(22,22,31,0.92)",
-                    border: "1px solid rgba(233,30,140,0.3)",
+                    fontSize: 20,
                     cursor: "pointer",
-                    boxShadow: "0 4px 16px rgba(0,0,0,0.5)",
-                    minWidth: 0,
+                    border: "none",
+                    gap: 2,
                   }}
                 >
-                  <span style={{ fontSize: 18 }}>{q.emoji}</span>
-                  <span style={{ fontSize: 9, fontWeight: 700, color: "rgba(255,255,255,0.7)", whiteSpace: "nowrap" }}>{q.label}</span>
+                  {q.emoji}
                 </motion.button>
               ))}
             </motion.div>
@@ -2869,11 +2845,11 @@ function HomeFeed({
             onClick={() => setPostMenuOpen((prev) => !prev)}
             className="relative flex min-w-max items-center justify-center gap-1.5 px-4 py-3 rounded-xl text-xs font-bold tracking-wide whitespace-nowrap shrink-0"
             style={{
-              border: postMenuOpen ? "1px solid rgba(233,30,140,0.6)" : "1px solid rgba(233,30,140,0.25)",
               cursor: "pointer",
+              border: postMenuOpen ? "1px solid rgba(233,30,140,0.6)" : "1px solid rgba(233,30,140,0.25)",
               color: postMenuOpen ? "white" : "rgba(233,30,140,0.9)",
               background: postMenuOpen
-                ? "linear-gradient(90deg,#e91e8c,#ff6b35)"
+                ? "linear-gradient(90deg, #e91e8c, #ff6b35)"
                 : "rgba(233,30,140,0.08)",
               boxShadow: postMenuOpen ? "0 4px 14px rgba(233,30,140,0.35)" : "none",
               transition: "all 0.2s",
@@ -5109,6 +5085,9 @@ function Profile({
   const [fanMatchOpen, setFanMatchOpen] = useState(false);
   const [rivalFollowed, setRivalFollowed] = useState(false);
   const [editName, setEditName] = useState("");
+  const [editDisplayName, setEditDisplayName] = useState("");
+  const [editFavouritePlayer, setEditFavouritePlayer] = useState("");
+  const [editAboutMe, setEditAboutMe] = useState("");
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -5121,6 +5100,15 @@ function Profile({
           }
           if (res.data.user?.username) {
             setEditName(res.data.user.username);
+          }
+          if (res.data.user?.displayName != null) {
+            setEditDisplayName(res.data.user.displayName);
+          }
+          if (res.data.user?.favouritePlayer != null) {
+            setEditFavouritePlayer(res.data.user.favouritePlayer);
+          }
+          if (res.data.user?.aboutMe != null) {
+            setEditAboutMe(res.data.user.aboutMe);
           }
         }
       } catch (err: any) {
@@ -5233,7 +5221,7 @@ function Profile({
             color: "#fff",
           }}
         >
-          {user.username ? user.username.toUpperCase() : "ROARFAN"}
+          {(user.displayName || user.username || "ROARFAN").toUpperCase()}
         </h1>
         <p style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 2 }}>
           @{user.handle || CURRENT_USER.handle}
@@ -5245,7 +5233,25 @@ function Profile({
           {user.yearsFandom || CURRENT_USER.yearsFandom || 1} years ·{" "}
           {BADGE_LABELS[userBadge]}
         </p>
+          {/* Favourite Player */}
+        {(user.favouritePlayer) && (
+          <p style={{ fontSize: 13, color: "var(--text-secondary)", marginTop: 6 }}>
+            ⭐ Favourite player:{" "}
+            <span style={{ color: "var(--text-primary)", fontWeight: 600 }}>
+              {user.favouritePlayer}
+            </span>
+          </p>
+        )}
 
+        {/* About Me */}
+        {(user.aboutMe) && (
+          <p style={{
+            fontSize: 13, color: "var(--text-secondary)",
+            marginTop: 6, maxWidth: 280, margin: "6px auto 0", lineHeight: 1.5,
+          }}>
+            {user.aboutMe}
+          </p>
+        )}
         {/* 3 dots/circles underneath */}
         <div
           style={{
@@ -5934,6 +5940,7 @@ function Profile({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            onClick={() => setEditOpen(false)}
             style={{
               position: "absolute",
               inset: 0,
@@ -5950,52 +5957,89 @@ function Profile({
               initial={{ scale: 0.9, y: 20 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.9, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
               className="glass-card animate-glow"
               style={{
                 width: "100%",
-                maxWidth: 320,
-                padding: 20,
+                maxWidth: 340,
+                padding: 24,
                 background: "var(--bg-secondary)",
+                maxHeight: "80vh",
+                overflowY: "auto",
               }}
             >
               <h3
                 className="font-display"
-                style={{ fontSize: 24, marginBottom: 16 }}
+                style={{ fontSize: 24, marginBottom: 20 }}
               >
                 EDIT PROFILE
               </h3>
-              <label
-                style={{
-                  fontSize: 11,
-                  color: "var(--text-secondary)",
-                  fontWeight: 700,
-                }}
-              >
+
+              {/* Display Name */}
+              <label style={{ fontSize: 11, color: "var(--text-secondary)", fontWeight: 700 }}>
                 DISPLAY NAME
               </label>
               <input
                 type="text"
-                value={editName}
-                onChange={(e) => setEditName(e.target.value)}
+                value={editDisplayName}
+                onChange={(e) => setEditDisplayName(e.target.value)}
+                placeholder="e.g. Raghav"
                 style={{
-                  width: "100%",
-                  height: 40,
-                  borderRadius: 10,
-                  background: "var(--bg-tertiary)",
-                  border: "1px solid var(--border)",
-                  padding: "0 12px",
-                  color: "white",
-                  fontSize: 14,
-                  marginTop: 6,
-                  marginBottom: 16,
-                  outline: "none",
+                  width: "100%", height: 40, borderRadius: 10,
+                  background: "var(--bg-tertiary)", border: "1px solid var(--border)",
+                  padding: "0 12px", color: "white", fontSize: 14,
+                  marginTop: 6, marginBottom: 16, outline: "none",
                 }}
               />
+
+              {/* Favourite Player */}
+              <label style={{ fontSize: 11, color: "var(--text-secondary)", fontWeight: 700 }}>
+                FAVOURITE PLAYER
+              </label>
+              <input
+                type="text"
+                value={editFavouritePlayer}
+                onChange={(e) => setEditFavouritePlayer(e.target.value)}
+                placeholder="e.g. Virat Kohli"
+                style={{
+                  width: "100%", height: 40, borderRadius: 10,
+                  background: "var(--bg-tertiary)", border: "1px solid var(--border)",
+                  padding: "0 12px", color: "white", fontSize: 14,
+                  marginTop: 6, marginBottom: 16, outline: "none",
+                }}
+              />
+
+              {/* About Me */}
+              <label style={{ fontSize: 11, color: "var(--text-secondary)", fontWeight: 700 }}>
+                ABOUT ME
+              </label>
+              <textarea
+                value={editAboutMe}
+                onChange={(e) => setEditAboutMe(e.target.value)}
+                placeholder="Tell other fans who you are... (max 300 chars)"
+                maxLength={300}
+                rows={3}
+                style={{
+                  width: "100%", borderRadius: 10,
+                  background: "var(--bg-tertiary)", border: "1px solid var(--border)",
+                  padding: "10px 12px", color: "white", fontSize: 14,
+                  marginTop: 6, marginBottom: 4, outline: "none",
+                  resize: "none", fontFamily: "inherit",
+                }}
+              />
+              <div style={{ fontSize: 11, color: "var(--text-muted)", textAlign: "right", marginBottom: 16 }}>
+                {editAboutMe.length}/300
+              </div>
+
+              {/* Buttons */}
               <div style={{ display: "flex", gap: 10 }}>
                 <button
                   onClick={() => setEditOpen(false)}
-                  className="btn-pill"
-                  style={{ flex: 1, padding: "10px 0" }}
+                  style={{
+                    flex: 1, padding: "10px 0", background: "none",
+                    border: "1px solid var(--border)", borderRadius: 10,
+                    color: "white", fontSize: 13, fontWeight: 700, cursor: "pointer",
+                  }}
                 >
                   Cancel
                 </button>
@@ -6004,21 +6048,38 @@ function Profile({
                     try {
                       await axios.patch("/api/roar/profile", {
                         username: editName,
+                        displayName: editDisplayName,
+                        favouritePlayer: editFavouritePlayer,
+                        aboutMe: editAboutMe,
                       });
+                      const res = await axios.get("/api/roar/profile");
+                      if (res.data?.success) {
+                        setProfileData(res.data);
+                        if (res.data.user?.displayName != null) {
+                          setEditDisplayName(res.data.user.displayName);
+                        }
+                        if (res.data.user?.favouritePlayer != null) {
+                          setEditFavouritePlayer(res.data.user.favouritePlayer);
+                        }
+                        if (res.data.user?.aboutMe != null) {
+                          setEditAboutMe(res.data.user.aboutMe);
+                        }
+                      }
                       setEditOpen(false);
-                      onToast("Profile updated successfully");
-                    } catch (err) {
+                      onToast("Profile updated! 🎉");
+                    } catch (err: any) {
                       console.error(err);
-                      onToast("Failed to update profile");
+                      const msg =
+                        err.response?.data?.fields
+                          ? Object.values(err.response.data.fields).join(", ")
+                          : "Failed to update profile";
+                      onToast(msg as string);
                     }
                   }}
                   className="btn-gradient"
                   style={{
-                    flex: 1,
-                    padding: "10px 0",
-                    border: "none",
-                    borderRadius: 10,
-                    cursor: "pointer",
+                    flex: 1, padding: "10px 0",
+                    border: "none", borderRadius: 10, cursor: "pointer",
                   }}
                 >
                   Save

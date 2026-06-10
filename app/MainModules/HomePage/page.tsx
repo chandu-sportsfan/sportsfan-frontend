@@ -43,6 +43,7 @@ import WPLPlayerPage from "../Wplplayer360/page";
 import FifaPlayerProfilePage from "../FifaPlayer360/page";
 import WomensT20Section from "@/src/components/HomeComponents/WomensT20Section";
 import FifaClub360Page from "../FifaClub360/page";
+import WT20Club360CardsSection from "../WT20WC360/page";
 
 export default function HomePage() {
   return (
@@ -65,6 +66,7 @@ export default function HomePage() {
         {/* <PlayerProfilePage /> */}
         <WPLPlayerPage />
         <FifaPlayerProfilePage />
+        <WT20Club360CardsSection />
         <FifaClub360Page />
         {/* <Player360CardsSection /> */}
          <SocialFeedSection />

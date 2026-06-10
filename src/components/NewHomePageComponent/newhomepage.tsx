@@ -177,6 +177,7 @@ type CardItem = {
   subtitle: string;
   image: string;
   url: string;
+  sport: string;
 };
 
 type QuickLink = {
@@ -201,6 +202,7 @@ const cards: CardItem[] = [
     subtitle: "The world's biggest football tournament",
     image: "/images/fifa2026.png",
     url: "/MainModules/MatchesDropContent?team=FIFA",
+    sport: "football",
   },
   {
     id: 2,
@@ -208,42 +210,28 @@ const cards: CardItem[] = [
     subtitle: "Exclusive coverage of women's cricket",
     image: "/images/womens_t20.jpg",
     url: "/MainModules/MatchesDropContent?team=Women%20T20",
-  },
-  {
-    id: 3,
-    title: "SportsFan360",
-    subtitle: "Your ultimate sports companion",
-    image: "/images/sportsfan360.jpeg",
-    url: "/MainModules/CricketArticles",
-  },
-  {
-    id: 4,
-    title: "My Playlists",
-    subtitle: "All your favorite sports content in one place",
-    image: "/images/cricketarticlessecond.jpg",
-    url: "/MainModules/Playlists",
-  },
-  {
-    id: 5,
-    title: "IPL T20 2026 360World",
-    subtitle: "Exclusive content from all 10 teams",
-    image: "/images/ipl360.jpg",
-    url: "/MainModules/MatchesDropContent",
+    sport: "cricket",
   },
 ];
 
-export default function NewHomePage() {
+export default function NewHomePage({ sportFilter }: { sportFilter?: string }) {
   const [activeTab, setActiveTab] = useState("All");
   const [activeCard, setActiveCard] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  const filteredCards = sportFilter
+    ? cards.filter((card) => card.sport.toLowerCase() === sportFilter.toLowerCase())
+    : cards;
 
   const handleScroll = () => {
     const el = scrollRef.current;
     if (!el) return;
     const cardWidth = el.clientWidth - 24; // matches w-[calc(100%-24px)]
     const index = Math.round(el.scrollLeft / (cardWidth + 12)); // 12 = gap-3
-    setActiveCard(Math.min(index, cards.length - 1));
+    setActiveCard(Math.min(index, filteredCards.length - 1));
   };
+
+  if (filteredCards.length === 0) return null;
 
   return (
     <div className="bg-black text-white">
@@ -272,7 +260,7 @@ export default function NewHomePage() {
           onScroll={handleScroll}
           className="flex gap-3 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden snap-x snap-mandatory"
         >
-          {cards.map((card) => (
+          {filteredCards.map((card) => (
             <Link
               key={card.id}
               href={card.url}
@@ -300,20 +288,22 @@ export default function NewHomePage() {
         </div>
 
         {/* Dot indicators — mobile only */}
-        <div className="flex items-center justify-center gap-1.5 mt-3 lg:hidden">
-          {cards.map((_, i) => (
-            <div
-              key={i}
-              className={`rounded-full transition-all duration-300 ${i === activeCard
-                ? "w-5 h-2 bg-[#C9115F]"
-                : "w-2 h-2 bg-neutral-600"
-                }`}
-            />
-          ))}
-        </div>
+        {filteredCards.length > 1 && (
+          <div className="flex items-center justify-center gap-1.5 mt-3 lg:hidden">
+            {filteredCards.map((_, i) => (
+              <div
+                key={i}
+                className={`rounded-full transition-all duration-300 ${i === activeCard
+                  ? "w-5 h-2 bg-[#C9115F]"
+                  : "w-2 h-2 bg-neutral-600"
+                  }`}
+              />
+            ))}
+          </div>
+        )}
 
         {/* Quick Links Row — swipeable on mobile, grid on desktop */}
-        <div className="flex gap-3 overflow-x-auto mt-4 pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:grid lg:grid-cols-4 lg:overflow-visible lg:pb-0">
+        {/* <div className="flex gap-3 overflow-x-auto mt-4 pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:grid lg:grid-cols-4 lg:overflow-visible lg:pb-0">
           {quickLinks.map((link) => (
             <Link
               key={link.label}
@@ -333,14 +323,14 @@ export default function NewHomePage() {
               </div>
             </Link>
           ))}
-        </div>
+        </div> */}
 
 
-        <div className="flex flex-row gap-3 mt-2 md:mt-6 w-full">
+        {/* <div className="flex flex-row gap-3 mt-2 md:mt-6 w-full">
           <Link href="/MainModules/WatchAlong" className="flex-1">
-            {/* Live Fan Rooms Card */}
+            
             <div className="flex-1 bg-[#3C0922] rounded-2xl p-3 sm:p-4 flex flex-col justify-between min-h-[150px] sm:min-h-[120px]">
-              {/* Top Row */}
+              
               <div className="flex items-center justify-between">
                 <span className="bg-[#3D2B3E] text-white text-[10px] sm:text-xs font-medium px-2.5 sm:px-4 py-1 sm:py-1.5 rounded-full">
                   Watch Along
@@ -355,13 +345,13 @@ export default function NewHomePage() {
                 </button>
               </div>
 
-              {/* Content */}
+              
               <div className="mt-3 sm:mt-4">
                 <h3 className="text-white font-bold text-sm sm:text-lg leading-tight">Live Fan Rooms</h3>
                 <p className="text-gray-400 text-[10px] sm:text-sm mt-0.5">Join now</p>
               </div>
 
-              {/* Bottom Row */}
+              
               <div className="flex items-center justify-between mt-3 sm:mt-4">
                 <span className="text-gray-400 text-[10px] sm:text-sm font-medium">2.4K watching</span>
                 <button className="bg-[#3D2B3E] hover:bg-[#4D3B4E] text-white rounded-full w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center transition-colors">
@@ -373,11 +363,11 @@ export default function NewHomePage() {
             </div>
           </Link>
 
-          {/* New Prediction Card */}
+          
             <Link href="/MainModules/ROAR" className="flex-1">
           <div className="flex-1 bg-[#230855] rounded-2xl p-3 sm:p-4 flex flex-col justify-between min-h-[150px] sm:min-h-[120px]">
           
-              {/* Top Row */}
+             
               <div className="flex items-center justify-between">
                 <span className="bg-[#3D2B3E] text-white text-[10px] sm:text-xs font-medium px-2.5 sm:px-4 py-1 sm:py-1.5 rounded-full">
                   ROAR
@@ -390,13 +380,13 @@ export default function NewHomePage() {
                 </button>
               </div>
 
-              {/* Content */}
+              
               <div className="mt-3 sm:mt-4">
                 <h3 className="text-white font-bold text-sm sm:text-lg leading-tight">New prediction</h3>
                 <p className="text-gray-400 text-[10px] sm:text-sm mt-0.5">Hot Takes</p>
               </div>
 
-              {/* Bottom Row */}
+              
               <div className="flex items-center justify-between mt-3 sm:mt-4">
                 <span className="text-gray-400 text-[10px] sm:text-sm font-medium">156K active</span>
                 <button className="bg-[#3D2B3E] hover:bg-[#4D3B4E] text-white rounded-full w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center transition-colors">
@@ -408,7 +398,7 @@ export default function NewHomePage() {
           </div>
           </Link>
 
-        </div>
+        </div> */}
 
       </div>
     </div>

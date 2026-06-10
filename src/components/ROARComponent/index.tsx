@@ -2724,6 +2724,7 @@ function HomeFeed({
       sideA: p.sideA,
       sideB: p.sideB,
       memCtx: p.memCtx,
+      mediaUrls: p.mediaUrls,
     };
   });
 
@@ -3323,7 +3324,7 @@ function HomeFeed({
             })}
 
         {filtered.map((item, i) => {
-          if (item.type === "hot_take" || item.type === "prediction") {
+          if (item.type === "hot_take" || item.type === "prediction" || item.type === "post") {
             const pct = pcts[item.id] ?? item.agreePercent ?? 50;
             const userVote = votes[item.id];
             return (
@@ -3354,16 +3355,30 @@ function HomeFeed({
                       background:
                         item.type === "hot_take"
                           ? "rgba(239,68,68,0.12)"
-                          : "rgba(255,107,53,0.12)",
+                          : item.type === "post"
+                            ? "rgba(233,30,140,0.12)"
+                            : "rgba(255,107,53,0.12)",
                       color:
                         item.type === "hot_take"
                           ? "#f87171"
-                          : "var(--accent-orange)",
-                      border: `1px solid ${item.type === "hot_take" ? "rgba(239,68,68,0.2)" : "rgba(255,107,53,0.2)"}`,
+                          : item.type === "post"
+                            ? "var(--accent-magenta)"
+                            : "var(--accent-orange)",
+                      border: `1px solid ${
+                        item.type === "hot_take"
+                          ? "rgba(239,68,68,0.2)"
+                          : item.type === "post"
+                            ? "rgba(233,30,140,0.2)"
+                            : "rgba(255,107,53,0.2)"
+                      }`,
                       textTransform: "uppercase",
                     }}
                   >
-                    {item.type === "hot_take" ? "🔥 Hot Take" : "📊 Prediction"}
+                    {item.type === "hot_take"
+                      ? "🔥 Hot Take"
+                      : item.type === "post"
+                        ? "✏️ Post"
+                        : "📊 Prediction"}
                   </span>
                   <span
                     style={{
@@ -3429,6 +3444,32 @@ function HomeFeed({
                 >
                   {item.text}
                 </p>
+                {item.mediaUrls && item.mediaUrls.length > 0 && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
+                    {item.mediaUrls.map((url: string, idx: number) => {
+                      const isVideo = url.endsWith(".mp4") || url.includes("/video/upload/");
+                      if (isVideo) {
+                        return (
+                          <video
+                            key={idx}
+                            src={url}
+                            controls
+                            style={{ width: "100%", maxHeight: 300, borderRadius: 12, objectFit: "cover" }}
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        );
+                      }
+                      return (
+                        <img
+                          key={idx}
+                          src={url}
+                          alt="Post Media"
+                          style={{ width: "100%", maxHeight: 300, borderRadius: 12, objectFit: "cover" }}
+                        />
+                      );
+                    })}
+                  </div>
+                )}
                 {item.match && (
                   <p
                     style={{
@@ -6764,6 +6805,31 @@ function PostDetailsOverlay({
             >
               {post.text}
             </p>
+            {post.mediaUrls && post.mediaUrls.length > 0 && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
+                {post.mediaUrls.map((url: string, idx: number) => {
+                  const isVideo = url.endsWith(".mp4") || url.includes("/video/upload/");
+                  if (isVideo) {
+                    return (
+                      <video
+                        key={idx}
+                        src={url}
+                        controls
+                        style={{ width: "100%", maxHeight: 300, borderRadius: 12, objectFit: "cover" }}
+                      />
+                    );
+                  }
+                  return (
+                    <img
+                      key={idx}
+                      src={url}
+                      alt="Post Media"
+                      style={{ width: "100%", maxHeight: 300, borderRadius: 12, objectFit: "cover" }}
+                    />
+                  );
+                })}
+              </div>
+            )}
 
             {post.type === "hot_take" && (
               <>
@@ -7269,9 +7335,24 @@ export default function ROARApp() {
   const handlePost = useCallback(
     async (payload: any) => {
       try {
-        const postType = ["hot_take", "prediction", "debate", "memory"].includes(payload.type)
+        const postType = ["hot_take", "prediction", "debate", "memory", "post"].includes(payload.type)
           ? payload.type
           : "hot_take";
+
+        let mediaUrls: string[] = [];
+        if (payload.mediaFiles && payload.mediaFiles.length > 0) {
+          showToast("Uploading media...");
+          const uploadPromises = payload.mediaFiles.map(async (file: File) => {
+            const formData = new FormData();
+            formData.append("file", file);
+            const uploadRes = await axios.post("/api/upload", formData, {
+              headers: { "Content-Type": "multipart/form-data" },
+            });
+            return uploadRes.data.url;
+          });
+          mediaUrls = await Promise.all(uploadPromises);
+        }
+
         const res = await axios.post("/api/roar/posts", {
           type: postType,
           text: payload.type === "debate"
@@ -7284,6 +7365,7 @@ export default function ROARApp() {
           matchId: payload.match,
           confidence: payload.confidence,
           audience: payload.audience,
+          mediaUrls,
         });
         if (res.data?.success) {
           const toastMap: Record<string, string> = {
@@ -7291,6 +7373,7 @@ export default function ROARApp() {
             prediction: "📊 Prediction posted · Let's see if you're right",
             debate: "⚡ Debate started · Get the fans talking",
             memory: "🕰 Memory shared · OG fans will feel this",
+            post: "✏️ Post is live · Fans can see it now",
           };
           showToast(toastMap[postType] || "🔥 Your take is live");
           fetchPosts();

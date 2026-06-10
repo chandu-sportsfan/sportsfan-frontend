@@ -167,6 +167,7 @@ export const GLOBAL_CSS = `
   overflow-y: auto;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
   padding-bottom: 24px;
 }
 .roar-root .gradient-border {

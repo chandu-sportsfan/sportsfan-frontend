@@ -135,7 +135,10 @@ export default function ComposeModal({ open, onClose, onPost, initialType }: Pro
                 ) : (
                   <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
                     <button
-                      onClick={() => setSelected(null)}
+                      onClick={() => {
+                        setSelected(null);
+                        onClose();
+                      }}
                       style={{ fontSize: 13, color: "var(--accent-magenta)", marginBottom: 12, background: "none", border: "none", cursor: "pointer" }}
                     >
                       ← Back

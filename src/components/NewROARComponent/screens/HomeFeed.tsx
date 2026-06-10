@@ -117,6 +117,7 @@ export default function HomeFeed({
       sideA: p.sideA,
       sideB: p.sideB,
       memCtx: p.memCtx,
+      mediaUrls: p.mediaUrls,
     };
   });
 
@@ -145,37 +146,8 @@ export default function HomeFeed({
           <div style={{ height: "2px", width: "24px", borderRadius: "999px", marginTop: "3px", background: "#e5003d" }} />
         </div>
 
-        {/* Quick-compose pills */}
-        <div style={{ display: "flex", gap: 5, alignItems: "center", flex: 1, justifyContent: "center", padding: "0 8px", overflow: "hidden" }}>
-          {RADIAL_OPTS.map((q) => (
-            <motion.button
-              key={q.id}
-              whileTap={{ scale: 0.9 }}
-              whileHover={{ scale: 1.05 }}
-              onClick={() => onQuickCompose && onQuickCompose(q.id)}
-              style={{
-                display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-                gap: 2, padding: "6px 7px", borderRadius: 12,
-                background: "linear-gradient(145deg, rgba(233,30,140,0.18), rgba(255,107,53,0.10))",
-                border: "1px solid rgba(233,30,140,0.35)", cursor: "pointer", flexShrink: 1, minWidth: 0,
-                boxShadow: "0 2px 10px rgba(233,30,140,0.2), inset 0 1px 0 rgba(255,255,255,0.07)",
-                backdropFilter: "blur(8px)", transition: "box-shadow 0.2s",
-              }}
-            >
-              <span style={{ fontSize: 14, lineHeight: 1 }}>{q.emoji}</span>
-              <span style={{ fontSize: 8.5, fontWeight: 700, color: "rgba(255,255,255,0.85)", whiteSpace: "nowrap", lineHeight: 1, letterSpacing: "0.03em" }}>{q.label}</span>
-            </motion.button>
-          ))}
-        </div>
-
+        {/* Notif, Profile, and Quick-compose pills — aligned to the right */}
         <div style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
-          <motion.button
-            whileTap={{ scale: 0.93 }}
-            onClick={onLeaderboard}
-            style={{ width: 38, height: 38, borderRadius: "50%", background: "rgba(255,255,255,0.06)", border: "none", cursor: "pointer", fontSize: 16, display: "flex", alignItems: "center", justifyContent: "center" }}
-          >
-            🏆
-          </motion.button>
           <motion.button
             whileTap={{ scale: 0.93 }}
             onClick={onNavigateAlerts}
@@ -188,9 +160,31 @@ export default function HomeFeed({
               </span>
             )}
           </motion.button>
-          <motion.button whileTap={{ scale: 0.93 }} onClick={onFanProfile} style={{ background: "none", border: "none", cursor: "pointer" }}>
+          <motion.button whileTap={{ scale: 0.93 }} onClick={onFanProfile} style={{ background: "none", border: "none", cursor: "pointer", marginRight: 4 }}>
             <AvatarWithBadge username={CURRENT_USER.username} badge={userBadge} size="sm" />
           </motion.button>
+
+          <div style={{ display: "flex", gap: 5, alignItems: "center" }}>
+            {RADIAL_OPTS.map((q) => (
+              <motion.button
+                key={q.id}
+                whileTap={{ scale: 0.9 }}
+                whileHover={{ scale: 1.05 }}
+                onClick={() => onQuickCompose && onQuickCompose(q.id)}
+                style={{
+                  display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+                  gap: 2, padding: "6px 7px", borderRadius: 12,
+                  background: "linear-gradient(145deg, rgba(233,30,140,0.18), rgba(255,107,53,0.10))",
+                  border: "1px solid rgba(233,30,140,0.35)", cursor: "pointer", flexShrink: 1, minWidth: 0,
+                  boxShadow: "0 2px 10px rgba(233,30,140,0.2), inset 0 1px 0 rgba(255,255,255,0.07)",
+                  backdropFilter: "blur(8px)", transition: "box-shadow 0.2s",
+                }}
+              >
+                <span style={{ fontSize: 14, lineHeight: 1 }}>{q.emoji}</span>
+                <span style={{ fontSize: 8.5, fontWeight: 700, color: "rgba(255,255,255,0.85)", whiteSpace: "nowrap", lineHeight: 1, letterSpacing: "0.03em" }}>{q.label}</span>
+              </motion.button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -262,7 +256,7 @@ export default function HomeFeed({
 
         {/* Feed posts */}
         {filtered.map((item, i) => {
-          if (item.type === "hot_take" || item.type === "prediction") {
+          if (item.type === "hot_take" || item.type === "prediction" || item.type === "post") {
             const pct = pcts[item.id] ?? item.agreePercent ?? 50;
             const userVote = votes[item.id];
             return (
@@ -277,8 +271,40 @@ export default function HomeFeed({
               >
                 {/* Type + sport badges */}
                 <div style={{ display: "flex", gap: 6, marginBottom: 8, flexWrap: "wrap" }}>
-                  <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.06em", padding: "3px 8px", borderRadius: 4, background: item.type === "hot_take" ? "rgba(239,68,68,0.12)" : "rgba(255,107,53,0.12)", color: item.type === "hot_take" ? "#f87171" : "var(--accent-orange)", border: `1px solid ${item.type === "hot_take" ? "rgba(239,68,68,0.2)" : "rgba(255,107,53,0.2)"}`, textTransform: "uppercase" }}>
-                    {item.type === "hot_take" ? "🔥 Hot Take" : "📊 Prediction"}
+                  <span
+                    style={{
+                      fontSize: 10,
+                      fontWeight: 800,
+                      letterSpacing: "0.06em",
+                      padding: "3px 8px",
+                      borderRadius: 4,
+                      background:
+                        item.type === "hot_take"
+                          ? "rgba(239,68,68,0.12)"
+                          : item.type === "post"
+                            ? "rgba(233,30,140,0.12)"
+                            : "rgba(255,107,53,0.12)",
+                      color:
+                        item.type === "hot_take"
+                          ? "#f87171"
+                          : item.type === "post"
+                            ? "var(--accent-magenta)"
+                            : "var(--accent-orange)",
+                      border: `1px solid ${
+                        item.type === "hot_take"
+                          ? "rgba(239,68,68,0.2)"
+                          : item.type === "post"
+                            ? "rgba(233,30,140,0.2)"
+                            : "rgba(255,107,53,0.2)"
+                      }`,
+                      textTransform: "uppercase",
+                    }}
+                  >
+                    {item.type === "hot_take"
+                      ? "🔥 Hot Take"
+                      : item.type === "post"
+                        ? "✏️ Post"
+                        : "📊 Prediction"}
                   </span>
                   <span style={{ fontSize: 10, fontWeight: 800, padding: "3px 8px", borderRadius: 4, background: item.sport === "cricket" ? "rgba(34,197,94,0.1)" : "rgba(59,130,246,0.1)", color: item.sport === "cricket" ? "#22c55e" : "#60a5fa", border: `1px solid ${item.sport === "cricket" ? "rgba(34,197,94,0.2)" : "rgba(59,130,246,0.2)"}`, textTransform: "uppercase" }}>
                     {item.sport === "cricket" ? "🏏 Cricket" : "⚽ Football"}
@@ -296,6 +322,32 @@ export default function HomeFeed({
                 </div>
 
                 <p style={{ fontWeight: 600, fontSize: 15, lineHeight: 1.5, marginBottom: 12 }}>{item.text}</p>
+                {item.mediaUrls && item.mediaUrls.length > 0 && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
+                    {item.mediaUrls.map((url: string, idx: number) => {
+                      const isVideo = url.endsWith(".mp4") || url.includes("/video/upload/");
+                      if (isVideo) {
+                        return (
+                          <video
+                            key={idx}
+                            src={url}
+                            controls
+                            style={{ width: "100%", maxHeight: 300, borderRadius: 12, objectFit: "cover" }}
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        );
+                      }
+                      return (
+                        <img
+                          key={idx}
+                          src={url}
+                          alt="Post Media"
+                          style={{ width: "100%", maxHeight: 300, borderRadius: 12, objectFit: "cover" }}
+                        />
+                      );
+                    })}
+                  </div>
+                )}
                 {item.match && <p style={{ fontSize: 11, color: "var(--accent-magenta)", marginBottom: 8, fontWeight: 600 }}>{item.match}</p>}
 
                 {item.type === "hot_take" && (

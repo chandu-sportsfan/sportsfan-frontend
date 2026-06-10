@@ -142,6 +142,31 @@ export default function PostDetailsOverlay({ post, onClose, onToast, onVote }: P
               </div>
             </div>
             <p style={{ fontWeight: 600, fontSize: 15, lineHeight: 1.5, marginBottom: 12, color: "white" }}>{post.text}</p>
+            {post.mediaUrls && post.mediaUrls.length > 0 && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
+                {post.mediaUrls.map((url: string, idx: number) => {
+                  const isVideo = url.endsWith(".mp4") || url.includes("/video/upload/");
+                  if (isVideo) {
+                    return (
+                      <video
+                        key={idx}
+                        src={url}
+                        controls
+                        style={{ width: "100%", maxHeight: 300, borderRadius: 12, objectFit: "cover" }}
+                      />
+                    );
+                  }
+                  return (
+                    <img
+                      key={idx}
+                      src={url}
+                      alt="Post Media"
+                      style={{ width: "100%", maxHeight: 300, borderRadius: 12, objectFit: "cover" }}
+                    />
+                  );
+                })}
+              </div>
+            )}
             {post.type === "hot_take" && (
               <>
                 <div style={{ marginBottom: 10 }}><SplitBar left={pct} /></div>

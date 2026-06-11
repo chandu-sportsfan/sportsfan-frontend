@@ -119,7 +119,7 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
 
   const send = async () => {
     if (!roomId) return;
-    const text = (composerPre || input).trim();
+    const text = `${composerPre}${input}`.trim();
     if (!text && !attachedUrl) return;
     try {
       const res = await axios.post(`/api/roar/rooms/${roomId}/messages`, {
@@ -408,8 +408,8 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
             type="text"
             placeholder={uploading ? "Uploading media..." : "Drop your take..."}
             disabled={uploading}
-            value={composerPre || input}
-            onChange={(e) => { if (composerPre) setComposerPre(e.target.value); else setInput(e.target.value); }}
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && send()}
             style={{ flex: 1, height: 44, borderRadius: 22, background: "var(--bg-secondary)", border: "1px solid var(--border)", paddingLeft: 16, paddingRight: 16, color: "white", fontSize: 14, outline: "none" }}
           />

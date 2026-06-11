@@ -511,7 +511,7 @@ export default function HomeFeed({
                       post: <PenTool size={18} color="white" />,
                     };
                     const icon = icons[q.id] || <span>{q.emoji}</span>;
-                    const isPost = q.id === "post";
+                    const isActive = q.id === selectedActionId;
                     return (
                       <button
                         key={q.id}
@@ -526,19 +526,19 @@ export default function HomeFeed({
                           gap: 12,
                           padding: "10px 12px",
                           borderRadius: 12,
-                          background: isPost ? "linear-gradient(145deg, rgba(233,30,140,0.18), rgba(255,107,53,0.10))" : "transparent",
-                          border: isPost ? "1px solid rgba(233,30,140,0.35)" : "1px solid transparent",
+                          background: isActive ? "linear-gradient(145deg, rgba(233,30,140,0.18), rgba(255,107,53,0.10))" : "transparent",
+                          border: isActive ? "1px solid rgba(233,30,140,0.35)" : "1px solid transparent",
                           color: "white",
                           cursor: "pointer",
                           textAlign: "left",
                           transition: "all 0.2s",
                         }}
                         onMouseEnter={(e) => {
-                          if (!isPost) e.currentTarget.style.background = "rgba(255,255,255,0.05)";
+                          if (!isActive) e.currentTarget.style.background = "rgba(255,255,255,0.05)";
                           else e.currentTarget.style.boxShadow = "0 0 10px rgba(229,0,61,0.2)";
                         }}
                         onMouseLeave={(e) => {
-                          if (!isPost) e.currentTarget.style.background = "transparent";
+                          if (!isActive) e.currentTarget.style.background = "transparent";
                           else e.currentTarget.style.boxShadow = "none";
                         }}
                       >

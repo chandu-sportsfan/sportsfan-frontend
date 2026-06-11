@@ -3,20 +3,24 @@ import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
 import AvatarWithBadge from "./AvatarWithBadge";
 import { SplitBar } from "./shared";
-import { clamp } from "../utils";
+import { clamp, formatTimeAgo } from "../utils";
+import { Trash2 } from "lucide-react";
 
 interface Props {
   post: any;
   onClose: () => void;
   onToast: (m: string) => void;
   onVote: (id: string, vote: "agree" | "disagree" | null) => void;
+  onDeletePost?: (id: string) => void;
+  currentUsername?: string;
 }
 
-export default function PostDetailsOverlay({ post, onClose, onToast, onVote }: Props) {
+export default function PostDetailsOverlay({ post, onClose, onToast, onVote, onDeletePost, currentUsername }: Props) {
   const [comments, setComments] = useState<any[]>([]);
   const [commentText, setCommentText] = useState("");
   const [loading, setLoading] = useState(false);
   const [userUsername, setUserUsername] = useState("RoarUser");
+  const activeUsername = currentUsername || userUsername;
   const [userBadge, setUserBadge] = useState("RISING_FAN");
   const [votes, setVotes] = useState<Record<string, boolean | null>>(() =>
     post.userVote ? { [post.id]: post.userVote === "agree" } : {},
@@ -127,7 +131,7 @@ export default function PostDetailsOverlay({ post, onClose, onToast, onVote }: P
               {headerTitle}
             </h2>
             <p style={{ fontSize: 9, color: "var(--text-secondary)", margin: "2px 0 0" }}>
-              Posted by {post.fan?.username || post.authorUsername} • {post.timeAgo || "2h ago"} • {comments.length} comments
+              Posted by {post.fan?.username || post.authorUsername} • {formatTimeAgo(post.createdAt)} • {comments.length} comments
             </p>
           </div>
         </div>
@@ -143,7 +147,7 @@ export default function PostDetailsOverlay({ post, onClose, onToast, onVote }: P
                   {post.fan?.username || post.authorUsername}
                   <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#00E676", display: "inline-block" }} />
                 </p>
-                <p style={{ fontSize: 10, color: "var(--text-secondary)", margin: 0 }}>{post.timeAgo || "2h ago"}</p>
+                <p style={{ fontSize: 10, color: "var(--text-secondary)", margin: 0 }}>{formatTimeAgo(post.createdAt)}</p>
               </div>
             </div>
             <p style={{ fontWeight: 600, fontSize: 15, lineHeight: 1.5, marginBottom: 12, color: "white" }}>{post.text}</p>
@@ -191,6 +195,37 @@ export default function PostDetailsOverlay({ post, onClose, onToast, onVote }: P
                 </div>
               </>
             )}
+            <div style={{ display: "flex", alignItems: "center", gap: 16, marginTop: 16, borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 12 }}>
+              {(post.fan?.username === activeUsername || post.authorUsername === activeUsername) && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (window.confirm("Are you sure you want to delete this post?")) {
+                      if (onDeletePost) {
+                        onDeletePost(post.id);
+                        onClose();
+                      }
+                    }
+                  }}
+                  title="Delete Post"
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    color: "#f87171",
+                    transition: "color 0.2s, transform 0.1s",
+                    marginLeft: "auto",
+                    padding: "4px",
+                    borderRadius: "50%",
+                  }}
+                >
+                  <Trash2 size={16} />
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Comments heading */}
@@ -222,7 +257,7 @@ export default function PostDetailsOverlay({ post, onClose, onToast, onVote }: P
                           <span style={{ width: 5, height: 5, borderRadius: "50%", background: "#E91E8C", display: "inline-block" }} />
                         </p>
                       </div>
-                      <span style={{ fontSize: 9, color: "var(--text-muted)" }}>{comment.createdAt ? "4h ago" : "Just now"}</span>
+                      <span style={{ fontSize: 9, color: "var(--text-muted)" }}>{formatTimeAgo(comment.createdAt)}</span>
                     </div>
                     <p style={{ fontSize: 13, color: "var(--text-primary)", lineHeight: 1.4, margin: "4px 0" }}>{comment.text}</p>
                     <div style={{ display: "flex", gap: 14, alignItems: "center", marginTop: 4 }}>

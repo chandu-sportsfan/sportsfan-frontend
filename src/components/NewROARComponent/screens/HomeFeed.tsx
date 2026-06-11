@@ -4,8 +4,8 @@ import AvatarWithBadge from "../components/AvatarWithBadge";
 import NewHomePage from "../../NewHomePageComponent/newhomepage";
 import { SplitBar, FilterPills } from "../components/shared";
 import { FEED_POSTS, FEED_FILTERS, BADGE_LABELS, RADIAL_OPTS, CURRENT_USER } from "../constants";
-import { fmt, clamp } from "../utils";
-import { Heart, Share2, Flame, TrendingUp, Zap, History, PenTool } from "lucide-react";
+import { fmt, clamp, formatTimeAgo } from "../utils";
+import { Heart, Share2, Flame, TrendingUp, Zap, History, PenTool, MessageSquare, Trash2 } from "lucide-react";
 import type { FeedPost, Room } from "../types";
 
 interface Props {
@@ -24,8 +24,10 @@ interface Props {
   onPostClick?: (post: any) => void;
   onVote?: (id: string, vote: "agree" | "disagree" | null) => void;
   onLike?: (id: string) => void;
+  onDeletePost?: (id: string) => void;
   userSports?: string[];
   onQuickCompose?: (t: string) => void;
+  currentUsername?: string;
 }
 
 export default function HomeFeed({
@@ -42,12 +44,39 @@ export default function HomeFeed({
   onPostClick,
   onVote,
   onLike,
+  onDeletePost,
   userSports = [],
   onQuickCompose,
+  currentUsername: propUsername,
 }: Props) {
   const [filter, setFilter] = useState("For You");
   const [votes, setVotes] = useState<Record<string, boolean | null>>({});
   const [pcts, setPcts] = useState<Record<string, number>>({});
+  const [now, setNow] = useState(Date.now());
+  const [localUsername, setLocalUsername] = useState("RoarUser");
+
+  useEffect(() => {
+    const interval = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    try {
+      setLocalUsername(localStorage.getItem("roar_username") || "RoarUser");
+    } catch {}
+  }, []);
+
+  const activeUsername = propUsername || localUsername;
+
+  const formatCountdown = (diffMs: number) => {
+    const diffSec = Math.floor(diffMs / 1000);
+    const secs = diffSec % 60;
+    const mins = Math.floor(diffSec / 60) % 60;
+    const hrs = Math.floor(diffSec / 3600);
+    const pad = (num: number) => String(num).padStart(2, "0");
+    if (hrs > 0) return `${pad(hrs)}:${pad(mins)}:${pad(secs)}`;
+    return `${pad(mins)}:${pad(secs)}`;
+  };
 
   useEffect(() => {
     if (dbPosts.length > 0) {
@@ -95,6 +124,111 @@ export default function HomeFeed({
     }
   };
 
+  const renderCardActions = (item: any) => {
+    return (
+      <div style={{ display: "flex", gap: 16, marginTop: 12, borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 12 }}>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            if (onLike) onLike(item.id);
+          }}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            color: item.userLiked ? "#ff4a7d" : "#9494ad",
+            fontSize: 13,
+            fontWeight: 600,
+            transition: "color 0.2s",
+          }}
+        >
+          <Heart size={16} fill={item.userLiked ? "#ff4a7d" : "none"} />
+          <span>{item.likeCount || 0}</span>
+        </button>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            if (onPostClick) onPostClick(item);
+          }}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            color: "#9494ad",
+            fontSize: 13,
+            fontWeight: 600,
+            transition: "color 0.2s",
+          }}
+        >
+          <MessageSquare size={16} />
+          <span>{item.replies || 0}</span>
+        </button>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            const shareUrl = window.location.origin + "/MainModules/ROAR?post=" + item.id;
+            if (navigator.share) {
+              navigator.share({
+                title: 'ROAR Post',
+                url: shareUrl,
+              }).catch(() => {});
+            } else {
+              navigator.clipboard.writeText(shareUrl);
+              onToast("Link copied to clipboard!");
+            }
+          }}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            color: "#9494ad",
+            fontSize: 13,
+            fontWeight: 600,
+            transition: "color 0.2s",
+          }}
+        >
+          <Share2 size={16} />
+          <span>Share</span>
+        </button>
+        {item.fan?.username === activeUsername && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              if (window.confirm("Are you sure you want to delete this post?")) {
+                if (onDeletePost) onDeletePost(item.id);
+              }
+            }}
+            title="Delete Post"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              color: "#f87171",
+              transition: "color 0.2s, transform 0.1s",
+              marginLeft: "auto",
+              padding: "4px",
+              borderRadius: "50%",
+            }}
+          >
+            <Trash2 size={16} />
+          </button>
+        )}
+      </div>
+    );
+  };
+
   const mappedDbPosts = dbPosts.map((p) => {
     const agreeCount = p.agreeCount ?? 0;
     const disagreeCount = p.disagreeCount ?? 0;
@@ -122,6 +256,7 @@ export default function HomeFeed({
       mediaUrls: p.mediaUrls,
       likeCount: p.likeCount ?? 0,
       userLiked: p.userLiked ?? false,
+      createdAt: p.createdAt,
     };
   });
 
@@ -234,12 +369,15 @@ export default function HomeFeed({
               (filter === "Cricket" && room.sport?.toLowerCase() === "cricket") ||
               (filter === "Football" && room.sport?.toLowerCase() === "football");
             if (!showThisRoom) return null;
+            const isFuture = room.scheduledStartTime && room.scheduledStartTime > now;
+            const diff = isFuture && room.scheduledStartTime ? room.scheduledStartTime - now : 0;
 
             const isBlueStyle = room.sport?.toLowerCase() === "football" || idx % 2 === 1;
             const bg = isBlueStyle ? "linear-gradient(135deg,rgba(59,130,246,0.12),rgba(59,130,246,0.04))" : "linear-gradient(135deg,rgba(233,30,140,0.12),rgba(255,107,53,0.06))";
             const border = isBlueStyle ? "1px solid rgba(59,130,246,0.25)" : "1px solid rgba(233,30,140,0.25)";
-            const livePulseBg = isBlueStyle ? "#60a5fa" : "var(--live-green)";
-            const liveTextCol = isBlueStyle ? "#60a5fa" : "var(--live-green)";
+            const livePulseBg = isFuture ? "var(--accent-orange)" : (isBlueStyle ? "#60a5fa" : "var(--live-green)");
+            const liveTextCol = isFuture ? "var(--accent-orange)" : (isBlueStyle ? "#60a5fa" : "var(--live-green)");
+            const liveLabel = isFuture ? "STARTS IN" : "LIVE NOW";
 
             return (
               <motion.div
@@ -247,31 +385,40 @@ export default function HomeFeed({
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="glass-card"
-                style={{ padding: 16, background: bg, border, cursor: "pointer" }}
-                onClick={() => onJoinRoom(room)}
+                style={{ padding: 16, background: bg, border, cursor: isFuture ? "default" : "pointer" }}
+                onClick={() => { if (!isFuture) onJoinRoom(room); else onToast("This discussion room hasn't started yet."); }}
               >
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                   <div>
                     <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
-                      <span className="live-pulse" style={{ width: 8, height: 8, borderRadius: "50%", background: livePulseBg, display: "inline-block" }} />
-                      <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.1em", color: liveTextCol }}>LIVE NOW</span>
+                      <span className={isFuture ? undefined : "live-pulse"} style={{ width: 8, height: 8, borderRadius: "50%", background: livePulseBg, display: "inline-block" }} />
+                      <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.1em", color: liveTextCol }}>{liveLabel}</span>
                     </div>
                     <p className="font-display" style={{ fontSize: isBlueStyle ? 22 : 26, lineHeight: 1 }}>{room.name}</p>
                     <p style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 4 }}>{room.description || "Discussion Show"}</p>
                   </div>
                   <div style={{ textAlign: "right" }}>
-                    <p className="font-display" style={{ fontSize: isBlueStyle ? 28 : 30, color: "white" }}>LIVE</p>
-                    <p style={{ fontSize: 11, color: isBlueStyle ? "#60a5fa" : "var(--text-muted)" }}>Active Now</p>
+                    <p className="font-display" style={{ fontSize: isBlueStyle ? 28 : 30, color: "white" }}>{isFuture ? "SOON" : "LIVE"}</p>
+                    <p style={{ fontSize: 11, color: isBlueStyle ? "#60a5fa" : "var(--text-muted)" }}>{isFuture ? "Scheduled" : "Active Now"}</p>
                   </div>
                 </div>
-                <motion.button
-                  whileTap={{ scale: 0.97 }}
-                  onClick={(e) => { e.stopPropagation(); onJoinRoom(room); }}
-                  className={isBlueStyle ? undefined : "btn-gradient"}
-                  style={{ width: "100%", marginTop: 12, padding: "10px 0", borderRadius: 999, fontSize: 13, border: "none", cursor: "pointer", background: isBlueStyle ? "#3b82f6" : undefined, color: "white", fontWeight: 800, fontFamily: isBlueStyle ? "'Bebas Neue',sans-serif" : undefined, letterSpacing: isBlueStyle ? "0.06em" : undefined }}
-                >
-                  JOIN LIVE · {room.fanCount || 0} fans →
-                </motion.button>
+                {isFuture ? (
+                  <button
+                    disabled
+                    style={{ width: "100%", marginTop: 12, padding: "10px 0", borderRadius: 999, fontSize: 13, border: "1px solid rgba(255,255,255,0.08)", cursor: "not-allowed", background: "rgba(255,255,255,0.04)", color: "rgba(255,255,255,0.35)", fontWeight: 800, letterSpacing: "0.06em" }}
+                  >
+                    STARTS IN {formatCountdown(diff)}
+                  </button>
+                ) : (
+                  <motion.button
+                    whileTap={{ scale: 0.97 }}
+                    onClick={(e) => { e.stopPropagation(); onJoinRoom(room); }}
+                    className={isBlueStyle ? undefined : "btn-gradient"}
+                    style={{ width: "100%", marginTop: 12, padding: "10px 0", borderRadius: 999, fontSize: 13, border: "none", cursor: "pointer", background: isBlueStyle ? "#3b82f6" : undefined, color: "white", fontWeight: 800, fontFamily: isBlueStyle ? "'Bebas Neue',sans-serif" : undefined, letterSpacing: isBlueStyle ? "0.06em" : undefined }}
+                  >
+                    JOIN LIVE · {room.fanCount || 0} fans →
+                  </motion.button>
+                )}
               </motion.div>
             );
           })}
@@ -328,9 +475,11 @@ export default function HomeFeed({
                         ? "✏️ Post"
                         : "📊 Prediction"}
                   </span>
-                  <span style={{ fontSize: 10, fontWeight: 800, padding: "3px 8px", borderRadius: 4, background: item.sport === "cricket" ? "rgba(34,197,94,0.1)" : "rgba(59,130,246,0.1)", color: item.sport === "cricket" ? "#22c55e" : "#60a5fa", border: `1px solid ${item.sport === "cricket" ? "rgba(34,197,94,0.2)" : "rgba(59,130,246,0.2)"}`, textTransform: "uppercase" }}>
-                    {item.sport === "cricket" ? "🏏 Cricket" : "⚽ Football"}
-                  </span>
+                  {item.type !== "post" && (
+                    <span style={{ fontSize: 10, fontWeight: 800, padding: "3px 8px", borderRadius: 4, background: item.sport === "cricket" ? "rgba(34,197,94,0.1)" : "rgba(59,130,246,0.1)", color: item.sport === "cricket" ? "#22c55e" : "#60a5fa", border: `1px solid ${item.sport === "cricket" ? "rgba(34,197,94,0.2)" : "rgba(59,130,246,0.2)"}`, textTransform: "uppercase" }}>
+                      {item.sport === "cricket" ? "🏏 Cricket" : "⚽ Football"}
+                    </span>
+                  )}
                   {item.following && <span style={{ marginLeft: "auto", fontSize: 9, padding: "3px 8px", borderRadius: 999, background: "rgba(233,30,140,0.15)", color: "var(--accent-magenta)" }}>Following</span>}
                 </div>
 
@@ -339,7 +488,7 @@ export default function HomeFeed({
                   <AvatarWithBadge username={item.fan.username} badge={item.fan.badge} size="sm" />
                   <div>
                     <p style={{ fontWeight: 700, fontSize: 13 }}>{item.fan.username}</p>
-                    <p style={{ fontSize: 10, color: "var(--text-secondary)" }}>{BADGE_LABELS[item.fan.badge]} · {item.fan.team}</p>
+                    <p style={{ fontSize: 10, color: "var(--text-secondary)" }}>{BADGE_LABELS[item.fan.badge]} · {item.fan.team} • {formatTimeAgo(item.createdAt)}</p>
                   </div>
                 </div>
 
@@ -391,6 +540,7 @@ export default function HomeFeed({
                         </motion.button>
                       ))}
                     </div>
+                    {renderCardActions(item)}
                   </>
                 )}
 
@@ -398,55 +548,12 @@ export default function HomeFeed({
                   <div>
                     <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>{item.samePredictionCount} fans made the same prediction</p>
                     {(item.counterCount ?? 0) > 0 && <p style={{ fontSize: 12, color: "var(--accent-magenta)", marginTop: 4 }}>{item.counterCount} fans think otherwise →</p>}
+                    {renderCardActions(item)}
                   </div>
                 )}
 
                 {item.type === "post" && (
-                  <div style={{ display: "flex", gap: 16, marginTop: 12, borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 12 }}>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (onLike) onLike(item.id);
-                      }}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 6,
-                        background: "none",
-                        border: "none",
-                        cursor: "pointer",
-                        color: item.userLiked ? "#ff4a7d" : "#9494ad",
-                        fontSize: 13,
-                        fontWeight: 600,
-                        transition: "color 0.2s",
-                      }}
-                    >
-                      <Heart size={16} fill={item.userLiked ? "#ff4a7d" : "none"} />
-                      <span>{item.likeCount || 0}</span>
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        navigator.clipboard.writeText(window.location.origin + "/MainModules/ROAR?post=" + item.id);
-                        onToast("Link copied to clipboard!");
-                      }}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 6,
-                        background: "none",
-                        border: "none",
-                        cursor: "pointer",
-                        color: "#9494ad",
-                        fontSize: 13,
-                        fontWeight: 600,
-                        transition: "color 0.2s",
-                      }}
-                    >
-                      <Share2 size={16} />
-                      <span>Share</span>
-                    </button>
-                  </div>
+                  renderCardActions(item)
                 )}
               </motion.div>
             );
@@ -462,7 +569,7 @@ export default function HomeFeed({
                   <AvatarWithBadge username={item.fan.username} badge={item.fan.badge} size="sm" />
                   <div>
                     <p style={{ fontWeight: 700, fontSize: 13 }}>{item.fan.username}</p>
-                    <p style={{ fontSize: 10, color: "var(--text-secondary)" }}>{BADGE_LABELS[item.fan.badge]} · {item.fan.team}</p>
+                    <p style={{ fontSize: 10, color: "var(--text-secondary)" }}>{BADGE_LABELS[item.fan.badge]} · {item.fan.team} • {formatTimeAgo(item.createdAt)}</p>
                   </div>
                 </div>
                 <div style={{ display: "flex", gap: 8, alignItems: "stretch" }}>
@@ -477,6 +584,7 @@ export default function HomeFeed({
                   </div>
                 </div>
                 <p style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 10 }}>{fmt(item.fanCount ?? 0)} fans · {item.replies ?? 0} replies</p>
+                {renderCardActions(item)}
               </motion.div>
             );
           }
@@ -491,12 +599,13 @@ export default function HomeFeed({
                   <AvatarWithBadge username={item.fan.username} badge={item.fan.badge} size="sm" />
                   <div>
                     <p style={{ fontWeight: 700, fontSize: 13 }}>{item.fan.username}</p>
-                    <p style={{ fontSize: 10, color: "var(--text-secondary)" }}>{BADGE_LABELS[item.fan.badge]}</p>
+                    <p style={{ fontSize: 10, color: "var(--text-secondary)" }}>{BADGE_LABELS[item.fan.badge]} • {formatTimeAgo(item.createdAt)}</p>
                   </div>
                 </div>
                 <p style={{ fontWeight: 600, fontSize: 15, lineHeight: 1.55, marginBottom: item.memCtx ? 8 : 0 }}>{item.text}</p>
                 {item.memCtx && <p style={{ fontSize: 12, color: "var(--teal)", fontStyle: "italic", borderLeft: "2px solid var(--teal)", paddingLeft: 10, marginTop: 6 }}>{item.memCtx}</p>}
                 <p style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 10 }}>{fmt(item.fanCount ?? 0)} fans · {item.replies ?? 0} replies</p>
+                {renderCardActions(item)}
               </motion.div>
             );
           }

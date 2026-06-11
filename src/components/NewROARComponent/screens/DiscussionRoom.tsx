@@ -143,6 +143,14 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
     return () => clearInterval(interval);
   }, [roomId]);
 
+  useEffect(() => {
+    if (!loading && listRef.current) {
+      setTimeout(() => {
+        if (listRef.current) listRef.current.scrollTo({ top: listRef.current.scrollHeight });
+      }, 50);
+    }
+  }, [loading]);
+
   const send = async () => {
     if (!roomId) return;
     const text = `${composerPre}${input}`.trim();
@@ -427,7 +435,6 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
 
       {/* Messages */}
       <div ref={listRef} style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "16px", display: "flex", flexDirection: "column", gap: 12 }}>
-        <div style={{ flex: 1 }} />
         <AnimatePresence initial={false}>
           {loading ? (
             <div style={{ textAlign: "center", color: "var(--text-muted)", padding: "20px 0" }}>Loading messages...</div>
@@ -437,7 +444,7 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
             </div>
           ) : (
             <>
-              {visiblePosts.map((p) => {
+              {[...visiblePosts].reverse().map((p) => {
                 const bg = p.type === "prediction" ? "linear-gradient(135deg,rgba(255,215,0,0.08),rgba(255,215,0,0.02))" : p.type === "hottake" ? "linear-gradient(135deg,rgba(239,68,68,0.08),rgba(239,68,68,0.02))" : undefined;
                 const border = p.type === "prediction" ? "1px solid rgba(255,215,0,0.18)" : p.type === "hottake" ? "1px solid rgba(239,68,68,0.18)" : undefined;
 

@@ -191,25 +191,25 @@ const quickLinks: QuickLink[] = [
 
 const cards: CardItem[] = [
   {
-    id: 1,
-    title: "FIFA World Cup 2026",
-    subtitle: "The world's biggest football tournament",
-    image: "/images/fifa2026.png",
-    url: "/MainModules/MatchesDropContent?team=FIFA",
-    sport: "football",
-    buttonBg: "bg-[#041E53]", // Dark blue matching your image
-    iconType: "football",
-  },
+  id: 1,
+  title: "FIFA World Cup 2026",
+  subtitle: "The world's biggest football tournament",
+  image: "/images/fifa2026.png",
+  url: "/MainModules/FIFAMatchCenter",
+  sport: "football",
+  buttonBg: "bg-[#041E53]",
+  iconType: "football",
+},,
   {
-    id: 2,
-    title: "Women's T20 2026",
-    subtitle: "Exclusive coverage of women's cricket",
-    image: "/images/womens_t20.jpg",
-    url: "/MainModules/MatchesDropContent?team=Women%20T20",
-    sport: "cricket",
-    buttonBg: "bg-[#5D287F]", // Purple matching your image
-    iconType: "cricket",
-  },
+  id: 2,
+  title: "Women's T20 2026",
+  subtitle: "Exclusive coverage of women's cricket",
+  image: "/images/womens_t20.jpg",
+  url: "/MainModules/WomensT20Dashboard",
+  sport: "cricket",
+  buttonBg: "bg-[#5D287F]",
+  iconType: "cricket",
+},,
 ];
 
 export default function NewHomePage({ sportFilter }: { sportFilter?: string }) {

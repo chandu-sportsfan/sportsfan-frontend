@@ -209,13 +209,18 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
               <ChevronLeft size={24} />
             </button>
             <div style={{ textAlign: "left", paddingTop: 2 }}>
-              <p className="font-display" style={{ fontSize: 18, letterSpacing: "0.04em", margin: 0, lineHeight: 1.2, color: "white", fontWeight: 800 }}>{roomName || "India vs Pakistan"}</p>
+              <p className="font-display" style={{ fontSize: 24, letterSpacing: "0.04em", margin: 0, lineHeight: 1.2, color: "white", fontWeight: 800, textTransform: "uppercase" }}>{roomName || "WORLDCUP"}</p>
               <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}>
                 <span className="live-pulse" style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--live-green)", display: "inline-block" }} />
                 <span style={{ fontSize: 10, fontWeight: 700, color: "var(--live-green)" }}>LIVE</span>
                 <span style={{ fontSize: 11, color: "var(--text-muted)" }}>· {fmt(fanCount)} fans</span>
               </div>
             </div>
+          </div>
+
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "flex-end", paddingRight: 20 }}>
+            <p className="font-display" style={{ fontSize: 24, fontWeight: 800, color: "#fbbf24", margin: 0, lineHeight: 1.2 }}>287/4</p>
+            <p style={{ fontSize: 12, color: "var(--text-secondary)", margin: 0, marginTop: 4 }}>IND · 88 ov</p>
           </div>
 
           {/* Dropdown */}
@@ -359,6 +364,50 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
         </div>
       </div>
 
+      {/* Fixed CTA Buttons */}
+      <div style={{ padding: "16px 16px 0", flexShrink: 0 }}>
+        {tab === "Predictions" && (
+          <motion.button
+            whileTap={{ scale: 0.98 }}
+            onClick={() => { setMode("prediction"); setComposerPre("My prediction: "); }}
+            className="btn-gradient"
+            style={{ width: "100%", padding: "14px", borderRadius: 999, color: "white", fontSize: 14, fontWeight: 700, letterSpacing: "0.06em", border: "none", cursor: "pointer", margin: 0 }}
+          >
+            MAKE YOUR PREDICTION
+          </motion.button>
+        )}
+        {tab === "Hot Takes" && (
+          <motion.button
+            whileTap={{ scale: 0.98 }}
+            onClick={() => { setMode("hottake"); setComposerPre(""); }}
+            className="btn-gradient"
+            style={{ width: "100%", padding: "14px", borderRadius: 999, color: "white", fontSize: 14, fontWeight: 700, letterSpacing: "0.06em", border: "none", cursor: "pointer", margin: 0 }}
+          >
+            DROP A HOT TAKE
+          </motion.button>
+        )}
+        {tab === "Debate" && (
+          <motion.button
+            whileTap={{ scale: 0.98 }}
+            onClick={() => { setMode("debate"); setComposerPre("My debate side: "); }}
+            className="btn-gradient"
+            style={{ width: "100%", padding: "14px", borderRadius: 999, color: "white", fontSize: 14, fontWeight: 700, letterSpacing: "0.06em", border: "none", cursor: "pointer", margin: 0 }}
+          >
+            START A DEBATE
+          </motion.button>
+        )}
+        {tab === "Memory" && (
+          <motion.button
+            whileTap={{ scale: 0.98 }}
+            onClick={() => { setMode("memory"); setComposerPre("Flashback: "); }}
+            className="btn-gradient"
+            style={{ width: "100%", padding: "14px", borderRadius: 999, color: "white", fontSize: 14, fontWeight: 700, letterSpacing: "0.06em", border: "none", cursor: "pointer", margin: 0 }}
+          >
+            SHARE A MEMORY
+          </motion.button>
+        )}
+      </div>
+
       {/* Messages */}
       <div ref={listRef} style={{ flex: 1, overflowY: "auto", padding: "16px 16px 140px", display: "flex", flexDirection: "column-reverse", gap: 12 }}>
         <AnimatePresence initial={false}>
@@ -461,46 +510,6 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
                   </motion.div>
                 );
               })}
-              {tab === "Predictions" && (
-                <motion.button
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => { setMode("prediction"); setComposerPre("My prediction: "); }}
-                  className="btn-gradient"
-                  style={{ width: "100%", padding: "14px", borderRadius: 999, color: "white", fontSize: 14, fontWeight: 700, letterSpacing: "0.06em", border: "none", cursor: "pointer", flexShrink: 0, margin: "8px 0 16px" }}
-                >
-                  MAKE YOUR PREDICTION
-                </motion.button>
-              )}
-              {tab === "Hot Takes" && (
-                <motion.button
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => { setMode("hottake"); setComposerPre(""); }}
-                  className="btn-gradient"
-                  style={{ width: "100%", padding: "14px", borderRadius: 999, color: "white", fontSize: 14, fontWeight: 700, letterSpacing: "0.06em", border: "none", cursor: "pointer", flexShrink: 0, margin: "8px 0 16px" }}
-                >
-                  DROP A HOT TAKE
-                </motion.button>
-              )}
-              {tab === "Debate" && (
-                <motion.button
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => { setMode("debate"); setComposerPre("My debate side: "); }}
-                  className="btn-gradient"
-                  style={{ width: "100%", padding: "14px", borderRadius: 999, color: "white", fontSize: 14, fontWeight: 700, letterSpacing: "0.06em", border: "none", cursor: "pointer", flexShrink: 0, margin: "8px 0 16px" }}
-                >
-                  START A DEBATE
-                </motion.button>
-              )}
-              {tab === "Memory" && (
-                <motion.button
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => { setMode("memory"); setComposerPre("Flashback: "); }}
-                  className="btn-gradient"
-                  style={{ width: "100%", padding: "14px", borderRadius: 999, color: "white", fontSize: 14, fontWeight: 700, letterSpacing: "0.06em", border: "none", cursor: "pointer", flexShrink: 0, margin: "8px 0 16px" }}
-                >
-                  SHARE A MEMORY
-                </motion.button>
-              )}
             </>
           )}
         </AnimatePresence>

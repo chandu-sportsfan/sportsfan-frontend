@@ -4,6 +4,7 @@ import axios from "axios";
 import AvatarWithBadge from "../components/AvatarWithBadge";
 import { JOIN_FANS } from "../constants";
 import { fmt } from "../utils";
+import { Image, Video } from "lucide-react";
 
 interface Props {
   onBack: () => void;
@@ -38,6 +39,44 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
   const [composerPre, setComposerPre] = useState("");
   const listRef = useRef<HTMLDivElement>(null);
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [attachedUrl, setAttachedUrl] = useState<string | null>(null);
+  const [attachedType, setAttachedType] = useState<"image" | "video" | null>(null);
+
+  const triggerUpload = (type: "image" | "video") => {
+    setAttachedType(type);
+    if (fileInputRef.current) {
+      fileInputRef.current.accept = type === "image" ? "image/*" : "video/*";
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      setUploading(true);
+      onToast("Uploading media...");
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await axios.post("/api/upload", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      if (res.data?.url) {
+        setAttachedUrl(res.data.url);
+        onToast("Media uploaded successfully!");
+      }
+    } catch (err) {
+      console.error("Upload failed", err);
+      onToast("Media upload failed");
+      setAttachedType(null);
+    } finally {
+      setUploading(false);
+      if (e.target) e.target.value = "";
+    }
+  };
+
   const [userUsername, setUserUsername] = useState("RoarUser");
   const [userBadge, setUserBadge] = useState("RISING_FAN");
 
@@ -63,6 +102,7 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
             heartCount: m.heartCount || 0,
             timeAgo: new Date(m.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
             type: m.type,
+            mediaUrls: m.mediaUrls,
           }));
           setPosts(mapped);
         }
@@ -80,14 +120,30 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
   const send = async () => {
     if (!roomId) return;
     const text = (composerPre || input).trim();
-    if (!text) return;
+    if (!text && !attachedUrl) return;
     try {
-      const res = await axios.post(`/api/roar/rooms/${roomId}/messages`, { text, type: mode });
+      const res = await axios.post(`/api/roar/rooms/${roomId}/messages`, {
+        text: text || "Shared media",
+        type: mode,
+        mediaUrls: attachedUrl ? [attachedUrl] : undefined,
+      });
       if (res.data?.success) {
         const m = res.data.message;
-        setPosts((p) => [{ id: m.msgId, fan: { username: m.authorUsername, badge: m.authorBadge }, text: m.text, fireCount: 0, nochanceCount: 0, heartCount: 0, timeAgo: "now", type: m.type }, ...p]);
+        setPosts((p) => [{
+          id: m.msgId,
+          fan: { username: m.authorUsername, badge: m.authorBadge },
+          text: m.text,
+          fireCount: 0,
+          nochanceCount: 0,
+          heartCount: 0,
+          timeAgo: "now",
+          type: m.type,
+          mediaUrls: m.mediaUrls,
+        }, ...p]);
         setInput("");
         setComposerPre("");
+        setAttachedUrl(null);
+        setAttachedType(null);
         setTimeout(() => listRef.current?.scrollTo({ top: 0, behavior: "smooth" }), 50);
       }
     } catch (err) {
@@ -194,6 +250,7 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
                           type: p.type || "chat",
                           isDbPost: true,
                           roomId: roomId,
+                          mediaUrls: p.mediaUrls,
                         });
                       }
                     }}
@@ -213,6 +270,32 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
                       )}
                     </div>
                     <p style={{ fontSize: 14, lineHeight: 1.4, marginTop: 8, color: MODE_COLOR[p.type] || "white" }}>{p.text}</p>
+                    {p.mediaUrls && p.mediaUrls.length > 0 && (
+                      <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 8 }}>
+                        {p.mediaUrls.map((url: string, idx: number) => {
+                          const isVideo = url.endsWith(".mp4") || url.includes("/video/upload/");
+                          if (isVideo) {
+                            return (
+                              <video
+                                key={idx}
+                                src={url}
+                                controls
+                                style={{ width: "100%", maxHeight: 200, borderRadius: 8, objectFit: "cover" }}
+                                onClick={(e) => e.stopPropagation()}
+                              />
+                            );
+                          }
+                          return (
+                            <img
+                              key={idx}
+                              src={url}
+                              alt="Message Media"
+                              style={{ width: "100%", maxHeight: 200, borderRadius: 8, objectFit: "cover" }}
+                            />
+                          );
+                        })}
+                      </div>
+                    )}
                     <div style={{ display: "flex", gap: 8, marginTop: 10, justifyContent: "flex-end" }}>
                       <motion.button whileTap={{ scale: 0.9 }} onClick={(e) => { e.stopPropagation(); react(p.id, "fire"); }} style={{ padding: "6px 14px", fontSize: 12, fontWeight: 600, background: "rgba(255,255,255,0.05)", borderRadius: 999, border: "1px solid rgba(255,255,255,0.08)", color: "var(--text-primary)", cursor: "pointer" }}>
                         🔥 {p.fireCount}
@@ -242,14 +325,37 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
         </AnimatePresence>
       </div>
 
+      {/* Hidden file input */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileChange}
+        style={{ display: "none" }}
+      />
+
       {/* Composer */}
       <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "10px 12px 14px", background: "rgba(14,14,20,0.92)", backdropFilter: "blur(20px)", borderTop: "1px solid var(--border)", zIndex: 10, display: "flex", flexDirection: "column", gap: 8 }}>
         {composerPre && (
-          <div style={{ position: "absolute", bottom: 110, left: 12, right: 12, padding: "8px 12px", borderRadius: 12, background: "var(--bg-tertiary)", border: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center", zIndex: 30 }}>
+          <div style={{ padding: "8px 12px", borderRadius: 12, background: "var(--bg-tertiary)", border: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <p style={{ fontSize: 12, color: MODE_COLOR[mode], fontStyle: "italic" }}>{MODE_LABEL[mode]} preset selected</p>
             <button onClick={() => setComposerPre("")} style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer" }}>✕</button>
           </div>
         )}
+        
+        {attachedUrl && (
+          <div style={{ padding: "8px 12px", borderRadius: 12, background: "var(--bg-tertiary)", border: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              {attachedType === "image" ? (
+                <img src={attachedUrl} style={{ width: 40, height: 40, borderRadius: 8, objectFit: "cover" }} alt="Attached" />
+              ) : (
+                <video src={attachedUrl} style={{ width: 40, height: 40, borderRadius: 8, objectFit: "cover" }} />
+              )}
+              <span style={{ fontSize: 12, color: "var(--text-secondary)" }}>Media attached</span>
+            </div>
+            <button onClick={() => { setAttachedUrl(null); setAttachedType(null); }} style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer" }}>✕</button>
+          </div>
+        )}
+
         {/* Mode pills */}
         <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
           {(["chat", "prediction", "hottake"] as const).map((m) => {
@@ -269,8 +375,8 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
             );
           })}
           <button
-            onClick={() => onCompose && onCompose("post")}
-            style={{ padding: "6px 12px", borderRadius: 999, fontSize: 12, fontWeight: 600, border: "1px solid var(--border)", background: "rgba(255,255,255,0.03)", color: "var(--text-secondary)", cursor: "pointer", transition: "all 0.2s" }}
+            onClick={() => { setMode("chat"); setComposerPre(""); }}
+            style={{ padding: "6px 12px", borderRadius: 999, fontSize: 12, fontWeight: 600, border: mode === "chat" && !composerPre ? "1px solid rgba(255,255,255,0.3)" : "1px solid var(--border)", background: mode === "chat" && !composerPre ? "rgba(255,255,255,0.1)" : "rgba(255,255,255,0.03)", color: mode === "chat" && !composerPre ? "#fff" : "var(--text-secondary)", cursor: "pointer", transition: "all 0.2s" }}
           >
             ✏️ Post
           </button>
@@ -279,9 +385,29 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
         {/* Input row */}
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           <AvatarWithBadge username={userUsername} badge={userBadge} size="sm" />
+          
+          <button
+            onClick={() => triggerUpload("image")}
+            disabled={uploading}
+            style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", display: "flex", alignItems: "center", padding: 4 }}
+            title="Upload Image"
+          >
+            <Image size={20} />
+          </button>
+          
+          <button
+            onClick={() => triggerUpload("video")}
+            disabled={uploading}
+            style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", display: "flex", alignItems: "center", padding: 4 }}
+            title="Upload Video"
+          >
+            <Video size={20} />
+          </button>
+
           <input
             type="text"
-            placeholder="Drop your take..."
+            placeholder={uploading ? "Uploading media..." : "Drop your take..."}
+            disabled={uploading}
             value={composerPre || input}
             onChange={(e) => { if (composerPre) setComposerPre(e.target.value); else setInput(e.target.value); }}
             onKeyDown={(e) => e.key === "Enter" && send()}
@@ -290,7 +416,8 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
           <motion.button
             whileTap={{ scale: 0.96 }}
             onClick={send}
-            style={{ width: 44, height: 44, borderRadius: "50%", background: "var(--accent-gradient)", border: "none", color: "white", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+            disabled={uploading}
+            style={{ width: 44, height: 44, borderRadius: "50%", background: "var(--accent-gradient)", border: "none", color: "white", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", opacity: uploading ? 0.5 : 1 }}
           >
             ↑
           </motion.button>

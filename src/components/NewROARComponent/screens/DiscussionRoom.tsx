@@ -427,6 +427,7 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
 
       {/* Messages */}
       <div ref={listRef} style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "16px", display: "flex", flexDirection: "column", gap: 12 }}>
+        <div style={{ flex: 1 }} />
         <AnimatePresence initial={false}>
           {loading ? (
             <div style={{ textAlign: "center", color: "var(--text-muted)", padding: "20px 0" }}>Loading messages...</div>
@@ -436,7 +437,7 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
             </div>
           ) : (
             <>
-              {[...visiblePosts].reverse().map((p) => {
+              {visiblePosts.map((p) => {
                 const bg = p.type === "prediction" ? "linear-gradient(135deg,rgba(255,215,0,0.08),rgba(255,215,0,0.02))" : p.type === "hottake" ? "linear-gradient(135deg,rgba(239,68,68,0.08),rgba(239,68,68,0.02))" : undefined;
                 const border = p.type === "prediction" ? "1px solid rgba(255,215,0,0.18)" : p.type === "hottake" ? "1px solid rgba(239,68,68,0.18)" : undefined;
 
@@ -619,7 +620,7 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
                   {[
                     { id: "hottake", title: "Fire", subtitle: "Hot take, no filter", icon: "🔥", preset: "", activeBg: "rgba(239, 68, 68, 0.15)" },
                     { id: "prediction", title: "Predict", subtitle: "Forecast what's next", icon: "📈", preset: "My prediction: ", activeBg: "rgba(255, 184, 0, 0.15)" },
-                    { id: "debate", title: "Bold Take", subtitle: "Controversial opinion", icon: "⚡", preset: "My debate side: ", activeBg: "rgba(233, 30, 140, 0.15)" },
+                    { id: "debate", title: "Debate", subtitle: "Controversial opinion", icon: "⚡", preset: "My debate side: ", activeBg: "rgba(233, 30, 140, 0.15)" },
                     { id: "memory", title: "Memory", subtitle: "Share a flashback", icon: "⏱️", preset: "Flashback: ", activeBg: "rgba(0, 232, 198, 0.15)" },
                     { id: "chat", title: "Normal Post", subtitle: "Just chatting", icon: "✒️", preset: "", activeBg: "rgba(255,255,255,0.1)" }
                   ].map((item) => {
@@ -677,7 +678,7 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
               const selectedItem = [
                 { id: "hottake", title: "Fire", subtitle: "Hot take, no filter", icon: "🔥", color: "#f87171" },
                 { id: "prediction", title: "Predict", subtitle: "Forecast what's next", icon: "📈", color: "var(--gold)" },
-                { id: "debate", title: "Bold Take", subtitle: "Controversial opinion", icon: "⚡", color: "#e91e8c" },
+                { id: "debate", title: "Debate", subtitle: "Controversial opinion", icon: "⚡", color: "#e91e8c" },
                 { id: "memory", title: "Memory", subtitle: "Share a flashback", icon: "⏱️", color: "#00e8c6" },
                 { id: "chat", title: "Normal Post", subtitle: "Just chatting", icon: "✒️", color: "#fff" }
               ].find(i => i.id === mode);

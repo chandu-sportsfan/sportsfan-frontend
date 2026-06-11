@@ -106,6 +106,7 @@ export default function HomeFeed({
   const [sharePost, setSharePost] = useState<ShareableRoarPost | null>(null);
   const [copied, setCopied] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [selectedActionId, setSelectedActionId] = useState("post");
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -440,26 +441,42 @@ export default function HomeFeed({
           </div>
 
           <div style={{ position: "relative" }} ref={dropdownRef}>
-            <motion.button
-              whileTap={{ scale: 0.95 }}
-              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
-                padding: "8px 16px",
-                borderRadius: 12,
-                background: "transparent",
-                border: "1px solid #e5003d",
-                color: "white",
-                cursor: "pointer",
-                boxShadow: "0 0 10px rgba(229,0,61,0.2)"
-              }}
-            >
-              <PenTool size={16} />
-              <span style={{ fontSize: 13, fontWeight: 700 }}>Post</span>
-              <span style={{ fontSize: 10 }}>{isDropdownOpen ? "▲" : "▼"}</span>
-            </motion.button>
+            {(() => {
+              const selectedOption = RADIAL_OPTS.find((q) => q.id === selectedActionId) || RADIAL_OPTS[4];
+              const icons: Record<string, React.ReactNode> = {
+                hot_take: <Flame size={16} stroke="url(#pink-orange-grad)" fill="url(#pink-orange-grad)" />,
+                prediction: <TrendingUp size={16} stroke="url(#pink-orange-grad)" />,
+                debate: <Zap size={16} stroke="url(#pink-orange-grad)" fill="url(#pink-orange-grad)" />,
+                memory: <History size={16} stroke="url(#pink-orange-grad)" />,
+                post: <PenTool size={16} stroke="url(#pink-orange-grad)" />,
+              };
+              const selectedIcon = icons[selectedOption.id] || <span>{selectedOption.emoji}</span>;
+
+              return (
+                <motion.button
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    padding: "8px 16px",
+                    borderRadius: 999,
+                    background: "linear-gradient(145deg, rgba(233,30,140,0.18), rgba(255,107,53,0.10))",
+                    border: "1px solid rgba(233,30,140,0.35)",
+                    boxShadow: "0 4px 15px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.05)",
+                    backdropFilter: "blur(8px)",
+                    color: "rgba(255,255,255,0.9)",
+                    cursor: "pointer",
+                    transition: "all 0.2s",
+                  }}
+                >
+                  {selectedIcon}
+                  <span style={{ fontSize: 13, fontWeight: 700, letterSpacing: "0.03em" }}>{selectedOption.label}</span>
+                  <span style={{ fontSize: 10, marginLeft: 2, color: "rgba(255,255,255,0.7)" }}>{isDropdownOpen ? "▲" : "▼"}</span>
+                </motion.button>
+              );
+            })()}
 
             <AnimatePresence>
               {isDropdownOpen && (
@@ -499,6 +516,7 @@ export default function HomeFeed({
                       <button
                         key={q.id}
                         onClick={() => {
+                          setSelectedActionId(q.id);
                           setIsDropdownOpen(false);
                           if (onQuickCompose) onQuickCompose(q.id);
                         }}
@@ -508,8 +526,8 @@ export default function HomeFeed({
                           gap: 12,
                           padding: "10px 12px",
                           borderRadius: 12,
-                          background: "transparent",
-                          border: isPost ? "1px solid #e5003d" : "1px solid transparent",
+                          background: isPost ? "linear-gradient(145deg, rgba(233,30,140,0.18), rgba(255,107,53,0.10))" : "transparent",
+                          border: isPost ? "1px solid rgba(233,30,140,0.35)" : "1px solid transparent",
                           color: "white",
                           cursor: "pointer",
                           textAlign: "left",

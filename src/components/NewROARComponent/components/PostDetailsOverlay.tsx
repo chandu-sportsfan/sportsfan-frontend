@@ -11,7 +11,7 @@ interface Props {
   onClose: () => void;
   onToast: (m: string) => void;
   onVote: (id: string, vote: "agree" | "disagree" | null) => void;
-  onDeletePost?: (id: string) => void;
+  onDeletePost?: (id: string, roomId?: string) => void;
   currentUsername?: string;
 }
 
@@ -185,7 +185,7 @@ export default function PostDetailsOverlay({ post, onClose, onToast, onVote, onD
                     e.stopPropagation();
                     if (window.confirm("Are you sure you want to delete this post?")) {
                       if (onDeletePost) {
-                        onDeletePost(post.id);
+                        onDeletePost(post.id, post.roomId);
                         onClose();
                       }
                     }

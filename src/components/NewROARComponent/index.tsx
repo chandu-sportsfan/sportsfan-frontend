@@ -241,18 +241,19 @@ export default function ROARApp() {
   );
 
   const handleDeletePost = useCallback(
-    async (postId: string) => {
+    async (postId: string, roomId?: string) => {
       try {
-        const res = await axios.delete(`/api/roar/posts/${postId}`);
+        const url = roomId ? `/api/roar/rooms/${roomId}/messages/${postId}` : `/api/roar/posts/${postId}`;
+        const res = await axios.delete(url);
         if (res.data?.success) {
-          showToast("Post deleted");
+          showToast(roomId ? "Message deleted" : "Post deleted");
           await fetchPosts();
         } else {
-          showToast("Failed to delete post");
+          showToast(roomId ? "Failed to delete message" : "Failed to delete post");
         }
       } catch (err) {
-        console.error("Failed to delete post:", err);
-        showToast("Error deleting post");
+        console.error("Failed to delete:", err);
+        showToast(roomId ? "Error deleting message" : "Error deleting post");
       }
     },
     [fetchPosts, showToast],

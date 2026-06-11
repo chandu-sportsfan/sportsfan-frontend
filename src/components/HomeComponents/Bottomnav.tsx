@@ -100,7 +100,7 @@ export default function BottomNav() {
       logo: "/images/roar.png",
       url: "/MainModules/ROAR" 
     },
-     { name: "Watch Along", logo: "/images/watch.png", url: "/MainModules/WatchAlong" },
+     { name: "Watch Along", logo: "/images/watchalong2.png", url: "/MainModules/WatchAlong" },
       { 
       name: "Ask AI", 
       logo: <Sparkles className="w-5 h-5 text-gradient" />,

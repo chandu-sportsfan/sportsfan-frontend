@@ -156,7 +156,7 @@ function UserSidebar() {
       ),
       href: "/MainModules/ROAR",
     },
-     { name: "Watch Along", icon: "/images/live.png", href: "/MainModules/WatchAlong" },
+     { name: "Watch Along", icon: "/images/watchalong2.png", href: "/MainModules/WatchAlong" },
     // { 
     //   name: isMatchIntelligence ? "Match Intelligence" : "Store", 
     //   icon: "/images/store.png", 

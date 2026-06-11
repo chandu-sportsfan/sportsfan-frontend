@@ -122,7 +122,7 @@ export default function PostDetailsOverlay({ post, onClose, onToast, onVote, onD
 
   return (
     <AnimatePresence>
-      <div style={{ position: "absolute", inset: 0, zIndex: 100, display: "flex", flexDirection: "column", background: "var(--bg-primary)" }}>
+      <div style={{ position: "absolute", inset: 0, zIndex: 40, display: "flex", flexDirection: "column", background: "var(--bg-primary)",  }}>
         {/* Header */}
         <div style={{ display: "flex", alignItems: "center", gap: 14, padding: "16px 20px", borderBottom: "1px solid var(--border)", background: "rgba(5, 5, 8, 0.95)", backdropFilter: "blur(10px)", zIndex: 10 }}>
           <button onClick={onClose} style={{ background: "none", border: "none", color: "white", fontSize: 18, cursor: "pointer", padding: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>←</button>

@@ -1409,7 +1409,7 @@ export default function Header() {
   return (
     <>
       {/* ── DESKTOP (1280px+) ─────────────────────────────────────────────── */}
-      <header className="hidden xl:flex w-full items-center gap-4 px-6 py-3 bg-[#0a0a0a] border-b border-white/5 sticky top-0 z-50">
+      <header className="hidden xl:flex w-full items-center gap-4 px-6 py-3 bg-[#0a0a0a] border-b border-white/5 sticky top-0 z-[100]">
         <div className="relative flex-1 max-w-2xl" ref={dropdownRef}>
           <div className="flex items-center bg-[#111] border border-white/10 rounded-full overflow-hidden pr-1">
             <Search size={16} className="text-gray-500 ml-4 shrink-0" />
@@ -1441,7 +1441,7 @@ export default function Header() {
             />
           </div>
           {showDropdown && (
-            <div className="absolute top-full left-0 right-0 mt-2 bg-[#111] border border-pink-500/20 rounded-2xl shadow-2xl z-50 max-h-[400px] overflow-y-auto">
+            <div className="absolute top-full left-0 right-0 mt-2 bg-[#111] border border-pink-500/20 rounded-2xl shadow-2xl z-[9999] max-h-[400px] overflow-y-auto">
               <ResultsList />
             </div>
           )}
@@ -1475,7 +1475,7 @@ export default function Header() {
               />
             </button>
             {showProfileDropdown && (
-              <div className="absolute right-0 top-full mt-3 w-56 bg-[#111] border border-white/10 rounded-2xl shadow-2xl shadow-black/60 overflow-hidden z-50">
+              <div className="absolute right-0 top-full mt-3 w-56 bg-[#111] border border-white/10 rounded-2xl shadow-2xl shadow-black/60 overflow-hidden z-[9999]">
                 <ProfileMenu onClose={() => setShowProfileDropdown(false)} />
               </div>
             )}
@@ -1484,7 +1484,7 @@ export default function Header() {
       </header>
 
       {/* ── TABLET (768px – 1279px) ───────────────────────────────────────── */}
-      <header className="hidden md:flex xl:hidden w-full items-center gap-3 px-4 py-2 bg-[#0a0a0a] border-b border-white/5 sticky top-0 z-50">
+      <header className="hidden md:flex xl:hidden w-full items-center gap-3 px-4 py-2 bg-[#0a0a0a] border-b border-white/5 sticky top-0 z-100">
         <Link href="/MainModules/ROAR" className="flex-shrink-0">
           <Image
             src="/images/Logo.png"
@@ -1527,7 +1527,7 @@ export default function Header() {
             />
           </div>
           {showDropdown && (
-            <div className="absolute top-full left-0 right-0 mt-2 bg-[#111] border border-pink-500/20 rounded-2xl shadow-2xl z-50 max-h-[400px] overflow-y-auto">
+            <div className="absolute top-full left-0 right-0 mt-2 bg-[#111] border border-pink-500/20 rounded-2xl shadow-2xl z-[9999] max-h-[400px] overflow-y-auto">
               <ResultsList />
             </div>
           )}
@@ -1550,7 +1550,7 @@ export default function Header() {
             <ChevronDown size={12} className="text-gray-400" />
           </button>
           {showProfileDropdown && (
-            <div className="absolute right-0 top-full mt-3 w-52 bg-[#111] border border-white/10 rounded-2xl shadow-2xl shadow-black/60 overflow-hidden z-50">
+            <div className="absolute right-0 top-full mt-3 w-52 bg-[#111] border border-white/10 rounded-2xl shadow-2xl shadow-black/60 overflow-hidden z-[9999]">
               <ProfileMenu onClose={() => setShowProfileDropdown(false)} />
             </div>
           )}
@@ -1560,7 +1560,7 @@ export default function Header() {
       {/* ── MOBILE (< 768px) ──────────────────────────────────────────────── */}
       <header
         className="flex md:hidden flex-col bg-[#0a0a0a] border-b border-white/5"
-        style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 50 }}
+        style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 100 }}
       >
         <div className="flex items-center gap-2 px-3 pt-2.5 pb-2 w-full">
           <Link href="/MainModules/ROAR" className="flex-shrink-0">
@@ -1604,7 +1604,7 @@ export default function Header() {
               />
             </div>
             {showDropdown && (
-              <div className="absolute top-full left-0 right-0 mt-2 bg-[#111] border border-pink-500/20 rounded-2xl shadow-2xl z-50 max-h-[60vh] overflow-y-auto">
+              <div className="absolute top-full left-0 right-0 mt-2 bg-[#111] border border-pink-500/20 rounded-2xl shadow-2xl z-[9999] max-h-[60vh] overflow-y-auto">
                 <ResultsList />
               </div>
             )}
@@ -1626,7 +1626,7 @@ export default function Header() {
               <Avatar src="" name={displayName} size={36} ring />
             </button>
             {showProfileDropdown && (
-              <div className="absolute right-0 top-full mt-2 w-48 bg-[#111] border border-white/10 rounded-2xl shadow-2xl shadow-black/60 overflow-hidden z-[100]">
+              <div className="absolute right-0 top-full mt-2 w-48 bg-[#111] border border-white/10 rounded-2xl shadow-2xl shadow-black/60 overflow-hidden z-[9999]">
                 <ProfileMenu onClose={() => setShowProfileDropdown(false)} />
               </div>
             )}

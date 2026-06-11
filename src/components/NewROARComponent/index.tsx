@@ -386,7 +386,7 @@ export default function ROARApp() {
 
         {/* Main content */}
         {onboarded && (
-          <div style={{ position: "relative", zIndex: 1, flex: 1, minHeight: 0, overflow: "hidden" }}>
+          <div style={{ position: "relative", zIndex: 1, flex: 1, minHeight: 0, overflow: "clip" }}>
             <AnimatePresence mode="wait">
               {isLB ? (
                 <motion.div key="lb" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} style={{ height: "100%" }}>

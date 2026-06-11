@@ -477,9 +477,9 @@ export default function Header() {
         >
           <User
             size={16}
-            className="text-gray-400 group-hover:text-white transition-colors"
+            className="text-gray-400 group-hover:text-pink-400 transition-colors"
           />
-          <span className="text-white text-sm font-medium">Profile</span>
+          <span className="text-white group-hover:text-pink-400 text-sm font-medium">Profile</span>
         </Link>
         <div className="h-px bg-white/5 mx-4" />
         <Link
@@ -506,12 +506,12 @@ export default function Header() {
           <span className="text-white text-sm font-medium">Settings</span>
         </Link> */}
         <div className="h-px bg-white/5 mx-4" />
-        <LogoutButton className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors group">
+        <LogoutButton className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 hover:cursor-pointer transition-colors group">
           <LogOut
             size={16}
-            className="text-gray-400 group-hover:text-red-400 transition-colors"
+            className="text-gray-400 group-hover:text-pink-400 transition-colors"
           />
-          <span className="text-white group-hover:text-red-400 text-sm font-medium transition-colors">
+          <span className="text-white group-hover:text-pink-400 text-sm font-medium transition-colors">
             Logout
           </span>
         </LogoutButton>
@@ -533,47 +533,46 @@ export default function Header() {
   return (
     <>
       {/* ── DESKTOP (1280px+) ─────────────────────────────────────────────── */}
-      <header className="hidden xl:flex w-full items-center gap-4 px-6 py-3 bg-[#0a0a0a] border-b border-white/5 sticky top-0 z-50">
-        <div className="relative flex-1 max-w-2xl" ref={dropdownRef}>
-          <div className="flex items-center bg-[#111] border border-white/10 rounded-full overflow-hidden pr-1">
-            <Search size={16} className="text-gray-500 ml-4 shrink-0" />
-            <input
-              ref={inputRef}
-              type="text"
-              maxLength={100}
-              value={searchQuery}
-              onChange={handleInputChange}
-              onFocus={() => {
-                if (searchQuery.trim() && searchResults.length > 0)
-                  setShowDropdown(true);
-              }}
-              placeholder="Search players, teams, jersey numbers..."
-              className="bg-transparent outline-none text-sm flex-1 text-white placeholder:text-gray-500 px-3 py-2.5"
-            />
-            {searchQuery && (
-              <button onClick={handleClear} className="mr-1">
-                <X
-                  size={14}
-                  className="text-gray-500 hover:text-white transition-colors"
-                />
-              </button>
-            )}
-            <Link href={askAIHref}>
-              <button
-                onClick={handleAskAIClick}
-                className="flex items-center gap-1.5 bg-[#1a1a1a] hover:bg-[#222] border border-white/10 text-pink-400 text-sm font-medium px-4 py-2 rounded-full transition-colors whitespace-nowrap"
-              >
-                <Sparkles size={14} className="text-pink-400" />
-                Ask AI
-              </button>
-            </Link>
-          </div>
-          {showDropdown && (
-            <div className="absolute top-full left-0 right-0 mt-2 bg-[#111] border border-pink-500/20 rounded-2xl shadow-2xl z-50 max-h-[400px] overflow-y-auto">
-              <ResultsList />
-            </div>
+      <header className="hidden xl:flex w-full items-center gap-4 px-6 py-3 bg-[#0a0a0a] border-b border-white/5 sticky top-0 z-[9999]">        <div className="relative flex-1 max-w-2xl" ref={dropdownRef}>
+        <div className="flex items-center bg-[#111] border border-white/10 rounded-full overflow-hidden pr-1">
+          <Search size={16} className="text-gray-500 ml-4 shrink-0" />
+          <input
+            ref={inputRef}
+            type="text"
+            maxLength={100}
+            value={searchQuery}
+            onChange={handleInputChange}
+            onFocus={() => {
+              if (searchQuery.trim() && searchResults.length > 0)
+                setShowDropdown(true);
+            }}
+            placeholder="Search players, teams, jersey numbers..."
+            className="bg-transparent outline-none text-sm flex-1 text-white placeholder:text-gray-500 px-3 py-2.5"
+          />
+          {searchQuery && (
+            <button onClick={handleClear} className="mr-1">
+              <X
+                size={14}
+                className="text-gray-500 hover:text-white transition-colors"
+              />
+            </button>
           )}
+          <Link href={askAIHref}>
+            <button
+              onClick={handleAskAIClick}
+              className="flex items-center gap-1.5 bg-[#1a1a1a] hover:bg-[#222] border border-white/10 text-pink-400 text-sm font-medium px-4 py-2 rounded-full transition-colors whitespace-nowrap"
+            >
+              <Sparkles size={14} className="text-pink-400" />
+              Ask AI
+            </button>
+          </Link>
         </div>
+        {showDropdown && (
+          <div className="absolute top-full left-0 right-0 mt-2 bg-[#111] border border-pink-500/20 rounded-2xl shadow-2xl z-50 max-h-[400px] overflow-y-auto">
+            <ResultsList />
+          </div>
+        )}
+      </div>
 
         <div className="flex items-center gap-3 ml-auto">
           {/* <button className="flex items-center gap-2 bg-transparent hover:bg-pink-500/10 border border-pink-500 text-pink-400 text-sm font-medium px-5 py-2.5 rounded-full transition-colors">
@@ -587,7 +586,7 @@ export default function Header() {
           <div className="relative" ref={profileDropdownRef}>
             <button
               onClick={() => setShowProfileDropdown((v) => !v)}
-              className="flex items-center gap-2 bg-[#111] border border-white/10 rounded-full pl-1 pr-3 py-1 hover:bg-white/5 transition-colors"
+              className="flex items-center gap-2 bg-[#111] border border-white/10 rounded-full pl-1 pr-3 py-1 hover:bg-white/5 transition-colors hover:cursor-pointer"
             >
               <Avatar src="" name={displayName} size={34} ring />
               <div className="flex flex-col items-start leading-tight">
@@ -603,7 +602,10 @@ export default function Header() {
               />
             </button>
             {showProfileDropdown && (
-              <div className="absolute right-0 top-full mt-3 w-56 bg-[#111] border border-white/10 rounded-2xl shadow-2xl shadow-black/60 overflow-hidden z-50">
+              <div
+                className="absolute right-0 top-full mt-3 w-56 bg-[#111] border border-white/10 rounded-2xl shadow-2xl shadow-black/60 overflow-hidden"
+                style={{ zIndex: 9999 }}
+              >
                 <ProfileMenu onClose={() => setShowProfileDropdown(false)} />
               </div>
             )}

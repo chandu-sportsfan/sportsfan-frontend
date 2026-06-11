@@ -240,7 +240,30 @@ export default function PostDetailsOverlay({ post, onClose, onToast, onVote, onD
                           <span style={{ width: 5, height: 5, borderRadius: "50%", background: "#E91E8C", display: "inline-block" }} />
                         </p>
                       </div>
-                      <span style={{ fontSize: 9, color: "var(--text-muted)" }}>{formatTimeAgo(comment.createdAt)}</span>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <span style={{ fontSize: 9, color: "var(--text-muted)" }}>{formatTimeAgo(comment.createdAt)}</span>
+                        {comment.authorUsername === activeUsername && (
+                          <button
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              if (window.confirm("Are you sure you want to delete this comment?")) {
+                                try {
+                                  await axios.delete(`/api/roar/posts/${post.id}/comments/${comment.commentId}`);
+                                  onToast("Comment deleted successfully");
+                                  fetchComments();
+                                } catch (err) {
+                                  console.error(err);
+                                  onToast("Failed to delete comment");
+                                }
+                              }
+                            }}
+                            style={{ background: "none", border: "none", color: "#f87171", cursor: "pointer", display: "flex", alignItems: "center", padding: 2 }}
+                            title="Delete Comment"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        )}
+                      </div>
                     </div>
                     <p style={{ fontSize: 13, color: "var(--text-primary)", lineHeight: 1.4, margin: "4px 0" }}>{comment.text}</p>
                     <div style={{ display: "flex", gap: 14, alignItems: "center", marginTop: 4 }}>

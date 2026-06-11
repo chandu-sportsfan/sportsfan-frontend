@@ -4,7 +4,7 @@ import axios from "axios";
 import AvatarWithBadge from "../components/AvatarWithBadge";
 import { JOIN_FANS } from "../constants";
 import { fmt } from "../utils";
-import { Image, Video } from "lucide-react";
+import { Image, Video, ChevronLeft, Flame, TrendingUp, Zap, History, Lock, PenTool } from "lucide-react";
 
 interface Props {
   onBack: () => void;
@@ -42,6 +42,19 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
   const [mode, setMode] = useState<"chat" | "prediction" | "hottake" | "debate" | "memory">("chat");
   const [composerPre, setComposerPre] = useState("");
   const listRef = useRef<HTMLDivElement>(null);
+  
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -190,37 +203,159 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
       {/* Header */}
       <div style={{ padding: "12px 16px", background: "rgba(14,14,20,0.95)", backdropFilter: "blur(20px)", borderBottom: "1px solid var(--border)", flexShrink: 0, zIndex: 20 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <button onClick={onBack} style={{ background: "none", border: "none", fontSize: 22, cursor: "pointer", color: "var(--text-primary)" }}>←</button>
-          <div style={{ flex: 1, textAlign: "left", paddingLeft: 8 }}>
-            <p className="font-display" style={{ fontSize: 20, letterSpacing: "0.04em" }}>{roomName || "India vs Pakistan"}</p>
-            <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}>
-              <span className="live-pulse" style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--live-green)", display: "inline-block" }} />
-              <span style={{ fontSize: 10, fontWeight: 700, color: "var(--live-green)" }}>LIVE</span>
-              <span style={{ fontSize: 11, color: "var(--text-muted)" }}>· {fmt(fanCount)} fans</span>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+          <div style={{ display: "flex", gap: 12 }}>
+            <button onClick={onBack} style={{ background: "none", border: "none", cursor: "pointer", color: "white", display: "flex", alignItems: "center", padding: 0 }}>
+              <ChevronLeft size={24} />
+            </button>
+            <div style={{ textAlign: "left", paddingTop: 2 }}>
+              <p className="font-display" style={{ fontSize: 18, letterSpacing: "0.04em", margin: 0, lineHeight: 1.2, color: "white", fontWeight: 800 }}>{roomName || "India vs Pakistan"}</p>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}>
+                <span className="live-pulse" style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--live-green)", display: "inline-block" }} />
+                <span style={{ fontSize: 10, fontWeight: 700, color: "var(--live-green)" }}>LIVE</span>
+                <span style={{ fontSize: 11, color: "var(--text-muted)" }}>· {fmt(fanCount)} fans</span>
+              </div>
             </div>
           </div>
+
+          {/* Dropdown */}
+          <div style={{ position: "relative" }} ref={dropdownRef}>
+            {(() => {
+              const icons: Record<string, React.ReactNode> = {
+                "Hot Takes": <Flame size={16} stroke="url(#pink-orange-grad)" fill="url(#pink-orange-grad)" />,
+                "Predictions": <TrendingUp size={16} stroke="url(#pink-orange-grad)" />,
+                "Debate": <Zap size={16} stroke="url(#pink-orange-grad)" fill="url(#pink-orange-grad)" />,
+                "Memory": <History size={16} stroke="url(#pink-orange-grad)" />,
+                "Post-Match 🔒": <Lock size={16} stroke="url(#pink-orange-grad)" />,
+              };
+              const selectedIcon = icons[tab] || <PenTool size={16} stroke="url(#pink-orange-grad)" />;
+
+              return (
+                <motion.button
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    padding: "8px 16px",
+                    borderRadius: 999,
+                    background: "linear-gradient(145deg, rgba(233,30,140,0.18), rgba(255,107,53,0.10))",
+                    border: "1px solid rgba(233,30,140,0.35)",
+                    boxShadow: "0 4px 15px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.05)",
+                    backdropFilter: "blur(8px)",
+                    color: "rgba(255,255,255,0.9)",
+                    cursor: "pointer",
+                    transition: "all 0.2s",
+                  }}
+                >
+                  {selectedIcon}
+                  <span style={{ fontSize: 13, fontWeight: 700, letterSpacing: "0.03em" }}>{tab.replace(" 🔒", "")}</span>
+                  <span style={{ fontSize: 10, marginLeft: 2, color: "rgba(255,255,255,0.7)" }}>{isDropdownOpen ? "▲" : "▼"}</span>
+                </motion.button>
+              );
+            })()}
+
+            <AnimatePresence>
+              {isDropdownOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                  transition={{ duration: 0.15 }}
+                  style={{
+                    position: "absolute",
+                    top: "100%",
+                    right: 0,
+                    marginTop: 8,
+                    background: "#121214",
+                    border: "1px solid rgba(255,255,255,0.05)",
+                    borderRadius: 16,
+                    padding: 8,
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 6,
+                    minWidth: 180,
+                    boxShadow: "0 10px 40px rgba(0,0,0,0.8)",
+                    zIndex: 30,
+                  }}
+                >
+                  {TABS.map((t) => {
+                    const isLocked = t.includes("🔒");
+                    const isActive = t === tab;
+                    const iconsWhite: Record<string, React.ReactNode> = {
+                      "Hot Takes": <Flame size={18} color="white" />,
+                      "Predictions": <TrendingUp size={18} color="white" />,
+                      "Debate": <Zap size={18} color="white" />,
+                      "Memory": <History size={18} color="white" />,
+                      "Post-Match 🔒": <Lock size={18} color="white" />,
+                    };
+                    const icon = iconsWhite[t] || <PenTool size={18} color="white" />;
+                    return (
+                      <button
+                        key={t}
+                        onClick={() => {
+                          if (isLocked) {
+                            onToast("🔒 Post-Match stats unlock when the game ends!");
+                          } else {
+                            setTab(t);
+                            setIsDropdownOpen(false);
+                          }
+                        }}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          padding: "10px 12px",
+                          borderRadius: 12,
+                          background: isActive ? "linear-gradient(145deg, rgba(233,30,140,0.18), rgba(255,107,53,0.10))" : "transparent",
+                          border: isActive ? "1px solid rgba(233,30,140,0.35)" : "1px solid transparent",
+                          color: "white",
+                          cursor: isLocked ? "not-allowed" : "pointer",
+                          textAlign: "left",
+                          transition: "all 0.2s",
+                          opacity: isLocked ? 0.5 : 1,
+                        }}
+                        onMouseEnter={(e) => {
+                          if (!isActive && !isLocked) e.currentTarget.style.background = "rgba(255,255,255,0.05)";
+                          else if (isActive) e.currentTarget.style.boxShadow = "0 0 10px rgba(229,0,61,0.2)";
+                        }}
+                        onMouseLeave={(e) => {
+                          if (!isActive) e.currentTarget.style.background = "transparent";
+                          else e.currentTarget.style.boxShadow = "none";
+                        }}
+                      >
+                        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                          <div style={{ 
+                            width: 32, 
+                            height: 32, 
+                            borderRadius: 8, 
+                            border: "1px solid rgba(255,255,255,0.1)", 
+                            display: "flex", 
+                            alignItems: "center", 
+                            justifyContent: "center",
+                            background: "rgba(255,255,255,0.02)"
+                          }}>
+                            {icon}
+                          </div>
+                          <span style={{ fontSize: 13, fontWeight: 500 }}>{t.replace(" 🔒", "")}</span>
+                        </div>
+                        {isLocked && <Lock size={12} color="var(--text-muted)" />}
+                      </button>
+                    );
+                  })}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
-        <div style={{ marginTop: 10 }}>
+
+        <div style={{ marginTop: 16 }}>
           <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "var(--text-muted)", marginBottom: 4 }}>
             <span>Room Energy</span>
             <span>{fmt(fanCount)} in room</span>
           </div>
           <div className="room-energy-bar room-energy-fast" style={{ borderRadius: 999 }} />
-        </div>
-        <div style={{ display: "flex", gap: 6, marginTop: 12, overflowX: "auto" }}>
-          {TABS.map((t) => {
-            const isLocked = t.includes("🔒");
-            return (
-              <button
-                key={t}
-                onClick={() => isLocked ? onToast("🔒 Post-Match stats unlock when the game ends!") : setTab(t)}
-                style={{ flexShrink: 0, padding: "6px 14px", borderRadius: 999, fontSize: 12, fontWeight: 600, border: "none", cursor: isLocked ? "not-allowed" : "pointer", background: tab === t ? "var(--accent-magenta)" : "transparent", color: tab === t ? "white" : "var(--text-secondary)", opacity: isLocked ? 0.6 : 1 }}
-              >
-                {t}
-              </button>
-            );
-          })}
         </div>
       </div>
 

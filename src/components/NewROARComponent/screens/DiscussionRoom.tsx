@@ -530,7 +530,7 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
       />
 
       {/* Composer */}
-      <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "10px 12px 14px", background: "rgba(14,14,20,0.92)", backdropFilter: "blur(20px)", borderTop: "1px solid var(--border)", zIndex: 10, display: "flex", flexDirection: "column", gap: 8 }}>
+      <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "10px 12px 32px", background: "rgba(14,14,20,0.92)", backdropFilter: "blur(20px)", borderTop: "1px solid var(--border)", zIndex: 10, display: "flex", flexDirection: "column", gap: 8 }}>
         {attachedUrl && (
           <div style={{ padding: "8px 12px", borderRadius: 12, background: "var(--bg-tertiary)", border: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>

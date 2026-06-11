@@ -679,7 +679,7 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
                 { id: "chat", title: "Normal Post", subtitle: "Just chatting", icon: "✒️", color: "#fff" }
               ].find(i => i.id === mode);
               
-              if (!selectedItem || selectedItem.id === "chat") return null;
+              if (!selectedItem) return null;
               return (
                 <div style={{ position: "absolute", top: "100%", left: 16, marginTop: 6, display: "flex", alignItems: "center", gap: 6 }}>
                   <span style={{ fontSize: 13 }}>{selectedItem.icon}</span>

@@ -143,7 +143,7 @@ function UserSidebar() {
 
   const sidebarItems: SidebarItem[] = [
     // { name: "Feed", icon: "/images/feed.png", href: "/MainModules/HomePage" },
-    // { name: "Watch Along", icon: "/images/live.png", href: "/MainModules/WatchAlong" },
+   
     // { name: "Fantasy", icon: "/images/battle.png", href: "/MainModules/Fantasy" },
     {
       name: "ROAR",
@@ -156,6 +156,7 @@ function UserSidebar() {
       ),
       href: "/MainModules/ROAR",
     },
+     { name: "Watch Along", icon: "/images/live.png", href: "/MainModules/WatchAlong" },
     // { 
     //   name: isMatchIntelligence ? "Match Intelligence" : "Store", 
     //   icon: "/images/store.png", 

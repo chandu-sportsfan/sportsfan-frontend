@@ -817,7 +817,7 @@ export default function AskAI() {
           />
 
           {/* Audio output toggle */}
-          <button
+          {/* <button
             onClick={() => setAudioEnabled(v => !v)}
             title={audioEnabled ? 'Audio on — click to mute' : 'Audio off — click to enable'}
             disabled={!isAuthenticated}
@@ -840,10 +840,10 @@ export default function AskAI() {
                 <line x1="17" y1="9" x2="23" y2="15"/>
               </svg>
             )}
-          </button>
+          </button> */}
 
           {/* Voice input */}
-          {isVoiceSupported && (
+          {/* {isVoiceSupported && (
             <button
               onClick={startVoice}
               title="Voice input"
@@ -861,7 +861,7 @@ export default function AskAI() {
                 <line x1="8"  y1="23" x2="16" y2="23"/>
               </svg>
             </button>
-          )}
+          )} */}
 
           {/* Send */}
           <button

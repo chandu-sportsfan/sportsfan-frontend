@@ -93,17 +93,18 @@ export default function BottomNav() {
 
   const bottomNavData: NavItem[] = [
     // { name: "Feed", logo: "/images/feed.png", url: "/MainModules/HomePage" },
-    // { name: "Watch Along", logo: "/images/watch.png", url: "/MainModules/WatchAlong" },
+   
     // { name: "Fan Battle", logo: "/images/battle.png", url: "/MainModules/Fantasy" },
     { 
       name: "Roar", 
       logo: "/images/roar.png",
       url: "/MainModules/ROAR" 
     },
+     { name: "Watch Along", logo: "/images/watch.png", url: "/MainModules/WatchAlong" },
       { 
       name: "Ask AI", 
       logo: <Sparkles className="w-5 h-5 text-gradient" />,
-      href: "/MainModules/AskAI" 
+      url: "/MainModules/AskAI" 
     },
     { name: "Fan Zone",
       //  logo: "/images/profile.png", 

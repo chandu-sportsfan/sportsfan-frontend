@@ -11,6 +11,7 @@ interface Props {
   roomId?: string;
   roomName?: string;
   onPostClick?: (post: any) => void;
+  onCompose?: (type: string | null) => void;
 }
 
 const TABS = ["Debate", "Predictions", "Hot Takes", "Post-Match 🔒"];
@@ -27,7 +28,7 @@ const MODE_LABEL: Record<string, string> = {
   hottake: "⚡ Bold Take",
 };
 
-export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPostClick }: Props) {
+export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPostClick, onCompose }: Props) {
   const [tab, setTab] = useState("Debate");
   const [posts, setPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -302,6 +303,12 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
               </button>
             );
           })}
+          <button
+            onClick={() => onCompose && onCompose("post")}
+            style={{ padding: "6px 12px", borderRadius: 999, fontSize: 12, fontWeight: 600, border: "1px solid var(--border)", background: "rgba(255,255,255,0.03)", color: "var(--text-secondary)", cursor: "pointer", transition: "all 0.2s" }}
+          >
+            ✏️ Post
+          </button>
         </div>
 
         {/* Input row */}

@@ -400,6 +400,7 @@ export default function ROARApp() {
                     onBack={() => { setOverlay(null); setActiveTab("home"); }}
                     onToast={showToast}
                     onPostClick={(post) => setSelectedPost(post)}
+                    onCompose={(type) => openCompose(type)}
                   />
                 </motion.div>
               ) : (

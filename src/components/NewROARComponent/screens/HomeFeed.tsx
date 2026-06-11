@@ -266,8 +266,8 @@ export default function HomeFeed({
       if (userSports && userSports.length > 0) return userSports.map((s) => s.toLowerCase()).includes(p.sport?.toLowerCase());
       return true;
     }
-    if (filter === "Cricket") return p.sport === "cricket";
-    if (filter === "Football") return p.sport === "football";
+    if (filter === "Cricket") return p.sport?.toLowerCase() === "cricket";
+    if (filter === "Football") return p.sport?.toLowerCase() === "football";
     if (filter === "Live") return p.isLive || p.type === "match_room";
     if (filter === "Predictions") return p.type === "prediction";
     return true;

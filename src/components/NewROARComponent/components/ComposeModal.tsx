@@ -302,8 +302,8 @@ export default function ComposeModal({ open, onClose, onPost, initialType }: Pro
                       </>
                     )}
 
-                    {/* Sport and Match selector (not for post type) */}
-                    {(selected === "hot_take" || selected === "prediction" || selected === "debate" || selected === "memory") && (
+                    {/* Sport and Match selector */}
+                    {(selected === "hot_take" || selected === "prediction" || selected === "debate" || selected === "memory" || selected === "post") && (
                       <>
                         <label style={{ fontSize: 11, color: "var(--text-muted)", display: "block", marginTop: 16, marginBottom: 4 }}>Sport</label>
                         <div style={{ display: "flex", gap: 8, marginTop: 4, marginBottom: 12 }}>

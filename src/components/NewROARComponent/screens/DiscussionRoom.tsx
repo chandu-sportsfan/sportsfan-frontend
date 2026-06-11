@@ -16,18 +16,22 @@ interface Props {
   fanCount?: number;
 }
 
-const TABS = ["Debate", "Predictions", "Hot Takes", "Post-Match 🔒"];
+const TABS = ["Debate", "Predictions", "Hot Takes", "Memory", "Post-Match 🔒"];
 
 const MODE_COLOR: Record<string, string> = {
   chat: "var(--text-primary)",
   prediction: "var(--gold)",
   hottake: "#f87171",
+  debate: "#e91e8c",
+  memory: "#00e8c6",
 };
 
 const MODE_LABEL: Record<string, string> = {
-  chat: "💬 Fire",
-  prediction: "📊 Predict",
-  hottake: "⚡ Bold Take",
+  chat: "✏️ Post",
+  prediction: "📈 Predict",
+  hottake: "🔥 Hot Take",
+  debate: "⚡ Debate",
+  memory: "⏱️ Memory",
 };
 
 export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPostClick, onCompose, fanCount = 312 }: Props) {
@@ -35,7 +39,7 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
   const [posts, setPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [input, setInput] = useState("");
-  const [mode, setMode] = useState<"chat" | "prediction" | "hottake">("chat");
+  const [mode, setMode] = useState<"chat" | "prediction" | "hottake" | "debate" | "memory">("chat");
   const [composerPre, setComposerPre] = useState("");
   const listRef = useRef<HTMLDivElement>(null);
 
@@ -173,9 +177,10 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
   };
 
   const visiblePosts = posts.filter((p) => {
-    if (tab === "Debate") return p.type === "chat" || !p.type;
+    if (tab === "Debate") return p.type === "chat" || p.type === "debate" || !p.type;
     if (tab === "Predictions") return p.type === "prediction";
     if (tab === "Hot Takes") return p.type === "hottake";
+    if (tab === "Memory") return p.type === "memory";
     return false;
   });
 
@@ -264,8 +269,16 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
                         </div>
                       </div>
                       {p.type !== "chat" && p.type && (
-                        <span style={{ fontSize: 9, fontWeight: 800, padding: "2px 6px", borderRadius: 4, background: p.type === "prediction" ? "rgba(255,215,0,0.15)" : "rgba(239,68,68,0.15)", color: p.type === "prediction" ? "#fbbf24" : "#f87171", border: p.type === "prediction" ? "1px solid rgba(255,215,0,0.25)" : "1px solid rgba(239,68,68,0.25)" }}>
-                          {p.type === "prediction" ? "PREDICTION" : "HOT TAKE"}
+                        <span style={{
+                          fontSize: 9,
+                          fontWeight: 800,
+                          padding: "2px 6px",
+                          borderRadius: 4,
+                          background: p.type === "prediction" ? "rgba(255,215,0,0.15)" : p.type === "hottake" ? "rgba(239,68,68,0.15)" : p.type === "debate" ? "rgba(233,30,140,0.15)" : "rgba(0,232,198,0.15)",
+                          color: p.type === "prediction" ? "#fbbf24" : p.type === "hottake" ? "#f87171" : p.type === "debate" ? "#e91e8c" : "#00e8c6",
+                          border: `1px solid ${p.type === "prediction" ? "rgba(255,215,0,0.25)" : p.type === "hottake" ? "rgba(239,68,68,0.25)" : p.type === "debate" ? "rgba(233,30,140,0.25)" : "rgba(0,232,198,0.25)"}`
+                        }}>
+                          {p.type.toUpperCase()}
                         </span>
                       )}
                     </div>
@@ -320,6 +333,36 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
                   MAKE YOUR PREDICTION
                 </motion.button>
               )}
+              {tab === "Hot Takes" && (
+                <motion.button
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => { setMode("hottake"); setComposerPre(""); }}
+                  className="btn-gradient"
+                  style={{ width: "100%", padding: "14px", borderRadius: 999, color: "white", fontSize: 14, fontWeight: 700, letterSpacing: "0.06em", border: "none", cursor: "pointer", flexShrink: 0, margin: "8px 0 16px" }}
+                >
+                  DROP A HOT TAKE
+                </motion.button>
+              )}
+              {tab === "Debate" && (
+                <motion.button
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => { setMode("debate"); setComposerPre("My debate side: "); }}
+                  className="btn-gradient"
+                  style={{ width: "100%", padding: "14px", borderRadius: 999, color: "white", fontSize: 14, fontWeight: 700, letterSpacing: "0.06em", border: "none", cursor: "pointer", flexShrink: 0, margin: "8px 0 16px" }}
+                >
+                  START A DEBATE
+                </motion.button>
+              )}
+              {tab === "Memory" && (
+                <motion.button
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => { setMode("memory"); setComposerPre("Flashback: "); }}
+                  className="btn-gradient"
+                  style={{ width: "100%", padding: "14px", borderRadius: 999, color: "white", fontSize: 14, fontWeight: 700, letterSpacing: "0.06em", border: "none", cursor: "pointer", flexShrink: 0, margin: "8px 0 16px" }}
+                >
+                  SHARE A MEMORY
+                </motion.button>
+              )}
             </>
           )}
         </AnimatePresence>
@@ -357,29 +400,43 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
         )}
 
         {/* Mode pills */}
-        <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
-          {(["chat", "prediction", "hottake"] as const).map((m) => {
-            const active = mode === m;
-            const colorMap = { chat: "#fff", prediction: "var(--gold)", hottake: "#f87171" };
-            const bgMap = { chat: "rgba(255,255,255,0.1)", prediction: "rgba(255,215,0,0.1)", hottake: "rgba(239,68,68,0.1)" };
-            const borderMap = { chat: "1px solid rgba(255,255,255,0.3)", prediction: "1px solid rgba(255,215,0,0.3)", hottake: "1px solid rgba(239,68,68,0.3)" };
-
+        <div style={{ display: "flex", gap: 8, justifyContent: "center", overflowX: "auto", paddingBottom: 4 }}>
+          {[
+            { id: "hottake", label: "Hot Take", emoji: "🔥", preset: "", activeBg: "rgba(239, 68, 68, 0.15)", activeBorder: "1px solid rgba(239, 68, 68, 0.35)", activeColor: "#f87171" },
+            { id: "prediction", label: "Predict", emoji: "📈", preset: "My prediction: ", activeBg: "rgba(255, 184, 0, 0.15)", activeBorder: "1px solid rgba(255, 184, 0, 0.35)", activeColor: "var(--gold)" },
+            { id: "debate", label: "Debate", emoji: "⚡", preset: "My debate side: ", activeBg: "rgba(233, 30, 140, 0.15)", activeBorder: "1px solid rgba(233, 30, 140, 0.35)", activeColor: "#e91e8c" },
+            { id: "memory", label: "Memory", emoji: "⏱️", preset: "Flashback: ", activeBg: "rgba(0, 232, 198, 0.15)", activeBorder: "1px solid rgba(0, 232, 198, 0.35)", activeColor: "#00e8c6" },
+            { id: "chat", label: "Post", emoji: "✒️", preset: "", activeBg: "rgba(255, 255, 255, 0.1)", activeBorder: "1px solid rgba(255, 255, 255, 0.3)", activeColor: "#fff" },
+          ].map((item) => {
+            const active = mode === item.id;
             return (
               <button
-                key={m}
-                onClick={() => { setMode(m); if (m === "prediction") setComposerPre("My prediction: "); else setComposerPre(""); }}
-                style={{ padding: "6px 12px", borderRadius: 999, fontSize: 12, fontWeight: 600, border: active ? borderMap[m] : "1px solid var(--border)", background: active ? bgMap[m] : "rgba(255,255,255,0.03)", color: active ? colorMap[m] : "var(--text-secondary)", cursor: "pointer", transition: "all 0.2s" }}
+                key={item.id}
+                onClick={() => {
+                  setMode(item.id as any);
+                  setComposerPre(item.preset);
+                }}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  padding: "8px 16px",
+                  borderRadius: 999,
+                  fontSize: 13,
+                  fontWeight: 600,
+                  border: active ? item.activeBorder : "1px solid var(--border)",
+                  background: active ? item.activeBg : "rgba(255,255,255,0.03)",
+                  color: active ? item.activeColor : "var(--text-secondary)",
+                  cursor: "pointer",
+                  transition: "all 0.2s",
+                  whiteSpace: "nowrap",
+                }}
               >
-                {MODE_LABEL[m]}
+                <span>{item.emoji}</span>
+                <span>{item.label}</span>
               </button>
             );
           })}
-          <button
-            onClick={() => { setMode("chat"); setComposerPre(""); }}
-            style={{ padding: "6px 12px", borderRadius: 999, fontSize: 12, fontWeight: 600, border: mode === "chat" && !composerPre ? "1px solid rgba(255,255,255,0.3)" : "1px solid var(--border)", background: mode === "chat" && !composerPre ? "rgba(255,255,255,0.1)" : "rgba(255,255,255,0.03)", color: mode === "chat" && !composerPre ? "#fff" : "var(--text-secondary)", cursor: "pointer", transition: "all 0.2s" }}
-          >
-            ✏️ Post
-          </button>
         </div>
 
         {/* Input row */}

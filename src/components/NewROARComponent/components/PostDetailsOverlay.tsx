@@ -1,3 +1,5 @@
+//NewROARComponent/components/PostDetailsOverlay.tsx
+
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";

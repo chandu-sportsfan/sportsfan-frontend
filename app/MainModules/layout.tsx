@@ -310,7 +310,7 @@ export default function MainModulesLayout({
       {renderSidebar()}
 
       <main className="flex-1 min-w-0 w-full h-full flex flex-col overflow-hidden lg:pb-0">
-        <div className="relative z-20">
+        <div className="relative z-60">
           <Header />
         </div>
         <div className="flex-1 overflow-y-auto overflow-x-hidden">

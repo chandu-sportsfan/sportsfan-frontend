@@ -1363,9 +1363,9 @@ export default function Header() {
         >
           <User
             size={16}
-            className="text-gray-400 group-hover:text-white transition-colors"
+            className="text-gray-400 group-hover:text-pink-400 transition-colors"
           />
-          <span className="text-white text-sm font-medium">Profile</span>
+          <span className="text-white group-hover:text-pink-400 text-sm font-medium">Profile</span>
         </Link>
         <div className="h-px bg-white/5 mx-4" />
         <Link
@@ -1392,12 +1392,12 @@ export default function Header() {
           <span className="text-white text-sm font-medium">Settings</span>
         </Link> */}
         <div className="h-px bg-white/5 mx-4" />
-        <LogoutButton className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors group">
+        <LogoutButton className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 hover:cursor-pointer transition-colors group">
           <LogOut
             size={16}
-            className="text-gray-400 group-hover:text-red-400 transition-colors"
+            className="text-gray-400 group-hover:text-pink-400 transition-colors"
           />
-          <span className="text-white group-hover:text-red-400 text-sm font-medium transition-colors">
+          <span className="text-white group-hover:text-pink-400 text-sm font-medium transition-colors">
             Logout
           </span>
         </LogoutButton>
@@ -1445,7 +1445,23 @@ export default function Header() {
               <ResultsList />
             </div>
           )}
+          <Link href={askAIHref}>
+            <button
+              onClick={handleAskAIClick}
+              className="flex items-center gap-1.5 bg-[#1a1a1a] hover:bg-[#222] border border-white/10 text-pink-400 text-sm font-medium px-4 py-2 rounded-full transition-colors whitespace-nowrap"
+            >
+              <Sparkles size={14} className="text-pink-400" />
+              Ask AI
+            </button>
+          </Link>
         </div>
+        {showDropdown && (
+          <div className="absolute top-full left-0 right-0 mt-2 bg-[#111] border border-pink-500/20 rounded-2xl shadow-2xl z-50 max-h-[400px] overflow-y-auto">
+            <ResultsList />
+          </div>
+        )}
+      
+      
 
         <div className="flex items-center gap-3 ml-auto">
           {/* <button className="flex items-center gap-2 bg-transparent hover:bg-pink-500/10 border border-pink-500 text-pink-400 text-sm font-medium px-5 py-2.5 rounded-full transition-colors">
@@ -1459,7 +1475,7 @@ export default function Header() {
           <div className="relative" ref={profileDropdownRef}>
             <button
               onClick={() => setShowProfileDropdown((v) => !v)}
-              className="flex items-center gap-2 bg-[#111] border border-white/10 rounded-full pl-1 pr-3 py-1 hover:bg-white/5 transition-colors"
+              className="flex items-center gap-2 bg-[#111] border border-white/10 rounded-full pl-1 pr-3 py-1 hover:bg-white/5 transition-colors hover:cursor-pointer"
             >
               <Avatar src="" name={displayName} size={34} ring />
               <div className="flex flex-col items-start leading-tight">

@@ -20,15 +20,15 @@ import { useAuth } from "@/context/AuthContext";
 import { ChatAPI, resolveChatName, type Chat, type Message } from "../../../lib/chatApi";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
-type ViewType       = "list" | "chat_room";
-type MessageStatus  = "sending" | "sent" | "delivered" | "read" | "failed";
-type TypingState    = { userId: string; name: string; since: number };
-type PickerUser     = {
+type ViewType = "list" | "chat_room";
+type MessageStatus = "sending" | "sent" | "delivered" | "read" | "failed";
+type TypingState = { userId: string; name: string; since: number };
+type PickerUser = {
   userId?: string; user_id?: string; id?: string; email?: string;
   firstName?: string; lastName?: string; name?: string; avatar?: string;
 };
-type PinnedMessage  = { id: string; content: string; senderId: string };
-type VoiceNote      = { duration: number; url?: string };
+type PinnedMessage = { id: string; content: string; senderId: string };
+type VoiceNote = { duration: number; url?: string };
 
 // ─── Theme ───────────────────────────────────────────────────────────────────
 // Base:          #0a0c10  (deep navy-charcoal)
@@ -42,16 +42,16 @@ type VoiceNote      = { duration: number; url?: string };
 
 // ─── Reactions ───────────────────────────────────────────────────────────────
 const REACTIONS = [
-  { emoji: "❤️", label: "Love" },  { emoji: "😆", label: "Haha" },
-  { emoji: "😮", label: "Wow" },   { emoji: "😢", label: "Sad" },
+  { emoji: "❤️", label: "Love" }, { emoji: "😆", label: "Haha" },
+  { emoji: "😮", label: "Wow" }, { emoji: "😢", label: "Sad" },
   { emoji: "😠", label: "Angry" }, { emoji: "👍", label: "Like" },
-  { emoji: "🔥", label: "Fire" },  { emoji: "🎉", label: "Party" },
+  { emoji: "🔥", label: "Fire" }, { emoji: "🎉", label: "Party" },
 ];
 const QUICK_REPLIES = ["👍 Sounds good!", "On my way 🚗", "Can we talk later?", "Thanks! 🙌"];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function formatMsgTime(ts: number) {
-  const d   = new Date(ts);
+  const d = new Date(ts);
   const now = new Date();
   const isToday = d.toDateString() === now.toDateString();
   if (isToday) return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
@@ -62,16 +62,16 @@ function formatMsgTime(ts: number) {
 }
 function formatListTime(ts?: number) {
   if (!ts) return "";
-  const d      = new Date(ts);
-  const now    = new Date();
-  const diffMs  = now.getTime() - d.getTime();
+  const d = new Date(ts);
+  const now = new Date();
+  const diffMs = now.getTime() - d.getTime();
   const diffMin = Math.floor(diffMs / 60000);
-  const diffHr  = Math.floor(diffMs / 3600000);
+  const diffHr = Math.floor(diffMs / 3600000);
   const diffDay = Math.floor(diffMs / 86400000);
-  if (diffMin < 1)  return "now";
+  if (diffMin < 1) return "now";
   if (diffMin < 60) return `${diffMin}m`;
-  if (diffHr  < 24) return `${diffHr}h`;
-  if (diffDay < 7)  return `${diffDay}d`;
+  if (diffHr < 24) return `${diffHr}h`;
+  if (diffDay < 7) return `${diffDay}d`;
   return d.toLocaleDateString([], { month: "short", day: "numeric" });
 }
 function formatDuration(sec: number) {
@@ -109,9 +109,8 @@ const Avatar = ({
       </div>
       {(online || typing) && (
         <span
-          className={`absolute bottom-0 right-0 rounded-full border-2 border-[#0a0c10] transition-colors duration-300 ${
-            typing ? "bg-amber-400" : "bg-emerald-400"
-          }`}
+          className={`absolute bottom-0 right-0 rounded-full border-2 border-[#0a0c10] transition-colors duration-300 ${typing ? "bg-amber-400" : "bg-emerald-400"
+            }`}
           style={{ width: size * 0.28, height: size * 0.28 }}
         />
       )}
@@ -121,9 +120,9 @@ const Avatar = ({
 
 // ─── Read Ticks ───────────────────────────────────────────────────────────────
 const Ticks = ({ status }: { status: MessageStatus }) => {
-  if (status === "sending")   return <Loader2 size={11} className="animate-spin text-white/40" />;
-  if (status === "failed")    return <AlertCircle size={11} className="text-rose-400" />;
-  if (status === "sent")      return <Check size={13} className="text-white/50" />;
+  if (status === "sending") return <Loader2 size={11} className="animate-spin text-white/40" />;
+  if (status === "failed") return <AlertCircle size={11} className="text-rose-400" />;
+  if (status === "sent") return <Check size={13} className="text-white/50" />;
   if (status === "delivered") return <CheckCheck size={13} className="text-white/50" />;
   return <CheckCheck size={13} className="text-[#e8967e]" />;
 };
@@ -166,7 +165,7 @@ const TypingIndicator = ({ name }: { name: string }) => (
 
 // ─── Voice Note Player ────────────────────────────────────────────────────────
 const VoiceNotePlayer = ({ isMe, duration }: { isMe: boolean; duration: number }) => {
-  const [playing, setPlaying]   = useState(false);
+  const [playing, setPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   useEffect(() => {
     if (!playing) return;
@@ -183,12 +182,11 @@ const VoiceNotePlayer = ({ isMe, duration }: { isMe: boolean; duration: number }
     <div className="flex items-center gap-3 min-w-[180px]">
       <button
         onClick={() => setPlaying(p => !p)}
-        className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 transition-all ${
-          isMe ? "bg-white/20 hover:bg-white/30" : "bg-[#c8705a]/20 hover:bg-[#c8705a]/30"
-        }`}
+        className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 transition-all ${isMe ? "bg-white/20 hover:bg-white/30" : "bg-[#c8705a]/20 hover:bg-[#c8705a]/30"
+          }`}
       >
         {playing
-          ? <div className="flex gap-0.5"><span className="w-1 h-3 bg-current rounded-sm"/><span className="w-1 h-3 bg-current rounded-sm"/></div>
+          ? <div className="flex gap-0.5"><span className="w-1 h-3 bg-current rounded-sm" /><span className="w-1 h-3 bg-current rounded-sm" /></div>
           : <div className="w-0 h-0 border-y-[5px] border-y-transparent border-l-[9px] border-l-current ml-0.5" />}
       </button>
       <div className="flex items-center gap-[1.5px] flex-1">
@@ -214,7 +212,7 @@ const VoiceNotePlayer = ({ isMe, duration }: { isMe: boolean; duration: number }
 
 // ─── Reaction Display ─────────────────────────────────────────────────────────
 const ReactionBadge = ({ reactions, isMe }: { reactions: Record<string, number>; isMe: boolean }) => {
-  const total    = Object.values(reactions).reduce((a, b) => a + b, 0);
+  const total = Object.values(reactions).reduce((a, b) => a + b, 0);
   if (!total) return null;
   const topEmoji = Object.entries(reactions).sort((a, b) => b[1] - a[1])[0]?.[0];
   return (
@@ -248,10 +246,10 @@ const Modal = ({ children, onClose }: { children: React.ReactNode; onClose: () =
 const UserPickerModal = ({
   open, onClose, onPickUser,
 }: { open: boolean; onClose: () => void; onPickUser: (id: string, name: string) => void }) => {
-  const [q, setQ]         = useState("");
+  const [q, setQ] = useState("");
   const [users, setUsers] = useState<PickerUser[]>([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError]     = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
     if (!open) { setQ(""); return; }
@@ -322,16 +320,16 @@ const ChatInfoModal = ({ chat, displayName, onClose, onBlock, onReport, onMute, 
       <div className="flex flex-col items-center px-6 pt-7 pb-5 border-b border-[#c8705a]/[0.08]">
         <Avatar src={chat.avatarUrl} name={displayName} size={76} online={chat.isOnline} />
         <h3 className="mt-3 font-bold text-[18px] text-white flex items-center gap-1.5">
-         {displayName}
+          {displayName}
           {chat.isVerified && <BadgeCheck size={16} className="text-[#e8967e]" />}
         </h3>
         {chat.isOnline
-          ? <span className="text-[12px] text-emerald-400 mt-0.5 flex items-center gap-1"><span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"/>Active now</span>
+          ? <span className="text-[12px] text-emerald-400 mt-0.5 flex items-center gap-1"><span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />Active now</span>
           : chat.lastMessageAt
             ? <span className="text-[12px] text-[#7a6a65] mt-0.5">Last active {timeAgo(chat.lastMessageAt)}</span>
             : null}
         <div className="flex gap-4 mt-4">
-          {[{ icon: <Phone size={18}/>, label: "Audio" }, { icon: <Video size={18}/>, label: "Video" }, { icon: <BellOff size={18}/>, label: "Mute" }].map(a => (
+          {[{ icon: <Phone size={18} />, label: "Audio" }, { icon: <Video size={18} />, label: "Video" }, { icon: <BellOff size={18} />, label: "Mute" }].map(a => (
             <button key={a.label} className="flex flex-col items-center gap-1.5 group">
               <div className="w-11 h-11 rounded-full bg-[#c8705a]/[0.12] flex items-center justify-center group-hover:bg-[#c8705a]/[0.22] transition text-[#c8705a]">{a.icon}</div>
               <span className="text-[10px] text-[#7a6a65]">{a.label}</span>
@@ -341,11 +339,11 @@ const ChatInfoModal = ({ chat, displayName, onClose, onBlock, onReport, onMute, 
       </div>
       <div className="py-2">
         {[
-          { icon: <Star size={17}/>,   label: "Mark as favourite",  action: () => {}, color: "text-gray-300" },
-          { icon: <EyeOff size={17}/>, label: "Vanish mode",        action: () => {}, color: "text-gray-300" },
-          { icon: <Trash2 size={17}/>, label: "Clear chat history", action: onClearHistory, color: "text-amber-400" },
-          { icon: <Shield size={17}/>, label: "Block user",         action: onBlock, color: "text-rose-400" },
-          { icon: <Flag size={17}/>,   label: "Report user",        action: onReport, color: "text-rose-400" },
+          { icon: <Star size={17} />, label: "Mark as favourite", action: () => { }, color: "text-gray-300" },
+          { icon: <EyeOff size={17} />, label: "Vanish mode", action: () => { }, color: "text-gray-300" },
+          { icon: <Trash2 size={17} />, label: "Clear chat history", action: onClearHistory, color: "text-amber-400" },
+          { icon: <Shield size={17} />, label: "Block user", action: onBlock, color: "text-rose-400" },
+          { icon: <Flag size={17} />, label: "Report user", action: onReport, color: "text-rose-400" },
         ].map(row => (
           <button key={row.label} onClick={() => { row.action(); onClose(); }} className={`w-full flex items-center gap-4 px-6 py-3 hover:bg-[#c8705a]/[0.05] transition-colors ${row.color}`}>
             {row.icon}
@@ -395,7 +393,7 @@ const ForwardModal = ({ chats, onForward, onClose, currentUserId }: {
   <Modal onClose={onClose}>
     <div className="bg-[#111318] w-full max-w-[400px] rounded-3xl overflow-hidden border border-[#c8705a]/[0.18] shadow-2xl">
       <div className="flex items-center gap-3 px-5 py-4 border-b border-[#c8705a]/[0.08]">
-        <button onClick={onClose} className="w-8 h-8 rounded-full bg-[#c8705a]/[0.12] flex items-center justify-center hover:bg-[#c8705a]/[0.22] transition"><X size={16}/></button>
+        <button onClick={onClose} className="w-8 h-8 rounded-full bg-[#c8705a]/[0.12] flex items-center justify-center hover:bg-[#c8705a]/[0.22] transition"><X size={16} /></button>
         <h3 className="font-bold text-[15px] text-white">Forward to…</h3>
       </div>
       <div className="overflow-y-auto max-h-[50vh] [&::-webkit-scrollbar]:hidden">
@@ -440,7 +438,7 @@ const QuickReplies = ({ onSelect }: { onSelect: (text: string) => void }) => (
 
 // ─── Emoji Picker ─────────────────────────────────────────────────────────────
 const EmojiPicker = ({ onSelect, onClose }: { onSelect: (e: string) => void; onClose: () => void }) => {
-  const emojis = ["😀","😂","😍","🥰","😎","🤔","😴","🥳","🎉","❤️","🔥","👍","👏","🙏","💪","🎯","✨","🌟","💯","🚀","🎵","💡","🤝","😊","😢","😮","😡","🤗","😏","🥺"];
+  const emojis = ["😀", "😂", "😍", "🥰", "😎", "🤔", "😴", "🥳", "🎉", "❤️", "🔥", "👍", "👏", "🙏", "💪", "🎯", "✨", "🌟", "💯", "🚀", "🎵", "💡", "🤝", "😊", "😢", "😮", "😡", "🤗", "😏", "🥺"];
   return (
     <div className="absolute bottom-full mb-2 right-0 w-[280px] bg-[#111318] border border-[#c8705a]/[0.18] rounded-2xl shadow-2xl p-3 z-50">
       <div className="grid grid-cols-8 gap-1.5">
@@ -458,10 +456,10 @@ const EmojiPicker = ({ onSelect, onClose }: { onSelect: (e: string) => void; onC
 const AttachmentMenu = ({ onClose, onSelect }: { onClose: () => void; onSelect: (type: string) => void }) => (
   <div className="absolute bottom-full mb-2 left-0 bg-[#111318] border border-[#c8705a]/[0.18] rounded-2xl shadow-2xl overflow-hidden z-50 w-[180px]">
     {[
-      { icon: <Image size={16}/>, label: "Photo / Video", type: "media" },
-      { icon: <FileText size={16}/>, label: "Document", type: "document" },
-      { icon: <Camera size={16}/>, label: "Camera", type: "camera" },
-      { icon: <Sticker size={16}/>, label: "Sticker", type: "sticker" },
+      { icon: <Image size={16} />, label: "Photo / Video", type: "media" },
+      { icon: <FileText size={16} />, label: "Document", type: "document" },
+      { icon: <Camera size={16} />, label: "Camera", type: "camera" },
+      { icon: <Sticker size={16} />, label: "Sticker", type: "sticker" },
     ].map(item => (
       <button key={item.type} onClick={() => { onSelect(item.type); onClose(); }} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[#c8705a]/[0.07] transition text-gray-300 text-[13px]">
         <span className="text-[#c8705a]">{item.icon}</span>
@@ -545,6 +543,10 @@ export default function ChatComponent() {
   const router = useRouter();
   const { user, authReady } = useAuth();
   const currentUserId = user?.userId ?? user?.uid ?? user?.email ?? "";
+  const currentUserName = (user as any)?.firstName
+    ? `${(user as any).firstName}${(user as any).lastName ? " " + (user as any).lastName : ""}`
+    : (user as any)?.name ?? (user as any)?.displayName ?? user?.email ?? "Me";
+  const currentUserAvatar = (user as any)?.avatar ?? (user as any)?.photoURL ?? null;
   const normalizeId = (id: string) => id.toLowerCase().replace(/[^a-zA-Z0-9]/g, "_");
   const normCurrentUserId = normalizeId(currentUserId);
   const isUserMe = (id: string) => {
@@ -554,53 +556,53 @@ export default function ChatComponent() {
   };
 
   // ── Navigation ──────────────────────────────────────────────────────────────
-  const [view, setView]             = useState<ViewType>("list");
+  const [view, setView] = useState<ViewType>("list");
   const [activeChat, setActiveChat] = useState<Chat | null>(null);
 
   // ── Hooks ───────────────────────────────────────────────────────────────────
-  const chatHook       = useChats(undefined, authReady);
-  const messageHook    = useMessages(activeChat?.id ?? null, currentUserId, authReady);
+  const chatHook = useChats(undefined, authReady);
+  const messageHook = useMessages(activeChat?.id ?? null, currentUserId, authReady);
   const createChatHook = useCreateChat();
 
   // ── List state ──────────────────────────────────────────────────────────────
-  const [search, setSearch]         = useState("");
+  const [search, setSearch] = useState("");
   const [showPicker, setShowPicker] = useState(false);
   const [dmCreating, setDmCreating] = useState(false);
   const [listFilter, setListFilter] = useState<"all" | "unread" | "muted">("all");
 
   // ── Chat room state ─────────────────────────────────────────────────────────
-  const [msgInput, setMsgInput]             = useState("");
-  const [replyingTo, setReplyingTo]         = useState<Message | null>(null);
-  const [editingMsg, setEditingMsg]         = useState<Message | null>(null);
-  const [deletingId, setDeletingId]         = useState<string | null>(null);
+  const [msgInput, setMsgInput] = useState("");
+  const [replyingTo, setReplyingTo] = useState<Message | null>(null);
+  const [editingMsg, setEditingMsg] = useState<Message | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   // FIX 1: menuMsgId now tracks which message has its context menu open
   // The menu is toggled by left-click and ALWAYS shows for the message owner (edit+delete)
   // or just reply/forward/copy/delete-for-me for others' messages
-  const [menuMsgId, setMenuMsgId]           = useState<string | null>(null);
-  const [reactionMsgId, setReactionMsgId]   = useState<string | null>(null);
-  const [showScrollBtn, setShowScrollBtn]   = useState(false);
-  const [showChatInfo, setShowChatInfo]     = useState(false);
-  const [toast, setToast]                   = useState<string | null>(null);
-  const [isTyping, setIsTyping]             = useState(false);
-  const [showEmoji, setShowEmoji]           = useState(false);
-  const [showAttach, setShowAttach]         = useState(false);
-  const [showSearch, setShowSearch]         = useState(false);
-  const [pinnedMsg, setPinnedMsg]           = useState<PinnedMessage | null>(null);
-  const [forwardingMsg, setForwardingMsg]   = useState<Message | null>(null);
-  const [schedulingMsg, setSchedulingMsg]   = useState<string | null>(null);
+  const [menuMsgId, setMenuMsgId] = useState<string | null>(null);
+  const [reactionMsgId, setReactionMsgId] = useState<string | null>(null);
+  const [showScrollBtn, setShowScrollBtn] = useState(false);
+  const [showChatInfo, setShowChatInfo] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+  const [isTyping, setIsTyping] = useState(false);
+  const [showEmoji, setShowEmoji] = useState(false);
+  const [showAttach, setShowAttach] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
+  const [pinnedMsg, setPinnedMsg] = useState<PinnedMessage | null>(null);
+  const [forwardingMsg, setForwardingMsg] = useState<Message | null>(null);
+  const [schedulingMsg, setSchedulingMsg] = useState<string | null>(null);
   const [showQuickReplies, setShowQuickReplies] = useState(false);
-  const [msgReactions, setMsgReactions]     = useState<Record<string, Record<string, number>>>({});
-  const [starredIds, setStarredIds]         = useState<Set<string>>(new Set());
-  const [isRecording, setIsRecording]       = useState(false);
-  const [recordSec, setRecordSec]           = useState(0);
-  const [voiceNotes, setVoiceNotes]         = useState<Record<string, VoiceNote>>({});
+  const [msgReactions, setMsgReactions] = useState<Record<string, Record<string, number>>>({});
+  const [starredIds, setStarredIds] = useState<Set<string>>(new Set());
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordSec, setRecordSec] = useState(0);
+  const [voiceNotes, setVoiceNotes] = useState<Record<string, VoiceNote>>({});
 
   // ── Refs ────────────────────────────────────────────────────────────────────
-  const scrollRef      = useRef<HTMLDivElement>(null);
-  const inputRef       = useRef<HTMLInputElement>(null);
-  const listRef        = useRef<HTMLDivElement>(null);
-  const msgRefs        = useRef<Record<string, HTMLDivElement>>({});
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+  const msgRefs = useRef<Record<string, HTMLDivElement>>({});
   const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const recordTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -774,7 +776,7 @@ export default function ChatComponent() {
   const filteredChats = useMemo(() => {
     let chats = dmChats;
     if (listFilter === "unread") chats = chats.filter(c => c.unreadCount > 0);
-    if (listFilter === "muted")  chats = chats.filter(c => c.isMuted);
+    if (listFilter === "muted") chats = chats.filter(c => c.isMuted);
     if (search.trim()) chats = chats.filter(c => resolveChatName(c, currentUserId).toLowerCase().includes(search.toLowerCase()));
     return chats;
   }, [dmChats, listFilter, search, currentUserId]);
@@ -799,14 +801,14 @@ export default function ChatComponent() {
     const grouped: any[] = [];
     let lastDate = "";
     for (const msg of messageHook.messages) {
-      const d         = new Date(msg.createdAt);
-      const today     = new Date();
+      const d = new Date(msg.createdAt);
+      const today = new Date();
       const yesterday = new Date(today);
       yesterday.setDate(today.getDate() - 1);
       const label =
-        d.toDateString() === today.toDateString()     ? "Today"
-        : d.toDateString() === yesterday.toDateString() ? "Yesterday"
-        : d.toLocaleDateString([], { weekday: "long", month: "long", day: "numeric" });
+        d.toDateString() === today.toDateString() ? "Today"
+          : d.toDateString() === yesterday.toDateString() ? "Yesterday"
+            : d.toLocaleDateString([], { weekday: "long", month: "long", day: "numeric" });
       if (label !== lastDate) { lastDate = label; grouped.push({ type: "date", label }); }
       grouped.push({ type: "msg", msg });
     }
@@ -841,14 +843,13 @@ export default function ChatComponent() {
                 {displayName}
                 {activeChat.isVerified && <BadgeCheck size={13} className="text-[#e8967e] flex-shrink-0" />}
               </div>
-              <div className={`text-[11px] transition-colors ${
-                isTyping ? "text-amber-400"
+              <div className={`text-[11px] transition-colors ${isTyping ? "text-amber-400"
                 : activeChat.isOnline ? "text-emerald-400"
-                : "text-[#7a6a65]"
-              }`}>
+                  : "text-[#7a6a65]"
+                }`}>
                 {isTyping ? "typing…" : activeChat.isOnline ? "Active now"
                   : activeChat.lastMessageAt ? `Active ${timeAgo(activeChat.lastMessageAt)} ago`
-                  : "Offline"}
+                    : "Offline"}
               </div>
             </div>
           </button>
@@ -857,8 +858,8 @@ export default function ChatComponent() {
             {[
               // { icon: <Phone size={17}/>,  action: () => {} },
               // { icon: <Video size={17}/>,  action: () => {} },
-              { icon: <Search size={17}/>, action: () => setShowSearch(s => !s) },
-              { icon: <Info size={17}/>,   action: () => setShowChatInfo(true) },
+              { icon: <Search size={17} />, action: () => setShowSearch(s => !s) },
+              { icon: <Info size={17} />, action: () => setShowChatInfo(true) },
             ].map((btn, i) => (
               <button key={i} onClick={e => { e.stopPropagation(); btn.action(); }}
                 className="w-9 h-9 rounded-full flex items-center justify-center transition active:scale-95 text-[#c8705a]"
@@ -925,29 +926,29 @@ export default function ChatComponent() {
           {grouped.map((item, idx) => {
             if (item.type === "date") return <DateDivider key={`date-${idx}`} label={item.label} />;
 
-            const msg          = item.msg as Message;
-            const isMe         = isUserMe(msg.senderId);
-            const isDeleted    = !!msg.deletedAt;
+            const msg = item.msg as Message;
+            const isMe = isUserMe(msg.senderId);
+            const isDeleted = !!msg.deletedAt;
             const isOptimistic = msg.id.startsWith("optimistic_");
-            const showMenu     = menuMsgId === msg.id;
-            const showReact    = reactionMsgId === msg.id;
-            const isStarred    = starredIds.has(msg.id);
-            const reactions    = msgReactions[msg.id] ?? {};
+            const showMenu = menuMsgId === msg.id;
+            const showReact = reactionMsgId === msg.id;
+            const isStarred = starredIds.has(msg.id);
+            const reactions = msgReactions[msg.id] ?? {};
             const hasReactions = Object.values(reactions).some(v => v > 0);
 
             const allMsgs = messageHook.messages;
-            const msgIdx  = allMsgs.indexOf(msg);
-            const prev    = allMsgs[msgIdx - 1];
-            const next    = allMsgs[msgIdx + 1];
+            const msgIdx = allMsgs.indexOf(msg);
+            const prev = allMsgs[msgIdx - 1];
+            const next = allMsgs[msgIdx + 1];
             const isFirst = !prev || prev.senderId !== msg.senderId;
-            const isLast  = !next || next.senderId !== msg.senderId;
+            const isLast = !next || next.senderId !== msg.senderId;
 
             const borderRadius = isMe
               ? `20px 20px ${isLast ? "5px" : "20px"} 20px`
               : `20px 20px 20px ${isLast ? "5px" : "20px"}`;
 
             const replyMsg = msg.replyToId ? allMsgs.find(m => m.id === msg.replyToId) : null;
-            const isVoice  = msg.content.startsWith("🎤 Voice message");
+            const isVoice = msg.content.startsWith("🎤 Voice message");
 
             const status: MessageStatus = isOptimistic ? "sending" : msg.isRead ? "read" : "delivered";
 
@@ -956,33 +957,33 @@ export default function ChatComponent() {
             // This ensures left-click on ANY message shows the context menu.
             const menuActions = [
               {
-                icon: <Reply size={14}/>, label: "Reply", color: "text-gray-300",
+                icon: <Reply size={14} />, label: "Reply", color: "text-gray-300",
                 action: () => {
                   setReplyingTo(msg); setMenuMsgId(null);
                   setTimeout(() => inputRef.current?.focus(), 60);
                 },
               },
               {
-                icon: <Forward size={14}/>, label: "Forward", color: "text-gray-300",
+                icon: <Forward size={14} />, label: "Forward", color: "text-gray-300",
                 action: () => { setForwardingMsg(msg); setMenuMsgId(null); },
               },
               {
-                icon: <Copy size={14}/>, label: "Copy", color: "text-gray-300",
+                icon: <Copy size={14} />, label: "Copy", color: "text-gray-300",
                 action: () => copyMessage(msg.content),
               },
               {
-                icon: <Star size={14}/>,
+                icon: <Star size={14} />,
                 label: isStarred ? "Unstar" : "Star",
                 color: isStarred ? "text-amber-400" : "text-gray-300",
                 action: () => handleStar(msg.id),
               },
               {
-                icon: <Pin size={14}/>, label: "Pin", color: "text-gray-300",
+                icon: <Pin size={14} />, label: "Pin", color: "text-gray-300",
                 action: () => handlePin(msg),
               },
               // Edit: only for own, non-deleted messages
               ...(isMe && !isDeleted ? [{
-                icon: <Edit2 size={14}/>, label: "Edit", color: "text-[#e8967e]",
+                icon: <Edit2 size={14} />, label: "Edit", color: "text-[#e8967e]",
                 action: () => {
                   setEditingMsg(msg); setMsgInput(msg.content); setMenuMsgId(null);
                   setTimeout(() => inputRef.current?.focus(), 60);
@@ -990,7 +991,7 @@ export default function ChatComponent() {
               }] : []),
               // Delete: always present; "for everyone" shown only if isMe
               {
-                icon: <Trash2 size={14}/>, label: "Delete", color: "text-rose-400",
+                icon: <Trash2 size={14} />, label: "Delete", color: "text-rose-400",
                 action: () => {
                   if (isMe) {
                     setDeletingId(msg.id);
@@ -1007,17 +1008,15 @@ export default function ChatComponent() {
               <div
                 key={msg.id}
                 ref={el => { if (el) msgRefs.current[msg.id] = el; }}
-                className={`flex flex-col transition-colors duration-700 rounded-xl ${
-                  isMe ? "items-end" : "items-start"
-                } ${isFirst ? "mt-3" : "mt-[3px]"}`}
+                className={`flex flex-col transition-colors duration-700 rounded-xl ${isMe ? "items-end" : "items-start"
+                  } ${isFirst ? "mt-3" : "mt-[3px]"}`}
               >
                 {/* Reply preview */}
                 {replyMsg && !isDeleted && (
                   <div
                     onClick={() => jumpToMessage(replyMsg.id)}
-                    className={`flex items-start gap-2 mb-1 max-w-[66%] px-3 py-2 rounded-xl border cursor-pointer hover:opacity-80 transition-opacity ${
-                      isMe ? "self-end" : "self-start"
-                    }`}
+                    className={`flex items-start gap-2 mb-1 max-w-[66%] px-3 py-2 rounded-xl border cursor-pointer hover:opacity-80 transition-opacity ${isMe ? "self-end" : "self-start"
+                      }`}
                     style={{
                       background: isMe ? "rgba(200,112,90,0.08)" : "rgba(255,255,255,0.04)",
                       borderColor: isMe ? "rgba(200,112,90,0.18)" : "rgba(255,255,255,0.06)",
@@ -1036,12 +1035,19 @@ export default function ChatComponent() {
                 )}
 
                 <div className={`relative flex items-end gap-1.5 ${isMe ? "flex-row-reverse" : "flex-row"}`}>
-                  {/* FIX 2: Other person's avatar — shows correctly with displayName (not currentUser's name) */}
+                  {/* Other person's avatar on the left */}
                   {!isMe && (
                     <div className="w-7 flex-shrink-0 mb-1">
                       {isLast ? (
-                        // The avatar src comes from activeChat (the chat partner), not current user
                         <Avatar src={activeChat.avatarUrl} name={displayName} size={26} />
+                      ) : null}
+                    </div>
+                  )}
+                  {/* Current user's avatar on the right */}
+                  {isMe && (
+                    <div className="w-7 flex-shrink-0 mb-1">
+                      {isLast ? (
+                        <Avatar src={currentUserAvatar} name={currentUserName} size={26} />
                       ) : null}
                     </div>
                   )}
@@ -1057,17 +1063,17 @@ export default function ChatComponent() {
 
                     {/* ── FIX 1: onClick toggles menu — works for both sent and received messages ── */}
                     <div
-                        onContextMenu={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
+                      onContextMenu={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
 
-                          if (isDeleted) return;
+                        if (isDeleted) return;
 
-                          setMenuMsgId(msg.id);
-                          setReactionMsgId(null);
-                        }}
+                        setMenuMsgId(msg.id);
+                        setReactionMsgId(null);
+                      }}
 
-                        onTouchStart={() => {
+                      onTouchStart={() => {
                         if (isDeleted) return;
 
                         longPressTimerRef.current = setTimeout(() => {
@@ -1088,7 +1094,7 @@ export default function ChatComponent() {
                         }
                       }}
 
-                        onDoubleClick={e => {
+                      onDoubleClick={e => {
                         e.stopPropagation();
                         if (isDeleted) return;
                         setReactionMsgId(msg.id);
@@ -1132,9 +1138,8 @@ export default function ChatComponent() {
 
                       {/* Time + ticks + edited */}
                       {!isDeleted && !isVoice && (
-                        <span className={`inline-flex items-center gap-1 ml-2 float-right mt-[5px] text-[10px] leading-none ${
-                          isMe ? "text-white/50" : "text-[#4a3a35]"
-                        }`}>
+                        <span className={`inline-flex items-center gap-1 ml-2 float-right mt-[5px] text-[10px] leading-none ${isMe ? "text-white/50" : "text-[#4a3a35]"
+                          }`}>
                           {msg.edited && (
                             <span className="text-[9px] opacity-70 italic">
                               edited
@@ -1239,7 +1244,7 @@ export default function ChatComponent() {
         )}
 
         {/* ── Input area ── */}
-        <div className="backdrop-blur-xl border-t px-3 pb-5 pt-2 z-20"
+        <div className="backdrop-blur-xl border-t  px-5 pb-5 pt-2 z-20"
           style={{ background: "rgba(10,12,16,0.94)", borderColor: "rgba(200,112,90,0.08)" }}>
           {/* Quick replies */}
           {showQuickReplies && !msgInput && (
@@ -1295,16 +1300,15 @@ export default function ChatComponent() {
               </button>
             </div>
           ) : (
-            <div className="flex items-end gap-2">
-              {/* Attach */}
+            <div className="flex items-end  sm:gap-2 w-full min-w-0">              {/* Attach */}
               <div className="relative">
-                <button onClick={e => { e.stopPropagation(); setShowAttach(s => !s); setShowEmoji(false); }}
+                {/* <button onClick={e => { e.stopPropagation(); setShowAttach(s => !s); setShowEmoji(false); }}
                   className="w-10 h-10 rounded-full flex items-center justify-center transition flex-shrink-0 mb-0.5"
                   onMouseEnter={e => (e.currentTarget.style.background = "rgba(200,112,90,0.08)")}
                   onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
                 >
                   <Plus size={20} className={`transition-transform duration-200 ${showAttach ? "rotate-45 text-rose-400" : "text-[#c8705a]"}`} />
-                </button>
+                </button> */}
                 {showAttach && (
                   <div onClick={e => e.stopPropagation()}>
                     <AttachmentMenu onClose={() => setShowAttach(false)} onSelect={type => showToast(`${type} attachment — coming soon`)} />
@@ -1313,7 +1317,8 @@ export default function ChatComponent() {
               </div>
 
               {/* Input */}
-              <div className="flex-1 flex items-end gap-2 rounded-[24px] px-4 py-2.5 border transition-colors min-h-[46px]"
+              <div className="flex-1 gap-2 min-w-0 flex items-end rounded-[24px] px-3 sm:px-4 py-2.5 border min-h-[46px]"
+
                 style={{ background: "#111318", borderColor: "rgba(200,112,90,0.14)" }}
                 onFocus={() => undefined}
               >
@@ -1323,16 +1328,14 @@ export default function ChatComponent() {
                   value={msgInput}
                   onChange={e => setMsgInput(e.target.value)}
                   placeholder={editingMsg ? "Edit message…" : `Message ${displayName}…`}
-                  className="flex-1 bg-transparent outline-none text-[14px] text-white leading-relaxed py-0.5"
-                  style={{ caretColor: "#c8705a" }}
-                  onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+                  className="flex-1 min-w-0 w-full h-10 bg-transparent outline-none text-[14px] text-white leading-10" onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
                   onFocus={() => setShowQuickReplies(!msgInput)}
                 />
                 {/* Emoji toggle */}
                 <div className="relative">
                   <button onClick={e => { e.stopPropagation(); setShowEmoji(s => !s); setShowAttach(false); }}
                     className="flex-shrink-0 text-[#7a6a65] hover:text-[#e8967e] transition mb-0.5">
-                    <Smile size={18} />
+                    <Smile size={30} />
                   </button>
                   {showEmoji && (
                     <div onClick={e => e.stopPropagation()}>
@@ -1350,7 +1353,7 @@ export default function ChatComponent() {
                     onMouseEnter={e => (e.currentTarget.style.background = "rgba(200,112,90,0.08)")}
                     onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
                   >
-                    <Clock size={17} className="text-[#7a6a65]" />
+                    {/* <Clock size={17} className="text-[#7a6a65]" /> */}
                   </button>
                   <button onClick={handleSend} disabled={messageHook.sending}
                     className="w-10 h-10 rounded-full flex items-center justify-center active:scale-90 transition flex-shrink-0 disabled:opacity-50"
@@ -1363,7 +1366,7 @@ export default function ChatComponent() {
                 </div>
               ) : (
                 <div className="flex gap-1 flex-shrink-0">
-                  <button
+                  {/* <button
                     onMouseDown={startRecording} onMouseUp={sendVoiceNote}
                     onTouchStart={startRecording} onTouchEnd={sendVoiceNote}
                     className="w-10 h-10 rounded-full flex items-center justify-center transition flex-shrink-0"
@@ -1371,13 +1374,19 @@ export default function ChatComponent() {
                     onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
                   >
                     <Mic size={18} className="text-[#c8705a]" />
-                  </button>
-                  <button onClick={() => { setMsgInput("👍"); handleSend(); }}
-                    className="w-10 h-10 rounded-full flex items-center justify-center transition flex-shrink-0"
+                  </button> */}
+                  <button
+                    onClick={() => {
+                      setMsgInput("👍");
+                      handleSend();
+                    }}
+                    className="w-10 h-10 mb-2 rounded-full flex items-center justify-center transition"
                     onMouseEnter={e => (e.currentTarget.style.background = "rgba(200,112,90,0.08)")}
                     onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
                   >
-                    <span className="text-[20px] leading-none">👍</span>
+                    <span className="text-[28px] leading-none">
+                      👍
+                    </span>
                   </button>
                 </div>
               )}
@@ -1393,7 +1402,7 @@ export default function ChatComponent() {
         )}
         {deletingId && (
           <DeleteModal onConfirm={confirmDelete} onCancel={() => setDeletingId(null)}
-             forEveryone={isUserMe(messageHook.messages.find(m => m.id === deletingId)?.senderId || "")} />
+            forEveryone={isUserMe(messageHook.messages.find(m => m.id === deletingId)?.senderId || "")} />
         )}
         {forwardingMsg && (
           <ForwardModal chats={dmChats} currentUserId={currentUserId}
@@ -1459,9 +1468,8 @@ export default function ChatComponent() {
         <div className="flex gap-2 mb-3">
           {(["all", "unread", "muted"] as const).map(f => (
             <button key={f} onClick={() => setListFilter(f)}
-              className={`px-4 py-1.5 rounded-full text-[12px] font-semibold capitalize transition-all ${
-                listFilter === f ? "text-white shadow-md" : "text-[#7a6a65] border hover:text-gray-300"
-              }`}
+              className={`px-4 py-1.5 rounded-full text-[12px] font-semibold capitalize transition-all ${listFilter === f ? "text-white shadow-md" : "text-[#7a6a65] border hover:text-gray-300"
+                }`}
               style={listFilter === f
                 ? { background: "linear-gradient(135deg, #c8705a, #9a4e3a)", boxShadow: "0 2px 10px rgba(200,112,90,0.25)" }
                 : { background: "#111318", borderColor: "rgba(200,112,90,0.14)" }
@@ -1501,7 +1509,7 @@ export default function ChatComponent() {
         )}
 
         {filteredChats.map(chat => {
-          const name      = resolveChatName(chat, currentUserId);
+          const name = resolveChatName(chat, currentUserId);
           const hasUnread = chat.unreadCount > 0;
           return (
             <div key={chat.id} onClick={() => openChat(chat)}

@@ -549,7 +549,7 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
       />
 
       {/* Composer */}
-      <div style={{ position: "relative", padding: "10px 12px 32px", background: "rgba(14,14,20,0.92)", backdropFilter: "blur(20px)", borderTop: "1px solid var(--border)", zIndex: 10, display: "flex", flexDirection: "column", gap: 8, flexShrink: 0 }}>
+      <div className="mobile-padding-bottom" style={{ position: "relative", padding: "10px 12px 32px", background: "rgba(14,14,20,0.92)", backdropFilter: "blur(20px)", borderTop: "1px solid var(--border)", zIndex: 10, display: "flex", flexDirection: "column", gap: 8, flexShrink: 0 }}>
         {attachedUrl && (
           <div style={{ padding: "8px 12px", borderRadius: 12, background: "var(--bg-tertiary)", border: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -679,7 +679,7 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && send()}
-              style={{ width: "100%", height: 44, borderRadius: 22, background: "var(--bg-secondary)", border: "1px solid var(--border)", paddingLeft: 16, paddingRight: 16, color: "white", fontSize: 14, outline: "none" }}
+              style={{ width: "100%", height: 44, borderRadius: 22, background: "var(--bg-secondary)", border: "1px solid var(--border)", paddingLeft: 16, paddingRight: 16, color: "white", fontSize: 16, outline: "none" }}
             />
             {(() => {
               const selectedItem = [

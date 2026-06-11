@@ -42,6 +42,7 @@ export interface Room {
   sport?: string;
   fanCount?: number;
   isActive?: boolean;
+  scheduledStartTime?: number;
 }
 
 export interface Notification {

@@ -32,6 +32,7 @@ export default function ROARApp() {
   const [onboarded, setOnboarded] = useState(false);
   const [userBadge, setUserBadge] = useState("RISING_FAN");
   const [userSports, setUserSports] = useState<string[]>([]);
+  const [currentUsername, setCurrentUsername] = useState("RoarUser");
 
   useEffect(() => {
     setMounted(true);
@@ -42,9 +43,11 @@ export default function ROARApp() {
           setOnboarded(true);
           setUserBadge(res.data.user.badge || "RISING_FAN");
           setUserSports(res.data.user.sports ?? []);
+          setCurrentUsername(res.data.user.username || "RoarUser");
           try {
             localStorage.setItem("roar_v2_complete", "1");
             localStorage.setItem("roar_badge", res.data.user.badge || "RISING_FAN");
+            localStorage.setItem("roar_username", res.data.user.username || "RoarUser");
           } catch {}
         } else {
           setOnboarded(false);
@@ -237,6 +240,24 @@ export default function ROARApp() {
     [fetchPosts],
   );
 
+  const handleDeletePost = useCallback(
+    async (postId: string) => {
+      try {
+        const res = await axios.delete(`/api/roar/posts/${postId}`);
+        if (res.data?.success) {
+          showToast("Post deleted");
+          await fetchPosts();
+        } else {
+          showToast("Failed to delete post");
+        }
+      } catch (err) {
+        console.error("Failed to delete post:", err);
+        showToast("Error deleting post");
+      }
+    },
+    [fetchPosts, showToast],
+  );
+
   const handlePost = useCallback(
     async (payload: any) => {
       try {
@@ -295,13 +316,16 @@ export default function ROARApp() {
   };
 
   const completeOnboarding = useCallback(async (prefs: any) => {
+    const username = prefs.username || "RoarUser";
     const badge = prefs.badge || "RISING_FAN";
     setUserSports(prefs.sports ?? []);
     setUserBadge(badge);
+    setCurrentUsername(username);
     setOnboarded(true);
     try {
       localStorage.setItem("roar_v2_complete", "1");
       localStorage.setItem("roar_badge", badge);
+      localStorage.setItem("roar_username", username);
     } catch {}
     try {
       await axios.post("/api/roar/onboarding", { sports: prefs.sports || ["cricket"], teams: prefs.teams || [], tenure: prefs.tenure || "rising", badge, firstContribution: prefs.firstContribution || null });
@@ -376,6 +400,7 @@ export default function ROARApp() {
                     onBack={() => { setOverlay(null); setActiveTab("home"); }}
                     onToast={showToast}
                     onPostClick={(post) => setSelectedPost(post)}
+                    onCompose={(type) => openCompose(type)}
                   />
                 </motion.div>
               ) : (
@@ -395,8 +420,10 @@ export default function ROARApp() {
                       onPostClick={(post) => setSelectedPost(post)}
                       onVote={handleVote}
                       onLike={handleLike}
+                      onDeletePost={handleDeletePost}
                       userSports={userSports}
                       onQuickCompose={(t) => openCompose(t)}
+                      currentUsername={currentUsername}
                     />
                   )}
                   {activeTab === "profile" && (
@@ -428,7 +455,7 @@ export default function ROARApp() {
 
         {/* Post details overlay */}
         {onboarded && selectedPost && (
-          <PostDetailsOverlay post={selectedPost} onClose={() => setSelectedPost(null)} onToast={showToast} onVote={handleVote} />
+          <PostDetailsOverlay post={selectedPost} onClose={() => setSelectedPost(null)} onToast={showToast} onVote={handleVote} onDeletePost={handleDeletePost} currentUsername={currentUsername} />
         )}
 
         {/* Compose modal */}

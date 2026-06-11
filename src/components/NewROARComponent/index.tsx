@@ -278,28 +278,44 @@ export default function ROARApp() {
           mediaUrls = await Promise.all(uploadPromises);
         }
 
-        const res = await axios.post("/api/roar/posts", {
-          type: postType,
-          text: payload.type === "debate" ? `${payload.sideA} VS ${payload.sideB}` : payload.text,
-          sideA: payload.sideA,
-          sideB: payload.sideB,
-          memCtx: payload.memCtx,
-          sport: payload.sport || "cricket",
-          matchId: payload.match,
-          confidence: payload.confidence,
-          audience: payload.audience,
-          mediaUrls,
-        });
+        const isInRoom = overlay === "room" && selectedRoom?.roomId;
+        let res;
+        
+        if (isInRoom) {
+          const msgType = postType === "prediction" ? "prediction" : postType === "hot_take" ? "hottake" : "chat";
+          res = await axios.post(`/api/roar/rooms/${selectedRoom.roomId}/messages`, {
+            text: payload.type === "debate" ? `${payload.sideA} VS ${payload.sideB}` : payload.text,
+            type: msgType,
+          });
+        } else {
+          res = await axios.post("/api/roar/posts", {
+            type: postType,
+            text: payload.type === "debate" ? `${payload.sideA} VS ${payload.sideB}` : payload.text,
+            sideA: payload.sideA,
+            sideB: payload.sideB,
+            memCtx: payload.memCtx,
+            sport: payload.sport || "cricket",
+            matchId: payload.match,
+            confidence: payload.confidence,
+            audience: payload.audience,
+            mediaUrls,
+          });
+        }
+
         if (res.data?.success) {
-          const toastMap: Record<string, string> = {
-            hot_take: "🔥 Hot Take is live · 47 fans may see it",
-            prediction: "📊 Prediction posted · Let's see if you're right",
-            debate: "⚡ Debate started · Get the fans talking",
-            memory: "🕰 Memory shared · OG fans will feel this",
-            post: "✏️ Post is live · Fans can see it now",
-          };
-          showToast(toastMap[postType] || "🔥 Your take is live");
-          fetchPosts();
+          if (isInRoom) {
+            showToast("✏️ Post is live in room!");
+          } else {
+            const toastMap: Record<string, string> = {
+              hot_take: "🔥 Hot Take is live · 47 fans may see it",
+              prediction: "📊 Prediction posted · Let's see if you're right",
+              debate: "⚡ Debate started · Get the fans talking",
+              memory: "🕰 Memory shared · OG fans will feel this",
+              post: "✏️ Post is live · Fans can see it now",
+            };
+            showToast(toastMap[postType] || "🔥 Your take is live");
+            fetchPosts();
+          }
         }
       } catch (err) {
         console.error("Failed to post:", err);
@@ -307,7 +323,7 @@ export default function ROARApp() {
       }
       setShowBanner(false);
     },
-    [showToast, fetchPosts],
+    [showToast, fetchPosts, overlay, selectedRoom],
   );
 
   const handleTab = (tab: string) => {

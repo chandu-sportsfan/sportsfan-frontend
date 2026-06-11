@@ -18,7 +18,7 @@ interface Props {
   scoreSubtitle?: string;
 }
 
-const TABS = ["Debate", "Predictions", "Hot Takes", "Memory", "Post-Match 🔒"];
+const TABS = ["Debate", "Predictions", "Hot Takes", "Memory", "Normal Post", "Post-Match 🔒"];
 
 const MODE_COLOR: Record<string, string> = {
   chat: "var(--text-primary)",
@@ -204,10 +204,11 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
   };
 
   const visiblePosts = posts.filter((p) => {
-    if (tab === "Debate") return p.type === "chat" || p.type === "debate" || !p.type;
+    if (tab === "Debate") return p.type === "debate";
     if (tab === "Predictions") return p.type === "prediction";
     if (tab === "Hot Takes") return p.type === "hottake";
     if (tab === "Memory") return p.type === "memory";
+    if (tab === "Normal Post") return p.type === "chat" || !p.type;
     return false;
   });
 
@@ -245,6 +246,7 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
                 "Predictions": <TrendingUp size={16} stroke="url(#pink-orange-grad)" />,
                 "Debate": <Zap size={16} stroke="url(#pink-orange-grad)" fill="url(#pink-orange-grad)" />,
                 "Memory": <History size={16} stroke="url(#pink-orange-grad)" />,
+                "Normal Post": <PenTool size={16} stroke="url(#pink-orange-grad)" />,
                 "Post-Match 🔒": <Lock size={16} stroke="url(#pink-orange-grad)" />,
               };
               const selectedIcon = icons[tab] || <PenTool size={16} stroke="url(#pink-orange-grad)" />;
@@ -307,6 +309,7 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
                       "Predictions": <TrendingUp size={18} color="white" />,
                       "Debate": <Zap size={18} color="white" />,
                       "Memory": <History size={18} color="white" />,
+                      "Normal Post": <PenTool size={18} color="white" />,
                       "Post-Match 🔒": <Lock size={18} color="white" />,
                     };
                     const icon = iconsWhite[t] || <PenTool size={18} color="white" />;
@@ -429,7 +432,7 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
             <div style={{ textAlign: "center", color: "var(--text-muted)", padding: "20px 0" }}>Loading messages...</div>
           ) : visiblePosts.length === 0 ? (
             <div style={{ textAlign: "center", color: "var(--text-muted)", padding: "20px 0" }}>
-              {tab === "Predictions" ? "No predictions yet. Make one to start!" : tab === "Hot Takes" ? "No hot takes yet. Share yours!" : "Welcome to the community chat! Type a message below to start."}
+              {tab === "Predictions" ? "No predictions yet. Make one to start!" : tab === "Hot Takes" ? "No hot takes yet. Share yours!" : tab === "Normal Post" ? "Welcome to the community chat! Type a message below to start." : "No posts here yet."}
             </div>
           ) : (
             <>
@@ -679,7 +682,7 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
                 { id: "chat", title: "Normal Post", subtitle: "Just chatting", icon: "✒️", color: "#fff" }
               ].find(i => i.id === mode);
               
-              if (!selectedItem || selectedItem.id === "chat") return null;
+              if (!selectedItem) return null;
               return (
                 <div style={{ position: "absolute", top: "100%", left: 16, marginTop: 6, display: "flex", alignItems: "center", gap: 6 }}>
                   <span style={{ fontSize: 13 }}>{selectedItem.icon}</span>

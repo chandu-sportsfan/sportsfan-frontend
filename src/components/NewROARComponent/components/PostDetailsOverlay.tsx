@@ -11,7 +11,7 @@ interface Props {
   onClose: () => void;
   onToast: (m: string) => void;
   onVote: (id: string, vote: "agree" | "disagree" | null) => void;
-  onDeletePost?: (id: string) => void;
+  onDeletePost?: (id: string, roomId?: string) => void;
   currentUsername?: string;
 }
 
@@ -37,13 +37,6 @@ export default function PostDetailsOverlay({ post, onClose, onToast, onVote, onD
   const fetchComments = useCallback(async () => {
     if (!post?.id) return;
     try {
-      if (!post.isDbPost) {
-        setComments([
-          { commentId: "c1", authorUsername: "KolkataKnight07", authorBadge: "CRICKET_HEAD", text: "IPL crowds are great, but nothing matches the tension of a bilateral series in Test cricket.", heartCount: 50, createdAt: Date.now() - 14400000 },
-          { commentId: "c2", authorUsername: "NagpurNight", authorBadge: "ORACLE", text: "@KolkataKnight07 Unpopular but 100% correct. Test cricket is where reputations are truly made.", heartCount: 16, createdAt: Date.now() - 10800000 },
-        ]);
-        return;
-      }
       const res = await axios.get(`/api/roar/posts/${post.id}/comments`, {
         params: { roomId: post.roomId }
       });
@@ -59,12 +52,6 @@ export default function PostDetailsOverlay({ post, onClose, onToast, onVote, onD
     if (!commentText.trim()) return;
     try {
       setLoading(true);
-      if (!post.isDbPost) {
-        setComments((prev) => [...prev, { commentId: `c-${Date.now()}`, authorUsername: userUsername, authorBadge: userBadge, text: commentText.trim(), heartCount: 0, createdAt: Date.now() }]);
-        setCommentText("");
-        onToast("Comment posted!");
-        return;
-      }
       const res = await axios.post(`/api/roar/posts/${post.id}/comments`, {
         text: commentText.trim(),
         roomId: post.roomId
@@ -80,10 +67,6 @@ export default function PostDetailsOverlay({ post, onClose, onToast, onVote, onD
 
   const reactToComment = async (commentId: string) => {
     try {
-      if (!post.isDbPost) {
-        setComments((prev) => prev.map((c) => c.commentId === commentId ? { ...c, heartCount: c.heartCount + 1 } : c));
-        return;
-      }
       const res = await axios.post(`/api/roar/posts/${post.id}/comments/${commentId}/react`);
       if (res.data?.success) setComments((prev) => prev.map((c) => c.commentId === commentId ? { ...c, heartCount: res.data.heartCount } : c));
     } catch (err) {
@@ -187,9 +170,21 @@ export default function PostDetailsOverlay({ post, onClose, onToast, onVote, onD
                     <button
                       key={label}
                       onClick={() => handleVoteClick(agree)}
-                      style={{ flex: 1, padding: "10px", borderRadius: 999, fontSize: 13, fontWeight: 700, cursor: "pointer", border: `2px solid ${active ? color : `${color}59`}`, background: active ? color : "transparent", color: active ? "white" : color, transition: "all 0.2s" }}
+                      style={{
+                        flex: 1,
+                        padding: "12px",
+                        borderRadius: 999,
+                        fontSize: 13,
+                        fontWeight: 700,
+                        cursor: "pointer",
+                        border: `2.5px solid ${color}`,
+                        background: active ? color : "rgba(255, 255, 255, 0.02)",
+                        color: active ? "white" : color,
+                        boxShadow: active ? `0 0 16px ${color}80` : "none",
+                        transition: "all 0.22s ease-in-out",
+                      }}
                     >
-                      {label}
+                      {active ? `✓ ${label}d` : label}
                     </button>
                   ))}
                 </div>
@@ -202,7 +197,7 @@ export default function PostDetailsOverlay({ post, onClose, onToast, onVote, onD
                     e.stopPropagation();
                     if (window.confirm("Are you sure you want to delete this post?")) {
                       if (onDeletePost) {
-                        onDeletePost(post.id);
+                        onDeletePost(post.id, post.roomId);
                         onClose();
                       }
                     }
@@ -257,7 +252,30 @@ export default function PostDetailsOverlay({ post, onClose, onToast, onVote, onD
                           <span style={{ width: 5, height: 5, borderRadius: "50%", background: "#E91E8C", display: "inline-block" }} />
                         </p>
                       </div>
-                      <span style={{ fontSize: 9, color: "var(--text-muted)" }}>{formatTimeAgo(comment.createdAt)}</span>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <span style={{ fontSize: 9, color: "var(--text-muted)" }}>{formatTimeAgo(comment.createdAt)}</span>
+                        {comment.authorUsername === activeUsername && (
+                          <button
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              if (window.confirm("Are you sure you want to delete this comment?")) {
+                                try {
+                                  await axios.delete(`/api/roar/posts/${post.id}/comments/${comment.commentId}`);
+                                  onToast("Comment deleted successfully");
+                                  fetchComments();
+                                } catch (err) {
+                                  console.error(err);
+                                  onToast("Failed to delete comment");
+                                }
+                              }
+                            }}
+                            style={{ background: "none", border: "none", color: "#f87171", cursor: "pointer", display: "flex", alignItems: "center", padding: 2 }}
+                            title="Delete Comment"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        )}
+                      </div>
                     </div>
                     <p style={{ fontSize: 13, color: "var(--text-primary)", lineHeight: 1.4, margin: "4px 0" }}>{comment.text}</p>
                     <div style={{ display: "flex", gap: 14, alignItems: "center", marginTop: 4 }}>

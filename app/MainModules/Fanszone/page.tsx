@@ -146,6 +146,14 @@ function normalizeActivityKey(type: string, label: string): ActivityKey {
   if (value.includes("like")) return "like";
   if (value.includes("share")) return "share";
   if (value.includes("post") || value.includes("create post")) return "post";
+
+  // ── ROAR activity types ──────────────────────────────────────────
+  if (value.includes("roar hot take") || value.includes("hot take")) return "fanBattle";
+  if (value.includes("roar prediction") || value.includes("prediction")) return "trivia";
+  if (value.includes("roar debate") || value.includes("debate")) return "fanBattle";
+  if (value.includes("roar memory") || value.includes("memory")) return "post";
+  if (value.includes("roar post")) return "post";
+  
   return "other";
 }
 

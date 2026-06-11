@@ -605,11 +605,12 @@ const nextConfig = {
           destination: `${apiTarget}/api/roar/:path*`,
           // destination: `http://localhost:3001/api/roar/:path*`,
         },
-        {
-          source: "/api/roar/posts/:path*",
-          destination: `${apiTarget}/api/roar/posts/:path*`,
-          // destination: `http://localhost:3001/api/roar/:path*`,
-        },
+        // {
+        //   source: "/api/roar/posts/:path*",
+        //   destination: `${apiTarget}/api/roar/posts/:path*`,
+        //   // destination: `http://localhost:3001/api/roar/:path*`,
+        // },
+
       ],
     };
   },

@@ -110,7 +110,7 @@ export default function Profile({ userBadge, setUserBadge, onCompose, onToast, s
       } catch (err: any) {
         console.error(err);
         if (err.response?.status === 404) {
-          try { localStorage.removeItem("roar_v2_complete"); } catch {}
+          try { localStorage.removeItem("roar_v2_complete"); } catch { }
           setOnboarded?.(false);
         }
       } finally {

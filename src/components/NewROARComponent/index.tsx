@@ -32,6 +32,7 @@ export default function ROARApp() {
   const [onboarded, setOnboarded] = useState(false);
   const [userBadge, setUserBadge] = useState("RISING_FAN");
   const [userSports, setUserSports] = useState<string[]>([]);
+  const [currentUsername, setCurrentUsername] = useState("RoarUser");
 
   useEffect(() => {
     setMounted(true);
@@ -42,9 +43,11 @@ export default function ROARApp() {
           setOnboarded(true);
           setUserBadge(res.data.user.badge || "RISING_FAN");
           setUserSports(res.data.user.sports ?? []);
+          setCurrentUsername(res.data.user.username || "RoarUser");
           try {
             localStorage.setItem("roar_v2_complete", "1");
             localStorage.setItem("roar_badge", res.data.user.badge || "RISING_FAN");
+            localStorage.setItem("roar_username", res.data.user.username || "RoarUser");
           } catch {}
         } else {
           setOnboarded(false);
@@ -209,6 +212,53 @@ export default function ROARApp() {
     [fetchPosts],
   );
 
+  const handleLike = useCallback(
+    async (postId: string) => {
+      // Optimistic update
+      setDbPosts((prev) =>
+        prev.map((post) => {
+          if (post.id === postId || post._id === postId) {
+            const userLiked = post.userLiked ?? false;
+            return {
+              ...post,
+              userLiked: !userLiked,
+              likeCount: Math.max(0, (post.likeCount ?? 0) + (userLiked ? -1 : 1)),
+            };
+          }
+          return post;
+        })
+      );
+
+      try {
+        await axios.post(`/api/roar/posts/${postId}/like`);
+        await fetchPosts();
+      } catch (err) {
+        console.error("Failed to submit like:", err);
+        await fetchPosts(); // Rollback to actual db state on error
+      }
+    },
+    [fetchPosts],
+  );
+
+  const handleDeletePost = useCallback(
+    async (postId: string, roomId?: string) => {
+      try {
+        const url = roomId ? `/api/roar/rooms/${roomId}/messages/${postId}` : `/api/roar/posts/${postId}`;
+        const res = await axios.delete(url);
+        if (res.data?.success) {
+          showToast(roomId ? "Message deleted" : "Post deleted");
+          await fetchPosts();
+        } else {
+          showToast(roomId ? "Failed to delete message" : "Failed to delete post");
+        }
+      } catch (err) {
+        console.error("Failed to delete:", err);
+        showToast(roomId ? "Error deleting message" : "Error deleting post");
+      }
+    },
+    [fetchPosts, showToast],
+  );
+
   const handlePost = useCallback(
     async (payload: any) => {
       try {
@@ -228,28 +278,44 @@ export default function ROARApp() {
           mediaUrls = await Promise.all(uploadPromises);
         }
 
-        const res = await axios.post("/api/roar/posts", {
-          type: postType,
-          text: payload.type === "debate" ? `${payload.sideA} VS ${payload.sideB}` : payload.text,
-          sideA: payload.sideA,
-          sideB: payload.sideB,
-          memCtx: payload.memCtx,
-          sport: payload.sport || "cricket",
-          matchId: payload.match,
-          confidence: payload.confidence,
-          audience: payload.audience,
-          mediaUrls,
-        });
+        const isInRoom = overlay === "room" && selectedRoom?.roomId;
+        let res;
+        
+        if (isInRoom) {
+          const msgType = postType === "prediction" ? "prediction" : postType === "hot_take" ? "hottake" : "chat";
+          res = await axios.post(`/api/roar/rooms/${selectedRoom.roomId}/messages`, {
+            text: payload.type === "debate" ? `${payload.sideA} VS ${payload.sideB}` : payload.text,
+            type: msgType,
+          });
+        } else {
+          res = await axios.post("/api/roar/posts", {
+            type: postType,
+            text: payload.type === "debate" ? `${payload.sideA} VS ${payload.sideB}` : payload.text,
+            sideA: payload.sideA,
+            sideB: payload.sideB,
+            memCtx: payload.memCtx,
+            sport: payload.sport || "cricket",
+            matchId: payload.match,
+            confidence: payload.confidence,
+            audience: payload.audience,
+            mediaUrls,
+          });
+        }
+
         if (res.data?.success) {
-          const toastMap: Record<string, string> = {
-            hot_take: "🔥 Hot Take is live · 47 fans may see it",
-            prediction: "📊 Prediction posted · Let's see if you're right",
-            debate: "⚡ Debate started · Get the fans talking",
-            memory: "🕰 Memory shared · OG fans will feel this",
-            post: "✏️ Post is live · Fans can see it now",
-          };
-          showToast(toastMap[postType] || "🔥 Your take is live");
-          fetchPosts();
+          if (isInRoom) {
+            showToast("✏️ Post is live in room!");
+          } else {
+            const toastMap: Record<string, string> = {
+              hot_take: "🔥 Hot Take is live · 47 fans may see it",
+              prediction: "📊 Prediction posted · Let's see if you're right",
+              debate: "⚡ Debate started · Get the fans talking",
+              memory: "🕰 Memory shared · OG fans will feel this",
+              post: "✏️ Post is live · Fans can see it now",
+            };
+            showToast(toastMap[postType] || "🔥 Your take is live");
+            fetchPosts();
+          }
         }
       } catch (err) {
         console.error("Failed to post:", err);
@@ -257,7 +323,7 @@ export default function ROARApp() {
       }
       setShowBanner(false);
     },
-    [showToast, fetchPosts],
+    [showToast, fetchPosts, overlay, selectedRoom],
   );
 
   const handleTab = (tab: string) => {
@@ -267,13 +333,16 @@ export default function ROARApp() {
   };
 
   const completeOnboarding = useCallback(async (prefs: any) => {
+    const username = prefs.username || "RoarUser";
     const badge = prefs.badge || "RISING_FAN";
     setUserSports(prefs.sports ?? []);
     setUserBadge(badge);
+    setCurrentUsername(username);
     setOnboarded(true);
     try {
       localStorage.setItem("roar_v2_complete", "1");
       localStorage.setItem("roar_badge", badge);
+      localStorage.setItem("roar_username", username);
     } catch {}
     try {
       await axios.post("/api/roar/onboarding", { sports: prefs.sports || ["cricket"], teams: prefs.teams || [], tenure: prefs.tenure || "rising", badge, firstContribution: prefs.firstContribution || null });
@@ -345,8 +414,11 @@ export default function ROARApp() {
                   <DiscussionRoom
                     roomId={selectedRoom?.roomId}
                     roomName={selectedRoom?.name}
+                    fanCount={selectedRoom?.fanCount}
                     onBack={() => { setOverlay(null); setActiveTab("home"); }}
                     onToast={showToast}
+                    onPostClick={(post) => setSelectedPost(post)}
+                    onCompose={(type) => openCompose(type)}
                   />
                 </motion.div>
               ) : (
@@ -365,8 +437,11 @@ export default function ROARApp() {
                       dbPosts={dbPosts}
                       onPostClick={(post) => setSelectedPost(post)}
                       onVote={handleVote}
+                      onLike={handleLike}
+                      onDeletePost={handleDeletePost}
                       userSports={userSports}
                       onQuickCompose={(t) => openCompose(t)}
+                      currentUsername={currentUsername}
                     />
                   )}
                   {activeTab === "profile" && (
@@ -398,7 +473,7 @@ export default function ROARApp() {
 
         {/* Post details overlay */}
         {onboarded && selectedPost && (
-          <PostDetailsOverlay post={selectedPost} onClose={() => setSelectedPost(null)} onToast={showToast} onVote={handleVote} />
+          <PostDetailsOverlay post={selectedPost} onClose={() => setSelectedPost(null)} onToast={showToast} onVote={handleVote} onDeletePost={handleDeletePost} currentUsername={currentUsername} />
         )}
 
         {/* Compose modal */}

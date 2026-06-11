@@ -1,3 +1,5 @@
+// components/NewROARComponent/components/ComposeModal.tsx
+
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { createPortal } from "react-dom";
@@ -147,8 +149,13 @@ export default function ComposeModal({ open, onClose, onPost, initialType }: Pro
                 <div style={{ width: 40, height: 4, borderRadius: 2, background: "var(--border)" }} />
               </div>
               <div style={{ padding: "0 20px 40px", maxHeight: "75vh", overflowY: "auto" }}>
-                <h2 className="font-display" style={{ fontSize: 28, letterSpacing: "0.04em", marginBottom: 16 }}>
-                  Create
+                <h2 className="font-display" style={{ fontSize: 28, letterSpacing: "0.04em", marginBottom: 16, textTransform: "uppercase" }}>
+                  {selected === "hot_take" && "Create Hot Take"}
+                  {selected === "prediction" && "Create Prediction"}
+                  {selected === "debate" && "Create Debate"}
+                  {selected === "memory" && "Create Memory"}
+                  {selected === "post" && "Create Post"}
+                  {!selected && "Create"}
                 </h2>
                 {!selected ? (
                   <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -295,8 +302,8 @@ export default function ComposeModal({ open, onClose, onPost, initialType }: Pro
                       </>
                     )}
 
-                    {/* Sport and Match selector (not for post type) */}
-                    {(selected === "hot_take" || selected === "prediction" || selected === "debate" || selected === "memory") && (
+                    {/* Sport and Match selector */}
+                    {(selected === "hot_take" || selected === "prediction" || selected === "debate" || selected === "memory" || selected === "post") && (
                       <>
                         <label style={{ fontSize: 11, color: "var(--text-muted)", display: "block", marginTop: 16, marginBottom: 4 }}>Sport</label>
                         <div style={{ display: "flex", gap: 8, marginTop: 4, marginBottom: 12 }}>

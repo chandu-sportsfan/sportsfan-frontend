@@ -213,7 +213,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         // ADD THIS REDIRECT CALLBACK
         async redirect({ url, baseUrl }) {
-            // Force redirect to master branch homepage
+            // Force redirect to master branch homepage, but preserve localhost for local development
+            if (url.includes("localhost") || baseUrl.includes("localhost")) {
+                return url.startsWith(baseUrl) ? url : `${baseUrl}/MainModules/ROAR`;
+            }
             console.log('Redirecting to:', `${MASTER_URL}/MainModules/ROAR`);
             return `${MASTER_URL}/MainModules/ROAR`;
         },

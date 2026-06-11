@@ -69,7 +69,7 @@ export default function HomePage() {
         <WT20Club360CardsSection />
         <FifaClub360Page />
         {/* <Player360CardsSection /> */}
-         {/* <SocialFeedSection /> */}
+         <SocialFeedSection />
         <NewsCenter /> 
       </div>
     </div>

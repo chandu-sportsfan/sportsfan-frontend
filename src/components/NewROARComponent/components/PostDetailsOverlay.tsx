@@ -3,20 +3,24 @@ import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
 import AvatarWithBadge from "./AvatarWithBadge";
 import { SplitBar } from "./shared";
-import { clamp } from "../utils";
+import { clamp, formatTimeAgo } from "../utils";
+import { Trash2 } from "lucide-react";
 
 interface Props {
   post: any;
   onClose: () => void;
   onToast: (m: string) => void;
   onVote: (id: string, vote: "agree" | "disagree" | null) => void;
+  onDeletePost?: (id: string, roomId?: string) => void;
+  currentUsername?: string;
 }
 
-export default function PostDetailsOverlay({ post, onClose, onToast, onVote }: Props) {
+export default function PostDetailsOverlay({ post, onClose, onToast, onVote, onDeletePost, currentUsername }: Props) {
   const [comments, setComments] = useState<any[]>([]);
   const [commentText, setCommentText] = useState("");
   const [loading, setLoading] = useState(false);
   const [userUsername, setUserUsername] = useState("RoarUser");
+  const activeUsername = currentUsername || userUsername;
   const [userBadge, setUserBadge] = useState("RISING_FAN");
   const [votes, setVotes] = useState<Record<string, boolean | null>>(() =>
     post.userVote ? { [post.id]: post.userVote === "agree" } : {},
@@ -33,14 +37,9 @@ export default function PostDetailsOverlay({ post, onClose, onToast, onVote }: P
   const fetchComments = useCallback(async () => {
     if (!post?.id) return;
     try {
-      if (!post.isDbPost) {
-        setComments([
-          { commentId: "c1", authorUsername: "KolkataKnight07", authorBadge: "CRICKET_HEAD", text: "IPL crowds are great, but nothing matches the tension of a bilateral series in Test cricket.", heartCount: 50, createdAt: Date.now() - 14400000 },
-          { commentId: "c2", authorUsername: "NagpurNight", authorBadge: "ORACLE", text: "@KolkataKnight07 Unpopular but 100% correct. Test cricket is where reputations are truly made.", heartCount: 16, createdAt: Date.now() - 10800000 },
-        ]);
-        return;
-      }
-      const res = await axios.get(`/api/roar/posts/${post.id}/comments`);
+      const res = await axios.get(`/api/roar/posts/${post.id}/comments`, {
+        params: { roomId: post.roomId }
+      });
       if (res.data?.success) setComments(res.data.comments);
     } catch (err) {
       console.error("Failed to fetch comments:", err);
@@ -53,13 +52,10 @@ export default function PostDetailsOverlay({ post, onClose, onToast, onVote }: P
     if (!commentText.trim()) return;
     try {
       setLoading(true);
-      if (!post.isDbPost) {
-        setComments((prev) => [...prev, { commentId: `c-${Date.now()}`, authorUsername: userUsername, authorBadge: userBadge, text: commentText.trim(), heartCount: 0, createdAt: Date.now() }]);
-        setCommentText("");
-        onToast("Comment posted!");
-        return;
-      }
-      const res = await axios.post(`/api/roar/posts/${post.id}/comments`, { text: commentText.trim() });
+      const res = await axios.post(`/api/roar/posts/${post.id}/comments`, {
+        text: commentText.trim(),
+        roomId: post.roomId
+      });
       if (res.data?.success) { setCommentText(""); fetchComments(); onToast("Comment posted successfully!"); }
     } catch (err) {
       console.error("Failed to submit comment:", err);
@@ -71,10 +67,6 @@ export default function PostDetailsOverlay({ post, onClose, onToast, onVote }: P
 
   const reactToComment = async (commentId: string) => {
     try {
-      if (!post.isDbPost) {
-        setComments((prev) => prev.map((c) => c.commentId === commentId ? { ...c, heartCount: c.heartCount + 1 } : c));
-        return;
-      }
       const res = await axios.post(`/api/roar/posts/${post.id}/comments/${commentId}/react`);
       if (res.data?.success) setComments((prev) => prev.map((c) => c.commentId === commentId ? { ...c, heartCount: res.data.heartCount } : c));
     } catch (err) {
@@ -122,7 +114,7 @@ export default function PostDetailsOverlay({ post, onClose, onToast, onVote }: P
               {headerTitle}
             </h2>
             <p style={{ fontSize: 9, color: "var(--text-secondary)", margin: "2px 0 0" }}>
-              Posted by {post.fan?.username || post.authorUsername} • {post.timeAgo || "2h ago"} • {comments.length} comments
+              Posted by {post.fan?.username || post.authorUsername} • {formatTimeAgo(post.createdAt)} • {comments.length} comments
             </p>
           </div>
         </div>
@@ -138,7 +130,7 @@ export default function PostDetailsOverlay({ post, onClose, onToast, onVote }: P
                   {post.fan?.username || post.authorUsername}
                   <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#00E676", display: "inline-block" }} />
                 </p>
-                <p style={{ fontSize: 10, color: "var(--text-secondary)", margin: 0 }}>{post.timeAgo || "2h ago"}</p>
+                <p style={{ fontSize: 10, color: "var(--text-secondary)", margin: 0 }}>{formatTimeAgo(post.createdAt)}</p>
               </div>
             </div>
             <p style={{ fontWeight: 600, fontSize: 15, lineHeight: 1.5, marginBottom: 12, color: "white" }}>{post.text}</p>
@@ -186,6 +178,37 @@ export default function PostDetailsOverlay({ post, onClose, onToast, onVote }: P
                 </div>
               </>
             )}
+            <div style={{ display: "flex", alignItems: "center", gap: 16, marginTop: 16, borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 12 }}>
+              {(post.fan?.username === activeUsername || post.authorUsername === activeUsername) && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (window.confirm("Are you sure you want to delete this post?")) {
+                      if (onDeletePost) {
+                        onDeletePost(post.id, post.roomId);
+                        onClose();
+                      }
+                    }
+                  }}
+                  title="Delete Post"
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    color: "#f87171",
+                    transition: "color 0.2s, transform 0.1s",
+                    marginLeft: "auto",
+                    padding: "4px",
+                    borderRadius: "50%",
+                  }}
+                >
+                  <Trash2 size={16} />
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Comments heading */}
@@ -217,7 +240,30 @@ export default function PostDetailsOverlay({ post, onClose, onToast, onVote }: P
                           <span style={{ width: 5, height: 5, borderRadius: "50%", background: "#E91E8C", display: "inline-block" }} />
                         </p>
                       </div>
-                      <span style={{ fontSize: 9, color: "var(--text-muted)" }}>{comment.createdAt ? "4h ago" : "Just now"}</span>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <span style={{ fontSize: 9, color: "var(--text-muted)" }}>{formatTimeAgo(comment.createdAt)}</span>
+                        {comment.authorUsername === activeUsername && (
+                          <button
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              if (window.confirm("Are you sure you want to delete this comment?")) {
+                                try {
+                                  await axios.delete(`/api/roar/posts/${post.id}/comments/${comment.commentId}`);
+                                  onToast("Comment deleted successfully");
+                                  fetchComments();
+                                } catch (err) {
+                                  console.error(err);
+                                  onToast("Failed to delete comment");
+                                }
+                              }
+                            }}
+                            style={{ background: "none", border: "none", color: "#f87171", cursor: "pointer", display: "flex", alignItems: "center", padding: 2 }}
+                            title="Delete Comment"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        )}
+                      </div>
                     </div>
                     <p style={{ fontSize: 13, color: "var(--text-primary)", lineHeight: 1.4, margin: "4px 0" }}>{comment.text}</p>
                     <div style={{ display: "flex", gap: 14, alignItems: "center", marginTop: 4 }}>

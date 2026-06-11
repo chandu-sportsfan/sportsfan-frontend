@@ -14,6 +14,8 @@ interface Props {
   onPostClick?: (post: any) => void;
   onCompose?: (type: string | null) => void;
   fanCount?: number;
+  score?: string;
+  scoreSubtitle?: string;
 }
 
 const TABS = ["Debate", "Predictions", "Hot Takes", "Memory", "Post-Match 🔒"];
@@ -34,7 +36,7 @@ const MODE_LABEL: Record<string, string> = {
   memory: "⏱️ Memory",
 };
 
-export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPostClick, onCompose, fanCount = 312 }: Props) {
+export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPostClick, onCompose, fanCount = 312, score, scoreSubtitle }: Props) {
   const [tab, setTab] = useState("Debate");
   const [posts, setPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -224,10 +226,12 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
             </div>
           </div>
 
-          <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "flex-end", paddingRight: 20 }}>
-            <p className="font-display" style={{ fontSize: 24, fontWeight: 800, color: "#fbbf24", margin: 0, lineHeight: 1.2 }}>287/4</p>
-            <p style={{ fontSize: 12, color: "var(--text-secondary)", margin: 0, marginTop: 4 }}>IND · 88 ov</p>
-          </div>
+          {(score || scoreSubtitle) && (
+            <div style={{ textAlign: "right", paddingRight: 8, marginTop: -4 }}>
+              {score && <div className="font-display" style={{ fontSize: 28, color: "var(--accent-yellow)", lineHeight: 1 }}>{score}</div>}
+              {scoreSubtitle && <div style={{ fontSize: 13, color: "var(--text-secondary)", marginTop: 4 }}>{scoreSubtitle}</div>}
+            </div>
+          )}
 
           {/* Dropdown */}
           <div style={{ position: "relative" }} ref={dropdownRef}>

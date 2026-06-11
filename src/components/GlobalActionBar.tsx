@@ -38,7 +38,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Pencil, Plus } from "lucide-react";
 import Link from "next/link";
 import type { CreatePostPayload } from "@/types/PostPolls";
@@ -48,13 +48,6 @@ import { usePosts } from "../../hooks/Useposts";
 export default function GlobalActionBar() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const { createPost } = usePosts();
-
-  // Listen for the custom event fired by "+ Post on ROAR" button in ROAR filter bar
-  useEffect(() => {
-    const handler = () => setDialogOpen(true);
-    window.addEventListener("openCreatePost", handler);
-    return () => window.removeEventListener("openCreatePost", handler);
-  }, []);
 
   // const handleSubmit = async (
   //   payload: CreatePostPayload,

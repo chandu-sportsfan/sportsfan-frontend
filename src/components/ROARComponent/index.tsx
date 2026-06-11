@@ -2863,16 +2863,19 @@ function HomeFeed({
             );
           })}
 
-          {/* Post on ROAR (+) tab — opens same CreatePost dialog as pencil button */}
+          {/* Post on ROAR (+) tab */}
           <motion.button
             whileTap={{ scale: 0.95 }}
-            onClick={() => window.dispatchEvent(new Event("openCreatePost"))}
+            onClick={() => setPostMenuOpen((prev) => !prev)}
             className="relative flex min-w-max items-center justify-center gap-1.5 px-4 py-3 rounded-xl text-xs font-bold tracking-wide whitespace-nowrap shrink-0"
             style={{
+              border: postMenuOpen ? "1px solid rgba(233,30,140,0.6)" : "1px solid rgba(233,30,140,0.25)",
               cursor: "pointer",
-              border: "1px solid rgba(233,30,140,0.25)",
-              color: "rgba(233,30,140,0.9)",
-              background: "rgba(233,30,140,0.08)",
+              color: postMenuOpen ? "white" : "rgba(233,30,140,0.9)",
+              background: postMenuOpen
+                ? "linear-gradient(90deg,#e91e8c,#ff6b35)"
+                : "rgba(233,30,140,0.08)",
+              boxShadow: postMenuOpen ? "0 4px 14px rgba(233,30,140,0.35)" : "none",
               transition: "all 0.2s",
             }}
           >
@@ -3621,22 +3624,21 @@ function DiscussionRoom({
   onToast,
   roomId,
   roomName,
+  fanCount = 312,
 }: {
   onBack: () => void;
   onToast: (m: string) => void;
   roomId?: string;
   roomName?: string;
+  fanCount?: number;
 }) {
   const [tab, setTab] = useState("Debate");
   const [posts, setPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [input, setInput] = useState("");
   const [mode, setMode] = useState<"chat" | "prediction" | "hottake">("chat");
-  const [fanCount, setFanCount] = useState(312);
-  const [joinToast, setJoinToast] = useState<string | null>(null);
   const [composerPre, setComposerPre] = useState("");
   const listRef = useRef<HTMLDivElement>(null);
-  const joinIdx = useRef(0);
   const TABS = ["Debate", "Predictions", "Hot Takes", "Post-Match 🔒"];
 
   const [userUsername, setUserUsername] = useState("RoarUser");
@@ -3646,21 +3648,6 @@ function DiscussionRoom({
       setUserUsername(localStorage.getItem("roar_username") || "RoarUser");
       setUserBadge(localStorage.getItem("roar_badge") || "RISING_FAN");
     } catch {}
-  }, []);
-
-  useEffect(() => {
-    const t = setInterval(() => setFanCount((c) => c + 1), 7000);
-    return () => clearInterval(t);
-  }, []);
-
-  useEffect(() => {
-    const iv = setInterval(() => {
-      const name = JOIN_FANS[joinIdx.current % JOIN_FANS.length];
-      joinIdx.current++;
-      setJoinToast(`${name} joined the room`);
-      setTimeout(() => setJoinToast(null), 2500);
-    }, 9000);
-    return () => clearInterval(iv);
   }, []);
 
   useEffect(() => {
@@ -3773,38 +3760,6 @@ function DiscussionRoom({
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
-      {/* Join toast */}
-      <AnimatePresence>
-        {joinToast && (
-          <motion.div
-            initial={{ y: -50 }}
-            animate={{ y: 0 }}
-            exit={{ y: -50 }}
-            style={{
-              position: "absolute",
-              top: 8,
-              left: 0,
-              right: 0,
-              zIndex: 40,
-              padding: "0 16px",
-              pointerEvents: "none",
-            }}
-          >
-            <div
-              className="glass-card"
-              style={{
-                padding: "8px 16px",
-                textAlign: "center",
-                fontSize: 13,
-                border: "1px solid rgba(0,230,118,0.25)",
-              }}
-            >
-              <span style={{ color: "var(--live-green)" }}>●</span> {joinToast}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       {/* Header */}
       <div
         style={{
@@ -3829,7 +3784,7 @@ function DiscussionRoom({
           >
             ←
           </button>
-          <div style={{ flex: 1, textAlign: "center" }}>
+          <div style={{ flex: 1, textAlign: "left", paddingLeft: 8 }}>
             <p
               className="font-display"
               style={{ fontSize: 20, letterSpacing: "0.04em" }}
@@ -3841,7 +3796,6 @@ function DiscussionRoom({
                 display: "flex",
                 alignItems: "center",
                 gap: 6,
-                justifyContent: "center",
                 marginTop: 2,
               }}
             >
@@ -3868,17 +3822,6 @@ function DiscussionRoom({
                 · {fmt(fanCount)} fans
               </span>
             </div>
-          </div>
-          <div style={{ textAlign: "right" }}>
-            <p
-              className="font-display"
-              style={{ fontSize: 22, color: "var(--gold)" }}
-            >
-              287/4
-            </p>
-            <p style={{ fontSize: 10, color: "var(--text-muted)" }}>
-              IND · 88 ov
-            </p>
           </div>
         </div>
         <div style={{ marginTop: 10 }}>
@@ -6365,27 +6308,6 @@ function PostDetailsOverlay({
   const fetchComments = useCallback(async () => {
     if (!post?.id) return;
     try {
-      if (!post.isDbPost) {
-        setComments([
-          {
-            commentId: "c1",
-            authorUsername: "KolkataKnight07",
-            authorBadge: "CRICKET_HEAD",
-            text: "IPL crowds are great, but nothing matches the tension of a bilateral series in Test cricket. Five days of tactical battle > 4 hours of cheerleaders.",
-            heartCount: 50,
-            createdAt: Date.now() - 14400000,
-          },
-          {
-            commentId: "c2",
-            authorUsername: "NagpurNight",
-            authorBadge: "ORACLE",
-            text: "@KolkataKnight07 Unpopular but 100% correct. Test cricket is where reputations are truly made.",
-            heartCount: 16,
-            createdAt: Date.now() - 10800000,
-          },
-        ]);
-        return;
-      }
       const res = await axios.get(`/api/roar/posts/${post.id}/comments`);
       if (res.data?.success) {
         setComments(res.data.comments);
@@ -6403,23 +6325,6 @@ function PostDetailsOverlay({
     if (!commentText.trim()) return;
     try {
       setLoading(true);
-      if (!post.isDbPost) {
-        setComments((prev) => [
-          ...prev,
-          {
-            commentId: `c-${Date.now()}`,
-            authorUsername: userUsername,
-            authorBadge: userBadge,
-            text: commentText.trim(),
-            heartCount: 0,
-            createdAt: Date.now(),
-          },
-        ]);
-        setCommentText("");
-        onToast("Comment posted!");
-        return;
-      }
-
       const res = await axios.post(`/api/roar/posts/${post.id}/comments`, {
         text: commentText.trim(),
       });
@@ -6438,16 +6343,6 @@ function PostDetailsOverlay({
 
   const reactToComment = async (commentId: string) => {
     try {
-      if (!post.isDbPost) {
-        setComments((prev) =>
-          prev.map((c) =>
-            c.commentId === commentId
-              ? { ...c, heartCount: c.heartCount + 1 }
-              : c,
-          ),
-        );
-        return;
-      }
       const res = await axios.post(
         `/api/roar/posts/${post.id}/comments/${commentId}/react`,
       );
@@ -7446,6 +7341,7 @@ export default function ROARApp() {
                   <DiscussionRoom
                     roomId={selectedRoom?.roomId}
                     roomName={selectedRoom?.name}
+                    fanCount={selectedRoom?.fanCount}
                     onBack={() => {
                       setOverlay(null);
                       setActiveTab("home");

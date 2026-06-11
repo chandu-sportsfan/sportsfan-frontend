@@ -673,10 +673,10 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
               
               if (!selectedItem || selectedItem.id === "chat") return null;
               return (
-                <div style={{ position: "absolute", top: "100%", left: 16, marginTop: 4, display: "flex", alignItems: "center", gap: 4 }}>
-                  <span style={{ fontSize: 10 }}>{selectedItem.icon}</span>
-                  <span style={{ fontSize: 10, fontWeight: 700, color: selectedItem.color }}>{selectedItem.title}</span>
-                  <span style={{ fontSize: 10, color: "var(--text-muted)" }}>{selectedItem.subtitle}</span>
+                <div style={{ position: "absolute", top: "100%", left: 16, marginTop: 6, display: "flex", alignItems: "center", gap: 6 }}>
+                  <span style={{ fontSize: 13 }}>{selectedItem.icon}</span>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: selectedItem.color }}>{selectedItem.title}</span>
+                  <span style={{ fontSize: 12, color: "var(--text-secondary)", marginLeft: 2 }}>{selectedItem.subtitle}</span>
                 </div>
               );
             })()}

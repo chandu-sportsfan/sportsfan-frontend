@@ -655,7 +655,7 @@ export default function HomeFeed({
                 {item.type === "hot_take" && (
                   <>
                     <div style={{ marginBottom: 10 }}><SplitBar left={pct} /></div>
-                    <p style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 12 }}>{fmt(item.fanCount ?? 0)} fans · {item.replies ?? 0} replies</p>
+                    <p style={{ fontSize: 12, color: "var(--text-primary)", fontWeight: 500, marginBottom: 12 }}>{fmt(item.fanCount ?? 0)} fans · {item.replies ?? 0} replies</p>
                     <div style={{ display: "flex", gap: 8 }}>
                       {[
                         { agree: true, label: "Agree", active: userVote === true, color: "var(--accent-magenta)" },
@@ -665,7 +665,19 @@ export default function HomeFeed({
                           key={label}
                           whileTap={{ scale: 0.93 }}
                           onClick={(e) => { e.stopPropagation(); vote(item.id, agree, item.agreePercent, item.userVote, item.isDbPost); }}
-                          style={{ flex: 1, padding: "10px", borderRadius: 999, fontSize: 13, fontWeight: 700, cursor: "pointer", border: `2px solid ${active ? color : `${color}59`}`, background: active ? color : "transparent", color: active ? "white" : color, transition: "all 0.2s" }}
+                          style={{
+                            flex: 1,
+                            padding: "10px",
+                            borderRadius: 999,
+                            fontSize: 13,
+                            fontWeight: 700,
+                            cursor: "pointer",
+                            border: `2.5px solid ${color}`,
+                            background: active ? color : "rgba(255, 255, 255, 0.02)",
+                            color: active ? "white" : color,
+                            boxShadow: active ? `0 0 16px ${color}60` : "none",
+                            transition: "all 0.2s ease-in-out",
+                          }}
                         >
                           {active ? `✓ ${agree ? "Agreed" : "Disagreed"}` : label}
                         </motion.button>
@@ -677,7 +689,7 @@ export default function HomeFeed({
 
                 {item.type === "prediction" && (
                   <div>
-                    <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>{item.samePredictionCount} fans made the same prediction</p>
+                    <p style={{ fontSize: 12, color: "var(--text-primary)", fontWeight: 500 }}>{item.samePredictionCount} fans made the same prediction</p>
                     {(item.counterCount ?? 0) > 0 && <p style={{ fontSize: 12, color: "var(--accent-magenta)", marginTop: 4 }}>{item.counterCount} fans think otherwise →</p>}
                     {renderCardActions(item)}
                   </div>
@@ -714,7 +726,7 @@ export default function HomeFeed({
                     <p style={{ fontSize: 13, fontWeight: 700 }}>{item.sideB || (item.text?.split(" VS ")[1]) || "Side B"}</p>
                   </div>
                 </div>
-                <p style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 10 }}>{fmt(item.fanCount ?? 0)} fans · {item.replies ?? 0} replies</p>
+                <p style={{ fontSize: 12, color: "var(--text-primary)", fontWeight: 500, marginTop: 10 }}>{fmt(item.fanCount ?? 0)} fans · {item.replies ?? 0} replies</p>
                 {renderCardActions(item)}
               </motion.div>
             );
@@ -735,7 +747,7 @@ export default function HomeFeed({
                 </div>
                 <p style={{ fontWeight: 600, fontSize: 15, lineHeight: 1.55, marginBottom: item.memCtx ? 8 : 0 }}>{item.text}</p>
                 {item.memCtx && <p style={{ fontSize: 12, color: "var(--teal)", fontStyle: "italic", borderLeft: "2px solid var(--teal)", paddingLeft: 10, marginTop: 6 }}>{item.memCtx}</p>}
-                <p style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 10 }}>{fmt(item.fanCount ?? 0)} fans · {item.replies ?? 0} replies</p>
+                <p style={{ fontSize: 12, color: "var(--text-primary)", fontWeight: 500, marginTop: 10 }}>{fmt(item.fanCount ?? 0)} fans · {item.replies ?? 0} replies</p>
                 {renderCardActions(item)}
               </motion.div>
             );

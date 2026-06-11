@@ -172,9 +172,21 @@ export default function PostDetailsOverlay({ post, onClose, onToast, onVote, onD
                     <button
                       key={label}
                       onClick={() => handleVoteClick(agree)}
-                      style={{ flex: 1, padding: "10px", borderRadius: 999, fontSize: 13, fontWeight: 700, cursor: "pointer", border: `2px solid ${active ? color : `${color}59`}`, background: active ? color : "transparent", color: active ? "white" : color, transition: "all 0.2s" }}
+                      style={{
+                        flex: 1,
+                        padding: "12px",
+                        borderRadius: 999,
+                        fontSize: 13,
+                        fontWeight: 700,
+                        cursor: "pointer",
+                        border: `2.5px solid ${color}`,
+                        background: active ? color : "rgba(255, 255, 255, 0.02)",
+                        color: active ? "white" : color,
+                        boxShadow: active ? `0 0 16px ${color}80` : "none",
+                        transition: "all 0.22s ease-in-out",
+                      }}
                     >
-                      {label}
+                      {active ? `✓ ${label}d` : label}
                     </button>
                   ))}
                 </div>

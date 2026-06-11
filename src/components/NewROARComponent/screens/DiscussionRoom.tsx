@@ -105,6 +105,7 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
             nochanceCount: m.noChanceCount || 0,
             heartCount: m.heartCount || 0,
             timeAgo: new Date(m.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+            createdAt: m.createdAt,
             type: m.type,
             mediaUrls: m.mediaUrls,
           }));
@@ -141,6 +142,7 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
           nochanceCount: 0,
           heartCount: 0,
           timeAgo: "now",
+          createdAt: m.createdAt || Date.now(),
           type: m.type,
           mediaUrls: m.mediaUrls,
         }, ...p]);
@@ -252,6 +254,7 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
                           text: p.text,
                           fan: p.fan,
                           timeAgo: p.timeAgo,
+                          createdAt: p.createdAt,
                           type: p.type || "chat",
                           isDbPost: true,
                           roomId: roomId,

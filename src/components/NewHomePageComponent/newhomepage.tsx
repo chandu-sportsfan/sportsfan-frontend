@@ -266,7 +266,8 @@ export default function NewHomePage({ sportFilter }: { sportFilter?: string }) {
             >
               <div className="relative bg-[#111] rounded-2xl overflow-hidden hover:scale-[1.01] transition-transform duration-200">
                 {/* Increased height to accommodate the new button properly */}
-                <div className="relative w-full h-[240px] lg:h-[220px]">
+                {/* <div className="relative w-full h-[240px] lg:h-[220px]"> */}
+                <div className="relative w-full h-[280px] lg:h-[260px]">
                   <Image
                     src={card.image}
                     alt={card.title}
@@ -282,28 +283,47 @@ export default function NewHomePage({ sportFilter }: { sportFilter?: string }) {
                     <p className="text-[11px] text-gray-300 mt-1 mb-4">{card.subtitle}</p>
                     
                     {/* Dynamic Match Center Button */}
-                    <div className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-lg transition-colors ${card.buttonBg}`}>
-                      {card.iconType === "football" ? (
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <circle cx="12" cy="12" r="10" />
-                          <polygon points="12 5.5 15.5 8 14.5 12 9.5 12 8.5 8 12 5.5" />
-                          <line x1="12" y1="5.5" x2="12" y2="2" />
-                          <line x1="15.5" y1="8" x2="19.5" y2="7.5" />
-                          <line x1="14.5" y1="12" x2="17.5" y2="16.5" />
-                          <line x1="9.5" y1="12" x2="6.5" y2="16.5" />
-                          <line x1="8.5" y1="8" x2="4.5" y2="7.5" />
-                        </svg>
-                      ) : (
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <circle cx="12" cy="12" r="10" />
-                          <path d="M8 2a8 8 0 0 0 0 20" />
-                          <path d="M16 2a8 8 0 0 1 0 20" />
-                          <line x1="8" y1="12" x2="16" y2="12" />
-                        </svg>
-                      )}
-                      <span className="text-[13px] font-semibold text-white tracking-wide">Match Center</span>
-                    </div>
+                    {/* <div className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-lg transition-colors ${card.buttonBg}`}> */}
+                    {/* Premium Match Center CTA */}
+<div
+  className={`w-full flex items-center justify-center gap-3 py-3 rounded-xl font-semibold text-white shadow-[0_8px_30px_rgba(0,0,0,0.35)] transition-all duration-300 hover:scale-[1.02] ${card.buttonBg}`}
+>
+  {card.iconType === "football" ? (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="22"
+      height="22"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+    >
+      <circle cx="12" cy="12" r="10" />
+      <polygon points="12 6 15 8.5 14 12 10 12 9 8.5 12 6" />
+    </svg>
+  ) : (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="22"
+      height="22"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+    >
+      <circle cx="12" cy="12" r="9" />
+      <path d="M7 7c3 2 7 8 10 10" />
+      <path d="M17 7c-3 2-7 8-10 10" />
+    </svg>
+  )}
 
+  <span className="text-[17px] font-bold tracking-wide">
+    Match Center
+  </span>
+
+  <span className="text-lg">→</span>
+</div>
+                     
                   </div>
                 </div>
               </div>

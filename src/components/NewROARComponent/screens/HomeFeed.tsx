@@ -429,11 +429,13 @@ export default function HomeFeed({
         </linearGradient>
       </svg>
 
-      {/* ── Header ── */}
-      <div
-        className="glass-card"
-        style={{ position: "sticky", top: 0, zIndex: 20, margin: "8px 12px 0", padding: "12px 16px", display: "flex", flexDirection: "column", gap: 12, borderRadius: 20, overflow: "visible" }}
-      >
+      {/* ── Sticky Header Section ── */}
+      <div style={{ position: "sticky", top: 0, zIndex: 30, background: "var(--bg-primary)", paddingBottom: 4 }}>
+        {/* ── Header ── */}
+        <div
+          className="glass-card"
+          style={{ margin: "8px 12px 0", padding: "12px 16px", display: "flex", flexDirection: "column", gap: 12, borderRadius: 20, overflow: "visible" }}
+        >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", flexShrink: 0 }}>
             <h1 className="logotype" style={{ fontSize: 34, margin: 0, lineHeight: 1 }}>ROAR</h1>
@@ -573,9 +575,10 @@ export default function HomeFeed({
         </div>
       )}
 
-      {/* Filters */}
-      <div style={{ padding: "10px 16px", overflow: "hidden", position: "relative" }}>
-        <FilterPills options={FEED_FILTERS} active={filter} onChange={setFilter} />
+        {/* Filters */}
+        <div style={{ padding: "10px 16px", overflow: "hidden", position: "relative" }}>
+          <FilterPills options={FEED_FILTERS} active={filter} onChange={setFilter} />
+        </div>
       </div>
 
       <div style={{ padding: "0 16px", display: "flex", flexDirection: "column", gap: 14 }}>

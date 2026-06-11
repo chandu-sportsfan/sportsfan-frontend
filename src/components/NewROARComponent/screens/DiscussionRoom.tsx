@@ -208,7 +208,7 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
   });
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+    <div style={{ display: "flex", flexDirection: "column", height: "100%", position: "relative" }}>
       {/* Header */}
       <div style={{ padding: "12px 16px", background: "rgba(14,14,20,0.95)", backdropFilter: "blur(20px)", borderBottom: "1px solid var(--border)", flexShrink: 0, zIndex: 20 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
@@ -419,7 +419,7 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
       </div>
 
       {/* Messages */}
-      <div ref={listRef} style={{ flex: 1, overflowY: "auto", padding: "16px 16px 140px", display: "flex", flexDirection: "column-reverse", justifyContent: "flex-end", gap: 12 }}>
+      <div ref={listRef} style={{ flex: 1, overflowY: "auto", padding: "16px", display: "flex", flexDirection: "column-reverse", justifyContent: "flex-end", gap: 12 }}>
         <AnimatePresence initial={false}>
           {loading ? (
             <div style={{ textAlign: "center", color: "var(--text-muted)", padding: "20px 0" }}>Loading messages...</div>
@@ -534,7 +534,7 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
       />
 
       {/* Composer */}
-      <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "10px 12px 32px", background: "rgba(14,14,20,0.92)", backdropFilter: "blur(20px)", borderTop: "1px solid var(--border)", zIndex: 10, display: "flex", flexDirection: "column", gap: 8 }}>
+      <div style={{ position: "relative", padding: "10px 12px 32px", background: "rgba(14,14,20,0.92)", backdropFilter: "blur(20px)", borderTop: "1px solid var(--border)", zIndex: 10, display: "flex", flexDirection: "column", gap: 8, flexShrink: 0 }}>
         {attachedUrl && (
           <div style={{ padding: "8px 12px", borderRadius: 12, background: "var(--bg-tertiary)", border: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>

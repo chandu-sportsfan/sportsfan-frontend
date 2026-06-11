@@ -12,7 +12,7 @@ import { useEffect, useState } from "react";
 import SportsFan360Footer from "@/src/components/footer-component/Footer";
 import { useAuth } from "@/context/AuthContext";
 import GlobalActionBar from "@/src/components/GlobalActionBar";
-import { Sparkles} from "lucide-react";
+import { Sparkles } from "lucide-react";
 
 // ─── Types 
 interface UserProfile {
@@ -113,11 +113,10 @@ function HostSidebar({ user }: { user: UserProfile }) {
               <Link
                 key={item.name}
                 href={item.href}
-                className={`flex items-center justify-center group-hover:justify-start gap-0 group-hover:gap-3 rounded-xl px-0 group-hover:px-3 py-2.5 w-10 group-hover:w-full mx-auto transition-all duration-300 ${
-                  isActive
+                className={`flex items-center justify-center group-hover:justify-start gap-0 group-hover:gap-3 rounded-xl px-0 group-hover:px-3 py-2.5 w-10 group-hover:w-full mx-auto transition-all duration-300 ${isActive
                     ? "bg-gradient-to-r from-orange-500/20 to-pink-600/20 text-white ring-1 ring-orange-400/30"
                     : "text-gray-400 hover:text-white hover:bg-white/5"
-                }`}
+                  }`}
               >
                 <span className={isActive ? "text-orange-400" : ""}>{item.icon}</span>
                 <span className="whitespace-nowrap text-sm font-medium opacity-0 -translate-x-2 max-w-0 overflow-hidden group-hover:opacity-100 group-hover:translate-x-0 group-hover:max-w-[140px] transition-all duration-300">
@@ -143,7 +142,7 @@ function UserSidebar() {
 
   const sidebarItems: SidebarItem[] = [
     // { name: "Feed", icon: "/images/feed.png", href: "/MainModules/HomePage" },
-   
+
     // { name: "Fantasy", icon: "/images/battle.png", href: "/MainModules/Fantasy" },
     {
       name: "ROAR",
@@ -156,30 +155,30 @@ function UserSidebar() {
       ),
       href: "/MainModules/ROAR",
     },
-     { name: "Watch Along", icon: "/images/watchalong2.png", href: "/MainModules/WatchAlong" },
+    { name: "Watch Along", icon: "/images/watchalong2.png", href: "/MainModules/WatchAlong" },
     // { 
     //   name: isMatchIntelligence ? "Match Intelligence" : "Store", 
     //   icon: "/images/store.png", 
     //   href: "/MainModules/Store" 
     // },
-     { 
-      name: "Ask AI", 
+    {
+      name: "Ask AI",
       icon: <Sparkles className="w-5 h-5 text-gradient" />,
-      href: "/MainModules/AskAI" 
+      href: "/MainModules/AskAI"
     },
     // { name: "Fan Zone", icon: "/images/profile.png", href: "/MainModules/Fanszone" },
-    { 
-  name: "Fan Zone", 
-  icon: (
-    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-      <circle cx="9" cy="7" r="4"/>
-      <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-      <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-    </svg>
-  ),
-  href: "/MainModules/Fanszone" 
-}
+    {
+      name: "Fan Zone",
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+          <circle cx="9" cy="7" r="4" />
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+        </svg>
+      ),
+      href: "/MainModules/Fanszone"
+    }
   ];
 
   return (
@@ -202,11 +201,10 @@ function UserSidebar() {
               <Link
                 key={item.name}
                 href={item.href}
-                className={`mx-auto flex w-12 group-hover:w-full items-center justify-center group-hover:justify-start gap-0 group-hover:gap-3 rounded-xl px-0 group-hover:px-3 py-2.5 transition-all duration-300 ${
-                  isActive
+                className={`mx-auto flex w-12 group-hover:w-full items-center justify-center group-hover:justify-start gap-0 group-hover:gap-3 rounded-xl px-0 group-hover:px-3 py-2.5 transition-all duration-300 ${isActive
                     ? "text-pink-300 bg-pink-500/15 ring-1 ring-pink-400/40"
                     : "text-gray-300 hover:text-pink-400 hover:bg-white/5"
-                }`}
+                  }`}
               >
                 {typeof item.icon === "string" ? (
                   <Image
@@ -214,11 +212,10 @@ function UserSidebar() {
                     alt={`${item.name} icon`}
                     width={22}
                     height={22}
-                    className={`shrink-0 transition-all duration-300 ${
-                      isActive
+                    className={`shrink-0 transition-all duration-300 ${isActive
                         ? "brightness-75 contrast-90 drop-shadow-[0_0_6px_rgba(244,114,182,0.5)]"
                         : "brightness-55 contrast-90"
-                    }`}
+                      }`}
                   />
                 ) : (
                   <span className={isActive ? "text-pink-300" : "text-gray-400"}>{item.icon}</span>
@@ -259,8 +256,8 @@ export default function MainModulesLayout({
           setUser(null);
         }
       } catch (error) {
-         if (axios.isAxiosError(error) && error.response?.status === 401) {
-            return; // silently ignore, Google session handles auth
+        if (axios.isAxiosError(error) && error.response?.status === 401) {
+          return; // silently ignore, Google session handles auth
         }
         console.error("fetchCurrentUser error:", error);
         setUser(null);
@@ -277,12 +274,12 @@ export default function MainModulesLayout({
     if (loading) {
       return <aside className="hidden lg:flex w-[84px] shrink-0 border-r border-white/5 self-stretch bg-black" />;
     }
-    
+
     // Host users get HostSidebar
     if (user?.role === "host") {
       return <HostSidebar user={user} />;
     }
-    
+
     // Regular users get UserSidebar
     return <UserSidebar />;
   };
@@ -318,7 +315,9 @@ export default function MainModulesLayout({
         </div>
         <div className="flex-1 overflow-y-auto overflow-x-hidden">
           {children}
-          <SportsFan360Footer />
+          <div className="hidden md:hidden lg:block">
+            <SportsFan360Footer />
+          </div>
         </div>
 
         <div className="fixed bottom-28 right-4 md:bottom-15 md:right-6 lg:bottom-5 lg:right-6 z-50">

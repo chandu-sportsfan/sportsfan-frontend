@@ -636,11 +636,11 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
                         onMouseEnter={(e) => !active && (e.currentTarget.style.background = "rgba(255,255,255,0.03)")}
                         onMouseLeave={(e) => !active && (e.currentTarget.style.background = "transparent")}
                       >
-                        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                          <span style={{ fontSize: 18 }}>{item.icon}</span>
+                        <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+                          <span style={{ fontSize: 20 }}>{item.icon}</span>
                           <div style={{ display: "flex", flexDirection: "column" }}>
-                            <span style={{ fontSize: 13, fontWeight: 600 }}>{item.title}</span>
-                            <span style={{ fontSize: 10, color: "var(--text-muted)" }}>{item.subtitle}</span>
+                            <span style={{ fontSize: 15, fontWeight: 600 }}>{item.title}</span>
+                            <span style={{ fontSize: 13, color: "var(--text-secondary)", marginTop: 2 }}>{item.subtitle}</span>
                           </div>
                         </div>
                         {active && <div style={{ width: 16, height: 16, borderRadius: "50%", background: "#e91e8c", display: "flex", alignItems: "center", justifyContent: "center" }}><span style={{ color: "white", fontSize: 10 }}>✓</span></div>}

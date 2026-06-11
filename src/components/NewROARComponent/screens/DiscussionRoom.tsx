@@ -46,10 +46,16 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  const [isModeMenuOpen, setIsModeMenuOpen] = useState(false);
+  const modeMenuRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsDropdownOpen(false);
+      }
+      if (modeMenuRef.current && !modeMenuRef.current.contains(event.target as Node)) {
+        setIsModeMenuOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -409,7 +415,7 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
       </div>
 
       {/* Messages */}
-      <div ref={listRef} style={{ flex: 1, overflowY: "auto", padding: "16px 16px 140px", display: "flex", flexDirection: "column-reverse", gap: 12 }}>
+      <div ref={listRef} style={{ flex: 1, overflowY: "auto", padding: "16px 16px 140px", display: "flex", flexDirection: "column-reverse", justifyContent: "flex-end", gap: 12 }}>
         <AnimatePresence initial={false}>
           {loading ? (
             <div style={{ textAlign: "center", color: "var(--text-muted)", padding: "20px 0" }}>Loading messages...</div>
@@ -525,13 +531,6 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
 
       {/* Composer */}
       <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "10px 12px 14px", background: "rgba(14,14,20,0.92)", backdropFilter: "blur(20px)", borderTop: "1px solid var(--border)", zIndex: 10, display: "flex", flexDirection: "column", gap: 8 }}>
-        {composerPre && (
-          <div style={{ padding: "8px 12px", borderRadius: 12, background: "var(--bg-tertiary)", border: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <p style={{ fontSize: 12, color: MODE_COLOR[mode], fontStyle: "italic" }}>{MODE_LABEL[mode]} preset selected</p>
-            <button onClick={() => setComposerPre("")} style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer" }}>✕</button>
-          </div>
-        )}
-        
         {attachedUrl && (
           <div style={{ padding: "8px 12px", borderRadius: 12, background: "var(--bg-tertiary)", border: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -546,49 +545,8 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
           </div>
         )}
 
-        {/* Mode pills */}
-        <div style={{ display: "flex", gap: 8, justifyContent: "center", overflowX: "auto", paddingBottom: 4 }}>
-          {[
-            { id: "hottake", label: "Hot Take", emoji: "🔥", preset: "", activeBg: "rgba(239, 68, 68, 0.15)", activeBorder: "1px solid rgba(239, 68, 68, 0.35)", activeColor: "#f87171" },
-            { id: "prediction", label: "Predict", emoji: "📈", preset: "My prediction: ", activeBg: "rgba(255, 184, 0, 0.15)", activeBorder: "1px solid rgba(255, 184, 0, 0.35)", activeColor: "var(--gold)" },
-            { id: "debate", label: "Debate", emoji: "⚡", preset: "My debate side: ", activeBg: "rgba(233, 30, 140, 0.15)", activeBorder: "1px solid rgba(233, 30, 140, 0.35)", activeColor: "#e91e8c" },
-            { id: "memory", label: "Memory", emoji: "⏱️", preset: "Flashback: ", activeBg: "rgba(0, 232, 198, 0.15)", activeBorder: "1px solid rgba(0, 232, 198, 0.35)", activeColor: "#00e8c6" },
-            { id: "chat", label: "Post", emoji: "✒️", preset: "", activeBg: "rgba(255, 255, 255, 0.1)", activeBorder: "1px solid rgba(255, 255, 255, 0.3)", activeColor: "#fff" },
-          ].map((item) => {
-            const active = mode === item.id;
-            return (
-              <button
-                key={item.id}
-                onClick={() => {
-                  setMode(item.id as any);
-                  setComposerPre(item.preset);
-                }}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 6,
-                  padding: "8px 16px",
-                  borderRadius: 999,
-                  fontSize: 13,
-                  fontWeight: 600,
-                  border: active ? item.activeBorder : "1px solid var(--border)",
-                  background: active ? item.activeBg : "rgba(255,255,255,0.03)",
-                  color: active ? item.activeColor : "var(--text-secondary)",
-                  cursor: "pointer",
-                  transition: "all 0.2s",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                <span>{item.emoji}</span>
-                <span>{item.label}</span>
-              </button>
-            );
-          })}
-        </div>
-
         {/* Input row */}
-        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <AvatarWithBadge username={userUsername} badge={userBadge} size="sm" />
+        <div style={{ display: "flex", gap: 8, alignItems: "center", position: "relative" }}>
           
           <button
             onClick={() => triggerUpload("image")}
@@ -599,29 +557,136 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
             <Image size={20} />
           </button>
           
-          <button
-            onClick={() => triggerUpload("video")}
-            disabled={uploading}
-            style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", display: "flex", alignItems: "center", padding: 4 }}
-            title="Upload Video"
-          >
-            <Video size={20} />
-          </button>
+          <div style={{ position: "relative" }} ref={modeMenuRef}>
+            <motion.button
+              whileTap={{ scale: 0.9 }}
+              onClick={() => setIsModeMenuOpen(!isModeMenuOpen)}
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: "50%",
+                background: "rgba(255,255,255,0.05)",
+                border: "1px solid rgba(255,255,255,0.1)",
+                color: "white",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+                fontSize: 18,
+                fontWeight: 300,
+                flexShrink: 0
+              }}
+            >
+              {isModeMenuOpen ? "×" : "+"}
+            </motion.button>
 
-          <input
-            type="text"
-            placeholder={uploading ? "Uploading media..." : "Drop your take..."}
-            disabled={uploading}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && send()}
-            style={{ flex: 1, height: 44, borderRadius: 22, background: "var(--bg-secondary)", border: "1px solid var(--border)", paddingLeft: 16, paddingRight: 16, color: "white", fontSize: 14, outline: "none" }}
-          />
+            <AnimatePresence>
+              {isModeMenuOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                  transition={{ duration: 0.15 }}
+                  style={{
+                    position: "absolute",
+                    bottom: "100%",
+                    left: 0,
+                    marginBottom: 12,
+                    background: "#1c1c21",
+                    border: "1px solid rgba(255,255,255,0.05)",
+                    borderRadius: 16,
+                    padding: "12px 8px",
+                    width: 220,
+                    boxShadow: "0 10px 40px rgba(0,0,0,0.8)",
+                    zIndex: 30,
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 4
+                  }}
+                >
+                  <div style={{ padding: "0 8px 8px", fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.05em" }}>POST AS</div>
+                  {[
+                    { id: "hottake", title: "Fire", subtitle: "Hot take, no filter", icon: "🔥", preset: "", activeBg: "rgba(239, 68, 68, 0.15)" },
+                    { id: "prediction", title: "Predict", subtitle: "Forecast what's next", icon: "📈", preset: "My prediction: ", activeBg: "rgba(255, 184, 0, 0.15)" },
+                    { id: "debate", title: "Bold Take", subtitle: "Controversial opinion", icon: "⚡", preset: "My debate side: ", activeBg: "rgba(233, 30, 140, 0.15)" },
+                    { id: "memory", title: "Memory", subtitle: "Share a flashback", icon: "⏱️", preset: "Flashback: ", activeBg: "rgba(0, 232, 198, 0.15)" },
+                    { id: "chat", title: "Normal Post", subtitle: "Just chatting", icon: "✒️", preset: "", activeBg: "rgba(255,255,255,0.1)" }
+                  ].map((item) => {
+                    const active = mode === item.id;
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => {
+                          setMode(item.id as any);
+                          setComposerPre(item.preset);
+                          setIsModeMenuOpen(false);
+                        }}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          padding: "8px",
+                          borderRadius: 12,
+                          background: active ? item.activeBg : "transparent",
+                          border: "none",
+                          color: "white",
+                          cursor: "pointer",
+                          textAlign: "left",
+                        }}
+                        onMouseEnter={(e) => !active && (e.currentTarget.style.background = "rgba(255,255,255,0.03)")}
+                        onMouseLeave={(e) => !active && (e.currentTarget.style.background = "transparent")}
+                      >
+                        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                          <span style={{ fontSize: 18 }}>{item.icon}</span>
+                          <div style={{ display: "flex", flexDirection: "column" }}>
+                            <span style={{ fontSize: 13, fontWeight: 600 }}>{item.title}</span>
+                            <span style={{ fontSize: 10, color: "var(--text-muted)" }}>{item.subtitle}</span>
+                          </div>
+                        </div>
+                        {active && <div style={{ width: 16, height: 16, borderRadius: "50%", background: "#e91e8c", display: "flex", alignItems: "center", justifyContent: "center" }}><span style={{ color: "white", fontSize: 10 }}>✓</span></div>}
+                      </button>
+                    );
+                  })}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          <div style={{ flex: 1, position: "relative" }}>
+            <input
+              type="text"
+              placeholder={uploading ? "Uploading media..." : "Drop your take..."}
+              disabled={uploading}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && send()}
+              style={{ width: "100%", height: 44, borderRadius: 22, background: "var(--bg-secondary)", border: "1px solid var(--border)", paddingLeft: 16, paddingRight: 16, color: "white", fontSize: 14, outline: "none" }}
+            />
+            {(() => {
+              const selectedItem = [
+                { id: "hottake", title: "Fire", subtitle: "Hot take, no filter", icon: "🔥", color: "#f87171" },
+                { id: "prediction", title: "Predict", subtitle: "Forecast what's next", icon: "📈", color: "var(--gold)" },
+                { id: "debate", title: "Bold Take", subtitle: "Controversial opinion", icon: "⚡", color: "#e91e8c" },
+                { id: "memory", title: "Memory", subtitle: "Share a flashback", icon: "⏱️", color: "#00e8c6" },
+                { id: "chat", title: "Normal Post", subtitle: "Just chatting", icon: "✒️", color: "#fff" }
+              ].find(i => i.id === mode);
+              
+              if (!selectedItem || selectedItem.id === "chat") return null;
+              return (
+                <div style={{ position: "absolute", top: "100%", left: 16, marginTop: 4, display: "flex", alignItems: "center", gap: 4 }}>
+                  <span style={{ fontSize: 10 }}>{selectedItem.icon}</span>
+                  <span style={{ fontSize: 10, fontWeight: 700, color: selectedItem.color }}>{selectedItem.title}</span>
+                  <span style={{ fontSize: 10, color: "var(--text-muted)" }}>{selectedItem.subtitle}</span>
+                </div>
+              );
+            })()}
+          </div>
+
           <motion.button
             whileTap={{ scale: 0.96 }}
             onClick={send}
             disabled={uploading}
-            style={{ width: 44, height: 44, borderRadius: "50%", background: "var(--accent-gradient)", border: "none", color: "white", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", opacity: uploading ? 0.5 : 1 }}
+            style={{ width: 44, height: 44, borderRadius: "50%", background: "var(--accent-gradient)", border: "none", color: "white", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", opacity: uploading ? 0.5 : 1, flexShrink: 0 }}
           >
             ↑
           </motion.button>

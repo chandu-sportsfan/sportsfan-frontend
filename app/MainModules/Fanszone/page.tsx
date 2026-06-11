@@ -2,13 +2,15 @@
 
 import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { type ActivityItem, useActivity } from "@/context/ActivityContext";
 import { useLeaderboard } from "@/context/LeaderboardContext";
 import {
   ChevronDown, Trophy, Share2, CheckCircle2,
   Award, TrendingUp, Play, ThumbsUp, FileText,
   Gamepad2, UserPlus, LayoutGrid, Calendar, Filter,
-  Download, ChevronLeft, ChevronRight, MoreHorizontal, X, Headphones
+  Download, ChevronLeft, ChevronRight, MoreHorizontal, X, Headphones,
+  Megaphone, MessagesSquare, Flame, Sparkles
 } from "lucide-react";
 
 // 
@@ -431,21 +433,22 @@ function InfoIcon() {
 }
 
 const earnPointsActions = [
-  { icon: Headphones,   title: "Listen Audio Drops", xp: "+2 SXP",   desc: "Per drop (90% listened)",    color: "text-sky-400",    bg: "bg-sky-400/10" },
-  { icon: CheckCircle2, title: "Answer Trivia",       xp: "+5 SXP",   desc: "Per correct answer",         color: "text-violet-400", bg: "bg-violet-400/10" },
-  { icon: Play,         title: "Watch Drops",         xp: "+20 SXP",  desc: "12 Actions",                 color: "text-yellow-500", bg: "bg-yellow-500/10" },
-  { icon: ThumbsUp,     title: "Like a Post",         xp: "+10 SXP",  desc: "28 Actions",                 color: "text-rose-500",   bg: "bg-rose-500/10" },
-  { icon: Share2,       title: "Share a Post",        xp: "+15 SXP",  desc: "18 Actions",                 color: "text-purple-500", bg: "bg-purple-500/10" },
-  { icon: FileText,     title: "Create a Post",       xp: "+12 SXP",  desc: "Per post created",           color: "text-rose-400",   bg: "bg-rose-400/10" },
+  { icon: Megaphone,       title: "Post On ROAR",       xp: "+2 SXP",  desc: "Per post on ROAR",      color: "text-orange-400", bg: "bg-orange-400/10" },
+  { icon: MessagesSquare,  title: "Start a Debate",     xp: "+2 SXP",  desc: "Per debate started",    color: "text-cyan-400",   bg: "bg-cyan-400/10" },
+  { icon: Flame,           title: "Posted Hot Take",    xp: "+2 SXP",  desc: "Per hot take posted",   color: "text-amber-500",  bg: "bg-amber-500/10" },
+  { icon: TrendingUp,      title: "Prediction Sharing", xp: "+2 SXP",  desc: "Per prediction shared", color: "text-lime-400",   bg: "bg-lime-400/10" },
+  { icon: Sparkles,        title: "Memory Shared",      xp: "+2 SXP",  desc: "Per memory shared",     color: "text-pink-400",   bg: "bg-pink-400/10" },
+  { icon: Headphones,   title: "Listen Audio Drops",        xp: "+2 SXP",   desc: "Per drop (90%)",     color: "text-sky-400",     bg: "bg-sky-400/10 border-sky-400/20" },
 ];
 
 const staticTopActivities = [
-  { icon: UserPlus,     title: "Register on SportsFan360", xp: "+100 SXP", desc: "1 time",             color: "text-emerald-500", bg: "bg-emerald-500/10 border-emerald-500/20" },
-  { icon: UserPlus,     title: "Invite Friends",            xp: "+100 SXP", desc: "3 invites",          color: "text-emerald-500", bg: "bg-emerald-500/10 border-emerald-500/20" },
-  { icon: Gamepad2,     title: "Fantasy - Fan Battle",      xp: "+15 SXP",  desc: "Per battle",         color: "text-yellow-500",  bg: "bg-yellow-500/10 border-yellow-500/20" },
-  { icon: CheckCircle2, title: "Answer Trivia",             xp: "+5 SXP",   desc: "Per correct answer", color: "text-violet-400",  bg: "bg-violet-400/10 border-violet-400/20" },
+ { icon: Megaphone,       title: "Post On ROAR",       xp: "+2 SXP",  desc: "Per post on ROAR",      color: "text-orange-400", bg: "bg-orange-400/10" },
+  { icon: MessagesSquare,  title: "Start a Debate",     xp: "+2 SXP",  desc: "Per debate started",    color: "text-cyan-400",   bg: "bg-cyan-400/10" },
+  { icon: Flame,           title: "Posted Hot Take",    xp: "+2 SXP",  desc: "Per hot take posted",   color: "text-amber-500",  bg: "bg-amber-500/10" },
+  { icon: TrendingUp,      title: "Prediction Sharing", xp: "+2 SXP",  desc: "Per prediction shared", color: "text-lime-400",   bg: "bg-lime-400/10" },
+  { icon: Sparkles,        title: "Memory Shared",      xp: "+2 SXP",  desc: "Per memory shared",     color: "text-pink-400",   bg: "bg-pink-400/10" },
   { icon: Headphones,   title: "Listen Audio Drops",        xp: "+2 SXP",   desc: "Per drop (90%)",     color: "text-sky-400",     bg: "bg-sky-400/10 border-sky-400/20" },
-  { icon: FileText,     title: "Create a Post",             xp: "+12 SXP",  desc: "Per post created",   color: "text-rose-400",    bg: "bg-rose-400/10 border-rose-400/20" },
+
 ];
 
 function getCurrentMonthLabel() {
@@ -458,12 +461,50 @@ function getPreviousMonthLabel() {
   return d.toLocaleDateString("en-US", { month: "short", year: "numeric" });
 }
 
+const buildFanZoneShareUrl = () => {
+  if (typeof window === "undefined") return "";
+  return `${window.location.origin}/MainModules/Fanszone`;
+};
+
+const buildFanZoneShareText = () => {
+  const shareUrl = buildFanZoneShareUrl();
+  return [
+    "Join me on Sportsfan Fanszone",
+    "Earn SXP, track your fan activity, and climb the leaderboard.",
+    `Join here: ${shareUrl}`,
+  ].filter(Boolean).join("\n");
+};
+
+const copyToClipboard = async (text: string) => {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    try {
+      const input = document.createElement("textarea");
+      input.value = text;
+      input.style.position = "fixed";
+      input.style.opacity = "0";
+      document.body.appendChild(input);
+      input.focus();
+      input.select();
+      const ok = document.execCommand("copy");
+      document.body.removeChild(input);
+      return ok;
+    } catch {
+      return false;
+    }
+  }
+};
+
 // ─────────────────────────────────────────────
 // MAIN DASHBOARD
 // ─────────────────────────────────────────────
 export default function FanZoneDashboard() {
   const [activeTab, setActiveTab] = useState("My Analytics");
   const [trendPeriod, setTrendPeriod] = useState<TrendPeriod>("30D");
+  const [showShareDialog, setShowShareDialog] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const contextData = useLeaderboard() as LeaderboardContextType | null;
   const currentUserPoints = contextData?.currentUserPoints ?? 0;
@@ -510,6 +551,35 @@ export default function FanZoneDashboard() {
   const currentMonthLabel  = getCurrentMonthLabel();
   const previousMonthLabel = getPreviousMonthLabel();
 
+  const openShareDialog = () => { setShowShareDialog(true); setCopied(false); };
+  const closeShareDialog = () => { setShowShareDialog(false); setCopied(false); };
+
+  const handleShareToWhatsApp = () => {
+    window.open(`https://wa.me/?text=${encodeURIComponent(buildFanZoneShareText())}`, "_blank");
+  };
+  const handleShareToThreads = () => {
+    window.open(`https://www.threads.net/intent/post?text=${encodeURIComponent(buildFanZoneShareText())}`, "_blank");
+  };
+  const handleShareToInstagram = async () => {
+    await copyToClipboard(buildFanZoneShareText());
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1600);
+    window.open("https://www.instagram.com/", "_blank");
+  };
+  const handleShareToLinkedIn = () => {
+    window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(buildFanZoneShareUrl())}`, "_blank");
+  };
+  const handleShareToX = () => {
+    window.open(`https://x.com/intent/tweet?text=${encodeURIComponent(buildFanZoneShareText())}`, "_blank");
+  };
+  const handleCopyLink = async () => {
+    const ok = await copyToClipboard(buildFanZoneShareText());
+    if (ok) {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1600);
+    }
+  };
+
   const now = new Date();
   const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
   const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1).getTime();
@@ -527,6 +597,28 @@ export default function FanZoneDashboard() {
     ? Math.round((monthDiff / lastMonthPoints) * 100)
     : thisMonthPoints > 0 ? 100 : 0;
   const displayMonthlyPoints = thisMonthPoints.toLocaleString();
+
+  const shareButtons = (size: string) => (
+    <>
+      {[
+        { handler: handleShareToWhatsApp, src: "/images/share_whatsapp.png", alt: "WhatsApp" },
+        { handler: handleShareToThreads, src: "/images/share_thread.png", alt: "Threads" },
+        { handler: handleShareToInstagram, src: "/images/share_insta.png", alt: "Instagram" },
+        { handler: handleShareToLinkedIn, src: "/images/Share_linkedin.png", alt: "LinkedIn" },
+        { handler: handleShareToX, src: "/images/Share_X.png", alt: "X" },
+        { handler: handleCopyLink, src: "/images/share_copy_link.png", alt: "Copy" },
+      ].map(({ handler, src, alt }) => (
+        <button
+          key={alt}
+          onClick={handler}
+          className={`${size} shrink-0 rounded-full overflow-hidden bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center`}
+          type="button"
+        >
+          <Image src={src} alt={alt} width={36} height={36} className="w-full h-full object-cover rounded-full" />
+        </button>
+      ))}
+    </>
+  );
 
   // ─── Sub-components ──────────────────────────
   const StreakWidget = () => (
@@ -566,9 +658,16 @@ export default function FanZoneDashboard() {
         <UserPlus className="w-32 h-32 text-rose-500" />
       </div>
       <div className="relative z-10">
-        <h3 className="text-lg font-black text-white mb-1">Invite Friends & Earn</h3>
-        <p className="text-sm text-gray-400 mb-4">Earn 100 SXP for each friend who joins!</p>
-        <button className="bg-gradient-to-r from-rose-600 to-orange-500 text-white text-sm font-bold py-2.5 px-6 rounded-full hover:shadow-[0_0_15px_rgba(225,29,72,0.4)] transition-all">
+        <h3 className="text-lg font-black text-white mb-1">Invite Friends</h3>
+        <p className="text-sm text-gray-400 mb-4">Share Fan Zone with your friends and bring them into the community!</p>
+        <button
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation();
+            openShareDialog();
+          }}
+          className="bg-gradient-to-r from-rose-600 to-orange-500 text-white text-sm font-bold py-2.5 px-6 rounded-full hover:shadow-[0_0_15px_rgba(225,29,72,0.4)] transition-all"
+        >
           Invite Now
         </button>
       </div>
@@ -1215,6 +1314,39 @@ export default function FanZoneDashboard() {
               </div>
             </div>
           </div>
+        )}
+
+        {/* Share Dialog */}
+        {showShareDialog && (
+          <>
+            <button type="button" className="fixed inset-0 z-40 bg-black/70 lg:hidden" onClick={closeShareDialog} />
+            <div className="fixed bottom-16 inset-x-4 z-50 mx-auto w-full max-w-[280px] rounded-2xl border border-white/10 bg-[#1a1a1e] p-3 shadow-2xl lg:hidden" onClick={e => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-white text-sm font-semibold">Share</p>
+                <button type="button" onClick={closeShareDialog} className="text-gray-400 hover:text-white">
+                  <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M15 5L5 15M5 5L15 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>
+                </button>
+              </div>
+              <div className="flex flex-row flex-nowrap items-center gap-1.5 mb-2 overflow-x-auto">{shareButtons("w-8 h-8")}</div>
+              {copied && <p className="text-xs text-emerald-400">Copied to clipboard</p>}
+            </div>
+            <div className="hidden lg:flex fixed inset-0 z-50 items-center justify-center bg-black/60" onClick={closeShareDialog}>
+              <div className="bg-[#1a1a1e] rounded-2xl border border-white/10 p-4 w-[300px] shadow-2xl" onClick={e => e.stopPropagation()}>
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-white text-sm font-semibold">Invite Friends</p>
+                  <button type="button" onClick={closeShareDialog} className="text-gray-400 hover:text-white">
+                    <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M15 5L5 15M5 5L15 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>
+                  </button>
+                </div>
+                <div className="rounded-xl border border-white/10 bg-[#111114] p-3 mb-3">
+                  <p className="text-white text-sm font-semibold line-clamp-2">Invite Friends & Earn</p>
+                  <p className="text-white/45 text-[11px] mt-2 line-clamp-2 break-all">{buildFanZoneShareUrl()}</p>
+                </div>
+                <div className="flex flex-row flex-nowrap items-center gap-2 mb-2">{shareButtons("w-9 h-9")}</div>
+                {copied && <p className="text-xs text-emerald-400">Copied to clipboard</p>}
+              </div>
+            </div>
+          </>
         )}
 
       </main>

@@ -33,6 +33,7 @@ export interface RoomPost {
   nochanceCount: number;
   timeAgo: string;
   type: "chat" | "prediction" | "hottake";
+  mediaUrls?: string[];
 }
 
 export interface Room {

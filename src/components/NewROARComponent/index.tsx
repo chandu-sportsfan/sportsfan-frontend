@@ -241,18 +241,19 @@ export default function ROARApp() {
   );
 
   const handleDeletePost = useCallback(
-    async (postId: string) => {
+    async (postId: string, roomId?: string) => {
       try {
-        const res = await axios.delete(`/api/roar/posts/${postId}`);
+        const url = roomId ? `/api/roar/rooms/${roomId}/messages/${postId}` : `/api/roar/posts/${postId}`;
+        const res = await axios.delete(url);
         if (res.data?.success) {
-          showToast("Post deleted");
+          showToast(roomId ? "Message deleted" : "Post deleted");
           await fetchPosts();
         } else {
-          showToast("Failed to delete post");
+          showToast(roomId ? "Failed to delete message" : "Failed to delete post");
         }
       } catch (err) {
-        console.error("Failed to delete post:", err);
-        showToast("Error deleting post");
+        console.error("Failed to delete:", err);
+        showToast(roomId ? "Error deleting message" : "Error deleting post");
       }
     },
     [fetchPosts, showToast],
@@ -277,28 +278,44 @@ export default function ROARApp() {
           mediaUrls = await Promise.all(uploadPromises);
         }
 
-        const res = await axios.post("/api/roar/posts", {
-          type: postType,
-          text: payload.type === "debate" ? `${payload.sideA} VS ${payload.sideB}` : payload.text,
-          sideA: payload.sideA,
-          sideB: payload.sideB,
-          memCtx: payload.memCtx,
-          sport: payload.sport || "cricket",
-          matchId: payload.match,
-          confidence: payload.confidence,
-          audience: payload.audience,
-          mediaUrls,
-        });
+        const isInRoom = overlay === "room" && selectedRoom?.roomId;
+        let res;
+        
+        if (isInRoom) {
+          const msgType = postType === "prediction" ? "prediction" : postType === "hot_take" ? "hottake" : "chat";
+          res = await axios.post(`/api/roar/rooms/${selectedRoom.roomId}/messages`, {
+            text: payload.type === "debate" ? `${payload.sideA} VS ${payload.sideB}` : payload.text,
+            type: msgType,
+          });
+        } else {
+          res = await axios.post("/api/roar/posts", {
+            type: postType,
+            text: payload.type === "debate" ? `${payload.sideA} VS ${payload.sideB}` : payload.text,
+            sideA: payload.sideA,
+            sideB: payload.sideB,
+            memCtx: payload.memCtx,
+            sport: payload.sport || "cricket",
+            matchId: payload.match,
+            confidence: payload.confidence,
+            audience: payload.audience,
+            mediaUrls,
+          });
+        }
+
         if (res.data?.success) {
-          const toastMap: Record<string, string> = {
-            hot_take: "🔥 Hot Take is live · 47 fans may see it",
-            prediction: "📊 Prediction posted · Let's see if you're right",
-            debate: "⚡ Debate started · Get the fans talking",
-            memory: "🕰 Memory shared · OG fans will feel this",
-            post: "✏️ Post is live · Fans can see it now",
-          };
-          showToast(toastMap[postType] || "🔥 Your take is live");
-          fetchPosts();
+          if (isInRoom) {
+            showToast("✏️ Post is live in room!");
+          } else {
+            const toastMap: Record<string, string> = {
+              hot_take: "🔥 Hot Take is live · 47 fans may see it",
+              prediction: "📊 Prediction posted · Let's see if you're right",
+              debate: "⚡ Debate started · Get the fans talking",
+              memory: "🕰 Memory shared · OG fans will feel this",
+              post: "✏️ Post is live · Fans can see it now",
+            };
+            showToast(toastMap[postType] || "🔥 Your take is live");
+            fetchPosts();
+          }
         }
       } catch (err) {
         console.error("Failed to post:", err);
@@ -306,7 +323,7 @@ export default function ROARApp() {
       }
       setShowBanner(false);
     },
-    [showToast, fetchPosts],
+    [showToast, fetchPosts, overlay, selectedRoom],
   );
 
   const handleTab = (tab: string) => {
@@ -397,6 +414,7 @@ export default function ROARApp() {
                   <DiscussionRoom
                     roomId={selectedRoom?.roomId}
                     roomName={selectedRoom?.name}
+                    fanCount={selectedRoom?.fanCount}
                     onBack={() => { setOverlay(null); setActiveTab("home"); }}
                     onToast={showToast}
                     onPostClick={(post) => setSelectedPost(post)}

@@ -716,15 +716,49 @@ export default function HomeFeed({
                   </div>
                 </div>
                 <div style={{ display: "flex", gap: 8, alignItems: "stretch" }}>
-                  <div style={{ flex: 1, padding: "12px", borderRadius: 14, textAlign: "center", background: "rgba(233,30,140,0.1)", border: "1px solid rgba(233,30,140,0.3)" }}>
-                    <p style={{ fontSize: 13, fontWeight: 700 }}>{item.sideA || (item.text?.split(" VS ")[0]) || "Side A"}</p>
-                  </div>
+                  <motion.button
+                    whileTap={{ scale: 0.96 }}
+                    onClick={(e) => { e.stopPropagation(); vote(item.id, true, item.agreePercent || 50, item.userVote, item.isDbPost); }}
+                    style={{
+                      flex: 1,
+                      padding: "12px",
+                      borderRadius: 14,
+                      textAlign: "center",
+                      background: userVote === true ? "var(--accent-magenta)" : "rgba(233,30,140,0.08)",
+                      border: `2px solid ${userVote === true ? "var(--accent-magenta)" : "rgba(233,30,140,0.3)"}`,
+                      color: userVote === true ? "white" : "var(--text-primary)",
+                      cursor: "pointer",
+                      transition: "all 0.2s ease-in-out",
+                    }}
+                  >
+                    <p style={{ fontSize: 13, fontWeight: 700, margin: 0 }}>
+                      {userVote === true && "✓ "}
+                      {item.sideA || (item.text?.split(" VS ")[0]) || "Side A"}
+                    </p>
+                  </motion.button>
                   <div style={{ display: "flex", alignItems: "center", padding: "0 4px" }}>
                     <span className="font-display" style={{ fontSize: 16, color: "var(--text-muted)" }}>VS</span>
                   </div>
-                  <div style={{ flex: 1, padding: "12px", borderRadius: 14, textAlign: "center", background: "rgba(59,130,246,0.1)", border: "1px solid rgba(59,130,246,0.3)" }}>
-                    <p style={{ fontSize: 13, fontWeight: 700 }}>{item.sideB || (item.text?.split(" VS ")[1]) || "Side B"}</p>
-                  </div>
+                  <motion.button
+                    whileTap={{ scale: 0.96 }}
+                    onClick={(e) => { e.stopPropagation(); vote(item.id, false, item.agreePercent || 50, item.userVote, item.isDbPost); }}
+                    style={{
+                      flex: 1,
+                      padding: "12px",
+                      borderRadius: 14,
+                      textAlign: "center",
+                      background: userVote === false ? "var(--accent-orange)" : "rgba(59,130,246,0.08)",
+                      border: `2px solid ${userVote === false ? "var(--accent-orange)" : "rgba(59,130,246,0.3)"}`,
+                      color: userVote === false ? "white" : "var(--text-primary)",
+                      cursor: "pointer",
+                      transition: "all 0.2s ease-in-out",
+                    }}
+                  >
+                    <p style={{ fontSize: 13, fontWeight: 700, margin: 0 }}>
+                      {userVote === false && "✓ "}
+                      {item.sideB || (item.text?.split(" VS ")[1]) || "Side B"}
+                    </p>
+                  </motion.button>
                 </div>
                 <p style={{ fontSize: 12, color: "var(--text-primary)", fontWeight: 500, marginTop: 10 }}>{fmt(item.fanCount ?? 0)} fans · {item.replies ?? 0} replies</p>
                 {renderCardActions(item)}

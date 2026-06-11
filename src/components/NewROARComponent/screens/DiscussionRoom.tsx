@@ -171,7 +171,11 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
         setComposerPre("");
         setAttachedUrl(null);
         setAttachedType(null);
-        setTimeout(() => listRef.current?.scrollTo({ top: 0, behavior: "smooth" }), 50);
+        setTimeout(() => {
+          if (listRef.current) {
+            listRef.current.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" });
+          }
+        }, 50);
       }
     } catch (err) {
       console.error(err);
@@ -419,7 +423,7 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
       </div>
 
       {/* Messages */}
-      <div ref={listRef} style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "16px", display: "flex", flexDirection: "column-reverse", justifyContent: "flex-end", gap: 12 }}>
+      <div ref={listRef} style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "16px", display: "flex", flexDirection: "column", gap: 12 }}>
         <AnimatePresence initial={false}>
           {loading ? (
             <div style={{ textAlign: "center", color: "var(--text-muted)", padding: "20px 0" }}>Loading messages...</div>
@@ -429,7 +433,7 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
             </div>
           ) : (
             <>
-              {visiblePosts.map((p) => {
+              {[...visiblePosts].reverse().map((p) => {
                 const bg = p.type === "prediction" ? "linear-gradient(135deg,rgba(255,215,0,0.08),rgba(255,215,0,0.02))" : p.type === "hottake" ? "linear-gradient(135deg,rgba(239,68,68,0.08),rgba(239,68,68,0.02))" : undefined;
                 const border = p.type === "prediction" ? "1px solid rgba(255,215,0,0.18)" : p.type === "hottake" ? "1px solid rgba(239,68,68,0.18)" : undefined;
 

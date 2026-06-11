@@ -173,6 +173,7 @@ type CardItem = {
   sport: string;
   buttonBg: string;
   iconType: "football" | "cricket";
+  url?: string;
 };
 
 type QuickLink = {

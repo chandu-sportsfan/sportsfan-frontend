@@ -1292,7 +1292,7 @@ export default function FullPlaylist() {
     return (
         <div className="min-h-screen bg-[#0d0d10] text-white pb-10">
             <div className="flex items-center gap-3 px-4 py-4 border-b border-white/5 sticky top-0 bg-[#0d0d10] z-10">
-                <Link href="/MainModules/ROAR">
+                <Link href="/MainModules/HomePage">
                     <button className="text-gray-400 hover:text-white transition-colors cursor-pointer">
                         <ArrowLeft size={20} />
                     </button>
@@ -1413,6 +1413,39 @@ export default function FullPlaylist() {
                                 </p>
                             </div>
                         </div>
+                        {teamFilter && (
+    <button
+        onClick={() =>
+            window.location.href = `/MainModules/MatchCenter?team=${encodeURIComponent(teamFilter)}`
+        }
+        className="w-full h-[56px] mt-5 mb-5 rounded-[14px] border border-white/15 bg-transparent hover:bg-white/[0.03] transition-all flex items-center justify-center gap-3"
+    >
+        <span className="text-white text-[16px] font-semibold">
+            Go to Match Center
+        </span>
+
+        <svg
+            width="18"
+            height="18"
+            viewBox="0 0 18 18"
+            fill="none"
+        >
+            <path
+                d="M3 9H15"
+                stroke="white"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+            />
+            <path
+                d="M10 4L15 9L10 14"
+                stroke="white"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+            />
+        </svg>
+    </button>
+)}
 
                         {/* <div className="mb-3 p-2 bg-[#1a1a1a] rounded-lg border border-white/5">
                             <p className="text-gray-500 text-xs">Requesting as:</p>

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
+import Image from "next/image";
 import AvatarWithBadge from "../components/AvatarWithBadge";
 import { FilterPills } from "../components/shared";
 import { BADGE_CONFIG, BADGE_DETAIL, BADGE_LABELS, BADGES_LIST, RIVAL, CURRENT_USER } from "../constants";
@@ -33,6 +34,15 @@ interface Props {
   onToast: (m: string) => void;
   setOnboarded?: (b: boolean) => void;
   onNavigateTab?: (tab: string) => void;
+}
+
+interface RoarShareUser {
+  handle?: string;
+  username?: string;
+  id?: string | number;
+  userId?: string | number;
+  reputationScore?: number;
+  accuracy?: number;
 }
 
 function AccuracyRing({ percent }: { percent: number }) {
@@ -75,6 +85,46 @@ function PencilIcon() {
   );
 }
 
+const buildRoarProfileShareUrl = (user: RoarShareUser) => {
+  if (typeof window === "undefined") return "";
+  const targetUrl = new URL(`${window.location.origin}/MainModules/ROAR`);
+  const profileKey = user?.handle || user?.username || user?.id || user?.userId;
+  if (profileKey) targetUrl.searchParams.set("profile", String(profileKey).replace(/^@/, ""));
+  return targetUrl.toString();
+};
+
+const buildRoarProfileShareText = (user: RoarShareUser, userBadge: string) => {
+  const shareUrl = buildRoarProfileShareUrl(user);
+  const badgeLabel = BADGE_LABELS[userBadge] || "ROAR fan";
+  return [
+    `Check out ${user?.username || "my"}'s ROAR profile on Sportsfan`,
+    `${badgeLabel} with ${fmt(user?.reputationScore || 0)} rep and ${user?.accuracy || 0}% prediction accuracy.`,
+    `View profile: ${shareUrl}`,
+  ].filter(Boolean).join("\n");
+};
+
+const copyToClipboard = async (text: string) => {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    try {
+      const input = document.createElement("textarea");
+      input.value = text;
+      input.style.position = "fixed";
+      input.style.opacity = "0";
+      document.body.appendChild(input);
+      input.focus();
+      input.select();
+      const ok = document.execCommand("copy");
+      document.body.removeChild(input);
+      return ok;
+    } catch {
+      return false;
+    }
+  }
+};
+
 export default function Profile({ userBadge, setUserBadge, onCompose, onToast, setOnboarded, onNavigateTab }: Props) {
   const [profileData, setProfileData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -82,6 +132,7 @@ export default function Profile({ userBadge, setUserBadge, onCompose, onToast, s
   const [badgeModal, setBadgeModal] = useState<any>(null);
   const [editOpen, setEditOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
   const [fanMatchOpen, setFanMatchOpen] = useState(false);
   const [rivalFollowed, setRivalFollowed] = useState(false);
   const [editName, setEditName] = useState("");
@@ -148,6 +199,55 @@ export default function Profile({ userBadge, setUserBadge, onCompose, onToast, s
 
   const displayFavPlayer = user.favPlayer || editFavPlayer;
   const displayAbout = user.about || editAbout;
+
+  const openShareDialog = () => { setShareOpen(true); setCopied(false); };
+  const closeShareDialog = () => { setShareOpen(false); setCopied(false); };
+
+  const handleShareToWhatsApp = () => {
+    window.open(`https://wa.me/?text=${encodeURIComponent(buildRoarProfileShareText(user, userBadge))}`, "_blank");
+  };
+  const handleShareToThreads = () => {
+    window.open(`https://www.threads.net/intent/post?text=${encodeURIComponent(buildRoarProfileShareText(user, userBadge))}`, "_blank");
+  };
+  const handleShareToInstagram = async () => {
+    await copyToClipboard(buildRoarProfileShareText(user, userBadge));
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1600);
+    window.open("https://www.instagram.com/", "_blank");
+  };
+  const handleShareToLinkedIn = () => {
+    window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(buildRoarProfileShareUrl(user))}`, "_blank");
+  };
+  const handleShareToX = () => {
+    window.open(`https://x.com/intent/tweet?text=${encodeURIComponent(buildRoarProfileShareText(user, userBadge))}`, "_blank");
+  };
+  const handleCopyLink = async () => {
+    const ok = await copyToClipboard(buildRoarProfileShareText(user, userBadge));
+    if (ok) {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1600);
+      onToast("Link copied to clipboard!");
+    }
+  };
+
+  const shareButtons = (size: string) => (
+    <>
+      {[
+        { handler: handleShareToWhatsApp, src: "/images/share_whatsapp.png", alt: "WhatsApp" },
+        { handler: handleShareToThreads, src: "/images/share_thread.png", alt: "Threads" },
+        { handler: handleShareToInstagram, src: "/images/share_insta.png", alt: "Instagram" },
+        { handler: handleShareToLinkedIn, src: "/images/Share_linkedin.png", alt: "LinkedIn" },
+        { handler: handleShareToX, src: "/images/Share_X.png", alt: "X" },
+        { handler: handleCopyLink, src: "/images/share_copy_link.png", alt: "Copy" },
+      ].map(({ handler, src, alt }) => (
+        <button key={alt} onClick={handler}
+          className={`${size} shrink-0 rounded-full overflow-hidden bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center`}
+          type="button">
+          <Image src={src} alt={alt} width={36} height={36} className="w-full h-full object-cover rounded-full" />
+        </button>
+      ))}
+    </>
+  );
 
   const handleAvatarSelect = async (avatarSrc: string) => {
     setSelectedAvatar(avatarSrc);
@@ -251,7 +351,7 @@ export default function Profile({ userBadge, setUserBadge, onCompose, onToast, s
         </div>
         <div style={{ display: "flex", gap: 10, justifyContent: "center", marginTop: 16 }}>
           <button onClick={() => setEditOpen(true)} style={{ flex: 1, maxWidth: 140, padding: "10px 0", background: "none", border: "1px solid var(--border)", borderRadius: 24, color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Edit Profile</button>
-          <button onClick={() => setShareOpen(true)} className="btn-gradient" style={{ flex: 1, maxWidth: 140, padding: "10px 0", border: "none", borderRadius: 24, color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Share Profile</button>
+          <button onClick={openShareDialog} className="btn-gradient" style={{ flex: 1, maxWidth: 140, padding: "10px 0", border: "none", borderRadius: 24, color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Share Profile</button>
         </div>
       </div>
 
@@ -615,6 +715,65 @@ export default function Profile({ userBadge, setUserBadge, onCompose, onToast, s
       {/* ── Share Modal ── */}
       <AnimatePresence>
         {shareOpen && (
+          <>
+            <motion.button
+              type="button"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-40 bg-black/70 lg:hidden"
+              onClick={closeShareDialog}
+            />
+            <motion.div
+              initial={{ y: 24, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 24, opacity: 0 }}
+              className="fixed bottom-16 inset-x-4 z-50 mx-auto w-full max-w-[280px] rounded-2xl border border-white/10 bg-[#1a1a1e] p-3 shadow-2xl lg:hidden"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-white text-sm font-semibold">Share</p>
+                <button type="button" onClick={closeShareDialog} className="text-gray-400 hover:text-white">
+                  <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M15 5L5 15M5 5L15 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>
+                </button>
+              </div>
+              <div className="flex flex-row flex-nowrap items-center gap-1.5 mb-2 overflow-x-auto">{shareButtons("w-8 h-8")}</div>
+              {copied && <p className="text-xs text-emerald-400">Copied to clipboard</p>}
+            </motion.div>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="hidden lg:flex fixed inset-0 z-50 items-center justify-center bg-black/60"
+              onClick={closeShareDialog}
+            >
+              <motion.div
+                initial={{ scale: 0.9, y: 20 }}
+                animate={{ scale: 1, y: 0 }}
+                exit={{ scale: 0.9, y: 20 }}
+                className="bg-[#1a1a1e] rounded-2xl border border-white/10 p-4 w-[300px] shadow-2xl"
+                onClick={e => e.stopPropagation()}
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-white text-sm font-semibold">Share ROAR Profile</p>
+                  <button type="button" onClick={closeShareDialog} className="text-gray-400 hover:text-white">
+                    <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M15 5L5 15M5 5L15 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>
+                  </button>
+                </div>
+                <div className="rounded-xl border border-white/10 bg-[#111114] p-3 mb-3">
+                  <p className="text-white text-sm font-semibold line-clamp-2">{user.username || "ROAR Profile"}</p>
+                  <p className="text-white/45 text-[11px] mt-2 line-clamp-2 break-all">{buildRoarProfileShareUrl(user)}</p>
+                </div>
+                <div className="flex flex-row flex-nowrap items-center gap-2 mb-2">{shareButtons("w-9 h-9")}</div>
+                {copied && <p className="text-xs text-emerald-400">Copied to clipboard</p>}
+              </motion.div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {false && shareOpen && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShareOpen(false)} style={{ position: "absolute", inset: 0, zIndex: 110, background: "rgba(0,0,0,0.85)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
             <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }} onClick={(e) => e.stopPropagation()} className="glass-card" style={{ width: "100%", maxWidth: 300, padding: 24, textAlign: "center", background: "var(--bg-secondary)" }}>
               <div style={{ display: "inline-flex", width: 54, height: 54, borderRadius: "50%", background: "rgba(0,230,118,0.1)", alignItems: "center", justifyContent: "center", color: "var(--live-green)", fontSize: 24, marginBottom: 14 }}>✓</div>

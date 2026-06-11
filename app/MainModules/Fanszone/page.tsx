@@ -2,13 +2,15 @@
 
 import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { type ActivityItem, useActivity } from "@/context/ActivityContext";
 import { useLeaderboard } from "@/context/LeaderboardContext";
 import {
   ChevronDown, Trophy, Share2, CheckCircle2,
   Award, TrendingUp, Play, ThumbsUp, FileText,
   Gamepad2, UserPlus, LayoutGrid, Calendar, Filter,
-  Download, ChevronLeft, ChevronRight, MoreHorizontal, X, Headphones
+  Download, ChevronLeft, ChevronRight, MoreHorizontal, X, Headphones,
+  Megaphone, MessagesSquare, Flame, Sparkles
 } from "lucide-react";
 
 // 
@@ -25,8 +27,8 @@ interface HistoryItem {
   points: number;
   type: string;
   source: string;
-  date: string;         // formatted display date  e.g. "Jun 7, 2026"
-  timestamp: number;    // ms since epoch — used for all real calculations
+  date: string;
+  timestamp: number;
   time: string;
   icon: React.ElementType;
   color: string;
@@ -48,9 +50,6 @@ interface LeaderboardContextType {
   previousUserRank?: number;
 }
 
-// ─────────────────────────────────────────────
-// ACTIVITY META — single source of truth
-// ─────────────────────────────────────────────
 const ACTIVITY_META: Record<ActivityKey, {
   action: string; type: string; icon: React.ElementType;
   color: string; hexColor: string; typeColor: string;
@@ -107,9 +106,6 @@ const ACTIVITY_META: Record<ActivityKey, {
   },
 };
 
-// ─────────────────────────────────────────────
-// FACTORY — create a history item
-// ─────────────────────────────────────────────
 function makeHistoryItem(
   key: ActivityKey,
   details: string,
@@ -139,9 +135,6 @@ function makeHistoryItem(
   };
 }
 
-// ─────────────────────────────────────────────
-// HELPERS
-// ─────────────────────────────────────────────
 function normalizeActivityKey(type: string, label: string): ActivityKey {
   const value = `${type} ${label}`.toLowerCase().replace(/[_-]+/g, " ");
   if (value.includes("audio")) return "audioDrop";
@@ -179,24 +172,14 @@ function readableSource(source: string) {
 
 function metadataText(metadata: ActivityItem["metadata"]) {
   const keys = [
-    "title",
-    "postTitle",
-    "audioTitle",
-    "videoTitle",
-    "battleTitle",
-    "matchName",
-    "question",
-    "resourceName",
-    "name",
-    "transactionId",
+    "title", "postTitle", "audioTitle", "videoTitle", "battleTitle",
+    "matchName", "question", "resourceName", "name", "transactionId",
   ];
-
   for (const key of keys) {
     const value = metadata?.[key];
     if (typeof value === "string" && value.trim()) return value.trim();
     if (typeof value === "number") return String(value);
   }
-
   return "";
 }
 
@@ -205,15 +188,10 @@ function activityToHistoryItem(activity: ActivityItem): HistoryItem {
   const rawSource = activity.type || key;
   const readable = readableSource(rawSource);
   const details = metadataText(activity.metadata) || activity.label || readable;
-
   return makeHistoryItem(
-    key,
-    details,
-    Number(activity.points) || 0,
+    key, details, Number(activity.points) || 0,
     new Date(normalizeTimestamp(activity.createdAt)),
-    activity.id,
-    activity.label || ACTIVITY_META[key].action,
-    readable
+    activity.id, activity.label || ACTIVITY_META[key].action, readable
   );
 }
 
@@ -226,9 +204,7 @@ function calculateLevelData(totalXp: number) {
   }
   const currentLevelXp = totalXp - xpAccumulated;
   return {
-    level,
-    currentLevelXp,
-    xpForNextLevel,
+    level, currentLevelXp, xpForNextLevel,
     xpRemaining: xpForNextLevel - currentLevelXp,
     progressPercentage: Math.min(100, Math.round((currentLevelXp / xpForNextLevel) * 100)),
   };
@@ -243,15 +219,12 @@ function getEarningBreakdown(history: HistoryItem[]): CategoryBreakdown[] {
     grouped[h.key].xpValue += h.points;
   });
   return Object.values(grouped).map((g) => ({
-    label: g.label,
-    color: g.color,
-    xpValue: g.xpValue,
+    label: g.label, color: g.color, xpValue: g.xpValue,
     percent: total > 0 ? Math.round((g.xpValue / total) * 100) : 0,
     xp: `+${g.xpValue.toLocaleString()} SXP`,
   }));
 }
 
-// ─── Streak calculator ───────────────────────
 function getDynamicStreakData(history: HistoryItem[]) {
   const today = new Date();
   const todayMid = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
@@ -269,20 +242,17 @@ function getDynamicStreakData(history: HistoryItem[]) {
     const dayMid = todayMid + (i - adjustedDay) * 86400000;
     const hasActivity = historyDates.has(dayMid);
     const isPast = dayMid < todayMid;
-    const isToday = dayMid === todayMid;
     if (hasActivity) currentStreak++;
     return {
-      day,
-      isActive: hasActivity,
+      day, isActive: hasActivity,
       isMissed: !hasActivity && isPast,
       isFuture: dayMid > todayMid,
-      isToday,
+      isToday: dayMid === todayMid,
     };
   });
   return { streakMap, currentStreak };
 }
 
-// ─── Trend analytics ────────────────────────
 function getTrendAnalytics(history: HistoryItem[], period: TrendPeriod) {
   const now = Date.now();
   const daysMap: Record<TrendPeriod, number> = { "7D": 7, "30D": 30, "90D": 90 };
@@ -290,15 +260,10 @@ function getTrendAnalytics(history: HistoryItem[], period: TrendPeriod) {
   const msPerDay = 86400000;
   const currentStart = now - days * msPerDay;
   const previousStart = currentStart - days * msPerDay;
-
-  // Bucket data for chart (10 evenly spaced points)
   const BUCKETS = 10;
   const bucketSize = (days * msPerDay) / BUCKETS;
   const buckets = new Array(BUCKETS).fill(0);
-
-  let currentPts = 0;
-  let previousPts = 0;
-
+  let currentPts = 0, previousPts = 0;
   history.forEach((item) => {
     const t = item.timestamp;
     if (t >= currentStart && t <= now) {
@@ -309,23 +274,14 @@ function getTrendAnalytics(history: HistoryItem[], period: TrendPeriod) {
       previousPts += item.points;
     }
   });
-
-  // Cumulative for a rising line
   let cum = 0;
   const chartData = buckets.map((v) => { cum += v; return cum; });
-
-  // If no data yet, flat zero line
   const finalChart = currentPts > 0 ? chartData : new Array(BUCKETS).fill(0);
-
-  const percentChange =
-    previousPts > 0
-      ? Math.round(((currentPts - previousPts) / previousPts) * 100)
-      : currentPts > 0 ? 100 : 0;
-
-  const fmt = (d: Date, opts: Intl.DateTimeFormatOptions) =>
-    d.toLocaleDateString("en-US", opts);
+  const percentChange = previousPts > 0
+    ? Math.round(((currentPts - previousPts) / previousPts) * 100)
+    : currentPts > 0 ? 100 : 0;
+  const fmt = (d: Date, opts: Intl.DateTimeFormatOptions) => d.toLocaleDateString("en-US", opts);
   const nowDate = new Date(now);
-
   const labelsMap: Record<TrendPeriod, string[]> = {
     "7D": [
       fmt(new Date(now - 6 * msPerDay), { weekday: "short" }),
@@ -347,63 +303,40 @@ function getTrendAnalytics(history: HistoryItem[], period: TrendPeriod) {
     ],
   };
   const vsMap: Record<TrendPeriod, string> = {
-    "7D": "vs last week",
-    "30D": "vs last month",
-    "90D": "vs last 90 days",
+    "7D": "vs last week", "30D": "vs last month", "90D": "vs last 90 days",
   };
   return {
-    chartData: finalChart,
-    percentChange,
+    chartData: finalChart, percentChange,
     isPositive: percentChange >= 0,
-    labels: labelsMap[period],
-    vsText: vsMap[period],
-    currentPts,
+    labels: labelsMap[period], vsText: vsMap[period], currentPts,
   };
 }
 
 // ─────────────────────────────────────────────
 // DONUT CHART
 // ─────────────────────────────────────────────
-function DonutChart({
-  data,
-  centerPoints,
-}: {
-  data: CategoryBreakdown[];
-  centerPoints: string;
-}) {
-  const RADIUS = 15.91549430918954;
+function DonutChart({ data, centerPoints }: { data: CategoryBreakdown[]; centerPoints: string }) {
+  const RADIUS = 25.91549430918954;
   const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
   let offsetPercent = 0;
-
   const slices = data.map((slice) => {
     const dashLength = (slice.percent / 100) * CIRCUMFERENCE;
     const gapLength = CIRCUMFERENCE - dashLength;
-    // rotate by current offset
     const rotation = (offsetPercent / 100) * 360 - 90;
     offsetPercent += slice.percent;
     return { ...slice, dashLength, gapLength, rotation };
   });
-
   const isEmpty = data.length === 0;
-
   return (
-    <div className="relative w-64 h-64 shrink-0">
+    <div className="relative w-56 h-56 sm:w-44 sm:h-44 xl:w-44 xl:h-44 shrink-0 mx-auto sm:mx-0">
       <svg viewBox="0 0 100 100" className="w-full h-full">
         {isEmpty ? (
-          <circle
-            cx="50" cy="50" r={RADIUS}
-            fill="transparent"
-            stroke="#27272a"
-            strokeWidth="8"
-          />
+          <circle cx="50" cy="50" r={RADIUS} fill="transparent" stroke="#27272a" strokeWidth="8" />
         ) : (
           slices.map((slice, i) => (
             <circle
-              key={i}
-              cx="50" cy="50" r={RADIUS}
-              fill="transparent"
-              stroke={slice.color}
-              strokeWidth="8"
+              key={i} cx="50" cy="50" r={RADIUS} fill="transparent"
+              stroke={slice.color} strokeWidth="8"
               strokeDasharray={`${slice.dashLength} ${slice.gapLength}`}
               strokeDashoffset={0}
               transform={`rotate(${slice.rotation} 50 50)`}
@@ -413,20 +346,72 @@ function DonutChart({
         )}
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-        <span className="text-3xl font-black text-white">
-          {isEmpty ? "0" : centerPoints}
-        </span>
+        <span className="text-3xl font-black text-white">{isEmpty ? "0" : centerPoints}</span>
         <span className="text-xs text-gray-400 font-bold uppercase tracking-wider mt-1">SXP</span>
-        {isEmpty && (
-          <span className="text-[10px] text-gray-600 mt-1 font-medium">No activity yet</span>
-        )}
+        {isEmpty && <span className="text-[10px] text-gray-600 mt-1 font-medium">No activity yet</span>}
       </div>
     </div>
   );
 }
 
 // ─────────────────────────────────────────────
-// MINI TREND LINE (SVG — no dependencies)
+// BREAKDOWN LEGEND
+// Label always fully visible — wraps to multiple lines on mobile, no overlap
+// ─────────────────────────────────────────────
+function BreakdownLegend({ data }: { data: CategoryBreakdown[] }) {
+  if (data.length === 0) {
+    return (
+      <div className="space-y-3 opacity-40 w-full">
+        {["Audio Drops", "Fan Battles", "Trivia", "Post Created"].map((label, i) => (
+          <div key={i} className="flex items-center gap-3 text-sm">
+            <span className="w-2.5 h-2.5 rounded-full shrink-0 bg-zinc-700" />
+            <span className="text-gray-600 flex-1">{label}</span>
+            <span className="text-gray-700">—</span>
+          </div>
+        ))}
+      </div>
+    );
+  }
+  return (
+    <div className="w-full space-y-3">
+      {data.map((item, i) => (
+        <div
+          key={i}
+          className="grid items-start text-sm w-full"
+          style={{
+            gridTemplateColumns: "10px 1fr auto",
+            columnGap: "4px",
+          }}
+        >
+          {/* Color dot — stays top-aligned when label wraps */}
+          <span
+            className="w-2.5 h-2.5 rounded-full shrink-0 mt-0.5"
+            style={{ backgroundColor: item.color }}
+          />
+
+          {/* Source label — wraps freely, always fully visible, never truncated */}
+          <span className="text-gray-300 whitespace-normal break-words">
+            {item.label}
+          </span>
+
+          {/* Percent + XP — pinned top-right, never overlaps label */}
+          <span
+            className="whitespace-nowrap flex items-start justify-end"
+            style={{ paddingLeft: "12px" }}
+          >
+            <span className="font-bold text-white">{item.percent}%</span>
+            <span className="text-gray-400" style={{ marginLeft: "4px" }}>
+              {item.xp}
+            </span>
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// MINI TREND LINE
 // ─────────────────────────────────────────────
 function MiniTrendLine({ data, color = "#f43f5e" }: { data: number[]; color?: string }) {
   if (!data.length) return null;
@@ -442,16 +427,11 @@ function MiniTrendLine({ data, color = "#f43f5e" }: { data: number[]; color?: st
   return (
     <svg viewBox={`0 0 ${W} ${H + 10}`} className="w-full h-20 overflow-visible">
       <path d={d} fill="none" stroke={color} strokeWidth="3" />
-      {pts.map((p, i) => (
-        <circle key={i} cx={p.x} cy={p.y} r="3.5" fill="#fff" />
-      ))}
+      {pts.map((p, i) => <circle key={i} cx={p.x} cy={p.y} r="3.5" fill="#fff" />)}
     </svg>
   );
 }
 
-// ─────────────────────────────────────────────
-// INFO ICON
-// ─────────────────────────────────────────────
 function InfoIcon() {
   return (
     <span className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full border border-gray-600 text-[9px] text-gray-500 cursor-help hover:text-gray-300 hover:border-gray-400 transition-colors">
@@ -460,30 +440,25 @@ function InfoIcon() {
   );
 }
 
-// ─────────────────────────────────────────────
-// STATIC DATA
-// ─────────────────────────────────────────────
 const earnPointsActions = [
-  { icon: Headphones,   title: "Listen Audio Drops", xp: "+2 SXP",   desc: "Per drop (90% listened)",    color: "text-sky-400",    bg: "bg-sky-400/10" },
-  { icon: CheckCircle2, title: "Answer Trivia",       xp: "+5 SXP",   desc: "Per correct answer",         color: "text-violet-400", bg: "bg-violet-400/10" },
-  { icon: Play,         title: "Watch Drops",         xp: "+20 SXP",  desc: "12 Actions",                 color: "text-yellow-500", bg: "bg-yellow-500/10" },
-  { icon: ThumbsUp,     title: "Like a Post",         xp: "+10 SXP",  desc: "28 Actions",                 color: "text-rose-500",   bg: "bg-rose-500/10" },
-  { icon: Share2,       title: "Share a Post",        xp: "+15 SXP",  desc: "18 Actions",                 color: "text-purple-500", bg: "bg-purple-500/10" },
-  { icon: FileText,     title: "Create a Post",       xp: "+12 SXP",  desc: "Per post created",           color: "text-rose-400",   bg: "bg-rose-400/10" },
+  { icon: Megaphone,       title: "Post On ROAR",       xp: "+2 SXP",  desc: "Per post on ROAR",      color: "text-orange-400", bg: "bg-orange-400/10" },
+  { icon: MessagesSquare,  title: "Start a Debate",     xp: "+2 SXP",  desc: "Per debate started",    color: "text-cyan-400",   bg: "bg-cyan-400/10" },
+  { icon: Flame,           title: "Posted Hot Take",    xp: "+2 SXP",  desc: "Per hot take posted",   color: "text-amber-500",  bg: "bg-amber-500/10" },
+  { icon: TrendingUp,      title: "Prediction Sharing", xp: "+2 SXP",  desc: "Per prediction shared", color: "text-lime-400",   bg: "bg-lime-400/10" },
+  { icon: Sparkles,        title: "Memory Shared",      xp: "+2 SXP",  desc: "Per memory shared",     color: "text-pink-400",   bg: "bg-pink-400/10" },
+  { icon: Headphones,   title: "Listen Audio Drops",        xp: "+2 SXP",   desc: "Per drop (90%)",     color: "text-sky-400",     bg: "bg-sky-400/10 border-sky-400/20" },
 ];
 
 const staticTopActivities = [
-  { icon: UserPlus,    title: "Register on SportsFan360", xp: "+100 SXP", desc: "1 time",              color: "text-emerald-500", bg: "bg-emerald-500/10 border-emerald-500/20" },
-  { icon: UserPlus,    title: "Invite Friends",            xp: "+100 SXP", desc: "3 invites",           color: "text-emerald-500", bg: "bg-emerald-500/10 border-emerald-500/20" },
-  { icon: Gamepad2,    title: "Fantasy - Fan Battle",      xp: "+15 SXP",  desc: "Per battle",          color: "text-yellow-500",  bg: "bg-yellow-500/10 border-yellow-500/20" },
-  { icon: CheckCircle2,title: "Answer Trivia",             xp: "+5 SXP",   desc: "Per correct answer",  color: "text-violet-400",  bg: "bg-violet-400/10 border-violet-400/20" },
-  { icon: Headphones,  title: "Listen Audio Drops",        xp: "+2 SXP",   desc: "Per drop (90%)",      color: "text-sky-400",     bg: "bg-sky-400/10 border-sky-400/20" },
-  { icon: FileText,    title: "Create a Post",             xp: "+12 SXP",  desc: "Per post created",    color: "text-rose-400",    bg: "bg-rose-400/10 border-rose-400/20" },
+ { icon: Megaphone,       title: "Post On ROAR",       xp: "+2 SXP",  desc: "Per post on ROAR",      color: "text-orange-400", bg: "bg-orange-400/10" },
+  { icon: MessagesSquare,  title: "Start a Debate",     xp: "+2 SXP",  desc: "Per debate started",    color: "text-cyan-400",   bg: "bg-cyan-400/10" },
+  { icon: Flame,           title: "Posted Hot Take",    xp: "+2 SXP",  desc: "Per hot take posted",   color: "text-amber-500",  bg: "bg-amber-500/10" },
+  { icon: TrendingUp,      title: "Prediction Sharing", xp: "+2 SXP",  desc: "Per prediction shared", color: "text-lime-400",   bg: "bg-lime-400/10" },
+  { icon: Sparkles,        title: "Memory Shared",      xp: "+2 SXP",  desc: "Per memory shared",     color: "text-pink-400",   bg: "bg-pink-400/10" },
+  { icon: Headphones,   title: "Listen Audio Drops",        xp: "+2 SXP",   desc: "Per drop (90%)",     color: "text-sky-400",     bg: "bg-sky-400/10 border-sky-400/20" },
+
 ];
 
-// ─────────────────────────────────────────────
-// CURRENT MONTH LABEL — always correct
-// ─────────────────────────────────────────────
 function getCurrentMonthLabel() {
   return new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" });
 }
@@ -494,30 +469,62 @@ function getPreviousMonthLabel() {
   return d.toLocaleDateString("en-US", { month: "short", year: "numeric" });
 }
 
+const buildFanZoneShareUrl = () => {
+  if (typeof window === "undefined") return "";
+  return `${window.location.origin}/MainModules/Fanszone`;
+};
+
+const buildFanZoneShareText = () => {
+  const shareUrl = buildFanZoneShareUrl();
+  return [
+    "Join me on Sportsfan Fanszone",
+    "Earn SXP, track your fan activity, and climb the leaderboard.",
+    `Join here: ${shareUrl}`,
+  ].filter(Boolean).join("\n");
+};
+
+const copyToClipboard = async (text: string) => {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    try {
+      const input = document.createElement("textarea");
+      input.value = text;
+      input.style.position = "fixed";
+      input.style.opacity = "0";
+      document.body.appendChild(input);
+      input.focus();
+      input.select();
+      const ok = document.execCommand("copy");
+      document.body.removeChild(input);
+      return ok;
+    } catch {
+      return false;
+    }
+  }
+};
+
 // ─────────────────────────────────────────────
 // MAIN DASHBOARD
 // ─────────────────────────────────────────────
 export default function FanZoneDashboard() {
   const [activeTab, setActiveTab] = useState("My Analytics");
   const [trendPeriod, setTrendPeriod] = useState<TrendPeriod>("30D");
+  const [showShareDialog, setShowShareDialog] = useState(false);
+  const [copied, setCopied] = useState(false);
 
-  // ── Leaderboard context ──────────────────────
   const contextData = useLeaderboard() as LeaderboardContextType | null;
   const currentUserPoints = contextData?.currentUserPoints ?? 0;
   const currentUserRank   = contextData?.currentUserRank   ?? 0;
   const { activities, loading: activitiesLoading } = useActivity();
 
-  // ── History rows come from the backend activity ledger ──
   const history = useMemo(
     () => activities.map(activityToHistoryItem).sort((a, b) => b.timestamp - a.timestamp),
     [activities]
   );
 
-  // ── Rank tracking — store previous rank in ref ──
-  // We keep prevRank as a ref so it doesn't cause re-renders,
-  // and we capture it the moment rank changes.
   const [rankSnapshot, setRankSnapshot] = useState({ prev: 0, current: 0 });
-
   useEffect(() => {
     if (currentUserRank === 0) return;
     if (rankSnapshot.current !== currentUserRank) {
@@ -526,15 +533,11 @@ export default function FanZoneDashboard() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUserRank]);
 
-  // ─── Total points — use context if available, else sum history ─────
-  // Context is the authoritative source; history is for display only.
   const totalPoints = currentUserPoints > 0
     ? currentUserPoints
     : history.reduce((s, h) => s + h.points, 0);
-
   const displayPoints = totalPoints.toLocaleString();
 
-  // ─── Derived data ────────────────────────────
   const earningBreakdown = useMemo(() => getEarningBreakdown(history), [history]);
   const trendAnalytics   = useMemo(() => getTrendAnalytics(history, trendPeriod), [history, trendPeriod]);
   const levelData        = useMemo(() => calculateLevelData(totalPoints), [totalPoints]);
@@ -548,16 +551,43 @@ export default function FanZoneDashboard() {
     [history]
   );
 
-  // ─── Rank display ────────────────────────────
-  const rankDiff   = rankSnapshot.prev > 0 && rankSnapshot.current > 0
+  const rankDiff  = rankSnapshot.prev > 0 && rankSnapshot.current > 0
     ? Math.abs(rankSnapshot.prev - rankSnapshot.current) : 0;
-  const isRankUp   = rankSnapshot.prev > 0 && rankSnapshot.current > 0
+  const isRankUp  = rankSnapshot.prev > 0 && rankSnapshot.current > 0
     && rankSnapshot.current < rankSnapshot.prev;
-  // ─── Month labels — always dynamic ──────────
-  const currentMonthLabel  = getCurrentMonthLabel();   // "June 2026"
-  const previousMonthLabel = getPreviousMonthLabel();   // "May 2026"
 
-  // ─── Points this month vs last month ─────────
+  const currentMonthLabel  = getCurrentMonthLabel();
+  const previousMonthLabel = getPreviousMonthLabel();
+
+  const openShareDialog = () => { setShowShareDialog(true); setCopied(false); };
+  const closeShareDialog = () => { setShowShareDialog(false); setCopied(false); };
+
+  const handleShareToWhatsApp = () => {
+    window.open(`https://wa.me/?text=${encodeURIComponent(buildFanZoneShareText())}`, "_blank");
+  };
+  const handleShareToThreads = () => {
+    window.open(`https://www.threads.net/intent/post?text=${encodeURIComponent(buildFanZoneShareText())}`, "_blank");
+  };
+  const handleShareToInstagram = async () => {
+    await copyToClipboard(buildFanZoneShareText());
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1600);
+    window.open("https://www.instagram.com/", "_blank");
+  };
+  const handleShareToLinkedIn = () => {
+    window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(buildFanZoneShareUrl())}`, "_blank");
+  };
+  const handleShareToX = () => {
+    window.open(`https://x.com/intent/tweet?text=${encodeURIComponent(buildFanZoneShareText())}`, "_blank");
+  };
+  const handleCopyLink = async () => {
+    const ok = await copyToClipboard(buildFanZoneShareText());
+    if (ok) {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1600);
+    }
+  };
+
   const now = new Date();
   const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
   const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1).getTime();
@@ -576,7 +606,29 @@ export default function FanZoneDashboard() {
     : thisMonthPoints > 0 ? 100 : 0;
   const displayMonthlyPoints = thisMonthPoints.toLocaleString();
 
-  // ─── Shared sub-components ───────────────────
+  const shareButtons = (size: string) => (
+    <>
+      {[
+        { handler: handleShareToWhatsApp, src: "/images/share_whatsapp.png", alt: "WhatsApp" },
+        { handler: handleShareToThreads, src: "/images/share_thread.png", alt: "Threads" },
+        { handler: handleShareToInstagram, src: "/images/share_insta.png", alt: "Instagram" },
+        { handler: handleShareToLinkedIn, src: "/images/Share_linkedin.png", alt: "LinkedIn" },
+        { handler: handleShareToX, src: "/images/Share_X.png", alt: "X" },
+        { handler: handleCopyLink, src: "/images/share_copy_link.png", alt: "Copy" },
+      ].map(({ handler, src, alt }) => (
+        <button
+          key={alt}
+          onClick={handler}
+          className={`${size} shrink-0 rounded-full overflow-hidden bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center`}
+          type="button"
+        >
+          <Image src={src} alt={alt} width={36} height={36} className="w-full h-full object-cover rounded-full" />
+        </button>
+      ))}
+    </>
+  );
+
+  // ─── Sub-components ──────────────────────────
   const StreakWidget = () => (
     <div className="bg-[#09090b] border border-white/10 rounded-2xl p-6">
       <h3 className="text-xs font-black tracking-widest text-gray-400 uppercase mb-4 flex items-center gap-1.5">
@@ -607,6 +659,7 @@ export default function FanZoneDashboard() {
       </div>
     </div>
   );
+//doneadd .
 
   const InviteWidget = () => (
     <div className="bg-[#09090b] border border-rose-500/20 rounded-2xl p-6 flex items-center justify-between overflow-hidden relative group cursor-pointer hover:border-rose-500/50 transition-colors">
@@ -614,9 +667,16 @@ export default function FanZoneDashboard() {
         <UserPlus className="w-32 h-32 text-rose-500" />
       </div>
       <div className="relative z-10">
-        <h3 className="text-lg font-black text-white mb-1">Invite Friends & Earn</h3>
-        <p className="text-sm text-gray-400 mb-4">Earn 100 SXP for each friend who joins!</p>
-        <button className="bg-gradient-to-r from-rose-600 to-orange-500 text-white text-sm font-bold py-2.5 px-6 rounded-full hover:shadow-[0_0_15px_rgba(225,29,72,0.4)] transition-all">
+        <h3 className="text-lg font-black text-white mb-1">Invite Friends</h3>
+        <p className="text-sm text-gray-400 mb-4">Share Fan Zone with your friends and bring them into the community!</p>
+        <button
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation();
+            openShareDialog();
+          }}
+          className="bg-gradient-to-r from-rose-600 to-orange-500 text-white text-sm font-bold py-2.5 px-6 rounded-full hover:shadow-[0_0_15px_rgba(225,29,72,0.4)] transition-all"
+        >
           Invite Now
         </button>
       </div>
@@ -632,16 +692,16 @@ export default function FanZoneDashboard() {
         ) : (
           recentActivityList.map((item, i) => (
             <div key={i} className="flex items-center justify-between group">
-              <div className="flex items-center gap-4">
-                <div className={`w-8 h-8 rounded-full bg-[#18181b] border border-white/5 flex items-center justify-center ${item.color}`}>
+              <div className="flex items-center gap-4 min-w-0">
+                <div className={`w-8 h-8 rounded-full bg-[#18181b] border border-white/5 flex items-center justify-center shrink-0 ${item.color}`}>
                   <item.icon className="w-4 h-4" />
                 </div>
-                <p className="text-sm">
+                <p className="text-sm truncate min-w-0">
                   <span className="font-bold text-white mr-1">{item.action}</span>
                   <span className="text-gray-400">{item.detail}</span>
                 </p>
               </div>
-              <div className="text-right">
+              <div className="text-right shrink-0 ml-3">
                 <p className="text-sm font-black" style={{ color: item.hexColor }}>+{item.xp} SXP</p>
                 <p className="text-[10px] text-gray-500 font-medium">{item.time}</p>
               </div>
@@ -707,9 +767,6 @@ export default function FanZoneDashboard() {
     </div>
   );
 
-  // ─────────────────────────────────────────────────────────────────
-  // RENDER
-  // ─────────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-[#050505] text-white font-sans selection:bg-rose-500/30 pb-20">
       <main className="max-w-[1400px] mx-auto p-6 space-y-6">
@@ -739,7 +796,6 @@ export default function FanZoneDashboard() {
             <div className="bg-[#09090b] border border-white/5 rounded-2xl p-6 w-full md:w-[320px] shadow-2xl relative z-10 hidden md:block">
               <div className="flex justify-between items-center mb-4">
                 <p className="text-[10px] font-black uppercase tracking-widest text-gray-500">Total Points</p>
-                {/* Dynamic month label */}
                 <span className="text-xs text-gray-400 font-semibold">{currentMonthLabel}</span>
               </div>
               <h2 className="text-4xl font-black text-white mb-2">{displayPoints} SXP</h2>
@@ -756,8 +812,6 @@ export default function FanZoneDashboard() {
 
         {/* ── STATS ROW ── */}
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-
-          {/* Level progress */}
           <div className="md:col-span-2 bg-[#09090b] border border-white/10 rounded-2xl p-5 flex items-center gap-5">
             <div className="w-14 h-14 rounded-xl border-2 border-rose-500 flex items-center justify-center font-black text-2xl text-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.3)]">
               {levelData.level}
@@ -765,12 +819,8 @@ export default function FanZoneDashboard() {
             <div className="flex-1">
               <h3 className="text-base font-bold text-white mb-1">You&apos;re doing great!</h3>
               <div className="flex justify-between items-end mb-2">
-                <p className="text-xs text-gray-400">
-                  {levelData.xpRemaining.toLocaleString()} SXP to Level {levelData.level + 1}
-                </p>
-                <p className="text-xs font-bold text-gray-400">
-                  {levelData.currentLevelXp.toLocaleString()} / {levelData.xpForNextLevel.toLocaleString()} SXP
-                </p>
+                <p className="text-xs text-gray-400">{levelData.xpRemaining.toLocaleString()} SXP to Level {levelData.level + 1}</p>
+                <p className="text-xs font-bold text-gray-400">{levelData.currentLevelXp.toLocaleString()} / {levelData.xpForNextLevel.toLocaleString()} SXP</p>
               </div>
               <div className="w-full h-1.5 bg-zinc-800 rounded-full overflow-hidden">
                 <div
@@ -783,7 +833,6 @@ export default function FanZoneDashboard() {
             </div>
           </div>
 
-          {/* Rank card — fully dynamic */}
           <div className="bg-[#09090b] border border-white/10 rounded-2xl p-5 flex items-center gap-4">
             <div className="w-12 h-12 rounded-full bg-yellow-500/10 flex items-center justify-center border border-yellow-500/20">
               <Trophy className="w-6 h-6 text-yellow-500" />
@@ -803,7 +852,6 @@ export default function FanZoneDashboard() {
             </div>
           </div>
 
-          {/* Badges */}
           <div className="bg-[#09090b] border border-white/10 rounded-2xl p-5 flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-full bg-purple-500/10 flex items-center justify-center border border-purple-500/20">
@@ -821,7 +869,6 @@ export default function FanZoneDashboard() {
             </div>
           </div>
 
-          {/* Leaderboard link */}
           <Link
             href="/MainModules/Leaderboard"
             className="bg-[#09090b] border border-white/10 hover:border-rose-500/50 rounded-2xl p-5 flex flex-col items-center justify-center group hover:scale-[1.02] transition-all cursor-pointer relative overflow-hidden"
@@ -868,14 +915,13 @@ export default function FanZoneDashboard() {
 
                 {/* Left: month stats */}
                 <div className="xl:col-span-3 w-full">
-                  {/* Dynamic month label — no hardcoding */}
                   <div className="inline-block bg-[#18181b] border border-white/10 text-sm font-bold rounded-xl px-4 py-2 text-white mb-6">
                     {currentMonthLabel}
                   </div>
                   <div className="space-y-6">
                     <div>
                       <p className="text-xs text-gray-400 font-medium mb-1">This Month</p>
-                      <div className="flex items-end gap-3">
+                      <div className="flex items-end gap-3 flex-wrap">
                         <h4 className="text-3xl font-black text-white leading-none">
                           {thisMonthPoints.toLocaleString()} SXP
                         </h4>
@@ -890,7 +936,7 @@ export default function FanZoneDashboard() {
                     </div>
                     <div>
                       <p className="text-xs text-gray-400 font-medium mb-1">All Time</p>
-                      <div className="flex items-end gap-3">
+                      <div className="flex items-end gap-3 flex-wrap">
                         <h4 className="text-3xl font-black text-white leading-none">{displayPoints} SXP</h4>
                         <span className="text-xs text-gray-500 font-medium mb-0.5">Since Apr 2026</span>
                       </div>
@@ -898,34 +944,20 @@ export default function FanZoneDashboard() {
                   </div>
                 </div>
 
-                {/* Middle: donut + legend */}
-                <div className="xl:col-span-5 flex flex-col sm:flex-row items-center justify-center gap-6 lg:gap-10 w-full py-6 xl:py-0 border-t border-white/10 xl:border-t-0 xl:border-l xl:pl-8">
-                  <DonutChart data={earningBreakdown} centerPoints={displayMonthlyPoints} />
-                  <div className="space-y-4 w-full sm:w-auto">
-                    {earningBreakdown.length > 0 ? (
-                      earningBreakdown.map((item, i) => (
-                        <div key={i} className="flex items-center justify-between sm:justify-start gap-4 text-sm whitespace-nowrap">
-                          <div className="flex items-center gap-3 w-40">
-                            <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
-                            <span className="text-gray-300">{item.label}</span>
-                          </div>
-                          <div className="flex items-center justify-end gap-3 pr-4">
-                            <span className="font-bold text-white">{item.percent}%</span>
-                            <span className="text-gray-400">{item.xp}</span>
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="space-y-3 opacity-40">
-                        {["Audio Drops", "Fan Battles", "Trivia", "Post Created"].map((label, i) => (
-                          <div key={i} className="flex items-center gap-3 text-sm whitespace-nowrap">
-                            <span className="w-2.5 h-2.5 rounded-full shrink-0 bg-zinc-700" />
-                            <span className="text-gray-600">{label}</span>
-                            <span className="text-gray-700 ml-auto pr-4">—</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                {/* ─────────────────────────────────────────────
+                    Middle: donut + legend
+                    Stack on mobile, side-by-side on xl
+                ───────────────────────────────────────────── */}
+                <div className="xl:col-span-5 border-t border-white/10 xl:border-t-0 xl:border-l pt-8 xl:pt-0 xl:pl-4 overflow-hidden">
+                  <div className="flex flex-col items-center xl:flex-row xl:items-center xl:justify-start gap-4 xl:gap-1">
+                    {/* Donut — centered on mobile, flush-left on xl */}
+                    <div className="shrink-0 mx-auto xl:mx-0">
+                      <DonutChart data={earningBreakdown} centerPoints={displayMonthlyPoints} />
+                    </div>
+                    {/* Legend — label wraps freely, never overflows or overlaps */}
+                    <div className="w-full xl:flex-1 min-w-0 xl:pl-2">
+                      <BreakdownLegend data={earningBreakdown} />
+                    </div>
                   </div>
                 </div>
 
@@ -949,24 +981,16 @@ export default function FanZoneDashboard() {
                       ))}
                     </div>
                   </div>
-
-                  {/* Dynamic total */}
                   <h4 className="text-4xl font-black text-emerald-500 mb-2">
                     +{trendAnalytics.currentPts.toLocaleString()} SXP
                   </h4>
-
-                  {/* Dynamic % change */}
                   <p className={`text-xs font-bold mb-6 ${trendAnalytics.isPositive ? "text-emerald-500" : "text-red-500"}`}>
                     {trendAnalytics.isPositive ? "↑" : "↓"} {Math.abs(trendAnalytics.percentChange)}%{" "}
                     <span className="text-gray-500 font-medium ml-1">{trendAnalytics.vsText}</span>
                   </p>
-
-                  {/* Dynamic trend line */}
                   <div className="w-full h-24 mt-auto">
                     <MiniTrendLine data={trendAnalytics.chartData} />
                   </div>
-
-                  {/* Dynamic axis labels */}
                   <div className="flex justify-between text-[10px] text-gray-500 font-bold mt-3 px-2">
                     {trendAnalytics.labels.map((label, index) => (
                       <span key={index}>{label}</span>
@@ -1113,16 +1137,16 @@ export default function FanZoneDashboard() {
                 <div className="space-y-1">
                   {history.slice(0, 10).map((item) => (
                     <div key={item.id} className="flex items-center justify-between p-3 rounded-xl hover:bg-white/5 transition-colors group">
-                      <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-4 min-w-0">
                         <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 border bg-white/5 border-white/10">
                           <item.icon className={`w-5 h-5 ${item.color}`} />
                         </div>
-                        <div>
+                        <div className="min-w-0">
                           <p className="text-[10px] font-black tracking-widest text-gray-500 uppercase mb-0.5">{item.source}</p>
-                          <p className="text-sm font-bold text-white group-hover:text-rose-100 transition-colors">{item.action}: {item.details}</p>
+                          <p className="text-sm font-bold text-white group-hover:text-rose-100 transition-colors truncate">{item.action}: {item.details}</p>
                         </div>
                       </div>
-                      <div className="text-right">
+                      <div className="text-right shrink-0 ml-3">
                         <p className="text-sm font-black" style={{ color: item.hexColor }}>+{item.points} SXP</p>
                         <p className="text-[10px] text-gray-500 font-medium mt-0.5">{item.time}</p>
                       </div>
@@ -1137,7 +1161,6 @@ export default function FanZoneDashboard() {
                 </div>
               </div>
 
-              {/* Sidebar: earn points */}
               <div className="bg-[#09090b] border border-white/10 rounded-2xl p-6 h-max sticky top-24">
                 <h3 className="text-base font-black text-white mb-1">How to Earn Points</h3>
                 <p className="text-xs text-gray-400 font-medium mb-6">More actions, more points!</p>
@@ -1210,7 +1233,6 @@ export default function FanZoneDashboard() {
 
                 <div className="bg-[#09090b] border border-white/10 rounded-2xl p-6 overflow-x-auto">
                   <HistoryTable rows={history} />
-
                   <div className="mt-6 pt-6 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4">
                     <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">
                       Showing 1 – {Math.min(history.length, 10)} of {history.length} activities
@@ -1232,7 +1254,6 @@ export default function FanZoneDashboard() {
                   </div>
                 </div>
 
-                {/* Motivational banner */}
                 <div className="bg-gradient-to-r from-rose-950 via-rose-900 to-orange-950 border border-rose-500/30 rounded-2xl p-6 flex items-center justify-between overflow-hidden relative">
                   <div className="flex items-center gap-6 relative z-10">
                     <Trophy className="w-16 h-16 text-yellow-500 drop-shadow-[0_0_15px_rgba(234,179,8,0.5)]" />
@@ -1251,8 +1272,6 @@ export default function FanZoneDashboard() {
 
               {/* Right sidebar */}
               <div className="space-y-6">
-
-                {/* Total earned */}
                 <div className="bg-[#09090b] border border-white/10 rounded-2xl p-6 relative overflow-hidden group">
                   <div className="absolute right-[-20%] top-[-20%] opacity-10 group-hover:scale-110 transition-transform duration-700">
                     <Trophy className="w-48 h-48 text-rose-500" />
@@ -1267,34 +1286,16 @@ export default function FanZoneDashboard() {
                   </div>
                 </div>
 
-                {/* Donut journey */}
+                {/* Donut journey — also uses BreakdownLegend */}
                 <div className="bg-[#09090b] border border-white/10 rounded-2xl p-6">
                   <h3 className="text-base font-black text-white mb-1">Your Points Journey</h3>
                   <p className="text-xs text-gray-400 font-medium mb-6">See how you&apos;re growing</p>
                   <div className="flex justify-center mb-8">
                     <DonutChart data={earningBreakdown} centerPoints={displayMonthlyPoints} />
                   </div>
-                  <div className="space-y-4">
-                    {earningBreakdown.length > 0 ? (
-                      earningBreakdown.map((item, i) => (
-                        <div key={i} className="flex items-center justify-between text-sm">
-                          <div className="flex items-center gap-3">
-                            <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }} />
-                            <span className="text-gray-300">{item.label}</span>
-                          </div>
-                          <div className="flex justify-end gap-3 pr-2">
-                            <span className="font-bold text-white">{item.percent}%</span>
-                            <span className="text-gray-400">({item.xp})</span>
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <p className="text-xs text-gray-600 text-center py-2">Complete activities to see your breakdown</p>
-                    )}
-                  </div>
+                  <BreakdownLegend data={earningBreakdown} />
                 </div>
 
-                {/* Top activities */}
                 <div className="bg-[#09090b] border border-white/10 rounded-2xl p-6">
                   <h3 className="text-base font-black text-white mb-1">Top Activities</h3>
                   <p className="text-xs text-gray-400 font-medium mb-6">By points earned</p>
@@ -1319,10 +1320,42 @@ export default function FanZoneDashboard() {
                     View All Activities →
                   </button>
                 </div>
-
               </div>
             </div>
           </div>
+        )}
+
+        {/* Share Dialog */}
+        {showShareDialog && (
+          <>
+            <button type="button" className="fixed inset-0 z-40 bg-black/70 lg:hidden" onClick={closeShareDialog} />
+            <div className="fixed bottom-16 inset-x-4 z-50 mx-auto w-full max-w-[280px] rounded-2xl border border-white/10 bg-[#1a1a1e] p-3 shadow-2xl lg:hidden" onClick={e => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-white text-sm font-semibold">Share</p>
+                <button type="button" onClick={closeShareDialog} className="text-gray-400 hover:text-white">
+                  <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M15 5L5 15M5 5L15 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>
+                </button>
+              </div>
+              <div className="flex flex-row flex-nowrap items-center gap-1.5 mb-2 overflow-x-auto">{shareButtons("w-8 h-8")}</div>
+              {copied && <p className="text-xs text-emerald-400">Copied to clipboard</p>}
+            </div>
+            <div className="hidden lg:flex fixed inset-0 z-50 items-center justify-center bg-black/60" onClick={closeShareDialog}>
+              <div className="bg-[#1a1a1e] rounded-2xl border border-white/10 p-4 w-[300px] shadow-2xl" onClick={e => e.stopPropagation()}>
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-white text-sm font-semibold">Invite Friends</p>
+                  <button type="button" onClick={closeShareDialog} className="text-gray-400 hover:text-white">
+                    <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M15 5L5 15M5 5L15 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>
+                  </button>
+                </div>
+                <div className="rounded-xl border border-white/10 bg-[#111114] p-3 mb-3">
+                  <p className="text-white text-sm font-semibold line-clamp-2">Invite Friends & Earn</p>
+                  <p className="text-white/45 text-[11px] mt-2 line-clamp-2 break-all">{buildFanZoneShareUrl()}</p>
+                </div>
+                <div className="flex flex-row flex-nowrap items-center gap-2 mb-2">{shareButtons("w-9 h-9")}</div>
+                {copied && <p className="text-xs text-emerald-400">Copied to clipboard</p>}
+              </div>
+            </div>
+          </>
         )}
 
       </main>

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import Image from "next/image";
 import AvatarWithBadge from "../components/AvatarWithBadge";
 import NewHomePage from "../../NewHomePageComponent/newhomepage";
 import { SplitBar, FilterPills } from "../components/shared";
@@ -7,6 +8,54 @@ import { FEED_POSTS, FEED_FILTERS, BADGE_LABELS, RADIAL_OPTS, CURRENT_USER } fro
 import { fmt, clamp, formatTimeAgo } from "../utils";
 import { Heart, Share2, Flame, TrendingUp, Zap, History, PenTool, MessageSquare, Trash2 } from "lucide-react";
 import type { FeedPost, Room } from "../types";
+
+type ShareableRoarPost = {
+  id?: string | number;
+  text?: string;
+  authorUsername?: string;
+  fan?: {
+    username?: string;
+  };
+};
+
+const buildRoarPostShareUrl = (post: ShareableRoarPost) => {
+  if (typeof window === "undefined") return "";
+  const targetUrl = new URL(`${window.location.origin}/MainModules/ROAR`);
+  if (post?.id) targetUrl.searchParams.set("post", String(post.id));
+  return targetUrl.toString();
+};
+
+const buildRoarPostShareText = (post: ShareableRoarPost) => {
+  const shareUrl = buildRoarPostShareUrl(post);
+  const author = post?.fan?.username || post?.authorUsername || "a Sportsfan";
+  return [
+    `Check out this ROAR post by ${author}`,
+    post?.text || "Join the conversation on Sportsfan ROAR.",
+    `View post: ${shareUrl}`,
+  ].filter(Boolean).join("\n");
+};
+
+const copyToClipboard = async (text: string) => {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    try {
+      const input = document.createElement("textarea");
+      input.value = text;
+      input.style.position = "fixed";
+      input.style.opacity = "0";
+      document.body.appendChild(input);
+      input.focus();
+      input.select();
+      const ok = document.execCommand("copy");
+      document.body.removeChild(input);
+      return ok;
+    } catch {
+      return false;
+    }
+  }
+};
 
 interface Props {
   // ── unreadCount and onNavigateAlerts REMOVED ──
@@ -54,6 +103,8 @@ export default function HomeFeed({
   const [pcts, setPcts] = useState<Record<string, number>>({});
   const [now, setNow] = useState(Date.now());
   const [localUsername, setLocalUsername] = useState("RoarUser");
+  const [sharePost, setSharePost] = useState<ShareableRoarPost | null>(null);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     const interval = setInterval(() => setNow(Date.now()), 1000);
@@ -67,6 +118,64 @@ export default function HomeFeed({
   }, []);
 
   const activeUsername = propUsername || localUsername;
+
+  const openShareDialog = (post: ShareableRoarPost) => { setSharePost(post); setCopied(false); };
+  const closeShareDialog = () => { setSharePost(null); setCopied(false); };
+
+  const handleShareToWhatsApp = () => {
+    if (!sharePost) return;
+    window.open(`https://wa.me/?text=${encodeURIComponent(buildRoarPostShareText(sharePost))}`, "_blank");
+  };
+  const handleShareToThreads = () => {
+    if (!sharePost) return;
+    window.open(`https://www.threads.net/intent/post?text=${encodeURIComponent(buildRoarPostShareText(sharePost))}`, "_blank");
+  };
+  const handleShareToInstagram = async () => {
+    if (!sharePost) return;
+    await copyToClipboard(buildRoarPostShareText(sharePost));
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1600);
+    window.open("https://www.instagram.com/", "_blank");
+  };
+  const handleShareToLinkedIn = () => {
+    if (!sharePost) return;
+    window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(buildRoarPostShareUrl(sharePost))}`, "_blank");
+  };
+  const handleShareToX = () => {
+    if (!sharePost) return;
+    window.open(`https://x.com/intent/tweet?text=${encodeURIComponent(buildRoarPostShareText(sharePost))}`, "_blank");
+  };
+  const handleCopyLink = async () => {
+    if (!sharePost) return;
+    const ok = await copyToClipboard(buildRoarPostShareText(sharePost));
+    if (ok) {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1600);
+      onToast("Link copied to clipboard!");
+    }
+  };
+
+  const shareButtons = (size: string) => (
+    <>
+      {[
+        { handler: handleShareToWhatsApp, src: "/images/share_whatsapp.png", alt: "WhatsApp" },
+        { handler: handleShareToThreads, src: "/images/share_thread.png", alt: "Threads" },
+        { handler: handleShareToInstagram, src: "/images/share_insta.png", alt: "Instagram" },
+        { handler: handleShareToLinkedIn, src: "/images/Share_linkedin.png", alt: "LinkedIn" },
+        { handler: handleShareToX, src: "/images/Share_X.png", alt: "X" },
+        { handler: handleCopyLink, src: "/images/share_copy_link.png", alt: "Copy" },
+      ].map(({ handler, src, alt }) => (
+        <button
+          key={alt}
+          onClick={handler}
+          className={`${size} shrink-0 rounded-full overflow-hidden bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center`}
+          type="button"
+        >
+          <Image src={src} alt={alt} width={36} height={36} className="w-full h-full object-cover rounded-full" />
+        </button>
+      ))}
+    </>
+  );
 
   const formatCountdown = (diffMs: number) => {
     const diffSec = Math.floor(diffMs / 1000);
@@ -172,16 +281,7 @@ export default function HomeFeed({
         <button
           onClick={(e) => {
             e.stopPropagation();
-            const shareUrl = window.location.origin + "/MainModules/ROAR?post=" + item.id;
-            if (navigator.share) {
-              navigator.share({
-                title: 'ROAR Post',
-                url: shareUrl,
-              }).catch(() => {});
-            } else {
-              navigator.clipboard.writeText(shareUrl);
-              onToast("Link copied to clipboard!");
-            }
+            openShareDialog(item);
           }}
           style={{
             display: "flex",
@@ -275,6 +375,39 @@ export default function HomeFeed({
 
   return (
     <div className="screen-scroll">
+      {/* Share Dialog */}
+      {sharePost && (
+        <>
+          <button type="button" className="fixed inset-0 z-40 bg-black/70 lg:hidden" onClick={closeShareDialog} />
+          <div className="fixed bottom-16 inset-x-4 z-50 mx-auto w-full max-w-[280px] rounded-2xl border border-white/10 bg-[#1a1a1e] p-3 shadow-2xl lg:hidden" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-white text-sm font-semibold">Share</p>
+              <button type="button" onClick={closeShareDialog} className="text-gray-400 hover:text-white">
+                <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M15 5L5 15M5 5L15 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>
+              </button>
+            </div>
+            <div className="flex flex-row flex-nowrap items-center gap-1.5 mb-2 overflow-x-auto">{shareButtons("w-8 h-8")}</div>
+            {copied && <p className="text-xs text-emerald-400">Copied to clipboard</p>}
+          </div>
+          <div className="hidden lg:flex fixed inset-0 z-50 items-center justify-center bg-black/60" onClick={closeShareDialog}>
+            <div className="bg-[#1a1a1e] rounded-2xl border border-white/10 p-4 w-[300px] shadow-2xl" onClick={e => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-white text-sm font-semibold">Share ROAR Post</p>
+                <button type="button" onClick={closeShareDialog} className="text-gray-400 hover:text-white">
+                  <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M15 5L5 15M5 5L15 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>
+                </button>
+              </div>
+              <div className="rounded-xl border border-white/10 bg-[#111114] p-3 mb-3">
+                <p className="text-white text-sm font-semibold line-clamp-2">{sharePost.text || "ROAR Post"}</p>
+                <p className="text-white/45 text-[11px] mt-2 line-clamp-2 break-all">{buildRoarPostShareUrl(sharePost)}</p>
+              </div>
+              <div className="flex flex-row flex-nowrap items-center gap-2 mb-2">{shareButtons("w-9 h-9")}</div>
+              {copied && <p className="text-xs text-emerald-400">Copied to clipboard</p>}
+            </div>
+          </div>
+        </>
+      )}
+
       {/* SVG Gradient Definition */}
       <svg width="0" height="0" style={{ position: "absolute" }}>
         <linearGradient id="pink-orange-grad" x1="0%" y1="0%" x2="100%" y2="100%">

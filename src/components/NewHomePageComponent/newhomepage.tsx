@@ -168,10 +168,11 @@ type CardItem = {
   title: string;
   subtitle: string;
   image: string;
-  url: string;
+  dropsUrl: string;
+  matchCenterUrl: string;
   sport: string;
-  buttonBg: string; // Added for customized button color
-  iconType: "football" | "cricket"; // Added to dynamically render the right icon
+  buttonBg: string;
+  iconType: "football" | "cricket";
 };
 
 type QuickLink = {
@@ -195,7 +196,10 @@ const cards: CardItem[] = [
     title: "FIFA World Cup 2026",
     subtitle: "The world's biggest football tournament",
     image: "/images/fifa2026.png",
-    url: "/MainModules/FIFAWorldCup/Standings",
+
+    dropsUrl: "/MainModules/MatchesDropContent?team=FIFA",
+    matchCenterUrl: "/MainModules/FIFAWorldCup/Standings",
+
     sport: "football",
     buttonBg: "bg-[#041E53]",
     iconType: "football",
@@ -206,7 +210,10 @@ const cards: CardItem[] = [
     title: "Women's T20 2026",
     subtitle: "Exclusive coverage of women's cricket",
     image: "/images/womens_t20.jpg",
-    url: "/MainModules/WomensT20/Matchcenter",
+
+    dropsUrl: "/MainModules/MatchesDropContent?team=Women%20T20",
+    matchCenterUrl: "/MainModules/WomensT20/Matchcenter",
+
     sport: "cricket",
     buttonBg: "bg-[#5D287F]",
     iconType: "cricket",

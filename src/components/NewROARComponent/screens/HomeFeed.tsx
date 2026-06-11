@@ -434,7 +434,7 @@ export default function HomeFeed({
         {/* ── Header ── */}
         <div
           className="glass-card"
-          style={{ margin: "8px 12px 0", padding: "12px 16px", display: "flex", flexDirection: "column", gap: 12, borderRadius: 20, overflow: "visible" }}
+          style={{ margin: "8px 12px 0", padding: "12px 16px", display: "flex", flexDirection: "column", gap: 12, borderRadius: 20, overflow: "visible", position: "relative", zIndex: 40 }}
         >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", flexShrink: 0 }}>

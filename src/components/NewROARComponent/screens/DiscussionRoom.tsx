@@ -12,6 +12,7 @@ interface Props {
   roomName?: string;
   onPostClick?: (post: any) => void;
   onCompose?: (type: string | null) => void;
+  fanCount?: number;
 }
 
 const TABS = ["Debate", "Predictions", "Hot Takes", "Post-Match 🔒"];
@@ -28,17 +29,14 @@ const MODE_LABEL: Record<string, string> = {
   hottake: "⚡ Bold Take",
 };
 
-export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPostClick, onCompose }: Props) {
+export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPostClick, onCompose, fanCount = 312 }: Props) {
   const [tab, setTab] = useState("Debate");
   const [posts, setPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [input, setInput] = useState("");
   const [mode, setMode] = useState<"chat" | "prediction" | "hottake">("chat");
-  const [fanCount, setFanCount] = useState(312);
-  const [joinToast, setJoinToast] = useState<string | null>(null);
   const [composerPre, setComposerPre] = useState("");
   const listRef = useRef<HTMLDivElement>(null);
-  const joinIdx = useRef(0);
 
   const [userUsername, setUserUsername] = useState("RoarUser");
   const [userBadge, setUserBadge] = useState("RISING_FAN");
@@ -48,21 +46,6 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
       setUserUsername(localStorage.getItem("roar_username") || "RoarUser");
       setUserBadge(localStorage.getItem("roar_badge") || "RISING_FAN");
     } catch {}
-  }, []);
-
-  useEffect(() => {
-    const t = setInterval(() => setFanCount((c) => c + 1), 7000);
-    return () => clearInterval(t);
-  }, []);
-
-  useEffect(() => {
-    const iv = setInterval(() => {
-      const name = JOIN_FANS[joinIdx.current % JOIN_FANS.length];
-      joinIdx.current++;
-      setJoinToast(`${name} joined the room`);
-      setTimeout(() => setJoinToast(null), 2500);
-    }, 9000);
-    return () => clearInterval(iv);
   }, []);
 
   useEffect(() => {
@@ -142,35 +125,17 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
-      {/* Join toast */}
-      <AnimatePresence>
-        {joinToast && (
-          <motion.div
-            initial={{ y: -50 }} animate={{ y: 0 }} exit={{ y: -50 }}
-            style={{ position: "absolute", top: 8, left: 0, right: 0, zIndex: 40, padding: "0 16px", pointerEvents: "none" }}
-          >
-            <div className="glass-card" style={{ padding: "8px 16px", textAlign: "center", fontSize: 13, border: "1px solid rgba(0,230,118,0.25)" }}>
-              <span style={{ color: "var(--live-green)" }}>●</span> {joinToast}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       {/* Header */}
       <div style={{ padding: "12px 16px", background: "rgba(14,14,20,0.95)", backdropFilter: "blur(20px)", borderBottom: "1px solid var(--border)", flexShrink: 0, zIndex: 20 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <button onClick={onBack} style={{ background: "none", border: "none", fontSize: 22, cursor: "pointer", color: "var(--text-primary)" }}>←</button>
-          <div style={{ flex: 1, textAlign: "center" }}>
+          <div style={{ flex: 1, textAlign: "left", paddingLeft: 8 }}>
             <p className="font-display" style={{ fontSize: 20, letterSpacing: "0.04em" }}>{roomName || "India vs Pakistan"}</p>
-            <div style={{ display: "flex", alignItems: "center", gap: 6, justifyContent: "center", marginTop: 2 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}>
               <span className="live-pulse" style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--live-green)", display: "inline-block" }} />
               <span style={{ fontSize: 10, fontWeight: 700, color: "var(--live-green)" }}>LIVE</span>
               <span style={{ fontSize: 11, color: "var(--text-muted)" }}>· {fmt(fanCount)} fans</span>
             </div>
-          </div>
-          <div style={{ textAlign: "right" }}>
-            <p className="font-display" style={{ fontSize: 22, color: "var(--gold)" }}>287/4</p>
-            <p style={{ fontSize: 10, color: "var(--text-muted)" }}>IND · 88 ov</p>
           </div>
         </div>
         <div style={{ marginTop: 10 }}>

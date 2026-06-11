@@ -397,6 +397,7 @@ export default function ROARApp() {
                   <DiscussionRoom
                     roomId={selectedRoom?.roomId}
                     roomName={selectedRoom?.name}
+                    fanCount={selectedRoom?.fanCount}
                     onBack={() => { setOverlay(null); setActiveTab("home"); }}
                     onToast={showToast}
                     onPostClick={(post) => setSelectedPost(post)}

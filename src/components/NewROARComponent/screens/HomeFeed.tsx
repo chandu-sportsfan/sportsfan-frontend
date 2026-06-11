@@ -286,59 +286,57 @@ export default function HomeFeed({
       {/* ── Header ── */}
       <div
         className="glass-card"
-        style={{ position: "sticky", top: 0, zIndex: 20, margin: "8px 12px 0", padding: "10px 16px", display: "flex", justifyContent: "space-between", alignItems: "center", borderRadius: 20 }}
+        style={{ position: "sticky", top: 0, zIndex: 20, margin: "8px 12px 0", padding: "12px 16px", display: "flex", flexDirection: "column", gap: 12, borderRadius: 20 }}
       >
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", flexShrink: 0 }}>
-          <h1 className="logotype" style={{ fontSize: 34, margin: 0, lineHeight: 1 }}>ROAR</h1>
-          <div style={{ height: "2px", width: "32px", borderRadius: "999px", marginTop: "3px", background: "#e5003d" }} />
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", flexShrink: 0 }}>
+            <h1 className="logotype" style={{ fontSize: 34, margin: 0, lineHeight: 1 }}>ROAR</h1>
+            <div style={{ height: "2px", width: "32px", borderRadius: "999px", marginTop: "3px", background: "#e5003d" }} />
+          </div>
         </div>
 
-        {/* Quick-compose pills — profile button and gold bell REMOVED */}
-        <div style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
-          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            {RADIAL_OPTS.map((q) => {
-              const icons: Record<string, React.ReactNode> = {
-                hot_take: <Flame size={16} stroke="url(#pink-orange-grad)" fill="url(#pink-orange-grad)" />,
-                prediction: <TrendingUp size={16} stroke="url(#pink-orange-grad)" />,
-                debate: <Zap size={16} stroke="url(#pink-orange-grad)" fill="url(#pink-orange-grad)" />,
-                memory: <History size={16} stroke="url(#pink-orange-grad)" />,
-                post: <PenTool size={16} stroke="url(#pink-orange-grad)" />,
-              };
+        {/* Quick-compose pills */}
+        <div style={{ display: "flex", gap: 8, alignItems: "center", overflowX: "auto", scrollbarWidth: "none", msOverflowStyle: "none", width: "100%", paddingBottom: 2 }}>
+          {RADIAL_OPTS.map((q) => {
+            const icons: Record<string, React.ReactNode> = {
+              hot_take: <Flame size={16} stroke="url(#pink-orange-grad)" fill="url(#pink-orange-grad)" />,
+              prediction: <TrendingUp size={16} stroke="url(#pink-orange-grad)" />,
+              debate: <Zap size={16} stroke="url(#pink-orange-grad)" fill="url(#pink-orange-grad)" />,
+              memory: <History size={16} stroke="url(#pink-orange-grad)" />,
+              post: <PenTool size={16} stroke="url(#pink-orange-grad)" />,
+            };
 
-              const icon = icons[q.id] || <span>{q.emoji}</span>;
+            const icon = icons[q.id] || <span>{q.emoji}</span>;
 
-              return (
-                <motion.button
-                  key={q.id}
-                  whileTap={{ scale: 0.93 }}
-                  whileHover={{ scale: 1.05 }}
-                  onClick={() => onQuickCompose && onQuickCompose(q.id)}
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: 4,
-                    padding: "8px 12px",
-                    borderRadius: 14,
-                    background: "linear-gradient(145deg, rgba(233,30,140,0.18), rgba(255,107,53,0.10))",
-                    border: "1px solid rgba(233,30,140,0.35)",
-                    cursor: "pointer",
-                    flexShrink: 1,
-                    minWidth: 0,
-                    boxShadow: "0 4px 15px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.05)",
-                    backdropFilter: "blur(8px)",
-                    transition: "all 0.2s",
-                  }}
-                >
-                  {icon}
-                  <span style={{ fontSize: 9.5, fontWeight: 700, color: "rgba(255,255,255,0.9)", whiteSpace: "nowrap", lineHeight: 1, letterSpacing: "0.03em" }}>
-                    {q.label}
-                  </span>
-                </motion.button>
-              );
-            })}
-          </div>
+            return (
+              <motion.button
+                key={q.id}
+                whileTap={{ scale: 0.93 }}
+                whileHover={{ scale: 1.05 }}
+                onClick={() => onQuickCompose && onQuickCompose(q.id)}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 6,
+                  padding: "8px 14px",
+                  borderRadius: 999,
+                  background: "linear-gradient(145deg, rgba(233,30,140,0.18), rgba(255,107,53,0.10))",
+                  border: "1px solid rgba(233,30,140,0.35)",
+                  cursor: "pointer",
+                  flexShrink: 0,
+                  boxShadow: "0 4px 15px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.05)",
+                  backdropFilter: "blur(8px)",
+                  transition: "all 0.2s",
+                }}
+              >
+                {icon}
+                <span style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.9)", whiteSpace: "nowrap", lineHeight: 1, letterSpacing: "0.03em" }}>
+                  {q.label}
+                </span>
+              </motion.button>
+            );
+          })}
         </div>
       </div>
 

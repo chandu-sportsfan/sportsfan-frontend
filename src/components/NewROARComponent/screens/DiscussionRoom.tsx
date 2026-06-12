@@ -480,7 +480,7 @@ export default function DiscussionRoom({
     if (!roomId) return;
     const fetchMsgs = async () => {
       try {
-        const res = await axios.get(`/api/roar/rooms/${roomId}/messages`);
+        const res = await axios.get(`/api/roar/rooms/${roomId}/messages?t=${Date.now()}`);
         if (res.data?.success) {
           setPosts(res.data.messages.map((m: any) => ({
             id: m.msgId,
@@ -778,5 +778,7 @@ export default function DiscussionRoom({
 
       <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" />
     </div>
+
   );
+
 }

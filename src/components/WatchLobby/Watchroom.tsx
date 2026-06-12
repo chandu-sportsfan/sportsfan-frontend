@@ -2588,6 +2588,7 @@ function LiveCameraFeed({
     roomName, 
     userRole, 
     userName,
+    userEmail,
     onApiReady,
     onReactionReceived,
     onParticipantsChange,
@@ -2603,6 +2604,7 @@ function LiveCameraFeed({
     roomName: string; 
     userRole: string; 
     userName: string;
+    userEmail?: string;
     onApiReady?: (api: any) => void;
     onReactionReceived?: (reaction: string) => void;
     onParticipantsChange?: (participants: any[]) => void;
@@ -2881,7 +2883,7 @@ function LiveCameraFeed({
                         }}
                         userInfo={{
                             displayName: userName || "Anonymous Viewer",
-                            email: `${(userName || "viewer").toLowerCase().replace(/\s+/g, '')}@sportsfan360.com`,
+                            email: userEmail || `${(userName || "viewer").toLowerCase().replace(/\s+/g, '')}@sportsfan360.com`,
                         }}
                         onApiReady={handleApiReady}
                         getIFrameRef={(wrapperDiv: HTMLDivElement) => {
@@ -3351,8 +3353,16 @@ function TabContent({
                         {jitsiParticipants && jitsiParticipants.map((p: any) => {
                             const displayName = p.displayName || p.formattedDisplayName || 'Viewer';
                             const initial = displayName.charAt(0).toUpperCase() || '?';
-                            const isHostUser = displayName.toLowerCase().includes('host') || displayName.toLowerCase() === room?.name?.split(' ')[0]?.toLowerCase();
-                            const isCoHostUser = room?.coHostUserId && displayName.toLowerCase() === room.coHostUserId.toLowerCase();
+                            const isHostUser = displayName.toLowerCase().includes('host') || 
+                                               (room?.hostUserId && (
+                                                   displayName.toLowerCase() === room.hostUserId.toLowerCase() ||
+                                                   p.email?.toLowerCase() === room.hostUserId.toLowerCase()
+                                               )) || 
+                                               displayName.toLowerCase() === room?.name?.split(' ')[0]?.toLowerCase();
+                            const isCoHostUser = room?.coHostUserId && (
+                                                 displayName.toLowerCase() === room.coHostUserId.toLowerCase() ||
+                                                 p.email?.toLowerCase() === room.coHostUserId.toLowerCase()
+                                               );
                             const role = isHostUser ? 'Host' : (isCoHostUser ? 'Co-Host' : 'Viewer');
                             return (
                                 <div key={p.id || p.displayName || Math.random()} className="flex items-center justify-between bg-[#1a1a1a] p-3 rounded-xl border border-[#333]">
@@ -3372,8 +3382,10 @@ function TabContent({
                                                     onClick={async () => {
                                                         try {
                                                             const fd = new FormData();
-                                                            const isAlreadyCoHost = room.coHostUserId?.toLowerCase() === displayName.toLowerCase();
-                                                            fd.set('coHostUserId', isAlreadyCoHost ? '' : displayName);
+                                                            const isAlreadyCoHost = room.coHostUserId?.toLowerCase() === displayName.toLowerCase() ||
+                                                                                   (p.email && room.coHostUserId?.toLowerCase() === p.email.toLowerCase());
+                                                            const targetValue = isAlreadyCoHost ? '' : (p.email && !p.email.toLowerCase().endsWith('@sportsfan360.com') ? p.email : displayName);
+                                                            fd.set('coHostUserId', targetValue);
                                                             const res = await fetch(`/api/watch-along/${room.id}`, {
                                                                 method: 'PUT',
                                                                 body: fd
@@ -3385,13 +3397,13 @@ function TabContent({
                                                         } catch (err) { console.error('Toggle Co-Host failed:', err); }
                                                     }}
                                                     className={`px-3 py-1 text-xs font-semibold rounded-full border transition-all flex items-center gap-1 ${
-                                                        room.coHostUserId?.toLowerCase() === displayName.toLowerCase()
+                                                        room.coHostUserId?.toLowerCase() === displayName.toLowerCase() || (p.email && room.coHostUserId?.toLowerCase() === p.email.toLowerCase())
                                                             ? 'bg-yellow-600 border-yellow-500 text-white'
                                                             : 'bg-[#222] hover:bg-yellow-600 border-[#444] text-white'
                                                     }`}
-                                                    title={room.coHostUserId?.toLowerCase() === displayName.toLowerCase() ? "Remove Co-Host" : "Make Co-Host"}
+                                                    title={room.coHostUserId?.toLowerCase() === displayName.toLowerCase() || (p.email && room.coHostUserId?.toLowerCase() === p.email.toLowerCase()) ? "Remove Co-Host" : "Make Co-Host"}
                                                 >
-                                                    <Crown size={10} /> {room.coHostUserId?.toLowerCase() === displayName.toLowerCase() ? "Co-Host" : "Make Co-Host"}
+                                                    <Crown size={10} /> {room.coHostUserId?.toLowerCase() === displayName.toLowerCase() || (p.email && room.coHostUserId?.toLowerCase() === p.email.toLowerCase()) ? "Co-Host" : "Make Co-Host"}
                                                 </button>
                                             )}
                                             <button
@@ -3698,7 +3710,7 @@ export default function WatchRoom({ room, onBack }: Props) {
     };
 
     // Big moments that deserve full confetti — smaller reactions show floating emoji
-    const CONFETTI_MOMENTS = new Set(['WICKET', 'SIX', 'GOAL', 'FOUR']);
+    const CONFETTI_MOMENTS = new Set(['WICKET', 'SIX', 'GOAL', 'FOUR', 'DRUMROLL']);
     // Emoji map for float-up reactions
     const FLOAT_EMOJI_MAP: Record<string, string> = { FIRE: '🔥', CLAP: '👏', HEART: '❤️' };
     const EMOJI_OPTIONS = ["🔥", "👏", "❤️"];
@@ -3765,6 +3777,22 @@ export default function WatchRoom({ room, onBack }: Props) {
         } else if (CONFETTI_MOMENTS.has(momentType)) {
             setConfettiText(momentType);
             setConfettiTrigger(prev => prev + 1);
+            if (momentType === "DRUMROLL") {
+                const audio = new Audio('/sounds/drumroll.mp3');
+                audio.play().catch((err) => console.log("Audio play blocked by browser:", err));
+                // Snappy fade out after 1.8 seconds to keep it short and natural
+                setTimeout(() => {
+                    const fadeInterval = setInterval(() => {
+                        if (audio.volume > 0.1) {
+                            audio.volume = Math.max(0, audio.volume - 0.15);
+                        } else {
+                            clearInterval(fadeInterval);
+                            audio.pause();
+                            audio.currentTime = 0;
+                        }
+                    }, 50);
+                }, 1800);
+            }
         } else if (FLOAT_EMOJI_MAP[momentType]) {
             spawnFloatingEmoji(FLOAT_EMOJI_MAP[momentType]);
         }
@@ -4441,6 +4469,7 @@ export default function WatchRoom({ room, onBack }: Props) {
                                 roomName={room.id ? `Watch-${room.id}` : 'Sportsfan-Watchalong'} 
                                 userRole={userRole}
                                 userName={userName}
+                                userEmail={authUser?.email || session?.user?.email || ""}
                                 activeInterview={activeInterview}
                                 telestratorActive={isTelestratorActive}
                                 telestratorStrokes={telestratorStrokes}
@@ -4552,6 +4581,15 @@ export default function WatchRoom({ room, onBack }: Props) {
                                 >
                                     <div className="w-5 h-5 rounded-full bg-red-600 flex items-center justify-center text-[10px] text-white">❤️</div>
                                     <span>Heart</span>
+                                </button>
+
+                                {/* DRUMROLL */}
+                                <button 
+                                    onClick={() => triggerMoment("DRUMROLL")}
+                                    className="flex-shrink-0 flex items-center gap-2 bg-[#202023] hover:bg-[#2a2a2e] border border-white/5 rounded-full px-3.5 py-1.5 transition-all hover:scale-105 active:scale-95 text-xs font-semibold text-gray-200"
+                                >
+                                    <div className="w-5 h-5 rounded-full bg-yellow-600 flex items-center justify-center text-[10px] text-white">🥁</div>
+                                    <span>Drumroll</span>
                                 </button>
 
                             </div>

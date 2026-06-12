@@ -3366,7 +3366,7 @@ function HomeFeed({
                       letterSpacing: isBlueStyle ? "0.06em" : undefined,
                     }}
                   >
-                    JOIN LIVE · {room.fanCount || 0} fans →
+                    JOIN LIVE
                   </motion.button>
                 </motion.div>
               );

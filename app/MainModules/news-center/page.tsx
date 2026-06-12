@@ -357,7 +357,7 @@ export default function DetailedNewsCenter() {
 
   return (
     <div className="flex flex-col gap-6 px-4 lg:px-6 py-4 w-full text-white font-sans">
-      <Link href="/MainModules/HomePage" className="flex items-center gap-2 text-pink-500 hover:text-pink-400 w-fit self-start">
+      <Link href="/MainModules/ROAR" className="flex items-center gap-2 text-pink-500 hover:text-pink-400 w-fit self-start">
         <ArrowLeft size={20} /> Back to Home
       </Link>
 

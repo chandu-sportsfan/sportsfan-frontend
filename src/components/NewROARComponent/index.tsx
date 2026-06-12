@@ -1,11 +1,10 @@
-// /**
-//  * ROAR — Root component
-//  * Thin orchestrator: state management + navigation only.
-//  * All screen/component logic lives in its own file.
-//  */
 
+
+
+// //NewROARComponent/index.tsx
 // import { useState, useEffect, useRef, useCallback } from "react";
 // import { motion, AnimatePresence } from "framer-motion";
+// import { useSearchParams } from "next/navigation";   // ← ADD THIS IMPORT
 // import axios from "axios";
 
 // import { GLOBAL_CSS } from "./constants/styles";
@@ -20,11 +19,11 @@
 // import Leaderboard from "./screens/Leaderboard";
 // import Profile from "./screens/Profile";
 // import type { Notification, Room } from "./types";
-// // ── NEW: shared context so Header's bell can show ROAR unread count ───────────
 // import { useRoarNotifications } from "@/context/RoarNotificationsContext";
 
 // export default function ROARApp() {
 //   const containerRef = useRef<HTMLDivElement>(null);
+//   const searchParams = useSearchParams();              // ← ADD THIS
 
 //   // ── Bootstrap ──────────────────────────────────────────────────────────────
 //   const [mounted, setMounted] = useState(false);
@@ -33,6 +32,7 @@
 //   const [userBadge, setUserBadge] = useState("RISING_FAN");
 //   const [userSports, setUserSports] = useState<string[]>([]);
 //   const [currentUsername, setCurrentUsername] = useState("RoarUser");
+//   const [currentAvatarUrl, setCurrentAvatarUrl] = useState<string | undefined>();
 
 //   useEffect(() => {
 //     setMounted(true);
@@ -44,10 +44,12 @@
 //           setUserBadge(res.data.user.badge || "RISING_FAN");
 //           setUserSports(res.data.user.sports ?? []);
 //           setCurrentUsername(res.data.user.username || "RoarUser");
+//           setCurrentAvatarUrl(res.data.user.avatarUrl || undefined);
 //           try {
 //             localStorage.setItem("roar_v2_complete", "1");
 //             localStorage.setItem("roar_badge", res.data.user.badge || "RISING_FAN");
 //             localStorage.setItem("roar_username", res.data.user.username || "RoarUser");
+//             if (res.data.user.avatarUrl) localStorage.setItem("roar_avatar_url", res.data.user.avatarUrl);
 //           } catch {}
 //         } else {
 //           setOnboarded(false);
@@ -57,7 +59,6 @@
 //         if (status === 404 || status === 401) {
 //           setOnboarded(false);
 //         } else {
-//           // Offline / 500 fallback — honour local storage
 //           let hasLocal = false;
 //           let badge = "RISING_FAN";
 //           try {
@@ -76,9 +77,15 @@
 
 //   // ── Navigation state ───────────────────────────────────────────────────────
 //   const [activeTab, setActiveTab] = useState("home");
-//   const [overlay, setOverlay] = useState<string | null>(null); // "room" | "leaderboard"
+//   const [overlay, setOverlay] = useState<string | null>(null);
 //   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
 //   const [selectedPost, setSelectedPost] = useState<any | null>(null);
+
+//   // ── Deep-link: open a specific post when ?postId= is in the URL ────────────
+//   // This fires when the user taps "View ROAR post" in the notifications page.
+//   // We wait until both onboarding is done AND posts have loaded before trying
+//   // to find the target post.
+  
 
 //   // ── Compose ────────────────────────────────────────────────────────────────
 //   const [composeOpen, setComposeOpen] = useState(false);
@@ -98,7 +105,7 @@
 //     setTimeout(() => setToast({ visible: false, message: "" }), 3700);
 //   }, []);
 
-//   // ── Notifications — now shared via context so global Header bell can read it
+//   // ── Notifications ──────────────────────────────────────────────────────────
 //   const {
 //     roarNotifications: notifications,
 //     setRoarNotifications: setNotifications,
@@ -106,7 +113,6 @@
 //     markAllRoarRead,
 //   } = useRoarNotifications();
 
-//   // Seed the initial static notifications once on mount
 //   const [notifSeeded, setNotifSeeded] = useState(false);
 //   useEffect(() => {
 //     if (!notifSeeded) {
@@ -129,6 +135,23 @@
 //     }
 //   }, []);
 
+
+//   useEffect(() => {
+//     const postId = searchParams.get("postId");
+//     if (!postId || !onboarded || dbPosts.length === 0) return;
+
+//     const target = dbPosts.find(
+//       (p) => p.postId === postId || p.id === postId,
+//     );
+
+//     if (target) {
+//       setSelectedPost(target);
+//       // Clean the URL so the Back button works normally and
+//       // refreshing the page doesn't re-open the overlay
+//       window.history.replaceState(null, "", window.location.pathname);
+//     }
+//   }, [searchParams, onboarded, dbPosts]); // re-runs once dbPosts finishes loading
+
 //   useEffect(() => {
 //     if (!onboarded) return;
 
@@ -150,6 +173,10 @@
 //         if (res.data?.success) {
 //           setUserSports(res.data.user.sports ?? []);
 //           setUserBadge(res.data.user.badge || "RISING_FAN");
+//           setCurrentAvatarUrl(res.data.user.avatarUrl || undefined);
+//           try {
+//             if (res.data.user.avatarUrl) localStorage.setItem("roar_avatar_url", res.data.user.avatarUrl);
+//           } catch {}
 //         }
 //       } catch (err: any) {
 //         if (err.response?.status === 404) {
@@ -163,6 +190,21 @@
 //     fetchPosts();
 //     fetchUserSports();
 //   }, [onboarded, fetchPosts]); // eslint-disable-line react-hooks/exhaustive-deps
+
+//   useEffect(() => {
+//     const syncAvatar = (event?: Event) => {
+//       const custom = event as CustomEvent<{ avatarUrl?: string }> | undefined;
+//       const avatarFromEvent = custom?.detail?.avatarUrl;
+//       try {
+//         setCurrentAvatarUrl(avatarFromEvent || localStorage.getItem("roar_avatar_url") || undefined);
+//       } catch {
+//         setCurrentAvatarUrl(avatarFromEvent || undefined);
+//       }
+//     };
+//     syncAvatar();
+//     window.addEventListener("roar-profile-updated", syncAvatar);
+//     return () => window.removeEventListener("roar-profile-updated", syncAvatar);
+//   }, []);
 
 //   // Sync notifications with live rooms
 //   useEffect(() => {
@@ -214,7 +256,6 @@
 
 //   const handleLike = useCallback(
 //     async (postId: string) => {
-//       // Optimistic update
 //       setDbPosts((prev) =>
 //         prev.map((post) => {
 //           if (post.id === postId || post._id === postId) {
@@ -234,7 +275,7 @@
 //         await fetchPosts();
 //       } catch (err) {
 //         console.error("Failed to submit like:", err);
-//         await fetchPosts(); // Rollback to actual db state on error
+//         await fetchPosts();
 //       }
 //     },
 //     [fetchPosts],
@@ -243,7 +284,9 @@
 //   const handleDeletePost = useCallback(
 //     async (postId: string, roomId?: string) => {
 //       try {
-//         const url = roomId ? `/api/roar/rooms/${roomId}/messages/${postId}` : `/api/roar/posts/${postId}`;
+//         const url = roomId
+//           ? `/api/roar/rooms/${roomId}/messages/${postId}`
+//           : `/api/roar/posts/${postId}`;
 //         const res = await axios.delete(url);
 //         if (res.data?.success) {
 //           showToast(roomId ? "Message deleted" : "Post deleted");
@@ -262,7 +305,9 @@
 //   const handlePost = useCallback(
 //     async (payload: any) => {
 //       try {
-//         const postType = ["hot_take", "prediction", "debate", "memory", "post"].includes(payload.type) ? payload.type : "hot_take";
+//         const postType = ["hot_take", "prediction", "debate", "memory", "post"].includes(payload.type)
+//           ? payload.type
+//           : "hot_take";
 
 //         let mediaUrls: string[] = [];
 //         if (payload.mediaFiles && payload.mediaFiles.length > 0) {
@@ -280,17 +325,24 @@
 
 //         const isInRoom = overlay === "room" && selectedRoom?.roomId;
 //         let res;
-        
+
 //         if (isInRoom) {
-//           const msgType = postType === "prediction" ? "prediction" : postType === "hot_take" ? "hottake" : "chat";
+//           const msgType =
+//             postType === "prediction" ? "prediction"
+//             : postType === "hot_take" ? "hottake"
+//             : "chat";
 //           res = await axios.post(`/api/roar/rooms/${selectedRoom.roomId}/messages`, {
-//             text: payload.type === "debate" ? `${payload.sideA} VS ${payload.sideB}` : payload.text,
+//             text: payload.type === "debate"
+//               ? `${payload.sideA} VS ${payload.sideB}`
+//               : payload.text,
 //             type: msgType,
 //           });
 //         } else {
 //           res = await axios.post("/api/roar/posts", {
 //             type: postType,
-//             text: payload.type === "debate" ? `${payload.sideA} VS ${payload.sideB}` : payload.text,
+//             text: payload.type === "debate"
+//               ? `${payload.sideA} VS ${payload.sideB}`
+//               : payload.text,
 //             sideA: payload.sideA,
 //             sideB: payload.sideB,
 //             memCtx: payload.memCtx,
@@ -307,11 +359,11 @@
 //             showToast("✏️ Post is live in room!");
 //           } else {
 //             const toastMap: Record<string, string> = {
-//               hot_take: "🔥 Hot Take is live · 47 fans may see it",
+//               hot_take:   "🔥 Hot Take is live · 47 fans may see it",
 //               prediction: "📊 Prediction posted · Let's see if you're right",
-//               debate: "⚡ Debate started · Get the fans talking",
-//               memory: "🕰 Memory shared · OG fans will feel this",
-//               post: "✏️ Post is live · Fans can see it now",
+//               debate:     "⚡ Debate started · Get the fans talking",
+//               memory:     "🕰 Memory shared · OG fans will feel this",
+//               post:       "✏️ Post is live · Fans can see it now",
 //             };
 //             showToast(toastMap[postType] || "🔥 Your take is live");
 //             fetchPosts();
@@ -345,14 +397,19 @@
 //       localStorage.setItem("roar_username", username);
 //     } catch {}
 //     try {
-//       await axios.post("/api/roar/onboarding", { sports: prefs.sports || ["cricket"], teams: prefs.teams || [], tenure: prefs.tenure || "rising", badge, firstContribution: prefs.firstContribution || null });
+//       await axios.post("/api/roar/onboarding", {
+//         sports: prefs.sports || ["cricket"],
+//         teams: prefs.teams || [],
+//         tenure: prefs.tenure || "rising",
+//         badge,
+//         firstContribution: prefs.firstContribution || null,
+//       });
 //     } catch (err) {
 //       console.error("Failed to save onboarding to backend:", err);
 //     }
 //   }, []);
 
 //   // ── Derived ────────────────────────────────────────────────────────────────
-//   // unreadCount is still used for HomeFeed's internal bell (now removed), kept for safety
 //   const unreadCount = notifications.filter((n) => !n.read).length;
 //   const isRoom = overlay === "room";
 //   const isLB = overlay === "leaderboard";
@@ -360,7 +417,10 @@
 //   // ── Loading spinner ────────────────────────────────────────────────────────
 //   if (!mounted || checkingProfile) {
 //     return (
-//       <div className="roar-root" style={{ minHeight: "600px", height: "100%", background: "#050508", display: "flex", alignItems: "center", justifyContent: "center", position: "relative", borderRadius: "24px", border: "1px solid #252538" }}>
+//       <div
+//         className="roar-root"
+//         style={{ minHeight: "600px", height: "100%", background: "#050508", display: "flex", alignItems: "center", justifyContent: "center", position: "relative", borderRadius: "24px", border: "1px solid #252538" }}
+//       >
 //         <style dangerouslySetInnerHTML={{ __html: GLOBAL_CSS }} />
 //         <div style={{ textAlign: "center", zIndex: 10 }}>
 //           <div style={{ width: "40px", height: "40px", border: "3px solid rgba(255,255,255,0.1)", borderTop: "3px solid #E91E8C", borderRadius: "50%", animation: "roar-spin 1s linear infinite", margin: "0 auto 16px" }} />
@@ -372,10 +432,10 @@
 //   }
 
 //   return (
-//     <div className="roar-root">
+//     <div className={`roar-root${isRoom ? " roar-room-active" : ""}`}>
 //       <style dangerouslySetInnerHTML={{ __html: GLOBAL_CSS }} />
 
-//       <div className="roar-inner" ref={containerRef} style={{ height: "100%", display: "flex", flexDirection: "column" }}>
+//       <div className="roar-inner" ref={containerRef} style={{ height: "100%", display: "flex", flexDirection: "column",  overflow: "hidden" }}>
 //         {/* Ambient background */}
 //         <div style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 0, background: "radial-gradient(ellipse 90% 55% at 50% -15%,rgba(233,30,140,0.18),transparent 55%),radial-gradient(ellipse 70% 45% at 100% 80%,rgba(255,107,53,0.12),transparent 50%),radial-gradient(ellipse 50% 40% at 0% 60%,rgba(0,232,198,0.08),transparent 45%),var(--bg-primary)" }} />
 
@@ -388,7 +448,10 @@
 //             { left: "72%", color: "var(--accent-magenta)", size: 4, duration: "20s", delay: "1s" },
 //             { left: "88%", color: "var(--accent-yellow)", size: 3, duration: "16s", delay: "7s" },
 //           ].map(({ left, color, size, duration, delay }) => (
-//             <div key={left} style={{ position: "absolute", bottom: -10, left, width: size, height: size, borderRadius: "50%", background: color, animation: `roar-driftUp ${duration} linear infinite ${delay}` }} />
+//             <div
+//               key={left}
+//               style={{ position: "absolute", bottom: -10, left, width: size, height: size, borderRadius: "50%", background: color, animation: `roar-driftUp ${duration} linear infinite ${delay}` }}
+//             />
 //           ))}
 //         </div>
 
@@ -403,26 +466,32 @@
 
 //         {/* Main content */}
 //         {onboarded && (
-//           <div style={{ position: "relative", zIndex: 1, flex: 1, minHeight: 0, overflow: "clip" }}>
+//           <div style={{ position: "relative", zIndex: 1, flex: 1, minHeight: 0,  display: "flex", flexDirection: "column",  overflow: "hidden",  }}>
 //             <AnimatePresence mode="wait">
 //               {isLB ? (
-//                 <motion.div key="lb" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} style={{ height: "100%" }}>
+//                 <motion.div key="lb" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
 //                   <Leaderboard onBack={() => setOverlay(null)} onCompose={() => openCompose("prediction")} />
 //                 </motion.div>
 //               ) : isRoom ? (
-//                 <motion.div key="room" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} style={{ height: "100%", display: "flex", flexDirection: "column" }}>
+//                 <motion.div key="room" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
+//                   <style dangerouslySetInnerHTML={{ __html: `
+//                     #global-header-desktop, #global-header-tablet, #global-header-mobile { display: none !important; }
+//                   `}} />
 //                   <DiscussionRoom
 //                     roomId={selectedRoom?.roomId}
 //                     roomName={selectedRoom?.name}
 //                     fanCount={selectedRoom?.fanCount}
+//                     score={selectedRoom?.score}
+//                     scoreSubtitle={selectedRoom?.scoreSubtitle}
 //                     onBack={() => { setOverlay(null); setActiveTab("home"); }}
 //                     onToast={showToast}
 //                     onPostClick={(post) => setSelectedPost(post)}
 //                     onCompose={(type) => openCompose(type)}
+//                     currentAvatarUrl={currentAvatarUrl}
 //                   />
 //                 </motion.div>
 //               ) : (
-//                 <motion.div key={activeTab} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }} style={{ height: "100%" }}>
+//                 <motion.div key={activeTab} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }} style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
 //                   {activeTab === "home" && (
 //                     <HomeFeed
 //                       onJoinRoom={(room) => { if (room) setSelectedRoom(room); else if (rooms.length) setSelectedRoom(rooms[0]); setOverlay("room"); }}
@@ -442,6 +511,7 @@
 //                       userSports={userSports}
 //                       onQuickCompose={(t) => openCompose(t)}
 //                       currentUsername={currentUsername}
+//                       currentAvatarUrl={currentAvatarUrl}
 //                     />
 //                   )}
 //                   {activeTab === "profile" && (
@@ -471,9 +541,18 @@
 //           </div>
 //         )}
 
-//         {/* Post details overlay */}
+//         {/* Post details overlay — opened either by tapping a post card
+//             OR automatically via the ?postId= deep-link from notifications */}
 //         {onboarded && selectedPost && (
-//           <PostDetailsOverlay post={selectedPost} onClose={() => setSelectedPost(null)} onToast={showToast} onVote={handleVote} onDeletePost={handleDeletePost} currentUsername={currentUsername} />
+//           <PostDetailsOverlay
+//             post={selectedPost}
+//             onClose={() => setSelectedPost(null)}
+//             onToast={showToast}
+//             onVote={handleVote}
+//             onDeletePost={handleDeletePost}
+//             currentUsername={currentUsername}
+//             currentAvatarUrl={currentAvatarUrl}
+//           />
 //         )}
 
 //         {/* Compose modal */}
@@ -485,11 +564,13 @@
 //             initialType={composeType}
 //           />
 //         )}
-
 //       </div>
 //     </div>
 //   );
 // }
+
+
+
 
 
 
@@ -502,7 +583,7 @@
 //NewROARComponent/index.tsx
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useSearchParams } from "next/navigation";   // ← ADD THIS IMPORT
+import { useSearchParams } from "next/navigation";
 import axios from "axios";
 
 import { GLOBAL_CSS } from "./constants/styles";
@@ -522,7 +603,8 @@ import { useRoarRoom } from "@/context/RoarRoomContext";
 
 export default function ROARApp() {
   const containerRef = useRef<HTMLDivElement>(null);
-  const searchParams = useSearchParams();              // ← ADD THIS
+  const searchParams = useSearchParams();
+  const [likingPosts, setLikingPosts] = useState<Set<string>>(new Set());
 
   // ── Bootstrap ──────────────────────────────────────────────────────────────
   const [mounted, setMounted] = useState(false);
@@ -580,12 +662,6 @@ export default function ROARApp() {
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
   const [selectedPost, setSelectedPost] = useState<any | null>(null);
 
-  // ── Deep-link: open a specific post when ?postId= is in the URL ────────────
-  // This fires when the user taps "View ROAR post" in the notifications page.
-  // We wait until both onboarding is done AND posts have loaded before trying
-  // to find the target post.
-  
-
   // ── Compose ────────────────────────────────────────────────────────────────
   const [composeOpen, setComposeOpen] = useState(false);
   const [composeType, setComposeType] = useState<string | null>(null);
@@ -603,6 +679,15 @@ export default function ROARApp() {
     setTimeout(() => setToast((t) => ({ ...t, visible: false })), 3200);
     setTimeout(() => setToast({ visible: false, message: "" }), 3700);
   }, []);
+
+    const navHeight = typeof window !== "undefined"
+     ? (() => {
+         const el = document.querySelector(".roar-bottom-nav");
+         if (!el) return 0;
+         const rect = el.getBoundingClientRect();
+         return Math.max(0, window.innerHeight - rect.top);
+       })()
+     : 0;
 
   // ── Notifications ──────────────────────────────────────────────────────────
   const {
@@ -627,13 +712,12 @@ export default function ROARApp() {
 
   const fetchPosts = useCallback(async () => {
     try {
-      const res = await axios.get("/api/roar/posts");
+      const res = await axios.get(`/api/roar/posts?t=${Date.now()}`);
       if (res.data?.success) setDbPosts(res.data.posts);
     } catch (err) {
       console.error("Failed to fetch posts:", err);
     }
   }, []);
-
 
   useEffect(() => {
     const postId = searchParams.get("postId");
@@ -645,21 +729,25 @@ export default function ROARApp() {
 
     if (target) {
       setSelectedPost(target);
-      // Clean the URL so the Back button works normally and
-      // refreshing the page doesn't re-open the overlay
       window.history.replaceState(null, "", window.location.pathname);
     }
-  }, [searchParams, onboarded, dbPosts]); // re-runs once dbPosts finishes loading
+  }, [searchParams, onboarded, dbPosts]);
 
   useEffect(() => {
     if (!onboarded) return;
 
     const fetchRooms = async () => {
       try {
-        const res = await axios.get("/api/roar/rooms");
+        const res = await axios.get(`/api/roar/rooms?t=${Date.now()}`);
         if (res.data?.success) {
           setRooms(res.data.rooms);
-          if (res.data.rooms.length > 0 && !selectedRoom) setSelectedRoom(res.data.rooms[0]);
+          // ── KEY FIX: only set selectedRoom if we don't already have one ──
+          // Previously this ran unconditionally and could override the user
+          // navigating back (overlay=null) by immediately re-selecting a room.
+          setSelectedRoom((prev) => {
+            if (prev) return prev; // keep existing selection
+            return res.data.rooms.length > 0 ? res.data.rooms[0] : null;
+          });
         }
       } catch (err) {
         console.error("Failed to fetch rooms:", err);
@@ -688,6 +776,12 @@ export default function ROARApp() {
     fetchRooms();
     fetchPosts();
     fetchUserSports();
+
+    const interval = setInterval(() => {
+      fetchRooms();
+      fetchPosts();
+    }, 5000);
+    return () => clearInterval(interval);
   }, [onboarded, fetchPosts]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
@@ -743,42 +837,114 @@ export default function ROARApp() {
   // ── Actions ────────────────────────────────────────────────────────────────
   const handleVote = useCallback(
     async (postId: string, voteType: "agree" | "disagree" | null) => {
-      try {
-        await axios.post(`/api/roar/posts/${postId}/vote`, { vote: voteType });
-        await fetchPosts();
-      } catch (err) {
-        console.error("Failed to submit vote:", err);
-      }
-    },
-    [fetchPosts],
-  );
-
-  const handleLike = useCallback(
-    async (postId: string) => {
       setDbPosts((prev) =>
         prev.map((post) => {
-          if (post.id === postId || post._id === postId) {
-            const userLiked = post.userLiked ?? false;
-            return {
-              ...post,
-              userLiked: !userLiked,
-              likeCount: Math.max(0, (post.likeCount ?? 0) + (userLiked ? -1 : 1)),
-            };
+          if (post.id === postId || post._id === postId || post.postId === postId) {
+            const currentVote = post.userVote;
+            let agreeCount = post.agreeCount ?? 0;
+            let disagreeCount = post.disagreeCount ?? 0;
+
+            if (currentVote === "agree") agreeCount = Math.max(0, agreeCount - 1);
+            if (currentVote === "disagree") disagreeCount = Math.max(0, disagreeCount - 1);
+
+            if (voteType === "agree") agreeCount += 1;
+            if (voteType === "disagree") disagreeCount += 1;
+
+            return { ...post, userVote: voteType, agreeCount, disagreeCount };
           }
           return post;
         })
       );
 
       try {
-        await axios.post(`/api/roar/posts/${postId}/like`);
-        await fetchPosts();
+        await axios.post(`/api/roar/posts/${postId}/vote`, { vote: voteType });
+        // Removed immediate fetchPosts() to prevent read-after-write DB lag from flickering the UI
       } catch (err) {
-        console.error("Failed to submit like:", err);
+        console.error("Failed to submit vote:", err);
         await fetchPosts();
       }
     },
     [fetchPosts],
   );
+
+  // const handleLike = useCallback(
+  //   async (postId: string) => {
+  //     setDbPosts((prev) =>
+  //       prev.map((post) => {
+  //         if (post.id === postId || post._id === postId) {
+  //           const userLiked = post.userLiked ?? false;
+  //           return {
+  //             ...post,
+  //             userLiked: !userLiked,
+  //             likeCount: Math.max(0, (post.likeCount ?? 0) + (userLiked ? -1 : 1)),
+  //           };
+  //         }
+  //         return post;
+  //       })
+  //     );
+
+  //     try {
+  //       await axios.post(`/api/roar/posts/${postId}/like`);
+  //       await fetchPosts();
+  //     } catch (err) {
+  //       console.error("Failed to submit like:", err);
+  //       await fetchPosts();
+  //     }
+  //   },
+  //   [fetchPosts],
+  // );
+
+const handleLike = useCallback(
+  async (postId: string) => {
+    if (likingPosts.has(postId)) return;
+    setLikingPosts(prev => new Set(prev).add(postId));
+
+    // Optimistic update
+    setDbPosts((prev) =>
+      prev.map((post) => {
+        if (post.postId === postId || post._id === postId) {
+          const userLiked = post.userLiked ?? false;
+          return {
+            ...post,
+            userLiked: !userLiked,
+            likeCount: Math.max(0, (post.likeCount ?? 0) + (userLiked ? -1 : 1)),
+          };
+        }
+        return post;
+      })
+    );
+
+    try {
+      await axios.post(`/api/roar/posts/${postId}/like`);
+      // ✅ Sync server state silently in background — no loading flash
+      fetchPosts();
+    } catch (err) {
+      console.error("Failed to submit like:", err);
+      // Revert on error
+      setDbPosts((prev) =>
+        prev.map((post) => {
+          if (post.postId === postId || post._id === postId) {
+            const userLiked = post.userLiked ?? false;
+            return {
+              ...post,
+              userLiked: !userLiked,
+              likeCount: Math.max(0, (post.likeCount ?? 0) + (userLiked ? 1 : -1)),
+            };
+          }
+          return post;
+        })
+      );
+      showToast("Failed to like post");
+    } finally {
+      setLikingPosts(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(postId);
+        return newSet;
+      });
+    }
+  },
+  [showToast, likingPosts, fetchPosts], // ✅ added fetchPosts
+);
 
   const handleDeletePost = useCallback(
     async (postId: string, roomId?: string) => {
@@ -883,6 +1049,13 @@ export default function ROARApp() {
     setActiveTab(tab);
   };
 
+  // ── KEY FIX: dedicated back handler that uses onPointerDown so it fires
+  // before any touch-delay or bubbling can re-trigger the room overlay.
+  const handleRoomBack = useCallback(() => {
+    setOverlay(null);
+    setActiveTab("home");
+  }, []);
+
   const completeOnboarding = useCallback(async (prefs: any) => {
     const username = prefs.username || "RoarUser";
     const badge = prefs.badge || "RISING_FAN";
@@ -931,10 +1104,10 @@ export default function ROARApp() {
   }
 
   return (
-    <div className="roar-root">
+    <div className={`roar-root${isRoom ? " roar-room-active" : ""}`}>
       <style dangerouslySetInnerHTML={{ __html: GLOBAL_CSS }} />
 
-      <div className="roar-inner" ref={containerRef} style={{ height: "100%", display: "flex", flexDirection: "column" }}>
+      <div className="roar-inner" ref={containerRef} style={{ height: "100%", display: "flex", flexDirection: "column", overflow: "hidden" }}>
         {/* Ambient background */}
         <div style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 0, background: "radial-gradient(ellipse 90% 55% at 50% -15%,rgba(233,30,140,0.18),transparent 55%),radial-gradient(ellipse 70% 45% at 100% 80%,rgba(255,107,53,0.12),transparent 50%),radial-gradient(ellipse 50% 40% at 0% 60%,rgba(0,232,198,0.08),transparent 45%),var(--bg-primary)" }} />
 
@@ -965,7 +1138,7 @@ export default function ROARApp() {
 
         {/* Main content */}
         {onboarded && (
-          <div style={{ position: "relative", zIndex: 1, flex: 1, minHeight: 0, overflow: "clip", display: "flex", flexDirection: "column" }}>
+          <div style={{ position: "relative", zIndex: 1, flex: 1, minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}>
             <AnimatePresence mode="wait">
               {isLB ? (
                 <motion.div key="lb" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
@@ -982,7 +1155,7 @@ export default function ROARApp() {
                     fanCount={selectedRoom?.fanCount}
                     score={selectedRoom?.score}
                     scoreSubtitle={selectedRoom?.scoreSubtitle}
-                    onBack={() => { setOverlay(null); setActiveTab("home"); }}
+                    onBack={handleRoomBack}
                     onToast={showToast}
                     onPostClick={(post) => setSelectedPost(post)}
                     onCompose={(type) => openCompose(type)}
@@ -1040,9 +1213,7 @@ export default function ROARApp() {
           </div>
         )}
 
-        {/* Post details overlay — opened either by tapping a post card
-            OR automatically via the ?postId= deep-link from notifications */}
-        {onboarded && selectedPost && (
+        {/* {onboarded && selectedPost && (
           <PostDetailsOverlay
             post={selectedPost}
             onClose={() => setSelectedPost(null)}
@@ -1052,9 +1223,22 @@ export default function ROARApp() {
             currentUsername={currentUsername}
             currentAvatarUrl={currentAvatarUrl}
           />
-        )}
+        )} */}
 
-        {/* Compose modal */}
+{onboarded && selectedPost && (
+  // <div className="roar-fixed-portal">
+    <PostDetailsOverlay
+      post={selectedPost}
+      onClose={() => setSelectedPost(null)}
+      onToast={showToast}
+      onVote={handleVote}
+      onDeletePost={handleDeletePost}
+      currentUsername={currentUsername}
+      currentAvatarUrl={currentAvatarUrl}
+      bottomNavHeight={navHeight}
+    />
+  // {/* </div> */}
+)}
         {onboarded && (
           <ComposeModal
             open={composeOpen}

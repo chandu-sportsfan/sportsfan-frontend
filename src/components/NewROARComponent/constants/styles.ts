@@ -53,18 +53,42 @@ export const GLOBAL_CSS = `
 }
 
 @media (max-width: 768px) {
+  .roar-root.roar-room-active {
+    position: fixed;
+    top: 0;
+    right: 0;
+    height: 100%; 
+    bottom: 0px;
+    left: 0;
+    z-index: 9999;
+    width: 100vw;
+    height: calc(100dvh - 60px);
+    min-height: calc(100dvh - 60px);
+  }
+  .roar-root.roar-room-active .roar-inner {
+    height: calc(100dvh - 60px);
+    min-height: calc(100dvh - 60px);
+  }
   .roar-inner {
     width: 100%;
     position: relative;
+    height: 100%;
     overflow: hidden;
     background: var(--bg-primary);
   }
+
   .roar-root .mobile-padding-bottom {
     padding-bottom: calc(env(safe-area-inset-bottom, 24px) + 80px) !important;
   }
-  .roar-root .screen-scroll {
-    padding-bottom: calc(env(safe-area-inset-bottom, 24px) + 80px) !important;
-  }
+
+ .roar-root .screen-scroll {
+  padding-top: 4px;
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 100px) !important;
+}
+  .roar-overlay-open .screen-scroll {
+  overflow: hidden !important;
+}
+
 }
 
 .roar-inner::before {
@@ -170,12 +194,22 @@ export const GLOBAL_CSS = `
 }
 .roar-root .screen-scroll {
   height: 100%;
+  min-height: 0;
+  flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
   scroll-behavior: smooth;
-  padding-bottom: 24px;
+  padding-top: 4px;
+  padding-bottom: 32px;
 }
+ 
+.roar-root .bottom-nav {
+  position: relative;
+  z-index: 10;
+  flex-shrink: 0;
+}
+
 .roar-root .gradient-border {
   position: relative;
   background: var(--bg-secondary);

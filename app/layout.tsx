@@ -56,10 +56,14 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: posthogScript }}
         />
       </head>
-      <body
+      {/* <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased !p-0 overflow-x-hidden`}
         suppressHydrationWarning
-      >
+      > */}
+      <body
+  className={`${geistSans.variable} ${geistMono.variable} antialiased !p-0 overflow-hidden h-full`}
+  suppressHydrationWarning
+>
         <SessionProvider>
           <AuthProvider>
             <ClubProfileProvider>
@@ -76,10 +80,9 @@ export default function RootLayout({
                                   <WPLPlayerProfileProvider>
                                     <FifaPlayerProfileProvider>
                                       <RoarNotificationsProvider>
-                                        <RoarRoomProvider>
-                                          <main>{children}</main>
-                                        </RoarRoomProvider>
-                                      </RoarNotificationsProvider>
+                                        {/* <main>{children}</main> */}
+                                        <main className="h-full flex flex-col">{children}</main>
+                                        </RoarNotificationsProvider>
                                     </FifaPlayerProfileProvider>
                                   </WPLPlayerProfileProvider>
                                 </AIChatProvider>

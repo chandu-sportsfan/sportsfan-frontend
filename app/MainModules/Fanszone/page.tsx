@@ -1,5 +1,6 @@
 "use client";
-
+import { motion } from "framer-motion";
+import { useRouter } from "next/navigation";
 import { useState, useMemo, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
@@ -12,6 +13,7 @@ import {
   Download, ChevronLeft, ChevronRight, MoreHorizontal, X, Headphones,
   Megaphone, MessagesSquare, Flame, Sparkles
 } from "lucide-react";
+import BackButton from "@/src/components/ReusableComponent/BackButton";
 
 // 
 // TYPES
@@ -783,8 +785,8 @@ export default function FanZoneDashboard() {
 
   return (
     <div className="min-h-screen bg-[#050505] text-white font-sans selection:bg-rose-500/30 pb-20">
+      <BackButton />
       <main className="max-w-[1400px] mx-auto px-3 py-3 sm:p-6 space-y-4 sm:space-y-6">
-
         {/* ── HERO ── */}
         <div className="relative rounded-xl overflow-hidden border border-white/10 bg-[#09090b] flex items-center min-h-[90px]">
           <div

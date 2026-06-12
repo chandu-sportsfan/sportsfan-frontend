@@ -24,7 +24,7 @@ export default function ComposeModal({ open, onClose, onPost, initialType }: Pro
   const [match, setMatch] = useState("None / General");
   const [confidence, setConf] = useState(7);
   const [audience, setAud] = useState("Everyone");
-  const [sport, setSport] = useState("cricket");
+  const [sport, setSport] = useState<string>("");
   const [postText, setPostText] = useState("");
   const [mediaFiles, setMediaFiles] = useState<File[]>([]);
   const [domReady, setDomReady] = useState(false);
@@ -76,7 +76,7 @@ export default function ComposeModal({ open, onClose, onPost, initialType }: Pro
     setSideA("");
     setSideB("");
     setMemCtx("");
-    setSport("cricket");
+    setSport("");
     setPostText("");
     setMediaFiles([]);
     setMatch("None / General");
@@ -149,14 +149,33 @@ export default function ComposeModal({ open, onClose, onPost, initialType }: Pro
                 <div style={{ width: 40, height: 4, borderRadius: 2, background: "var(--border)" }} />
               </div>
               <div className="mobile-padding-bottom" style={{ padding: "0 20px 40px", maxHeight: "75vh", overflowY: "auto" }}>
-                <h2 className="font-display" style={{ fontSize: 28, letterSpacing: "0.04em", marginBottom: 16, textTransform: "uppercase" }}>
-                  {selected === "hot_take" && "Create Hot Take"}
-                  {selected === "prediction" && "Create Prediction"}
-                  {selected === "debate" && "Create Debate"}
-                  {selected === "memory" && "Create Memory"}
-                  {selected === "post" && "Create Post"}
-                  {!selected && "Create"}
-                </h2>
+                {/* Header row with title + X close button */}
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+                  <h2 className="font-display" style={{ fontSize: 28, letterSpacing: "0.04em", textTransform: "uppercase", margin: 0 }}>
+                    {selected === "hot_take" && "Create Hot Take"}
+                    {selected === "prediction" && "Create Prediction"}
+                    {selected === "debate" && "Create Debate"}
+                    {selected === "memory" && "Create Memory"}
+                    {selected === "post" && "Create Post"}
+                    {!selected && "Create"}
+                  </h2>
+                  <button
+                    onClick={onClose}
+                    style={{
+                      width: 32, height: 32, borderRadius: "50%",
+                      background: "rgba(255,255,255,0.08)",
+                      border: "1px solid var(--border)",
+                      color: "var(--text-secondary)",
+                      fontSize: 16, cursor: "pointer",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      flexShrink: 0,
+                    }}
+                    aria-label="Close"
+                  >
+                    ✕
+                  </button>
+                </div>
+
                 {!selected ? (
                   <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                     {COMPOSE_OPTIONS.map((opt) => (
@@ -178,16 +197,6 @@ export default function ComposeModal({ open, onClose, onPost, initialType }: Pro
                   </div>
                 ) : (
                   <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
-                    <button
-                      onClick={() => {
-                        setSelected(null);
-                        onClose();
-                      }}
-                      style={{ fontSize: 13, color: "var(--accent-magenta)", marginBottom: 12, background: "none", border: "none", cursor: "pointer" }}
-                    >
-                      ← Back
-                    </button>
-
                     {/* Hot Take / Memory */}
                     {(selected === "hot_take" || selected === "memory") && (
                       <>
@@ -198,14 +207,14 @@ export default function ComposeModal({ open, onClose, onPost, initialType }: Pro
                           placeholder={selected === "hot_take" ? "What's your boldest take?" : "Your memory or flashback moment..."}
                           style={inputStyle}
                         />
-                        {selected === "memory" && (
+                        {/* {selected === "memory" && (
                           <input
                             value={memCtx}
                             onChange={(e) => setMemCtx(e.target.value)}
                             placeholder="Which match or moment?"
                             style={{ ...inputStyle, marginTop: 8, borderRadius: 14 }}
                           />
-                        )}
+                        )} */}
                       </>
                     )}
 
@@ -219,24 +228,18 @@ export default function ComposeModal({ open, onClose, onPost, initialType }: Pro
                           placeholder="Your prediction..."
                           style={{ ...inputStyle, fontStyle: "italic" }}
                         />
-                        <label style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 12, display: "block" }}>
-                          Confidence: {confidence}/10
-                        </label>
-                        <input
+                        {/* <input
                           type="range" min={1} max={10} value={confidence}
                           onChange={(e) => setConf(+e.target.value)}
                           style={{ width: "100%", accentColor: "var(--accent-magenta)", marginTop: 4 }}
-                        />
+                        /> */}
                       </>
                     )}
 
                     {/* Debate */}
                     {selected === "debate" && (
                       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                        <input value={sideA} onChange={(e) => setSideA(e.target.value)} placeholder="Side A"
-                          style={{ ...inputStyle, borderRadius: 14 }} />
-                        <p className="font-display" style={{ textAlign: "center", color: "var(--text-muted)" }}>VS</p>
-                        <input value={sideB} onChange={(e) => setSideB(e.target.value)} placeholder="Side B"
+                        <input value={sideA} onChange={(e) => setSideA(e.target.value)} placeholder="Create a debate"
                           style={{ ...inputStyle, borderRadius: 14 }} />
                       </div>
                     )}
@@ -302,7 +305,7 @@ export default function ComposeModal({ open, onClose, onPost, initialType }: Pro
                       </>
                     )}
 
-                    {/* Sport and Match selector */}
+                    {/* Sport selector */}
                     {(selected === "hot_take" || selected === "prediction" || selected === "debate" || selected === "memory" || selected === "post") && (
                       <>
                         <label style={{ fontSize: 11, color: "var(--text-muted)", display: "block", marginTop: 16, marginBottom: 4 }}>Sport</label>
@@ -329,33 +332,8 @@ export default function ComposeModal({ open, onClose, onPost, initialType }: Pro
                             );
                           })}
                         </div>
-
-                        <label style={{ fontSize: 11, color: "var(--text-muted)", display: "block", marginTop: 12, marginBottom: 4 }}>Match Context</label>
-                        <select
-                          value={match}
-                          onChange={(e) => setMatch(e.target.value)}
-                          style={{ width: "100%", marginTop: 4, padding: "10px 12px", borderRadius: 14, background: "rgba(0,0,0,0.4)", border: "1px solid var(--border)", color: "var(--text-primary)", fontSize: 16 }}
-                        >
-                          {filteredMatches.map((m) => (
-                            <option key={m} value={m}>{m}</option>
-                          ))}
-                        </select>
                       </>
                     )}
-
-                    {/* Audience */}
-                    <label style={{ fontSize: 11, color: "var(--text-muted)", display: "block", marginTop: 16, marginBottom: 4 }}>
-                      Who can see this?
-                    </label>
-                    <select
-                      value={audience}
-                      onChange={(e) => setAud(e.target.value)}
-                      style={{ width: "100%", padding: "10px 12px", borderRadius: 14, background: "rgba(0,0,0,0.4)", border: "1px solid var(--border)", color: "var(--text-primary)", fontSize: 16, marginBottom: 16 }}
-                    >
-                      {["Everyone", "Cricket fans", "Football fans", "MI fans only"].map((a) => (
-                        <option key={a}>{a}</option>
-                      ))}
-                    </select>
 
                     <motion.button
                       whileTap={{ scale: 0.97 }}

@@ -230,13 +230,13 @@ const TEAMS = [
   { id: "Pak", label: "Pakistan", color: "#2E7D32", logo: "/images/Container (1).png" },
   { id: "Aus", label: "Aus", color: "#FFB300", logo: "/images/Container (2).png" },
   { id: "Eng", label: "England", color: "#C62828", logo: "/images/Container (3).png" },
-  
+
   // Row 2: IPL Teams
   { id: "MI", label: "MI", color: "#0277BD", logo: "/images/Container (4).png" },
   { id: "CSK", label: "CSK", color: "#FBC02D", logo: "/images/Container (5).png" },
   { id: "RCB", label: "RCB", color: "#D32F2F", logo: "/images/Container (6).png" },
   { id: "KKR", label: "KKR", color: "#4527A0", logo: "/images/Container (7).png" },
-  
+
   // Row 3: ISL Teams
   { id: "MCFC", label: "MCFC", color: "#0288D1", logo: "/images/Container (11).png" },
   { id: "BFC", label: "BFC", color: "#D32F2F", logo: "/images/Container (10).png" },
@@ -1364,23 +1364,23 @@ function Onboarding({ onComplete }: { onComplete: (prefs: any) => void }) {
                       }}
                     >
                       <span
-  style={{
-    width: 52,
-    height: 52,
-    borderRadius: "50%",
-    overflow: "hidden",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    background: `${t.color}44`,
-  }}
->
-  <img
-    src={t.logo}
-    alt={t.label}
-    style={{ width: "100%", height: "100%", objectFit: "cover" }}
-  />
-</span>
+                        style={{
+                          width: 52,
+                          height: 52,
+                          borderRadius: "50%",
+                          overflow: "hidden",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          background: `${t.color}44`,
+                        }}
+                      >
+                        <img
+                          src={t.logo}
+                          alt={t.label}
+                          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                        />
+                      </span>
                       <span
                         style={{ fontSize: 10, color: "var(--text-secondary)" }}
                       >
@@ -1918,122 +1918,221 @@ function ComposeModal({
                 border: "1px solid rgba(255,255,255,0.08)",
               }}
             >
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "center",
-                padding: "12px 0 4px",
-              }}
-            >
               <div
                 style={{
-                  width: 40,
-                  height: 4,
-                  borderRadius: 2,
-                  background: "var(--border)",
-                }}
-              />
-            </div>
-            <div
-              style={{
-                padding: "0 20px 40px",
-                maxHeight: "75vh",
-                overflowY: "auto",
-              }}
-            >
-              <h2
-                className="font-display"
-                style={{
-                  fontSize: 28,
-                  letterSpacing: "0.04em",
-                  marginBottom: 16,
+                  display: "flex",
+                  justifyContent: "center",
+                  padding: "12px 0 4px",
                 }}
               >
-                Create
-              </h2>
-              {!selected ? (
                 <div
-                  style={{ display: "flex", flexDirection: "column", gap: 12 }}
+                  style={{
+                    width: 40,
+                    height: 4,
+                    borderRadius: 2,
+                    background: "var(--border)",
+                  }}
+                />
+              </div>
+              <div
+                style={{
+                  padding: "0 20px 40px",
+                  maxHeight: "75vh",
+                  overflowY: "auto",
+                }}
+              >
+                <h2
+                  className="font-display"
+                  style={{
+                    fontSize: 28,
+                    letterSpacing: "0.04em",
+                    marginBottom: 16,
+                  }}
                 >
-                  {COMPOSE_OPTIONS.map((opt) => (
-                    <motion.button
-                      key={opt.id}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={() => setSelected(opt.id)}
+                  Create
+                </h2>
+                {!selected ? (
+                  <div
+                    style={{ display: "flex", flexDirection: "column", gap: 12 }}
+                  >
+                    {COMPOSE_OPTIONS.map((opt) => (
+                      <motion.button
+                        key={opt.id}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => setSelected(opt.id)}
+                        style={{
+                          padding: "16px",
+                          borderRadius: 20,
+                          background: "var(--bg-tertiary)",
+                          border: "1px solid var(--border)",
+                          textAlign: "left",
+                          cursor: "pointer",
+                          width: "100%",
+                        }}
+                      >
+                        <span style={{ fontSize: 28 }}>{opt.emoji}</span>
+                        <p
+                          className="font-display"
+                          style={{ fontSize: 18, marginTop: 8 }}
+                        >
+                          {opt.title}
+                        </p>
+                        <p
+                          style={{ fontSize: 13, color: "var(--text-secondary)" }}
+                        >
+                          {opt.desc}
+                        </p>
+                      </motion.button>
+                    ))}
+                  </div>
+                ) : (
+                  <motion.div
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                  >
+                    <button
+                      onClick={() => setSelected(null)}
                       style={{
-                        padding: "16px",
-                        borderRadius: 20,
-                        background: "var(--bg-tertiary)",
-                        border: "1px solid var(--border)",
-                        textAlign: "left",
+                        fontSize: 13,
+                        color: "var(--accent-magenta)",
+                        marginBottom: 12,
+                        background: "none",
+                        border: "none",
                         cursor: "pointer",
-                        width: "100%",
                       }}
                     >
-                      <span style={{ fontSize: 28 }}>{opt.emoji}</span>
-                      <p
-                        className="font-display"
-                        style={{ fontSize: 18, marginTop: 8 }}
-                      >
-                        {opt.title}
-                      </p>
-                      <p
-                        style={{ fontSize: 13, color: "var(--text-secondary)" }}
-                      >
-                        {opt.desc}
-                      </p>
-                    </motion.button>
-                  ))}
-                </div>
-              ) : (
-                <motion.div
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                >
-                  <button
-                    onClick={() => setSelected(null)}
-                    style={{
-                      fontSize: 13,
-                      color: "var(--accent-magenta)",
-                      marginBottom: 12,
-                      background: "none",
-                      border: "none",
-                      cursor: "pointer",
-                    }}
-                  >
-                    ← Back
-                  </button>
-                  {(selected === "hot_take" || selected === "memory") && (
-                    <>
-                      <textarea
-                        value={text}
-                        onChange={(e) => setText(e.target.value)}
-                        rows={4}
-                        placeholder={
-                          selected === "hot_take"
-                            ? "What's your boldest take?"
-                            : "Your memory or flashback moment..."
-                        }
-                        style={{
-                          width: "100%",
-                          padding: "14px",
-                          borderRadius: 16,
-                          background: "rgba(0,0,0,0.4)",
-                          border: "1px solid var(--border)",
-                          resize: "none",
-                          outline: "none",
-                          color: "var(--text-primary)",
-                          fontSize: 14,
-                        }}
-                      />
-                      {selected === "memory" && (
-                        <input
-                          value={memCtx}
-                          onChange={(e) => setMemCtx(e.target.value)}
-                          placeholder="Which match or moment?"
+                      ← Back
+                    </button>
+                    {(selected === "hot_take" || selected === "memory") && (
+                      <>
+                        <textarea
+                          value={text}
+                          onChange={(e) => setText(e.target.value)}
+                          rows={4}
+                          placeholder={
+                            selected === "hot_take"
+                              ? "What's your boldest take?"
+                              : "Your memory or flashback moment..."
+                          }
                           style={{
                             width: "100%",
-                            marginTop: 8,
+                            padding: "14px",
+                            borderRadius: 16,
+                            background: "rgba(0,0,0,0.4)",
+                            border: "1px solid var(--border)",
+                            resize: "none",
+                            outline: "none",
+                            color: "var(--text-primary)",
+                            fontSize: 14,
+                          }}
+                        />
+                        {selected === "memory" && (
+                          <input
+                            value={memCtx}
+                            onChange={(e) => setMemCtx(e.target.value)}
+                            placeholder="Which match or moment?"
+                            style={{
+                              width: "100%",
+                              marginTop: 8,
+                              padding: "12px",
+                              borderRadius: 14,
+                              background: "rgba(0,0,0,0.4)",
+                              border: "1px solid var(--border)",
+                              outline: "none",
+                              color: "var(--text-primary)",
+                              fontSize: 13,
+                            }}
+                          />
+                        )}
+                      </>
+                    )}
+                    {selected === "prediction" && (
+                      <>
+                        <textarea
+                          value={text}
+                          onChange={(e) => setText(e.target.value)}
+                          rows={3}
+                          placeholder="Your prediction..."
+                          style={{
+                            width: "100%",
+                            padding: "14px",
+                            borderRadius: 16,
+                            background: "rgba(0,0,0,0.4)",
+                            border: "1px solid var(--border)",
+                            resize: "none",
+                            outline: "none",
+                            color: "var(--text-primary)",
+                            fontSize: 14,
+                            fontStyle: "italic",
+                          }}
+                        />
+                        <label
+                          style={{
+                            fontSize: 11,
+                            color: "var(--text-muted)",
+                            marginTop: 12,
+                            display: "block",
+                          }}
+                        >
+                          Match
+                        </label>
+                        <select
+                          value={match}
+                          onChange={(e) => setMatch(e.target.value)}
+                          style={{
+                            width: "100%",
+                            marginTop: 4,
+                            padding: "10px 12px",
+                            borderRadius: 14,
+                            background: "rgba(0,0,0,0.4)",
+                            border: "1px solid var(--border)",
+                            color: "var(--text-primary)",
+                            fontSize: 13,
+                          }}
+                        >
+                          {UPCOMING_MATCHES.map((m) => (
+                            <option key={m} value={m}>
+                              {m}
+                            </option>
+                          ))}
+                        </select>
+                        <label
+                          style={{
+                            fontSize: 11,
+                            color: "var(--text-muted)",
+                            marginTop: 12,
+                            display: "block",
+                          }}
+                        >
+                          Confidence: {confidence}/10
+                        </label>
+                        <input
+                          type="range"
+                          min={1}
+                          max={10}
+                          value={confidence}
+                          onChange={(e) => setConf(+e.target.value)}
+                          style={{
+                            width: "100%",
+                            accentColor: "var(--accent-magenta)",
+                            marginTop: 4,
+                          }}
+                        />
+                      </>
+                    )}
+                    {selected === "debate" && (
+                      <div
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 10,
+                        }}
+                      >
+                        <input
+                          value={sideA}
+                          onChange={(e) => setSideA(e.target.value)}
+                          placeholder="Side A"
+                          style={{
                             padding: "12px",
                             borderRadius: 14,
                             background: "rgba(0,0,0,0.4)",
@@ -2043,264 +2142,161 @@ function ComposeModal({
                             fontSize: 13,
                           }}
                         />
-                      )}
-                    </>
-                  )}
-                  {selected === "prediction" && (
-                    <>
-                      <textarea
-                        value={text}
-                        onChange={(e) => setText(e.target.value)}
-                        rows={3}
-                        placeholder="Your prediction..."
-                        style={{
-                          width: "100%",
-                          padding: "14px",
-                          borderRadius: 16,
-                          background: "rgba(0,0,0,0.4)",
-                          border: "1px solid var(--border)",
-                          resize: "none",
-                          outline: "none",
-                          color: "var(--text-primary)",
-                          fontSize: 14,
-                          fontStyle: "italic",
-                        }}
-                      />
-                      <label
-                        style={{
-                          fontSize: 11,
-                          color: "var(--text-muted)",
-                          marginTop: 12,
-                          display: "block",
-                        }}
-                      >
-                        Match
-                      </label>
-                      <select
-                        value={match}
-                        onChange={(e) => setMatch(e.target.value)}
-                        style={{
-                          width: "100%",
-                          marginTop: 4,
-                          padding: "10px 12px",
-                          borderRadius: 14,
-                          background: "rgba(0,0,0,0.4)",
-                          border: "1px solid var(--border)",
-                          color: "var(--text-primary)",
-                          fontSize: 13,
-                        }}
-                      >
-                        {UPCOMING_MATCHES.filter((m) =>
-                          sport === "football"
-                            ? m.toLowerCase().includes("isl")
-                            : !m.toLowerCase().includes("isl")
-                        ).map((m) => (
-                          <option key={m} value={m}>
-                            {m}
-                          </option>
-                        ))}
-                      </select>
-                      <label
-                        style={{
-                          fontSize: 11,
-                          color: "var(--text-muted)",
-                          marginTop: 12,
-                          display: "block",
-                        }}
-                      >
-                        Confidence: {confidence}/10
-                      </label>
-                      <input
-                        type="range"
-                        min={1}
-                        max={10}
-                        value={confidence}
-                        onChange={(e) => setConf(+e.target.value)}
-                        style={{
-                          width: "100%",
-                          accentColor: "var(--accent-magenta)",
-                          marginTop: 4,
-                        }}
-                      />
-                    </>
-                  )}
-                  {selected === "debate" && (
-                    <div
+                        <p
+                          className="font-display"
+                          style={{
+                            textAlign: "center",
+                            color: "var(--text-muted)",
+                          }}
+                        >
+                          VS
+                        </p>
+                        <input
+                          value={sideB}
+                          onChange={(e) => setSideB(e.target.value)}
+                          placeholder="Side B"
+                          style={{
+                            padding: "12px",
+                            borderRadius: 14,
+                            background: "rgba(0,0,0,0.4)",
+                            border: "1px solid var(--border)",
+                            outline: "none",
+                            color: "var(--text-primary)",
+                            fontSize: 13,
+                          }}
+                        />
+                      </div>
+                    )}
+                    {(selected === "hot_take" || selected === "prediction") && (
+                      <>
+                        <label
+                          style={{
+                            fontSize: 11,
+                            color: "var(--text-muted)",
+                            display: "block",
+                            marginTop: 16,
+                            marginBottom: 4,
+                          }}
+                        >
+                          Sport
+                        </label>
+                        <div
+                          style={{
+                            display: "flex",
+                            gap: 8,
+                            marginTop: 4,
+                            marginBottom: 12,
+                          }}
+                        >
+                          <button
+                            type="button"
+                            onClick={() => setSport("cricket")}
+                            style={{
+                              flex: 1,
+                              padding: "8px",
+                              borderRadius: 10,
+                              fontSize: 12,
+                              fontWeight: 700,
+                              cursor: "pointer",
+                              border:
+                                sport === "cricket"
+                                  ? "1px solid var(--accent-magenta)"
+                                  : "1px solid var(--border)",
+                              background:
+                                sport === "cricket"
+                                  ? "rgba(233,30,140,0.15)"
+                                  : "transparent",
+                              color:
+                                sport === "cricket"
+                                  ? "var(--accent-magenta)"
+                                  : "var(--text-secondary)",
+                            }}
+                          >
+                            🏏 Cricket
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setSport("football")}
+                            style={{
+                              flex: 1,
+                              padding: "8px",
+                              borderRadius: 10,
+                              fontSize: 12,
+                              fontWeight: 700,
+                              cursor: "pointer",
+                              border:
+                                sport === "football"
+                                  ? "1px solid #3b82f6"
+                                  : "1px solid var(--border)",
+                              background:
+                                sport === "football"
+                                  ? "rgba(59,130,246,0.15)"
+                                  : "transparent",
+                              color:
+                                sport === "football"
+                                  ? "#3b82f6"
+                                  : "var(--text-secondary)",
+                            }}
+                          >
+                            ⚽ Football
+                          </button>
+                        </div>
+                      </>
+                    )}
+                    <label
                       style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: 10,
+                        fontSize: 11,
+                        color: "var(--text-muted)",
+                        display: "block",
+                        marginTop: 16,
+                        marginBottom: 4,
                       }}
                     >
-                      <input
-                        value={sideA}
-                        onChange={(e) => setSideA(e.target.value)}
-                        placeholder="Side A"
-                        style={{
-                          padding: "12px",
-                          borderRadius: 14,
-                          background: "rgba(0,0,0,0.4)",
-                          border: "1px solid var(--border)",
-                          outline: "none",
-                          color: "var(--text-primary)",
-                          fontSize: 13,
-                        }}
-                      />
-                      <p
-                        className="font-display"
-                        style={{
-                          textAlign: "center",
-                          color: "var(--text-muted)",
-                        }}
-                      >
-                        VS
-                      </p>
-                      <input
-                        value={sideB}
-                        onChange={(e) => setSideB(e.target.value)}
-                        placeholder="Side B"
-                        style={{
-                          padding: "12px",
-                          borderRadius: 14,
-                          background: "rgba(0,0,0,0.4)",
-                          border: "1px solid var(--border)",
-                          outline: "none",
-                          color: "var(--text-primary)",
-                          fontSize: 13,
-                        }}
-                      />
-                    </div>
-                  )}
-                  {(selected === "hot_take" || selected === "prediction" || selected === "debate" || selected === "memory") && (
-                    <>
-                      <label
-                        style={{
-                          fontSize: 11,
-                          color: "var(--text-muted)",
-                          display: "block",
-                          marginTop: 16,
-                          marginBottom: 4,
-                        }}
-                      >
-                        Sport
-                      </label>
-                      <div
-                        style={{
-                          display: "flex",
-                          gap: 8,
-                          marginTop: 4,
-                          marginBottom: 12,
-                        }}
-                      >
-                        <button
-                          type="button"
-                          onClick={() => setSport("cricket")}
-                          style={{
-                            flex: 1,
-                            padding: "8px",
-                            borderRadius: 10,
-                            fontSize: 12,
-                            fontWeight: 700,
-                            cursor: "pointer",
-                            border:
-                              sport === "cricket"
-                                ? "1px solid var(--accent-magenta)"
-                                : "1px solid var(--border)",
-                            background:
-                              sport === "cricket"
-                                ? "rgba(233,30,140,0.15)"
-                                : "transparent",
-                            color:
-                              sport === "cricket"
-                                ? "var(--accent-magenta)"
-                                : "var(--text-secondary)",
-                          }}
-                        >
-                          🏏 Cricket
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setSport("football")}
-                          style={{
-                            flex: 1,
-                            padding: "8px",
-                            borderRadius: 10,
-                            fontSize: 12,
-                            fontWeight: 700,
-                            cursor: "pointer",
-                            border:
-                              sport === "football"
-                                ? "1px solid #3b82f6"
-                                : "1px solid var(--border)",
-                            background:
-                              sport === "football"
-                                ? "rgba(59,130,246,0.15)"
-                                : "transparent",
-                            color:
-                              sport === "football"
-                                ? "#3b82f6"
-                                : "var(--text-secondary)",
-                          }}
-                        >
-                          ⚽ Football
-                        </button>
-                      </div>
-                    </>
-                  )}
-                  <label
-                    style={{
-                      fontSize: 11,
-                      color: "var(--text-muted)",
-                      display: "block",
-                      marginTop: 16,
-                      marginBottom: 4,
-                    }}
-                  >
-                    Who can see this?
-                  </label>
-                  <select
-                    value={audience}
-                    onChange={(e) => setAud(e.target.value)}
-                    style={{
-                      width: "100%",
-                      padding: "10px 12px",
-                      borderRadius: 14,
-                      background: "rgba(0,0,0,0.4)",
-                      border: "1px solid var(--border)",
-                      color: "var(--text-primary)",
-                      fontSize: 13,
-                      marginBottom: 16,
-                    }}
-                  >
-                    {[
-                      "Everyone",
-                      "Cricket fans",
-                      "Football fans",
-                      "MI fans only",
-                    ].map((a) => (
-                      <option key={a}>{a}</option>
-                    ))}
-                  </select>
-                  <motion.button
-                    whileTap={{ scale: 0.97 }}
-                    disabled={!canPost}
-                    onClick={handlePost}
-                    className="btn-gradient"
-                    style={{
-                      width: "100%",
-                      padding: "14px",
-                      borderRadius: 999,
-                      fontSize: 16,
-                      border: "none",
-                      cursor: "pointer",
-                      opacity: canPost ? 1 : 0.4,
-                    }}
-                  >
-                    POST TO ROAR
-                  </motion.button>
-                </motion.div>
-              )}
-            </div>
+                      Who can see this?
+                    </label>
+                    <select
+                      value={audience}
+                      onChange={(e) => setAud(e.target.value)}
+                      style={{
+                        width: "100%",
+                        padding: "10px 12px",
+                        borderRadius: 14,
+                        background: "rgba(0,0,0,0.4)",
+                        border: "1px solid var(--border)",
+                        color: "var(--text-primary)",
+                        fontSize: 13,
+                        marginBottom: 16,
+                      }}
+                    >
+                      {[
+                        "Everyone",
+                        "Cricket fans",
+                        "Football fans",
+                        "MI fans only",
+                      ].map((a) => (
+                        <option key={a}>{a}</option>
+                      ))}
+                    </select>
+                    <motion.button
+                      whileTap={{ scale: 0.97 }}
+                      disabled={!canPost}
+                      onClick={handlePost}
+                      className="btn-gradient"
+                      style={{
+                        width: "100%",
+                        padding: "14px",
+                        borderRadius: 999,
+                        fontSize: 16,
+                        border: "none",
+                        cursor: "pointer",
+                        opacity: canPost ? 1 : 0.4,
+                      }}
+                    >
+                      POST TO ROAR
+                    </motion.button>
+                  </motion.div>
+                )}
+              </div>
             </motion.div>
           </>
         )}
@@ -2341,6 +2337,103 @@ function BottomNav({
   matchLive: boolean;
   badgeNearUnlock: boolean;
 }) {
+  const [radial, setRadial] = useState(false);
+  const pressRef = useRef<any>(null);
+  const touchStartY = useRef<number | null>(null);
+  const didScroll = useRef(false);
+
+  const [domReady, setDomReady] = useState(false);
+  useEffect(() => {
+    setDomReady(true);
+  }, []);
+
+  const down = (e: React.TouchEvent | React.MouseEvent) => {
+    didScroll.current = false;
+    if ("touches" in e) {
+      touchStartY.current = e.touches[0].clientY;
+    }
+    pressRef.current = setTimeout(() => setRadial(true), 320);
+  };
+  const onTouchMove = (e: React.TouchEvent) => {
+    if (touchStartY.current !== null) {
+      const delta = Math.abs(e.touches[0].clientY - touchStartY.current);
+      if (delta > 10) {
+        didScroll.current = true;
+        clearTimeout(pressRef.current);
+      }
+    }
+  };
+  const up = () => {
+    clearTimeout(pressRef.current);
+    if (!radial && !didScroll.current) 
+      // onCompose();
+    setRadial(false);
+    touchStartY.current = null;
+    didScroll.current = false;
+  };
+
+  const radialMenuContent = (
+    <div className="roar-root">
+      <AnimatePresence>
+        {radial && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            style={{
+              position: "fixed",
+              inset: 0,
+              zIndex: 55,
+              pointerEvents: "auto",
+              background: "rgba(0,0,0,0.4)",
+            }}
+            onClick={() => setRadial(false)}
+          >
+            <div
+              style={{
+                position: "fixed",
+                bottom: 100,
+                left: "50%",
+                transform: "translateX(-50%)",
+                display: "flex",
+                gap: 12,
+              }}
+            >
+              {RADIAL_OPTS.map((q, i) => (
+                <motion.button
+                  key={q.id}
+                  initial={{ scale: 0, y: 20 }}
+                  animate={{ scale: 1, y: 0 }}
+                  transition={{ delay: i * 0.05, type: "spring" }}
+                  onClick={() => {
+                    // onQuickCompose(q.id);
+                    setRadial(false);
+                  }}
+                  className="glass-card"
+                  style={{
+                    width: 56,
+                    height: 56,
+                    borderRadius: "50%",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: 20,
+                    cursor: "pointer",
+                    border: "none",
+                    gap: 2,
+                  }}
+                >
+                  {q.emoji}
+                </motion.button>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+
   return (
     <>
       <div
@@ -3235,7 +3328,7 @@ function HomeFeed({
                       letterSpacing: isBlueStyle ? "0.06em" : undefined,
                     }}
                   >
-                    JOIN LIVE · {room.fanCount || 0} fans →
+                    JOIN LIVE
                   </motion.button>
                 </motion.div>
               );
@@ -3624,7 +3717,7 @@ function DiscussionRoom({
     try {
       setUserUsername(localStorage.getItem("roar_username") || "RoarUser");
       setUserBadge(localStorage.getItem("roar_badge") || "RISING_FAN");
-    } catch {}
+    } catch { }
   }, []);
 
   useEffect(() => {
@@ -4000,11 +4093,11 @@ function DiscussionRoom({
               </div>
             </div>
           ) : posts.filter((p) => {
-              if (tab === "Debate") return p.type === "chat" || !p.type;
-              if (tab === "Predictions") return p.type === "prediction";
-              if (tab === "Hot Takes") return p.type === "hottake";
-              return false;
-            }).length === 0 ? (
+            if (tab === "Debate") return p.type === "chat" || !p.type;
+            if (tab === "Predictions") return p.type === "prediction";
+            if (tab === "Hot Takes") return p.type === "hottake";
+            return false;
+          }).length === 0 ? (
             <div
               style={{
                 textAlign: "center",
@@ -5116,7 +5209,7 @@ function Profile({
         if (err.response?.status === 404) {
           try {
             localStorage.removeItem("roar_v2_complete");
-          } catch {}
+          } catch { }
           setOnboarded?.(false);
         }
       } finally {
@@ -5233,7 +5326,7 @@ function Profile({
           {user.yearsFandom || CURRENT_USER.yearsFandom || 1} years ·{" "}
           {BADGE_LABELS[userBadge]}
         </p>
-          {/* Favourite Player */}
+        {/* Favourite Player */}
         {(user.favouritePlayer) && (
           <p style={{ fontSize: 13, color: "var(--text-secondary)", marginTop: 6 }}>
             ⭐ Favourite player:{" "}
@@ -5809,9 +5902,9 @@ function Profile({
                     <span style={{ fontSize: 10, color: "var(--text-muted)" }}>
                       {p.createdAt
                         ? new Date(p.createdAt).toLocaleDateString(undefined, {
-                            month: "short",
-                            day: "numeric",
-                          })
+                          month: "short",
+                          day: "numeric",
+                        })
                         : "Today"}
                     </span>
                     <button
@@ -6423,7 +6516,7 @@ function PostDetailsOverlay({
     try {
       setUserUsername(localStorage.getItem("roar_username") || "RoarUser");
       setUserBadge(localStorage.getItem("roar_badge") || "RISING_FAN");
-    } catch {}
+    } catch { }
   }, []);
 
   const fetchComments = useCallback(async () => {
@@ -6603,7 +6696,7 @@ function PostDetailsOverlay({
               padding: 0,
             }}
           >
-            ←
+
           </button>
           <div
             style={{
@@ -7050,13 +7143,13 @@ export default function ROARApp() {
           try {
             localStorage.setItem("roar_v2_complete", "1");
             localStorage.setItem("roar_badge", res.data.user.badge || "RISING_FAN");
-          } catch {}
+          } catch { }
         } else {
           setOnboarded(false);
           try {
             localStorage.removeItem("roar_v2_complete");
             localStorage.removeItem("roar_badge");
-          } catch {}
+          } catch { }
         }
       } catch (err: any) {
         console.error("ROAR checking profile failed:", err);
@@ -7066,7 +7159,7 @@ export default function ROARApp() {
           try {
             localStorage.removeItem("roar_v2_complete");
             localStorage.removeItem("roar_badge");
-          } catch {}
+          } catch { }
         } else {
           // Fallback to local storage if API fails/offline (e.g. 500 or Network Error)
           let hasLocal = false;
@@ -7074,7 +7167,7 @@ export default function ROARApp() {
           try {
             hasLocal = !!localStorage.getItem("roar_v2_complete");
             badge = localStorage.getItem("roar_badge") || "RISING_FAN";
-          } catch (storageErr) {}
+          } catch (storageErr) { }
           setOnboarded(hasLocal);
           setUserBadge(badge);
         }
@@ -7129,26 +7222,26 @@ export default function ROARApp() {
         console.error("Failed to fetch rooms:", err);
       }
     };
-  // 👇 Add this — fetch user's saved sports from profile
-  const fetchUserSports = async () => {
-    try {
-      const res = await axios.get("/api/roar/profile");
-      console.log("fetch user sports", res.data);
-      if (res.data?.success) {
-        setUserSports(res.data.user.sports ?? []);
-        setUserBadge(res.data.user.badge || "RISING_FAN");
+    // 👇 Add this — fetch user's saved sports from profile
+    const fetchUserSports = async () => {
+      try {
+        const res = await axios.get("/api/roar/profile");
+        console.log("fetch user sports", res.data);
+        if (res.data?.success) {
+          setUserSports(res.data.user.sports ?? []);
+          setUserBadge(res.data.user.badge || "RISING_FAN");
+        }
+      } catch (err: any) {
+        console.error("Failed to fetch user sports:", err);
+        if (err.response?.status === 404) {
+          setOnboarded(false);
+          try {
+            localStorage.removeItem("roar_v2_complete");
+            localStorage.removeItem("roar_badge");
+          } catch { }
+        }
       }
-    } catch (err: any) {
-      console.error("Failed to fetch user sports:", err);
-      if (err.response?.status === 404) {
-        setOnboarded(false);
-        try {
-          localStorage.removeItem("roar_v2_complete");
-          localStorage.removeItem("roar_badge");
-        } catch {}
-      }
-    }
-  };
+    };
     if (onboarded) {
       fetchRooms();
       fetchPosts();
@@ -7267,7 +7360,7 @@ export default function ROARApp() {
     try {
       localStorage.setItem("roar_v2_complete", "1");
       localStorage.setItem("roar_badge", badge);
-    } catch {}
+    } catch { }
     // Save to backend so any device/browser works for this user
     try {
       await axios.post("/api/roar/onboarding", {
@@ -7331,7 +7424,8 @@ export default function ROARApp() {
               margin: "0 auto 16px",
             }}
           />
-          <style dangerouslySetInnerHTML={{ __html: `
+          <style dangerouslySetInnerHTML={{
+            __html: `
             @keyframes roar-spin {
               0% { transform: rotate(0deg); }
               100% { transform: rotate(360deg); }

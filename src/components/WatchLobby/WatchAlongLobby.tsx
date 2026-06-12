@@ -69,8 +69,9 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useAuth } from "@/context/AuthContext";
+import BackButton from "../ReusableComponent/BackButton";
 
-const tabs = ["Match Predictions", "Goal Reactions", "Fan Leaderboard", "Highlights"];
+const tabs = ["Live Rooms"/*, "Goal Reactions", "Fan Leaderboard", "Highlights"*/];
 
 type Props = {
     onEnterRoom: (roomId: string) => void;
@@ -83,10 +84,10 @@ export default function WatchAlongLobby({ onEnterRoom }: Props) {
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [newRoomName, setNewRoomName] = useState("");
     const [isCreating, setIsCreating] = useState(false);
-    
+
     const { data: session } = useSession();
     const { user: authUser } = useAuth();
-    
+
     const {
         rooms,
         createRoom,
@@ -132,7 +133,7 @@ export default function WatchAlongLobby({ onEnterRoom }: Props) {
         const previewLink = buildShareUrl(room.id);
         const matchText = match ? `Live match: ${match.team1?.name || "Team 1"} vs ${match.team2?.name || "Team 2"}` : "Live match updates and fan chat";
         return [
-            `Join ${room.name} in Watch Along - IPL 2026`,
+            `Join ${room.name} in Watch Along - Women's T20 World Cup & FIFA`,
             room.role,
             matchText,
             `View and join: ${previewLink}`,
@@ -237,19 +238,11 @@ export default function WatchAlongLobby({ onEnterRoom }: Props) {
     return (
         <div className="relative min-h-screen bg-black text-white font-sans flex justify-center w-full">
             <div className="w-full max-w-7xl mx-auto pt-8 pb-24 px-4 lg:px-8">
+                <BackButton />
 
-                {/* Back Button */}
-                <div className="mb-6">
-                    <Link href="/MainModules/HomePage" className="inline-flex items-center gap-2 text-gray-400 hover:text-white transition">
-                        <button className="flex items-center gap-2 text-gray-400 hover:text-white transition cursor-pointer bg-transparent border-none p-0">
-                            <ArrowLeft size={18} />
-                            <span className="text-sm">Back</span>
-                        </button>
-                    </Link>
-                </div>
 
                 {/* Header Section */}
-                <div className="mb-6 flex flex-col items-start">
+                <div className="mb-6 flex flex-col items-center">
                     <h1 className="text-3xl font-bold uppercase tracking-wider text-[#e5003d]" style={{ fontFamily: "'Bebas Neue', sans-serif" }}>
                         Watch Along
                     </h1>
@@ -264,14 +257,14 @@ export default function WatchAlongLobby({ onEnterRoom }: Props) {
                     />
                     <div className="flex items-center gap-2 mt-4">
                         <span className="w-2.5 h-2.5 rounded-full bg-[#e5003d] animate-pulse" />
-                        <span className="text-sm font-semibold text-gray-400">Watch Along – IPL 2026</span>
+                        <span className="text-sm font-semibold text-gray-400">Watch Along – Women's T20 World Cup & FIFA</span>
                     </div>
                 </div>
 
                 {/* Tabs Section */}
                 <div className="mb-8 overflow-hidden">
                     <div
-                        className="flex justify-start items-center gap-2 overflow-x-auto rounded-2xl border border-white/5 bg-[#1a1a1a]/80 p-1.5 shadow-xl [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                        className="flex justify-center items-center gap-2 overflow-x-auto rounded-2xl border border-white/5 bg-[#1a1a1a]/80 p-1.5 shadow-xl [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
                         style={{ WebkitOverflowScrolling: "touch" }}
                     >
                         {tabs.map((tab, i) => {
@@ -300,11 +293,11 @@ export default function WatchAlongLobby({ onEnterRoom }: Props) {
                         <div className="bg-[#1a1a1a] border border-[#333] rounded-2xl p-6 w-full max-w-md shadow-2xl">
                             <h2 className="text-2xl font-bold text-white mb-2">Host a Watchalong</h2>
                             <p className="text-gray-400 text-sm mb-6">Create a room and instantly become the Host.</p>
-                            
+
                             <div className="mb-6">
                                 <label className="block text-sm font-medium text-gray-300 mb-2">Room Name</label>
-                                <input 
-                                    type="text" 
+                                <input
+                                    type="text"
                                     value={newRoomName}
                                     onChange={(e) => setNewRoomName(e.target.value)}
                                     placeholder="e.g. MS Dhoni Fan Club"
@@ -313,15 +306,15 @@ export default function WatchAlongLobby({ onEnterRoom }: Props) {
                             </div>
 
                             <div className="flex gap-3">
-                                <button 
+                                <button
                                     onClick={() => setShowCreateModal(false)}
                                     className="flex-1 py-3 px-4 rounded-lg bg-[#333] hover:bg-[#444] text-white font-medium transition"
                                 >
                                     Cancel
                                 </button>
-                                <button 
+                                <button
                                     onClick={async () => {
-                                        if(!newRoomName.trim()) return;
+                                        if (!newRoomName.trim()) return;
                                         setIsCreating(true);
                                         const formData = new FormData();
                                         formData.append("name", newRoomName);
@@ -336,7 +329,7 @@ export default function WatchAlongLobby({ onEnterRoom }: Props) {
                                             formData.append("role", "Fan Host");
                                         }
                                         const newRoom = await createRoom(formData);
-                                        if(newRoom) {
+                                        if (newRoom) {
                                             onEnterRoom(newRoom.id);
                                         }
                                         setIsCreating(false);
@@ -366,7 +359,7 @@ export default function WatchAlongLobby({ onEnterRoom }: Props) {
                             </div>
                         ) : (
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
-                                 {combinedRooms.map((room) => (
+                                {combinedRooms.map((room) => (
                                     <ExpertCard
                                         key={room.id}
                                         room={room}
@@ -374,7 +367,7 @@ export default function WatchAlongLobby({ onEnterRoom }: Props) {
                                         onEnter={() => onEnterRoom(room.id)}
                                         onShare={() => openShare(room)}
                                     />
-                                ))} 
+                                ))}
                             </div>
                         );
                     })()}
@@ -472,12 +465,12 @@ function ExpertCard({
     onEnter: () => void;
     onShare: () => void;
 }) {
-       const formatNumber = (num: string): string => {
+    const formatNumber = (num: string): string => {
         if (!num) return "0";
-        
+
         const value = parseFloat(num);
         if (isNaN(value)) return "0";
-        
+
         // For Crore (10 million = 1 Crore)
         if (value >= 10000000) {
             return (value / 10000000).toFixed(1) + "Cr";
@@ -490,12 +483,12 @@ function ExpertCard({
         if (value >= 1000) {
             return (value / 1000).toFixed(1) + "K";
         }
-        
+
         return value.toString();
     };
 
     const hasLiveMatchContent = room.isLive && match;
-    const hasLivePlaceholder  = room.isLive && !match;
+    const hasLivePlaceholder = room.isLive && !match;
 
     return (
         <div className="bg-[#1a1a1a] rounded-2xl p-4 sm:p-5 relative overflow-hidden flex flex-col">
@@ -544,7 +537,7 @@ function ExpertCard({
                             LIVE
                         </span>
                         <span className="text-[11px] text-gray-400">
-                            Match {match.matchNo} &nbsp; {match.tournament || "IPL 2026"}
+                            Match {match.matchNo} &nbsp; {match.tournament || "Women's T20 World Cup & FIFA"}
                         </span>
                     </div>
                     <div className="flex items-center justify-between mb-1">
@@ -603,4 +596,5 @@ function ExpertCard({
                 Enter Watch Room →
             </button>
         </div>
-    );}
+    );
+}

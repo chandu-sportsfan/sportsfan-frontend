@@ -133,7 +133,7 @@ export default function WatchAlongLobby({ onEnterRoom }: Props) {
         const previewLink = buildShareUrl(room.id);
         const matchText = match ? `Live match: ${match.team1?.name || "Team 1"} vs ${match.team2?.name || "Team 2"}` : "Live match updates and fan chat";
         return [
-            `Join ${room.name} in Watch Along - IPL 2026`,
+            `Join ${room.name} in Watch Along - Women's T20 World Cup & FIFA`,
             room.role,
             matchText,
             `View and join: ${previewLink}`,
@@ -257,14 +257,14 @@ export default function WatchAlongLobby({ onEnterRoom }: Props) {
                     />
                     <div className="flex items-center gap-2 mt-4">
                         <span className="w-2.5 h-2.5 rounded-full bg-[#e5003d] animate-pulse" />
-                        <span className="text-sm font-semibold text-gray-400">Watch Along – IPL 2026</span>
+                        <span className="text-sm font-semibold text-gray-400">Watch Along – Women's T20 World Cup & FIFA</span>
                     </div>
                 </div>
 
                 {/* Tabs Section */}
                 <div className="mb-8 overflow-hidden">
                     <div
-                        className="flex justify-start items-center gap-2 overflow-x-auto rounded-2xl border border-white/5 bg-[#1a1a1a]/80 p-1.5 shadow-xl [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                        className="flex justify-center items-center gap-2 overflow-x-auto rounded-2xl border border-white/5 bg-[#1a1a1a]/80 p-1.5 shadow-xl [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
                         style={{ WebkitOverflowScrolling: "touch" }}
                     >
                         {tabs.map((tab, i) => {
@@ -537,7 +537,7 @@ function ExpertCard({
                             LIVE
                         </span>
                         <span className="text-[11px] text-gray-400">
-                            Match {match.matchNo} &nbsp; {match.tournament || "IPL 2026"}
+                            Match {match.matchNo} &nbsp; {match.tournament || "Women's T20 World Cup & FIFA"}
                         </span>
                     </div>
                     <div className="flex items-center justify-between mb-1">

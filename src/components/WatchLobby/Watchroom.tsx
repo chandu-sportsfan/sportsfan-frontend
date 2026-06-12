@@ -3710,7 +3710,7 @@ export default function WatchRoom({ room, onBack }: Props) {
     };
 
     // Big moments that deserve full confetti — smaller reactions show floating emoji
-    const CONFETTI_MOMENTS = new Set(['WICKET', 'SIX', 'GOAL', 'FOUR']);
+    const CONFETTI_MOMENTS = new Set(['WICKET', 'SIX', 'GOAL', 'FOUR', 'DRUMROLL']);
     // Emoji map for float-up reactions
     const FLOAT_EMOJI_MAP: Record<string, string> = { FIRE: '🔥', CLAP: '👏', HEART: '❤️' };
     const EMOJI_OPTIONS = ["🔥", "👏", "❤️"];
@@ -3777,6 +3777,10 @@ export default function WatchRoom({ room, onBack }: Props) {
         } else if (CONFETTI_MOMENTS.has(momentType)) {
             setConfettiText(momentType);
             setConfettiTrigger(prev => prev + 1);
+            if (momentType === "DRUMROLL") {
+                const audio = new Audio('/sounds/drumroll.mp3');
+                audio.play().catch((err) => console.log("Audio play blocked by browser:", err));
+            }
         } else if (FLOAT_EMOJI_MAP[momentType]) {
             spawnFloatingEmoji(FLOAT_EMOJI_MAP[momentType]);
         }
@@ -4565,6 +4569,15 @@ export default function WatchRoom({ room, onBack }: Props) {
                                 >
                                     <div className="w-5 h-5 rounded-full bg-red-600 flex items-center justify-center text-[10px] text-white">❤️</div>
                                     <span>Heart</span>
+                                </button>
+
+                                {/* DRUMROLL */}
+                                <button 
+                                    onClick={() => triggerMoment("DRUMROLL")}
+                                    className="flex-shrink-0 flex items-center gap-2 bg-[#202023] hover:bg-[#2a2a2e] border border-white/5 rounded-full px-3.5 py-1.5 transition-all hover:scale-105 active:scale-95 text-xs font-semibold text-gray-200"
+                                >
+                                    <div className="w-5 h-5 rounded-full bg-yellow-600 flex items-center justify-center text-[10px] text-white">🥁</div>
+                                    <span>Drumroll</span>
                                 </button>
 
                             </div>

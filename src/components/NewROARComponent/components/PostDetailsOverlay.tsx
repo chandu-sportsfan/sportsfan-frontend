@@ -15,15 +15,17 @@ interface Props {
   onVote: (id: string, vote: "agree" | "disagree" | null) => void;
   onDeletePost?: (id: string, roomId?: string) => void;
   currentUsername?: string;
+  currentAvatarUrl?: string;
 }
 
-export default function PostDetailsOverlay({ post, onClose, onToast, onVote, onDeletePost, currentUsername }: Props) {
+export default function PostDetailsOverlay({ post, onClose, onToast, onVote, onDeletePost, currentUsername, currentAvatarUrl }: Props) {
   const [comments, setComments] = useState<any[]>([]);
   const [commentText, setCommentText] = useState("");
   const [loading, setLoading] = useState(false);
   const [userUsername, setUserUsername] = useState("RoarUser");
   const activeUsername = currentUsername || userUsername;
   const [userBadge, setUserBadge] = useState("RISING_FAN");
+  const [userAvatarUrl, setUserAvatarUrl] = useState<string | undefined>(currentAvatarUrl);
   const [votes, setVotes] = useState<Record<string, boolean | null>>(() =>
     post.userVote ? { [post.id]: post.userVote === "agree" } : {},
   );
@@ -33,8 +35,9 @@ export default function PostDetailsOverlay({ post, onClose, onToast, onVote, onD
     try {
       setUserUsername(localStorage.getItem("roar_username") || "RoarUser");
       setUserBadge(localStorage.getItem("roar_badge") || "RISING_FAN");
+      setUserAvatarUrl(currentAvatarUrl || localStorage.getItem("roar_avatar_url") || undefined);
     } catch {}
-  }, []);
+  }, [currentAvatarUrl]);
 
   const fetchComments = useCallback(async () => {
     if (!post?.id) return;
@@ -126,7 +129,12 @@ export default function PostDetailsOverlay({ post, onClose, onToast, onVote, onD
           {/* Main post card */}
           <div className="glass-card" style={{ padding: "16px", marginBottom: 20, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
             <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 12 }}>
-              <AvatarWithBadge username={post.fan?.username || post.authorUsername} badge={post.fan?.badge || post.authorBadge} size="sm" />
+              <AvatarWithBadge
+                username={post.fan?.username || post.authorUsername}
+                badge={post.fan?.badge || post.authorBadge}
+                size="sm"
+                avatarUrl={post.fan?.avatarUrl || post.authorAvatarUrl || post.avatarUrl || ((post.fan?.username || post.authorUsername) === activeUsername ? userAvatarUrl : undefined)}
+              />
               <div>
                 <p style={{ fontWeight: 700, fontSize: 13, color: "white", margin: 0, display: "flex", alignItems: "center", gap: 4 }}>
                   {post.fan?.username || post.authorUsername}
@@ -248,7 +256,12 @@ export default function PostDetailsOverlay({ post, onClose, onToast, onVote, onD
                     )}
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                        <AvatarWithBadge username={comment.authorUsername} badge={comment.authorBadge} size="sm" />
+                        <AvatarWithBadge
+                          username={comment.authorUsername}
+                          badge={comment.authorBadge}
+                          size="sm"
+                          avatarUrl={comment.authorAvatarUrl || comment.avatarUrl || (comment.authorUsername === activeUsername ? userAvatarUrl : undefined)}
+                        />
                         <p style={{ fontWeight: 700, fontSize: 12, color: "white", margin: 0, display: "flex", alignItems: "center", gap: 4 }}>
                           {comment.authorUsername}
                           <span style={{ width: 5, height: 5, borderRadius: "50%", background: "#E91E8C", display: "inline-block" }} />
@@ -302,15 +315,15 @@ export default function PostDetailsOverlay({ post, onClose, onToast, onVote, onD
         </div>
 
         {/* Bottom composer */}
-        <div style={{ padding: "12px 20px 24px", background: "rgba(5, 5, 8, 0.95)", borderTop: "1px solid var(--border)", display: "flex", gap: 10, alignItems: "center", zIndex: 10 }}>
-          <AvatarWithBadge username={userUsername} badge={userBadge} size="sm" />
+        <div className="mobile-padding-bottom" style={{ padding: "12px 20px 24px", background: "rgba(5, 5, 8, 0.95)", borderTop: "1px solid var(--border)", display: "flex", gap: 10, alignItems: "center", zIndex: 10 }}>
+          <AvatarWithBadge username={userUsername} badge={userBadge} size="sm" avatarUrl={userAvatarUrl} />
           <input
             type="text"
             placeholder="Share your opinion.."
             value={commentText}
             onChange={(e) => setCommentText(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && !loading && submitComment()}
-            style={{ flex: 1, height: 40, borderRadius: 20, background: "var(--bg-secondary)", border: "1px solid var(--border)", paddingLeft: 16, paddingRight: 16, color: "white", fontSize: 13, outline: "none" }}
+            style={{ flex: 1, height: 40, borderRadius: 20, background: "var(--bg-secondary)", border: "1px solid var(--border)", paddingLeft: 16, paddingRight: 16, color: "white", fontSize: 16, outline: "none" }}
           />
           <button
             onClick={submitComment}

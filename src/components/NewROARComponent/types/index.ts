@@ -2,6 +2,7 @@ export interface Fan {
   username: string;
   badge: string;
   team?: string;
+  avatarUrl?: string;
 }
 
 export interface FeedPost {

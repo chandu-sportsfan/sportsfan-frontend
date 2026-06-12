@@ -18,6 +18,7 @@ interface Props {
   fanCount?: number;
   score?: string;
   scoreSubtitle?: string;
+  currentAvatarUrl?: string;
 }
 
 const TABS = ["Debate", "Predictions", "Hot Takes", "Memory", "Normal Post", "Post-Match 🔒"];
@@ -38,7 +39,7 @@ const MODE_LABEL: Record<string, string> = {
   memory: "⏱️ Memory",
 };
 
-export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPostClick, onCompose, fanCount = 312, score, scoreSubtitle }: Props) {
+export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPostClick, onCompose, fanCount = 312, score, scoreSubtitle, currentAvatarUrl }: Props) {
   const [tab, setTab] = useState("Debate");
   const [posts, setPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -46,6 +47,53 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
   const [mode, setMode] = useState<"chat" | "prediction" | "hottake" | "debate" | "memory">("chat");
   const [composerPre, setComposerPre] = useState("");
   const listRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    switch (tab) {
+      case "Debate":
+        setMode("debate");
+        setComposerPre("My debate side: ");
+        break;
+      case "Predictions":
+        setMode("prediction");
+        setComposerPre("My prediction: ");
+        break;
+      case "Memory":
+        setMode("memory");
+        setComposerPre("Flashback: ");
+        break;
+      default:
+        setMode("chat");
+        setComposerPre("");
+    }
+  }, [tab]);
+
+  useEffect(() => {
+    // Aggressively remove any top padding/margin from ALL host app wrappers to destroy the top gap
+    // But NEVER touch overflow/height so we don't break the bottom nav again!
+    const root = document.querySelector('.roar-root');
+    const originalStyles = new Map();
+    
+    if (root) {
+      let current = root.parentElement;
+      while (current && current.tagName.toLowerCase() !== 'body') {
+        originalStyles.set(current, {
+          paddingTop: current.style.paddingTop,
+          marginTop: current.style.marginTop
+        });
+        current.style.setProperty('padding-top', '0px', 'important');
+        current.style.setProperty('margin-top', '0px', 'important');
+        current = current.parentElement;
+      }
+    }
+    
+    return () => {
+      originalStyles.forEach((styles, el) => {
+        if (styles.paddingTop !== undefined) el.style.paddingTop = styles.paddingTop;
+        if (styles.marginTop !== undefined) el.style.marginTop = styles.marginTop;
+      });
+    };
+  }, []);
   
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -106,13 +154,15 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
 
   const [userUsername, setUserUsername] = useState("RoarUser");
   const [userBadge, setUserBadge] = useState("RISING_FAN");
+  const [userAvatarUrl, setUserAvatarUrl] = useState<string | undefined>(currentAvatarUrl);
 
   useEffect(() => {
     try {
       setUserUsername(localStorage.getItem("roar_username") || "RoarUser");
       setUserBadge(localStorage.getItem("roar_badge") || "RISING_FAN");
+      setUserAvatarUrl(currentAvatarUrl || localStorage.getItem("roar_avatar_url") || undefined);
     } catch {}
-  }, []);
+  }, [currentAvatarUrl]);
 
   useEffect(() => {
     if (!roomId) return;
@@ -122,7 +172,11 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
         if (res.data?.success) {
           const mapped = res.data.messages.map((m: any) => ({
             id: m.msgId,
-            fan: { username: m.authorUsername, badge: m.authorBadge },
+            fan: {
+              username: m.authorUsername,
+              badge: m.authorBadge,
+              avatarUrl: m.authorAvatarUrl || m.avatarUrl || (m.authorUsername === userUsername ? userAvatarUrl : undefined),
+            },
             text: m.text,
             fireCount: m.fireCount || 0,
             nochanceCount: m.noChanceCount || 0,
@@ -143,7 +197,7 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
     fetchMessages();
     const interval = setInterval(fetchMessages, 3000);
     return () => clearInterval(interval);
-  }, [roomId]);
+  }, [roomId, userAvatarUrl, userUsername]);
 
   useEffect(() => {
     if (!loading && listRef.current) {
@@ -167,7 +221,11 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
         const m = res.data.message;
         setPosts((p) => [{
           id: m.msgId,
-          fan: { username: m.authorUsername, badge: m.authorBadge },
+          fan: {
+            username: m.authorUsername,
+            badge: m.authorBadge,
+            avatarUrl: m.authorAvatarUrl || m.avatarUrl || (m.authorUsername === userUsername ? userAvatarUrl : undefined),
+          },
           text: m.text,
           fireCount: 0,
           nochanceCount: 0,
@@ -436,7 +494,7 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
       </div>
 
       {/* Messages */}
-      <div ref={listRef} style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "16px", display: "flex", flexDirection: "column", gap: 12 }}>
+      <div ref={listRef} style={{ flex: 1, overflowY: "auto", overflowX: "hidden", padding: "16px", paddingBottom: 100, display: "flex", flexDirection: "column", gap: 12 }}>
         <AnimatePresence initial={false}>
           {loading ? (
             <div style={{ textAlign: "center", color: "var(--text-muted)", padding: "20px 0" }}>Loading messages...</div>
@@ -476,7 +534,7 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
                   >
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                        <AvatarWithBadge username={p.fan.username} badge={p.fan.badge} size="sm" />
+                        <AvatarWithBadge username={p.fan.username} badge={p.fan.badge} size="sm" avatarUrl={p.fan.avatarUrl} />
                         <div>
                           <p style={{ fontWeight: 700, fontSize: 13 }}>{p.fan.username}</p>
                           <p style={{ fontSize: 10, color: "var(--text-muted)" }}>{p.timeAgo}</p>
@@ -551,7 +609,7 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
       />
 
       {/* Composer */}
-      <div className="mobile-padding-bottom" style={{ position: "relative", padding: "10px 12px 32px", background: "rgba(14,14,20,0.92)", backdropFilter: "blur(20px)", borderTop: "1px solid var(--border)", zIndex: 10, display: "flex", flexDirection: "column", gap: 8, flexShrink: 0 }}>
+      <div className="composer-fixed-bottom" style={{ position: "fixed", bottom: 60, left: 0, right: 0, padding: "10px 12px", background: "rgba(14,14,20,0.92)", backdropFilter: "blur(20px)", borderTop: "1px solid var(--border)", zIndex: 50, display: "flex", flexDirection: "column", gap: 8 }}>
         {attachedUrl && (
           <div style={{ padding: "8px 12px", borderRadius: 12, background: "var(--bg-tertiary)", border: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -578,129 +636,25 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
             <Image size={20} />
           </button>
           
-          <div style={{ position: "relative" }} ref={modeMenuRef}>
-            <motion.button
-              whileTap={{ scale: 0.9 }}
-              onClick={() => setIsModeMenuOpen(!isModeMenuOpen)}
-              style={{
-                width: 36,
-                height: 36,
-                borderRadius: "50%",
-                background: "rgba(255,255,255,0.05)",
-                border: "1px solid rgba(255,255,255,0.1)",
-                color: "white",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                cursor: "pointer",
-                fontSize: 18,
-                fontWeight: 300,
-                flexShrink: 0
-              }}
-            >
-              {isModeMenuOpen ? "×" : "+"}
-            </motion.button>
 
-            <AnimatePresence>
-              {isModeMenuOpen && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                  transition={{ duration: 0.15 }}
-                  style={{
-                    position: "absolute",
-                    bottom: "100%",
-                    left: 0,
-                    marginBottom: 12,
-                    background: "#1c1c21",
-                    border: "1px solid rgba(255,255,255,0.05)",
-                    borderRadius: 16,
-                    padding: "12px 8px",
-                    width: 220,
-                    boxShadow: "0 10px 40px rgba(0,0,0,0.8)",
-                    zIndex: 30,
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: 4
-                  }}
-                >
-                  <div style={{ padding: "0 8px 8px", fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.05em" }}>POST AS</div>
-                  {[
-                    { id: "hottake", title: "Fire", subtitle: "Hot take, no filter", icon: "🔥", preset: "", activeBg: "rgba(239, 68, 68, 0.15)" },
-                    { id: "prediction", title: "Predict", subtitle: "Forecast what's next", icon: "📈", preset: "My prediction: ", activeBg: "rgba(255, 184, 0, 0.15)" },
-                    { id: "debate", title: "Debate", subtitle: "Controversial opinion", icon: "⚡", preset: "My debate side: ", activeBg: "rgba(233, 30, 140, 0.15)" },
-                    { id: "memory", title: "Memory", subtitle: "Share a flashback", icon: "⏱️", preset: "Flashback: ", activeBg: "rgba(0, 232, 198, 0.15)" },
-                    { id: "chat", title: "Normal Post", subtitle: "Just chatting", icon: "✒️", preset: "", activeBg: "rgba(255,255,255,0.1)" }
-                  ].map((item) => {
-                    const active = mode === item.id;
-                    return (
-                      <button
-                        key={item.id}
-                        onClick={() => {
-                          setMode(item.id as any);
-                          setComposerPre(item.preset);
-                          setIsModeMenuOpen(false);
-                        }}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          padding: "8px",
-                          borderRadius: 12,
-                          background: active ? item.activeBg : "transparent",
-                          border: "none",
-                          color: "white",
-                          cursor: "pointer",
-                          textAlign: "left",
-                        }}
-                        onMouseEnter={(e) => !active && (e.currentTarget.style.background = "rgba(255,255,255,0.03)")}
-                        onMouseLeave={(e) => !active && (e.currentTarget.style.background = "transparent")}
-                      >
-                        <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-                          <span style={{ fontSize: 20 }}>{item.icon}</span>
-                          <div style={{ display: "flex", flexDirection: "column" }}>
-                            <span style={{ fontSize: 15, fontWeight: 600 }}>{item.title}</span>
-                            <span style={{ fontSize: 13, color: "var(--text-secondary)", marginTop: 2 }}>{item.subtitle}</span>
-                          </div>
-                        </div>
-                        {active && <div style={{ width: 16, height: 16, borderRadius: "50%", background: "#e91e8c", display: "flex", alignItems: "center", justifyContent: "center" }}><span style={{ color: "white", fontSize: 10 }}>✓</span></div>}
-                      </button>
-                    );
-                  })}
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
 
           <div style={{ flex: 1, position: "relative" }}>
+            {input === "" && !uploading && (
+              <div style={{ position: "absolute", left: 16, top: 0, bottom: 0, display: "flex", alignItems: "center", pointerEvents: "none" }}>
+                <span style={{ color: MODE_COLOR[mode] || "var(--text-secondary)", fontWeight: 500 }}>
+                  {composerPre || "Drop your take..."}
+                </span>
+              </div>
+            )}
             <input
               type="text"
-              placeholder={uploading ? "Uploading media..." : "Drop your take..."}
               disabled={uploading}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && send()}
               style={{ width: "100%", height: 44, borderRadius: 22, background: "var(--bg-secondary)", border: "1px solid var(--border)", paddingLeft: 16, paddingRight: 16, color: "white", fontSize: 16, outline: "none" }}
             />
-            {(() => {
-              const selectedItem = [
-                { id: "hottake", title: "Fire", subtitle: "Hot take, no filter", icon: "🔥", color: "#f87171" },
-                { id: "prediction", title: "Predict", subtitle: "Forecast what's next", icon: "📈", color: "var(--gold)" },
-                { id: "debate", title: "Debate", subtitle: "Controversial opinion", icon: "⚡", color: "#e91e8c" },
-                { id: "memory", title: "Memory", subtitle: "Share a flashback", icon: "⏱️", color: "#00e8c6" },
-                { id: "chat", title: "Normal Post", subtitle: "Just chatting", icon: "✒️", color: "#fff" }
-              ].find(i => i.id === mode);
-              
-              if (!selectedItem) return null;
-              return (
-                <div style={{ position: "absolute", top: "100%", left: 16, marginTop: 6, display: "flex", alignItems: "center", gap: 6 }}>
-                  <span style={{ fontSize: 13 }}>{selectedItem.icon}</span>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: selectedItem.color }}>{selectedItem.title}</span>
-                  <span style={{ fontSize: 12, color: "var(--text-secondary)", marginLeft: 2 }}>{selectedItem.subtitle}</span>
-                </div>
-              );
-            })()}
+
           </div>
 
           <motion.button

@@ -25,7 +25,7 @@
 
 // export function AIChatProvider({ children }: { children: React.ReactNode }) {
 //   const { user, isAuthenticated } = useAuth();
-
+  
 //   const [messages, setMessages] = useState<Message[]>([]);
 //   const [sessionId, setSessionId] = useState<string | null>(null);
 //   const [loading, setLoading] = useState(false);
@@ -50,15 +50,15 @@
 //       setSessionId(null);
 //       return;
 //     }
-
+    
 //     setLoading(true);
 //     setError(null);
-
+    
 //     try {
 //       const response = await fetch('/api/ask-ai', {
 //         headers: getAuthHeaders(),
 //       });
-
+      
 //       if (!response.ok) {
 //         setError('Failed to load recent session');
 //         console.warn('Failed to load recent session: Endpoint returned status ' + response.status);
@@ -66,22 +66,14 @@
 //         setMessages([]);
 //         return;
 //       }
-
+      
 //       const data = await response.json();
-
+      
 //       if (data.sessionId) {
 //         setSessionId(data.sessionId);
 //         // setMessages(data.messages || []);
-//         // setMessages((data.messages || []).sort((a: Message, b: Message) => a.id > b.id ? 1 : -1));
-//         setMessages(
-//           (data.messages || []).sort((a: Message, b: Message) => {
-//             const numA = parseInt(a.id, 10);
-//             const numB = parseInt(b.id, 10);
-//             if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
-//             return a.id > b.id ? 1 : -1;
-//           })
-//         );
-//       }
+//         setMessages((data.messages || []).sort((a: Message, b: Message) => a.id > b.id ? 1 : -1));
+//       } 
 //       else {
 //         setSessionId(null);
 //         setMessages([]);
@@ -94,20 +86,18 @@
 //     }
 //   }, [isAuthenticated, userId, getAuthHeaders]);
 
-  
-
 //   // Send a message to the AI
 //   const sendMessage = useCallback(async (query: string) => {
 //     if (!isAuthenticated || !userId) {
 //       setError('Please login to use AI Assistant');
 //       return;
 //     }
-
+    
 //     if (!query.trim()) return;
-
+    
 //     setSending(true);
 //     setError(null);
-
+    
 //     // Add user message optimistically
 //     const tempUserMessageId = `temp-user-${Date.now()}`;
 //     const userMessage: Message = {
@@ -115,9 +105,9 @@
 //       role: 'user',
 //       content: query.trim(),
 //     };
-
+    
 //     setMessages(prev => [...prev, userMessage]);
-
+    
 //     try {
 //       const response = await fetch('/api/ask-ai', {
 //         method: 'POST',
@@ -132,33 +122,33 @@
 //           userName: user?.name,
 //         }),
 //       });
-
+      
 //       if (!response.ok) {
 //         const errorData = await response.json();
 //         throw new Error(errorData.error || 'Failed to get response');
 //       }
-
+      
 //       const data = await response.json();
-
+      
 //       // Add AI response
 //       const aiMessage: Message = {
-//         id: data.messageId || `ai-${Date.now()}`,  // use server ID if returned
+//         id: `ai-${Date.now()}`,
 //         role: 'assistant',
 //         content: data.answer,
 //       };
-
-//       //   setMessages(prev => {
-//       //     // Remove temp user message and add the new AI message
-//       //     const filtered = prev.filter(m => m.id !== tempUserMessageId);
-//       //     return [...filtered, aiMessage];
-//       //   });
-//       setMessages(prev => [...prev, aiMessage]);
-
+      
+//     //   setMessages(prev => {
+//     //     // Remove temp user message and add the new AI message
+//     //     const filtered = prev.filter(m => m.id !== tempUserMessageId);
+//     //     return [...filtered, aiMessage];
+//     //   });
+//     setMessages(prev => [...prev, aiMessage]);
+      
 //       // Update session ID if it was new
 //       if (data.sessionId && !sessionId) {
 //         setSessionId(data.sessionId);
 //       }
-
+      
 //     } catch (err) {
 //       setError(err instanceof Error ? err.message : 'Failed to send message');
 //       // Remove the optimistic user message on error
@@ -210,10 +200,6 @@
 //   }
 //   return context;
 // }
-
-
-
-
 
 
 

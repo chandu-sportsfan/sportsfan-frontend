@@ -1409,7 +1409,7 @@ export default function Header() {
   return (
     <>
       {/* ── DESKTOP (1280px+) ─────────────────────────────────────────────── */}
-      <header className="hidden xl:flex w-full items-center gap-4 px-6 py-3 bg-[#0a0a0a] border-b border-white/5 sticky top-0 z-[100]">
+      <header id="global-header-desktop" className="hidden xl:flex w-full items-center gap-4 px-6 py-3 bg-[#0a0a0a] border-b border-white/5 sticky top-0 z-[100]">
         <div className="relative flex-1 max-w-2xl" ref={dropdownRef}>
           <div className="flex items-center bg-[#111] border border-white/10 rounded-full overflow-hidden pr-1">
             <Search size={16} className="text-gray-500 ml-4 shrink-0" />
@@ -1500,7 +1500,7 @@ export default function Header() {
       </header>
 
       {/* ── TABLET (768px – 1279px) ───────────────────────────────────────── */}
-      <header className="hidden md:flex xl:hidden w-full items-center gap-3 px-4 py-2 bg-[#0a0a0a] border-b border-white/5 sticky top-0 z-100">
+      <header id="global-header-tablet" className="hidden md:flex xl:hidden w-full items-center gap-3 px-4 py-2 bg-[#0a0a0a] border-b border-white/5 sticky top-0 z-100">
         <Link href="/MainModules/ROAR" className="flex-shrink-0">
           <Image
             src="/images/Logo.png"
@@ -1575,6 +1575,7 @@ export default function Header() {
 
       {/* ── MOBILE (< 768px) ──────────────────────────────────────────────── */}
       <header
+        id="global-header-mobile"
         className="flex md:hidden flex-col bg-[#0a0a0a] border-b border-white/5"
         style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 100 }}
       >

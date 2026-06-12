@@ -950,6 +950,9 @@ export default function ROARApp() {
                 </motion.div>
               ) : isRoom ? (
                 <motion.div key="room" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
+                  <style dangerouslySetInnerHTML={{ __html: `
+                    #global-header-desktop, #global-header-tablet, #global-header-mobile { display: none !important; }
+                  `}} />
                   <DiscussionRoom
                     roomId={selectedRoom?.roomId}
                     roomName={selectedRoom?.name}

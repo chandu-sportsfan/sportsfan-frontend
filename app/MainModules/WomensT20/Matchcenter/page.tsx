@@ -779,10 +779,10 @@ function BracketCard({
           </div>
         </div>
       </div>
-
+      
       {isFinal && (
         <div className="absolute right-[-45px] top-1/2 -translate-y-1/2 hidden md:block">
-          <Trophy className="text-gray-400 drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]" size={64} strokeWidth={1} />
+           <Trophy className="text-gray-400 drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]" size={64} strokeWidth={1} />
         </div>
       )}
     </div>
@@ -816,66 +816,66 @@ function PlayoffsTab() {
         <div className="border border-[#1e2a5c] bg-[#111730] rounded-xl p-5 text-center flex flex-col justify-center shadow-lg transition-transform hover:scale-[1.02]">
           <p className="text-sky-400 font-bold text-xs mb-1.5">30 JUN</p>
           <h3 className="text-white text-lg font-black mb-2 tracking-wide">SEMI-FINAL 1</h3>
-          <p className="text-gray-500 text-xs flex justify-center items-center gap-1"><MapPin size={12} /> TBC</p>
+          <p className="text-gray-500 text-xs flex justify-center items-center gap-1"><MapPin size={12}/> TBC</p>
         </div>
-
+        
         <div className="border border-[#5c1e3a] bg-[#301120] rounded-xl p-5 text-center flex flex-col justify-center shadow-lg transition-transform hover:scale-[1.02]">
           <p className="text-pink-400 font-bold text-xs mb-1.5">02 JUL</p>
           <h3 className="text-white text-lg font-black mb-2 tracking-wide">SEMI-FINAL 2</h3>
-          <p className="text-gray-500 text-xs flex justify-center items-center gap-1"><MapPin size={12} /> TBC</p>
+          <p className="text-gray-500 text-xs flex justify-center items-center gap-1"><MapPin size={12}/> TBC</p>
         </div>
-
+        
         <div className="border border-[#2e2359] bg-[#1a1433] rounded-xl p-5 text-center flex flex-col justify-center shadow-lg transition-transform hover:scale-[1.02]">
           <p className="text-purple-400 font-bold text-xs mb-1.5">05 JUL</p>
           <h3 className="text-white text-lg font-black mb-2 tracking-wide">FINAL</h3>
-          <p className="text-gray-500 text-xs flex justify-center items-center gap-1"><MapPin size={12} /> TBC</p>
+          <p className="text-gray-500 text-xs flex justify-center items-center gap-1"><MapPin size={12}/> TBC</p>
         </div>
       </div>
 
       {/* Bracket Area */}
       <div className="border border-gray-800/60 bg-[#101322] rounded-2xl p-6 sm:p-8 relative overflow-x-auto">
         <div className="min-w-[600px] flex justify-between relative">
-
+          
           {/* SVG Connector Lines (Absolute, fixed to the 2 columns) */}
           <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ zIndex: 0 }}>
-            {/* Line from SF1 Right to Center Node */}
-            <path d="M 280 60 L 350 60 L 350 160 L 400 160" fill="none" stroke="#38bdf8" strokeWidth="1.5" />
-            {/* Line from SF2 Right to Center Node */}
-            <path d="M 280 260 L 350 260 L 350 160 L 400 160" fill="none" stroke="#e81cff" strokeWidth="1.5" />
-
-            {/* Center Connection Dot */}
-            <circle cx="348" cy="160" r="7" fill="#101322" stroke="#6b7280" strokeWidth="1.5" />
-            <text x="345.5" y="163" fill="#9ca3af" fontSize="8" fontWeight="bold">x</text>
+             {/* Line from SF1 Right to Center Node */}
+             <path d="M 280 60 L 350 60 L 350 160 L 400 160" fill="none" stroke="#38bdf8" strokeWidth="1.5" />
+             {/* Line from SF2 Right to Center Node */}
+             <path d="M 280 260 L 350 260 L 350 160 L 400 160" fill="none" stroke="#e81cff" strokeWidth="1.5" />
+             
+             {/* Center Connection Dot */}
+             <circle cx="348" cy="160" r="7" fill="#101322" stroke="#6b7280" strokeWidth="1.5" />
+             <text x="345.5" y="163" fill="#9ca3af" fontSize="8" fontWeight="bold">x</text>
           </svg>
 
           {/* Left Column: Semi Finals */}
           <div className="w-[280px] flex flex-col gap-20 relative z-10">
-            <BracketCard
-              title="SEMI-FINAL 1" date="30 JUN"
-              team1="TEAM 1" sub1="Group A Winner"
-              team2="TEAM 2" sub2="Group B Runner-up"
-            />
-            <BracketCard
-              title="SEMI-FINAL 2" date="02 JUL"
-              team1="TEAM 3" sub1="Group B Winner"
-              team2="TEAM 4" sub2="Group A Runner-up"
-            />
+             <BracketCard 
+               title="SEMI-FINAL 1" date="30 JUN" 
+               team1="TEAM 1" sub1="Group A Winner" 
+               team2="TEAM 2" sub2="Group B Runner-up" 
+             />
+             <BracketCard 
+               title="SEMI-FINAL 2" date="02 JUL" 
+               team1="TEAM 3" sub1="Group B Winner" 
+               team2="TEAM 4" sub2="Group A Runner-up" 
+             />
           </div>
 
           {/* Right Column: Final */}
           <div className="w-[300px] pr-8 flex flex-col justify-center relative z-10">
-            <BracketCard
-              title="FINAL" date="05 JUL"
-              team1="SF 1 WINNER" sub1=""
-              team2="SF 2 WINNER" sub2=""
-              isFinal={true}
-            />
+             <BracketCard 
+               title="FINAL" date="05 JUL" 
+               team1="SF 1 WINNER" sub1="" 
+               team2="SF 2 WINNER" sub2="" 
+               isFinal={true}
+             />
           </div>
         </div>
       </div>
 
       <div className="text-center mt-6 flex items-center justify-center gap-2 text-gray-500 text-xs">
-        <Info size={14} /> All match dates are subject to change.
+         <Info size={14} /> All match dates are subject to change.
       </div>
     </div>
   );
@@ -897,8 +897,9 @@ function TabBar({ activeTab, onChange }: { activeTab: TabId; onChange: (id: TabI
         <button
           key={id}
           onClick={() => onChange(id)}
-          className={`relative flex-1 min-w-[80px] sm:min-w-[100px] py-3 sm:py-4 px-1 text-[9px] sm:text-[10px] font-bold tracking-widest transition-colors flex items-center justify-center gap-1.5 ${activeTab === id ? "text-white" : "text-gray-500 hover:text-gray-300"
-            }`}
+          className={`relative flex-1 min-w-[80px] sm:min-w-[100px] py-3 sm:py-4 px-1 text-[9px] sm:text-[10px] font-bold tracking-widest transition-colors flex items-center justify-center gap-1.5 ${
+            activeTab === id ? "text-white" : "text-gray-500 hover:text-gray-300"
+          }`}
         >
           {label}
           {isNew && (
@@ -953,8 +954,8 @@ export default function WCT20Dashboard() {
         <div className="rounded-2xl overflow-hidden shadow-2xl" style={{ background: "#0b0c16", border: "1px solid #1e1e30" }}>
           <TabBar activeTab={tab} onChange={setTab} />
           <div className="p-4 sm:p-5">
-            {tab === "table" && <PointsTableTab data={data.pointsTable} />}
-            {tab === "stats" && <StatsTab data={data} />}
+            {tab === "table"   && <PointsTableTab data={data.pointsTable} />}
+            {tab === "stats"   && <StatsTab data={data} />}
             {tab === "matches" && <MatchesTab upcomingMatches={data.upcomingMatches} recentMatches={data.recentMatches} />}
             {tab === "playoffs" && <PlayoffsTab />}
           </div>

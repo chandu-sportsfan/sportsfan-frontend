@@ -16,6 +16,7 @@ interface Props {
   fanCount?: number;
   score?: string;
   scoreSubtitle?: string;
+  currentAvatarUrl?: string;
 }
 
 const TABS = ["Debate", "Predictions", "Hot Takes", "Memory", "Normal Post", "Post-Match 🔒"];
@@ -36,7 +37,7 @@ const MODE_LABEL: Record<string, string> = {
   memory: "⏱️ Memory",
 };
 
-export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPostClick, onCompose, fanCount = 312, score, scoreSubtitle }: Props) {
+export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPostClick, onCompose, fanCount = 312, score, scoreSubtitle, currentAvatarUrl }: Props) {
   const [tab, setTab] = useState("Debate");
   const [posts, setPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -44,6 +45,53 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
   const [mode, setMode] = useState<"chat" | "prediction" | "hottake" | "debate" | "memory">("chat");
   const [composerPre, setComposerPre] = useState("");
   const listRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    switch (tab) {
+      case "Debate":
+        setMode("debate");
+        setComposerPre("My debate side: ");
+        break;
+      case "Predictions":
+        setMode("prediction");
+        setComposerPre("My prediction: ");
+        break;
+      case "Memory":
+        setMode("memory");
+        setComposerPre("Flashback: ");
+        break;
+      default:
+        setMode("chat");
+        setComposerPre("");
+    }
+  }, [tab]);
+
+  useEffect(() => {
+    // Aggressively remove any top padding/margin from ALL host app wrappers to destroy the top gap
+    // But NEVER touch overflow/height so we don't break the bottom nav again!
+    const root = document.querySelector('.roar-root');
+    const originalStyles = new Map();
+    
+    if (root) {
+      let current = root.parentElement;
+      while (current && current.tagName.toLowerCase() !== 'body') {
+        originalStyles.set(current, {
+          paddingTop: current.style.paddingTop,
+          marginTop: current.style.marginTop
+        });
+        current.style.setProperty('padding-top', '0px', 'important');
+        current.style.setProperty('margin-top', '0px', 'important');
+        current = current.parentElement;
+      }
+    }
+    
+    return () => {
+      originalStyles.forEach((styles, el) => {
+        if (styles.paddingTop !== undefined) el.style.paddingTop = styles.paddingTop;
+        if (styles.marginTop !== undefined) el.style.marginTop = styles.marginTop;
+      });
+    };
+  }, []);
   
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -104,13 +152,15 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
 
   const [userUsername, setUserUsername] = useState("RoarUser");
   const [userBadge, setUserBadge] = useState("RISING_FAN");
+  const [userAvatarUrl, setUserAvatarUrl] = useState<string | undefined>(currentAvatarUrl);
 
   useEffect(() => {
     try {
       setUserUsername(localStorage.getItem("roar_username") || "RoarUser");
       setUserBadge(localStorage.getItem("roar_badge") || "RISING_FAN");
+      setUserAvatarUrl(currentAvatarUrl || localStorage.getItem("roar_avatar_url") || undefined);
     } catch {}
-  }, []);
+  }, [currentAvatarUrl]);
 
   useEffect(() => {
     if (!roomId) return;
@@ -120,7 +170,11 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
         if (res.data?.success) {
           const mapped = res.data.messages.map((m: any) => ({
             id: m.msgId,
-            fan: { username: m.authorUsername, badge: m.authorBadge },
+            fan: {
+              username: m.authorUsername,
+              badge: m.authorBadge,
+              avatarUrl: m.authorAvatarUrl || m.avatarUrl || (m.authorUsername === userUsername ? userAvatarUrl : undefined),
+            },
             text: m.text,
             fireCount: m.fireCount || 0,
             nochanceCount: m.noChanceCount || 0,
@@ -141,7 +195,7 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
     fetchMessages();
     const interval = setInterval(fetchMessages, 3000);
     return () => clearInterval(interval);
-  }, [roomId]);
+  }, [roomId, userAvatarUrl, userUsername]);
 
   useEffect(() => {
     if (!loading && listRef.current) {
@@ -165,7 +219,11 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
         const m = res.data.message;
         setPosts((p) => [{
           id: m.msgId,
-          fan: { username: m.authorUsername, badge: m.authorBadge },
+          fan: {
+            username: m.authorUsername,
+            badge: m.authorBadge,
+            avatarUrl: m.authorAvatarUrl || m.avatarUrl || (m.authorUsername === userUsername ? userAvatarUrl : undefined),
+          },
           text: m.text,
           fireCount: 0,
           nochanceCount: 0,
@@ -434,7 +492,7 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
       </div>
 
       {/* Messages */}
-      <div ref={listRef} style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "16px", display: "flex", flexDirection: "column", gap: 12 }}>
+      <div ref={listRef} style={{ flex: 1, overflowY: "auto", overflowX: "hidden", padding: "16px", paddingBottom: 100, display: "flex", flexDirection: "column", gap: 12 }}>
         <AnimatePresence initial={false}>
           {loading ? (
             <div style={{ textAlign: "center", color: "var(--text-muted)", padding: "20px 0" }}>Loading messages...</div>
@@ -474,7 +532,7 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
                   >
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                        <AvatarWithBadge username={p.fan.username} badge={p.fan.badge} size="sm" />
+                        <AvatarWithBadge username={p.fan.username} badge={p.fan.badge} size="sm" avatarUrl={p.fan.avatarUrl} />
                         <div>
                           <p style={{ fontWeight: 700, fontSize: 13 }}>{p.fan.username}</p>
                           <p style={{ fontSize: 10, color: "var(--text-muted)" }}>{p.timeAgo}</p>
@@ -549,7 +607,7 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
       />
 
       {/* Composer */}
-      <div className="mobile-padding-bottom" style={{ position: "relative", padding: "10px 12px 32px", background: "rgba(14,14,20,0.92)", backdropFilter: "blur(20px)", borderTop: "1px solid var(--border)", zIndex: 10, display: "flex", flexDirection: "column", gap: 8, flexShrink: 0 }}>
+      <div className="composer-fixed-bottom" style={{ position: "fixed", bottom: 60, left: 0, right: 0, padding: "10px 12px", background: "rgba(14,14,20,0.92)", backdropFilter: "blur(20px)", borderTop: "1px solid var(--border)", zIndex: 50, display: "flex", flexDirection: "column", gap: 8 }}>
         {attachedUrl && (
           <div style={{ padding: "8px 12px", borderRadius: 12, background: "var(--bg-tertiary)", border: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -579,9 +637,15 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
 
 
           <div style={{ flex: 1, position: "relative" }}>
+            {input === "" && !uploading && (
+              <div style={{ position: "absolute", left: 16, top: 0, bottom: 0, display: "flex", alignItems: "center", pointerEvents: "none" }}>
+                <span style={{ color: MODE_COLOR[mode] || "var(--text-secondary)", fontWeight: 500 }}>
+                  {composerPre || "Drop your take..."}
+                </span>
+              </div>
+            )}
             <input
               type="text"
-              placeholder={uploading ? "Uploading media..." : "Drop your take..."}
               disabled={uploading}
               value={input}
               onChange={(e) => setInput(e.target.value)}

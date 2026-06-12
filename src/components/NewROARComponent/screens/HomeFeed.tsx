@@ -77,6 +77,7 @@ interface Props {
   userSports?: string[];
   onQuickCompose?: (t: string) => void;
   currentUsername?: string;
+  currentAvatarUrl?: string;
 }
 
 export default function HomeFeed({
@@ -97,6 +98,7 @@ export default function HomeFeed({
   userSports = [],
   onQuickCompose,
   currentUsername: propUsername,
+  currentAvatarUrl,
 }: Props) {
   const [filter, setFilter] = useState("For You");
   const [votes, setVotes] = useState<Record<string, boolean | null>>({});
@@ -351,7 +353,12 @@ export default function HomeFeed({
       id: p.postId,
       type: p.type,
       sport: p.sport || "cricket",
-      fan: { username: p.authorUsername || "RoarUser", badge: p.authorBadge || "RISING_FAN", team: p.sport === "cricket" ? "India" : "MCFC" },
+      fan: {
+        username: p.authorUsername || "RoarUser",
+        badge: p.authorBadge || "RISING_FAN",
+        team: p.sport === "cricket" ? "India" : "MCFC",
+        avatarUrl: p.authorAvatarUrl || p.avatarUrl || (p.authorUsername === activeUsername ? currentAvatarUrl : undefined),
+      },
       text: p.text,
       agreePercent,
       fanCount: totalVotes + (p.type === "hot_take" ? 47 : 1240),
@@ -711,7 +718,7 @@ export default function HomeFeed({
 
                 {/* Author */}
                 <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 12 }}>
-                  <AvatarWithBadge username={item.fan.username} badge={item.fan.badge} size="sm" />
+                  <AvatarWithBadge username={item.fan.username} badge={item.fan.badge} size="sm" avatarUrl={item.fan.avatarUrl} />
                   <div>
                     <p style={{ fontWeight: 700, fontSize: 13 }}>{item.fan.username}</p>
                     <p style={{ fontSize: 10, color: "var(--text-secondary)" }}>{BADGE_LABELS[item.fan.badge]} · {item.fan.team} • {formatTimeAgo(item.createdAt)}</p>
@@ -805,7 +812,7 @@ export default function HomeFeed({
                   <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.06em", padding: "3px 8px", borderRadius: 4, textTransform: "uppercase", background: "rgba(233,30,140,0.12)", color: "var(--accent-magenta)", border: "1px solid rgba(233,30,140,0.25)" }}>⚡ Debate</span>
                 </div>
                 <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 12 }}>
-                  <AvatarWithBadge username={item.fan.username} badge={item.fan.badge} size="sm" />
+                  <AvatarWithBadge username={item.fan.username} badge={item.fan.badge} size="sm" avatarUrl={item.fan.avatarUrl} />
                   <div>
                     <p style={{ fontWeight: 700, fontSize: 13 }}>{item.fan.username}</p>
                     <p style={{ fontSize: 10, color: "var(--text-secondary)" }}>{BADGE_LABELS[item.fan.badge]} · {item.fan.team} • {formatTimeAgo(item.createdAt)}</p>
@@ -869,7 +876,7 @@ export default function HomeFeed({
                   <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.06em", padding: "3px 8px", borderRadius: 4, textTransform: "uppercase", background: "rgba(0,232,198,0.1)", color: "var(--teal)", border: "1px solid rgba(0,232,198,0.25)" }}>🕰 Memory</span>
                 </div>
                 <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 12 }}>
-                  <AvatarWithBadge username={item.fan.username} badge={item.fan.badge} size="sm" />
+                  <AvatarWithBadge username={item.fan.username} badge={item.fan.badge} size="sm" avatarUrl={item.fan.avatarUrl} />
                   <div>
                     <p style={{ fontWeight: 700, fontSize: 13 }}>{item.fan.username}</p>
                     <p style={{ fontSize: 10, color: "var(--text-secondary)" }}>{BADGE_LABELS[item.fan.badge]} • {formatTimeAgo(item.createdAt)}</p>

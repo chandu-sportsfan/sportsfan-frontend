@@ -1445,15 +1445,7 @@ export default function Header() {
               <ResultsList />
             </div>
           )}
-          <Link href={askAIHref}>
-            <button
-              onClick={handleAskAIClick}
-              className="flex items-center gap-1.5 bg-[#1a1a1a] hover:bg-[#222] border border-white/10 text-pink-400 text-sm font-medium px-4 py-2 rounded-full transition-colors whitespace-nowrap"
-            >
-              <Sparkles size={14} className="text-pink-400" />
-              Ask AI
-            </button>
-          </Link>
+        
         </div>
         {showDropdown && (
           <div className="absolute top-full left-0 right-0 mt-2 bg-[#111] border border-pink-500/20 rounded-2xl shadow-2xl z-50 max-h-[400px] overflow-y-auto">

@@ -156,7 +156,12 @@ export default function Profile({ userBadge, setUserBadge, onCompose, onToast, s
           if (res.data.user?.about !== undefined) setEditAbout(res.data.user.about || "");
           if (res.data.user?.showPredHistory !== undefined) setEditShowPredHistory(res.data.user.showPredHistory !== false);
           // Restore persisted avatar if any
-          if (res.data.user?.avatarUrl) setSelectedAvatar(res.data.user.avatarUrl);
+          if (res.data.user?.avatarUrl) {
+            setSelectedAvatar(res.data.user.avatarUrl);
+            try {
+              localStorage.setItem("roar_avatar_url", res.data.user.avatarUrl);
+            } catch {}
+          }
         }
       } catch (err: any) {
         console.error(err);
@@ -252,6 +257,10 @@ export default function Profile({ userBadge, setUserBadge, onCompose, onToast, s
   const handleAvatarSelect = async (avatarSrc: string) => {
     setSelectedAvatar(avatarSrc);
     setAvatarPickerOpen(false);
+    try {
+      localStorage.setItem("roar_avatar_url", avatarSrc);
+      window.dispatchEvent(new CustomEvent("roar-profile-updated", { detail: { avatarUrl: avatarSrc } }));
+    } catch {}
     onToast("Avatar updated!");
     // Persist silently
     try {
@@ -265,6 +274,42 @@ export default function Profile({ userBadge, setUserBadge, onCompose, onToast, s
     <div className="screen-scroll">
       {/* ── Header ── */}
       <div style={{ padding: "24px 16px 0", textAlign: "center", position: "relative" }}>
+        {/* Back Button */}
+        <motion.button
+          whileTap={{ scale: 0.88 }}
+          onClick={() => {
+            if (typeof window !== "undefined" && window.history.length > 1) {
+              window.history.back();
+            } else {
+              onNavigateTab?.("home");
+            }
+          }}
+          aria-label="Go back"
+          style={{
+            marginTop: "10px", marginLeft: "5px",
+            position: "absolute",
+            top: 0,
+            left: 0,
+            width: 38,
+            height: 38,
+            borderRadius: "50%",
+            background: "rgba(255,255,255,0.07)",
+            border: "1px solid rgba(255,255,255,0.12)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer",
+            zIndex: 10,
+            backdropFilter: "blur(6px)",
+            transition: "background 0.18s",
+          }}
+          onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.13)")}
+          onMouseLeave={e => (e.currentTarget.style.background = "rgba(255,255,255,0.07)")}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M15 19L8 12L15 5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </motion.button>
         <div style={{ display: "flex", justifyContent: "center", position: "relative", width: 96, margin: "0 auto" }}>
 
           {/* Avatar display — custom image if selected, otherwise default AvatarWithBadge */}

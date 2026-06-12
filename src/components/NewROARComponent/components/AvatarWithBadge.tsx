@@ -5,6 +5,7 @@ interface Props {
   badge?: string;
   size?: "sm" | "md" | "lg";
   onClick?: () => void;
+  avatarUrl?: string;
 }
 
 const SIZES: Record<string, any> = {
@@ -13,7 +14,7 @@ const SIZES: Record<string, any> = {
   lg: { outer: 80, avatar: 64, ring: 76, icon: 24, stroke: 4 },
 };
 
-export default function AvatarWithBadge({ username, badge = "RISING_FAN", size = "md", onClick }: Props) {
+export default function AvatarWithBadge({ username, badge = "RISING_FAN", size = "md", onClick, avatarUrl: customAvatarUrl }: Props) {
   const s = SIZES[size] || SIZES.md;
   const cfg = BADGE_CONFIG[badge] || BADGE_CONFIG.RISING_FAN;
   const gradId = `rg-${username}-${size}`.replace(/[^a-zA-Z0-9]/g, "");
@@ -82,7 +83,7 @@ export default function AvatarWithBadge({ username, badge = "RISING_FAN", size =
         }}
       >
         <img
-          src={avatarUrl(username)}
+          src={customAvatarUrl || avatarUrl(username)}
           alt={username}
           style={{ width: "100%", height: "100%", objectFit: "cover" }}
           loading="lazy"

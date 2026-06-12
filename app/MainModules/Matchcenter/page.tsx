@@ -1560,7 +1560,7 @@ export default function IPLDashboard() {
     <div className="min-h-screen bg-[#0b0c16]" style={{ fontFamily: "'Inter', 'SF Pro Display', system-ui, sans-serif" }}>
        <RCBChampionPopup />  
       <div className={`mx-auto px-3 py-4 sm:px-6 sm:py-6 transition-all duration-500 ${tab === "playoffs" ? "max-w-7xl" : "max-w-4xl"}`}>
-        <Link href="/MainModules/HomePage" className="inline-flex items-center gap-1.5 text-gray-500 hover:text-gray-300 mb-4 transition-colors">
+        <Link href="/MainModules/ROAR" className="inline-flex items-center gap-1.5 text-gray-500 hover:text-gray-300 mb-4 transition-colors">
           <ArrowLeft size={16} />
           <span className="text-sm">Back</span>
         </Link>

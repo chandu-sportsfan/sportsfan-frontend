@@ -942,14 +942,14 @@ export default function ROARApp() {
 
         {/* Main content */}
         {onboarded && (
-          <div style={{ position: "relative", zIndex: 1, flex: 1, minHeight: 0, overflow: "clip" }}>
+          <div style={{ position: "relative", zIndex: 1, flex: 1, minHeight: 0, overflow: "clip", display: "flex", flexDirection: "column" }}>
             <AnimatePresence mode="wait">
               {isLB ? (
-                <motion.div key="lb" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} style={{ height: "100%" }}>
+                <motion.div key="lb" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
                   <Leaderboard onBack={() => setOverlay(null)} onCompose={() => openCompose("prediction")} />
                 </motion.div>
               ) : isRoom ? (
-                <motion.div key="room" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} style={{ height: "100%", display: "flex", flexDirection: "column" }}>
+                <motion.div key="room" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
                   <DiscussionRoom
                     roomId={selectedRoom?.roomId}
                     roomName={selectedRoom?.name}
@@ -963,7 +963,7 @@ export default function ROARApp() {
                   />
                 </motion.div>
               ) : (
-                <motion.div key={activeTab} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }} style={{ height: "100%" }}>
+                <motion.div key={activeTab} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }} style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
                   {activeTab === "home" && (
                     <HomeFeed
                       onJoinRoom={(room) => { if (room) setSelectedRoom(room); else if (rooms.length) setSelectedRoom(rooms[0]); setOverlay("room"); }}

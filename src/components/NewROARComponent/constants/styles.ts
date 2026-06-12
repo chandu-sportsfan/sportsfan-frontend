@@ -53,6 +53,21 @@ export const GLOBAL_CSS = `
 }
 
 @media (max-width: 768px) {
+  .roar-root.roar-room-active {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 60px;
+    left: 0;
+    z-index: 30;
+    width: 100vw;
+    height: calc(100dvh - 60px);
+    min-height: calc(100dvh - 60px);
+  }
+  .roar-root.roar-room-active .roar-inner {
+    height: calc(100dvh - 60px);
+    min-height: calc(100dvh - 60px);
+  }
   .roar-inner {
     width: 100%;
     position: relative;

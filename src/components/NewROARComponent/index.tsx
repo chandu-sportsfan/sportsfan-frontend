@@ -930,7 +930,7 @@ export default function ROARApp() {
   }
 
   return (
-    <div className="roar-root">
+    <div className={`roar-root${isRoom ? " roar-room-active" : ""}`}>
       <style dangerouslySetInnerHTML={{ __html: GLOBAL_CSS }} />
 
       <div className="roar-inner" ref={containerRef} style={{ height: "100%", display: "flex", flexDirection: "column" }}>

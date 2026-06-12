@@ -24,7 +24,7 @@ export default function ComposeModal({ open, onClose, onPost, initialType }: Pro
   const [match, setMatch] = useState("None / General");
   const [confidence, setConf] = useState(7);
   const [audience, setAud] = useState("Everyone");
-  const [sport, setSport] = useState("cricket");
+  const [sport, setSport] = useState("");
   const [postText, setPostText] = useState("");
   const [mediaFiles, setMediaFiles] = useState<File[]>([]);
   const [domReady, setDomReady] = useState(false);
@@ -219,9 +219,7 @@ export default function ComposeModal({ open, onClose, onPost, initialType }: Pro
                           placeholder="Your prediction..."
                           style={{ ...inputStyle, fontStyle: "italic" }}
                         />
-                        <label style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 12, display: "block" }}>
-                          Confidence: {confidence}/10
-                        </label>
+                       
                         <input
                           type="range" min={1} max={10} value={confidence}
                           onChange={(e) => setConf(+e.target.value)}
@@ -233,11 +231,11 @@ export default function ComposeModal({ open, onClose, onPost, initialType }: Pro
                     {/* Debate */}
                     {selected === "debate" && (
                       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                        <input value={sideA} onChange={(e) => setSideA(e.target.value)} placeholder="Side A"
+                        <input value={sideA} onChange={(e) => setSideA(e.target.value)} placeholder="Create a debate"
                           style={{ ...inputStyle, borderRadius: 14 }} />
-                        <p className="font-display" style={{ textAlign: "center", color: "var(--text-muted)" }}>VS</p>
-                        <input value={sideB} onChange={(e) => setSideB(e.target.value)} placeholder="Side B"
-                          style={{ ...inputStyle, borderRadius: 14 }} />
+                        {/* <p className="font-display" style={{ textAlign: "center", color: "var(--text-muted)" }}>VS</p> */}
+                        {/* <input value={sideB} onChange={(e) => setSideB(e.target.value)} placeholder="Side B"
+                          style={{ ...inputStyle, borderRadius: 14 }} /> */}
                       </div>
                     )}
 
@@ -330,7 +328,7 @@ export default function ComposeModal({ open, onClose, onPost, initialType }: Pro
                           })}
                         </div>
 
-                        <label style={{ fontSize: 11, color: "var(--text-muted)", display: "block", marginTop: 12, marginBottom: 4 }}>Match Context</label>
+                        {/* <label style={{ fontSize: 11, color: "var(--text-muted)", display: "block", marginTop: 12, marginBottom: 4 }}>Match Context</label>
                         <select
                           value={match}
                           onChange={(e) => setMatch(e.target.value)}
@@ -339,15 +337,15 @@ export default function ComposeModal({ open, onClose, onPost, initialType }: Pro
                           {filteredMatches.map((m) => (
                             <option key={m} value={m}>{m}</option>
                           ))}
-                        </select>
+                        </select> */}
                       </>
                     )}
 
                     {/* Audience */}
-                    <label style={{ fontSize: 11, color: "var(--text-muted)", display: "block", marginTop: 16, marginBottom: 4 }}>
+                    {/* <label style={{ fontSize: 11, color: "var(--text-muted)", display: "block", marginTop: 16, marginBottom: 4 }}>
                       Who can see this?
-                    </label>
-                    <select
+                    </label> */}
+                    {/* <select
                       value={audience}
                       onChange={(e) => setAud(e.target.value)}
                       style={{ width: "100%", padding: "10px 12px", borderRadius: 14, background: "rgba(0,0,0,0.4)", border: "1px solid var(--border)", color: "var(--text-primary)", fontSize: 16, marginBottom: 16 }}
@@ -355,7 +353,7 @@ export default function ComposeModal({ open, onClose, onPost, initialType }: Pro
                       {["Everyone", "Cricket fans", "Football fans", "MI fans only"].map((a) => (
                         <option key={a}>{a}</option>
                       ))}
-                    </select>
+                    </select> */}
 
                     <motion.button
                       whileTap={{ scale: 0.97 }}

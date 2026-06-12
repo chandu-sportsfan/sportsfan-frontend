@@ -313,9 +313,9 @@ export default function MainModulesLayout({
         <div className="relative z-60">
           <Header />
         </div>
-        <div className="flex-1 overflow-y-auto overflow-x-hidden">
+        <div className={`flex-1 overflow-x-hidden ${isROARPath ? "overflow-y-auto lg:overflow-hidden" : "overflow-y-auto"}`}>
           {children}
-          <div className="hidden md:hidden lg:block">
+          <div className={`hidden md:hidden ${isROARPath ? "" : "lg:block"}`}>
             <SportsFan360Footer />
           </div>
         </div>

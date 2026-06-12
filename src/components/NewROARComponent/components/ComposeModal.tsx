@@ -114,7 +114,7 @@ export default function ComposeModal({ open, onClose, onPost, initialType }: Pro
     resize: "none" as const,
     outline: "none",
     color: "var(--text-primary)",
-    fontSize: 14,
+    fontSize: 16,
     boxSizing: "border-box",
   };
 
@@ -148,7 +148,7 @@ export default function ComposeModal({ open, onClose, onPost, initialType }: Pro
               <div style={{ display: "flex", justifyContent: "center", padding: "12px 0 4px" }}>
                 <div style={{ width: 40, height: 4, borderRadius: 2, background: "var(--border)" }} />
               </div>
-              <div style={{ padding: "0 20px 40px", maxHeight: "75vh", overflowY: "auto" }}>
+              <div className="mobile-padding-bottom" style={{ padding: "0 20px 40px", maxHeight: "75vh", overflowY: "auto" }}>
                 <h2 className="font-display" style={{ fontSize: 28, letterSpacing: "0.04em", marginBottom: 16, textTransform: "uppercase" }}>
                   {selected === "hot_take" && "Create Hot Take"}
                   {selected === "prediction" && "Create Prediction"}
@@ -334,7 +334,7 @@ export default function ComposeModal({ open, onClose, onPost, initialType }: Pro
                         <select
                           value={match}
                           onChange={(e) => setMatch(e.target.value)}
-                          style={{ width: "100%", marginTop: 4, padding: "10px 12px", borderRadius: 14, background: "rgba(0,0,0,0.4)", border: "1px solid var(--border)", color: "var(--text-primary)", fontSize: 13 }}
+                          style={{ width: "100%", marginTop: 4, padding: "10px 12px", borderRadius: 14, background: "rgba(0,0,0,0.4)", border: "1px solid var(--border)", color: "var(--text-primary)", fontSize: 16 }}
                         >
                           {filteredMatches.map((m) => (
                             <option key={m} value={m}>{m}</option>
@@ -350,7 +350,7 @@ export default function ComposeModal({ open, onClose, onPost, initialType }: Pro
                     <select
                       value={audience}
                       onChange={(e) => setAud(e.target.value)}
-                      style={{ width: "100%", padding: "10px 12px", borderRadius: 14, background: "rgba(0,0,0,0.4)", border: "1px solid var(--border)", color: "var(--text-primary)", fontSize: 13, marginBottom: 16 }}
+                      style={{ width: "100%", padding: "10px 12px", borderRadius: 14, background: "rgba(0,0,0,0.4)", border: "1px solid var(--border)", color: "var(--text-primary)", fontSize: 16, marginBottom: 16 }}
                     >
                       {["Everyone", "Cricket fans", "Football fans", "MI fans only"].map((a) => (
                         <option key={a}>{a}</option>

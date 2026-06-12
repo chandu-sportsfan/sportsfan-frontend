@@ -52,12 +52,18 @@ export const GLOBAL_CSS = `
   }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 768px) {
   .roar-inner {
     width: 100%;
     position: relative;
     overflow: hidden;
     background: var(--bg-primary);
+  }
+  .roar-root .mobile-padding-bottom {
+    padding-bottom: calc(env(safe-area-inset-bottom, 24px) + 80px) !important;
+  }
+  .roar-root .screen-scroll {
+    padding-bottom: calc(env(safe-area-inset-bottom, 24px) + 80px) !important;
   }
 }
 

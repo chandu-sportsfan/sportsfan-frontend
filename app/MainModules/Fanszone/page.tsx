@@ -225,6 +225,7 @@ function getEarningBreakdown(history: HistoryItem[]): CategoryBreakdown[] {
   }));
 }
 
+/* ── STREAK DATA COMMENTED OUT ──
 function getDynamicStreakData(history: HistoryItem[]) {
   const today = new Date();
   const todayMid = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
@@ -252,6 +253,7 @@ function getDynamicStreakData(history: HistoryItem[]) {
   });
   return { streakMap, currentStreak };
 }
+*/
 
 function getTrendAnalytics(history: HistoryItem[], period: TrendPeriod) {
   const now = Date.now();
@@ -441,7 +443,7 @@ function InfoIcon() {
 }
 
 const earnPointsActions = [
-  { icon: Megaphone,       title: "Post On ROAR",       xp: "+2 SXP",  desc: "Per post on ROAR",      color: "text-orange-400", bg: "bg-orange-400/10" },
+  { icon: Megaphone,       title: "Post On ROAR",        xp: "+2 SXP",  desc: "Per post on ROAR",      color: "text-orange-400", bg: "bg-orange-400/10" },
   { icon: MessagesSquare,  title: "Start a Debate",     xp: "+2 SXP",  desc: "Per debate started",    color: "text-cyan-400",   bg: "bg-cyan-400/10" },
   { icon: Flame,           title: "Posted Hot Take",    xp: "+2 SXP",  desc: "Per hot take posted",   color: "text-amber-500",  bg: "bg-amber-500/10" },
   { icon: TrendingUp,      title: "Prediction Sharing", xp: "+2 SXP",  desc: "Per prediction shared", color: "text-lime-400",   bg: "bg-lime-400/10" },
@@ -450,7 +452,7 @@ const earnPointsActions = [
 ];
 
 const staticTopActivities = [
- { icon: Megaphone,       title: "Post On ROAR",       xp: "+2 SXP",  desc: "Per post on ROAR",      color: "text-orange-400", bg: "bg-orange-400/10" },
+ { icon: Megaphone,       title: "Post On ROAR",        xp: "+2 SXP",  desc: "Per post on ROAR",      color: "text-orange-400", bg: "bg-orange-400/10" },
   { icon: MessagesSquare,  title: "Start a Debate",     xp: "+2 SXP",  desc: "Per debate started",    color: "text-cyan-400",   bg: "bg-cyan-400/10" },
   { icon: Flame,           title: "Posted Hot Take",    xp: "+2 SXP",  desc: "Per hot take posted",   color: "text-amber-500",  bg: "bg-amber-500/10" },
   { icon: TrendingUp,      title: "Prediction Sharing", xp: "+2 SXP",  desc: "Per prediction shared", color: "text-lime-400",   bg: "bg-lime-400/10" },
@@ -541,7 +543,8 @@ export default function FanZoneDashboard() {
   const earningBreakdown = useMemo(() => getEarningBreakdown(history), [history]);
   const trendAnalytics   = useMemo(() => getTrendAnalytics(history, trendPeriod), [history, trendPeriod]);
   const levelData        = useMemo(() => calculateLevelData(totalPoints), [totalPoints]);
-  const { streakMap, currentStreak } = useMemo(() => getDynamicStreakData(history), [history]);
+  // STREAK DATA COMMENTED OUT
+  // const { streakMap, currentStreak } = useMemo(() => getDynamicStreakData(history), [history]);
 
   const recentActivityList = useMemo(
     () => history.slice(0, 5).map((h) => ({
@@ -629,6 +632,8 @@ export default function FanZoneDashboard() {
   );
 
   // ─── Sub-components ──────────────────────────
+  
+  /* ── STREAK WIDGET COMMENTED OUT ──
   const StreakWidget = () => (
     <div className="bg-[#09090b] border border-white/10 rounded-2xl p-6">
       <h3 className="text-xs font-black tracking-widest text-gray-400 uppercase mb-4 flex items-center gap-1.5">
@@ -659,6 +664,7 @@ export default function FanZoneDashboard() {
       </div>
     </div>
   );
+  */
 //doneadd .
 //done
   const InviteWidget = () => (
@@ -1041,7 +1047,7 @@ export default function FanZoneDashboard() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <RecentActivityWidget />
               <div className="space-y-6">
-                <StreakWidget />
+                {/* <StreakWidget /> */}
                 <InviteWidget />
               </div>
             </div>
@@ -1099,7 +1105,7 @@ export default function FanZoneDashboard() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <RecentActivityWidget />
               <div className="space-y-6">
-                <StreakWidget />
+                {/* <StreakWidget /> */}
                 <InviteWidget />
               </div>
             </div>
@@ -1189,7 +1195,7 @@ export default function FanZoneDashboard() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <RecentActivityWidget />
               <div className="space-y-6">
-                <StreakWidget />
+                {/* <StreakWidget /> */}
                 <InviteWidget />
               </div>
             </div>

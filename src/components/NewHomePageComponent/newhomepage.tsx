@@ -168,10 +168,12 @@ type CardItem = {
   title: string;
   subtitle: string;
   image: string;
-  url: string;
+  dropsUrl: string;
+  matchCenterUrl: string;
   sport: string;
-  buttonBg: string; // Added for customized button color
-  iconType: "football" | "cricket"; // Added to dynamically render the right icon
+  buttonBg: string;
+  iconType: "football" | "cricket";
+  url?: string;
 };
 
 type QuickLink = {
@@ -191,25 +193,32 @@ const quickLinks: QuickLink[] = [
 
 const cards: CardItem[] = [
   {
-  id: 1,
-  title: "FIFA World Cup 2026",
-  subtitle: "The world's biggest football tournament",
-  image: "/images/fifa2026.png",
-  url: "/MainModules/FIFAMatchCenter",
-  sport: "football",
-  buttonBg: "bg-[#041E53]",
-  iconType: "football",
-},,
+    id: 1,
+    title: "FIFA World Cup 2026",
+    subtitle: "The world's biggest football tournament",
+    image: "/images/fifa2026.png",
+
+    dropsUrl: "/MainModules/MatchesDropContent?team=FIFA",
+    matchCenterUrl: "/MainModules/FIFAWorldCup/Standings",
+
+    sport: "football",
+    buttonBg: "bg-[#041E53]",
+    iconType: "football",
+  },
+
   {
-  id: 2,
-  title: "Women's T20 2026",
-  subtitle: "Exclusive coverage of women's cricket",
-  image: "/images/womens_t20.jpg",
-  url: "/MainModules/WomensT20Dashboard",
-  sport: "cricket",
-  buttonBg: "bg-[#5D287F]",
-  iconType: "cricket",
-},,
+    id: 2,
+    title: "Women's T20 2026",
+    subtitle: "Exclusive coverage of women's cricket",
+    image: "/images/womens_t20.jpg",
+
+    dropsUrl: "/MainModules/MatchesDropContent?team=Women%20T20",
+    matchCenterUrl: "/MainModules/WomensT20/Matchcenter",
+
+    sport: "cricket",
+    buttonBg: "bg-[#5D287F]",
+    iconType: "cricket",
+  },
 ];
 
 export default function NewHomePage({ sportFilter }: { sportFilter?: string }) {
@@ -252,6 +261,7 @@ export default function NewHomePage({ sportFilter }: { sportFilter?: string }) {
           ))}
         </div> */}
 
+        
         {/* Cards Row */}
         <div
           ref={scrollRef}
@@ -259,75 +269,79 @@ export default function NewHomePage({ sportFilter }: { sportFilter?: string }) {
           className="flex gap-3 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden snap-x snap-mandatory"
         >
           {filteredCards.map((card) => (
-            <Link
+            <div
               key={card.id}
-              href={card.url}
               className="snap-start flex-shrink-0 w-[calc(100%-24px)] lg:w-[260px]"
             >
-              <div className="relative bg-[#111] rounded-2xl overflow-hidden hover:scale-[1.01] transition-transform duration-200">
-                {/* Increased height to accommodate the new button properly */}
-                {/* <div className="relative w-full h-[240px] lg:h-[220px]"> */}
-                <div className="relative w-full h-[280px] lg:h-[260px]">
+              <div className="relative bg-[#111] rounded-2xl overflow-hidden hover:scale-[1.01] transition-transform duration-200 h-[280px] lg:h-[260px] group">
+                
+                {/* 1. Main Card Link (Audio Drops) - Covers the entire background */}
+                <Link href={card.dropsUrl} className="absolute inset-0 z-0 block">
                   <Image
                     src={card.image}
                     alt={card.title}
                     fill
                     className="object-cover"
                   />
-                  {/* Taller Gradient overlay to ensure text/button readability */}
+                  {/* Gradient overlay */}
                   <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
-                  
-                  {/* Text & Button Layout */}
-                  <div className="absolute bottom-0 left-0 right-0 p-4">
-                    <h2 className="text-[15px] lg:text-[17px] font-bold leading-tight">{card.title}</h2>
-                    <p className="text-[11px] text-gray-300 mt-1 mb-4">{card.subtitle}</p>
-                    
-                    {/* Dynamic Match Center Button */}
-                    {/* <div className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-lg transition-colors ${card.buttonBg}`}> */}
-                    {/* Premium Match Center CTA */}
-<div
-  className={`w-full flex items-center justify-center gap-3 py-3 rounded-xl font-semibold text-white shadow-[0_8px_30px_rgba(0,0,0,0.35)] transition-all duration-300 hover:scale-[1.02] ${card.buttonBg}`}
->
-  {card.iconType === "football" ? (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="22"
-      height="22"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-    >
-      <circle cx="12" cy="12" r="10" />
-      <polygon points="12 6 15 8.5 14 12 10 12 9 8.5 12 6" />
-    </svg>
-  ) : (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="22"
-      height="22"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-    >
-      <circle cx="12" cy="12" r="9" />
-      <path d="M7 7c3 2 7 8 10 10" />
-      <path d="M17 7c-3 2-7 8-10 10" />
-    </svg>
-  )}
+                </Link>
 
-  <span className="text-[17px] font-bold tracking-wide">
-    Match Center
-  </span>
-
-  <span className="text-lg">→</span>
-</div>
-                     
+                {/* 2. Content Overlay (Text + Button) */}
+                {/* pointer-events-none ensures clicks on the text fall through to the drops link */}
+                <div className="absolute inset-0 z-10 p-4 flex flex-col justify-end pointer-events-none">
+                  <div className="mb-4">
+                    <h2 className="text-[15px] lg:text-[17px] font-bold leading-tight text-white">{card.title}</h2>
+                    <p className="text-[11px] text-gray-300 mt-1">
+                      {card.subtitle}
+                    </p>
                   </div>
+
+                  {/* Match Center Button */}
+                  {/* pointer-events-auto makes ONLY the button clickable for its specific route */}
+                  <Link href={card.matchCenterUrl} className="pointer-events-auto block w-full">
+                    <div
+                      className={`w-full flex items-center justify-center gap-3 py-3 rounded-xl font-semibold text-white shadow-[0_8px_30px_rgba(0,0,0,0.35)] transition-all duration-300 hover:scale-[1.02] ${card.buttonBg}`}
+                    >
+                      {card.iconType === "football" ? (
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="22"
+                          height="22"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <circle cx="12" cy="12" r="10" />
+                          <polygon points="12 6 15 8.5 14 12 10 12 9 8.5 12 6" />
+                        </svg>
+                      ) : (
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="22"
+                          height="22"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <circle cx="12" cy="12" r="9" />
+                          <path d="M7 7c3 2 7 8 10 10" />
+                          <path d="M17 7c-3 2-7 8-10 10" />
+                        </svg>
+                      )}
+
+                      <span className="text-[17px] font-bold tracking-wide">
+                        Match Center
+                      </span>
+                      <span className="text-lg">→</span>
+                    </div>
+                  </Link>
                 </div>
+                
               </div>
-            </Link>
+            </div>
           ))}
         </div>
 

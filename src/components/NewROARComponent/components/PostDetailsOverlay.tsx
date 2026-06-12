@@ -1,3 +1,5 @@
+//NewROARComponent/components/PostDetailsOverlay.tsx
+
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
@@ -105,7 +107,7 @@ export default function PostDetailsOverlay({ post, onClose, onToast, onVote, onD
 
   return (
     <AnimatePresence>
-      <div style={{ position: "absolute", inset: 0, zIndex: 100, display: "flex", flexDirection: "column", background: "var(--bg-primary)" }}>
+      <div style={{ position: "absolute", inset: 0, zIndex: 40, display: "flex", flexDirection: "column", background: "var(--bg-primary)",  }}>
         {/* Header */}
         <div style={{ display: "flex", alignItems: "center", gap: 14, padding: "16px 20px", borderBottom: "1px solid var(--border)", background: "rgba(5, 5, 8, 0.95)", backdropFilter: "blur(10px)", zIndex: 10 }}>
           <button onClick={onClose} style={{ background: "none", border: "none", color: "white", fontSize: 18, cursor: "pointer", padding: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>←</button>
@@ -170,9 +172,21 @@ export default function PostDetailsOverlay({ post, onClose, onToast, onVote, onD
                     <button
                       key={label}
                       onClick={() => handleVoteClick(agree)}
-                      style={{ flex: 1, padding: "10px", borderRadius: 999, fontSize: 13, fontWeight: 700, cursor: "pointer", border: `2px solid ${active ? color : `${color}59`}`, background: active ? color : "transparent", color: active ? "white" : color, transition: "all 0.2s" }}
+                      style={{
+                        flex: 1,
+                        padding: "12px",
+                        borderRadius: 999,
+                        fontSize: 13,
+                        fontWeight: 700,
+                        cursor: "pointer",
+                        border: `2.5px solid ${color}`,
+                        background: active ? color : "rgba(255, 255, 255, 0.02)",
+                        color: active ? "white" : color,
+                        boxShadow: active ? `0 0 16px ${color}80` : "none",
+                        transition: "all 0.22s ease-in-out",
+                      }}
                     >
-                      {label}
+                      {active ? `✓ ${label}d` : label}
                     </button>
                   ))}
                 </div>
@@ -288,7 +302,7 @@ export default function PostDetailsOverlay({ post, onClose, onToast, onVote, onD
         </div>
 
         {/* Bottom composer */}
-        <div style={{ padding: "12px 20px 24px", background: "rgba(5, 5, 8, 0.95)", borderTop: "1px solid var(--border)", display: "flex", gap: 10, alignItems: "center", zIndex: 10 }}>
+        <div className="mobile-padding-bottom" style={{ padding: "12px 20px 24px", background: "rgba(5, 5, 8, 0.95)", borderTop: "1px solid var(--border)", display: "flex", gap: 10, alignItems: "center", zIndex: 10 }}>
           <AvatarWithBadge username={userUsername} badge={userBadge} size="sm" />
           <input
             type="text"
@@ -296,7 +310,7 @@ export default function PostDetailsOverlay({ post, onClose, onToast, onVote, onD
             value={commentText}
             onChange={(e) => setCommentText(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && !loading && submitComment()}
-            style={{ flex: 1, height: 40, borderRadius: 20, background: "var(--bg-secondary)", border: "1px solid var(--border)", paddingLeft: 16, paddingRight: 16, color: "white", fontSize: 13, outline: "none" }}
+            style={{ flex: 1, height: 40, borderRadius: 20, background: "var(--bg-secondary)", border: "1px solid var(--border)", paddingLeft: 16, paddingRight: 16, color: "white", fontSize: 16, outline: "none" }}
           />
           <button
             onClick={submitComment}

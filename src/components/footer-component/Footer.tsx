@@ -112,7 +112,7 @@ const SportsFan360Footer: React.FC = () => {
   ];
 
   return (
-    <footer className="w-full bg-[#111114] text-white pb-2 font-sans selection:bg-pink-700 selection:text-white">
+    <footer className="w-full bg-[#111114] text-white pb-14 md:pb-2 font-sans selection:bg-pink-700 selection:text-white">
       {/* Top accent line */}
       <div className="h-px w-full bg-gradient-to-r from-transparent via-pink-600 to-transparent" />
 
@@ -128,20 +128,21 @@ const SportsFan360Footer: React.FC = () => {
               Quick Links
             </p>
 
+          
             <div className="flex flex-wrap gap-x-2 gap-y-1">
               {quickLinks.map((link, i) => (
-                <React.Fragment key={link.label}>
+                <div key={link.label} className="flex items-center gap-x-2 whitespace-nowrap">
                   <a
                     href={link.href}
-                    className="text-sm text-zinc-400 hover:text-pink-400 transition-colors duration-200 whitespace-nowrap"
+                    className="text-xs text-zinc-400 hover:text-pink-400 transition-colors duration-200"
                   >
                     {link.label}
                   </a>
-                  {/* bullet separator — hide after last item */}
+                  {/* Only add bullet if it's not the last item */}
                   {i < quickLinks.length - 1 && (
-                    <span className="text-pink-700 text-xs select-none">•</span>
+                    <span className="text-pink-700 text-xs">•</span>
                   )}
-                </React.Fragment>
+                </div>
               ))}
             </div>
           </div>
@@ -165,7 +166,7 @@ const SportsFan360Footer: React.FC = () => {
         {/* <GlowDivider /> */}
 
         {/* ── Bottom Bar ──────────────────────────────────── */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between lg:justify-center gap-4 md:gap-8 lg:gap-6 px-5">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between lg:justify-center gap-4 md:gap-8 lg:gap-6">
 
           {/* <div>
             <Link href="/MainModules/Feedback">
@@ -184,14 +185,14 @@ const SportsFan360Footer: React.FC = () => {
             </Link>
           </div> */}
 
-          <div className="flex flex-row justify-center items-center mt-4 md:mt-0 lg:mt-4 gap-10">
-            <div className="flex items-center gap-2.5 mt-4 md:mt-0">
+          <div className="flex flex-row justify-between items-center mt-4 md:mt-0 lg:mt-4 gap-2 lg:gap-14">
+            <div className="flex items-center gap-2.5 md:mt-0">
               {/* <RocketIcon /> */}
               <div>
                 <p className="text-xs font-medium text-zinc-300 whitespace-nowrap">
                   Beta Build v0.0.02
                 </p>
-                <p className="text-[11px] text-zinc-600">We&apos;re improving every day.</p>
+                <p className="text-[11px] text-zinc-600 whitespace-nowrap">We&apos;re improving every day.</p>
               </div>
             </div>
 
@@ -200,7 +201,7 @@ const SportsFan360Footer: React.FC = () => {
               {/* <div className="w-4 h-4">
                   <ShieldIcon  />
               </div> */}
-             
+
               <div>
                 <p className="flex whitespace-nowrap text-xs font-medium text-zinc-300">
                   © 2026 SportsFan360

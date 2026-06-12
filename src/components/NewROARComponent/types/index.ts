@@ -44,6 +44,8 @@ export interface Room {
   fanCount?: number;
   isActive?: boolean;
   scheduledStartTime?: number;
+  score?: string;
+  scoreSubtitle?: string;
 }
 
 export interface Notification {

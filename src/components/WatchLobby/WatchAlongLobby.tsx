@@ -71,7 +71,7 @@ import { useSession } from "next-auth/react";
 import { useAuth } from "@/context/AuthContext";
 import BackButton from "../ReusableComponent/BackButton";
 
-const tabs = ["Match Predictions", "Goal Reactions", "Fan Leaderboard", "Highlights"];
+const tabs = ["Live Rooms"/*, "Goal Reactions", "Fan Leaderboard", "Highlights"*/];
 
 type Props = {
     onEnterRoom: (roomId: string) => void;

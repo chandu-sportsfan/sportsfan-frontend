@@ -660,7 +660,7 @@ export default function FanZoneDashboard() {
     </div>
   );
 //doneadd .
-
+//done
   const InviteWidget = () => (
     <div className="bg-[#09090b] border border-rose-500/20 rounded-2xl p-6 flex items-center justify-between overflow-hidden relative group cursor-pointer hover:border-rose-500/50 transition-colors">
       <div className="absolute right-0 top-1/2 -translate-y-1/2 opacity-30 group-hover:scale-110 transition-transform duration-500 translate-x-4">

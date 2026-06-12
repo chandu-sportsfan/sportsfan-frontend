@@ -3780,6 +3780,18 @@ export default function WatchRoom({ room, onBack }: Props) {
             if (momentType === "DRUMROLL") {
                 const audio = new Audio('/sounds/drumroll.mp3');
                 audio.play().catch((err) => console.log("Audio play blocked by browser:", err));
+                // Snappy fade out after 1.8 seconds to keep it short and natural
+                setTimeout(() => {
+                    const fadeInterval = setInterval(() => {
+                        if (audio.volume > 0.1) {
+                            audio.volume = Math.max(0, audio.volume - 0.15);
+                        } else {
+                            clearInterval(fadeInterval);
+                            audio.pause();
+                            audio.currentTime = 0;
+                        }
+                    }, 50);
+                }, 1800);
             }
         } else if (FLOAT_EMOJI_MAP[momentType]) {
             spawnFloatingEmoji(FLOAT_EMOJI_MAP[momentType]);

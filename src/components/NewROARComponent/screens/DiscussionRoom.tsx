@@ -16,6 +16,7 @@ interface Props {
   fanCount?: number;
   score?: string;
   scoreSubtitle?: string;
+  currentAvatarUrl?: string;
 }
 
 const TABS = ["Debate", "Predictions", "Hot Takes", "Memory", "Normal Post", "Post-Match 🔒"];
@@ -36,7 +37,7 @@ const MODE_LABEL: Record<string, string> = {
   memory: "⏱️ Memory",
 };
 
-export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPostClick, onCompose, fanCount = 312, score, scoreSubtitle }: Props) {
+export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPostClick, onCompose, fanCount = 312, score, scoreSubtitle, currentAvatarUrl }: Props) {
   const [tab, setTab] = useState("Debate");
   const [posts, setPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -145,13 +146,15 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
 
   const [userUsername, setUserUsername] = useState("RoarUser");
   const [userBadge, setUserBadge] = useState("RISING_FAN");
+  const [userAvatarUrl, setUserAvatarUrl] = useState<string | undefined>(currentAvatarUrl);
 
   useEffect(() => {
     try {
       setUserUsername(localStorage.getItem("roar_username") || "RoarUser");
       setUserBadge(localStorage.getItem("roar_badge") || "RISING_FAN");
+      setUserAvatarUrl(currentAvatarUrl || localStorage.getItem("roar_avatar_url") || undefined);
     } catch {}
-  }, []);
+  }, [currentAvatarUrl]);
 
   useEffect(() => {
     if (!roomId) return;
@@ -161,7 +164,11 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
         if (res.data?.success) {
           const mapped = res.data.messages.map((m: any) => ({
             id: m.msgId,
-            fan: { username: m.authorUsername, badge: m.authorBadge },
+            fan: {
+              username: m.authorUsername,
+              badge: m.authorBadge,
+              avatarUrl: m.authorAvatarUrl || m.avatarUrl || (m.authorUsername === userUsername ? userAvatarUrl : undefined),
+            },
             text: m.text,
             fireCount: m.fireCount || 0,
             nochanceCount: m.noChanceCount || 0,
@@ -182,7 +189,7 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
     fetchMessages();
     const interval = setInterval(fetchMessages, 3000);
     return () => clearInterval(interval);
-  }, [roomId]);
+  }, [roomId, userAvatarUrl, userUsername]);
 
   useEffect(() => {
     if (!loading && listRef.current) {
@@ -206,7 +213,11 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
         const m = res.data.message;
         setPosts((p) => [{
           id: m.msgId,
-          fan: { username: m.authorUsername, badge: m.authorBadge },
+          fan: {
+            username: m.authorUsername,
+            badge: m.authorBadge,
+            avatarUrl: m.authorAvatarUrl || m.avatarUrl || (m.authorUsername === userUsername ? userAvatarUrl : undefined),
+          },
           text: m.text,
           fireCount: 0,
           nochanceCount: 0,
@@ -515,7 +526,7 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
                   >
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                        <AvatarWithBadge username={p.fan.username} badge={p.fan.badge} size="sm" />
+                        <AvatarWithBadge username={p.fan.username} badge={p.fan.badge} size="sm" avatarUrl={p.fan.avatarUrl} />
                         <div>
                           <p style={{ fontWeight: 700, fontSize: 13 }}>{p.fan.username}</p>
                           <p style={{ fontSize: 10, color: "var(--text-muted)" }}>{p.timeAgo}</p>

@@ -3351,7 +3351,9 @@ function TabContent({
                         {jitsiParticipants && jitsiParticipants.map((p: any) => {
                             const displayName = p.displayName || p.formattedDisplayName || 'Viewer';
                             const initial = displayName.charAt(0).toUpperCase() || '?';
-                            const isHostUser = displayName.toLowerCase().includes('host') || displayName.toLowerCase() === room?.name?.split(' ')[0]?.toLowerCase();
+                            const isHostUser = displayName.toLowerCase().includes('host') || 
+                                               (room?.hostUserId && displayName.toLowerCase() === room.hostUserId.toLowerCase()) || 
+                                               displayName.toLowerCase() === room?.name?.split(' ')[0]?.toLowerCase();
                             const isCoHostUser = room?.coHostUserId && displayName.toLowerCase() === room.coHostUserId.toLowerCase();
                             const role = isHostUser ? 'Host' : (isCoHostUser ? 'Co-Host' : 'Viewer');
                             return (

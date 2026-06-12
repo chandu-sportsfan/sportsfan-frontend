@@ -568,12 +568,12 @@ export default function HomeFeed({
       </div>
 
       {/* Onboarding banner */}
-      {showBanner && (
+      {/* {showBanner && (
         <div style={{ margin: "8px 16px", padding: "10px 14px", borderRadius: 16, background: "var(--bg-tertiary)", border: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <p style={{ fontSize: 12, color: "var(--text-secondary)", flex: 1 }}>Your feed is personalising. Make a prediction or react to a take.</p>
+          
           <button onClick={onDismissBanner} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", marginLeft: 8 }}>✕</button>
         </div>
-      )}
+      )} */}
 
         {/* Filters */}
         <div style={{ padding: "10px 16px", overflow: "hidden", position: "relative" }}>

@@ -44,6 +44,30 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
   const [mode, setMode] = useState<"chat" | "prediction" | "hottake" | "debate" | "memory">("chat");
   const [composerPre, setComposerPre] = useState("");
   const listRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    switch (tab) {
+      case "Debate":
+        setMode("debate");
+        setComposerPre("My debate side: ");
+        break;
+      case "Predictions":
+        setMode("prediction");
+        setComposerPre("My prediction: ");
+        break;
+      case "Hot Takes":
+        setMode("hottake");
+        setComposerPre("Hot take: ");
+        break;
+      case "Memory":
+        setMode("memory");
+        setComposerPre("Flashback: ");
+        break;
+      default:
+        setMode("chat");
+        setComposerPre("");
+    }
+  }, [tab]);
   
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -579,9 +603,15 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
 
 
           <div style={{ flex: 1, position: "relative" }}>
+            {input === "" && !uploading && (
+              <div style={{ position: "absolute", left: 16, top: 0, bottom: 0, display: "flex", alignItems: "center", pointerEvents: "none" }}>
+                <span style={{ color: MODE_COLOR[mode] || "var(--text-secondary)", fontWeight: 500 }}>
+                  {composerPre || "Drop your take..."}
+                </span>
+              </div>
+            )}
             <input
               type="text"
-              placeholder={uploading ? "Uploading media..." : "Drop your take..."}
               disabled={uploading}
               value={input}
               onChange={(e) => setInput(e.target.value)}

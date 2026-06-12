@@ -952,6 +952,8 @@ export default function ROARApp() {
                 <motion.div key="room" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
                   <style dangerouslySetInnerHTML={{ __html: `
                     #global-header-desktop, #global-header-tablet, #global-header-mobile { display: none !important; }
+                    div:has(> div > .roar-root) { padding-top: 0 !important; padding-bottom: 0 !important; height: 100vh !important; max-height: 100vh !important; }
+                    div:has(> .roar-root) { height: 100vh !important; min-height: 100vh !important; border-radius: 0 !important; }
                   `}} />
                   <DiscussionRoom
                     roomId={selectedRoom?.roomId}

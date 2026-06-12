@@ -518,6 +518,7 @@ import Leaderboard from "./screens/Leaderboard";
 import Profile from "./screens/Profile";
 import type { Notification, Room } from "./types";
 import { useRoarNotifications } from "@/context/RoarNotificationsContext";
+import { useRoarRoom } from "@/context/RoarRoomContext";
 
 export default function ROARApp() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -530,6 +531,7 @@ export default function ROARApp() {
   const [userBadge, setUserBadge] = useState("RISING_FAN");
   const [userSports, setUserSports] = useState<string[]>([]);
   const [currentUsername, setCurrentUsername] = useState("RoarUser");
+  const { setIsInRoom } = useRoarRoom();
 
   useEffect(() => {
     setMounted(true);

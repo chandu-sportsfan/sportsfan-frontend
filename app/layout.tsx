@@ -18,6 +18,7 @@ import { WPLPlayerProfileProvider } from "@/context/Wplplayerprofilecontext";
 import { FifaPlayerProfileProvider } from "@/context/FifaPlayerProfileContext";
 import { RoarNotificationsProvider } from "@/context/RoarNotificationsContext"; // Import your Activity Context
 import { ActivityProvider } from "@/context/ActivityContext";
+import { RoarRoomProvider } from "@/context/RoarRoomContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -75,8 +76,10 @@ export default function RootLayout({
                                   <WPLPlayerProfileProvider>
                                     <FifaPlayerProfileProvider>
                                       <RoarNotificationsProvider>
-                                        <main>{children}</main>
-                                        </RoarNotificationsProvider>
+                                        <RoarRoomProvider>
+                                          <main>{children}</main>
+                                        </RoarRoomProvider>
+                                      </RoarNotificationsProvider>
                                     </FifaPlayerProfileProvider>
                                   </WPLPlayerProfileProvider>
                                 </AIChatProvider>

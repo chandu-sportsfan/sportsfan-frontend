@@ -302,7 +302,7 @@ export default function PostDetailsOverlay({ post, onClose, onToast, onVote, onD
         </div>
 
         {/* Bottom composer */}
-        <div style={{ padding: "12px 20px 24px", background: "rgba(5, 5, 8, 0.95)", borderTop: "1px solid var(--border)", display: "flex", gap: 10, alignItems: "center", zIndex: 10 }}>
+        <div className="mobile-padding-bottom" style={{ padding: "12px 20px 24px", background: "rgba(5, 5, 8, 0.95)", borderTop: "1px solid var(--border)", display: "flex", gap: 10, alignItems: "center", zIndex: 10 }}>
           <AvatarWithBadge username={userUsername} badge={userBadge} size="sm" />
           <input
             type="text"
@@ -310,7 +310,7 @@ export default function PostDetailsOverlay({ post, onClose, onToast, onVote, onD
             value={commentText}
             onChange={(e) => setCommentText(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && !loading && submitComment()}
-            style={{ flex: 1, height: 40, borderRadius: 20, background: "var(--bg-secondary)", border: "1px solid var(--border)", paddingLeft: 16, paddingRight: 16, color: "white", fontSize: 13, outline: "none" }}
+            style={{ flex: 1, height: 40, borderRadius: 20, background: "var(--bg-secondary)", border: "1px solid var(--border)", paddingLeft: 16, paddingRight: 16, color: "white", fontSize: 16, outline: "none" }}
           />
           <button
             onClick={submitComment}

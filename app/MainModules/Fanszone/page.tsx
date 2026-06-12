@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { type ActivityItem, useActivity } from "@/context/ActivityContext";
@@ -434,6 +434,7 @@ function MiniTrendLine({ data, color = "#f43f5e" }: { data: number[]; color?: st
   );
 }
 
+/* ── INFO ICON COMMENTED OUT ──
 function InfoIcon() {
   return (
     <span className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full border border-gray-600 text-[9px] text-gray-500 cursor-help hover:text-gray-300 hover:border-gray-400 transition-colors">
@@ -441,6 +442,7 @@ function InfoIcon() {
     </span>
   );
 }
+*/
 
 const earnPointsActions = [
   { icon: Megaphone,       title: "Post On ROAR",        xp: "+2 SXP",  desc: "Per post on ROAR",      color: "text-orange-400", bg: "bg-orange-400/10" },
@@ -515,6 +517,7 @@ export default function FanZoneDashboard() {
   const [trendPeriod, setTrendPeriod] = useState<TrendPeriod>("30D");
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [copied, setCopied] = useState(false);
+  const earningHistoryRef = useRef<HTMLDivElement>(null);
 
   const contextData = useLeaderboard() as LeaderboardContextType | null;
   const currentUserPoints = contextData?.currentUserPoints ?? 0;
@@ -665,8 +668,7 @@ export default function FanZoneDashboard() {
     </div>
   );
   */
-//doneadd .
-//done
+
   const InviteWidget = () => (
     <div className="bg-[#09090b] border border-rose-500/20 rounded-2xl p-6 flex items-center justify-between overflow-hidden relative group cursor-pointer hover:border-rose-500/50 transition-colors">
       <div className="absolute right-0 top-1/2 -translate-y-1/2 opacity-30 group-hover:scale-110 transition-transform duration-500 translate-x-4">
@@ -715,11 +717,17 @@ export default function FanZoneDashboard() {
           ))
         )}
       </div>
+      {/* ── "View All Activity" button replaced with "Show Full Earning History" navigating to Earning History tab ── */}
       <button
-        onClick={() => setActiveTab("Earning History")}
+        onClick={() => {
+          setActiveTab("Earning History");
+          setTimeout(() => {
+            earningHistoryRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+          }, 50);
+        }}
         className="text-xs font-bold text-rose-500 hover:text-rose-400 text-center w-full mt-6 py-2 border border-rose-500/20 rounded-lg hover:bg-rose-500/5 transition-colors uppercase tracking-widest"
       >
-        View All Activity →
+        Show Full Earning History →
       </button>
     </div>
   );
@@ -775,30 +783,33 @@ export default function FanZoneDashboard() {
 
   return (
     <div className="min-h-screen bg-[#050505] text-white font-sans selection:bg-rose-500/30 pb-20">
-      <main className="max-w-[1400px] mx-auto p-6 space-y-6">
+      <main className="max-w-[1400px] mx-auto px-3 py-3 sm:p-6 space-y-4 sm:space-y-6">
 
         {/* ── HERO ── */}
-        <div className="relative rounded-2xl overflow-hidden border border-white/10 bg-[#09090b] flex items-center min-h-[220px]">
+        <div className="relative rounded-xl overflow-hidden border border-white/10 bg-[#09090b] flex items-center min-h-[90px]">
           <div
-            className="absolute inset-0 bg-cover bg-center opacity-40 mix-blend-screen"
+            className="absolute inset-0 bg-cover bg-center opacity-30 mix-blend-screen"
             style={{ backgroundImage: "url('https://images.unsplash.com/photo-1504450758481-7338eba7524a?q=80&w=1200&auto=format&fit=crop')" }}
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-black via-rose-950/80 to-transparent" />
-          <div className="relative z-10 p-8 w-full flex flex-col md:flex-row items-center justify-between gap-8">
+          <div className="absolute inset-0 bg-gradient-to-r from-black via-rose-950/70 to-transparent" />
+          <div className="relative z-10 px-5 py-4 w-full flex flex-row items-center justify-between gap-3">
             <div>
-              <h1 className="text-5xl md:text-6xl font-black tracking-tighter text-white mb-2 drop-shadow-lg">FAN ZONE</h1>
-              <p className="text-lg md:text-xl font-medium text-gray-300 mb-6">Connect. Engage. Belong.</p>
-              <div className="flex gap-4">
-                <button className="px-6 py-2.5 rounded-full text-sm font-bold text-white bg-rose-600 hover:bg-rose-500 transition-colors shadow-[0_0_20px_rgba(225,29,72,0.4)]">
-                  Connect with Fans
-                </button>
-                <button className="px-6 py-2.5 rounded-full text-sm font-bold text-white border border-white/20 bg-black/40 hover:bg-white/10 transition-colors backdrop-blur-sm">
-                  Watch Live
-                </button>
-              </div>
+              <h1 className="text-2xl sm:text-3xl font-black tracking-tighter text-white drop-shadow-lg leading-none">FAN ZONE</h1>
+              <p className="text-xs sm:text-sm font-medium text-gray-300 mt-1">Earn SXP. Rule the Fan Zone.</p>
             </div>
+            {/* ── HERO BUTTONS COMMENTED OUT ──
+            <div className="flex gap-4">
+              <button className="px-6 py-2.5 rounded-full text-sm font-bold text-white bg-rose-600 hover:bg-rose-500 transition-colors shadow-[0_0_20px_rgba(225,29,72,0.4)]">
+                Connect with Fans
+              </button>
+              <button className="px-6 py-2.5 rounded-full text-sm font-bold text-white border border-white/20 bg-black/40 hover:bg-white/10 transition-colors backdrop-blur-sm">
+                Watch Live
+              </button>
+            </div>
+            */}
+          </div>
 
-            {/* Hero Points Card */}
+            {/* ── HERO POINTS CARD (Top Graph Card) COMMENTED OUT ──
             <div className="bg-[#09090b] border border-white/5 rounded-2xl p-6 w-full md:w-[320px] shadow-2xl relative z-10 hidden md:block">
               <div className="flex justify-between items-center mb-4">
                 <p className="text-[10px] font-black uppercase tracking-widest text-gray-500">Total Points</p>
@@ -813,12 +824,12 @@ export default function FanZoneDashboard() {
               </p>
               <MiniTrendLine data={trendAnalytics.chartData} />
             </div>
-          </div>
+            */}
         </div>
 
         {/* ── STATS ROW ── */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-          <div className="md:col-span-2 bg-[#09090b] border border-white/10 rounded-2xl p-5 flex items-center gap-5">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 sm:gap-4">
+          <div className="col-span-2 md:col-span-2 bg-[#09090b] border border-white/10 rounded-2xl p-4 sm:p-5 flex items-center gap-4 sm:gap-5">
             <div className="w-14 h-14 rounded-xl border-2 border-rose-500 flex items-center justify-center font-black text-2xl text-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.3)]">
               {levelData.level}
             </div>
@@ -853,11 +864,15 @@ export default function FanZoneDashboard() {
                   {isRankUp ? "↑" : "↓"} {rankDiff} <span className="text-gray-500 font-medium">This Month</span>
                 </p>
               ) : (
+                /* ── "No Change" line COMMENTED OUT ──
                 <p className="text-xs text-gray-500 font-medium mt-0.5">— No Change</p>
+                */
+                null
               )}
             </div>
           </div>
 
+          {/* ── ELITE FAN CARD COMMENTED OUT ──
           <div className="bg-[#09090b] border border-white/10 rounded-2xl p-5 flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-full bg-purple-500/10 flex items-center justify-center border border-purple-500/20">
@@ -874,6 +889,7 @@ export default function FanZoneDashboard() {
               <h3 className="text-xl font-black text-white">12</h3>
             </div>
           </div>
+          */}
 
           <Link
             href="/MainModules/Leaderboard"
@@ -889,7 +905,10 @@ export default function FanZoneDashboard() {
 
         {/* ── TABS ── */}
         <div className="border-b border-white/10 flex gap-8 px-2 overflow-x-auto">
-          {["My Analytics", "Earning History", "Activity Feed", "All Activities"].map((tab) => (
+          {/* ── "Activity Feed" and "All Activities" tabs COMMENTED OUT from nav ──
+              Original: ["My Analytics", "Earning History", "Activity Feed", "All Activities"]
+          */}
+          {["My Analytics", "Earning History"].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -913,8 +932,13 @@ export default function FanZoneDashboard() {
 
             {/* OVERVIEW CARD */}
             <div className="bg-[#09090b] border border-white/10 rounded-2xl p-6 md:p-8">
+              {/* ── Overview heading InfoIcon COMMENTED OUT ──
               <h3 className="text-[10px] font-black tracking-widest text-gray-500 uppercase mb-8 flex items-center gap-1.5">
                 Overview <InfoIcon />
+              </h3>
+              */}
+              <h3 className="text-[10px] font-black tracking-widest text-gray-500 uppercase mb-8">
+                Overview
               </h3>
 
               <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 lg:gap-12 items-center">
@@ -931,6 +955,7 @@ export default function FanZoneDashboard() {
                         <h4 className="text-3xl font-black text-white leading-none">
                           {thisMonthPoints.toLocaleString()} SXP
                         </h4>
+                        {/* ── Date comparison label COMMENTED OUT ──
                         <span
                           className="text-xs font-bold mb-0.5"
                           style={{ color: monthPctChange >= 0 ? "#10b981" : "#f43f5e" }}
@@ -938,13 +963,16 @@ export default function FanZoneDashboard() {
                           {monthPctChange >= 0 ? "↑" : "↓"} {Math.abs(monthPctChange)}%{" "}
                           <span className="text-gray-500 font-medium">vs {previousMonthLabel}</span>
                         </span>
+                        */}
                       </div>
                     </div>
                     <div>
                       <p className="text-xs text-gray-400 font-medium mb-1">All Time</p>
                       <div className="flex items-end gap-3 flex-wrap">
                         <h4 className="text-3xl font-black text-white leading-none">{displayPoints} SXP</h4>
+                        {/* ── "Since Apr 2026" date label COMMENTED OUT ──
                         <span className="text-xs text-gray-500 font-medium mb-0.5">Since Apr 2026</span>
+                        */}
                       </div>
                     </div>
                   </div>
@@ -967,7 +995,7 @@ export default function FanZoneDashboard() {
                   </div>
                 </div>
 
-                {/* Right: trend */}
+                {/* ── RECENT TREND SECTION COMMENTED OUT ──
                 <div className="xl:col-span-4 border-t xl:border-t-0 xl:border-l border-white/10 pt-8 xl:pt-0 xl:pl-8 h-full flex flex-col justify-center w-full">
                   <div className="flex justify-between items-start mb-6">
                     <h3 className="text-[10px] font-black tracking-widest text-gray-500 uppercase flex items-center gap-1.5">
@@ -1003,14 +1031,20 @@ export default function FanZoneDashboard() {
                     ))}
                   </div>
                 </div>
+                */}
 
               </div>
             </div>
 
             {/* HOW YOU EARN */}
             <div className="bg-[#09090b] border border-white/10 rounded-2xl p-6">
+              {/* ── HOW YOU EARN heading InfoIcon COMMENTED OUT ──
               <h3 className="text-xs font-black tracking-widest text-gray-400 uppercase mb-6 flex items-center gap-1.5">
                 How You Earn Points <InfoIcon />
+              </h3>
+              */}
+              <h3 className="text-xs font-black tracking-widest text-gray-400 uppercase mb-6">
+                How You Earn Points
               </h3>
               <div className="flex flex-col lg:flex-row gap-6">
                 <div className="flex-1 grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -1025,6 +1059,7 @@ export default function FanZoneDashboard() {
                     </div>
                   ))}
                 </div>
+                {/* ── MAXIMIZE YOUR POINTS CARD COMMENTED OUT ──
                 <div className="w-full lg:w-72 rounded-xl bg-gradient-to-br from-rose-900 to-black border border-rose-500/30 p-6 flex flex-col justify-center relative overflow-hidden group cursor-pointer">
                   <div className="absolute -right-6 -bottom-6 opacity-20 group-hover:scale-110 transition-transform duration-500">
                     <Trophy className="w-40 h-40 text-rose-500" />
@@ -1040,10 +1075,11 @@ export default function FanZoneDashboard() {
                     </button>
                   </div>
                 </div>
+                */}
               </div>
             </div>
 
-            {/* RECENT + STREAK */}
+            {/* RECENT + INVITE */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <RecentActivityWidget />
               <div className="space-y-6">
@@ -1058,7 +1094,7 @@ export default function FanZoneDashboard() {
             TAB: EARNING HISTORY
         ══════════════════════════════════════ */}
         {activeTab === "Earning History" && (
-          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div ref={earningHistoryRef} className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="bg-[#09090b] border border-white/10 rounded-2xl p-6">
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                 <div>
@@ -1071,6 +1107,7 @@ export default function FanZoneDashboard() {
                 </div>
               </div>
 
+              {/* ── EARNING HISTORY FILTERS COMMENTED OUT ──
               <div className="flex flex-wrap gap-4 mb-6">
                 <div className="relative w-48">
                   <LayoutGrid className="w-4 h-4 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2 z-10 pointer-events-none" />
@@ -1092,6 +1129,7 @@ export default function FanZoneDashboard() {
                   <ChevronDown className="w-4 h-4 text-gray-500 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" />
                 </div>
               </div>
+              */}
 
               <HistoryTable rows={history} />
 
@@ -1102,19 +1140,21 @@ export default function FanZoneDashboard() {
               </div>
             </div>
 
+            {/* ── RECENT ACTIVITY + INVITE SECTION AT BOTTOM OF EARNING HISTORY COMMENTED OUT ──
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <RecentActivityWidget />
               <div className="space-y-6">
-                {/* <StreakWidget /> */}
                 <InviteWidget />
               </div>
             </div>
+            */}
           </div>
         )}
 
         {/* ══════════════════════════════════════
             TAB: ACTIVITY FEED
         ══════════════════════════════════════ */}
+        {/* ── ACTIVITY FEED TAB COMMENTED OUT ──
         {activeTab === "Activity Feed" && (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -1195,16 +1235,17 @@ export default function FanZoneDashboard() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <RecentActivityWidget />
               <div className="space-y-6">
-                {/* <StreakWidget /> */}
                 <InviteWidget />
               </div>
             </div>
           </div>
         )}
+        */}
 
         {/* ══════════════════════════════════════
             TAB: ALL ACTIVITIES
         ══════════════════════════════════════ */}
+        {/* ── ALL ACTIVITIES TAB COMMENTED OUT ──
         {activeTab === "All Activities" && (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
@@ -1276,7 +1317,6 @@ export default function FanZoneDashboard() {
                 </div>
               </div>
 
-              {/* Right sidebar */}
               <div className="space-y-6">
                 <div className="bg-[#09090b] border border-white/10 rounded-2xl p-6 relative overflow-hidden group">
                   <div className="absolute right-[-20%] top-[-20%] opacity-10 group-hover:scale-110 transition-transform duration-700">
@@ -1292,7 +1332,6 @@ export default function FanZoneDashboard() {
                   </div>
                 </div>
 
-                {/* Donut journey — also uses BreakdownLegend */}
                 <div className="bg-[#09090b] border border-white/10 rounded-2xl p-6">
                   <h3 className="text-base font-black text-white mb-1">Your Points Journey</h3>
                   <p className="text-xs text-gray-400 font-medium mb-6">See how you&apos;re growing</p>
@@ -1330,6 +1369,7 @@ export default function FanZoneDashboard() {
             </div>
           </div>
         )}
+        */}
 
         {/* Share Dialog */}
         {showShareDialog && (

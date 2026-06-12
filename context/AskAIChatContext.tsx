@@ -71,7 +71,8 @@ export function AIChatProvider({ children }: { children: React.ReactNode }) {
       
       if (data.sessionId) {
         setSessionId(data.sessionId);
-        setMessages(data.messages || []);
+        // setMessages(data.messages || []);
+        setMessages((data.messages || []).sort((a: Message, b: Message) => a.id > b.id ? 1 : -1));
       } 
       else {
         setSessionId(null);
@@ -114,7 +115,8 @@ export function AIChatProvider({ children }: { children: React.ReactNode }) {
         body: JSON.stringify({
           query: query.trim(),
           sessionId: sessionId || crypto.randomUUID(),
-          history: messages.map(m => ({ role: m.role, content: m.content })),
+          // history: messages.map(m => ({ role: m.role, content: m.content })),
+          history: [...messages, userMessage].map(m => ({ role: m.role, content: m.content })),
           userId,
           userEmail: user?.email,
           userName: user?.name,

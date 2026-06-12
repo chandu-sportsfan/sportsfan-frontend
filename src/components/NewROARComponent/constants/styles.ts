@@ -59,6 +59,12 @@ export const GLOBAL_CSS = `
     overflow: hidden;
     background: var(--bg-primary);
   }
+  .roar-root .mobile-padding-bottom {
+    padding-bottom: calc(env(safe-area-inset-bottom, 24px) + 80px) !important;
+  }
+  .roar-root .screen-scroll {
+    padding-bottom: calc(env(safe-area-inset-bottom, 24px) + 80px) !important;
+  }
 }
 
 .roar-inner::before {

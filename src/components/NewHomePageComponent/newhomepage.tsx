@@ -1,7 +1,3 @@
-
-
-
-
 // "use client";
 
 // import { useState } from "react";
@@ -159,10 +155,6 @@
 //   );
 // }
 
-
-
-
-
 "use client";
 
 import { useState, useRef } from "react";
@@ -176,8 +168,12 @@ type CardItem = {
   title: string;
   subtitle: string;
   image: string;
-  url: string;
+  dropsUrl: string;
+  matchCenterUrl: string;
   sport: string;
+  buttonBg: string;
+  iconType: "football" | "cricket";
+  url?: string;
 };
 
 type QuickLink = {
@@ -201,16 +197,27 @@ const cards: CardItem[] = [
     title: "FIFA World Cup 2026",
     subtitle: "The world's biggest football tournament",
     image: "/images/fifa2026.png",
-    url: "/MainModules/MatchesDropContent?team=FIFA",
+
+    dropsUrl: "/MainModules/MatchesDropContent?team=FIFA",
+    matchCenterUrl: "/MainModules/FIFAWorldCup/Standings",
+
     sport: "football",
+    buttonBg: "bg-[#041E53]",
+    iconType: "football",
   },
+
   {
     id: 2,
     title: "Women's T20 2026",
     subtitle: "Exclusive coverage of women's cricket",
     image: "/images/womens_t20.jpg",
-    url: "/MainModules/MatchesDropContent?team=Women%20T20",
+
+    dropsUrl: "/MainModules/MatchesDropContent?team=Women%20T20",
+    matchCenterUrl: "/MainModules/WomensT20/Matchcenter",
+
     sport: "cricket",
+    buttonBg: "bg-[#5D287F]",
+    iconType: "cricket",
   },
 ];
 
@@ -254,6 +261,7 @@ export default function NewHomePage({ sportFilter }: { sportFilter?: string }) {
           ))}
         </div> */}
 
+        
         {/* Cards Row */}
         <div
           ref={scrollRef}
@@ -261,13 +269,14 @@ export default function NewHomePage({ sportFilter }: { sportFilter?: string }) {
           className="flex gap-3 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden snap-x snap-mandatory"
         >
           {filteredCards.map((card) => (
-            <Link
+            <div
               key={card.id}
-              href={card.url}
               className="snap-start flex-shrink-0 w-[calc(100%-24px)] lg:w-[260px]"
             >
-              <div className="relative bg-[#111] rounded-2xl overflow-hidden hover:scale-[1.01] transition-transform duration-200">
-                <div className="relative w-full h-[190px] lg:h-[165px]">
+              <div className="relative bg-[#111] rounded-2xl overflow-hidden hover:scale-[1.01] transition-transform duration-200 h-[280px] lg:h-[260px] group">
+                
+                {/* 1. Main Card Link (Audio Drops) - Covers the entire background */}
+                <Link href={card.dropsUrl} className="absolute inset-0 z-0 block">
                   <Image
                     src={card.image}
                     alt={card.title}
@@ -275,15 +284,64 @@ export default function NewHomePage({ sportFilter }: { sportFilter?: string }) {
                     className="object-cover"
                   />
                   {/* Gradient overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
-                  {/* Text */}
-                  <div className="absolute bottom-0 left-0 right-0 p-4">
-                    <h2 className="text-[15px] lg:text-[16px] font-bold leading-tight">{card.title}</h2>
-                    <p className="text-[11px] text-gray-300 mt-1">{card.subtitle}</p>
+                  <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
+                </Link>
+
+                {/* 2. Content Overlay (Text + Button) */}
+                {/* pointer-events-none ensures clicks on the text fall through to the drops link */}
+                <div className="absolute inset-0 z-10 p-4 flex flex-col justify-end pointer-events-none">
+                  <div className="mb-4">
+                    <h2 className="text-[15px] lg:text-[17px] font-bold leading-tight text-white">{card.title}</h2>
+                    <p className="text-[11px] text-gray-300 mt-1">
+                      {card.subtitle}
+                    </p>
                   </div>
+
+                  {/* Match Center Button */}
+                  {/* pointer-events-auto makes ONLY the button clickable for its specific route */}
+                  <Link href={card.matchCenterUrl} className="pointer-events-auto block w-full">
+                    <div
+                      className={`w-full flex items-center justify-center gap-3 py-3 rounded-xl font-semibold text-white shadow-[0_8px_30px_rgba(0,0,0,0.35)] transition-all duration-300 hover:scale-[1.02] ${card.buttonBg}`}
+                    >
+                      {card.iconType === "football" ? (
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="22"
+                          height="22"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <circle cx="12" cy="12" r="10" />
+                          <polygon points="12 6 15 8.5 14 12 10 12 9 8.5 12 6" />
+                        </svg>
+                      ) : (
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="22"
+                          height="22"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <circle cx="12" cy="12" r="9" />
+                          <path d="M7 7c3 2 7 8 10 10" />
+                          <path d="M17 7c-3 2-7 8-10 10" />
+                        </svg>
+                      )}
+
+                      <span className="text-[17px] font-bold tracking-wide">
+                        Match Center
+                      </span>
+                      <span className="text-lg">→</span>
+                    </div>
+                  </Link>
                 </div>
+                
               </div>
-            </Link>
+            </div>
           ))}
         </div>
 
@@ -367,7 +425,7 @@ export default function NewHomePage({ sportFilter }: { sportFilter?: string }) {
             <Link href="/MainModules/ROAR" className="flex-1">
           <div className="flex-1 bg-[#230855] rounded-2xl p-3 sm:p-4 flex flex-col justify-between min-h-[150px] sm:min-h-[120px]">
           
-             
+              
               <div className="flex items-center justify-between">
                 <span className="bg-[#3D2B3E] text-white text-[10px] sm:text-xs font-medium px-2.5 sm:px-4 py-1 sm:py-1.5 rounded-full">
                   ROAR

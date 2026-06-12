@@ -32,10 +32,17 @@ export default function PreJoinLobby({ room, onJoin, onBack }: PreJoinLobbyProps
     useEffect(() => {
         if (!userName) return;
         let defaultRole: 'Host' | 'Viewer' = 'Viewer';
-        const currentUserId = authUser?.userId || (session?.user as { userId?: string })?.userId || session?.user?.id;
-        if (room?.hostUserId && currentUserId && currentUserId === room.hostUserId) {
+        
+        const currentUserId = (authUser?.userId || (session?.user as { userId?: string })?.userId || session?.user?.id || "").toLowerCase().trim();
+        const currentEmail = (authUser?.email || session?.user?.email || "").toLowerCase().trim();
+        const currentName = userName.toLowerCase().trim();
+
+        const hostId = (room?.hostUserId || "").toLowerCase().trim();
+        const coHostId = (room?.coHostUserId || "").toLowerCase().trim();
+
+        if (hostId && (currentUserId === hostId || currentEmail === hostId || currentName === hostId)) {
             defaultRole = 'Host';
-        } else if (room?.coHostUserId && currentUserId && currentUserId === room.coHostUserId) {
+        } else if (coHostId && (currentUserId === coHostId || currentEmail === coHostId || currentName === coHostId)) {
             defaultRole = 'Host';
         } else {
             const userFirst = userName.toLowerCase().split(" ")[0];

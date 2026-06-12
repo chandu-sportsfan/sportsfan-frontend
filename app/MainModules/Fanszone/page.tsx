@@ -153,7 +153,7 @@ function normalizeActivityKey(type: string, label: string): ActivityKey {
   if (value.includes("roar debate") || value.includes("debate")) return "fanBattle";
   if (value.includes("roar memory") || value.includes("memory")) return "post";
   if (value.includes("roar post")) return "post";
-  
+
   return "other";
 }
 
@@ -445,21 +445,21 @@ function InfoIcon() {
 */
 
 const earnPointsActions = [
-  { icon: Megaphone,       title: "Post On ROAR",        xp: "+2 SXP",  desc: "Per post on ROAR",      color: "text-orange-400", bg: "bg-orange-400/10" },
-  { icon: MessagesSquare,  title: "Start a Debate",     xp: "+2 SXP",  desc: "Per debate started",    color: "text-cyan-400",   bg: "bg-cyan-400/10" },
-  { icon: Flame,           title: "Posted Hot Take",    xp: "+2 SXP",  desc: "Per hot take posted",   color: "text-amber-500",  bg: "bg-amber-500/10" },
-  { icon: TrendingUp,      title: "Prediction Sharing", xp: "+2 SXP",  desc: "Per prediction shared", color: "text-lime-400",   bg: "bg-lime-400/10" },
-  { icon: Sparkles,        title: "Memory Shared",      xp: "+2 SXP",  desc: "Per memory shared",     color: "text-pink-400",   bg: "bg-pink-400/10" },
-  { icon: Headphones,   title: "Listen Audio Drops",        xp: "+2 SXP",   desc: "Per drop (90%)",     color: "text-sky-400",     bg: "bg-sky-400/10 border-sky-400/20" },
+  { icon: Megaphone, title: "Post On ROAR", xp: "+2 SXP", desc: "Per post on ROAR", color: "text-orange-400", bg: "bg-orange-400/10" },
+  { icon: MessagesSquare, title: "Start a Debate", xp: "+2 SXP", desc: "Per debate started", color: "text-cyan-400", bg: "bg-cyan-400/10" },
+  { icon: Flame, title: "Posted Hot Take", xp: "+2 SXP", desc: "Per hot take posted", color: "text-amber-500", bg: "bg-amber-500/10" },
+  { icon: TrendingUp, title: "Prediction Sharing", xp: "+2 SXP", desc: "Per prediction shared", color: "text-lime-400", bg: "bg-lime-400/10" },
+  { icon: Sparkles, title: "Memory Shared", xp: "+2 SXP", desc: "Per memory shared", color: "text-pink-400", bg: "bg-pink-400/10" },
+  { icon: Headphones, title: "Listen Audio Drops", xp: "+2 SXP", desc: "Per drop (90%)", color: "text-sky-400", bg: "bg-sky-400/10 border-sky-400/20" },
 ];
 
 const staticTopActivities = [
- { icon: Megaphone,       title: "Post On ROAR",        xp: "+2 SXP",  desc: "Per post on ROAR",      color: "text-orange-400", bg: "bg-orange-400/10" },
-  { icon: MessagesSquare,  title: "Start a Debate",     xp: "+2 SXP",  desc: "Per debate started",    color: "text-cyan-400",   bg: "bg-cyan-400/10" },
-  { icon: Flame,           title: "Posted Hot Take",    xp: "+2 SXP",  desc: "Per hot take posted",   color: "text-amber-500",  bg: "bg-amber-500/10" },
-  { icon: TrendingUp,      title: "Prediction Sharing", xp: "+2 SXP",  desc: "Per prediction shared", color: "text-lime-400",   bg: "bg-lime-400/10" },
-  { icon: Sparkles,        title: "Memory Shared",      xp: "+2 SXP",  desc: "Per memory shared",     color: "text-pink-400",   bg: "bg-pink-400/10" },
-  { icon: Headphones,   title: "Listen Audio Drops",        xp: "+2 SXP",   desc: "Per drop (90%)",     color: "text-sky-400",     bg: "bg-sky-400/10 border-sky-400/20" },
+  { icon: Megaphone, title: "Post On ROAR", xp: "+2 SXP", desc: "Per post on ROAR", color: "text-orange-400", bg: "bg-orange-400/10" },
+  { icon: MessagesSquare, title: "Start a Debate", xp: "+2 SXP", desc: "Per debate started", color: "text-cyan-400", bg: "bg-cyan-400/10" },
+  { icon: Flame, title: "Posted Hot Take", xp: "+2 SXP", desc: "Per hot take posted", color: "text-amber-500", bg: "bg-amber-500/10" },
+  { icon: TrendingUp, title: "Prediction Sharing", xp: "+2 SXP", desc: "Per prediction shared", color: "text-lime-400", bg: "bg-lime-400/10" },
+  { icon: Sparkles, title: "Memory Shared", xp: "+2 SXP", desc: "Per memory shared", color: "text-pink-400", bg: "bg-pink-400/10" },
+  { icon: Headphones, title: "Listen Audio Drops", xp: "+2 SXP", desc: "Per drop (90%)", color: "text-sky-400", bg: "bg-sky-400/10 border-sky-400/20" },
 
 ];
 
@@ -521,7 +521,7 @@ export default function FanZoneDashboard() {
 
   const contextData = useLeaderboard() as LeaderboardContextType | null;
   const currentUserPoints = contextData?.currentUserPoints ?? 0;
-  const currentUserRank   = contextData?.currentUserRank   ?? 0;
+  const currentUserRank = contextData?.currentUserRank ?? 0;
   const { activities, loading: activitiesLoading } = useActivity();
 
   const history = useMemo(
@@ -535,7 +535,7 @@ export default function FanZoneDashboard() {
     if (rankSnapshot.current !== currentUserRank) {
       setRankSnapshot({ prev: rankSnapshot.current, current: currentUserRank });
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUserRank]);
 
   const totalPoints = currentUserPoints > 0
@@ -544,8 +544,8 @@ export default function FanZoneDashboard() {
   const displayPoints = totalPoints.toLocaleString();
 
   const earningBreakdown = useMemo(() => getEarningBreakdown(history), [history]);
-  const trendAnalytics   = useMemo(() => getTrendAnalytics(history, trendPeriod), [history, trendPeriod]);
-  const levelData        = useMemo(() => calculateLevelData(totalPoints), [totalPoints]);
+  const trendAnalytics = useMemo(() => getTrendAnalytics(history, trendPeriod), [history, trendPeriod]);
+  const levelData = useMemo(() => calculateLevelData(totalPoints), [totalPoints]);
   // STREAK DATA COMMENTED OUT
   // const { streakMap, currentStreak } = useMemo(() => getDynamicStreakData(history), [history]);
 
@@ -557,12 +557,12 @@ export default function FanZoneDashboard() {
     [history]
   );
 
-  const rankDiff  = rankSnapshot.prev > 0 && rankSnapshot.current > 0
+  const rankDiff = rankSnapshot.prev > 0 && rankSnapshot.current > 0
     ? Math.abs(rankSnapshot.prev - rankSnapshot.current) : 0;
-  const isRankUp  = rankSnapshot.prev > 0 && rankSnapshot.current > 0
+  const isRankUp = rankSnapshot.prev > 0 && rankSnapshot.current > 0
     && rankSnapshot.current < rankSnapshot.prev;
 
-  const currentMonthLabel  = getCurrentMonthLabel();
+  const currentMonthLabel = getCurrentMonthLabel();
   const previousMonthLabel = getPreviousMonthLabel();
 
   const openShareDialog = () => { setShowShareDialog(true); setCopied(false); };
@@ -635,7 +635,7 @@ export default function FanZoneDashboard() {
   );
 
   // ─── Sub-components ──────────────────────────
-  
+
   /* ── STREAK WIDGET COMMENTED OUT ──
   const StreakWidget = () => (
     <div className="bg-[#09090b] border border-white/10 rounded-2xl p-6">
@@ -809,7 +809,7 @@ export default function FanZoneDashboard() {
             */}
           </div>
 
-            {/* ── HERO POINTS CARD (Top Graph Card) COMMENTED OUT ──
+          {/* ── HERO POINTS CARD (Top Graph Card) COMMENTED OUT ──
             <div className="bg-[#09090b] border border-white/5 rounded-2xl p-6 w-full md:w-[320px] shadow-2xl relative z-10 hidden md:block">
               <div className="flex justify-between items-center mb-4">
                 <p className="text-[10px] font-black uppercase tracking-widest text-gray-500">Total Points</p>
@@ -912,9 +912,8 @@ export default function FanZoneDashboard() {
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`pb-4 text-sm font-bold whitespace-nowrap transition-all relative ${
-                activeTab === tab ? "text-rose-500" : "text-gray-400 hover:text-gray-200"
-              }`}
+              className={`pb-4 text-sm font-bold whitespace-nowrap transition-all relative ${activeTab === tab ? "text-rose-500" : "text-gray-400 hover:text-gray-200"
+                }`}
             >
               {tab}
               {activeTab === tab && (

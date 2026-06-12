@@ -52,7 +52,7 @@ export const GLOBAL_CSS = `
   }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 768px) {
   .roar-inner {
     width: 100%;
     position: relative;

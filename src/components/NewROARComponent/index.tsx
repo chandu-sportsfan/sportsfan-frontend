@@ -530,6 +530,7 @@ export default function ROARApp() {
   const [userBadge, setUserBadge] = useState("RISING_FAN");
   const [userSports, setUserSports] = useState<string[]>([]);
   const [currentUsername, setCurrentUsername] = useState("RoarUser");
+  const [currentAvatarUrl, setCurrentAvatarUrl] = useState<string | undefined>();
 
   useEffect(() => {
     setMounted(true);
@@ -541,10 +542,12 @@ export default function ROARApp() {
           setUserBadge(res.data.user.badge || "RISING_FAN");
           setUserSports(res.data.user.sports ?? []);
           setCurrentUsername(res.data.user.username || "RoarUser");
+          setCurrentAvatarUrl(res.data.user.avatarUrl || undefined);
           try {
             localStorage.setItem("roar_v2_complete", "1");
             localStorage.setItem("roar_badge", res.data.user.badge || "RISING_FAN");
             localStorage.setItem("roar_username", res.data.user.username || "RoarUser");
+            if (res.data.user.avatarUrl) localStorage.setItem("roar_avatar_url", res.data.user.avatarUrl);
           } catch {}
         } else {
           setOnboarded(false);
@@ -668,6 +671,10 @@ export default function ROARApp() {
         if (res.data?.success) {
           setUserSports(res.data.user.sports ?? []);
           setUserBadge(res.data.user.badge || "RISING_FAN");
+          setCurrentAvatarUrl(res.data.user.avatarUrl || undefined);
+          try {
+            if (res.data.user.avatarUrl) localStorage.setItem("roar_avatar_url", res.data.user.avatarUrl);
+          } catch {}
         }
       } catch (err: any) {
         if (err.response?.status === 404) {
@@ -681,6 +688,21 @@ export default function ROARApp() {
     fetchPosts();
     fetchUserSports();
   }, [onboarded, fetchPosts]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    const syncAvatar = (event?: Event) => {
+      const custom = event as CustomEvent<{ avatarUrl?: string }> | undefined;
+      const avatarFromEvent = custom?.detail?.avatarUrl;
+      try {
+        setCurrentAvatarUrl(avatarFromEvent || localStorage.getItem("roar_avatar_url") || undefined);
+      } catch {
+        setCurrentAvatarUrl(avatarFromEvent || undefined);
+      }
+    };
+    syncAvatar();
+    window.addEventListener("roar-profile-updated", syncAvatar);
+    return () => window.removeEventListener("roar-profile-updated", syncAvatar);
+  }, []);
 
   // Sync notifications with live rooms
   useEffect(() => {
@@ -942,14 +964,17 @@ export default function ROARApp() {
 
         {/* Main content */}
         {onboarded && (
-          <div style={{ position: "relative", zIndex: 1, flex: 1, minHeight: 0, overflow: "clip" }}>
+          <div style={{ position: "relative", zIndex: 1, flex: 1, minHeight: 0, overflow: "clip", display: "flex", flexDirection: "column" }}>
             <AnimatePresence mode="wait">
               {isLB ? (
-                <motion.div key="lb" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} style={{ height: "100%" }}>
+                <motion.div key="lb" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
                   <Leaderboard onBack={() => setOverlay(null)} onCompose={() => openCompose("prediction")} />
                 </motion.div>
               ) : isRoom ? (
-                <motion.div key="room" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} style={{ height: "100%", display: "flex", flexDirection: "column" }}>
+                <motion.div key="room" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
+                  <style dangerouslySetInnerHTML={{ __html: `
+                    #global-header-desktop, #global-header-tablet, #global-header-mobile { display: none !important; }
+                  `}} />
                   <DiscussionRoom
                     roomId={selectedRoom?.roomId}
                     roomName={selectedRoom?.name}
@@ -960,10 +985,11 @@ export default function ROARApp() {
                     onToast={showToast}
                     onPostClick={(post) => setSelectedPost(post)}
                     onCompose={(type) => openCompose(type)}
+                    currentAvatarUrl={currentAvatarUrl}
                   />
                 </motion.div>
               ) : (
-                <motion.div key={activeTab} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }} style={{ height: "100%" }}>
+                <motion.div key={activeTab} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }} style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
                   {activeTab === "home" && (
                     <HomeFeed
                       onJoinRoom={(room) => { if (room) setSelectedRoom(room); else if (rooms.length) setSelectedRoom(rooms[0]); setOverlay("room"); }}
@@ -983,6 +1009,7 @@ export default function ROARApp() {
                       userSports={userSports}
                       onQuickCompose={(t) => openCompose(t)}
                       currentUsername={currentUsername}
+                      currentAvatarUrl={currentAvatarUrl}
                     />
                   )}
                   {activeTab === "profile" && (
@@ -1022,6 +1049,7 @@ export default function ROARApp() {
             onVote={handleVote}
             onDeletePost={handleDeletePost}
             currentUsername={currentUsername}
+            currentAvatarUrl={currentAvatarUrl}
           />
         )}
 

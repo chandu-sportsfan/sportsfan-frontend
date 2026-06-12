@@ -12,6 +12,7 @@ import {
   Users,
 } from "lucide-react";
 import Link from "next/link";
+import BackButton from "@/src/components/ReusableComponent/BackButton";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -94,14 +95,14 @@ const COUNTRY_FLAGS: Record<string, string> = {
   "BAN-W": "🇧🇩",
   "ENG-W": "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
   "IND-W": "🇮🇳",
-  "NZ-W":  "🇳🇿",
+  "NZ-W": "🇳🇿",
   "PAK-W": "🇵🇰",
-  "SA-W":  "🇿🇦",
-  "SL-W":  "🇱🇰",
-  "WI-W":  "🌴",
+  "SA-W": "🇿🇦",
+  "SL-W": "🇱🇰",
+  "WI-W": "🌴",
   "SCO-W": "🏴󠁧󠁢󠁳󠁣󠁴󠁿",
   "IRE-W": "🇮🇪",
-  "TBC":   "❓",
+  "TBC": "❓",
 };
 
 // ─── Static Data ──────────────────────────────────────────────────────────────
@@ -131,75 +132,75 @@ const NEXT_MATCH: NextMatch = {
 };
 
 const GLANCE = [
-  { icon: "calendar", label: "MATCHES",          value: "33" },
-  { icon: "users",    label: "TEAMS",             value: "12" },
-  { icon: "pin",      label: "VENUES",            value: "7"  },
-  { icon: "clock",    label: "TOURNAMENT DATES",  value: "11 JUN – 5 JULY 2026" },
+  { icon: "calendar", label: "MATCHES", value: "33" },
+  { icon: "users", label: "TEAMS", value: "12" },
+  { icon: "pin", label: "VENUES", value: "7" },
+  { icon: "clock", label: "TOURNAMENT DATES", value: "11 JUN – 5 JULY 2026" },
 ];
 
 const GROUP_A: TeamRow[] = [
-  { rank: 1, abbr: "AUS-W", flag: "🇦🇺", name: "Australia Women",   group: "A", p: 0, w: 0, l: 0, nrr: "0.000", pts: 0 },
-  { rank: 2, abbr: "ENG-W", flag: "🏴󠁧󠁢󠁥󠁮󠁧󠁿", name: "England Women",    group: "A", p: 0, w: 0, l: 0, nrr: "0.000", pts: 0 },
-  { rank: 3, abbr: "NZ-W",  flag: "🇳🇿", name: "New Zealand Women", group: "A", p: 0, w: 0, l: 0, nrr: "0.000", pts: 0 },
-  { rank: 4, abbr: "SA-W",  flag: "🇿🇦", name: "South Africa Women",group: "A", p: 0, w: 0, l: 0, nrr: "0.000", pts: 0 },
-  { rank: 5, abbr: "SCO-W", flag: "🏴󠁧󠁢󠁳󠁣󠁴󠁿", name: "Scotland Women",   group: "A", p: 0, w: 0, l: 0, nrr: "0.000", pts: 0 },
-  { rank: 6, abbr: "IRE-W", flag: "🇮🇪", name: "Ireland Women",     group: "A", p: 0, w: 0, l: 0, nrr: "0.000", pts: 0 },
+  { rank: 1, abbr: "AUS-W", flag: "🇦🇺", name: "Australia Women", group: "A", p: 0, w: 0, l: 0, nrr: "0.000", pts: 0 },
+  { rank: 2, abbr: "ENG-W", flag: "🏴󠁧󠁢󠁥󠁮󠁧󠁿", name: "England Women", group: "A", p: 0, w: 0, l: 0, nrr: "0.000", pts: 0 },
+  { rank: 3, abbr: "NZ-W", flag: "🇳🇿", name: "New Zealand Women", group: "A", p: 0, w: 0, l: 0, nrr: "0.000", pts: 0 },
+  { rank: 4, abbr: "SA-W", flag: "🇿🇦", name: "South Africa Women", group: "A", p: 0, w: 0, l: 0, nrr: "0.000", pts: 0 },
+  { rank: 5, abbr: "SCO-W", flag: "🏴󠁧󠁢󠁳󠁣󠁴󠁿", name: "Scotland Women", group: "A", p: 0, w: 0, l: 0, nrr: "0.000", pts: 0 },
+  { rank: 6, abbr: "IRE-W", flag: "🇮🇪", name: "Ireland Women", group: "A", p: 0, w: 0, l: 0, nrr: "0.000", pts: 0 },
 ];
 
 const GROUP_B: TeamRow[] = [
-  { rank: 1, abbr: "IND-W", flag: "🇮🇳", name: "India Women",       group: "B", p: 0, w: 0, l: 0, nrr: "0.000", pts: 0 },
-  { rank: 2, abbr: "PAK-W", flag: "🇵🇰", name: "Pakistan Women",    group: "B", p: 0, w: 0, l: 0, nrr: "0.000", pts: 0 },
-  { rank: 3, abbr: "WI-W",  flag: "🌴",  name: "West Indies Women", group: "B", p: 0, w: 0, l: 0, nrr: "0.000", pts: 0 },
-  { rank: 4, abbr: "SL-W",  flag: "🇱🇰", name: "Sri Lanka Women",   group: "B", p: 0, w: 0, l: 0, nrr: "0.000", pts: 0 },
-  { rank: 5, abbr: "BAN-W", flag: "🇧🇩", name: "Bangladesh Women",  group: "B", p: 0, w: 0, l: 0, nrr: "0.000", pts: 0 },
-  { rank: 6, abbr: "TBC",   flag: "❓",  name: "TBC",               group: "B", p: 0, w: 0, l: 0, nrr: "0.000", pts: 0 },
+  { rank: 1, abbr: "IND-W", flag: "🇮🇳", name: "India Women", group: "B", p: 0, w: 0, l: 0, nrr: "0.000", pts: 0 },
+  { rank: 2, abbr: "PAK-W", flag: "🇵🇰", name: "Pakistan Women", group: "B", p: 0, w: 0, l: 0, nrr: "0.000", pts: 0 },
+  { rank: 3, abbr: "WI-W", flag: "🌴", name: "West Indies Women", group: "B", p: 0, w: 0, l: 0, nrr: "0.000", pts: 0 },
+  { rank: 4, abbr: "SL-W", flag: "🇱🇰", name: "Sri Lanka Women", group: "B", p: 0, w: 0, l: 0, nrr: "0.000", pts: 0 },
+  { rank: 5, abbr: "BAN-W", flag: "🇧🇩", name: "Bangladesh Women", group: "B", p: 0, w: 0, l: 0, nrr: "0.000", pts: 0 },
+  { rank: 6, abbr: "TBC", flag: "❓", name: "TBC", group: "B", p: 0, w: 0, l: 0, nrr: "0.000", pts: 0 },
 ];
 
 const ORANGE_CAP: PlayerRow[] = [
-  { rank: 1, player: "Smriti Mandhana",   country: "IND-W", flag: "🇮🇳", m: 0, runs: 0, avg: "-",  sr: "-" },
-  { rank: 2, player: "Heather Knight",    country: "ENG-W", flag: "🏴󠁧󠁢󠁥󠁮󠁧󠁿", m: 0, runs: 0, avg: "-",  sr: "-" },
-  { rank: 3, player: "Beth Mooney",       country: "AUS-W", flag: "🇦🇺", m: 0, runs: 0, avg: "-",  sr: "-" },
-  { rank: 4, player: "Nat Sciver-Brunt",  country: "ENG-W", flag: "🏴󠁧󠁢󠁥󠁮󠁧󠁿", m: 0, runs: 0, avg: "-",  sr: "-" },
-  { rank: 5, player: "Laura Wolvaardt",   country: "SA-W",  flag: "🇿🇦", m: 0, runs: 0, avg: "-",  sr: "-" },
+  { rank: 1, player: "Smriti Mandhana", country: "IND-W", flag: "🇮🇳", m: 0, runs: 0, avg: "-", sr: "-" },
+  { rank: 2, player: "Heather Knight", country: "ENG-W", flag: "🏴󠁧󠁢󠁥󠁮󠁧󠁿", m: 0, runs: 0, avg: "-", sr: "-" },
+  { rank: 3, player: "Beth Mooney", country: "AUS-W", flag: "🇦🇺", m: 0, runs: 0, avg: "-", sr: "-" },
+  { rank: 4, player: "Nat Sciver-Brunt", country: "ENG-W", flag: "🏴󠁧󠁢󠁥󠁮󠁧󠁿", m: 0, runs: 0, avg: "-", sr: "-" },
+  { rank: 5, player: "Laura Wolvaardt", country: "SA-W", flag: "🇿🇦", m: 0, runs: 0, avg: "-", sr: "-" },
 ];
 
 const PURPLE_CAP: PlayerRow[] = [
-  { rank: 1, player: "Sophie Ecclestone",    country: "ENG-W", flag: "🏴󠁧󠁢󠁥󠁮󠁧󠁿", m: 0, wickets: 0, avg: "-", econ: "-" },
-  { rank: 2, player: "Shabnim Ismail",       country: "SA-W",  flag: "🇿🇦", m: 0, wickets: 0, avg: "-", econ: "-" },
-  { rank: 3, player: "Ashleigh Gardner",     country: "AUS-W", flag: "🇦🇺", m: 0, wickets: 0, avg: "-", econ: "-" },
-  { rank: 4, player: "Deepti Sharma",        country: "IND-W", flag: "🇮🇳", m: 0, wickets: 0, avg: "-", econ: "-" },
-  { rank: 5, player: "Marizanne Kapp",       country: "SA-W",  flag: "🇿🇦", m: 0, wickets: 0, avg: "-", econ: "-" },
+  { rank: 1, player: "Sophie Ecclestone", country: "ENG-W", flag: "🏴󠁧󠁢󠁥󠁮󠁧󠁿", m: 0, wickets: 0, avg: "-", econ: "-" },
+  { rank: 2, player: "Shabnim Ismail", country: "SA-W", flag: "🇿🇦", m: 0, wickets: 0, avg: "-", econ: "-" },
+  { rank: 3, player: "Ashleigh Gardner", country: "AUS-W", flag: "🇦🇺", m: 0, wickets: 0, avg: "-", econ: "-" },
+  { rank: 4, player: "Deepti Sharma", country: "IND-W", flag: "🇮🇳", m: 0, wickets: 0, avg: "-", econ: "-" },
+  { rank: 5, player: "Marizanne Kapp", country: "SA-W", flag: "🇿🇦", m: 0, wickets: 0, avg: "-", econ: "-" },
 ];
 
 const UPCOMING_MATCHES: MatchCard[] = [
   {
     matchNo: 1, date: "11 Jun", time: "3:00 PM IST",
     teamA: "ENG-W", teamAFull: "England Women", teamAFlag: "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
-    teamB: "IND-W", teamBFull: "India Women",   teamBFlag: "🇮🇳",
+    teamB: "IND-W", teamBFull: "India Women", teamBFlag: "🇮🇳",
     venue: "Edgbaston, Birmingham", group: "Group A", status: "upcoming",
   },
   {
     matchNo: 2, date: "12 Jun", time: "3:00 PM IST",
     teamA: "AUS-W", teamAFull: "Australia Women", teamAFlag: "🇦🇺",
-    teamB: "NZ-W",  teamBFull: "New Zealand Women", teamBFlag: "🇳🇿",
+    teamB: "NZ-W", teamBFull: "New Zealand Women", teamBFlag: "🇳🇿",
     venue: "Lord's, London", group: "Group A", status: "upcoming",
   },
   {
     matchNo: 3, date: "13 Jun", time: "3:00 PM IST",
-    teamA: "SA-W",  teamAFull: "South Africa Women", teamAFlag: "🇿🇦",
+    teamA: "SA-W", teamAFull: "South Africa Women", teamAFlag: "🇿🇦",
     teamB: "SCO-W", teamBFull: "Scotland Women", teamBFlag: "🏴󠁧󠁢󠁳󠁣󠁴󠁿",
     venue: "The Oval, London", group: "Group A", status: "upcoming",
   },
   {
     matchNo: 4, date: "14 Jun", time: "3:00 PM IST",
-    teamA: "WI-W",  teamBFull: "Pakistan Women",    teamAFlag: "🌴",
+    teamA: "WI-W", teamBFull: "Pakistan Women", teamAFlag: "🌴",
     teamB: "PAK-W", teamAFull: "West Indies Women", teamBFlag: "🇵🇰",
     venue: "Headingley, Leeds", group: "Group B", status: "upcoming",
   },
   {
     matchNo: 5, date: "15 Jun", time: "3:00 PM IST",
-    teamA: "IND-W", teamAFull: "India Women",     teamAFlag: "🇮🇳",
-    teamB: "IRE-W", teamBFull: "Ireland Women",   teamBFlag: "🇮🇪",
+    teamA: "IND-W", teamAFull: "India Women", teamAFlag: "🇮🇳",
+    teamB: "IRE-W", teamBFull: "Ireland Women", teamBFlag: "🇮🇪",
     venue: "Trent Bridge, Nottingham", group: "Group A", status: "upcoming",
   },
 ];
@@ -207,13 +208,13 @@ const UPCOMING_MATCHES: MatchCard[] = [
 const SEMIFINAL_MATCHES: MatchCard[] = [
   {
     matchNo: 32, date: "2 Jul",
-    teamA: "TBC", teamAFull: "Group A Winner",    teamAFlag: "❓",
+    teamA: "TBC", teamAFull: "Group A Winner", teamAFlag: "❓",
     teamB: "TBC", teamBFull: "Group B Runner Up", teamBFlag: "❓",
     venue: "Lord's, London", status: "upcoming",
   },
   {
     matchNo: 33, date: "3 Jul",
-    teamA: "TBC", teamAFull: "Group B Winner",    teamAFlag: "❓",
+    teamA: "TBC", teamAFull: "Group B Winner", teamAFlag: "❓",
     teamB: "TBC", teamBFull: "Group A Runner Up", teamBFlag: "❓",
     venue: "Lord's, London", status: "upcoming",
   },
@@ -231,14 +232,14 @@ const PARTICIPATING_TEAMS = [
   { abbr: "BAN-W", flag: "🇧🇩" },
   { abbr: "ENG-W", flag: "🏴󠁧󠁢󠁥󠁮󠁧󠁿" },
   { abbr: "IND-W", flag: "🇮🇳" },
-  { abbr: "NZ-W",  flag: "🇳🇿" },
+  { abbr: "NZ-W", flag: "🇳🇿" },
   { abbr: "PAK-W", flag: "🇵🇰" },
-  { abbr: "SA-W",  flag: "🇿🇦" },
-  { abbr: "SL-W",  flag: "🇱🇰" },
-  { abbr: "WI-W",  flag: "🌴"  },
+  { abbr: "SA-W", flag: "🇿🇦" },
+  { abbr: "SL-W", flag: "🇱🇰" },
+  { abbr: "WI-W", flag: "🌴" },
   { abbr: "SCO-W", flag: "🏴󠁧󠁢󠁳󠁣󠁴󠁿" },
   { abbr: "IRE-W", flag: "🇮🇪" },
-  { abbr: "TBC",   flag: "❓"  },
+  { abbr: "TBC", flag: "❓" },
 ];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -354,9 +355,9 @@ function HeroBanner() {
         style={{ borderTop: "1px solid rgba(255,255,255,0.07)", divideColor: "rgba(255,255,255,0.08)" }}
       >
         {[
-          { icon: <Calendar size={14} />,  value: TOURNAMENT.matches,  label: "MATCHES" },
-          { icon: <Users size={14} />,     value: TOURNAMENT.teams,    label: "TEAMS"   },
-          { icon: <Clock size={14} />,     value: TOURNAMENT.daysToGo, label: "DAYS TO GO" },
+          { icon: <Calendar size={14} />, value: TOURNAMENT.matches, label: "MATCHES" },
+          { icon: <Users size={14} />, value: TOURNAMENT.teams, label: "TEAMS" },
+          { icon: <Clock size={14} />, value: TOURNAMENT.daysToGo, label: "DAYS TO GO" },
         ].map((s, i) => (
           <div key={i} className={`flex items-center gap-2 px-4 ${i === 0 ? "pl-0" : ""}`}>
             <span className="text-[#e91e8c]">{s.icon}</span>
@@ -461,10 +462,10 @@ function NextMatchAndGlance() {
         </div>
         <div className="divide-y divide-[#1e1e30]">
           {[
-            { icon: <Calendar size={14} />, label: "MATCHES",          value: "33" },
-            { icon: <Users size={14} />,    label: "TEAMS",            value: "12" },
-            { icon: <MapPin size={14} />,   label: "VENUES",           value: "7"  },
-            { icon: <Clock size={14} />,    label: "TOURNAMENT DATES", value: "11 JUN – 5 JULY 2026" },
+            { icon: <Calendar size={14} />, label: "MATCHES", value: "33" },
+            { icon: <Users size={14} />, label: "TEAMS", value: "12" },
+            { icon: <MapPin size={14} />, label: "VENUES", value: "7" },
+            { icon: <Clock size={14} />, label: "TOURNAMENT DATES", value: "11 JUN – 5 JULY 2026" },
           ].map((row, i) => (
             <div key={i} className="flex items-center justify-between px-4 py-3">
               <div className="flex items-center gap-2.5">
@@ -494,9 +495,8 @@ function PointsTableTab() {
           <button
             key={g}
             onClick={() => setActiveGroup(g)}
-            className={`flex-1 py-2 rounded-xl text-xs font-black tracking-widest uppercase transition-all ${
-              activeGroup === g ? "text-white" : "text-gray-600 hover:text-gray-400"
-            }`}
+            className={`flex-1 py-2 rounded-xl text-xs font-black tracking-widest uppercase transition-all ${activeGroup === g ? "text-white" : "text-gray-600 hover:text-gray-400"
+              }`}
             style={{
               background: activeGroup === g ? "rgba(233,30,140,0.15)" : "rgba(255,255,255,0.03)",
               border: activeGroup === g ? "1px solid rgba(233,30,140,0.4)" : "1px solid rgba(255,255,255,0.06)",
@@ -805,10 +805,10 @@ function SemifinalsTab() {
 
 function TabBar({ activeTab, onChange }: { activeTab: TabId; onChange: (id: TabId) => void }) {
   const tabs: { id: TabId; label: string }[] = [
-    { id: "table",      label: "POINTS TABLE" },
-    { id: "stats",      label: "STATS"        },
-    { id: "matches",    label: "MATCHES"      },
-    { id: "semifinals", label: "KNOCKOUTS"    },
+    { id: "table", label: "POINTS TABLE" },
+    { id: "stats", label: "STATS" },
+    { id: "matches", label: "MATCHES" },
+    { id: "semifinals", label: "KNOCKOUTS" },
   ];
   return (
     <div className="flex border-b border-[#1e1e30] bg-[#0d0e1c] sticky top-0 z-20 overflow-x-auto no-scrollbar">
@@ -816,9 +816,8 @@ function TabBar({ activeTab, onChange }: { activeTab: TabId; onChange: (id: TabI
         <button
           key={id}
           onClick={() => onChange(id)}
-          className={`relative flex-1 min-w-[90px] py-4 text-[10px] font-black tracking-widest transition-colors flex items-center justify-center ${
-            activeTab === id ? "text-white" : "text-gray-600 hover:text-gray-400"
-          }`}
+          className={`relative flex-1 min-w-[90px] py-4 text-[10px] font-black tracking-widest transition-colors flex items-center justify-center ${activeTab === id ? "text-white" : "text-gray-600 hover:text-gray-400"
+            }`}
         >
           {label}
           {activeTab === id && (
@@ -879,9 +878,9 @@ function BottomSection() {
         <p className="text-[#e91e8c] text-[10px] font-black tracking-widest uppercase mb-3">TOURNAMENT OVERVIEW</p>
         <div className="grid grid-cols-2 gap-3 mb-3">
           {[
-            { icon: "🏏", label: "TEAMS",    value: "12" },
-            { icon: "📅", label: "MATCHES",  value: "33" },
-            { icon: "📍", label: "VENUES",   value: "7"  },
+            { icon: "🏏", label: "TEAMS", value: "12" },
+            { icon: "📅", label: "MATCHES", value: "33" },
+            { icon: "📍", label: "VENUES", value: "7" },
             { icon: "⏳", label: "DAYS TO GO", value: "26" },
           ].map((s, i) => (
             <div
@@ -940,14 +939,7 @@ export default function WomensT20Dashboard() {
     <div className="min-h-screen bg-[#0b0c16]" style={{ fontFamily: "'Inter', 'SF Pro Display', system-ui, sans-serif" }}>
       <div className="mx-auto px-3 py-4 sm:px-6 sm:py-6 max-w-4xl">
         {/* Back */}
-        <Link
-          href="/MainModules/HomePage"
-          className="inline-flex items-center gap-1.5 text-gray-500 hover:text-gray-300 mb-4 transition-colors"
-        >
-          <ArrowLeft size={16} />
-          <span className="text-sm">Back</span>
-        </Link>
-
+        <BackButton />
         {/* Hero */}
         <HeroBanner />
 
@@ -961,9 +953,9 @@ export default function WomensT20Dashboard() {
         >
           <TabBar activeTab={tab} onChange={setTab} />
           <div className="p-4">
-            {tab === "table"      && <PointsTableTab />}
-            {tab === "stats"      && <StatsTab />}
-            {tab === "matches"    && <MatchesTab />}
+            {tab === "table" && <PointsTableTab />}
+            {tab === "stats" && <StatsTab />}
+            {tab === "matches" && <MatchesTab />}
             {tab === "semifinals" && <SemifinalsTab />}
           </div>
         </div>

@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Calendar, MapPin, Trophy, Users, ChevronRight, Play, Tv2 } from "lucide-react";
-
+import { motion } from "framer-motion";
 // ─── Data ────────────────────────────────────────────────────────────────────
 
 const upcomingMatches = [
@@ -165,12 +166,48 @@ function CityImg({ src, alt }: { src: string; alt: string }) {
 export default function FIFAMatchCenter() {
   const kickoff = new Date("2026-06-11T19:00:00-06:00");
   const { days, hrs, mins, secs } = useCountdown(kickoff);
+  const router = useRouter();
 
   return (
     <div
       className="min-h-screen text-white font-sans"
       style={{ background: "linear-gradient(160deg, #04040E 0%, #070718 40%, #0C0820 70%, #07071A 100%)" }}
     >
+      <motion.button
+        whileTap={{ scale: 0.88 }}
+        onClick={() => {
+          if (typeof window !== "undefined" && window.history.length > 1) {
+            window.history.back();
+          } else {
+            router.push("/");
+          }
+        }}
+        aria-label="Go back"
+        style={{
+          position: "fixed",
+          marginTop: 5,
+          marginLeft: 5,
+          width: 38,
+          height: 38,
+          borderRadius: "50%",
+          background: "rgba(255,255,255,0.09)",
+          border: "1px solid rgba(255,255,255,0.15)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          cursor: "pointer",
+          zIndex: 90,
+          backdropFilter: "blur(8px)",
+          transition: "background 0.18s",
+        }}
+        onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.16)")}
+        onMouseLeave={e => (e.currentTarget.style.background = "rgba(255,255,255,0.09)")}
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M15 19L8 12L15 5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </motion.button>
+
       {/* Ambient top glow */}
       <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[900px] h-[350px] bg-[#C9115F]/15 blur-[130px] pointer-events-none z-0" />
       {/* Purple ambient glow */}
@@ -179,6 +216,8 @@ export default function FIFAMatchCenter() {
       <div className="fixed bottom-0 left-0 w-[600px] h-[300px] bg-blue-900/10 blur-[120px] pointer-events-none z-0" />
 
       <div className="relative z-10 p-4 lg:p-6 max-w-[1600px] mx-auto">
+        {/* ── Back Button ── */}
+
 
         {/* ── TOP ROW ──────────────────────────────────────────────────────── */}
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 mb-4">

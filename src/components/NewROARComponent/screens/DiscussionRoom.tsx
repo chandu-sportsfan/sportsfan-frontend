@@ -66,23 +66,29 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
   }, [tab]);
 
   useEffect(() => {
-    // Only fix the top padding gap, leaving host scroll intact so bottom nav works
+    // Aggressively remove any top padding/margin from ALL host app wrappers to destroy the top gap
+    // But NEVER touch overflow/height so we don't break the bottom nav again!
     const root = document.querySelector('.roar-root');
-    let originalPadding = '';
-    let parent2: HTMLElement | null = null;
+    const originalStyles = new Map();
     
     if (root) {
-      parent2 = root.parentElement?.parentElement as HTMLElement;
-      if (parent2) {
-        originalPadding = parent2.style.paddingTop;
-        parent2.style.setProperty('padding-top', '0px', 'important');
+      let current = root.parentElement;
+      while (current && current.tagName.toLowerCase() !== 'body') {
+        originalStyles.set(current, {
+          paddingTop: current.style.paddingTop,
+          marginTop: current.style.marginTop
+        });
+        current.style.setProperty('padding-top', '0px', 'important');
+        current.style.setProperty('margin-top', '0px', 'important');
+        current = current.parentElement;
       }
     }
     
     return () => {
-      if (parent2) {
-        parent2.style.paddingTop = originalPadding;
-      }
+      originalStyles.forEach((styles, el) => {
+        if (styles.paddingTop !== undefined) el.style.paddingTop = styles.paddingTop;
+        if (styles.marginTop !== undefined) el.style.marginTop = styles.marginTop;
+      });
     };
   }, []);
   

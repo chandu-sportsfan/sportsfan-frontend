@@ -748,11 +748,31 @@ export default function ROARApp() {
   // ── Actions ────────────────────────────────────────────────────────────────
   const handleVote = useCallback(
     async (postId: string, voteType: "agree" | "disagree" | null) => {
+      setDbPosts((prev) =>
+        prev.map((post) => {
+          if (post.id === postId || post._id === postId || post.postId === postId) {
+            const currentVote = post.userVote;
+            let agreeCount = post.agreeCount ?? 0;
+            let disagreeCount = post.disagreeCount ?? 0;
+
+            if (currentVote === "agree") agreeCount = Math.max(0, agreeCount - 1);
+            if (currentVote === "disagree") disagreeCount = Math.max(0, disagreeCount - 1);
+
+            if (voteType === "agree") agreeCount += 1;
+            if (voteType === "disagree") disagreeCount += 1;
+
+            return { ...post, userVote: voteType, agreeCount, disagreeCount };
+          }
+          return post;
+        })
+      );
+
       try {
         await axios.post(`/api/roar/posts/${postId}/vote`, { vote: voteType });
         await fetchPosts();
       } catch (err) {
         console.error("Failed to submit vote:", err);
+        await fetchPosts();
       }
     },
     [fetchPosts],
@@ -762,7 +782,7 @@ export default function ROARApp() {
     async (postId: string) => {
       setDbPosts((prev) =>
         prev.map((post) => {
-          if (post.id === postId || post._id === postId) {
+          if (post.id === postId || post._id === postId || post.postId === postId) {
             const userLiked = post.userLiked ?? false;
             return {
               ...post,

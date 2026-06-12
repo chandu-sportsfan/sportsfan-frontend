@@ -102,6 +102,8 @@ export default function HomeFeed({
 }: Props) {
   const [filter, setFilter] = useState("For You");
   const [votes, setVotes] = useState<Record<string, boolean | null>>({});
+  const [localLikes, setLocalLikes] = useState<Record<string, { userLiked: boolean; likeCount: number }>>({});
+  const [lastActionAt, setLastActionAt] = useState<Record<string, number>>({});
   const [pcts, setPcts] = useState<Record<string, number>>({});
   const [now, setNow] = useState(Date.now());
   const [localUsername, setLocalUsername] = useState("RoarUser");
@@ -204,15 +206,24 @@ export default function HomeFeed({
 
   useEffect(() => {
     if (dbPosts.length > 0) {
-      setPcts({});
-      const synced: Record<string, boolean | null> = {};
+      const syncedVotes: Record<string, boolean | null> = { ...votes };
+      const syncedLikes: Record<string, { userLiked: boolean; likeCount: number }> = { ...localLikes };
+      const nowMs = Date.now();
+      
       dbPosts.forEach((p) => {
-        if (p.userVote) synced[p.postId] = p.userVote === "agree";
-        else synced[p.postId] = null;
+        // If user interacted with this post in the last 15 seconds, ignore stale DB data to prevent flickering
+        const lastAction = lastActionAt[p.postId] || 0;
+        if (nowMs - lastAction < 15000) return;
+
+        if (p.userVote) syncedVotes[p.postId] = p.userVote === "agree";
+        else syncedVotes[p.postId] = null;
+
+        syncedLikes[p.postId] = { userLiked: p.userLiked ?? false, likeCount: p.likeCount ?? 0 };
       });
-      setVotes(synced);
+      setVotes(syncedVotes);
+      setLocalLikes(syncedLikes);
     }
-  }, [dbPosts]);
+  }, [dbPosts, lastActionAt]);
 
   const vote = (
     id: string,
@@ -224,7 +235,9 @@ export default function HomeFeed({
     const prev = votes[id];
     let nextVote: boolean | null = agree;
     if (prev === agree) nextVote = null;
+    
     setVotes((v) => ({ ...v, [id]: nextVote }));
+    setLastActionAt((prev) => ({ ...prev, [id]: Date.now() }));
 
     let delta = 0;
     if (initialUserVote === "agree") {
@@ -249,11 +262,23 @@ export default function HomeFeed({
   };
 
   const renderCardActions = (item: any) => {
+    const likeData = localLikes[item.id] || { userLiked: item.userLiked, likeCount: item.likeCount };
+    const isLiked = likeData.userLiked;
+    const count = likeData.likeCount;
+
     return (
       <div style={{ display: "flex", gap: 16, marginTop: 12, borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 12 }}>
         <button
           onClick={(e) => {
             e.stopPropagation();
+            setLocalLikes((prev) => ({
+              ...prev,
+              [item.id]: {
+                userLiked: !isLiked,
+                likeCount: Math.max(0, count + (isLiked ? -1 : 1))
+              }
+            }));
+            setLastActionAt((prev) => ({ ...prev, [item.id]: Date.now() }));
             if (onLike) onLike(item.id);
           }}
           style={{
@@ -263,14 +288,14 @@ export default function HomeFeed({
             background: "none",
             border: "none",
             cursor: "pointer",
-            color: item.userLiked ? "#ff4a7d" : "#9494ad",
+            color: isLiked ? "#ff4a7d" : "#9494ad",
             fontSize: 13,
             fontWeight: 600,
             transition: "color 0.2s",
           }}
         >
-          <Heart size={16} fill={item.userLiked ? "#ff4a7d" : "none"} />
-          <span>{item.likeCount || 0}</span>
+          <Heart size={16} fill={isLiked ? "#ff4a7d" : "none"} />
+          <span>{count || 0}</span>
         </button>
         <button
           onClick={(e) => {

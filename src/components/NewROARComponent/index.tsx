@@ -769,7 +769,7 @@ export default function ROARApp() {
 
       try {
         await axios.post(`/api/roar/posts/${postId}/vote`, { vote: voteType });
-        await fetchPosts();
+        // Removed immediate fetchPosts() to prevent read-after-write DB lag from flickering the UI
       } catch (err) {
         console.error("Failed to submit vote:", err);
         await fetchPosts();
@@ -796,7 +796,7 @@ export default function ROARApp() {
 
       try {
         await axios.post(`/api/roar/posts/${postId}/like`);
-        await fetchPosts();
+        // Removed immediate fetchPosts() to prevent read-after-write DB lag from flickering the UI
       } catch (err) {
         console.error("Failed to submit like:", err);
         await fetchPosts();

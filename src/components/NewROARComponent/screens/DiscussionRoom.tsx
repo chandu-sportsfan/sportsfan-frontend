@@ -66,77 +66,22 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
   }, [tab]);
 
   useEffect(() => {
-    // Force fix host app layout padding and scrolling
+    // Only fix the top padding gap, leaving host scroll intact so bottom nav works
     const root = document.querySelector('.roar-root');
-    let originalStyles: any = {};
-    let parent1: HTMLElement | null = null;
+    let originalPadding = '';
     let parent2: HTMLElement | null = null;
-    let parent3: HTMLElement | null = null;
     
     if (root) {
-      parent1 = root.parentElement as HTMLElement;
-      parent2 = parent1?.parentElement as HTMLElement;
-      parent3 = parent2?.parentElement as HTMLElement;
-      
+      parent2 = root.parentElement?.parentElement as HTMLElement;
       if (parent2) {
-        originalStyles.p2Padding = parent2.style.padding;
-        originalStyles.p2Margin = parent2.style.margin;
-        originalStyles.p2MaxWidth = parent2.style.maxWidth;
-        parent2.style.setProperty('padding', '0px', 'important');
-        parent2.style.setProperty('margin', '0px', 'important');
-        parent2.style.setProperty('max-width', 'none', 'important');
-        parent2.style.setProperty('display', 'flex', 'important');
-        parent2.style.setProperty('flex-direction', 'column', 'important');
-        parent2.style.setProperty('flex', '1', 'important');
+        originalPadding = parent2.style.paddingTop;
+        parent2.style.setProperty('padding-top', '0px', 'important');
       }
-      if (parent1) {
-        originalStyles.p1Height = parent1.style.height;
-        originalStyles.p1MinHeight = parent1.style.minHeight;
-        originalStyles.p1BorderRadius = parent1.style.borderRadius;
-        parent1.style.setProperty('height', 'auto', 'important');
-        parent1.style.setProperty('min-height', '0px', 'important');
-        parent1.style.setProperty('border-radius', '0px', 'important');
-        parent1.style.setProperty('flex', '1', 'important');
-        parent1.style.setProperty('display', 'flex', 'important');
-        parent1.style.setProperty('flex-direction', 'column', 'important');
-      }
-      if (parent3) {
-        originalStyles.p3Overflow = parent3.style.overflow;
-        parent3.style.setProperty('overflow', 'hidden', 'important');
-        parent3.style.setProperty('display', 'flex', 'important');
-        parent3.style.setProperty('flex-direction', 'column', 'important');
-      }
-      
-      (root as HTMLElement).style.setProperty('flex', '1', 'important');
-      (root as HTMLElement).style.setProperty('height', 'auto', 'important');
     }
     
     return () => {
-      // Restore on unmount
       if (parent2) {
-        parent2.style.padding = originalStyles.p2Padding || '';
-        parent2.style.margin = originalStyles.p2Margin || '';
-        parent2.style.maxWidth = originalStyles.p2MaxWidth || '';
-        parent2.style.display = '';
-        parent2.style.flexDirection = '';
-        parent2.style.flex = '';
-      }
-      if (parent1) {
-        parent1.style.height = originalStyles.p1Height || '';
-        parent1.style.minHeight = originalStyles.p1MinHeight || '';
-        parent1.style.borderRadius = originalStyles.p1BorderRadius || '';
-        parent1.style.flex = '';
-        parent1.style.display = '';
-        parent1.style.flexDirection = '';
-      }
-      if (parent3) {
-        parent3.style.overflow = originalStyles.p3Overflow || '';
-        parent3.style.display = '';
-        parent3.style.flexDirection = '';
-      }
-      if (root) {
-        (root as HTMLElement).style.flex = '';
-        (root as HTMLElement).style.height = '';
+        parent2.style.paddingTop = originalPadding;
       }
     };
   }, []);
@@ -530,7 +475,7 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
       </div>
 
       {/* Messages */}
-      <div ref={listRef} style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "16px", display: "flex", flexDirection: "column", gap: 12 }}>
+      <div ref={listRef} style={{ flex: 1, overflowY: "auto", overflowX: "hidden", padding: "16px", paddingBottom: 100, display: "flex", flexDirection: "column", gap: 12 }}>
         <AnimatePresence initial={false}>
           {loading ? (
             <div style={{ textAlign: "center", color: "var(--text-muted)", padding: "20px 0" }}>Loading messages...</div>
@@ -645,7 +590,7 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
       />
 
       {/* Composer */}
-      <div className="mobile-padding-bottom" style={{ position: "relative", padding: "10px 12px 32px", background: "rgba(14,14,20,0.92)", backdropFilter: "blur(20px)", borderTop: "1px solid var(--border)", zIndex: 10, display: "flex", flexDirection: "column", gap: 8, flexShrink: 0 }}>
+      <div className="composer-fixed-bottom" style={{ position: "fixed", bottom: 60, left: 0, right: 0, padding: "10px 12px", background: "rgba(14,14,20,0.92)", backdropFilter: "blur(20px)", borderTop: "1px solid var(--border)", zIndex: 50, display: "flex", flexDirection: "column", gap: 8 }}>
         {attachedUrl && (
           <div style={{ padding: "8px 12px", borderRadius: 12, background: "var(--bg-tertiary)", border: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>

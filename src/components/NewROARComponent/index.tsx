@@ -950,6 +950,17 @@ export default function ROARApp() {
                 </motion.div>
               ) : isRoom ? (
                 <motion.div key="room" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
+                  <style dangerouslySetInnerHTML={{ __html: `
+                    #global-header-desktop, #global-header-tablet, #global-header-mobile { display: none !important; }
+                    /* Disable scroll on the container that holds the padded wrapper */
+                    div:has(> div > div > .roar-root) { overflow: hidden !important; display: flex !important; flex-direction: column !important; }
+                    /* Remove padding from the wrapper */
+                    div:has(> div > .roar-root) { padding: 0 !important; margin: 0 !important; max-width: none !important; flex: 1 !important; display: flex !important; flex-direction: column !important; }
+                    /* Remove border-radius and calc-height from the direct parent */
+                    div:has(> .roar-root) { height: auto !important; min-height: 0 !important; border-radius: 0 !important; flex: 1 !important; display: flex !important; flex-direction: column !important; }
+                    /* Ensure roar-root fills the available space correctly */
+                    .roar-root { flex: 1 !important; height: auto !important; display: flex !important; flex-direction: column !important; }
+                  `}} />
                   <DiscussionRoom
                     roomId={selectedRoom?.roomId}
                     roomName={selectedRoom?.name}

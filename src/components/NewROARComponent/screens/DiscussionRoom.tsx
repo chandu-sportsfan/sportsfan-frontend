@@ -44,6 +44,102 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
   const [mode, setMode] = useState<"chat" | "prediction" | "hottake" | "debate" | "memory">("chat");
   const [composerPre, setComposerPre] = useState("");
   const listRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    switch (tab) {
+      case "Debate":
+        setMode("debate");
+        setComposerPre("My debate side: ");
+        break;
+      case "Predictions":
+        setMode("prediction");
+        setComposerPre("My prediction: ");
+        break;
+      case "Memory":
+        setMode("memory");
+        setComposerPre("Flashback: ");
+        break;
+      default:
+        setMode("chat");
+        setComposerPre("");
+    }
+  }, [tab]);
+
+  useEffect(() => {
+    // Force fix host app layout padding and scrolling
+    const root = document.querySelector('.roar-root');
+    let originalStyles: any = {};
+    let parent1: HTMLElement | null = null;
+    let parent2: HTMLElement | null = null;
+    let parent3: HTMLElement | null = null;
+    
+    if (root) {
+      parent1 = root.parentElement as HTMLElement;
+      parent2 = parent1?.parentElement as HTMLElement;
+      parent3 = parent2?.parentElement as HTMLElement;
+      
+      if (parent2) {
+        originalStyles.p2Padding = parent2.style.padding;
+        originalStyles.p2Margin = parent2.style.margin;
+        originalStyles.p2MaxWidth = parent2.style.maxWidth;
+        parent2.style.setProperty('padding', '0px', 'important');
+        parent2.style.setProperty('margin', '0px', 'important');
+        parent2.style.setProperty('max-width', 'none', 'important');
+        parent2.style.setProperty('display', 'flex', 'important');
+        parent2.style.setProperty('flex-direction', 'column', 'important');
+        parent2.style.setProperty('flex', '1', 'important');
+      }
+      if (parent1) {
+        originalStyles.p1Height = parent1.style.height;
+        originalStyles.p1MinHeight = parent1.style.minHeight;
+        originalStyles.p1BorderRadius = parent1.style.borderRadius;
+        parent1.style.setProperty('height', 'auto', 'important');
+        parent1.style.setProperty('min-height', '0px', 'important');
+        parent1.style.setProperty('border-radius', '0px', 'important');
+        parent1.style.setProperty('flex', '1', 'important');
+        parent1.style.setProperty('display', 'flex', 'important');
+        parent1.style.setProperty('flex-direction', 'column', 'important');
+      }
+      if (parent3) {
+        originalStyles.p3Overflow = parent3.style.overflow;
+        parent3.style.setProperty('overflow', 'hidden', 'important');
+        parent3.style.setProperty('display', 'flex', 'important');
+        parent3.style.setProperty('flex-direction', 'column', 'important');
+      }
+      
+      (root as HTMLElement).style.setProperty('flex', '1', 'important');
+      (root as HTMLElement).style.setProperty('height', 'auto', 'important');
+    }
+    
+    return () => {
+      // Restore on unmount
+      if (parent2) {
+        parent2.style.padding = originalStyles.p2Padding || '';
+        parent2.style.margin = originalStyles.p2Margin || '';
+        parent2.style.maxWidth = originalStyles.p2MaxWidth || '';
+        parent2.style.display = '';
+        parent2.style.flexDirection = '';
+        parent2.style.flex = '';
+      }
+      if (parent1) {
+        parent1.style.height = originalStyles.p1Height || '';
+        parent1.style.minHeight = originalStyles.p1MinHeight || '';
+        parent1.style.borderRadius = originalStyles.p1BorderRadius || '';
+        parent1.style.flex = '';
+        parent1.style.display = '';
+        parent1.style.flexDirection = '';
+      }
+      if (parent3) {
+        parent3.style.overflow = originalStyles.p3Overflow || '';
+        parent3.style.display = '';
+        parent3.style.flexDirection = '';
+      }
+      if (root) {
+        (root as HTMLElement).style.flex = '';
+        (root as HTMLElement).style.height = '';
+      }
+    };
+  }, []);
   
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -576,129 +672,25 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
             <Image size={20} />
           </button>
           
-          <div style={{ position: "relative" }} ref={modeMenuRef}>
-            <motion.button
-              whileTap={{ scale: 0.9 }}
-              onClick={() => setIsModeMenuOpen(!isModeMenuOpen)}
-              style={{
-                width: 36,
-                height: 36,
-                borderRadius: "50%",
-                background: "rgba(255,255,255,0.05)",
-                border: "1px solid rgba(255,255,255,0.1)",
-                color: "white",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                cursor: "pointer",
-                fontSize: 18,
-                fontWeight: 300,
-                flexShrink: 0
-              }}
-            >
-              {isModeMenuOpen ? "×" : "+"}
-            </motion.button>
 
-            <AnimatePresence>
-              {isModeMenuOpen && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                  transition={{ duration: 0.15 }}
-                  style={{
-                    position: "absolute",
-                    bottom: "100%",
-                    left: 0,
-                    marginBottom: 12,
-                    background: "#1c1c21",
-                    border: "1px solid rgba(255,255,255,0.05)",
-                    borderRadius: 16,
-                    padding: "12px 8px",
-                    width: 220,
-                    boxShadow: "0 10px 40px rgba(0,0,0,0.8)",
-                    zIndex: 30,
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: 4
-                  }}
-                >
-                  <div style={{ padding: "0 8px 8px", fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.05em" }}>POST AS</div>
-                  {[
-                    { id: "hottake", title: "Fire", subtitle: "Hot take, no filter", icon: "🔥", preset: "", activeBg: "rgba(239, 68, 68, 0.15)" },
-                    { id: "prediction", title: "Predict", subtitle: "Forecast what's next", icon: "📈", preset: "My prediction: ", activeBg: "rgba(255, 184, 0, 0.15)" },
-                    { id: "debate", title: "Debate", subtitle: "Controversial opinion", icon: "⚡", preset: "My debate side: ", activeBg: "rgba(233, 30, 140, 0.15)" },
-                    { id: "memory", title: "Memory", subtitle: "Share a flashback", icon: "⏱️", preset: "Flashback: ", activeBg: "rgba(0, 232, 198, 0.15)" },
-                    { id: "chat", title: "Normal Post", subtitle: "Just chatting", icon: "✒️", preset: "", activeBg: "rgba(255,255,255,0.1)" }
-                  ].map((item) => {
-                    const active = mode === item.id;
-                    return (
-                      <button
-                        key={item.id}
-                        onClick={() => {
-                          setMode(item.id as any);
-                          setComposerPre(item.preset);
-                          setIsModeMenuOpen(false);
-                        }}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          padding: "8px",
-                          borderRadius: 12,
-                          background: active ? item.activeBg : "transparent",
-                          border: "none",
-                          color: "white",
-                          cursor: "pointer",
-                          textAlign: "left",
-                        }}
-                        onMouseEnter={(e) => !active && (e.currentTarget.style.background = "rgba(255,255,255,0.03)")}
-                        onMouseLeave={(e) => !active && (e.currentTarget.style.background = "transparent")}
-                      >
-                        <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-                          <span style={{ fontSize: 20 }}>{item.icon}</span>
-                          <div style={{ display: "flex", flexDirection: "column" }}>
-                            <span style={{ fontSize: 15, fontWeight: 600 }}>{item.title}</span>
-                            <span style={{ fontSize: 13, color: "var(--text-secondary)", marginTop: 2 }}>{item.subtitle}</span>
-                          </div>
-                        </div>
-                        {active && <div style={{ width: 16, height: 16, borderRadius: "50%", background: "#e91e8c", display: "flex", alignItems: "center", justifyContent: "center" }}><span style={{ color: "white", fontSize: 10 }}>✓</span></div>}
-                      </button>
-                    );
-                  })}
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
 
           <div style={{ flex: 1, position: "relative" }}>
+            {input === "" && !uploading && (
+              <div style={{ position: "absolute", left: 16, top: 0, bottom: 0, display: "flex", alignItems: "center", pointerEvents: "none" }}>
+                <span style={{ color: MODE_COLOR[mode] || "var(--text-secondary)", fontWeight: 500 }}>
+                  {composerPre || "Drop your take..."}
+                </span>
+              </div>
+            )}
             <input
               type="text"
-              placeholder={uploading ? "Uploading media..." : "Drop your take..."}
               disabled={uploading}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && send()}
               style={{ width: "100%", height: 44, borderRadius: 22, background: "var(--bg-secondary)", border: "1px solid var(--border)", paddingLeft: 16, paddingRight: 16, color: "white", fontSize: 16, outline: "none" }}
             />
-            {(() => {
-              const selectedItem = [
-                { id: "hottake", title: "Fire", subtitle: "Hot take, no filter", icon: "🔥", color: "#f87171" },
-                { id: "prediction", title: "Predict", subtitle: "Forecast what's next", icon: "📈", color: "var(--gold)" },
-                { id: "debate", title: "Debate", subtitle: "Controversial opinion", icon: "⚡", color: "#e91e8c" },
-                { id: "memory", title: "Memory", subtitle: "Share a flashback", icon: "⏱️", color: "#00e8c6" },
-                { id: "chat", title: "Normal Post", subtitle: "Just chatting", icon: "✒️", color: "#fff" }
-              ].find(i => i.id === mode);
-              
-              if (!selectedItem) return null;
-              return (
-                <div style={{ position: "absolute", top: "100%", left: 16, marginTop: 6, display: "flex", alignItems: "center", gap: 6 }}>
-                  <span style={{ fontSize: 13 }}>{selectedItem.icon}</span>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: selectedItem.color }}>{selectedItem.title}</span>
-                  <span style={{ fontSize: 12, color: "var(--text-secondary)", marginLeft: 2 }}>{selectedItem.subtitle}</span>
-                </div>
-              );
-            })()}
+
           </div>
 
           <motion.button

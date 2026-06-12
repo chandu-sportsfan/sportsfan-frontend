@@ -37,13 +37,6 @@ export default function PostDetailsOverlay({ post, onClose, onToast, onVote, onD
   const fetchComments = useCallback(async () => {
     if (!post?.id) return;
     try {
-      if (!post.isDbPost) {
-        setComments([
-          { commentId: "c1", authorUsername: "KolkataKnight07", authorBadge: "CRICKET_HEAD", text: "IPL crowds are great, but nothing matches the tension of a bilateral series in Test cricket.", heartCount: 50, createdAt: Date.now() - 14400000 },
-          { commentId: "c2", authorUsername: "NagpurNight", authorBadge: "ORACLE", text: "@KolkataKnight07 Unpopular but 100% correct. Test cricket is where reputations are truly made.", heartCount: 16, createdAt: Date.now() - 10800000 },
-        ]);
-        return;
-      }
       const res = await axios.get(`/api/roar/posts/${post.id}/comments`, {
         params: { roomId: post.roomId }
       });
@@ -59,12 +52,6 @@ export default function PostDetailsOverlay({ post, onClose, onToast, onVote, onD
     if (!commentText.trim()) return;
     try {
       setLoading(true);
-      if (!post.isDbPost) {
-        setComments((prev) => [...prev, { commentId: `c-${Date.now()}`, authorUsername: userUsername, authorBadge: userBadge, text: commentText.trim(), heartCount: 0, createdAt: Date.now() }]);
-        setCommentText("");
-        onToast("Comment posted!");
-        return;
-      }
       const res = await axios.post(`/api/roar/posts/${post.id}/comments`, {
         text: commentText.trim(),
         roomId: post.roomId

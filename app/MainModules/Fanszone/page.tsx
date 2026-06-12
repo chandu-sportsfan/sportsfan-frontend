@@ -481,7 +481,7 @@ const buildFanZoneShareUrl = () => {
 const buildFanZoneShareText = () => {
   const shareUrl = buildFanZoneShareUrl();
   return [
-    "Join me on Sportsfan Fanszone",
+    "Join me on Sportsfan Fan zone",
     "Earn SXP, track your fan activity, and climb the leaderboard.",
     `Join here: ${shareUrl}`,
   ].filter(Boolean).join("\n");

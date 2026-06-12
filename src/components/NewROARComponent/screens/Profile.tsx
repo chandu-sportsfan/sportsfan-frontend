@@ -156,7 +156,12 @@ export default function Profile({ userBadge, setUserBadge, onCompose, onToast, s
           if (res.data.user?.about !== undefined) setEditAbout(res.data.user.about || "");
           if (res.data.user?.showPredHistory !== undefined) setEditShowPredHistory(res.data.user.showPredHistory !== false);
           // Restore persisted avatar if any
-          if (res.data.user?.avatarUrl) setSelectedAvatar(res.data.user.avatarUrl);
+          if (res.data.user?.avatarUrl) {
+            setSelectedAvatar(res.data.user.avatarUrl);
+            try {
+              localStorage.setItem("roar_avatar_url", res.data.user.avatarUrl);
+            } catch {}
+          }
         }
       } catch (err: any) {
         console.error(err);
@@ -252,6 +257,10 @@ export default function Profile({ userBadge, setUserBadge, onCompose, onToast, s
   const handleAvatarSelect = async (avatarSrc: string) => {
     setSelectedAvatar(avatarSrc);
     setAvatarPickerOpen(false);
+    try {
+      localStorage.setItem("roar_avatar_url", avatarSrc);
+      window.dispatchEvent(new CustomEvent("roar-profile-updated", { detail: { avatarUrl: avatarSrc } }));
+    } catch {}
     onToast("Avatar updated!");
     // Persist silently
     try {

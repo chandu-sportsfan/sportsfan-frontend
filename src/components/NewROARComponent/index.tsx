@@ -530,6 +530,7 @@ export default function ROARApp() {
   const [userBadge, setUserBadge] = useState("RISING_FAN");
   const [userSports, setUserSports] = useState<string[]>([]);
   const [currentUsername, setCurrentUsername] = useState("RoarUser");
+  const [currentAvatarUrl, setCurrentAvatarUrl] = useState<string | undefined>();
 
   useEffect(() => {
     setMounted(true);
@@ -541,10 +542,12 @@ export default function ROARApp() {
           setUserBadge(res.data.user.badge || "RISING_FAN");
           setUserSports(res.data.user.sports ?? []);
           setCurrentUsername(res.data.user.username || "RoarUser");
+          setCurrentAvatarUrl(res.data.user.avatarUrl || undefined);
           try {
             localStorage.setItem("roar_v2_complete", "1");
             localStorage.setItem("roar_badge", res.data.user.badge || "RISING_FAN");
             localStorage.setItem("roar_username", res.data.user.username || "RoarUser");
+            if (res.data.user.avatarUrl) localStorage.setItem("roar_avatar_url", res.data.user.avatarUrl);
           } catch {}
         } else {
           setOnboarded(false);
@@ -668,6 +671,10 @@ export default function ROARApp() {
         if (res.data?.success) {
           setUserSports(res.data.user.sports ?? []);
           setUserBadge(res.data.user.badge || "RISING_FAN");
+          setCurrentAvatarUrl(res.data.user.avatarUrl || undefined);
+          try {
+            if (res.data.user.avatarUrl) localStorage.setItem("roar_avatar_url", res.data.user.avatarUrl);
+          } catch {}
         }
       } catch (err: any) {
         if (err.response?.status === 404) {
@@ -681,6 +688,21 @@ export default function ROARApp() {
     fetchPosts();
     fetchUserSports();
   }, [onboarded, fetchPosts]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    const syncAvatar = (event?: Event) => {
+      const custom = event as CustomEvent<{ avatarUrl?: string }> | undefined;
+      const avatarFromEvent = custom?.detail?.avatarUrl;
+      try {
+        setCurrentAvatarUrl(avatarFromEvent || localStorage.getItem("roar_avatar_url") || undefined);
+      } catch {
+        setCurrentAvatarUrl(avatarFromEvent || undefined);
+      }
+    };
+    syncAvatar();
+    window.addEventListener("roar-profile-updated", syncAvatar);
+    return () => window.removeEventListener("roar-profile-updated", syncAvatar);
+  }, []);
 
   // Sync notifications with live rooms
   useEffect(() => {
@@ -952,14 +974,6 @@ export default function ROARApp() {
                 <motion.div key="room" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
                   <style dangerouslySetInnerHTML={{ __html: `
                     #global-header-desktop, #global-header-tablet, #global-header-mobile { display: none !important; }
-                    /* Disable scroll on the container that holds the padded wrapper */
-                    div:has(> div > div > .roar-root) { overflow: hidden !important; display: flex !important; flex-direction: column !important; }
-                    /* Remove padding from the wrapper */
-                    div:has(> div > .roar-root) { padding: 0 !important; margin: 0 !important; max-width: none !important; flex: 1 !important; display: flex !important; flex-direction: column !important; }
-                    /* Remove border-radius and calc-height from the direct parent */
-                    div:has(> .roar-root) { height: auto !important; min-height: 0 !important; border-radius: 0 !important; flex: 1 !important; display: flex !important; flex-direction: column !important; }
-                    /* Ensure roar-root fills the available space correctly */
-                    .roar-root { flex: 1 !important; height: auto !important; display: flex !important; flex-direction: column !important; }
                   `}} />
                   <DiscussionRoom
                     roomId={selectedRoom?.roomId}
@@ -971,6 +985,7 @@ export default function ROARApp() {
                     onToast={showToast}
                     onPostClick={(post) => setSelectedPost(post)}
                     onCompose={(type) => openCompose(type)}
+                    currentAvatarUrl={currentAvatarUrl}
                   />
                 </motion.div>
               ) : (
@@ -994,6 +1009,7 @@ export default function ROARApp() {
                       userSports={userSports}
                       onQuickCompose={(t) => openCompose(t)}
                       currentUsername={currentUsername}
+                      currentAvatarUrl={currentAvatarUrl}
                     />
                   )}
                   {activeTab === "profile" && (
@@ -1033,6 +1049,7 @@ export default function ROARApp() {
             onVote={handleVote}
             onDeletePost={handleDeletePost}
             currentUsername={currentUsername}
+            currentAvatarUrl={currentAvatarUrl}
           />
         )}
 

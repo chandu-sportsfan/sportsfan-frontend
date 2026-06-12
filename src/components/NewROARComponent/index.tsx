@@ -626,7 +626,7 @@ export default function ROARApp() {
 
   const fetchPosts = useCallback(async () => {
     try {
-      const res = await axios.get("/api/roar/posts");
+      const res = await axios.get(`/api/roar/posts?t=${Date.now()}`);
       if (res.data?.success) setDbPosts(res.data.posts);
     } catch (err) {
       console.error("Failed to fetch posts:", err);
@@ -655,7 +655,7 @@ export default function ROARApp() {
 
     const fetchRooms = async () => {
       try {
-        const res = await axios.get("/api/roar/rooms");
+        const res = await axios.get(`/api/roar/rooms?t=${Date.now()}`);
         if (res.data?.success) {
           setRooms(res.data.rooms);
           if (res.data.rooms.length > 0 && !selectedRoom) setSelectedRoom(res.data.rooms[0]);
@@ -687,6 +687,12 @@ export default function ROARApp() {
     fetchRooms();
     fetchPosts();
     fetchUserSports();
+
+    const interval = setInterval(() => {
+      fetchRooms();
+      fetchPosts();
+    }, 5000);
+    return () => clearInterval(interval);
   }, [onboarded, fetchPosts]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
@@ -742,11 +748,31 @@ export default function ROARApp() {
   // ── Actions ────────────────────────────────────────────────────────────────
   const handleVote = useCallback(
     async (postId: string, voteType: "agree" | "disagree" | null) => {
+      setDbPosts((prev) =>
+        prev.map((post) => {
+          if (post.id === postId || post._id === postId || post.postId === postId) {
+            const currentVote = post.userVote;
+            let agreeCount = post.agreeCount ?? 0;
+            let disagreeCount = post.disagreeCount ?? 0;
+
+            if (currentVote === "agree") agreeCount = Math.max(0, agreeCount - 1);
+            if (currentVote === "disagree") disagreeCount = Math.max(0, disagreeCount - 1);
+
+            if (voteType === "agree") agreeCount += 1;
+            if (voteType === "disagree") disagreeCount += 1;
+
+            return { ...post, userVote: voteType, agreeCount, disagreeCount };
+          }
+          return post;
+        })
+      );
+
       try {
         await axios.post(`/api/roar/posts/${postId}/vote`, { vote: voteType });
-        await fetchPosts();
+        // Removed immediate fetchPosts() to prevent read-after-write DB lag from flickering the UI
       } catch (err) {
         console.error("Failed to submit vote:", err);
+        await fetchPosts();
       }
     },
     [fetchPosts],
@@ -756,7 +782,7 @@ export default function ROARApp() {
     async (postId: string) => {
       setDbPosts((prev) =>
         prev.map((post) => {
-          if (post.id === postId || post._id === postId) {
+          if (post.id === postId || post._id === postId || post.postId === postId) {
             const userLiked = post.userLiked ?? false;
             return {
               ...post,
@@ -770,7 +796,7 @@ export default function ROARApp() {
 
       try {
         await axios.post(`/api/roar/posts/${postId}/like`);
-        await fetchPosts();
+        // Removed immediate fetchPosts() to prevent read-after-write DB lag from flickering the UI
       } catch (err) {
         console.error("Failed to submit like:", err);
         await fetchPosts();

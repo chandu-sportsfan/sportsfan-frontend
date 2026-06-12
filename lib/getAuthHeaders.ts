@@ -25,6 +25,9 @@ export async function getAuthHeaders(): Promise<Record<string, string>> {
             if (user.email) {
                 headers["x-user-email"] = user.email;
             }
+            if (user.name) {
+                headers["x-user-name"] = user.name;
+            }
             const userId = (user as Record<string, unknown>)["userId"] as string | undefined;
             headers["x-user-id"] = userId || user.email || "unknown";
             headers["x-user-role"] = ((user as Record<string, unknown>)["role"] as string | undefined) || "user";

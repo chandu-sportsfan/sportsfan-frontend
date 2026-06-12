@@ -55,10 +55,6 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
         setMode("prediction");
         setComposerPre("My prediction: ");
         break;
-      case "Hot Takes":
-        setMode("hottake");
-        setComposerPre("Hot take: ");
-        break;
       case "Memory":
         setMode("memory");
         setComposerPre("Flashback: ");
@@ -68,6 +64,82 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
         setComposerPre("");
     }
   }, [tab]);
+
+  useEffect(() => {
+    // Force fix host app layout padding and scrolling
+    const root = document.querySelector('.roar-root');
+    let originalStyles: any = {};
+    let parent1: HTMLElement | null = null;
+    let parent2: HTMLElement | null = null;
+    let parent3: HTMLElement | null = null;
+    
+    if (root) {
+      parent1 = root.parentElement as HTMLElement;
+      parent2 = parent1?.parentElement as HTMLElement;
+      parent3 = parent2?.parentElement as HTMLElement;
+      
+      if (parent2) {
+        originalStyles.p2Padding = parent2.style.padding;
+        originalStyles.p2Margin = parent2.style.margin;
+        originalStyles.p2MaxWidth = parent2.style.maxWidth;
+        parent2.style.setProperty('padding', '0px', 'important');
+        parent2.style.setProperty('margin', '0px', 'important');
+        parent2.style.setProperty('max-width', 'none', 'important');
+        parent2.style.setProperty('display', 'flex', 'important');
+        parent2.style.setProperty('flex-direction', 'column', 'important');
+        parent2.style.setProperty('flex', '1', 'important');
+      }
+      if (parent1) {
+        originalStyles.p1Height = parent1.style.height;
+        originalStyles.p1MinHeight = parent1.style.minHeight;
+        originalStyles.p1BorderRadius = parent1.style.borderRadius;
+        parent1.style.setProperty('height', 'auto', 'important');
+        parent1.style.setProperty('min-height', '0px', 'important');
+        parent1.style.setProperty('border-radius', '0px', 'important');
+        parent1.style.setProperty('flex', '1', 'important');
+        parent1.style.setProperty('display', 'flex', 'important');
+        parent1.style.setProperty('flex-direction', 'column', 'important');
+      }
+      if (parent3) {
+        originalStyles.p3Overflow = parent3.style.overflow;
+        parent3.style.setProperty('overflow', 'hidden', 'important');
+        parent3.style.setProperty('display', 'flex', 'important');
+        parent3.style.setProperty('flex-direction', 'column', 'important');
+      }
+      
+      (root as HTMLElement).style.setProperty('flex', '1', 'important');
+      (root as HTMLElement).style.setProperty('height', 'auto', 'important');
+    }
+    
+    return () => {
+      // Restore on unmount
+      if (parent2) {
+        parent2.style.padding = originalStyles.p2Padding || '';
+        parent2.style.margin = originalStyles.p2Margin || '';
+        parent2.style.maxWidth = originalStyles.p2MaxWidth || '';
+        parent2.style.display = '';
+        parent2.style.flexDirection = '';
+        parent2.style.flex = '';
+      }
+      if (parent1) {
+        parent1.style.height = originalStyles.p1Height || '';
+        parent1.style.minHeight = originalStyles.p1MinHeight || '';
+        parent1.style.borderRadius = originalStyles.p1BorderRadius || '';
+        parent1.style.flex = '';
+        parent1.style.display = '';
+        parent1.style.flexDirection = '';
+      }
+      if (parent3) {
+        parent3.style.overflow = originalStyles.p3Overflow || '';
+        parent3.style.display = '';
+        parent3.style.flexDirection = '';
+      }
+      if (root) {
+        (root as HTMLElement).style.flex = '';
+        (root as HTMLElement).style.height = '';
+      }
+    };
+  }, []);
   
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);

@@ -626,7 +626,7 @@ export default function ROARApp() {
 
   const fetchPosts = useCallback(async () => {
     try {
-      const res = await axios.get("/api/roar/posts");
+      const res = await axios.get(`/api/roar/posts?t=${Date.now()}`);
       if (res.data?.success) setDbPosts(res.data.posts);
     } catch (err) {
       console.error("Failed to fetch posts:", err);
@@ -655,7 +655,7 @@ export default function ROARApp() {
 
     const fetchRooms = async () => {
       try {
-        const res = await axios.get("/api/roar/rooms");
+        const res = await axios.get(`/api/roar/rooms?t=${Date.now()}`);
         if (res.data?.success) {
           setRooms(res.data.rooms);
           if (res.data.rooms.length > 0 && !selectedRoom) setSelectedRoom(res.data.rooms[0]);
@@ -687,6 +687,12 @@ export default function ROARApp() {
     fetchRooms();
     fetchPosts();
     fetchUserSports();
+
+    const interval = setInterval(() => {
+      fetchRooms();
+      fetchPosts();
+    }, 5000);
+    return () => clearInterval(interval);
   }, [onboarded, fetchPosts]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {

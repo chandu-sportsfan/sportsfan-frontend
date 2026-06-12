@@ -166,7 +166,7 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
     if (!roomId) return;
     const fetchMessages = async () => {
       try {
-        const res = await axios.get(`/api/roar/rooms/${roomId}/messages`);
+        const res = await axios.get(`/api/roar/rooms/${roomId}/messages?t=${Date.now()}`);
         if (res.data?.success) {
           const mapped = res.data.messages.map((m: any) => ({
             id: m.msgId,
@@ -279,7 +279,19 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
   });
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, position: "relative" }}>
+    <>
+      <style dangerouslySetInnerHTML={{ __html: `
+        /* Hide any previous sibling (like a spacer or header) of the scroll container */
+        *:has(+ div:has(> div > div > .roar-root)) { display: none !important; }
+        
+        /* Hide any previous sibling of the padded wrapper */
+        *:has(+ div:has(> div > .roar-root)) { display: none !important; }
+        
+        /* Force remove border radius and padding from the host app wrappers */
+        div:has(> div > .roar-root) { padding: 0 !important; margin: 0 !important; }
+        div:has(> .roar-root) { border-radius: 0 !important; }
+      `}} />
+      <div style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, position: "relative" }}>
       {/* Header */}
       <div style={{ padding: "12px 16px", background: "rgba(14,14,20,0.95)", backdropFilter: "blur(20px)", borderBottom: "1px solid var(--border)", flexShrink: 0, zIndex: 20 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
@@ -666,5 +678,6 @@ export default function DiscussionRoom({ onBack, onToast, roomId, roomName, onPo
         </div>
       </div>
     </div>
+    </>
   );
 }

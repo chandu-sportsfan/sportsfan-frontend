@@ -157,55 +157,111 @@ const STATIC_DATA: StatsData = {
 
   pointsTable: {
     groupA: [
-      { rank: 1, abbr: "ENG", name: "England", qualified: false, m: 0, w: 0, l: 0, nr: 0, pts: 0, nrr: "0.000" },
-      { rank: 2, abbr: "SL", name: "Sri Lanka", qualified: false, m: 0, w: 0, l: 0, nr: 0, pts: 0, nrr: "0.000" },
-      { rank: 3, abbr: "SCO", name: "Scotland", qualified: false, m: 0, w: 0, l: 0, nr: 0, pts: 0, nrr: "0.000" },
-      { rank: 4, abbr: "IRE", name: "Ireland", qualified: false, m: 0, w: 0, l: 0, nr: 0, pts: 0, nrr: "0.000" },
-      { rank: 5, abbr: "BAN", name: "Bangladesh", qualified: false, m: 0, w: 0, l: 0, nr: 0, pts: 0, nrr: "0.000" },
-      { rank: 6, abbr: "NED", name: "Netherlands", qualified: false, m: 0, w: 0, l: 0, nr: 0, pts: 0, nrr: "0.000" },
+      { rank: 1, abbr: "AUS", name: "Australia", qualified: false, m: 1, w: 1, l: 0, nr: 0, pts: 2, nrr: "+3.250" },
+      { rank: 2, abbr: "SA", name: "South Africa", qualified: false, m: 1, w: 0, l: 1, nr: 0, pts: 0, nrr: "-3.250" },
+      { rank: 3, abbr: "BAN", name: "Bangladesh", qualified: false, m: 0, w: 0, l: 0, nr: 0, pts: 0, nrr: "+0.000" },
+      { rank: 4, abbr: "IND", name: "India", qualified: false, m: 0, w: 0, l: 0, nr: 0, pts: 0, nrr: "+0.000" },
+      { rank: 5, abbr: "NED", name: "Netherlands", qualified: false, m: 0, w: 0, l: 0, nr: 0, pts: 0, nrr: "+0.000" },
+      { rank: 6, abbr: "PAK", name: "Pakistan", qualified: false, m: 0, w: 0, l: 0, nr: 0, pts: 0, nrr: "+0.000" },
     ],
     groupB: [
-      { rank: 1, abbr: "AUS", name: "Australia", qualified: false, m: 0, w: 0, l: 0, nr: 0, pts: 0, nrr: "0.000" },
-      { rank: 2, abbr: "SA", name: "South Africa", qualified: false, m: 0, w: 0, l: 0, nr: 0, pts: 0, nrr: "0.000" },
-      { rank: 3, abbr: "WI", name: "West Indies", qualified: false, m: 0, w: 0, l: 0, nr: 0, pts: 0, nrr: "0.000" },
-      { rank: 4, abbr: "NZ", name: "New Zealand", qualified: false, m: 0, w: 0, l: 0, nr: 0, pts: 0, nrr: "0.000" },
-      { rank: 5, abbr: "IND", name: "India", qualified: false, m: 0, w: 0, l: 0, nr: 0, pts: 0, nrr: "0.000" },
-      { rank: 6, abbr: "PAK", name: "Pakistan", qualified: false, m: 0, w: 0, l: 0, nr: 0, pts: 0, nrr: "0.000" },
+      { rank: 1, abbr: "ENG", name: "England", qualified: false, m: 1, w: 1, l: 0, nr: 0, pts: 2, nrr: "+4.350" },
+      { rank: 2, abbr: "SCO", name: "Scotland", qualified: false, m: 1, w: 1, l: 0, nr: 0, pts: 2, nrr: "+2.000" },
+      { rank: 3, abbr: "IRE", name: "Ireland", qualified: false, m: 1, w: 0, l: 1, nr: 0, pts: 0, nrr: "-2.000" },
+      { rank: 4, abbr: "SL", name: "Sri Lanka", qualified: false, m: 1, w: 0, l: 1, nr: 0, pts: 0, nrr: "-4.350" },
+      { rank: 5, abbr: "NZ", name: "New Zealand", qualified: false, m: 0, w: 0, l: 0, nr: 0, pts: 0, nrr: "+0.000" },
+      { rank: 6, abbr: "WI", name: "West Indies", qualified: false, m: 0, w: 0, l: 0, nr: 0, pts: 0, nrr: "+0.000" },
     ],
   },
 
-  mostRuns: generateEmptyPlayers(5, { m: 0, runs: 0, avg: "0.00" }),
-  mostWickets: generateEmptyPlayers(5, { m: 0, wickets: 0, avg: "0.00", econ: "0.00" }),
+  mostRuns: [
+    { rank: 1, player: "Danni Wyatt-Hodge", team: "ENG", m: 1, runs: 105, avg: "-" },
+    { rank: 2, player: "Amy Jones", team: "ENG", m: 1, runs: 53, avg: "53.00" },
+    { rank: 3, player: "Nat Sciver-Brunt", team: "ENG", m: 1, runs: 46, avg: "-" },
+    { rank: 4, player: "Nilakshi de Silva", team: "SL", m: 1, runs: 39, avg: "39.00" },
+    { rank: 5, player: "H. Samarawickrama", team: "SL", m: 1, runs: 29, avg: "29.00" },
+  ],
+  mostWickets: [
+    { rank: 1, player: "Freya Kemp", team: "ENG", m: 1, wickets: 4, avg: "5.50", econ: "5.50" },
+    { rank: 2, player: "Charlie Dean", team: "ENG", m: 1, wickets: 2, avg: "9.00", econ: "6.00" },
+    { rank: 3, player: "Sophie Ecclestone", team: "ENG", m: 1, wickets: 2, avg: "13.50", econ: "6.75" },
+    { rank: 4, player: "Lauren Bell", team: "ENG", m: 1, wickets: 1, avg: "15.00", econ: "5.00" },
+    { rank: 5, player: "Linsey Smith", team: "ENG", m: 1, wickets: 1, avg: "24.00", econ: "6.00" },
+  ],
 
   todayMatch: {
-    teamA: "ENG", teamAFull: "England",
-    teamB: "SL", teamBFull: "Sri Lanka",
+    teamA: "WI", teamAFull: "West Indies",
+    teamB: "NZ", teamBFull: "New Zealand",
     time: "11:00 PM",
     venue: "TBC",
-    matchNo: "1",
+    matchNo: "4",
     totalMatches: 33,
   },
 
-  recentMatch: null, // No matches played yet
+  recentMatch: {
+    teamA: "AUS", teamB: "SA", result: "AUS won by 65 runs", scoreA: "172/8", scoreB: "107"
+  },
 
   upcomingMatches: [
-    { matchNo: 2, date: "Tomorrow", teamA: "SCO", teamAFull: "Scotland", teamB: "IRE", teamBFull: "Ireland", time: "3:00 PM", status: "upcoming", venue: "TBC" },
-    { matchNo: 3, date: "Tomorrow", teamA: "AUS", teamAFull: "Australia", teamB: "SA", teamBFull: "South Africa", time: "7:00 PM", status: "upcoming", venue: "TBC" },
-    { matchNo: 4, date: "Tomorrow", teamA: "WI", teamAFull: "West Indies", teamB: "NZ", teamBFull: "New Zealand", time: "11:00 PM", status: "upcoming", venue: "TBC" },
-    { matchNo: 5, date: "Sun, 14 Jun", teamA: "BAN", teamAFull: "Bangladesh", teamB: "NED", teamBFull: "Netherlands", time: "3:00 PM", status: "upcoming", venue: "TBC" },
-    { matchNo: 6, date: "Sun, 14 Jun", teamA: "IND", teamAFull: "India", teamB: "PAK", teamBFull: "Pakistan", time: "7:00 PM", status: "upcoming", venue: "TBC" },
+    { matchNo: 4, date: "Today", teamA: "WI", teamAFull: "West Indies", teamB: "NZ", teamBFull: "New Zealand", time: "11:00 PM", status: "upcoming", venue: "TBC" },
+    { matchNo: 5, date: "Tomorrow", teamA: "BAN", teamAFull: "Bangladesh", teamB: "NED", teamBFull: "Netherlands", time: "3:00 PM", status: "upcoming", venue: "TBC" },
+    { matchNo: 6, date: "Tomorrow", teamA: "IND", teamAFull: "India", teamB: "PAK", teamBFull: "Pakistan", time: "7:00 PM", status: "upcoming", venue: "TBC" },
+    { matchNo: 7, date: "Tue, 16 Jun", teamA: "NZ", teamAFull: "New Zealand", teamB: "SL", teamBFull: "Sri Lanka", time: "7:00 PM", status: "upcoming", venue: "TBC" },
+    { matchNo: 8, date: "Tue, 16 Jun", teamA: "ENG", teamAFull: "England", teamB: "IRE", teamBFull: "Ireland", time: "11:00 PM", status: "upcoming", venue: "TBC" },
+    { matchNo: 9, date: "Wed, 17 Jun", teamA: "AUS", teamAFull: "Australia", teamB: "BAN", teamBFull: "Bangladesh", time: "3:00 PM", status: "upcoming", venue: "TBC" },
+    { matchNo: 10, date: "Wed, 17 Jun", teamA: "IND", teamAFull: "India", teamB: "NED", teamBFull: "Netherlands", time: "7:00 PM", status: "upcoming", venue: "TBC" },
   ],
 
-  recentMatches: [],
+  recentMatches: [
+    { matchNo: 3, date: "Today", teamA: "AUS", teamAFull: "Australia", teamB: "SA", teamBFull: "South Africa", time: "Completed", status: "completed", venue: "TBC", result: "AU-W won by 65 runs", scoreA: "172/8 (20)", scoreB: "107 (16.4)" },
+    { matchNo: 2, date: "Today", teamA: "SCO", teamAFull: "Scotland", teamB: "IRE", teamBFull: "Ireland", time: "Completed", status: "completed", venue: "TBC", result: "SCOW won by 40 runs", scoreA: "161/5 (20)", scoreB: "121 (19.1)" },
+    { matchNo: 1, date: "Yesterday", teamA: "ENG", teamAFull: "England", teamB: "SL", teamBFull: "Sri Lanka", time: "Completed", status: "completed", venue: "TBC", result: "EN-W won by 87 runs", scoreA: "219/1 (20)", scoreB: "132 (20)" },
+  ],
 
-  highestScores: generateEmptyPlayers(5, { score: 0, sr: "0.00" }),
+  highestScores: [
+    { rank: 1, player: "Danni Wyatt-Hodge", team: "ENG", score: "105*", sr: "169.35" },
+    { rank: 2, player: "Amy Jones", team: "ENG", score: "53", sr: "139.47" },
+    { rank: 3, player: "Nat Sciver-Brunt", team: "ENG", score: "46*", sr: "209.09" },
+    { rank: 4, player: "Nilakshi de Silva", team: "SL", score: "39", sr: "118.18" },
+    { rank: 5, player: "H. Samarawickrama", team: "SL", score: "29", sr: "161.11" },
+  ],
 
   extraStats: {
-    battingAvg: generateEmptyPlayers(5, { value: "0.00", subValue: 0 }),
-    bowlingAvg: generateEmptyPlayers(5, { value: "0.00", subValue: 0 }),
-    bestBowling: generateEmptyPlayers(5, { value: "0/0" }),
-    mostEcon: generateEmptyPlayers(5, { value: "0.00", subValue: 0 }),
-    maxSixes: generateEmptyPlayers(5, { value: 0, subValue: 0 }),
+    battingAvg: [
+        { rank: 1, player: "Amy Jones", team: "ENG", value: "53.00", subValue: 53 },
+        { rank: 2, player: "Nilakshi de Silva", team: "SL", value: "39.00", subValue: 39 },
+        { rank: 3, player: "H. Samarawickrama", team: "SL", value: "29.00", subValue: 29 },
+        { rank: 4, player: "Beth Mooney", team: "AUS", value: "24.00", subValue: 24 },
+        { rank: 5, player: "Saskia Horley", team: "SCO", value: "22.00", subValue: 22 },
+    ],
+    bowlingAvg: [
+        { rank: 1, player: "Freya Kemp", team: "ENG", value: "5.50", subValue: 4 },
+        { rank: 2, player: "Charlie Dean", team: "ENG", value: "9.00", subValue: 2 },
+        { rank: 3, player: "Sophie Ecclestone", team: "ENG", value: "13.50", subValue: 2 },
+        { rank: 4, player: "Lauren Bell", team: "ENG", value: "15.00", subValue: 1 },
+        { rank: 5, player: "Linsey Smith", team: "ENG", value: "24.00", subValue: 1 },
+    ],
+    bestBowling: [
+        { rank: 1, player: "Freya Kemp", team: "ENG", value: "4/22" },
+        { rank: 2, player: "Charlie Dean", team: "ENG", value: "2/18" },
+        { rank: 3, player: "Sophie Ecclestone", team: "ENG", value: "2/27" },
+        { rank: 4, player: "Lauren Bell", team: "ENG", value: "1/15" },
+        { rank: 5, player: "Linsey Smith", team: "ENG", value: "1/24" },
+    ],
+    mostEcon: [
+        { rank: 1, player: "Lauren Bell", team: "ENG", value: "5.00", subValue: 1 },
+        { rank: 2, player: "Freya Kemp", team: "ENG", value: "5.50", subValue: 4 },
+        { rank: 3, player: "Charlie Dean", team: "ENG", value: "6.00", subValue: 2 },
+        { rank: 4, player: "Linsey Smith", team: "ENG", value: "6.00", subValue: 1 },
+        { rank: 5, player: "Sophie Ecclestone", team: "ENG", value: "6.75", subValue: 2 },
+    ],
+    maxSixes: [
+        { rank: 1, player: "Amy Jones", team: "ENG", value: 1, subValue: 53 },
+        { rank: 2, player: "Danni Wyatt-Hodge", team: "ENG", value: 1, subValue: 105 },
+        { rank: 3, player: "H. Samarawickrama", team: "SL", value: 1, subValue: 29 },
+        { rank: 4, player: "Nat Sciver-Brunt", team: "ENG", value: 1, subValue: 46 },
+        { rank: 5, player: "Nilakshi de Silva", team: "SL", value: 1, subValue: 39 },
+    ],
     maxFours: generateEmptyPlayers(5, { value: 0, subValue: 0 }),
     boundaries: generateEmptyPlayers(5, { value: 0 }),
   },
@@ -305,8 +361,12 @@ function HeroSection({ todayMatch }: { todayMatch: TodayMatch }) {
 function TopPerformersSection({ mostRuns, mostWickets }: { mostRuns: PlayerRow[]; mostWickets: PlayerRow[] }) {
   const [showAll, setShowAll] = useState(false);
   const [statTab, setStatTab] = useState<"runs" | "wickets">("runs");
-  const top1Run = mostRuns;
-  const top1Wicket = mostWickets;
+  
+  // FIXED: Access the first item in the array for the top performer cards
+  // const top1Run = mostRuns;
+  // const top1Wicket = mostWickets;
+  const top1Run = mostRuns?.length ? mostRuns[0] : null;
+const top1Wicket = mostWickets?.length ? mostWickets[0] : null;
 
   return (
     <div className="rounded-2xl border border-[#1e1e30] mb-4 overflow-hidden shadow-lg" style={{ background: "#0d0e1c" }}>
@@ -498,7 +558,7 @@ function PointsTableGroup({ title, rows }: { title: string; rows: TeamRow[] }) {
                 <td className="py-3 px-3 text-center text-emerald-400 font-semibold text-xs">{team.w}</td>
                 <td className="py-3 px-3 text-center text-rose-400 font-semibold text-xs">{team.l}</td>
                 <td className="py-3 px-3 text-center text-white font-bold text-xs">{team.pts}</td>
-                <td className={`py-3 px-3 text-center font-medium text-xs ${team.nrr !== "0.000" && String(team.nrr).startsWith("+") ? "text-emerald-400" : "text-gray-400"}`}>
+                <td className={`py-3 px-3 text-center font-medium text-xs ${team.nrr !== "+0.000" && String(team.nrr).startsWith("+") ? "text-emerald-400" : "text-gray-400"}`}>
                   {team.nrr}
                 </td>
               </tr>
@@ -705,8 +765,11 @@ function MatchesTab({ upcomingMatches, recentMatches }: { upcomingMatches: Match
             <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0 py-1">
               <div className="flex items-center gap-3 flex-1 justify-end">
                 <div className="min-w-0 text-right">
-                  <p className="text-white font-bold text-sm sm:text-base">{match.teamA}</p>
+                  <p className="text-white font-bold text-sm sm:text-base">
+                    {match.teamA}
+                  </p>
                   <p className="text-gray-500 text-[10px] truncate max-w-[100px] hidden sm:block">{match.teamAFull}</p>
+                  {subTab === "recent" && match.scoreA && <p className="text-gray-300 font-bold text-xs mt-0.5">{match.scoreA}</p>}
                 </div>
                 <TeamLogo abbr={match.teamA} size="lg" />
               </div>
@@ -719,8 +782,11 @@ function MatchesTab({ upcomingMatches, recentMatches }: { upcomingMatches: Match
               <div className="flex items-center gap-3 flex-1 justify-start">
                 <TeamLogo abbr={match.teamB} size="lg" />
                 <div className="min-w-0 text-left">
-                  <p className="text-white font-bold text-sm sm:text-base">{match.teamB}</p>
+                  <p className="text-white font-bold text-sm sm:text-base">
+                    {match.teamB}
+                  </p>
                   <p className="text-gray-500 text-[10px] truncate max-w-[100px] hidden sm:block">{match.teamBFull}</p>
+                  {subTab === "recent" && match.scoreB && <p className="text-gray-400 font-bold text-xs mt-0.5">{match.scoreB}</p>}
                 </div>
               </div>
             </div>

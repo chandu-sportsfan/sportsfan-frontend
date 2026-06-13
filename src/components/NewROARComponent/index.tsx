@@ -1067,18 +1067,21 @@ const handleLike = useCallback(
       localStorage.setItem("roar_v2_complete", "1");
       localStorage.setItem("roar_badge", badge);
       localStorage.setItem("roar_username", username);
-    } catch {}
-    try {
-      await axios.post("/api/roar/onboarding", {
-        sports: prefs.sports || ["cricket"],
-        teams: prefs.teams || [],
-        tenure: prefs.tenure || "rising",
-        badge,
-        firstContribution: prefs.firstContribution || null,
-      });
-    } catch (err) {
-      console.error("Failed to save onboarding to backend:", err);
     }
+    catch (err) {
+  console.error("Failed to persist onboarding data to localStorage:", err);
+}
+    // try {
+    //   await axios.post("/api/roar/onboarding", {
+    //     sports: prefs.sports || ["cricket"],
+    //     teams: prefs.teams || [],
+    //     tenure: prefs.tenure || "rising",
+    //     badge,
+    //     firstContribution: prefs.firstContribution || null,
+    //   });
+    // } catch (err) {
+    //   console.error("Failed to save onboarding to backend:", err);
+    // }
   }, []);
 
   // ── Derived ────────────────────────────────────────────────────────────────

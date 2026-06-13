@@ -386,15 +386,18 @@
 // }
 
 
+//components/NewROARComponent/screens/DiscussionRoom
 
-
-
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
 import AvatarWithBadge from "../components/AvatarWithBadge";
 import { fmt } from "../utils";
-import { Image, ChevronLeft, Flame, TrendingUp, Zap, History, PenTool } from "lucide-react";
+import { RADIAL_OPTS } from "../constants";
+import {
+  Image, ChevronLeft, Flame, TrendingUp, Zap, History, PenTool,
+  Brain, Users, CheckCircle2, XCircle,
+} from "lucide-react";
 
 interface Props {
   onBack: () => void;
@@ -410,7 +413,7 @@ interface Props {
 }
 
 const MODE_COLOR: Record<string, string> = {
-  chat: "var(--text-primary)",
+  post: "var(--text-primary)",
   prediction: "var(--gold)",
   hottake: "#f87171",
   debate: "#e91e8c",
@@ -418,15 +421,16 @@ const MODE_COLOR: Record<string, string> = {
 };
 
 const MODES = [
-  { key: "chat" as const,       label: "Post",     icon: <PenTool size={13} />,    color: "#ffffff" },
-  { key: "debate" as const,     label: "Debate",   icon: <Zap size={13} />,        color: "#e91e8c" },
-  { key: "prediction" as const, label: "Predict",  icon: <TrendingUp size={13} />, color: "#fbbf24" },
-  { key: "hottake" as const,    label: "Hot Take", icon: <Flame size={13} />,      color: "#f87171" },
-  { key: "memory" as const,     label: "Memory",   icon: <History size={13} />,    color: "#00e8c6" },
+  { key: "post" as const,       label: "Post",       icon: <PenTool size={13} />,    color: "#ffffff",  isAction: false },
+  { key: "debate" as const,     label: "Debate",     icon: <Zap size={13} />,        color: "#e91e8c",  isAction: false },
+  { key: "prediction" as const, label: "Predict",    icon: <TrendingUp size={13} />, color: "#fbbf24",  isAction: false },
+  { key: "hottake" as const,    label: "Hot Take",   icon: <Flame size={13} />,      color: "#f87171",  isAction: false },
+  { key: "memory" as const,     label: "Memory",     icon: <History size={13} />,    color: "#00e8c6",  isAction: false },
+  { key: "quiz" as const,       label: "Flash Quiz", icon: <Brain size={13} />,      color: "#00e8c6",  isAction: true  },
 ];
 
 const PLACEHOLDER: Record<string, string> = {
-  chat: "Drop your take...",
+  post: "Drop your take...",
   debate: "My debate side: ",
   prediction: "My prediction: ",
   hottake: "Drop a hot take...",
@@ -436,6 +440,7 @@ const PLACEHOLDER: Record<string, string> = {
 const typeBadgeClass = (type: string) => {
   const base = "text-[9px] font-extrabold px-1.5 py-0.5 rounded";
   if (type === "prediction") return `${base} bg-[rgba(255,215,0,0.15)] text-[#fbbf24] border border-[rgba(255,215,0,0.25)]`;
+   if (type === "post")      return `${base} bg-[rgba(233,30,140,0.12)] text-[#E91E8C] border border-[rgba(233,30,140,0.2)]`;
   if (type === "hottake")   return `${base} bg-[rgba(239,68,68,0.15)] text-[#f87171] border border-[rgba(239,68,68,0.25)]`;
   if (type === "debate")    return `${base} bg-[rgba(233,30,140,0.15)] text-[#e91e8c] border border-[rgba(233,30,140,0.25)]`;
   if (type === "memory")    return `${base} bg-[rgba(0,232,198,0.15)] text-[#00e8c6] border border-[rgba(0,232,198,0.25)]`;
@@ -450,22 +455,305 @@ const postCardStyle = (type: string): React.CSSProperties => {
   return {};
 };
 
+// ── QuizCard — self-contained interactive quiz component ──────────────────────
+interface QuizCardProps {
+  post: any;
+  onToast: (m: string) => void;
+  onPostClick?: (post: any) => void;
+  roomId?: string;
+}
+
+function QuizCard({ post, onToast, onPostClick, roomId }: QuizCardProps) {
+  const [selectedOption, setSelectedOption] = useState<string | null>(
+    post.quizUserAnswer ?? null,
+  );
+  const [revealedCorrect, setRevealedCorrect] = useState<string | null>(
+    post.quizCorrectOption ?? null,
+  );
+  const [submitting, setSubmitting] = useState(false);
+  const [participants, setParticipants] = useState<number>(post.quizParticipants ?? 0);
+
+  const hasAnswered = selectedOption !== null;
+  const quizOptions: { label: string; text: string }[] = post.quizOptions ?? [];
+
+  // Quiz answers in a room use the same post-level endpoint since quizzes are
+  // stored as posts even when surfaced in a room feed.
+  const handleOptionClick = useCallback(
+    async (label: string) => {
+      if (hasAnswered || submitting) return;
+      setSubmitting(true);
+      setSelectedOption(label); // optimistic
+
+      try {
+        const res = await axios.post(
+          `/api/roar/posts/${post.id}/quiz-answer`,
+          { selectedOption: label },
+        );
+
+        if (res.data?.success || res.data?.message === "Already answered") {
+          setRevealedCorrect(res.data.correctOption);
+          setParticipants(res.data.quizParticipants ?? participants + 1);
+          if (res.data.isCorrect) {
+            onToast("✅ Correct! +2 points awarded");
+          } else {
+            onToast(`❌ Wrong! Correct answer was ${res.data.correctOption}`);
+          }
+        }
+      } catch (err) {
+        console.error("Quiz answer error:", err);
+        setSelectedOption(null);
+        onToast("Failed to submit answer");
+      } finally {
+        setSubmitting(false);
+      }
+    },
+    [hasAnswered, submitting, post.id, participants, onToast],
+  );
+
+  const getOptionStyle = (label: string): React.CSSProperties => {
+    const isSelected = selectedOption === label;
+    const isCorrect  = revealedCorrect === label;
+    const isWrong    = hasAnswered && isSelected && revealedCorrect !== null && !isCorrect;
+
+    if (!hasAnswered) {
+      return {
+        padding: "11px 14px", borderRadius: 14,
+        background: "rgba(255,255,255,0.04)",
+        border: "1px solid rgba(255,255,255,0.1)",
+        display: "flex", alignItems: "center", gap: 10,
+        cursor: submitting ? "not-allowed" : "pointer",
+        transition: "all 0.18s",
+        opacity: submitting ? 0.6 : 1,
+      };
+    }
+
+    if (isCorrect) {
+      return {
+        padding: "11px 14px", borderRadius: 14,
+        background: "rgba(0,232,198,0.12)",
+        border: "1px solid rgba(0,232,198,0.4)",
+        display: "flex", alignItems: "center", gap: 10,
+        cursor: "default", transition: "all 0.18s",
+      };
+    }
+
+    if (isWrong) {
+      return {
+        padding: "11px 14px", borderRadius: 14,
+        background: "rgba(244,67,54,0.1)",
+        border: "1px solid rgba(244,67,54,0.35)",
+        display: "flex", alignItems: "center", gap: 10,
+        cursor: "default", transition: "all 0.18s",
+      };
+    }
+
+    // other options after answering — dim
+    return {
+      padding: "11px 14px", borderRadius: 14,
+      background: "rgba(255,255,255,0.02)",
+      border: "1px solid rgba(255,255,255,0.05)",
+      display: "flex", alignItems: "center", gap: 10,
+      cursor: "default", opacity: 0.45, transition: "all 0.18s",
+    };
+  };
+
+  const getLabelColor = (label: string) => {
+    if (!hasAnswered) return "#4A4A62";
+    if (revealedCorrect === label) return "#00E8C6";
+    if (selectedOption === label && revealedCorrect !== label) return "#F44336";
+    return "#4A4A62";
+  };
+
+  return (
+    <div
+      className="glass-card"
+      style={{ padding: "16px", position: "relative", overflow: "hidden" }}
+    >
+      {/* Accent stripe */}
+      <div style={{
+        position: "absolute", top: 0, left: 0, right: 0, height: 2,
+        background: "linear-gradient(90deg,#E91E8C,#FF6B35,#00E8C6)",
+        borderRadius: "28px 28px 0 0",
+      }} />
+
+      {/* Type badge + result indicator */}
+      <div style={{ display: "flex", gap: 6, marginBottom: 10, flexWrap: "wrap", alignItems: "center" }}>
+        <span style={{
+          fontSize: 10, fontWeight: 800, letterSpacing: "0.06em",
+          padding: "3px 8px", borderRadius: 4, textTransform: "uppercase",
+          background: "rgba(0,232,198,0.12)", color: "#00E8C6",
+          border: "1px solid rgba(0,232,198,0.25)",
+        }}>
+          🧠 Flash Quiz
+        </span>
+        {hasAnswered && revealedCorrect && (
+          <span style={{
+            fontSize: 10, fontWeight: 700, marginLeft: "auto",
+            color: selectedOption === revealedCorrect ? "#00E8C6" : "#F44336",
+          }}>
+            {selectedOption === revealedCorrect ? "✓ Correct!" : "✗ Wrong"}
+          </span>
+        )}
+      </div>
+
+      {/* Author */}
+      <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 12 }}>
+        <AvatarWithBadge
+          username={post.fan.username}
+          badge={post.fan.badge}
+          size="sm"
+          avatarUrl={post.fan.avatarUrl}
+        />
+        <div>
+          <p style={{ fontWeight: 700, fontSize: 13 }}>{post.fan.username}</p>
+          <p style={{ fontSize: 10, color: "var(--text-secondary)" }}>{post.timeAgo}</p>
+        </div>
+      </div>
+
+      {/* Question — tapping opens post detail */}
+      <p
+        style={{
+          fontWeight: 700, fontSize: 15, lineHeight: 1.5,
+          marginBottom: 14, color: "#F5F5FA", cursor: "pointer",
+        }}
+        onClick={() => onPostClick && onPostClick(post)}
+      >
+        {post.quizQuestion || post.text}
+      </p>
+
+      {/* Options */}
+      {quizOptions.length > 0 && (
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 14 }}>
+          {quizOptions.map((opt) => {
+            const isCorrect = hasAnswered && revealedCorrect === opt.label;
+            const isWrong   = hasAnswered && selectedOption === opt.label && revealedCorrect !== opt.label && revealedCorrect !== null;
+
+            return (
+              <motion.div
+                key={opt.label}
+                whileTap={!hasAnswered && !submitting ? { scale: 0.97 } : {}}
+                style={getOptionStyle(opt.label)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleOptionClick(opt.label);
+                }}
+              >
+                {/* Label letter */}
+                <span style={{
+                  fontSize: 11, fontWeight: 800,
+                  fontFamily: "'Bebas Neue', sans-serif",
+                  letterSpacing: "0.04em",
+                  color: getLabelColor(opt.label),
+                  minWidth: 14, flexShrink: 0,
+                }}>
+                  {opt.label}
+                </span>
+
+                {/* Status icon */}
+                {hasAnswered && isCorrect && <CheckCircle2 size={13} color="#00E8C6" style={{ flexShrink: 0 }} />}
+                {hasAnswered && isWrong   && <XCircle      size={13} color="#F44336" style={{ flexShrink: 0 }} />}
+
+                {/* Option text */}
+                <span style={{
+                  fontSize: 12, fontWeight: 500,
+                  color: isCorrect ? "#00E8C6" : isWrong ? "#F44336" : hasAnswered ? "rgba(255,255,255,0.35)" : "#9494AD",
+                  overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                }}>
+                  {opt.text || `Option ${opt.label}`}
+                </span>
+              </motion.div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Pre-answer hint */}
+      {!hasAnswered && (
+        <p style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 8, fontStyle: "italic" }}>
+          Tap an option to answer
+        </p>
+      )}
+
+      {/* Participant count */}
+      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+        <Users size={13} color="#9494AD" />
+        <span style={{ fontSize: 12, fontWeight: 600, color: "#9494AD" }}>
+          {participants > 0
+            ? `${participants.toLocaleString()} fan${participants === 1 ? "" : "s"} participated`
+            : "Be the first to answer!"}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+// ── Main DiscussionRoom ───────────────────────────────────────────────────────
+
 export default function DiscussionRoom({
-  onBack, onToast, roomId, roomName, onPostClick,
+  onBack, onToast, roomId, roomName, onPostClick,  onCompose,
   fanCount = 312, score, scoreSubtitle, currentAvatarUrl,
 }: Props) {
   const [posts, setPosts]               = useState<any[]>([]);
   const [loading, setLoading]           = useState(true);
   const [input, setInput]               = useState("");
-  const [mode, setMode]                 = useState<typeof MODES[number]["key"]>("chat");
+  const [mode, setMode]                 = useState<"post" | "debate" | "prediction" | "hottake" | "memory">("post");
   const [uploading, setUploading]       = useState(false);
   const [attachedUrl, setAttachedUrl]   = useState<string | null>(null);
   const [attachedType, setAttachedType] = useState<"image" | "video" | null>(null);
   const [userUsername, setUserUsername] = useState("RoarUser");
   const [userAvatarUrl, setUserAvatarUrl] = useState<string | undefined>(currentAvatarUrl);
+  const [isDropdownOpen, setIsDropdownOpen]     = useState(false);
+  const [selectedActionId, setSelectedActionId] = useState("post");
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [liveCount, setLiveCount] = useState<number>(fanCount ?? 0);
 
   const listRef      = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  /* ── close dropdown on outside click ── */
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  /* ── join / leave counter ── */
+useEffect(() => {
+  if (!roomId) return;
+
+  const join = async () => {
+    try {
+      const res = await axios.post(`/api/roar/rooms/${roomId}/presence`);
+      if (res.data?.success) setLiveCount(res.data.fanCount);
+    } catch (e) {
+      console.error("Join failed:", e);
+    }
+  };
+
+  const leaveBeacon = () => {
+    navigator.sendBeacon(`/api/roar/rooms/${roomId}/presence/leave`);
+  };
+
+  const leaveAxios = () => {
+    axios.delete(`/api/roar/rooms/${roomId}/presence`).catch(() => {});
+  };
+
+  // Join on mount
+  join();
+
+  // Tab close → sendBeacon
+  window.addEventListener("beforeunload", leaveBeacon);
+
+  return () => {
+    // Back button / unmount → axios delete
+    leaveAxios();
+    window.removeEventListener("beforeunload", leaveBeacon);
+  };
+}, [roomId]);
 
   /* ── user prefs ── */
   useEffect(() => {
@@ -497,6 +785,14 @@ export default function DiscussionRoom({
             createdAt: m.createdAt,
             type: m.type,
             mediaUrls: m.mediaUrls,
+            // Quiz fields — correctOption hidden server-side until answered
+            quizQuestion:      m.quizQuestion,
+            quizOptions:       m.quizOptions,
+            quizCorrectOption: m.quizCorrectOption,
+            quizUserAnswer:    m.quizUserAnswer ?? null,
+            quizTimer:         m.quizTimer,
+            quizPoints:        m.quizPoints,
+            quizParticipants:  m.quizParticipants ?? 0,
           })));
         }
       } catch (e) { console.error(e); }
@@ -550,6 +846,9 @@ export default function DiscussionRoom({
           fan: { username: m.authorUsername, badge: m.authorBadge, avatarUrl: m.authorAvatarUrl || m.avatarUrl || (m.authorUsername === userUsername ? userAvatarUrl : undefined) },
           text: m.text, fireCount: 0, nochanceCount: 0, heartCount: 0,
           timeAgo: "now", createdAt: m.createdAt || Date.now(), type: m.type, mediaUrls: m.mediaUrls,
+          quizQuestion: m.quizQuestion, quizOptions: m.quizOptions,
+          quizCorrectOption: m.quizCorrectOption, quizUserAnswer: m.quizUserAnswer ?? null,
+          quizTimer: m.quizTimer, quizPoints: m.quizPoints, quizParticipants: m.quizParticipants ?? 0,
         }, ...p]);
         setInput(""); setAttachedUrl(null); setAttachedType(null);
         setTimeout(() => listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" }), 50);
@@ -570,8 +869,7 @@ export default function DiscussionRoom({
     } catch (e) { console.error(e); }
   };
 
-  /* ── back: use onPointerDown so it fires immediately on mobile
-        without the 300ms touch delay that can cause mis-navigation ── */
+  /* ── back ── */
   const handleBack = (e: React.PointerEvent | React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -583,11 +881,19 @@ export default function DiscussionRoom({
       className="flex flex-col w-full bg-[#0e0e14]"
       style={{ height: "100%", overflow: "hidden" }}
     >
+      {/* gradient def reused by dropdown icons */}
+      <svg width="0" height="0" style={{ position: "absolute" }}>
+        <linearGradient id="dr-pink-orange-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#e91e8c" />
+          <stop offset="100%" stopColor="#ff6b35" />
+        </linearGradient>
+      </svg>
+
       {/* ── HEADER ── */}
-      <div className="shrink-0 px-4 py-3 bg-[rgba(14,14,20,0.98)] backdrop-blur-[20px] border-b border-[var(--border)]">
+      <div className="shrink-0 px-4 py-3 bg-[rgba(14,14,20,0.98)] backdrop-blur-[20px] border-b border-[var(--border)]" style={{ overflow: "visible", position: "relative", zIndex: 40 }}>
         <div className="flex justify-between items-start">
+          {/* left: back + room name */}
           <div className="flex gap-3">
-            {/* onPointerDown fires immediately on touch; onClick kept for mouse */}
             <button
               type="button"
               onPointerDown={handleBack}
@@ -604,29 +910,130 @@ export default function DiscussionRoom({
               <div className="flex items-center gap-1.5 mt-1">
                 <span className="live-pulse w-1.5 h-1.5 rounded-full bg-[var(--live-green)] inline-block" />
                 <span className="text-[10px] font-bold text-[var(--live-green)]">LIVE</span>
-                <span className="text-[11px] text-[var(--text-muted)]">· {fmt(fanCount)} fans</span>
+                {/* <span className="text-[11px] text-[var(--text-muted)]">· {fmt(fanCount)} fans</span> */}
+                <span className="text-[11px] text-[var(--text-muted)]">· {fmt(liveCount)} joined</span>
               </div>
             </div>
           </div>
 
-          {(score || scoreSubtitle) && (
-            <div className="text-right pr-2 -mt-1">
-              {score && <div className="font-display text-[28px] text-[var(--accent-yellow)] leading-none">{score}</div>}
-              {scoreSubtitle && <div className="text-[13px] text-[var(--text-secondary)] mt-1">{scoreSubtitle}</div>}
+          {/* right: score (if any) + compose dropdown */}
+          <div className="flex items-center gap-2 -mt-1">
+            {(score || scoreSubtitle) && (
+              <div className="text-right pr-1">
+                {score && <div className="font-display text-[24px] text-[var(--accent-yellow)] leading-none">{score}</div>}
+                {scoreSubtitle && <div className="text-[11px] text-[var(--text-secondary)] mt-0.5">{scoreSubtitle}</div>}
+              </div>
+            )}
+
+            {/* Compose dropdown — identical structure to HomeFeed */}
+            <div style={{ position: "relative" }} ref={dropdownRef}>
+              {(() => {
+                const selected = RADIAL_OPTS.find((q) => q.id === selectedActionId) || RADIAL_OPTS[0];
+                const iconMap: Record<string, React.ReactNode> = {
+                  hot_take:   <Flame      size={15} stroke="url(#dr-pink-orange-grad)" fill="url(#dr-pink-orange-grad)" />,
+                  prediction: <TrendingUp size={15} stroke="url(#dr-pink-orange-grad)" />,
+                  debate:     <Zap        size={15} stroke="url(#dr-pink-orange-grad)" fill="url(#dr-pink-orange-grad)" />,
+                  memory:     <History    size={15} stroke="url(#dr-pink-orange-grad)" />,
+                  post:       <PenTool    size={15} stroke="url(#dr-pink-orange-grad)" />,
+                  quiz:       <Brain      size={15} stroke="url(#dr-pink-orange-grad)" />,
+                };
+                return (
+                  <motion.button
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setIsDropdownOpen((v) => !v)}
+                    style={{
+                      display: "flex", alignItems: "center", gap: 6,
+                      padding: "7px 13px", borderRadius: 999,
+                      background: "linear-gradient(145deg,rgba(233,30,140,0.18),rgba(255,107,53,0.10))",
+                      border: "1px solid rgba(233,30,140,0.35)",
+                      boxShadow: "0 4px 15px rgba(0,0,0,0.25),inset 0 1px 0 rgba(255,255,255,0.05)",
+                      backdropFilter: "blur(8px)",
+                      color: "rgba(255,255,255,0.9)", cursor: "pointer",
+                    }}
+                  >
+                    {iconMap[selected.id] || <span>{selected.emoji}</span>}
+                    <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.03em" }}>{selected.label}</span>
+                    <span style={{ fontSize: 9, marginLeft: 2, color: "rgba(255,255,255,0.7)" }}>{isDropdownOpen ? "▲" : "▼"}</span>
+                  </motion.button>
+                );
+              })()}
+
+              <AnimatePresence>
+                {isDropdownOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                    transition={{ duration: 0.15 }}
+                    style={{
+                      position: "absolute", top: "100%", right: 0, marginTop: 8,
+                      background: "#121214", border: "1px solid rgba(255,255,255,0.05)",
+                      borderRadius: 16, padding: 8, display: "flex", flexDirection: "column", gap: 6,
+                      minWidth: 180, boxShadow: "0 10px 40px rgba(0,0,0,0.8)", zIndex: 50,
+                      maxHeight: "60vh", overflowY: "auto", scrollbarWidth: "none",
+                    }}
+                  >
+                    {RADIAL_OPTS.map((q) => {
+                      const dropIconMap: Record<string, React.ReactNode> = {
+                        hot_take:   <Flame      size={18} color="white" />,
+                        prediction: <TrendingUp size={18} color="white" />,
+                        debate:     <Zap        size={18} color="white" />,
+                        memory:     <History    size={18} color="white" />,
+                        post:       <PenTool    size={18} color="white" />,
+                        quiz:       <Brain      size={18} color="white" />,
+                      };
+                      const isActive = q.id === selectedActionId;
+                      return (
+                        <button
+                          key={q.id}
+                          onClick={() => {
+                            setSelectedActionId(q.id);
+                            setIsDropdownOpen(false);
+                            onCompose?.(q.id);
+                          }}
+                          style={{
+                            display: "flex", alignItems: "center", gap: 12,
+                            padding: "10px 12px", borderRadius: 12,
+                            background: isActive
+                              ? "linear-gradient(145deg,rgba(233,30,140,0.18),rgba(255,107,53,0.10))"
+                              : "transparent",
+                            border: isActive
+                              ? "1px solid rgba(233,30,140,0.35)"
+                              : "1px solid transparent",
+                            color: "white", cursor: "pointer", textAlign: "left", transition: "all 0.2s",
+                          }}
+                          onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.background = "rgba(255,255,255,0.05)"; }}
+                          onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.background = "transparent"; }}
+                        >
+                          <div style={{
+                            width: 32, height: 32, borderRadius: 8,
+                            border: "1px solid rgba(255,255,255,0.1)",
+                            display: "flex", alignItems: "center", justifyContent: "center",
+                            background: "rgba(255,255,255,0.02)",
+                          }}>
+                            {dropIconMap[q.id] || <span>{q.emoji}</span>}
+                          </div>
+                          <span style={{ fontSize: 13, fontWeight: 500 }}>{q.label}</span>
+                        </button>
+                      );
+                    })}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
-          )}
+          </div>
         </div>
 
         <div className="mt-3">
           <div className="flex justify-between text-[10px] text-[var(--text-muted)] mb-1">
             <span>Room Energy</span>
-            <span>{fmt(fanCount)} in room</span>
+            {/* <span>{fmt(fanCount)} in room</span> */}
           </div>
           <div className="room-energy-bar room-energy-fast rounded-full" />
         </div>
       </div>
 
-      {/* ── FEED — only this scrolls ── */}
+      {/* ── FEED ── */}
       <div ref={listRef} className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-3 flex flex-col gap-3 min-h-0">
         <AnimatePresence initial={false}>
           {loading ? (
@@ -634,94 +1041,140 @@ export default function DiscussionRoom({
           ) : posts.length === 0 ? (
             <div className="text-center text-[var(--text-muted)] py-8">No posts yet. Be the first!</div>
           ) : (
-            [...posts].reverse().map((p) => (
-              <motion.div
-                key={p.id}
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.22 }}
-                className="glass-card p-3 cursor-pointer"
-                style={postCardStyle(p.type)}
-                onClick={() => onPostClick?.({
-                  id: p.id, text: p.text, fan: p.fan, timeAgo: p.timeAgo,
-                  createdAt: p.createdAt, type: p.type || "chat",
-                  isDbPost: true, roomId, mediaUrls: p.mediaUrls,
-                })}
-              >
-                <div className="flex justify-between items-center">
-                  <div className="flex gap-2 items-center">
-                    <AvatarWithBadge username={p.fan.username} badge={p.fan.badge} size="sm" avatarUrl={p.fan.avatarUrl} />
-                    <div>
-                      <p className="font-bold text-[13px]">{p.fan.username}</p>
-                      <p className="text-[10px] text-[var(--text-muted)]">{p.timeAgo}</p>
+            [...posts].reverse().map((p) => {
+
+              /* ── QUIZ card ── */
+              if (p.type === "quiz") {
+                return (
+                  <motion.div
+                    key={p.id}
+                    initial={{ opacity: 0, y: 16 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.22 }}
+                  >
+                    <QuizCard
+                      post={p}
+                      onToast={onToast}
+                      onPostClick={onPostClick}
+                      roomId={roomId}
+                    />
+                  </motion.div>
+                );
+              }
+
+              /* ── default message card ── */
+              return (
+                <motion.div
+                  key={p.id}
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.22 }}
+                  className="glass-card p-3 cursor-pointer"
+                  style={postCardStyle(p.type)}
+                  onClick={() => onPostClick?.({
+                    id: p.id, text: p.text, fan: p.fan, timeAgo: p.timeAgo,
+                    createdAt: p.createdAt, type: p.type || "post",
+                    isDbPost: true, roomId, mediaUrls: p.mediaUrls,
+                  })}
+                >
+                  <div className="flex justify-between items-center">
+                    <div className="flex gap-2 items-center">
+                      <AvatarWithBadge username={p.fan.username} badge={p.fan.badge} size="sm" avatarUrl={p.fan.avatarUrl} />
+                      <div>
+                        <p className="font-bold text-[13px]">{p.fan.username}</p>
+                        <p className="text-[10px] text-[var(--text-muted)]">{p.timeAgo}</p>
+                      </div>
                     </div>
+                    {/* {p.type && p.type !== "post" && (
+                      <span className={typeBadgeClass(p.type)}>{p.type.toUpperCase()}</span>
+                    )} */}
+                    {p.type && (
+  <span className={typeBadgeClass(p.type)}>
+    {p.type === "post" ? "✏️ POST" 
+    : p.type === "hottake" ? "🔥 HOT TAKE"
+    : p.type === "prediction" ? "📊 PREDICT"
+    : p.type === "debate" ? "⚡ DEBATE"
+    : p.type === "memory" ? "🕰 MEMORY"
+    : p.type.toUpperCase()}
+  </span>
+)}
                   </div>
-                  {p.type && p.type !== "chat" && (
-                    <span className={typeBadgeClass(p.type)}>{p.type.toUpperCase()}</span>
+
+                  <p className="text-sm leading-snug mt-2" style={{ color: MODE_COLOR[p.type] || "white" }}>
+                    {p.text}
+                  </p>
+
+                  {p.mediaUrls?.length > 0 && (
+                    <div className="flex flex-col gap-2 mt-2">
+                      {p.mediaUrls.map((url: string, i: number) =>
+                        url.endsWith(".mp4") || url.includes("/video/upload/") ? (
+                          <video key={i} src={url} controls className="w-full max-h-[200px] rounded-lg object-cover" onClick={e => e.stopPropagation()} />
+                        ) : (
+                          <img key={i} src={url} alt="" className="w-full max-h-[200px] rounded-lg object-cover" />
+                        )
+                      )}
+                    </div>
                   )}
-                </div>
 
-                <p className="text-sm leading-snug mt-2" style={{ color: MODE_COLOR[p.type] || "white" }}>
-                  {p.text}
-                </p>
-
-                {p.mediaUrls?.length > 0 && (
-                  <div className="flex flex-col gap-2 mt-2">
-                    {p.mediaUrls.map((url: string, i: number) =>
-                      url.endsWith(".mp4") || url.includes("/video/upload/") ? (
-                        <video key={i} src={url} controls className="w-full max-h-[200px] rounded-lg object-cover" onClick={e => e.stopPropagation()} />
-                      ) : (
-                        <img key={i} src={url} alt="" className="w-full max-h-[200px] rounded-lg object-cover" />
-                      )
-                    )}
+                  <div className="flex gap-2 mt-2.5 justify-end">
+                    {([
+                      { label: `🔥 ${p.fireCount}`,            r: "fire"     as const },
+                      { label: `❤️ ${p.heartCount || 0}`,      r: "heart"    as const },
+                      // { label: `No chance ${p.nochanceCount}`,  r: "noChance" as const },
+                    ] as const).map(({ label, r }) => (
+                      <motion.button
+                        key={r} whileTap={{ scale: 0.9 }}
+                        onClick={e => { e.stopPropagation(); react(p.id, r); }}
+                        className="px-3.5 py-1.5 text-xs font-semibold bg-[rgba(255,255,255,0.05)] rounded-full border border-[rgba(255,255,255,0.08)] text-[var(--text-primary)] cursor-pointer"
+                      >
+                        {label}
+                      </motion.button>
+                    ))}
                   </div>
-                )}
-
-                <div className="flex gap-2 mt-2.5 justify-end">
-                  {([
-                    { label: `🔥 ${p.fireCount}`,            r: "fire"     as const },
-                    { label: `❤️ ${p.heartCount || 0}`,      r: "heart"    as const },
-                    { label: `No chance ${p.nochanceCount}`,  r: "noChance" as const },
-                  ] as const).map(({ label, r }) => (
-                    <motion.button
-                      key={r} whileTap={{ scale: 0.9 }}
-                      onClick={e => { e.stopPropagation(); react(p.id, r); }}
-                      className="px-3.5 py-1.5 text-xs font-semibold bg-[rgba(255,255,255,0.05)] rounded-full border border-[rgba(255,255,255,0.08)] text-[var(--text-primary)] cursor-pointer"
-                    >
-                      {label}
-                    </motion.button>
-                  ))}
-                </div>
-              </motion.div>
-            ))
+                </motion.div>
+              );
+            })
           )}
         </AnimatePresence>
       </div>
 
-      {/* ── COMPOSER — always at bottom ── */}
-      <div className="shrink-0 px-3 pt-2 pb-4 bg-[rgba(14,14,20,0.98)] backdrop-blur-[20px] border-t border-[var(--border)] flex flex-col gap-2">
+      {/* ── COMPOSER ── */}
+      {/* <div className="shrink-0 px-3 pt-2 pb-4 bg-[rgba(14,14,20,0.98)] backdrop-blur-[20px] border-t border-[var(--border)] flex flex-col gap-2"> */}
         {/* mode pills */}
-        <div className="flex gap-1.5 overflow-x-auto" style={{ scrollbarWidth: "none" }}>
-          {MODES.map(m => (
-            <button
-              key={m.key}
-              type="button"
-              onClick={() => setMode(m.key)}
-              className={[
-                "flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-bold whitespace-nowrap border transition-all duration-150 cursor-pointer shrink-0",
-                mode === m.key
-                  ? "border-[rgba(255,255,255,0.25)] bg-[rgba(255,255,255,0.1)]"
-                  : "border-transparent bg-[rgba(255,255,255,0.04)] text-[rgba(255,255,255,0.35)]",
-              ].join(" ")}
-              style={{ color: mode === m.key ? m.color : undefined }}
-            >
-              {m.icon}{m.label}
-            </button>
-          ))}
-        </div>
+        {/* <div className="flex gap-1.5 overflow-x-auto" style={{ scrollbarWidth: "none" }}>
+          {MODES.map(m => {
+            const isQuiz    = m.key === "quiz";
+            const isActive  = !isQuiz && mode === m.key;
+            return (
+              <button
+                key={m.key}
+                type="button"
+                onClick={() => {
+                  if (isQuiz) {
+                    // Quiz has its own dedicated modal — delegate to parent
+                    onCompose?.("quiz");
+                  } else {
+                    setMode(m.key as "chat" | "debate" | "prediction" | "hottake" | "memory");
+                  }
+                }}
+                className={[
+                  "flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-bold whitespace-nowrap border transition-all duration-150 cursor-pointer shrink-0",
+                  isQuiz
+                    ? "border-[rgba(0,232,198,0.35)] bg-[rgba(0,232,198,0.08)]"
+                    : isActive
+                      ? "border-[rgba(255,255,255,0.25)] bg-[rgba(255,255,255,0.1)]"
+                      : "border-transparent bg-[rgba(255,255,255,0.04)] text-[rgba(255,255,255,0.35)]",
+                ].join(" ")}
+                style={{ color: isActive || isQuiz ? m.color : undefined }}
+              >
+                {m.icon}{m.label}
+              </button>
+            );
+          })}
+        </div> */}
 
         {/* attached media preview */}
-        {attachedUrl && (
+        {/* {attachedUrl && (
           <div className="px-3 py-2 rounded-xl bg-[var(--bg-tertiary)] border border-[var(--border)] flex justify-between items-center">
             <div className="flex items-center gap-2">
               {attachedType === "image"
@@ -731,10 +1184,10 @@ export default function DiscussionRoom({
             </div>
             <button type="button" onClick={() => { setAttachedUrl(null); setAttachedType(null); }} className="bg-transparent border-none text-[var(--text-muted)] cursor-pointer">✕</button>
           </div>
-        )}
+        )} */}
 
         {/* input row */}
-        <div className="flex gap-2 items-center">
+        {/* <div className="flex gap-2 items-center">
           <button
             type="button"
             onClick={() => triggerUpload("image")} disabled={uploading}
@@ -773,12 +1226,10 @@ export default function DiscussionRoom({
           >
             ↑
           </motion.button>
-        </div>
-      </div>
+        </div> */}
+      {/* </div> */}
 
       <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" />
     </div>
-
   );
-
 }

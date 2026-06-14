@@ -14,7 +14,8 @@ export default function BackButton() {
                     typeof window !== "undefined" &&
                     window.history.length > 1
                 ) {
-                    window.history.back();
+                    // window.history.back();
+                    router.push("/MainModules/ROAR")
                 } else {
                     router.push("/");
                 }

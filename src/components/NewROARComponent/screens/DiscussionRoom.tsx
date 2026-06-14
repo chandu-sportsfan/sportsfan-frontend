@@ -399,6 +399,19 @@ import {
   Brain, Users, CheckCircle2, XCircle,
 } from "lucide-react";
 
+// interface Props {
+//   onBack: () => void;
+//   onToast: (m: string) => void;
+//   roomId?: string;
+//   roomName?: string;
+//   onPostClick?: (post: any) => void;
+//   onCompose?: (type: string | null) => void;
+//   fanCount?: number;
+//   score?: string;
+//   scoreSubtitle?: string;
+//   currentAvatarUrl?: string;
+// }
+
 interface Props {
   onBack: () => void;
   onToast: (m: string) => void;
@@ -410,6 +423,8 @@ interface Props {
   score?: string;
   scoreSubtitle?: string;
   currentAvatarUrl?: string;
+  onRegisterRefresh?: (fn: () => void) => void;
+  onRegisterReplyUpdate?: (fn: (postId: string, count: number) => void) => void;
 }
 
 const MODE_COLOR: Record<string, string> = {
@@ -421,12 +436,12 @@ const MODE_COLOR: Record<string, string> = {
 };
 
 const MODES = [
-  { key: "post" as const,       label: "Post",       icon: <PenTool size={13} />,    color: "#ffffff",  isAction: false },
-  { key: "debate" as const,     label: "Debate",     icon: <Zap size={13} />,        color: "#e91e8c",  isAction: false },
-  { key: "prediction" as const, label: "Predict",    icon: <TrendingUp size={13} />, color: "#fbbf24",  isAction: false },
-  { key: "hottake" as const,    label: "Hot Take",   icon: <Flame size={13} />,      color: "#f87171",  isAction: false },
-  { key: "memory" as const,     label: "Memory",     icon: <History size={13} />,    color: "#00e8c6",  isAction: false },
-  { key: "quiz" as const,       label: "Flash Quiz", icon: <Brain size={13} />,      color: "#00e8c6",  isAction: true  },
+  { key: "post" as const, label: "Post", icon: <PenTool size={13} />, color: "#ffffff", isAction: false },
+  { key: "debate" as const, label: "Debate", icon: <Zap size={13} />, color: "#e91e8c", isAction: false },
+  { key: "prediction" as const, label: "Predict", icon: <TrendingUp size={13} />, color: "#fbbf24", isAction: false },
+  { key: "hottake" as const, label: "Hot Take", icon: <Flame size={13} />, color: "#f87171", isAction: false },
+  { key: "memory" as const, label: "Memory", icon: <History size={13} />, color: "#00e8c6", isAction: false },
+  { key: "quiz" as const, label: "Flash Quiz", icon: <Brain size={13} />, color: "#00e8c6", isAction: true },
 ];
 
 const PLACEHOLDER: Record<string, string> = {
@@ -440,18 +455,18 @@ const PLACEHOLDER: Record<string, string> = {
 const typeBadgeClass = (type: string) => {
   const base = "text-[9px] font-extrabold px-1.5 py-0.5 rounded";
   if (type === "prediction") return `${base} bg-[rgba(255,215,0,0.15)] text-[#fbbf24] border border-[rgba(255,215,0,0.25)]`;
-   if (type === "post")      return `${base} bg-[rgba(233,30,140,0.12)] text-[#E91E8C] border border-[rgba(233,30,140,0.2)]`;
-  if (type === "hottake")   return `${base} bg-[rgba(239,68,68,0.15)] text-[#f87171] border border-[rgba(239,68,68,0.25)]`;
-  if (type === "debate")    return `${base} bg-[rgba(233,30,140,0.15)] text-[#e91e8c] border border-[rgba(233,30,140,0.25)]`;
-  if (type === "memory")    return `${base} bg-[rgba(0,232,198,0.15)] text-[#00e8c6] border border-[rgba(0,232,198,0.25)]`;
+  if (type === "post") return `${base} bg-[rgba(233,30,140,0.12)] text-[#E91E8C] border border-[rgba(233,30,140,0.2)]`;
+  if (type === "hottake") return `${base} bg-[rgba(239,68,68,0.15)] text-[#f87171] border border-[rgba(239,68,68,0.25)]`;
+  if (type === "debate") return `${base} bg-[rgba(233,30,140,0.15)] text-[#e91e8c] border border-[rgba(233,30,140,0.25)]`;
+  if (type === "memory") return `${base} bg-[rgba(0,232,198,0.15)] text-[#00e8c6] border border-[rgba(0,232,198,0.25)]`;
   return `${base} bg-[rgba(255,255,255,0.08)] text-[rgba(255,255,255,0.5)] border border-[rgba(255,255,255,0.1)]`;
 };
 
 const postCardStyle = (type: string): React.CSSProperties => {
-  if (type === "prediction") return { background: "linear-gradient(135deg,rgba(255,215,0,0.08),rgba(255,215,0,0.02))",   border: "1px solid rgba(255,215,0,0.18)" };
-  if (type === "hottake")   return { background: "linear-gradient(135deg,rgba(239,68,68,0.08),rgba(239,68,68,0.02))",   border: "1px solid rgba(239,68,68,0.18)" };
-  if (type === "debate")    return { background: "linear-gradient(135deg,rgba(233,30,140,0.08),rgba(233,30,140,0.02))", border: "1px solid rgba(233,30,140,0.18)" };
-  if (type === "memory")    return { background: "linear-gradient(135deg,rgba(0,232,198,0.08),rgba(0,232,198,0.02))",   border: "1px solid rgba(0,232,198,0.18)" };
+  if (type === "prediction") return { background: "linear-gradient(135deg,rgba(255,215,0,0.08),rgba(255,215,0,0.02))", border: "1px solid rgba(255,215,0,0.18)" };
+  if (type === "hottake") return { background: "linear-gradient(135deg,rgba(239,68,68,0.08),rgba(239,68,68,0.02))", border: "1px solid rgba(239,68,68,0.18)" };
+  if (type === "debate") return { background: "linear-gradient(135deg,rgba(233,30,140,0.08),rgba(233,30,140,0.02))", border: "1px solid rgba(233,30,140,0.18)" };
+  if (type === "memory") return { background: "linear-gradient(135deg,rgba(0,232,198,0.08),rgba(0,232,198,0.02))", border: "1px solid rgba(0,232,198,0.18)" };
   return {};
 };
 
@@ -512,8 +527,8 @@ function QuizCard({ post, onToast, onPostClick, roomId }: QuizCardProps) {
 
   const getOptionStyle = (label: string): React.CSSProperties => {
     const isSelected = selectedOption === label;
-    const isCorrect  = revealedCorrect === label;
-    const isWrong    = hasAnswered && isSelected && revealedCorrect !== null && !isCorrect;
+    const isCorrect = revealedCorrect === label;
+    const isWrong = hasAnswered && isSelected && revealedCorrect !== null && !isCorrect;
 
     if (!hasAnswered) {
       return {
@@ -626,7 +641,7 @@ function QuizCard({ post, onToast, onPostClick, roomId }: QuizCardProps) {
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 14 }}>
           {quizOptions.map((opt) => {
             const isCorrect = hasAnswered && revealedCorrect === opt.label;
-            const isWrong   = hasAnswered && selectedOption === opt.label && revealedCorrect !== opt.label && revealedCorrect !== null;
+            const isWrong = hasAnswered && selectedOption === opt.label && revealedCorrect !== opt.label && revealedCorrect !== null;
 
             return (
               <motion.div
@@ -651,7 +666,7 @@ function QuizCard({ post, onToast, onPostClick, roomId }: QuizCardProps) {
 
                 {/* Status icon */}
                 {hasAnswered && isCorrect && <CheckCircle2 size={13} color="#00E8C6" style={{ flexShrink: 0 }} />}
-                {hasAnswered && isWrong   && <XCircle      size={13} color="#F44336" style={{ flexShrink: 0 }} />}
+                {hasAnswered && isWrong && <XCircle size={13} color="#F44336" style={{ flexShrink: 0 }} />}
 
                 {/* Option text */}
                 <span style={{
@@ -690,24 +705,24 @@ function QuizCard({ post, onToast, onPostClick, roomId }: QuizCardProps) {
 // ── Main DiscussionRoom ───────────────────────────────────────────────────────
 
 export default function DiscussionRoom({
-  onBack, onToast, roomId, roomName, onPostClick,  onCompose,
-  fanCount = 312, score, scoreSubtitle, currentAvatarUrl,
+  onBack, onToast, roomId, roomName, onPostClick, onCompose,
+  fanCount = 312, score, scoreSubtitle, currentAvatarUrl, onRegisterRefresh, onRegisterReplyUpdate,
 }: Props) {
-  const [posts, setPosts]               = useState<any[]>([]);
-  const [loading, setLoading]           = useState(true);
-  const [input, setInput]               = useState("");
-  const [mode, setMode]                 = useState<"post" | "debate" | "prediction" | "hottake" | "memory">("post");
-  const [uploading, setUploading]       = useState(false);
-  const [attachedUrl, setAttachedUrl]   = useState<string | null>(null);
+  const [posts, setPosts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [input, setInput] = useState("");
+  const [mode, setMode] = useState<"post" | "debate" | "prediction" | "hottake" | "memory">("post");
+  const [uploading, setUploading] = useState(false);
+  const [attachedUrl, setAttachedUrl] = useState<string | null>(null);
   const [attachedType, setAttachedType] = useState<"image" | "video" | null>(null);
   const [userUsername, setUserUsername] = useState("RoarUser");
   const [userAvatarUrl, setUserAvatarUrl] = useState<string | undefined>(currentAvatarUrl);
-  const [isDropdownOpen, setIsDropdownOpen]     = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [selectedActionId, setSelectedActionId] = useState("post");
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [liveCount, setLiveCount] = useState<number>(fanCount ?? 0);
 
-  const listRef      = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   /* ── close dropdown on outside click ── */
@@ -722,55 +737,145 @@ export default function DiscussionRoom({
   }, []);
 
   /* ── join / leave counter ── */
-useEffect(() => {
-  if (!roomId) return;
+  useEffect(() => {
+    if (!roomId) return;
 
-  const join = async () => {
-    try {
-      const res = await axios.post(`/api/roar/rooms/${roomId}/presence`);
-      if (res.data?.success) setLiveCount(res.data.fanCount);
-    } catch (e) {
-      console.error("Join failed:", e);
-    }
-  };
+    const join = async () => {
+      try {
+        const res = await axios.post(`/api/roar/rooms/${roomId}/presence`);
+        if (res.data?.success) setLiveCount(res.data.fanCount);
+      } catch (e) {
+        console.error("Join failed:", e);
+      }
+    };
 
-  const leaveBeacon = () => {
-    navigator.sendBeacon(`/api/roar/rooms/${roomId}/presence/leave`);
-  };
+    const leaveBeacon = () => {
+      navigator.sendBeacon(`/api/roar/rooms/${roomId}/presence/leave`);
+    };
 
-  const leaveAxios = () => {
-    axios.delete(`/api/roar/rooms/${roomId}/presence`).catch(() => {});
-  };
+    const leaveAxios = () => {
+      axios.delete(`/api/roar/rooms/${roomId}/presence`).catch(() => { });
+    };
 
-  // Join on mount
-  join();
+    // Join on mount
+    join();
 
-  // Tab close → sendBeacon
-  window.addEventListener("beforeunload", leaveBeacon);
+    // Tab close → sendBeacon
+    window.addEventListener("beforeunload", leaveBeacon);
 
-  return () => {
-    // Back button / unmount → axios delete
-    leaveAxios();
-    window.removeEventListener("beforeunload", leaveBeacon);
-  };
-}, [roomId]);
+    return () => {
+      // Back button / unmount → axios delete
+      leaveAxios();
+      window.removeEventListener("beforeunload", leaveBeacon);
+    };
+  }, [roomId]);
 
   /* ── user prefs ── */
   useEffect(() => {
     try {
       setUserUsername(localStorage.getItem("roar_username") || "RoarUser");
       setUserAvatarUrl(currentAvatarUrl || localStorage.getItem("roar_avatar_url") || undefined);
-    } catch {}
+    } catch { }
   }, [currentAvatarUrl]);
 
   /* ── poll messages ── */
-  useEffect(() => {
-    if (!roomId) return;
-    const fetchMsgs = async () => {
-      try {
-        const res = await axios.get(`/api/roar/rooms/${roomId}/messages?t=${Date.now()}`);
-        if (res.data?.success) {
-          setPosts(res.data.messages.map((m: any) => ({
+  // useEffect(() => {
+  //   if (!roomId) return;
+  //   const fetchMsgs = async () => {
+  //     try {
+  //       const res = await axios.get(`/api/roar/rooms/${roomId}/messages?t=${Date.now()}`);
+  //       if (res.data?.success) {
+  //         // setPosts(res.data.messages.map((m: any) => ({
+  //         setPosts([...res.data.messages].sort((a, b) =>
+  //           new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  //         ).map((m: any) => ({
+  //           id: m.msgId,
+  //           fan: {
+  //             username: m.authorUsername,
+  //             badge: m.authorBadge,
+  //             avatarUrl: m.authorAvatarUrl || m.avatarUrl || (m.authorUsername === userUsername ? userAvatarUrl : undefined),
+  //           },
+  //           text: m.text,
+  //           fireCount: m.fireCount || 0,
+  //           nochanceCount: m.noChanceCount || 0,
+  //           heartCount: m.heartCount || 0,
+  //           // timeAgo: new Date(m.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+  //           timeAgo: new Date(m.createdAt).toLocaleDateString([], { month: "short", day: "numeric" }) + " · " + new Date(m.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+  //           createdAt: m.createdAt,
+  //           type: m.type,
+  //           mediaUrls: m.mediaUrls,
+  //           // Quiz fields — correctOption hidden server-side until answered
+  //           quizQuestion: m.quizQuestion,
+  //           quizOptions: m.quizOptions,
+  //           quizCorrectOption: m.quizCorrectOption,
+  //           quizUserAnswer: m.quizUserAnswer ?? null,
+  //           quizTimer: m.quizTimer,
+  //           quizPoints: m.quizPoints,
+  //           quizParticipants: m.quizParticipants ?? 0,
+  //         })));
+  //       }
+  //     } catch (e) { console.error(e); }
+  //     finally { setLoading(false); }
+  //   };
+  //   fetchMsgs();
+  //   const iv = setInterval(fetchMsgs, 3000);
+  //   return () => clearInterval(iv);
+  // }, [roomId, userAvatarUrl, userUsername]);
+
+  // const fetchMsgs = useCallback(async () => {
+  //   if (!roomId) return;
+  //   try {
+  //     const res = await axios.get(`/api/roar/rooms/${roomId}/messages?t=${Date.now()}`);
+  //     if (res.data?.success) {
+  //       setPosts([...res.data.messages].sort((a, b) =>
+  //         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  //       ).map((m: any) => ({
+  //         id: m.msgId,
+  //         fan: {
+  //           username: m.authorUsername,
+  //           badge: m.authorBadge,
+  //           avatarUrl: m.authorAvatarUrl || m.avatarUrl || (m.authorUsername === userUsername ? userAvatarUrl : undefined),
+  //         },
+  //         text: m.text,
+  //         fireCount: m.fireCount || 0,
+  //         nochanceCount: m.noChanceCount || 0,
+  //         heartCount: m.heartCount || 0,
+  //         replyCount: m.replyCount ?? 0,
+  //         agreeCount: m.agreeCount ?? 0,
+  //         disagreeCount: m.disagreeCount ?? 0,
+  //         userVote: m.userVote ?? null,
+  //         sideA: m.sideA ?? null,   // ← add
+  //         sideB: m.sideB ?? null,
+  //         timeAgo: new Date(m.createdAt).toLocaleDateString([], { month: "short", day: "numeric" }) + " · " + new Date(m.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+  //         createdAt: m.createdAt,
+  //         type: m.type,
+  //         mediaUrls: m.mediaUrls,
+  //         quizQuestion: m.quizQuestion,
+  //         quizOptions: m.quizOptions,
+  //         quizCorrectOption: m.quizCorrectOption,
+  //         quizUserAnswer: m.quizUserAnswer ?? null,
+  //         quizTimer: m.quizTimer,
+  //         quizPoints: m.quizPoints,
+  //         quizParticipants: m.quizParticipants ?? 0,
+  //       })));
+  //     }
+  //   } catch (e) { console.error(e); }
+  //   finally { setLoading(false); }
+  // }, [roomId, userAvatarUrl, userUsername]);
+
+
+  const fetchMsgs = useCallback(async () => {
+  if (!roomId) return;
+  try {
+    const res = await axios.get(`/api/roar/rooms/${roomId}/messages?t=${Date.now()}`);
+    if (res.data?.success) {
+      setPosts(prev => {                                          // ← use prev
+        const prevMap = Object.fromEntries(prev.map(p => [p.id, p]));
+        return [...res.data.messages].sort((a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        ).map((m: any) => {
+          const existing = prevMap[m.msgId];                     // ← look up old
+          return {
             id: m.msgId,
             fan: {
               username: m.authorUsername,
@@ -781,32 +886,58 @@ useEffect(() => {
             fireCount: m.fireCount || 0,
             nochanceCount: m.noChanceCount || 0,
             heartCount: m.heartCount || 0,
-            timeAgo: new Date(m.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+            // Use whichever replyCount is higher — server or local optimistic
+            replyCount: Math.max(m.replyCount ?? 0, existing?.replyCount ?? 0),
+            agreeCount: m.agreeCount ?? 0,
+            disagreeCount: m.disagreeCount ?? 0,
+            userVote: m.userVote ?? null,
+            sideA: m.sideA ?? null,
+            sideB: m.sideB ?? null,
+            timeAgo: new Date(m.createdAt).toLocaleDateString([], { month: "short", day: "numeric" }) + " · " + new Date(m.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
             createdAt: m.createdAt,
             type: m.type,
             mediaUrls: m.mediaUrls,
-            // Quiz fields — correctOption hidden server-side until answered
-            quizQuestion:      m.quizQuestion,
-            quizOptions:       m.quizOptions,
+            quizQuestion: m.quizQuestion,
+            quizOptions: m.quizOptions,
             quizCorrectOption: m.quizCorrectOption,
-            quizUserAnswer:    m.quizUserAnswer ?? null,
-            quizTimer:         m.quizTimer,
-            quizPoints:        m.quizPoints,
-            quizParticipants:  m.quizParticipants ?? 0,
-          })));
-        }
-      } catch (e) { console.error(e); }
-      finally { setLoading(false); }
-    };
+            quizUserAnswer: m.quizUserAnswer ?? null,
+            quizTimer: m.quizTimer,
+            quizPoints: m.quizPoints,
+            quizParticipants: m.quizParticipants ?? 0,
+          };
+        });
+      });
+    }
+  } catch (e) { console.error(e); }
+  finally { setLoading(false); }
+}, [roomId, userAvatarUrl, userUsername]);
+
+
+  // useEffect(() => {
+  //   onRegisterRefresh?.(fetchMsgs);
+  // }, [fetchMsgs, onRegisterRefresh]);
+  useEffect(() => {
+    onRegisterRefresh?.(fetchMsgs);
+  }, [fetchMsgs, onRegisterRefresh]);
+
+  useEffect(() => {
+    onRegisterReplyUpdate?.((postId, count) => {
+      setPosts(p => p.map(x => x.id === postId ? { ...x, replyCount: count } : x));
+    });
+  }, [onRegisterReplyUpdate]);
+
+  useEffect(() => {
+    if (!roomId) return;
     fetchMsgs();
     const iv = setInterval(fetchMsgs, 3000);
     return () => clearInterval(iv);
-  }, [roomId, userAvatarUrl, userUsername]);
+  }, [fetchMsgs, roomId]);
 
   /* ── scroll to bottom on load ── */
   useEffect(() => {
     if (!loading && listRef.current)
-      setTimeout(() => listRef.current?.scrollTo({ top: listRef.current.scrollHeight }), 50);
+      // setTimeout(() => listRef.current?.scrollTo({ top: listRef.current.scrollHeight }), 50);
+      setTimeout(() => listRef.current?.scrollTo({ top: 0 }), 50);
   }, [loading]);
 
   /* ── upload ── */
@@ -844,14 +975,19 @@ useEffect(() => {
         setPosts(p => [{
           id: m.msgId,
           fan: { username: m.authorUsername, badge: m.authorBadge, avatarUrl: m.authorAvatarUrl || m.avatarUrl || (m.authorUsername === userUsername ? userAvatarUrl : undefined) },
-          text: m.text, fireCount: 0, nochanceCount: 0, heartCount: 0,
+          // text: m.text, fireCount: 0, nochanceCount: 0, heartCount: 0,
+          // timeAgo: "now", createdAt: m.createdAt || Date.now(), type: m.type, mediaUrls: m.mediaUrls,
+          text: m.text, fireCount: 0, nochanceCount: 0, heartCount: 0, replyCount: 0, agreeCount: 0, disagreeCount: 0, userVote: null,
+          sideA: m.sideA ?? null,   // ← add
+          sideB: m.sideB ?? null,
           timeAgo: "now", createdAt: m.createdAt || Date.now(), type: m.type, mediaUrls: m.mediaUrls,
           quizQuestion: m.quizQuestion, quizOptions: m.quizOptions,
           quizCorrectOption: m.quizCorrectOption, quizUserAnswer: m.quizUserAnswer ?? null,
           quizTimer: m.quizTimer, quizPoints: m.quizPoints, quizParticipants: m.quizParticipants ?? 0,
         }, ...p]);
         setInput(""); setAttachedUrl(null); setAttachedType(null);
-        setTimeout(() => listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" }), 50);
+        // setTimeout(() => listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" }), 50);
+        setTimeout(() => listRef.current?.scrollTo({ top: 0, behavior: "smooth" }), 50);
       }
     } catch { onToast("Failed to send message"); }
   };
@@ -862,9 +998,9 @@ useEffect(() => {
     try {
       await axios.post(`/api/roar/rooms/${roomId}/messages/${id}/react`, { reaction });
       setPosts(p => p.map(x => x.id !== id ? x :
-        reaction === "fire"  ? { ...x, fireCount: x.fireCount + 1 } :
-        reaction === "heart" ? { ...x, heartCount: (x.heartCount || 0) + 1 } :
-                               { ...x, nochanceCount: x.nochanceCount + 1 }
+        reaction === "fire" ? { ...x, fireCount: x.fireCount + 1 } :
+          reaction === "heart" ? { ...x, heartCount: (x.heartCount || 0) + 1 } :
+            { ...x, nochanceCount: x.nochanceCount + 1 }
       ));
     } catch (e) { console.error(e); }
   };
@@ -930,12 +1066,12 @@ useEffect(() => {
               {(() => {
                 const selected = RADIAL_OPTS.find((q) => q.id === selectedActionId) || RADIAL_OPTS[0];
                 const iconMap: Record<string, React.ReactNode> = {
-                  hot_take:   <Flame      size={15} stroke="url(#dr-pink-orange-grad)" fill="url(#dr-pink-orange-grad)" />,
+                  hot_take: <Flame size={15} stroke="url(#dr-pink-orange-grad)" fill="url(#dr-pink-orange-grad)" />,
                   prediction: <TrendingUp size={15} stroke="url(#dr-pink-orange-grad)" />,
-                  debate:     <Zap        size={15} stroke="url(#dr-pink-orange-grad)" fill="url(#dr-pink-orange-grad)" />,
-                  memory:     <History    size={15} stroke="url(#dr-pink-orange-grad)" />,
-                  post:       <PenTool    size={15} stroke="url(#dr-pink-orange-grad)" />,
-                  quiz:       <Brain      size={15} stroke="url(#dr-pink-orange-grad)" />,
+                  debate: <Zap size={15} stroke="url(#dr-pink-orange-grad)" fill="url(#dr-pink-orange-grad)" />,
+                  memory: <History size={15} stroke="url(#dr-pink-orange-grad)" />,
+                  post: <PenTool size={15} stroke="url(#dr-pink-orange-grad)" />,
+                  quiz: <Brain size={15} stroke="url(#dr-pink-orange-grad)" />,
                 };
                 return (
                   <motion.button
@@ -975,12 +1111,12 @@ useEffect(() => {
                   >
                     {RADIAL_OPTS.map((q) => {
                       const dropIconMap: Record<string, React.ReactNode> = {
-                        hot_take:   <Flame      size={18} color="white" />,
+                        hot_take: <Flame size={18} color="white" />,
                         prediction: <TrendingUp size={18} color="white" />,
-                        debate:     <Zap        size={18} color="white" />,
-                        memory:     <History    size={18} color="white" />,
-                        post:       <PenTool    size={18} color="white" />,
-                        quiz:       <Brain      size={18} color="white" />,
+                        debate: <Zap size={18} color="white" />,
+                        memory: <History size={18} color="white" />,
+                        post: <PenTool size={18} color="white" />,
+                        quiz: <Brain size={18} color="white" />,
                       };
                       const isActive = q.id === selectedActionId;
                       return (
@@ -1041,7 +1177,8 @@ useEffect(() => {
           ) : posts.length === 0 ? (
             <div className="text-center text-[var(--text-muted)] py-8">No posts yet. Be the first!</div>
           ) : (
-            [...posts].reverse().map((p) => {
+            // [...posts].reverse().map((p) => {
+            posts.map((p) => {
 
               /* ── QUIZ card ── */
               if (p.type === "quiz") {
@@ -1058,6 +1195,234 @@ useEffect(() => {
                       onPostClick={onPostClick}
                       roomId={roomId}
                     />
+                  </motion.div>
+                );
+              }
+
+              if (p.type === "debate") {
+                const liveTotal = (p.agreeCount ?? 0) + (p.disagreeCount ?? 0);
+                const agrPct = liveTotal > 0 ? Math.round(((p.agreeCount ?? 0) / liveTotal) * 100) : 50;
+                const disAgrPct = 100 - agrPct;
+
+                // Derive voted state from server field (room messages don't go through
+                // the local `votes` React state — they're refreshed via fetchMsgs poll)
+                const userVote = p.userVote; // "agree" | "disagree" | null
+                const hasVoted = userVote === "agree" || userVote === "disagree";
+                const displayVotedA = userVote === "agree";
+                const displayVotedB = userVote === "disagree";
+
+                // Extract sides — room messages store "SideA VS SideB" in text,
+                // or may have explicit sideA/sideB fields if you add them later.
+                // const rawText = p.text ?? "";
+                // const vsParts = rawText.split(" VS ");
+                // const sideA = p.sideA || vsParts[0] || "Side A";
+                // const sideB = p.sideB || vsParts[1] || "Side B";
+                const rawText = p.text ?? "";
+                const vsParts = rawText.split(" VS ");
+                const hasSides = !!(p.sideA || p.sideB);
+                const sideA = p.sideA || vsParts[0] || "Side A";
+                const sideB = p.sideB || vsParts[1] || "Side B";
+                const questionText = hasSides ? rawText : null;
+                return (
+                  <motion.div
+                    key={p.id}
+                    initial={{ opacity: 0, y: 16 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.22 }}
+                    className="glass-card p-4 cursor-pointer"
+                    style={{
+                      background: "linear-gradient(135deg,rgba(233,30,140,0.08),rgba(233,30,140,0.02))",
+                      border: "1px solid rgba(233,30,140,0.18)",
+                    }}
+                    onClick={() =>
+                      onPostClick?.({
+                        id: p.id, text: p.text, fan: p.fan, timeAgo: p.timeAgo,
+                        createdAt: p.createdAt, type: "debate",
+                        isDbPost: true, roomId, mediaUrls: p.mediaUrls,
+                        sideA, sideB,
+                      })
+                    }
+                  >
+                    {/* Badges */}
+                    <div style={{ display: "flex", gap: 6, marginBottom: 8, alignItems: "center" }}>
+                      <span style={{
+                        fontSize: 10, fontWeight: 800, letterSpacing: "0.06em",
+                        padding: "3px 8px", borderRadius: 4, textTransform: "uppercase",
+                        background: "rgba(233,30,140,0.12)", color: "#e91e8c",
+                        border: "1px solid rgba(233,30,140,0.25)",
+                      }}>⚡ Debate</span>
+                      {hasVoted && (
+                        <span style={{
+                          fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 4,
+                          background: "rgba(233,30,140,0.08)", color: "#e91e8c",
+                          border: "1px solid rgba(233,30,140,0.2)",
+                        }}>🗳️ Voted</span>
+                      )}
+                    </div>
+
+                    {/* Author */}
+                    <div className="flex gap-2 items-center mb-2.5">
+                      <AvatarWithBadge
+                        username={p.fan.username}
+                        badge={p.fan.badge}
+                        size="sm"
+                        avatarUrl={p.fan.avatarUrl}
+                      />
+                      <div>
+                        <p className="font-bold text-[13px]">{p.fan.username}</p>
+                        <p className="text-[10px] text-[var(--text-muted)]">{p.timeAgo}</p>
+                      </div>
+                    </div>
+
+                    {/* Question text (only show if it's not purely "SideA VS SideB") */}
+                    {/* {vsParts.length <= 1 && rawText && (
+                      <p style={{ fontWeight: 600, fontSize: 14, lineHeight: 1.4, marginBottom: 12, color: "var(--text-primary)" }}>
+                        {rawText}
+                      </p>
+                    )} */}
+                    {questionText && (
+                      <p style={{ fontWeight: 600, fontSize: 14, lineHeight: 1.4, marginBottom: 12, color: "var(--text-primary)" }}>
+                        {questionText}
+                      </p>
+                    )}
+
+                    {/* Side-by-side VS buttons */}
+                    <div style={{ display: "flex", gap: 8, alignItems: "stretch", marginBottom: 10 }}>
+                      {[
+                        { label: sideA, isA: true, voted: displayVotedA, color: "var(--accent-magenta)", bg: "rgba(233,30,140,0.08)", border: "rgba(233,30,140,0.3)", voteVal: "agree" as const },
+                        { label: sideB, isA: false, voted: displayVotedB, color: "#60a5fa", bg: "rgba(59,130,246,0.08)", border: "rgba(59,130,246,0.3)", voteVal: "disagree" as const },
+                      ].map(({ label, isA, voted, color, bg, border, voteVal }, idx) => (
+                        <>
+                          {idx === 1 && (
+                            <div key="vs" style={{ display: "flex", alignItems: "center", padding: "0 4px" }}>
+                              <span className="font-display" style={{ fontSize: 16, color: "var(--text-muted)" }}>VS</span>
+                            </div>
+                          )}
+                          <motion.button
+                            key={voteVal}
+                            whileTap={!hasVoted ? { scale: 0.96 } : {}}
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              if (hasVoted) return;
+                              try {
+                                await axios.post(
+                                  `/api/roar/rooms/${roomId}/messages/${p.id}/vote`,
+                                  { vote: voteVal },
+                                );
+                                setPosts(prev =>
+                                  prev.map(x =>
+                                    x.id !== p.id ? x : {
+                                      ...x,
+                                      userVote: voteVal,
+                                      agreeCount: (x.agreeCount ?? 0) + (voteVal === "agree" ? 1 : 0),
+                                      disagreeCount: (x.disagreeCount ?? 0) + (voteVal === "disagree" ? 1 : 0),
+                                    },
+                                  ),
+                                );
+                              } catch { onToast("You've already voted!!"); }
+                            }}
+                            disabled={hasVoted}
+                            style={{
+                              flex: 1, padding: "12px", borderRadius: 14, textAlign: "center",
+                              background: voted ? color : bg,
+                              border: `2px solid ${voted ? color : border}`,
+                              color: voted ? "white" : "var(--text-primary)",
+                              cursor: hasVoted ? "not-allowed" : "pointer",
+                              transition: "all 0.2s",
+                              opacity: hasVoted && !voted ? 0.35 : 1,
+                            }}
+                          >
+                            <p style={{ fontSize: 13, fontWeight: 700, margin: 0 }}>
+                              {voted ? "✓ " : ""}{label}
+                            </p>
+                          </motion.button>
+                        </>
+                      ))}
+                    </div>
+
+                    {/* Split progress bar — always visible */}
+                    <div style={{ marginBottom: 10 }}>
+                      <div style={{
+                        display: "flex", borderRadius: 999, overflow: "hidden",
+                        height: 6, background: "rgba(255,255,255,0.06)",
+                      }}>
+                        <div style={{ width: `${agrPct}%`, background: "var(--accent-magenta)", transition: "width 0.4s ease" }} />
+                        <div style={{ width: `${disAgrPct}%`, background: "#60a5fa", transition: "width 0.4s ease" }} />
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between", marginTop: 5 }}>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: "var(--accent-magenta)" }}>{agrPct}%</span>
+                        <span style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 500 }}>
+                          {liveTotal} vote{liveTotal !== 1 ? "s" : ""}
+                        </span>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: "#60a5fa" }}>{disAgrPct}%</span>
+                      </div>
+                    </div>
+
+                    {/* Status line */}
+                    <p style={{
+                      fontSize: 11,
+                      fontWeight: hasVoted ? 600 : 400,
+                      color: hasVoted ? "var(--accent-magenta)" : "var(--text-muted)",
+                      marginBottom: 10,
+                      fontStyle: hasVoted ? "normal" : "italic",
+                    }}>
+                      {hasVoted
+                        ? "🗳️ You've already voted · thanks for joining the debate!"
+                        : "Tap a side to vote · results reveal after voting"}
+                    </p>
+
+                    {/* Reactions + comment + share row */}
+                    <div style={{ marginTop: 2 }}>
+                      <div style={{ display: "flex", gap: 16, borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 10 }}>
+                        <button
+                          onClick={e => { e.stopPropagation(); react(p.id, "heart"); }}
+                          style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", color: p.heartCount > 0 ? "#ff4a7d" : "#9494ad", fontSize: 13, fontWeight: 600 }}
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill={p.heartCount > 0 ? "#ff4a7d" : "none"} stroke="currentColor" strokeWidth="2">
+                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                          </svg>
+                          <span>{p.heartCount || 0}</span>
+                        </button>
+
+                        <button
+                          onClick={e => {
+                            e.stopPropagation();
+                            onPostClick?.({
+                              id: p.id, text: p.text, fan: p.fan, timeAgo: p.timeAgo,
+                              createdAt: p.createdAt, type: "debate",
+                              isDbPost: true, roomId, mediaUrls: p.mediaUrls,
+                              sideA, sideB,
+                            });
+                          }}
+                          style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", color: "#9494ad", fontSize: 13, fontWeight: 600 }}
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                          </svg>
+                          <span>{p.replyCount || 0}</span>
+                        </button>
+
+                        <button
+                          onClick={e => {
+                            e.stopPropagation();
+                            if (navigator.share) {
+                              navigator.share({ title: "ROAR", text: p.text, url: window.location.href });
+                            } else {
+                              navigator.clipboard.writeText(window.location.href);
+                              onToast("Link copied!");
+                            }
+                          }}
+                          style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", color: "#9494ad", fontSize: 13, fontWeight: 600 }}
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
+                            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+                            <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+                          </svg>
+                          <span>Share</span>
+                        </button>
+                      </div>
+                    </div>
                   </motion.div>
                 );
               }
@@ -1089,20 +1454,72 @@ useEffect(() => {
                       <span className={typeBadgeClass(p.type)}>{p.type.toUpperCase()}</span>
                     )} */}
                     {p.type && (
-  <span className={typeBadgeClass(p.type)}>
-    {p.type === "post" ? "✏️ POST" 
-    : p.type === "hottake" ? "🔥 HOT TAKE"
-    : p.type === "prediction" ? "📊 PREDICT"
-    : p.type === "debate" ? "⚡ DEBATE"
-    : p.type === "memory" ? "🕰 MEMORY"
-    : p.type.toUpperCase()}
-  </span>
-)}
+                      <span className={typeBadgeClass(p.type)}>
+                        {p.type === "post" ? "✏️ POST"
+                          : p.type === "hottake" ? "🔥 HOT TAKE"
+                            : p.type === "prediction" ? "📊 PREDICT"
+                              : p.type === "debate" ? "⚡ DEBATE"
+                                : p.type === "memory" ? "🕰 MEMORY"
+                                  : p.type.toUpperCase()}
+                      </span>
+                    )}
                   </div>
 
                   <p className="text-sm leading-snug mt-2" style={{ color: MODE_COLOR[p.type] || "white" }}>
                     {p.text}
                   </p>
+
+                  {p.type === "prediction" && (() => {
+                    const liveTotal = (p.agreeCount ?? 0) + (p.disagreeCount ?? 0);
+                    const agrPct = liveTotal > 0 ? Math.round(((p.agreeCount ?? 0) / liveTotal) * 100) : 50;
+                    const disAgrPct = 100 - agrPct;
+                    const userVote = p.userVote; // from server; room messages don't go through local votes state
+                    const hasVoted = userVote === "agree" || userVote === "disagree";
+
+                    return (
+                      <div style={{ display: "flex", gap: 8, marginTop: 10, marginBottom: 4 }}>
+                        {[
+                          { agree: true, label: "Support", pctVal: agrPct, active: userVote === "agree", color: "#22c55e" },
+                          { agree: false, label: "Counter", pctVal: disAgrPct, active: userVote === "disagree", color: "var(--accent-magenta)" },
+                        ].map(({ agree, label, pctVal, active, color }) => (
+                          <motion.button
+                            key={label}
+                            whileTap={!hasVoted ? { scale: 0.93 } : {}}
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              if (hasVoted) return;
+                              try {
+                                // await axios.post(`/api/roar/posts/${p.id}/vote`, { vote: agree ? "agree" : "disagree" });
+                                await axios.post(`/api/roar/rooms/${roomId}/messages/${p.id}/vote`, { vote: agree ? "agree" : "disagree" });
+                                setPosts(prev => prev.map(x => x.id !== p.id ? x : {
+                                  ...x,
+                                  userVote: agree ? "agree" : "disagree",
+                                  agreeCount: (x.agreeCount ?? 0) + (agree ? 1 : 0),
+                                  disagreeCount: (x.disagreeCount ?? 0) + (!agree ? 1 : 0),
+                                }));
+                              } catch { onToast("You've already vote!!"); }
+                            }}
+                            style={{
+                              flex: 1, padding: "9px", borderRadius: 999, fontSize: 12, fontWeight: 700,
+                              cursor: hasVoted ? "default" : "pointer",
+                              border: `2px solid ${color}`,
+                              background: active ? color : "rgba(255,255,255,0.02)",
+                              color: active ? "white" : color,
+                              boxShadow: active ? `0 0 14px ${color}50` : "none",
+                              transition: "all 0.2s ease-in-out",
+                              display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                              opacity: hasVoted && !active ? 0.4 : 1,
+                            }}
+                          >
+                            {active ? `✓ ${agree ? "Supported" : "Countered"}` : label}
+                            <span style={{ fontSize: 10, fontWeight: 800, background: active ? "rgba(255,255,255,0.2)" : `${color}22`, borderRadius: 999, padding: "1px 6px" }}>
+                              {pctVal}%
+                            </span>
+                          </motion.button>
+                        ))}
+                      </div>
+                    );
+                  })()}
 
                   {p.mediaUrls?.length > 0 && (
                     <div className="flex flex-col gap-2 mt-2">
@@ -1115,11 +1532,71 @@ useEffect(() => {
                       )}
                     </div>
                   )}
+                  {p.type === "hottake" && (() => {
+                    const liveTotal = (p.agreeCount ?? 0) + (p.disagreeCount ?? 0);
+                    const agrPct = liveTotal > 0 ? Math.round(((p.agreeCount ?? 0) / liveTotal) * 100) : 50;
+                    const disAgrPct = 100 - agrPct;
+                    const userVote = p.userVote;
+                    const hasVoted = userVote === "agree" || userVote === "disagree";
 
-                  <div className="flex gap-2 mt-2.5 justify-end">
+                    return (
+                      <div style={{ marginTop: 10, marginBottom: 4 }}>
+                        {/* Split bar */}
+                        <div style={{ display: "flex", borderRadius: 999, overflow: "hidden", height: 5, background: "rgba(255,255,255,0.06)", marginBottom: 8 }}>
+                          <div style={{ width: `${agrPct}%`, background: "var(--accent-magenta)", transition: "width 0.4s ease" }} />
+                          <div style={{ width: `${disAgrPct}%`, background: "var(--accent-orange)", transition: "width 0.4s ease" }} />
+                        </div>
+                        <div style={{ display: "flex", gap: 8 }}>
+                          {[
+                            { agree: true, label: "Agree", pctVal: agrPct, active: userVote === "agree", color: "var(--accent-magenta)" },
+                            { agree: false, label: "Disagree", pctVal: disAgrPct, active: userVote === "disagree", color: "var(--accent-orange)" },
+                          ].map(({ agree, label, pctVal, active, color }) => (
+                            <motion.button
+                              key={label}
+                              whileTap={!hasVoted ? { scale: 0.93 } : {}}
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                if (hasVoted) return;
+                                try {
+                                  await axios.post(
+                                    `/api/roar/rooms/${roomId}/messages/${p.id}/vote`,
+                                    { vote: agree ? "agree" : "disagree" }
+                                  );
+                                  setPosts(prev => prev.map(x => x.id !== p.id ? x : {
+                                    ...x,
+                                    userVote: agree ? "agree" : "disagree",
+                                    agreeCount: (x.agreeCount ?? 0) + (agree ? 1 : 0),
+                                    disagreeCount: (x.disagreeCount ?? 0) + (!agree ? 1 : 0),
+                                  }));
+                                } catch { onToast("Failed to submit vote"); }
+                              }}
+                              style={{
+                                flex: 1, padding: "10px", borderRadius: 999, fontSize: 12, fontWeight: 700,
+                                cursor: hasVoted ? "default" : "pointer",
+                                border: `2.5px solid ${color}`,
+                                background: active ? color : "rgba(255,255,255,0.02)",
+                                color: active ? "white" : color,
+                                boxShadow: active ? `0 0 16px ${color}60` : "none",
+                                transition: "all 0.2s ease-in-out",
+                                display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                                opacity: hasVoted && !active ? 0.4 : 1,
+                              }}
+                            >
+                              {active ? `✓ ${agree ? "Agreed" : "Disagreed"}` : label}
+                              <span style={{ fontSize: 10, fontWeight: 800, background: active ? "rgba(255,255,255,0.2)" : `${color}22`, borderRadius: 999, padding: "1px 6px" }}>
+                                {pctVal}%
+                              </span>
+                            </motion.button>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* <div className="flex gap-2 mt-2.5 justify-end">
                     {([
-                      { label: `🔥 ${p.fireCount}`,            r: "fire"     as const },
-                      { label: `❤️ ${p.heartCount || 0}`,      r: "heart"    as const },
+                      { label: `🔥 ${p.fireCount}`, r: "fire" as const },
+                      { label: `❤️ ${p.heartCount || 0}`, r: "heart" as const },
                       // { label: `No chance ${p.nochanceCount}`,  r: "noChance" as const },
                     ] as const).map(({ label, r }) => (
                       <motion.button
@@ -1130,6 +1607,66 @@ useEffect(() => {
                         {label}
                       </motion.button>
                     ))}
+                  </div> */}
+
+                  <div style={{ marginTop: 10 }}>
+                    {/* Fire & Heart reaction pills */}
+                    <div className="flex gap-2 mb-2.5">
+                      {([
+                        { label: `🔥 ${p.fireCount}`, r: "fire" as const },
+                        { label: `❤️ ${p.heartCount || 0}`, r: "heart" as const },
+                      ] as const).map(({ label, r }) => (
+                        <motion.button
+                          key={r} whileTap={{ scale: 0.9 }}
+                          onClick={e => { e.stopPropagation(); react(p.id, r); }}
+                          className="px-3.5 py-1.5 text-xs font-semibold bg-[rgba(255,255,255,0.05)] rounded-full border border-[rgba(255,255,255,0.08)] text-[var(--text-primary)] cursor-pointer"
+                        >
+                          {label}
+                        </motion.button>
+                      ))}
+                    </div>
+
+                    {/* Like, Comment, Share row */}
+                    <div style={{ display: "flex", gap: 16, borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 10 }}>
+                      <button
+                        onClick={e => { e.stopPropagation(); react(p.id, "heart"); }}
+                        style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", color: p.heartCount > 0 ? "#ff4a7d" : "#9494ad", fontSize: 13, fontWeight: 600 }}
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill={p.heartCount > 0 ? "#ff4a7d" : "none"} stroke="currentColor" strokeWidth="2">
+                          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                        </svg>
+                        <span>{p.heartCount || 0}</span>
+                      </button>
+
+                      <button
+                        onClick={e => { e.stopPropagation(); onPostClick?.({ id: p.id, text: p.text, fan: p.fan, timeAgo: p.timeAgo, createdAt: p.createdAt, type: p.type || "post", isDbPost: true, roomId, mediaUrls: p.mediaUrls,  replyCount: p.replyCount, }); }}
+                        style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", color: "#9494ad", fontSize: 13, fontWeight: 600 }}
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                        </svg>
+                        <span>{p.replyCount || 0}</span>
+                      </button>
+
+                      <button
+                        onClick={e => {
+                          e.stopPropagation();
+                          if (navigator.share) {
+                            navigator.share({ title: "ROAR", text: p.text, url: window.location.href });
+                          } else {
+                            navigator.clipboard.writeText(window.location.href);
+                            onToast("Link copied!");
+                          }
+                        }}
+                        style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", color: "#9494ad", fontSize: 13, fontWeight: 600 }}
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
+                          <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+                        </svg>
+                        <span>Share</span>
+                      </button>
+                    </div>
                   </div>
                 </motion.div>
               );
@@ -1140,8 +1677,8 @@ useEffect(() => {
 
       {/* ── COMPOSER ── */}
       {/* <div className="shrink-0 px-3 pt-2 pb-4 bg-[rgba(14,14,20,0.98)] backdrop-blur-[20px] border-t border-[var(--border)] flex flex-col gap-2"> */}
-        {/* mode pills */}
-        {/* <div className="flex gap-1.5 overflow-x-auto" style={{ scrollbarWidth: "none" }}>
+      {/* mode pills */}
+      {/* <div className="flex gap-1.5 overflow-x-auto" style={{ scrollbarWidth: "none" }}>
           {MODES.map(m => {
             const isQuiz    = m.key === "quiz";
             const isActive  = !isQuiz && mode === m.key;
@@ -1173,8 +1710,8 @@ useEffect(() => {
           })}
         </div> */}
 
-        {/* attached media preview */}
-        {/* {attachedUrl && (
+      {/* attached media preview */}
+      {/* {attachedUrl && (
           <div className="px-3 py-2 rounded-xl bg-[var(--bg-tertiary)] border border-[var(--border)] flex justify-between items-center">
             <div className="flex items-center gap-2">
               {attachedType === "image"
@@ -1186,8 +1723,8 @@ useEffect(() => {
           </div>
         )} */}
 
-        {/* input row */}
-        {/* <div className="flex gap-2 items-center">
+      {/* input row */}
+      {/* <div className="flex gap-2 items-center">
           <button
             type="button"
             onClick={() => triggerUpload("image")} disabled={uploading}

@@ -1425,21 +1425,82 @@ export default function HomeFeed({
     return `${pad(mins)}:${pad(secs)}`;
   };
 
+  // useEffect(() => {
+  //   if (dbPosts.length > 0) {
+  //     const syncedVotes: Record<string, boolean | null> = { ...votes };
+  //     const syncedLikes: Record<string, { userLiked: boolean; likeCount: number }> = { ...localLikes };
+  //     const nowMs = Date.now();
+  //     dbPosts.forEach((p) => {
+  //       const lastAction = lastActionAt[p.postId] || 0;
+  //       if (nowMs - lastAction < 15000) return;
+  //       syncedVotes[p.postId] = p.userVote ? p.userVote === "agree" : null;
+  //       syncedLikes[p.postId] = { userLiked: p.userLiked ?? false, likeCount: p.likeCount ?? 0 };
+  //     });
+  //     setVotes(syncedVotes);
+  //     setLocalLikes(syncedLikes);
+  //   }
+  // }, [dbPosts, lastActionAt]);
+
   useEffect(() => {
-    if (dbPosts.length > 0) {
-      const syncedVotes: Record<string, boolean | null> = { ...votes };
-      const syncedLikes: Record<string, { userLiked: boolean; likeCount: number }> = { ...localLikes };
-      const nowMs = Date.now();
+    if (dbPosts.length === 0) return;
+    const nowMs = Date.now();
+    setVotes((prev) => {
+      const next = { ...prev };
       dbPosts.forEach((p) => {
-        const lastAction = lastActionAt[p.postId] || 0;
+        const id = p.postId;
+        const lastAction = lastActionAt[id] || 0;
         if (nowMs - lastAction < 15000) return;
-        syncedVotes[p.postId] = p.userVote ? p.userVote === "agree" : null;
-        syncedLikes[p.postId] = { userLiked: p.userLiked ?? false, likeCount: p.likeCount ?? 0 };
+        if (p.userVote === "agree") next[id] = true;
+        else if (p.userVote === "disagree") next[id] = false;
+        else next[id] = null;
       });
-      setVotes(syncedVotes);
-      setLocalLikes(syncedLikes);
-    }
+      return next;
+    });
+    setLocalLikes((prev) => {
+      const next = { ...prev };
+      dbPosts.forEach((p) => {
+        const id = p.postId;
+        const lastAction = lastActionAt[id] || 0;
+        if (nowMs - lastAction < 15000) return;
+        next[id] = { userLiked: p.userLiked ?? false, likeCount: p.likeCount ?? 0 };
+      });
+      return next;
+    });
   }, [dbPosts, lastActionAt]);
+
+  // const vote = (
+  //   id: string,
+  //   agree: boolean,
+  //   initialAgreePercent: number,
+  //   initialUserVote: "agree" | "disagree" | null,
+  //   isDbPost?: boolean,
+  // ) => {
+  //   const prev = votes[id];
+  //   let nextVote: boolean | null = agree;
+  //   if (prev === agree) nextVote = null;
+  //   setVotes((v) => ({ ...v, [id]: nextVote }));
+  //   setLastActionAt((prev) => ({ ...prev, [id]: Date.now() }));
+
+  //   let delta = 0;
+  //   if (initialUserVote === "agree") {
+  //     if (nextVote === true) delta = 0;
+  //     else if (nextVote === false) delta = -6;
+  //     else delta = -3;
+  //   } else if (initialUserVote === "disagree") {
+  //     if (nextVote === true) delta = 6;
+  //     else if (nextVote === false) delta = 0;
+  //     else delta = 3;
+  //   } else {
+  //     if (nextVote === true) delta = 3;
+  //     else if (nextVote === false) delta = -3;
+  //     else delta = 0;
+  //   }
+  //   setPcts((p) => ({ ...p, [id]: clamp(initialAgreePercent + delta, 1, 99) }));
+
+  //   if (isDbPost && onVote) {
+  //     onVote(id, nextVote === true ? "agree" : nextVote === false ? "disagree" : null);
+  //   }
+  // };
 
   const vote = (
     id: string,
@@ -1448,30 +1509,22 @@ export default function HomeFeed({
     initialUserVote: "agree" | "disagree" | null,
     isDbPost?: boolean,
   ) => {
-    const prev = votes[id];
-    let nextVote: boolean | null = agree;
-    if (prev === agree) nextVote = null;
+    // Block if already voted
+    const currentVote = votes[id];
+    const alreadyVoted =
+      currentVote === true || currentVote === false ||
+      initialUserVote === "agree" || initialUserVote === "disagree";
+    if (alreadyVoted) return;
+
+    const nextVote: boolean = agree;
     setVotes((v) => ({ ...v, [id]: nextVote }));
     setLastActionAt((prev) => ({ ...prev, [id]: Date.now() }));
 
-    let delta = 0;
-    if (initialUserVote === "agree") {
-      if (nextVote === true) delta = 0;
-      else if (nextVote === false) delta = -6;
-      else delta = -3;
-    } else if (initialUserVote === "disagree") {
-      if (nextVote === true) delta = 6;
-      else if (nextVote === false) delta = 0;
-      else delta = 3;
-    } else {
-      if (nextVote === true) delta = 3;
-      else if (nextVote === false) delta = -3;
-      else delta = 0;
-    }
+    const delta = agree ? 3 : -3;
     setPcts((p) => ({ ...p, [id]: clamp(initialAgreePercent + delta, 1, 99) }));
 
     if (isDbPost && onVote) {
-      onVote(id, nextVote === true ? "agree" : nextVote === false ? "disagree" : null);
+      onVote(id, agree ? "agree" : "disagree");
     }
   };
 
@@ -1907,10 +1960,41 @@ export default function HomeFeed({
                   </>
                 )}
 
-                {item.type === "prediction" && (
+                {/* {item.type === "prediction" && (
                   <div>
                     <p style={{ fontSize: 12, color: "var(--text-primary)", fontWeight: 500 }}>{item.samePredictionCount} fans made the same prediction</p>
                     {(item.counterCount ?? 0) > 0 && <p style={{ fontSize: 12, color: "var(--accent-magenta)", marginTop: 4 }}>{item.counterCount} fans think otherwise →</p>}
+                    {renderCardActions(item)}
+                  </div>
+                )} */}
+                {item.type === "prediction" && (
+                  <div>
+                    <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+                      {[
+                        { agree: true, label: "Support", pctVal: agrPct, active: userVote === true, color: "#22c55e" },
+                        { agree: false, label: "Counter", pctVal: disAgrPct, active: userVote === false, color: "var(--accent-magenta)" },
+                      ].map(({ agree, label, pctVal, active, color }) => (
+                        <motion.button
+                          key={label}
+                          whileTap={{ scale: 0.93 }}
+                          onClick={(e) => { e.stopPropagation(); vote(item.id, agree, item.agreePercent, item.userVote, item.isDbPost); }}
+                          style={{
+                            flex: 1, padding: "10px", borderRadius: 999, fontSize: 13, fontWeight: 700,
+                            cursor: "pointer", border: `2.5px solid ${color}`,
+                            background: active ? color : "rgba(255,255,255,0.02)",
+                            color: active ? "white" : color,
+                            boxShadow: active ? `0 0 16px ${color}60` : "none",
+                            transition: "all 0.2s ease-in-out",
+                            display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                          }}
+                        >
+                          {active ? `✓ ${agree ? "Supported" : "Countered"}` : label}
+                          <span style={{ fontSize: 11, fontWeight: 800, opacity: 0.9, background: active ? "rgba(255,255,255,0.2)" : `${color}22`, borderRadius: 999, padding: "1px 7px" }}>
+                            {pctVal}%
+                          </span>
+                        </motion.button>
+                      ))}
+                    </div>
                     {renderCardActions(item)}
                   </div>
                 )}
@@ -1960,21 +2044,145 @@ export default function HomeFeed({
           // }
 
           // ── DEBATE ─────────────────────────────────────────────────────────────
+          // if (item.type === "debate") {
+          //   // const userVote = votes[item.id];
+          //   // const hasVoted = userVote !== undefined && userVote !== null;
+          //   const userVote = votes[item.id];
+          //   const serverVote = item.userVote; // "agree" | "disagree" | null from DB
+          //   const hasVoted =
+          //     userVote === true || userVote === false ||
+          //     serverVote === "agree" || serverVote === "disagree";
+          //   const displayVotedAgree =
+          //     userVote === true ||
+          //     (!Object.prototype.hasOwnProperty.call(votes, item.id) && serverVote === "agree");
+          //   const displayVotedDisagree =
+          //     userVote === false ||
+          //     (!Object.prototype.hasOwnProperty.call(votes, item.id) && serverVote === "disagree");
+
+          //   const liveTotal = (item.agreeCount ?? 0) + (item.disagreeCount ?? 0);
+          //   const agrPct = liveTotal > 0 ? Math.round(((item.agreeCount ?? 0) / liveTotal) * 100) : 50;
+          //   const disAgrPct = 100 - agrPct;
+
+          //   return (
+          //     <motion.div
+          //       key={item.id}
+          //       initial={{ opacity: 0, y: 16 }}
+          //       animate={{ opacity: 1, y: 0 }}
+          //       transition={{ delay: i * 0.04 }}
+          //       className="glass-card"
+          //       style={{ padding: "16px", cursor: "pointer" }}
+          //       onClick={() => onPostClick && onPostClick(item)}
+          //     >
+          //       {/* Badge */}
+          //       <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
+          //         <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.06em", padding: "3px 8px", borderRadius: 4, textTransform: "uppercase", background: "rgba(233,30,140,0.12)", color: "var(--accent-magenta)", border: "1px solid rgba(233,30,140,0.25)" }}>⚡ Debate</span>
+          //       </div>
+
+          //       {/* Author */}
+          //       <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 10 }}>
+          //         <AvatarWithBadge username={item.fan.username} badge={item.fan.badge} size="sm" avatarUrl={item.fan.avatarUrl} />
+          //         <div>
+          //           <p style={{ fontWeight: 700, fontSize: 13 }}>{item.fan.username}</p>
+          //           <p style={{ fontSize: 10, color: "var(--text-secondary)" }}>{BADGE_LABELS[item.fan.badge]} · {item.fan.team} • {formatTimeAgo(item.createdAt)}</p>
+          //         </div>
+          //       </div>
+
+          //       {/* Debate question */}
+          //       {item.text && (
+          //         <p style={{ fontWeight: 600, fontSize: 14, lineHeight: 1.4, marginBottom: 12, color: "var(--text-primary)" }}>
+          //           {item.text}
+          //         </p>
+          //       )}
+
+          //       {/* Side buttons */}
+          //       <div style={{ display: "flex", gap: 8, alignItems: "stretch", marginBottom: 10 }}>
+          //         {[
+          //           { agree: true, side: item.sideA || item.text?.split(" VS ")[0] || "Side A", color: "var(--accent-magenta)", bg: "rgba(233,30,140,0.08)", border: "rgba(233,30,140,0.3)", voted: userVote === true },
+          //           { agree: false, side: item.sideB || item.text?.split(" VS ")[1] || "Side B", color: "#60a5fa", bg: "rgba(59,130,246,0.08)", border: "rgba(59,130,246,0.3)", voted: userVote === false },
+          //         ].map(({ agree, side, color, bg, border, voted }, idx) => (
+          //           <>
+          //             {idx === 1 && (
+          //               <div key="vs" style={{ display: "flex", alignItems: "center", padding: "0 4px" }}>
+          //                 <span className="font-display" style={{ fontSize: 16, color: "var(--text-muted)" }}>VS</span>
+          //               </div>
+          //             )}
+          //             <motion.button
+          //               key={String(agree)}
+          //               whileTap={!hasVoted ? { scale: 0.96 } : {}}
+          //               onClick={(e) => {
+          //                 e.stopPropagation();
+          //                 if (hasVoted) return; // ← one vote only
+          //                 vote(item.id, agree, item.agreePercent || 50, item.userVote, item.isDbPost);
+          //               }}
+          //               style={{
+          //                 flex: 1, padding: "12px", borderRadius: 14, textAlign: "center",
+          //                 background: voted ? color : bg,
+          //                 border: `2px solid ${voted ? color : border}`,
+          //                 color: voted ? "white" : "var(--text-primary)",
+          //                 cursor: hasVoted ? "default" : "pointer",
+          //                 transition: "all 0.2s",
+          //                 opacity: hasVoted && !voted ? 0.5 : 1,
+          //               }}
+          //             >
+          //               <p style={{ fontSize: 13, fontWeight: 700, margin: 0 }}>
+          //                 {voted ? "✓ " : ""}{side}
+          //               </p>
+          //             </motion.button>
+          //           </>
+          //         ))}
+          //       </div>
+
+          //       {/* Split progress bar — only shown after voting */}
+          //       {hasVoted && (
+          //         <div style={{ marginBottom: 10 }}>
+          //           <div style={{ display: "flex", borderRadius: 999, overflow: "hidden", height: 6, background: "rgba(255,255,255,0.06)" }}>
+          //             <div style={{ width: `${agrPct}%`, background: "var(--accent-magenta)", transition: "width 0.4s ease" }} />
+          //             <div style={{ width: `${disAgrPct}%`, background: "#60a5fa", transition: "width 0.4s ease" }} />
+          //           </div>
+          //           <div style={{ display: "flex", justifyContent: "space-between", marginTop: 5 }}>
+          //             <span style={{ fontSize: 11, fontWeight: 700, color: "var(--accent-magenta)" }}>{agrPct}%</span>
+          //             <span style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 500 }}>{fmt(liveTotal)} votes</span>
+          //             <span style={{ fontSize: 11, fontWeight: 700, color: "#60a5fa" }}>{disAgrPct}%</span>
+          //           </div>
+          //         </div>
+          //       )}
+
+          //       {!hasVoted && (
+          //         <p style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 8, fontStyle: "italic" }}>
+          //           Tap a side to vote · results reveal after voting
+          //         </p>
+          //       )}
+
+          //       {renderCardActions(item)}
+          //     </motion.div>
+          //   );
+          // }
+
+
+          // ── DEBATE ─────────────────────────────────────────────────────────────────
           if (item.type === "debate") {
             // const userVote = votes[item.id];
-            // const hasVoted = userVote !== undefined && userVote !== null;
-             const userVote = votes[item.id];
-  const serverVote = item.userVote; // "agree" | "disagree" | null from DB
-  const hasVoted =
-    userVote === true || userVote === false ||
-    serverVote === "agree" || serverVote === "disagree";
-  const displayVotedAgree =
-    userVote === true ||
-    (!Object.prototype.hasOwnProperty.call(votes, item.id) && serverVote === "agree");
-  const displayVotedDisagree =
-    userVote === false ||
-    (!Object.prototype.hasOwnProperty.call(votes, item.id) && serverVote === "disagree");
-
+            // const serverVote = item.userVote;
+            // const hasVoted =
+            //   userVote === true || userVote === false ||
+            //   serverVote === "agree" || serverVote === "disagree";
+            // const displayVotedAgree =
+            //   userVote === true ||
+            //   (!Object.prototype.hasOwnProperty.call(votes, item.id) && serverVote === "agree");
+            // const displayVotedDisagree =
+            //   userVote === false ||
+            //   (!Object.prototype.hasOwnProperty.call(votes, item.id) && serverVote === "disagree");
+            const userVote = votes[item.id];
+            const serverVote = item.userVote;
+            const hasVoted =
+              userVote === true || userVote === false ||
+              (userVote === undefined && (serverVote === "agree" || serverVote === "disagree"));
+            const displayVotedAgree =
+              userVote === true ||
+              (userVote === undefined && serverVote === "agree");
+            const displayVotedDisagree =
+              userVote === false ||
+              (userVote === undefined && serverVote === "disagree");
             const liveTotal = (item.agreeCount ?? 0) + (item.disagreeCount ?? 0);
             const agrPct = liveTotal > 0 ? Math.round(((item.agreeCount ?? 0) / liveTotal) * 100) : 50;
             const disAgrPct = 100 - agrPct;
@@ -1992,6 +2200,11 @@ export default function HomeFeed({
                 {/* Badge */}
                 <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
                   <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.06em", padding: "3px 8px", borderRadius: 4, textTransform: "uppercase", background: "rgba(233,30,140,0.12)", color: "var(--accent-magenta)", border: "1px solid rgba(233,30,140,0.25)" }}>⚡ Debate</span>
+                  {hasVoted && (
+                    <span style={{ fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 4, background: "rgba(233,30,140,0.08)", color: "var(--accent-magenta)", border: "1px solid rgba(233,30,140,0.2)" }}>
+                      🗳️ Already Voted
+                    </span>
+                  )}
                 </div>
 
                 {/* Author */}
@@ -2013,8 +2226,8 @@ export default function HomeFeed({
                 {/* Side buttons */}
                 <div style={{ display: "flex", gap: 8, alignItems: "stretch", marginBottom: 10 }}>
                   {[
-                    { agree: true, side: item.sideA || item.text?.split(" VS ")[0] || "Side A", color: "var(--accent-magenta)", bg: "rgba(233,30,140,0.08)", border: "rgba(233,30,140,0.3)", voted: userVote === true },
-                    { agree: false, side: item.sideB || item.text?.split(" VS ")[1] || "Side B", color: "#60a5fa", bg: "rgba(59,130,246,0.08)", border: "rgba(59,130,246,0.3)", voted: userVote === false },
+                    { agree: true, side: item.sideA || "Side A", color: "var(--accent-magenta)", bg: "rgba(233,30,140,0.08)", border: "rgba(233,30,140,0.3)", voted: displayVotedAgree },
+                    { agree: false, side: item.sideB || "Side B", color: "#60a5fa", bg: "rgba(59,130,246,0.08)", border: "rgba(59,130,246,0.3)", voted: displayVotedDisagree },
                   ].map(({ agree, side, color, bg, border, voted }, idx) => (
                     <>
                       {idx === 1 && (
@@ -2024,20 +2237,20 @@ export default function HomeFeed({
                       )}
                       <motion.button
                         key={String(agree)}
-                        whileTap={!hasVoted ? { scale: 0.96 } : {}}
                         onClick={(e) => {
                           e.stopPropagation();
-                          if (hasVoted) return; // ← one vote only
+                          if (hasVoted) return;
                           vote(item.id, agree, item.agreePercent || 50, item.userVote, item.isDbPost);
                         }}
+                        disabled={hasVoted}
                         style={{
                           flex: 1, padding: "12px", borderRadius: 14, textAlign: "center",
                           background: voted ? color : bg,
                           border: `2px solid ${voted ? color : border}`,
                           color: voted ? "white" : "var(--text-primary)",
-                          cursor: hasVoted ? "default" : "pointer",
+                          cursor: hasVoted ? "not-allowed" : "pointer",
                           transition: "all 0.2s",
-                          opacity: hasVoted && !voted ? 0.5 : 1,
+                          opacity: hasVoted && !voted ? 0.35 : 1,
                         }}
                       >
                         <p style={{ fontSize: 13, fontWeight: 700, margin: 0 }}>
@@ -2048,26 +2261,29 @@ export default function HomeFeed({
                   ))}
                 </div>
 
-                {/* Split progress bar — only shown after voting */}
-                {hasVoted && (
-                  <div style={{ marginBottom: 10 }}>
-                    <div style={{ display: "flex", borderRadius: 999, overflow: "hidden", height: 6, background: "rgba(255,255,255,0.06)" }}>
-                      <div style={{ width: `${agrPct}%`, background: "var(--accent-magenta)", transition: "width 0.4s ease" }} />
-                      <div style={{ width: `${disAgrPct}%`, background: "#60a5fa", transition: "width 0.4s ease" }} />
-                    </div>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginTop: 5 }}>
-                      <span style={{ fontSize: 11, fontWeight: 700, color: "var(--accent-magenta)" }}>{agrPct}%</span>
-                      <span style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 500 }}>{fmt(liveTotal)} votes</span>
-                      <span style={{ fontSize: 11, fontWeight: 700, color: "#60a5fa" }}>{disAgrPct}%</span>
-                    </div>
+                {/* Progress bar — always visible */}
+                <div style={{ marginBottom: 10 }}>
+                  <div style={{ display: "flex", borderRadius: 999, overflow: "hidden", height: 6, background: "rgba(255,255,255,0.06)" }}>
+                    <div style={{ width: `${agrPct}%`, background: "var(--accent-magenta)", transition: "width 0.4s ease" }} />
+                    <div style={{ width: `${disAgrPct}%`, background: "#60a5fa", transition: "width 0.4s ease" }} />
                   </div>
-                )}
+                  <div style={{ display: "flex", justifyContent: "space-between", marginTop: 5 }}>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: "var(--accent-magenta)" }}>{agrPct}%</span>
+                    <span style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 500 }}>{fmt(liveTotal)} votes</span>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: "#60a5fa" }}>{disAgrPct}%</span>
+                  </div>
+                </div>
 
-                {!hasVoted && (
-                  <p style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 8, fontStyle: "italic" }}>
-                    Tap a side to vote · results reveal after voting
-                  </p>
-                )}
+                {/* Status message — always visible */}
+                <p style={{
+                  fontSize: 11,
+                  fontWeight: hasVoted ? 600 : 400,
+                  color: hasVoted ? "var(--accent-magenta)" : "var(--text-muted)",
+                  marginBottom: 8,
+                  fontStyle: hasVoted ? "normal" : "italic",
+                }}>
+                  {hasVoted ? "🗳️ You've already voted · thanks for joining the debate!" : "Tap a side to vote · results reveal after voting"}
+                </p>
 
                 {renderCardActions(item)}
               </motion.div>

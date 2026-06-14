@@ -706,14 +706,15 @@ import Leaderboard from "./screens/Leaderboard";
 import Profile from "./screens/Profile";
 import type { Notification, Room } from "./types";
 import { useRoarNotifications } from "@/context/RoarNotificationsContext";
-import { useRoarRoom } from "@/context/RoarRoomContext";
+import RoomPostDetailsOverlay from "./components/RoomPostDetailsOverlay";
 
 
 export default function ROARApp() {
   const containerRef = useRef<HTMLDivElement>(null);
   const searchParams = useSearchParams();
   const [likingPosts, setLikingPosts] = useState<Set<string>>(new Set());
-
+  const roomRefreshRef = useRef<(() => void) | null>(null);
+  const roomReplyUpdateRef = useRef<((postId: string, count: number) => void) | null>(null);
   // ── Bootstrap ──────────────────────────────────────────────────────────────
   const [mounted, setMounted] = useState(false);
   const [checkingProfile, setCheckingProfile] = useState(true);
@@ -949,9 +950,20 @@ export default function ROARApp() {
           return post;
         })
       );
+      // try {
+      //   await axios.post(`/api/roar/posts/${postId}/vote`, { vote: voteType });
+      // } catch (err) {
+      //   console.error("Failed to submit vote:", err);
+      //   await fetchPosts();
+      // }
       try {
         await axios.post(`/api/roar/posts/${postId}/vote`, { vote: voteType });
-      } catch (err) {
+      } catch (err: any) {
+        if (err.response?.status === 409) {
+          // Server says already voted — just sync, don't revert
+          await fetchPosts();
+          return;
+        }
         console.error("Failed to submit vote:", err);
         await fetchPosts();
       }
@@ -1071,10 +1083,17 @@ export default function ROARApp() {
           };
           const msgType = msgTypeMap[postType] || "post";
 
+          // res = await axios.post(`/api/roar/rooms/${selectedRoom.roomId}/messages`, {
+          //   text: postType === "debate"
+          //     ? `${payload.sideA} VS ${payload.sideB}`
+          //     : payload.text,
+          //   type: msgType,
+          //   mediaUrls: payload.mediaUrls,
+          //   sideA: payload.sideA,
+          //   sideB: payload.sideB,
+          // });
           res = await axios.post(`/api/roar/rooms/${selectedRoom.roomId}/messages`, {
-            text: postType === "debate"
-              ? `${payload.sideA} VS ${payload.sideB}`
-              : payload.text,
+            text: payload.text,  // debate question — sides are sent separately
             type: msgType,
             mediaUrls: payload.mediaUrls,
             sideA: payload.sideA,
@@ -1087,11 +1106,14 @@ export default function ROARApp() {
         else {
           res = await axios.post("/api/roar/posts", {
             type: postType,
+            // text: postType === "quiz"
+            //   ? payload.quizQuestion
+            //   : postType === "debate"
+            //     ? `${payload.sideA} VS ${payload.sideB}`
+            //     : payload.text,
             text: postType === "quiz"
               ? payload.quizQuestion
-              : postType === "debate"
-                ? `${payload.sideA} VS ${payload.sideB}`
-                : payload.text,
+              : payload.text,
             sport: payload.sport || "cricket",
             audience: payload.audience,
             mediaUrls,
@@ -1251,6 +1273,8 @@ export default function ROARApp() {
                     onPostClick={(post) => setSelectedPost(post)}
                     onCompose={(type) => openCompose(type)}
                     currentAvatarUrl={currentAvatarUrl}
+                    onRegisterRefresh={(fn) => { roomRefreshRef.current = fn; }}
+                    onRegisterReplyUpdate={(fn) => { roomReplyUpdateRef.current = fn; }}
                   />
                 </motion.div>
               ) : (
@@ -1313,16 +1337,51 @@ export default function ROARApp() {
                 within roar-inner's bounds — the app header and sidebar remain
                 visible outside this container on desktop. position:absolute
                 fills roar-inner exactly with no JS measurement needed. */}
-            {onboarded && selectedPost && (
+            {/* {onboarded && selectedPost && (
               <PostDetailsOverlay
                 post={selectedPost}
-                onClose={() => setSelectedPost(null)}
+                // onClose={() => setSelectedPost(null)}
+                onClose={(updatedReplyCount?: number) => {
+                  if (selectedPost && updatedReplyCount !== undefined && overlay === "room") {
+                    roomReplyUpdateRef.current?.(selectedPost.id, updatedReplyCount);
+                  }
+                  setSelectedPost(null);
+                  roomRefreshRef.current?.();
+                }}
                 onToast={showToast}
                 onVote={handleVote}
                 onDeletePost={handleDeletePost}
                 currentUsername={currentUsername}
                 currentAvatarUrl={currentAvatarUrl}
+
               />
+            )} */}
+            {onboarded && selectedPost && (
+              overlay === "room" ? (
+                <RoomPostDetailsOverlay
+                  post={selectedPost}
+                  onClose={(count?) => {
+                    if (selectedPost && count !== undefined) roomReplyUpdateRef.current?.(selectedPost.id, count);
+                    setSelectedPost(null);
+                    roomRefreshRef.current?.();
+                  }}
+                  onToast={showToast}
+                  onVote={handleVote}
+                  onDeletePost={handleDeletePost}
+                  currentUsername={currentUsername}
+                  currentAvatarUrl={currentAvatarUrl}
+                />
+              ) : (
+                <PostDetailsOverlay
+                  post={selectedPost}
+                  onClose={(count?) => { setSelectedPost(null); }}
+                  onToast={showToast}
+                  onVote={handleVote}
+                  onDeletePost={handleDeletePost}
+                  currentUsername={currentUsername}
+                  currentAvatarUrl={currentAvatarUrl}
+                />
+              )
             )}
           </div>
         )}

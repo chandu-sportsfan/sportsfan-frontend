@@ -4157,7 +4157,7 @@ export default function WatchRoom({ room, onBack }: Props) {
     }
 
     return (
-        <div className="h-screen bg-[#111] text-white font-sans flex flex-col overflow-auto lg:overflow-hidden">
+        <div className="h-[100dvh] lg:h-screen bg-[#111] text-white font-sans flex flex-col overflow-hidden lg:overflow-hidden">
             <ConfettiWrapper trigger={confettiTrigger} text={confettiText} />
 
             {/* Floating emoji overlay for small reactions */}

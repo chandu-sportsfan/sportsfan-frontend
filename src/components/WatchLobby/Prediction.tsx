@@ -571,7 +571,7 @@ export default function Prediction({ matchId }: { matchId: string }) {
     }
 
     return (
-        <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-18 md:py-18 lg:py-5 -mt-12 lg:-mt-2">
+        <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 lg:py-5">
             {/* Header */}
             <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">

@@ -4157,7 +4157,7 @@ export default function WatchRoom({ room, onBack }: Props) {
     }
 
     return (
-        <div className="h-screen bg-[#111] text-white font-sans flex flex-col overflow-auto lg:overflow-hidden">
+        <div className="h-[100dvh] lg:h-screen bg-[#111] text-white font-sans flex flex-col overflow-hidden lg:overflow-hidden">
             <ConfettiWrapper trigger={confettiTrigger} text={confettiText} />
 
             {/* Floating emoji overlay for small reactions */}
@@ -4433,16 +4433,12 @@ export default function WatchRoom({ room, onBack }: Props) {
 
                             </>
                         ) : (
-                            <div className="absolute inset-0 flex items-center justify-center">
-                                <div className="text-center">
-                                    <div className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center mb-3">
-                                        <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                        </svg>
-                                    </div>
-                                    <p className="text-gray-400 text-sm">No video stream available</p>
-                                </div>
+                            <div className="absolute inset-0 w-full h-full">
+                                <img
+                                    src="/images/watchalong_welcome.jpg"
+                                    alt="Welcome to Watchalong!"
+                                    className="w-full h-full object-cover"
+                                />
                             </div>
                         )}
 

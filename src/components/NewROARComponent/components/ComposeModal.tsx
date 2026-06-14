@@ -380,6 +380,25 @@ interface Props {
   onOpenQuiz?: () => void; // NEW — handed off from index.tsx
 }
 
+const MEMORY_GIFS = [
+  { id: "phew",        label: "Phew!",        path: "/gifs/memory/sweatingflowers.gif" },
+  { id: "angry",       label: "Angry",        path: "/gifs/memory/angryoffice.gif" },
+  { id: "wow",         label: "WOW!",         path: "/gifs/memory/formula1.gif" },
+  { id: "frustrated",  label: "Frustrated",   path: "/gifs/memory/frustratedhead.gif" },
+  { id: "happy",       label: "Happy",        path: "/gifs/memory/happychrispratt.gif" },
+  { id: "called-it",   label: "I Told You!",  path: "/gifs/memory/jimmyfallon.gif" },
+  { id: "hype",        label: "Hype",         path: "/gifs/memory/joerogan.gif" },
+  { id: "loser",       label: "L",            path: "/gifs/memory/lloser.gif" },
+  { id: "no-way",      label: "No Way",       path: "/gifs/memory/nowaywow.gif" },
+  { id: "pray",        label: "Pray",         path: "/gifs/memory/praygameshow.gif" },
+  { id: "sad",         label: "Heartbreak",   path: "/gifs/memory/sadinlove.gif" },
+];
+
+const SF360_TAGS = [
+  "Scenes", "Called It", "Game Breaking", "Survived",
+  "Loading...", "This is ours", "Excuse me", "Pain", "Investigate this",
+];
+
 export default function ComposeModal({ open, onClose, onPost, initialType, onOpenQuiz }: Props) {
   const [selected, setSelected] = useState<string | null>(null);
   const [text, setText] = useState("");
@@ -394,6 +413,8 @@ export default function ComposeModal({ open, onClose, onPost, initialType, onOpe
   const [postText, setPostText] = useState("");
   const [mediaFiles, setMediaFiles] = useState<File[]>([]);
   const [domReady, setDomReady] = useState(false);
+  const [selectedGif, setSelectedGif] = useState<string | null>(null);
+  const [selectedTag, setSelectedTag] = useState<string | null>(null);
 
   useEffect(() => { setDomReady(true); }, []);
 
@@ -456,6 +477,8 @@ export default function ComposeModal({ open, onClose, onPost, initialType, onOpe
     setPostText("");
     setMediaFiles([]);
     setMatch("None / General");
+    setSelectedGif(null);   // ADD
+    setSelectedTag(null);
   };
 
   const canPost =
@@ -463,7 +486,7 @@ export default function ComposeModal({ open, onClose, onPost, initialType, onOpe
     (selected === "prediction" && text.trim()) ||
     // (selected === "debate" && sideA.trim() && sideB.trim()) ||
     (selected === "debate" && text.trim() && sideA.trim() && sideB.trim()) ||
-    (selected === "memory" && text.trim()) ||
+    (selected === "raw_reactions" && text.trim()) ||
     (selected === "post" && (postText.trim() || mediaFiles.length > 0));
 
   const handlePost = () => {
@@ -478,6 +501,8 @@ export default function ComposeModal({ open, onClose, onPost, initialType, onOpe
       memCtx,
       sport,
       mediaFiles: selected === "post" ? mediaFiles : [],
+      gifUrl: selectedGif ? MEMORY_GIFS.find(g => g.id === selectedGif)?.path : undefined,  // ADD
+      sf360Tag: selectedTag ?? undefined,  // ADD
     });
     onClose();
   };
@@ -532,7 +557,7 @@ export default function ComposeModal({ open, onClose, onPost, initialType, onOpe
                     {selected === "hot_take" && "Create Hot Take"}
                     {selected === "prediction" && "Create Prediction"}
                     {selected === "debate" && "Create Debate"}
-                    {selected === "memory" && "Create Memory"}
+                    {selected === "raw_reactions" && "Create Raw Reactions"}
                     {selected === "post" && "Create Post"}
                     {!selected && "Create"}
                   </h2>
@@ -583,7 +608,7 @@ export default function ComposeModal({ open, onClose, onPost, initialType, onOpe
                 ) : (
                   <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
                     {/* Hot Take / Memory */}
-                    {(selected === "hot_take" || selected === "memory") && (
+                    {/* {(selected === "hot_take" || selected === "memory") && (
                       <>
                         <textarea
                           value={text}
@@ -592,6 +617,78 @@ export default function ComposeModal({ open, onClose, onPost, initialType, onOpe
                           placeholder={selected === "hot_take" ? "What's your boldest take?" : "Your memory or flashback moment..."}
                           style={inputStyle}
                         />
+                      </>
+                    )} */}
+                    {selected === "hot_take" && (
+                      <textarea
+                        value={text}
+                        onChange={(e) => setText(e.target.value)}
+                        rows={4}
+                        placeholder="What's your boldest take?"
+                        style={inputStyle}
+                      />
+                    )}
+
+                    {selected === "raw_reactions" && (
+                      <>
+                        <textarea
+                          value={text}
+                          onChange={(e) => setText(e.target.value)}
+                          rows={3}
+                          placeholder="Your memory or flashback moment..."
+                          style={inputStyle}
+                        />
+
+                        <label style={{ fontSize: 11, color: "var(--text-muted)", display: "block", marginTop: 14, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                          Add a reaction GIF
+                        </label>
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6 }}>
+                          {MEMORY_GIFS.map((gif) => {
+                            const active = selectedGif === gif.id;
+                            return (
+                              <div
+                                key={gif.id}
+                                onClick={() => setSelectedGif(active ? null : gif.id)}
+                                style={{
+                                  aspectRatio: "1", borderRadius: 10, overflow: "hidden", cursor: "pointer",
+                                  border: `2px solid ${active ? "var(--accent-magenta)" : "rgba(255,255,255,0.08)"}`,
+                                  position: "relative", background: "rgba(0,0,0,0.3)",
+                                }}
+                              >
+                                <img src={gif.path} alt={gif.label} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                                {active && (
+                                  <div style={{ position: "absolute", top: 3, right: 3, width: 14, height: 14, borderRadius: "50%", background: "var(--accent-magenta)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                    <span style={{ fontSize: 8, color: "#fff" }}>✓</span>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+
+                        <label style={{ fontSize: 11, color: "var(--text-muted)", display: "block", marginTop: 14, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                          SF360 Tag
+                        </label>
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: 7 }}>
+                          {SF360_TAGS.map((tag) => {
+                            const active = selectedTag === tag;
+                            return (
+                              <button
+                                key={tag}
+                                type="button"
+                                onClick={() => setSelectedTag(active ? null : tag)}
+                                style={{
+                                  padding: "7px 13px", borderRadius: 999, fontSize: 12, fontWeight: 600, cursor: "pointer",
+                                  border: `1.5px solid ${active ? "var(--accent-magenta)" : "rgba(255,255,255,0.15)"}`,
+                                  background: active ? "rgba(233,30,140,0.15)" : "transparent",
+                                  color: active ? "var(--accent-magenta)" : "rgba(255,255,255,0.6)",
+                                }}
+                              >
+                                {tag}
+                              </button>
+                            );
+                          })}
+                        </div>
                       </>
                     )}
 

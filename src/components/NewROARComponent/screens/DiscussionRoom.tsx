@@ -432,7 +432,7 @@ const MODE_COLOR: Record<string, string> = {
   prediction: "var(--gold)",
   hottake: "#f87171",
   debate: "#e91e8c",
-  memory: "#00e8c6",
+  raw_reactions: "#00e8c6",
 };
 
 const MODES = [
@@ -440,7 +440,7 @@ const MODES = [
   { key: "debate" as const, label: "Debate", icon: <Zap size={13} />, color: "#e91e8c", isAction: false },
   { key: "prediction" as const, label: "Predict", icon: <TrendingUp size={13} />, color: "#fbbf24", isAction: false },
   { key: "hottake" as const, label: "Hot Take", icon: <Flame size={13} />, color: "#f87171", isAction: false },
-  { key: "memory" as const, label: "Memory", icon: <History size={13} />, color: "#00e8c6", isAction: false },
+  { key: "raw_reactions" as const, label: "Raw Reactions", icon: <History size={13} />, color: "#00e8c6", isAction: false },
   { key: "quiz" as const, label: "Flash Quiz", icon: <Brain size={13} />, color: "#00e8c6", isAction: true },
 ];
 
@@ -449,7 +449,7 @@ const PLACEHOLDER: Record<string, string> = {
   debate: "My debate side: ",
   prediction: "My prediction: ",
   hottake: "Drop a hot take...",
-  memory: "Flashback: ",
+  raw_reactions: "Share your raw reaction...",
 };
 
 const typeBadgeClass = (type: string) => {
@@ -458,7 +458,7 @@ const typeBadgeClass = (type: string) => {
   if (type === "post") return `${base} bg-[rgba(233,30,140,0.12)] text-[#E91E8C] border border-[rgba(233,30,140,0.2)]`;
   if (type === "hottake") return `${base} bg-[rgba(239,68,68,0.15)] text-[#f87171] border border-[rgba(239,68,68,0.25)]`;
   if (type === "debate") return `${base} bg-[rgba(233,30,140,0.15)] text-[#e91e8c] border border-[rgba(233,30,140,0.25)]`;
-  if (type === "memory") return `${base} bg-[rgba(0,232,198,0.15)] text-[#00e8c6] border border-[rgba(0,232,198,0.25)]`;
+  if (type === "raw_reactions") return `${base} bg-[rgba(0,232,198,0.15)] text-[#00e8c6] border border-[rgba(0,232,198,0.25)]`;
   return `${base} bg-[rgba(255,255,255,0.08)] text-[rgba(255,255,255,0.5)] border border-[rgba(255,255,255,0.1)]`;
 };
 
@@ -466,7 +466,7 @@ const postCardStyle = (type: string): React.CSSProperties => {
   if (type === "prediction") return { background: "linear-gradient(135deg,rgba(255,215,0,0.08),rgba(255,215,0,0.02))", border: "1px solid rgba(255,215,0,0.18)" };
   if (type === "hottake") return { background: "linear-gradient(135deg,rgba(239,68,68,0.08),rgba(239,68,68,0.02))", border: "1px solid rgba(239,68,68,0.18)" };
   if (type === "debate") return { background: "linear-gradient(135deg,rgba(233,30,140,0.08),rgba(233,30,140,0.02))", border: "1px solid rgba(233,30,140,0.18)" };
-  if (type === "memory") return { background: "linear-gradient(135deg,rgba(0,232,198,0.08),rgba(0,232,198,0.02))", border: "1px solid rgba(0,232,198,0.18)" };
+  if (type === "raw_reactions") return { background: "linear-gradient(135deg,rgba(0,232,198,0.08),rgba(0,232,198,0.02))", border: "1px solid rgba(0,232,198,0.18)" };
   return {};
 };
 
@@ -711,7 +711,7 @@ export default function DiscussionRoom({
   const [posts, setPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [input, setInput] = useState("");
-  const [mode, setMode] = useState<"post" | "debate" | "prediction" | "hottake" | "memory">("post");
+  const [mode, setMode] = useState<"post" | "debate" | "prediction" | "hottake" | "raw_reactions">("post");
   const [uploading, setUploading] = useState(false);
   const [attachedUrl, setAttachedUrl] = useState<string | null>(null);
   const [attachedType, setAttachedType] = useState<"image" | "video" | null>(null);
@@ -865,52 +865,54 @@ export default function DiscussionRoom({
 
 
   const fetchMsgs = useCallback(async () => {
-  if (!roomId) return;
-  try {
-    const res = await axios.get(`/api/roar/rooms/${roomId}/messages?t=${Date.now()}`);
-    if (res.data?.success) {
-      setPosts(prev => {                                          // ← use prev
-        const prevMap = Object.fromEntries(prev.map(p => [p.id, p]));
-        return [...res.data.messages].sort((a, b) =>
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        ).map((m: any) => {
-          const existing = prevMap[m.msgId];                     // ← look up old
-          return {
-            id: m.msgId,
-            fan: {
-              username: m.authorUsername,
-              badge: m.authorBadge,
-              avatarUrl: m.authorAvatarUrl || m.avatarUrl || (m.authorUsername === userUsername ? userAvatarUrl : undefined),
-            },
-            text: m.text,
-            fireCount: m.fireCount || 0,
-            nochanceCount: m.noChanceCount || 0,
-            heartCount: m.heartCount || 0,
-            // Use whichever replyCount is higher — server or local optimistic
-            replyCount: Math.max(m.replyCount ?? 0, existing?.replyCount ?? 0),
-            agreeCount: m.agreeCount ?? 0,
-            disagreeCount: m.disagreeCount ?? 0,
-            userVote: m.userVote ?? null,
-            sideA: m.sideA ?? null,
-            sideB: m.sideB ?? null,
-            timeAgo: new Date(m.createdAt).toLocaleDateString([], { month: "short", day: "numeric" }) + " · " + new Date(m.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-            createdAt: m.createdAt,
-            type: m.type,
-            mediaUrls: m.mediaUrls,
-            quizQuestion: m.quizQuestion,
-            quizOptions: m.quizOptions,
-            quizCorrectOption: m.quizCorrectOption,
-            quizUserAnswer: m.quizUserAnswer ?? null,
-            quizTimer: m.quizTimer,
-            quizPoints: m.quizPoints,
-            quizParticipants: m.quizParticipants ?? 0,
-          };
+    if (!roomId) return;
+    try {
+      const res = await axios.get(`/api/roar/rooms/${roomId}/messages?t=${Date.now()}`);
+      if (res.data?.success) {
+        setPosts(prev => {                                          // ← use prev
+          const prevMap = Object.fromEntries(prev.map(p => [p.id, p]));
+          return [...res.data.messages].sort((a, b) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          ).map((m: any) => {
+            const existing = prevMap[m.msgId];                     // ← look up old
+            return {
+              id: m.msgId,
+              fan: {
+                username: m.authorUsername,
+                badge: m.authorBadge,
+                avatarUrl: m.authorAvatarUrl || m.avatarUrl || (m.authorUsername === userUsername ? userAvatarUrl : undefined),
+              },
+              text: m.text,
+              fireCount: m.fireCount || 0,
+              nochanceCount: m.noChanceCount || 0,
+              heartCount: m.heartCount || 0,
+              // Use whichever replyCount is higher — server or local optimistic
+              replyCount: Math.max(m.replyCount ?? 0, existing?.replyCount ?? 0),
+              agreeCount: m.agreeCount ?? 0,
+              disagreeCount: m.disagreeCount ?? 0,
+              userVote: m.userVote ?? null,
+              sideA: m.sideA ?? null,
+              sideB: m.sideB ?? null,
+              timeAgo: new Date(m.createdAt).toLocaleDateString([], { month: "short", day: "numeric" }) + " · " + new Date(m.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+              createdAt: m.createdAt,
+              type: m.type,
+              mediaUrls: m.mediaUrls,
+              quizQuestion: m.quizQuestion,
+              quizOptions: m.quizOptions,
+              quizCorrectOption: m.quizCorrectOption,
+              quizUserAnswer: m.quizUserAnswer ?? null,
+              quizTimer: m.quizTimer,
+              quizPoints: m.quizPoints,
+              quizParticipants: m.quizParticipants ?? 0,
+              memGifUrl: m.memGifUrl ?? null,
+              memTag: m.memTag ?? null,
+            };
+          });
         });
-      });
-    }
-  } catch (e) { console.error(e); }
-  finally { setLoading(false); }
-}, [roomId, userAvatarUrl, userUsername]);
+      }
+    } catch (e) { console.error(e); }
+    finally { setLoading(false); }
+  }, [roomId, userAvatarUrl, userUsername]);
 
 
   // useEffect(() => {
@@ -984,6 +986,8 @@ export default function DiscussionRoom({
           quizQuestion: m.quizQuestion, quizOptions: m.quizOptions,
           quizCorrectOption: m.quizCorrectOption, quizUserAnswer: m.quizUserAnswer ?? null,
           quizTimer: m.quizTimer, quizPoints: m.quizPoints, quizParticipants: m.quizParticipants ?? 0,
+          memGifUrl: m.memGifUrl ?? null,
+          memTag: m.memTag ?? null,
         }, ...p]);
         setInput(""); setAttachedUrl(null); setAttachedType(null);
         // setTimeout(() => listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" }), 50);
@@ -1459,7 +1463,7 @@ export default function DiscussionRoom({
                           : p.type === "hottake" ? "🔥 HOT TAKE"
                             : p.type === "prediction" ? "📊 PREDICT"
                               : p.type === "debate" ? "⚡ DEBATE"
-                                : p.type === "memory" ? "🕰 MEMORY"
+                                : p.type === "raw_reactions" ? "🕰 Raw REACTIONS"
                                   : p.type.toUpperCase()}
                       </span>
                     )}
@@ -1468,6 +1472,39 @@ export default function DiscussionRoom({
                   <p className="text-sm leading-snug mt-2" style={{ color: MODE_COLOR[p.type] || "white" }}>
                     {p.text}
                   </p>
+
+                  {/* Raw Reactions: GIF */}
+                  {p.type === "raw_reactions" && p.memGifUrl && (
+                    <img
+                      src={p.memGifUrl}
+                      alt="reaction gif"
+                      style={{
+                        width: "100%",
+                        maxHeight: 180,
+                        objectFit: "cover",
+                        borderRadius: 12,
+                        marginTop: 8,
+                      }}
+                    />
+                  )}
+
+                  {/* Raw Reactions: SF360 Tag */}
+                  {p.type === "raw_reactions" && p.memTag && (
+                    <span style={{
+                      display: "inline-block",
+                      marginTop: 8,
+                      fontSize: 11,
+                      fontWeight: 700,
+                      padding: "3px 10px",
+                      borderRadius: 999,
+                      background: "rgba(0,232,198,0.12)",
+                      color: "#00e8c6",
+                      border: "1px solid rgba(0,232,198,0.3)",
+                      letterSpacing: "0.04em",
+                    }}>
+                      #{p.memTag}
+                    </span>
+                  )}
 
                   {p.type === "prediction" && (() => {
                     const liveTotal = (p.agreeCount ?? 0) + (p.disagreeCount ?? 0);
@@ -1639,7 +1676,7 @@ export default function DiscussionRoom({
                       </button>
 
                       <button
-                        onClick={e => { e.stopPropagation(); onPostClick?.({ id: p.id, text: p.text, fan: p.fan, timeAgo: p.timeAgo, createdAt: p.createdAt, type: p.type || "post", isDbPost: true, roomId, mediaUrls: p.mediaUrls,  replyCount: p.replyCount, }); }}
+                        onClick={e => { e.stopPropagation(); onPostClick?.({ id: p.id, text: p.text, fan: p.fan, timeAgo: p.timeAgo, createdAt: p.createdAt, type: p.type || "post", isDbPost: true, roomId, mediaUrls: p.mediaUrls, replyCount: p.replyCount, }); }}
                         style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", color: "#9494ad", fontSize: 13, fontWeight: 600 }}
                       >
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

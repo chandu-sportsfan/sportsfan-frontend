@@ -1616,6 +1616,8 @@ export default function HomeFeed({
       sideB: p.sideB,
       memCtx: p.memCtx,
       mediaUrls: p.mediaUrls,
+      memGifUrl: p.memGifUrl,
+    memTag: p.memTag,
       likeCount: p.likeCount ?? 0,
       userLiked: p.userLiked ?? false,
       createdAt: p.createdAt,
@@ -1701,7 +1703,7 @@ export default function HomeFeed({
                   hot_take: <Flame size={16} stroke="url(#pink-orange-grad)" fill="url(#pink-orange-grad)" />,
                   prediction: <TrendingUp size={16} stroke="url(#pink-orange-grad)" />,
                   debate: <Zap size={16} stroke="url(#pink-orange-grad)" fill="url(#pink-orange-grad)" />,
-                  memory: <History size={16} stroke="url(#pink-orange-grad)" />,
+                  raw_reactions: <History size={16} stroke="url(#pink-orange-grad)" />,
                   post: <PenTool size={16} stroke="url(#pink-orange-grad)" />,
                   quiz: <Brain size={16} stroke="url(#pink-orange-grad)" />,
                 };
@@ -2290,11 +2292,11 @@ export default function HomeFeed({
             );
           }
           // ── MEMORY ─────────────────────────────────────────────────────────
-          if (item.type === "memory") {
+          if (item.type === "raw_reactions") {
             return (
               <motion.div key={item.id} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }} className="glass-card" style={{ padding: "16px", cursor: "pointer" }} onClick={() => onPostClick && onPostClick(item)}>
                 <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
-                  <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.06em", padding: "3px 8px", borderRadius: 4, textTransform: "uppercase", background: "rgba(0,232,198,0.1)", color: "var(--teal)", border: "1px solid rgba(0,232,198,0.25)" }}>🕰 Memory</span>
+                  <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.06em", padding: "3px 8px", borderRadius: 4, textTransform: "uppercase", background: "rgba(0,232,198,0.1)", color: "var(--teal)", border: "1px solid rgba(0,232,198,0.25)" }}>🕰 Raw Reactions</span>
                 </div>
                 <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 12 }}>
                   <AvatarWithBadge username={item.fan.username} badge={item.fan.badge} size="sm" avatarUrl={item.fan.avatarUrl} />
@@ -2305,6 +2307,18 @@ export default function HomeFeed({
                 </div>
                 <p style={{ fontWeight: 600, fontSize: 15, lineHeight: 1.55, marginBottom: item.memCtx ? 8 : 0 }}>{item.text}</p>
                 {item.memCtx && <p style={{ fontSize: 12, color: "var(--teal)", fontStyle: "italic", borderLeft: "2px solid var(--teal)", paddingLeft: 10, marginTop: 6 }}>{item.memCtx}</p>}
+                {item.memGifUrl && (
+                  <img
+                    src={item.memGifUrl}
+                    alt=""
+                    style={{ width: "100%", maxHeight: 180, borderRadius: 10, objectFit: "cover", marginTop: 8 }}
+                  />
+                )}
+                {item.memTag && (
+                  <span style={{ fontSize: 11, fontWeight: 700, color: "var(--teal)", marginTop: 6, display: "inline-block" }}>
+                    #{item.memTag}
+                  </span>
+                )}
                 <p style={{ fontSize: 12, color: "var(--text-primary)", fontWeight: 500, marginTop: 10 }}>{fmt(item.fanCount ?? 0)} fans · {item.replies ?? 0} replies</p>
                 {renderCardActions(item)}
               </motion.div>

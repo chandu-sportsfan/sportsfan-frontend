@@ -7,7 +7,7 @@ export interface Fan {
 
 export interface FeedPost {
   id: string;
-  type: "hot_take" | "prediction" | "debate" | "memory" | "match_room";
+  type: "hot_take" | "prediction" | "debate" | "raw_reactions" | "match_room";
   sport: string;
   fan: Fan;
   text?: string;
@@ -24,6 +24,8 @@ export interface FeedPost {
   sideA?: string;
   sideB?: string;
   memCtx?: string;
+   memGifUrl?: string;
+  memTag?: string;
 }
 
 export interface RoomPost {
@@ -123,4 +125,6 @@ export interface ComposePayload {
   memCtx?: string;
   sport?: string;
   mediaFiles?: File[];
+   gifUrl?: string;
+  sf360Tag?: string;
 }

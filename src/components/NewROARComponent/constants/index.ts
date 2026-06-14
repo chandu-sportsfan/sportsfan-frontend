@@ -995,7 +995,8 @@ export const COMPOSE_OPTIONS = [
   { id: "hot_take",  emoji: "🔥", title: "Drop a Hot Take",    desc: "Say what others won't" },
   { id: "prediction",emoji: "📊", title: "Make a Prediction",  desc: "Put your reputation on the line" },
   { id: "debate",    emoji: "⚡", title: "Start a Debate",      desc: "Two sides. One winner." },
-  { id: "memory",    emoji: "🕰", title: "Share a Memory",      desc: "Flashback moment" },
+  // { id: "memory",    emoji: "🕰", title: "Share a Memory",      desc: "Flashback moment" },
+  { id: "raw_reactions", emoji: "🎭", title: "Raw Reactions", desc: "Share your raw reaction to a moment" },
   { id: "post",      emoji: "✏️", title: "Post",                desc: "Share photos, videos or GIFs" },
   { id: "quiz",      emoji: "🧠", title: "Flash Quiz",          desc: "Test your fans with a quick quiz" },
 ];
@@ -1004,7 +1005,7 @@ export const RADIAL_OPTS = [
   { id: "hot_take",   label: "Hot Take",    emoji: "🔥" },
   { id: "prediction", label: "Predict",     emoji: "📊" },
   { id: "debate",     label: "Debate",      emoji: "⚡" },
-  { id: "memory",     label: "Memory",      emoji: "🕰" },
+  { id: "raw_reactions", label: "Raw Reactions", emoji: "🕰" },
   { id: "post",       label: "Post",        emoji: "✏️" },
   { id: "quiz",       label: "Flash Quiz",  emoji: "🧠" },
 ];

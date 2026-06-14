@@ -940,7 +940,7 @@ export default function PostDetailsOverlay({
         )}
 
         {!isMobile && (
-          <div className="flex items-center gap-3 px-5 pt-30 py-3 border-b border-[#252538] bg-[rgba(5,5,8,0.97)] backdrop-blur-[10px] shrink-0">
+          <div className="flex items-center gap-3 px-5 pt-30 lg:pt-0 py-3 border-b border-[#252538] bg-[rgba(5,5,8,0.97)] backdrop-blur-[10px] shrink-0">
             <button onClick={() => onClose(comments.length)} className="bg-transparent border-none text-white cursor-pointer p-1 flex items-center min-w-9 min-h-9">
               <ChevronLeft size={22} />
             </button>

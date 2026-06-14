@@ -1044,7 +1044,7 @@ export default function ROARApp() {
   const handlePost = useCallback(
     async (payload: any) => {
       try {
-        const postType = ["hot_take", "prediction", "debate", "memory", "post", "quiz"].includes(payload.type)
+        const postType = ["hot_take", "prediction", "debate", "raw_reactions", "post", "quiz"].includes(payload.type)
           ? payload.type
           : "hot_take";
 
@@ -1061,7 +1061,7 @@ export default function ROARApp() {
           });
           mediaUrls = await Promise.all(uploadPromises);
         }
-        const ROOM_NATIVE_TYPES = ["post", "chat", "hot_take", "hottake", "prediction", "debate", "memory"];
+        const ROOM_NATIVE_TYPES = ["post", "chat", "hot_take", "hottake", "prediction", "debate", "raw_reactions"];
 
         const isRoomNative =
           overlay === "room" &&
@@ -1077,7 +1077,7 @@ export default function ROARApp() {
             hot_take: "hottake",
             hottake: "hottake",
             debate: "debate",
-            memory: "memory",
+            raw_reactions: "raw_reactions",
             post: "post",
             chat: "chat",
           };
@@ -1098,6 +1098,8 @@ export default function ROARApp() {
             mediaUrls: payload.mediaUrls,
             sideA: payload.sideA,
             sideB: payload.sideB,
+            memGifUrl: payload.gifUrl ?? undefined,   // ← ADD
+  memTag: payload.sf360Tag ?? undefined,   
           });
           if (res.data?.success) {
             showToast("✏️ Post is live in room!");
@@ -1131,6 +1133,10 @@ export default function ROARApp() {
               quizTimer: payload.quizTimer,
               quizPoints: payload.quizPoints,
             }),
+            ...(postType === "raw_reactions" && {
+              memGifUrl: payload.gifUrl,
+              memTag: payload.sf360Tag,
+            }),
           });
 
           if (res.data?.success) {
@@ -1138,7 +1144,7 @@ export default function ROARApp() {
               hot_take: "🔥 Hot Take is live · 47 fans may see it",
               prediction: "📊 Prediction posted · Let's see if you're right",
               debate: "⚡ Debate started · Get the fans talking",
-              memory: "🕰 Memory shared · OG fans will feel this",
+              raw_reactions: "🎭 Raw Reaction shared · OG fans will feel this", 
               post: "✏️ Post is live · Fans can see it now",
               quiz: "🧠 Flash Quiz launched · Let the fans answer!",
             };

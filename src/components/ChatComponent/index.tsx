@@ -1300,7 +1300,7 @@ export default function ChatComponent() {
               </button>
             </div>
           ) : (
-            <div className="flex items-end  sm:gap-2 w-full min-w-0">              {/* Attach */}
+              <div className="flex items-end mb-[50px] lg:mb-0 sm:gap-2 w-full min-w-0">              {/* Attach */}
               <div className="relative">
                 {/* <button onClick={e => { e.stopPropagation(); setShowAttach(s => !s); setShowEmoji(false); }}
                   className="w-10 h-10 rounded-full flex items-center justify-center transition flex-shrink-0 mb-0.5"
@@ -1317,9 +1317,9 @@ export default function ChatComponent() {
               </div>
 
               {/* Input */}
-              <div className="flex-1 gap-2 min-w-0 flex items-end rounded-[24px] px-3 sm:px-4 py-2.5 border min-h-[46px]"
+                <div className="flex-1  gap-2 min-w-0 flex items-end rounded-[24px] px-3 sm:px-4 py-2.5 border min-h-[46px]"
 
-                style={{ background: "#111318", borderColor: "rgba(200,112,90,0.14)" }}
+                  style={{ background: "#1c1d1fff", borderColor: "rgba(200,112,90,0.14)" }}
                 onFocus={() => undefined}
               >
                 <input

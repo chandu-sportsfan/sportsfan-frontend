@@ -1353,58 +1353,48 @@ export default function Header() {
   );
 
   // ── Profile menu ──────────────────────────────────────────────────────────
-  const ProfileMenu = useCallback(
-    ({ onClose }: { onClose: () => void }) => (
-      <div className="py-1.5">
-        <Link
-          href="/MainModules/Profile"
-          onClick={onClose}
-          className="flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors group"
-        >
-          <User
-            size={16}
-            className="text-gray-400 group-hover:text-pink-400 transition-colors"
-          />
-          <span className="text-white group-hover:text-pink-400 text-sm font-medium">Profile</span>
-        </Link>
-        <div className="h-px bg-white/5 mx-4" />
-        <Link
-          href="/MainModules/RoarPreference"
-          onClick={onClose}
-          className="flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors group"
-        >
+ const ProfileMenu = useCallback(
+  ({ onClose }: { onClose: () => void }) => (
+    <div className="py-1.5">
+      <Link
+        href="/MainModules/Profile"
+        onClick={onClose}
+        className="flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors group"
+      >
+        <User
+          size={16}
+          className="text-gray-400 group-hover:text-pink-400 transition-colors"
+        />
+        <span className="text-white group-hover:text-pink-400 text-sm font-medium">Profile</span>
+      </Link>
+      <div className="h-px bg-white/5 mx-4" />
+      <Link
+        href="/MainModules/RoarPreference"
+        onClick={onClose}
+        className="flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors group"
+      >
+        <div className="relative">
           <SlidersHorizontal size={16} className="text-pink-400" />
-          <span className="text-pink-400 text-sm font-medium">Preferences</span>
-          <span className="ml-auto text-[8px] font-semibold bg-pink-500/20 text-pink-400 px-2 py-0.5 rounded-full border border-pink-500/30">
-            Recommended
+          <span className="absolute -top-2 -right-3 text-[8px] font-bold bg-pink-500 text-white px-1 rounded-full">
+            REC
           </span>
-        </Link>
-        <div className="h-px bg-white/5 mx-4" />
-        {/* <Link
-          href="/MainModules/Settings"
-          onClick={onClose}
-          className="flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors group"
-        >
-          <Settings
-            size={16}
-            className="text-gray-400 group-hover:text-white transition-colors"
-          />
-          <span className="text-white text-sm font-medium">Settings</span>
-        </Link> */}
-        <div className="h-px bg-white/5 mx-4" />
-        <LogoutButton className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 hover:cursor-pointer transition-colors group">
-          <LogOut
-            size={16}
-            className="text-gray-400 group-hover:text-pink-400 transition-colors"
-          />
-          <span className="text-white group-hover:text-pink-400 text-sm font-medium transition-colors">
-            Logout
-          </span>
-        </LogoutButton>
-      </div>
-    ),
-    []
-  );
+        </div>
+        <span className="text-pink-400 text-sm font-medium">Preferences</span>
+      </Link>
+      <div className="h-px bg-white/5 mx-4" />
+      <LogoutButton className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 hover:cursor-pointer transition-colors group">
+        <LogOut
+          size={16}
+          className="text-gray-400 group-hover:text-pink-400 transition-colors"
+        />
+        <span className="text-white group-hover:text-pink-400 text-sm font-medium transition-colors">
+          Logout
+        </span>
+      </LogoutButton>
+    </div>
+  ),
+  []
+);
 
   return (
     <>

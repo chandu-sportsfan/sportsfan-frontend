@@ -6,6 +6,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import axios from "axios";
+import { emitSxpActivityRefresh } from "@/lib/sxpEvents";
 import AvatarWithBadge from "../components/AvatarWithBadge";
 import NewHomePage from "../../NewHomePageComponent/newhomepage";
 import { SplitBar, FilterPills } from "../components/shared";
@@ -117,6 +118,7 @@ function QuizCard({
 
           if (res.data.isCorrect) {
             onToast("✅ Correct! +2 points awarded");
+            emitSxpActivityRefresh();
           } else {
             onToast(`❌ Wrong! Correct answer was ${res.data.correctOption}`);
           }

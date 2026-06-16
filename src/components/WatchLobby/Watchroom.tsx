@@ -2956,25 +2956,9 @@ function LiveCameraFeed({
 
 
 
-                    {/* Mic, Video, Screen Share & Record buttons (Host/Mods ONLY) */}
+                    {/* Record button (Host/Mods ONLY) */}
                     {isModerator && (
                         <div className="absolute top-1.5 right-1.5 flex items-center gap-1.5 z-[9999] bg-[#111]/80 backdrop-blur-md px-1.5 py-1 rounded-lg border border-white/10">
-                            <button
-                                type="button"
-                                onClick={toggleMic}
-                                className={`w-6 h-6 rounded-md flex items-center justify-center transition-all hover:scale-110 ${micOn ? "bg-white/20 text-white" : "bg-red-600 text-white"}`}
-                                title="Toggle Microphone"
-                            >
-                                {micOn ? <Mic size={12} /> : <MicOff size={12} />}
-                            </button>
-                            <button
-                                type="button"
-                                onClick={toggleVid}
-                                className={`w-6 h-6 rounded-md flex items-center justify-center transition-all hover:scale-110 ${vidOn ? "bg-white/20 text-white" : "bg-red-600 text-white"}`}
-                                title="Toggle Camera"
-                            >
-                                {vidOn ? <Video size={12} /> : <VideoOff size={12} />}
-                            </button>
                             <button
                                 type="button"
                                 onClick={toggleRecording}
@@ -2990,19 +2974,7 @@ function LiveCameraFeed({
                         </div>
                     )}
 
-                    {/* Mic button overlay (Viewers ONLY) */}
-                    {!isModerator && (
-                        <div className="absolute top-1.5 right-1.5 flex items-center gap-1.5 z-[9999] bg-[#111]/80 backdrop-blur-md px-1.5 py-1 rounded-lg border border-white/10">
-                            <button
-                                type="button"
-                                onClick={toggleMic}
-                                className={`w-6 h-6 rounded-md flex items-center justify-center transition-all hover:scale-110 ${micOn ? "bg-white/20 text-white" : "bg-red-600 text-white"}`}
-                                title="Toggle Microphone"
-                            >
-                                {micOn ? <Mic size={12} /> : <MicOff size={12} />}
-                            </button>
-                        </div>
-                    )}
+
 
                     {/* Premium Glassmorphic Recording Selector Popover */}
                     {isModerator && showRecordingOptions && customRecordingState === 'idle' && (
@@ -3525,6 +3497,20 @@ export default function WatchRoom({ room, onBack }: Props) {
     const [jitsiParticipants, setJitsiParticipants] = useState<any[]>([]);
     const jitsiApiRef = useRef<any>(null);
     const [jitsiApi, setJitsiApi] = useState<any>(null);
+    const [micOn, setMicOn] = useState(true);
+    const [vidOn, setVidOn] = useState(true);
+
+    const toggleMic = () => {
+        if (jitsiApiRef.current) {
+            jitsiApiRef.current.executeCommand('toggleAudio');
+        }
+    };
+
+    const toggleVid = () => {
+        if (jitsiApiRef.current) {
+            jitsiApiRef.current.executeCommand('toggleVideo');
+        }
+    };
 
     // Creation Modals Visibility
     const [showPredictionModal, setShowPredictionModal] = useState(false);
@@ -4540,6 +4526,12 @@ export default function WatchRoom({ room, onBack }: Props) {
                                 onApiReady={(api) => {
                                     jitsiApiRef.current = api;
                                     setJitsiApi(api);
+                                    api.addListener("audioMuteStatusChanged", (data: { muted: boolean }) => {
+                                        setMicOn(!data.muted);
+                                    });
+                                    api.addListener("videoMuteStatusChanged", (data: { muted: boolean }) => {
+                                        setVidOn(!data.muted);
+                                    });
                                 }}
                                 onReactionReceived={(reaction) => {
                                     triggerMoment(reaction, false);
@@ -4555,6 +4547,47 @@ export default function WatchRoom({ room, onBack }: Props) {
                             <span className="text-white/80 text-xs font-bold tracking-wide" style={{ textShadow: '0 1px 3px rgba(0,0,0,0.5)' }}>SportsFan 360</span>
                         </div>
                     </div>
+
+                    {/* HTML Audio/Video Control Panel (100% click-reliable on all devices, no overlap) */}
+                    {userName && (
+                        <div className="flex flex-row items-center justify-between gap-3 bg-[#141416] border border-white/5 rounded-xl p-3 mt-3 mx-3 sm:mx-4 lg:mx-6 shadow-2xl">
+                            <div className="flex items-center gap-2">
+                                <span className={`w-2 h-2 rounded-full ${micOn ? "bg-green-500 animate-pulse" : "bg-red-500"}`} />
+                                <span className="text-[10px] font-extrabold uppercase tracking-wider text-gray-300">
+                                    {micOn ? "Mic Active" : "Mic Muted"}
+                                </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    type="button"
+                                    onClick={toggleMic}
+                                    className={`flex items-center justify-center gap-1.5 px-3 py-1.5 border rounded-xl text-[10px] font-black uppercase tracking-wider transition-all duration-200 active:scale-95 cursor-pointer ${
+                                        micOn 
+                                            ? "bg-green-600/10 border-green-500/30 text-green-400 hover:bg-green-600/20" 
+                                            : "bg-red-600 border-red-500 text-white hover:bg-red-700"
+                                    }`}
+                                >
+                                    {micOn ? <Mic size={12} /> : <MicOff size={12} />}
+                                    <span>{micOn ? "Mute" : "Unmute"}</span>
+                                </button>
+
+                                {(userRole === 'Host' || userRole === 'Co-Host' || userRole === 'Moderator') && (
+                                    <button
+                                        type="button"
+                                        onClick={toggleVid}
+                                        className={`flex items-center justify-center gap-1.5 px-3 py-1.5 border rounded-xl text-[10px] font-black uppercase tracking-wider transition-all duration-200 active:scale-95 cursor-pointer ${
+                                            vidOn 
+                                                ? "bg-green-600/10 border-green-500/30 text-green-400 hover:bg-green-600/20" 
+                                                : "bg-red-600 border-red-500 text-white hover:bg-red-700"
+                                        }`}
+                                    >
+                                        {vidOn ? <Video size={12} /> : <VideoOff size={12} />}
+                                        <span>{vidOn ? "Stop Cam" : "Start Cam"}</span>
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    )}
 
                     {/* Zoom-style Host Reactions */}
                     {(userRole === 'Host' || userRole === 'Co-Host' || userRole === 'Moderator') && (

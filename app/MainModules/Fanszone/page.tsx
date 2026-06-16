@@ -1,5 +1,5 @@
 "use client";
-// MainModules/Fanszone/page.tsx  (or wherever your FanZone page lives)
+// MainModules/Fanszone/page.tsx
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useState, useMemo, useEffect, useRef } from "react";
@@ -31,6 +31,7 @@ type ActivityKey =
   | "roarDebate"
   | "roarMemory"
   | "roarPost"
+  | "roarReaction"   // FIX 2: added for ROAR_RAW_REACTIONS
   | "watchDrop"
   | "like"
   | "share"
@@ -74,52 +75,46 @@ interface LeaderboardContextType {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// ROOT CAUSE FIX 1 — CENTRALISED TYPE → ActivityKey MAP
+// FIX 1 + FIX 2 — CENTRALISED TYPE → ActivityKey MAP
 //
-// Previously normalizeActivityKey() did substring matching on a concatenated
-// "type + label" string.  That caused:
-//   • ROAR_HOT_TAKE  → fell through to "other" (no "hot take" check existed)
-//   • ROAR_PREDICTION → matched "prediction" inside the trivia branch
-//   • ROAR_DEBATE    → matched "debate" inside the fanBattle branch
-//
-// The fix: check the raw type string against this map FIRST.  Fuzzy matching
-// is only used as a last resort for unknown/legacy type strings.
+// FIX 1: Added ROAR_RAW_REACTIONS → "roarReaction" so it no longer falls
+//         through to "other" with wrong icon/colour/category.
 // ─────────────────────────────────────────────────────────────────────────────
 const ACTIVITY_TYPE_MAP: Record<string, ActivityKey> = {
   // Audio Drop — multiple aliases that appear in the wild
-  AUDIO_DROP:         "audioDrop",
-  LISTEN_COMPLETE:    "audioDrop",
-  LISTEN_AUDIO_DROP:  "audioDrop",
+  AUDIO_DROP:           "audioDrop",
+  LISTEN_COMPLETE:      "audioDrop",
+  LISTEN_AUDIO_DROP:    "audioDrop",
 
   // Fan Battle
-  FAN_BATTLE_WIN:     "fanBattleWin",
-  FAN_BATTLE_PLAY:    "fanBattlePlay",
+  FAN_BATTLE_WIN:       "fanBattleWin",
+  FAN_BATTLE_PLAY:      "fanBattlePlay",
 
   // Fan Zone Post
-  POST_CREATED:       "post",
+  POST_CREATED:         "post",
 
   // Trivia
-  TRIVIA_CORRECT:     "trivia",
+  TRIVIA_CORRECT:       "trivia",
 
   // Account / Referral
-  REGISTRATION:       "register",
-  INVITE_ACCEPTED:    "invite",
+  REGISTRATION:         "register",
+  INVITE_ACCEPTED:      "invite",
 
   // ROAR
-  ROAR_HOT_TAKE:      "roarHotTake",
-  ROAR_PREDICTION:    "roarPrediction",
-  ROAR_DEBATE:        "roarDebate",
-  ROAR_MEMORY:        "roarMemory",
-  ROAR_POST:          "roarPost",
+  ROAR_HOT_TAKE:        "roarHotTake",
+  ROAR_PREDICTION:      "roarPrediction",
+  ROAR_DEBATE:          "roarDebate",
+  ROAR_MEMORY:          "roarMemory",
+  ROAR_POST:            "roarPost",
+  ROAR_RAW_REACTIONS:   "roarReaction",  // FIX 2: was missing, now mapped
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// ROOT CAUSE FIX 2 — EXPANDED ACTIVITY_META
+// FIX 2 — EXPANDED ACTIVITY_META
 //
-// Previously there was no entry for ROAR_HOT_TAKE, ROAR_PREDICTION,
-// ROAR_DEBATE, ROAR_MEMORY, or ROAR_POST, so they inherited the "other"
-// fallback: wrong icon, wrong colour, wrong category, and wrong type label
-// which broke the Earning History category filter.
+// Added "roarReaction" entry for ROAR_RAW_REACTIONS so it gets the right
+// icon, colour, and "ROAR" category (instead of falling to "other" /
+// "Engagement" which broke the category filter).
 // ─────────────────────────────────────────────────────────────────────────────
 const ACTIVITY_META: Record<ActivityKey, {
   action:    string;
@@ -191,6 +186,13 @@ const ACTIVITY_META: Record<ActivityKey, {
     color: "text-orange-400", hexColor: "#fb923c",
     typeColor: "text-orange-400 border-orange-400/30 bg-orange-400/5",
   },
+  // FIX 2: new entry — was previously missing, causing ROAR_RAW_REACTIONS to
+  // render as "other" (grey trophy icon, Engagement category, wrong badge).
+  roarReaction: {
+    action: "Reacted on ROAR", type: "ROAR", icon: ThumbsUp,
+    color: "text-fuchsia-400", hexColor: "#e879f9",
+    typeColor: "text-fuchsia-400 border-fuchsia-400/30 bg-fuchsia-400/5",
+  },
 
   // Legacy / less-used
   watchDrop: {
@@ -213,6 +215,31 @@ const ACTIVITY_META: Record<ActivityKey, {
     color: "text-gray-300", hexColor: "#d4d4d8",
     typeColor: "text-gray-300 border-gray-400/30 bg-white/5",
   },
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// FIX 6 — CLEAN SOURCE BADGE LABELS
+//
+// Previously readableSource("ROAR_HOT_TAKE") → "Roar Hot Take", producing
+// inconsistent badge text in the Earning History table.  This map collapses
+// all ROAR variants to a single "ROAR" badge and normalises audio-drop aliases.
+// ─────────────────────────────────────────────────────────────────────────────
+const SOURCE_LABEL_MAP: Record<string, string> = {
+  ROAR_HOT_TAKE:        "ROAR",
+  ROAR_PREDICTION:      "ROAR",
+  ROAR_DEBATE:          "ROAR",
+  ROAR_MEMORY:          "ROAR",
+  ROAR_POST:            "ROAR",
+  ROAR_RAW_REACTIONS:   "ROAR",
+  LISTEN_AUDIO_DROP:    "LISTEN AUDIO DROP",
+  LISTEN_COMPLETE:      "LISTEN AUDIO DROP",
+  AUDIO_DROP:           "LISTEN AUDIO DROP",
+  FAN_BATTLE_WIN:       "FAN BATTLE",
+  FAN_BATTLE_PLAY:      "FAN BATTLE",
+  TRIVIA_CORRECT:       "TRIVIA",
+  POST_CREATED:         "FAN ZONE POST",
+  REGISTRATION:         "REGISTRATION",
+  INVITE_ACCEPTED:      "REFERRAL",
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -247,7 +274,7 @@ function makeHistoryItem(
 }
 
 /**
- * ROOT CAUSE FIX 3 — normalizeActivityKey
+ * normalizeActivityKey
  *
  * Strategy (in priority order):
  *   1. Direct lookup in ACTIVITY_TYPE_MAP using the raw `type` string.
@@ -263,22 +290,23 @@ function normalizeActivityKey(type: string, label: string): ActivityKey {
   // 2. Fuzzy fallback — concatenate both fields, lowercase, normalise separators
   const value = `${type} ${label}`.toLowerCase().replace(/[_-]+/g, " ");
 
-  if (value.includes("audio") || value.includes("listen"))   return "audioDrop";
-  if (value.includes("battle win"))                          return "fanBattleWin";
-  if (value.includes("battle play") || value.includes("fan battle")) return "fanBattlePlay";
-  if (value.includes("trivia") || value.includes("quiz"))   return "trivia";
+  if (value.includes("audio") || value.includes("listen"))              return "audioDrop";
+  if (value.includes("battle win"))                                      return "fanBattleWin";
+  if (value.includes("battle play") || value.includes("fan battle"))    return "fanBattlePlay";
+  if (value.includes("trivia") || value.includes("quiz"))               return "trivia";
   if (value.includes("register") || value.includes("signup") ||
-      value.includes("sign up") || value.includes("joined")) return "register";
-  if (value.includes("invite") || value.includes("referral")) return "invite";
-  if (value.includes("hot take"))                            return "roarHotTake";
-  if (value.includes("prediction"))                          return "roarPrediction";
-  if (value.includes("debate"))                              return "roarDebate";
-  if (value.includes("memory"))                              return "roarMemory";
-  if (value.includes("roar post"))                           return "roarPost";
-  if (value.includes("watch") || value.includes("video"))   return "watchDrop";
-  if (value.includes("like"))                                return "like";
-  if (value.includes("share") && !value.includes("roar"))   return "share";
-  if (value.includes("post") || value.includes("create"))   return "post";
+      value.includes("sign up") || value.includes("joined"))            return "register";
+  if (value.includes("invite") || value.includes("referral"))           return "invite";
+  if (value.includes("hot take"))                                        return "roarHotTake";
+  if (value.includes("prediction"))                                      return "roarPrediction";
+  if (value.includes("debate"))                                          return "roarDebate";
+  if (value.includes("memory"))                                          return "roarMemory";
+  if (value.includes("roar post"))                                       return "roarPost";
+  if (value.includes("reaction") && value.includes("roar"))             return "roarReaction";
+  if (value.includes("watch") || value.includes("video"))               return "watchDrop";
+  if (value.includes("like"))                                            return "like";
+  if (value.includes("share") && !value.includes("roar"))               return "share";
+  if (value.includes("post") || value.includes("create"))               return "post";
 
   return "other";
 }
@@ -296,10 +324,14 @@ function readableSource(source: string) {
     .replace(/\b\w/g, (l) => l.toUpperCase());
 }
 
+// FIX 1 — metadataText now includes "sport" and "postId" so ROAR activities
+// (whose metadata is { postId, sport }) get a meaningful details string instead
+// of falling through to a blank / raw-type fallback.
 function metadataText(metadata: ActivityItem["metadata"]) {
   const keys = [
     "title", "postTitle", "audioTitle", "videoTitle", "battleTitle",
     "matchName", "question", "resourceName", "name", "transactionId",
+    "sport",   // FIX 1: ROAR activities carry { postId, sport }
   ];
   for (const key of keys) {
     const value = metadata?.[key];
@@ -310,11 +342,18 @@ function metadataText(metadata: ActivityItem["metadata"]) {
 }
 
 function activityToHistoryItem(activity: ActivityItem): HistoryItem {
-  const key       = normalizeActivityKey(activity.type, activity.label);
-  const rawSource = activity.type || key;
-  const readable  = readableSource(rawSource);
-  const details   = metadataText(activity.metadata) || activity.label || readable;
-  const meta      = ACTIVITY_META[key];
+  const key      = normalizeActivityKey(activity.type, activity.label);
+  const rawType  = (activity.type || key).toUpperCase();
+
+  // FIX 6: Use the SOURCE_LABEL_MAP for a clean, consistent badge label.
+  // Fall back to title-cased readable string only for unknown types.
+  const source   = SOURCE_LABEL_MAP[rawType] ?? readableSource(activity.type || key);
+
+  // FIX 1: metadataText now picks up "sport", so ROAR details show the sport
+  // (e.g. "cricket") rather than the raw type string or a blank cell.
+  const details  = metadataText(activity.metadata) || activity.label || source;
+
+  const meta     = ACTIVITY_META[key];
   return makeHistoryItem(
     key, details, Number(activity.points) || 0,
     new Date(normalizeTimestamp(activity.createdAt)),
@@ -323,7 +362,7 @@ function activityToHistoryItem(activity: ActivityItem): HistoryItem {
     activity.label && activity.label !== activity.type
       ? activity.label
       : meta.action,
-    readable
+    source
   );
 }
 
@@ -342,6 +381,8 @@ function calculateLevelData(totalXp: number) {
   };
 }
 
+// FIX 4: getEarningBreakdown now accepts the already-filtered (this-month)
+// history so the donut slices are consistent with the "This Month" centre label.
 function getEarningBreakdown(history: HistoryItem[]): CategoryBreakdown[] {
   if (!history.length) return [];
   const total = history.reduce((s, h) => s + h.points, 0);
@@ -519,12 +560,12 @@ function getPreviousMonthLabel() {
 // STATIC DATA
 // ─────────────────────────────────────────────────────────────────────────────
 const earnPointsActions = [
-  { icon: Megaphone,    title: "Post On ROAR",        xp: "+2 SXP", desc: "Per post on ROAR",       color: "text-orange-400", bg: "bg-orange-400/10" },
-  { icon: MessagesSquare, title: "Start a Debate",    xp: "+2 SXP", desc: "Per debate started",     color: "text-cyan-400",   bg: "bg-cyan-400/10" },
-  { icon: Flame,        title: "Post Hot Take",        xp: "+2 SXP", desc: "Per hot take posted",    color: "text-amber-500",  bg: "bg-amber-500/10" },
-  { icon: TrendingUp,   title: "Share Prediction",    xp: "+2 SXP", desc: "Per prediction shared",  color: "text-lime-400",   bg: "bg-lime-400/10" },
-  { icon: Sparkles,     title: "Share Memory",         xp: "+2 SXP", desc: "Per memory shared",      color: "text-pink-400",   bg: "bg-pink-400/10" },
-  { icon: Headphones,   title: "Listen Audio Drops",  xp: "+2 SXP", desc: "Per drop (90%)",         color: "text-sky-400",    bg: "bg-sky-400/10" },
+  { icon: Megaphone,      title: "Post On ROAR",       xp: "+2 SXP", desc: "Per post on ROAR",      color: "text-orange-400", bg: "bg-orange-400/10" },
+  { icon: MessagesSquare, title: "Start a Debate",      xp: "+2 SXP", desc: "Per debate started",    color: "text-cyan-400",   bg: "bg-cyan-400/10"   },
+  { icon: Flame,          title: "Post Hot Take",        xp: "+2 SXP", desc: "Per hot take posted",   color: "text-amber-500",  bg: "bg-amber-500/10"  },
+  { icon: TrendingUp,     title: "Share Prediction",    xp: "+2 SXP", desc: "Per prediction shared", color: "text-lime-400",   bg: "bg-lime-400/10"   },
+  { icon: Sparkles,       title: "Share Memory",         xp: "+2 SXP", desc: "Per memory shared",     color: "text-pink-400",   bg: "bg-pink-400/10"   },
+  { icon: Headphones,     title: "Listen Audio Drops",  xp: "+2 SXP", desc: "Per drop (90%)",        color: "text-sky-400",    bg: "bg-sky-400/10"    },
 ];
 
 const buildFanZoneShareUrl = () => {
@@ -563,7 +604,8 @@ const copyToClipboard = async (text: string) => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // DONUT CHART
-// Center = This Month's points.  Slices = ALL activity types proportionally.
+// FIX 4: Slices now represent THIS MONTH's activity (caller passes
+// thisMonthHistory), so they are consistent with the "This Month" centre label.
 // ─────────────────────────────────────────────────────────────────────────────
 function DonutChart({
   data,
@@ -667,7 +709,7 @@ function TrendBarChart({
   labels: string[];
   period: TrendPeriod;
 }) {
-  const maxVal = Math.max(...data, 1);
+  const maxVal  = Math.max(...data, 1);
   const hasData = data.some((v) => v > 0);
 
   return (
@@ -812,9 +854,13 @@ export default function FanZoneDashboard() {
   const contextData        = useLeaderboard() as LeaderboardContextType | null;
   const currentUserPoints  = contextData?.currentUserPoints ?? 0;
   const currentUserRank    = contextData?.currentUserRank   ?? 0;
+
+  // FIX 3: ActivityContext limit raised to 200 in ActivityContext.tsx.
+  // Here we simply consume whatever the context provides — no change needed
+  // in this file, but note the companion fix in ActivityContext.tsx.
   const { activities, loading: activitiesLoading } = useActivity();
 
-  // Convert all ActivityItems to HistoryItems — no type filtering, no Audio-Drop special-casing
+  // Convert all ActivityItems to HistoryItems — no type filtering
   const history = useMemo(
     () => activities.map(activityToHistoryItem).sort((a, b) => b.timestamp - a.timestamp),
     [activities]
@@ -835,8 +881,19 @@ export default function FanZoneDashboard() {
     : history.reduce((s, h) => s + h.points, 0);
   const displayPoints = totalPoints.toLocaleString();
 
+  const now            = new Date();
+  const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+  const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1).getTime();
+
+  // FIX 4: Filter history to this month BEFORE passing to getEarningBreakdown
+  // so donut slices match the "This Month" centre label.
+  const thisMonthHistory = useMemo(
+    () => history.filter((h) => h.timestamp >= thisMonthStart),
+    [history, thisMonthStart]
+  );
+
   // All analytics derived from the full history — every activity type included
-  const earningBreakdown = useMemo(() => getEarningBreakdown(history), [history]);
+  const earningBreakdown = useMemo(() => getEarningBreakdown(thisMonthHistory), [thisMonthHistory]);
   const trendAnalytics   = useMemo(() => getTrendAnalytics(history, trendPeriod), [history, trendPeriod]);
   const levelData        = useMemo(() => calculateLevelData(totalPoints), [totalPoints]);
   const { streakMap, currentStreak, longestStreak } =
@@ -874,13 +931,10 @@ export default function FanZoneDashboard() {
 
   const currentMonthLabel  = getCurrentMonthLabel();
   const previousMonthLabel = getPreviousMonthLabel();
-  const now               = new Date();
-  const thisMonthStart    = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
-  const lastMonthStart    = new Date(now.getFullYear(), now.getMonth() - 1, 1).getTime();
 
   const thisMonthPoints = useMemo(
-    () => history.filter((h) => h.timestamp >= thisMonthStart).reduce((s, h) => s + h.points, 0),
-    [history, thisMonthStart]
+    () => thisMonthHistory.reduce((s, h) => s + h.points, 0),
+    [thisMonthHistory]
   );
   const lastMonthPoints = useMemo(
     () => history.filter((h) => h.timestamp >= lastMonthStart && h.timestamp < thisMonthStart)
@@ -1053,12 +1107,12 @@ export default function FanZoneDashboard() {
   const shareButtons = (size: string) => (
     <>
       {[
-        { handler: handleShareToWhatsApp,  src: "/images/share_whatsapp.png", alt: "WhatsApp" },
-        { handler: handleShareToThreads,   src: "/images/share_thread.png",   alt: "Threads"  },
-        { handler: handleShareToInstagram, src: "/images/share_insta.png",    alt: "Instagram"},
-        { handler: handleShareToLinkedIn,  src: "/images/Share_linkedin.png", alt: "LinkedIn" },
-        { handler: handleShareToX,         src: "/images/Share_X.png",        alt: "X"        },
-        { handler: handleCopyLink,         src: "/images/share_copy_link.png",alt: "Copy"     },
+        { handler: handleShareToWhatsApp,  src: "/images/share_whatsapp.png", alt: "WhatsApp"  },
+        { handler: handleShareToThreads,   src: "/images/share_thread.png",   alt: "Threads"   },
+        { handler: handleShareToInstagram, src: "/images/share_insta.png",    alt: "Instagram" },
+        { handler: handleShareToLinkedIn,  src: "/images/Share_linkedin.png", alt: "LinkedIn"  },
+        { handler: handleShareToX,         src: "/images/Share_X.png",        alt: "X"         },
+        { handler: handleCopyLink,         src: "/images/share_copy_link.png",alt: "Copy"      },
       ].map(({ handler, src, alt }) => (
         <button
           key={alt}
@@ -1234,10 +1288,10 @@ export default function FanZoneDashboard() {
                   </div>
                 </div>
 
-                {/* Middle: donut + legend — ALL activity types */}
+                {/* Middle: donut + legend — THIS MONTH's activity (FIX 4) */}
                 <div className="xl:col-span-5 border-t border-white/10 xl:border-t-0 xl:border-l pt-8 xl:pt-0 xl:pl-6 overflow-hidden">
                   <p className="text-[10px] font-black tracking-widest text-gray-500 uppercase mb-4 flex items-center gap-1.5">
-                    Points by Activity (All Time) <InfoIcon />
+                    Points by Activity (This Month) <InfoIcon />
                   </p>
                   <div className="flex flex-col items-center xl:flex-row xl:items-center gap-4">
                     <div className="shrink-0 mx-auto xl:mx-0">
@@ -1350,7 +1404,7 @@ export default function FanZoneDashboard() {
                 </div>
               </div>
 
-              {/* Filters — "ROAR" category added to cover all ROAR activity types */}
+              {/* Filters — "ROAR" category covers all ROAR activity types */}
               <div className="flex flex-wrap gap-3 mb-6">
                 <div className="relative w-48">
                   <LayoutGrid className="w-4 h-4 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2 z-10 pointer-events-none" />

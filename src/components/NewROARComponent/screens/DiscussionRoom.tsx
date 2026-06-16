@@ -391,6 +391,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
+import { emitSxpActivityRefresh } from "@/lib/sxpEvents";
 import AvatarWithBadge from "../components/AvatarWithBadge";
 import { fmt } from "../utils";
 import { RADIAL_OPTS } from "../constants";
@@ -510,6 +511,7 @@ function QuizCard({ post, onToast, onPostClick, roomId }: QuizCardProps) {
           setParticipants(res.data.quizParticipants ?? participants + 1);
           if (res.data.isCorrect) {
             onToast("✅ Correct! +2 points awarded");
+            emitSxpActivityRefresh();
           } else {
             onToast(`❌ Wrong! Correct answer was ${res.data.correctOption}`);
           }

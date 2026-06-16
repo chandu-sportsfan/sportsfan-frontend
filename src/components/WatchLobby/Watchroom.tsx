@@ -2877,7 +2877,7 @@ function LiveCameraFeed({
                             JITSI_WATERMARK_LINK: '',
                             TOOLBAR_BUTTONS: isModerator 
                                 ? ['microphone', 'camera', 'desktop', 'fullscreen', 'hangup', 'chat', 'settings', 'raisehand', 'videoquality', 'participants-pane', 'recording', 'localrecording', 'select-background'] 
-                                : [],
+                                : ['microphone', 'hangup'],
                             FILM_STRIP_MAX_HEIGHT: isModerator ? undefined : 0,
                             DISABLE_VIDEO_BACKGROUND: true,
                         }}

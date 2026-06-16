@@ -257,7 +257,8 @@ async function awardPostPoints(
   userName: string,
   userEmail: string | undefined,
   postId: string
-) {
+) 
+{
   await axios.post("/api/user-points", {
     actualUserId: userId,
     userName,

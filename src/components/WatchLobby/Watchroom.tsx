@@ -2983,7 +2983,20 @@ function LiveCameraFeed({
                                 }`}
                                 title={customRecordingState === 'recording' ? "Stop Recording" : "Start Recording Options"}
                             >
-                                <CircleDot size={12} className={customRecordingState === 'recording' ? "text-white" : "text-red-500"} />
+                            </button>
+                        </div>
+                    )}
+
+                    {/* Mic button overlay (Viewers ONLY) */}
+                    {!isModerator && (
+                        <div className="absolute top-1.5 right-1.5 flex items-center gap-1.5 z-30 bg-[#111]/80 backdrop-blur-md px-1.5 py-1 rounded-lg border border-white/10">
+                            <button
+                                type="button"
+                                onClick={toggleMic}
+                                className={`w-6 h-6 rounded-md flex items-center justify-center transition-all hover:scale-110 ${micOn ? "bg-white/20 text-white" : "bg-red-600 text-white"}`}
+                                title="Toggle Microphone"
+                            >
+                                {micOn ? <Mic size={12} /> : <MicOff size={12} />}
                             </button>
                         </div>
                     )}

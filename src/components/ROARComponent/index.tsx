@@ -7,6 +7,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { createPortal } from "react-dom";
 import axios from "axios";
+import { emitSxpActivityRefresh } from "@/lib/sxpEvents";
 
 /* ─── STYLES ─────────────────────────────────────────────────────────────── */
 const GLOBAL_CSS = `
@@ -7341,6 +7342,7 @@ export default function ROARApp() {
             memory: "🕰 Memory shared · OG fans will feel this",
           };
           showToast(toastMap[postType] || "🔥 Your take is live");
+          emitSxpActivityRefresh();
           fetchPosts();
         }
       } catch (err) {

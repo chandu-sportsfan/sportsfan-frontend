@@ -4437,7 +4437,7 @@ export default function WatchRoom({ room, onBack }: Props) {
                 <div className="flex flex-col flex-1 lg:min-w-0 overflow-y-auto">
 
                     {/* Video player */}
-                    <div className="relative w-full aspect-video bg-[#1a0a14] overflow-hidden">
+                    <div className="relative w-full aspect-video bg-[#1a0a14] overflow-hidden shrink-0">
                         {liveMatch?.videoUrl ? (
                             <>
                                 <VideoPlayer

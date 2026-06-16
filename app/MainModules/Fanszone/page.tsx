@@ -282,13 +282,16 @@ function makeHistoryItem(
  *   2. Fuzzy substring scan of the combined "type label" string.
  *      Retained only as a safety net for unknown/legacy types.
  */
-function normalizeActivityKey(type: string, label: string): ActivityKey {
+function normalizeActivityKey(type: string = "", label: string = ""): ActivityKey {
+  // Add a fallback so undefined types don't crash
+  const safeType = type || "";
+  
   // 1. Direct enum lookup — always preferred
-  const direct = ACTIVITY_TYPE_MAP[type.toUpperCase().replace(/-/g, "_")];
+  const direct = ACTIVITY_TYPE_MAP[safeType.toUpperCase().replace(/-/g, "_")];
   if (direct) return direct;
 
   // 2. Fuzzy fallback — concatenate both fields, lowercase, normalise separators
-  const value = `${type} ${label}`.toLowerCase().replace(/[_-]+/g, " ");
+  const value = `${safeType} ${label}`.toLowerCase().replace(/[_-]+/g, " ");
 
   if (value.includes("audio") || value.includes("listen"))              return "audioDrop";
   if (value.includes("battle win"))                                      return "fanBattleWin";
@@ -342,15 +345,15 @@ function metadataText(metadata: ActivityItem["metadata"]) {
 }
 
 function activityToHistoryItem(activity: ActivityItem): HistoryItem {
-  const key      = normalizeActivityKey(activity.type, activity.label);
-  const rawType  = (activity.type || key).toUpperCase();
+  // Pass safe strings to prevent crashes
+  const safeType = activity.type || "";
+  const key      = normalizeActivityKey(safeType, activity.label);
+  const rawType  = (safeType || key).toUpperCase();
 
   // FIX 6: Use the SOURCE_LABEL_MAP for a clean, consistent badge label.
-  // Fall back to title-cased readable string only for unknown types.
-  const source   = SOURCE_LABEL_MAP[rawType] ?? readableSource(activity.type || key);
+  const source   = SOURCE_LABEL_MAP[rawType] ?? readableSource(safeType || key);
 
   // FIX 1: metadataText now picks up "sport", so ROAR details show the sport
-  // (e.g. "cricket") rather than the raw type string or a blank cell.
   const details  = metadataText(activity.metadata) || activity.label || source;
 
   const meta     = ACTIVITY_META[key];
@@ -358,7 +361,6 @@ function activityToHistoryItem(activity: ActivityItem): HistoryItem {
     key, details, Number(activity.points) || 0,
     new Date(normalizeTimestamp(activity.createdAt)),
     activity.id,
-    // Prefer the human label that came from the server; fall back to our local map
     activity.label && activity.label !== activity.type
       ? activity.label
       : meta.action,

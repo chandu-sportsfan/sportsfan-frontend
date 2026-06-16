@@ -215,7 +215,7 @@ const refreshLeaderboard = useCallback(async () => {
 }, [user?.userId, fetchGlobalLeaderboard]);
 
 const addLocalPoints = useCallback((points: number) => {
-  const userId = user?.userId;
+  const userId = user?.userId || user?.uid || user?.email;
   if (!userId || !points) return;
   const delta = Number(points) || 0;
 
@@ -248,7 +248,7 @@ const addLocalPoints = useCallback((points: number) => {
       ),
     };
   }
-}, [currentUserRank, user?.userId]);
+}, [currentUserRank, user?.email, user?.uid, user?.userId]);
 
   // Only fires when auth is confirmed ready — avoids spurious calls with
   // undefined userId during the initial auth hydration.

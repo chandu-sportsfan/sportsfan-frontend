@@ -4057,8 +4057,20 @@ export default function WatchRoom({ room, onBack }: Props) {
         });
     }, [chats, userName, onBack]);
 
-    // No body overflow lock — let the page scroll naturally.
-    // The watchroom uses flex layout so internal panels handle their own scroll.
+    // Request camera/mic permissions at the parent level on mount to ensure iOS Safari 
+    // authorizes the domain before loading the Jitsi cross-origin iframe.
+    useEffect(() => {
+        if (typeof navigator !== 'undefined' && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            navigator.mediaDevices.getUserMedia({ audio: true, video: true })
+                .then(stream => {
+                    // Immediately stop the tracks to release the hardware devices
+                    stream.getTracks().forEach(track => track.stop());
+                })
+                .catch(err => {
+                    console.warn("Parent-level media permission request was declined or failed:", err);
+                });
+        }
+    }, []);
 
     useEffect(() => {
         setIsMounted(true);
@@ -4716,7 +4728,7 @@ export default function WatchRoom({ room, onBack }: Props) {
                             </div>
                         )}
                     </div>
-                    <div className="flex-1 flex flex-col min-h-0 lg:hidden relative">
+                    <div className="flex-1 flex flex-col min-h-[300px] lg:min-h-0 lg:hidden relative">
                         <TabContent activeTab={activeTab} matchId={room.liveMatchId} userName={userName} userRole={userRole} room={room} jitsiParticipants={jitsiParticipants} jitsiApi={jitsiApi} chats={chats} qnaList={qnaList} setQnaList={setQnaList} answeringQuestion={answeringQuestion} setAnsweringQuestion={setAnsweringQuestion} qnaInput={qnaInput} setQnaInput={setQnaInput} sendChatMessage={sendChatMessage} />
                     </div>
                 </div>

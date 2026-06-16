@@ -1,36 +1,55 @@
 "use client";
-import { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
+// context/ActivityContext.tsx
+//
+// Fetches the user's activity log from /api/user-activity and exposes it to
+// the rest of the app.  Every activity type written by awardUserPoints() flows
+// through unchanged — no filtering is applied here.
+
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+} from "react";
 import axios from "axios";
 import { useAuth } from "@/context/AuthContext";
 
+// ─── Public types ─────────────────────────────────────────────────────────────
 export interface ActivityItem {
-  id: string;
-  type: string;
-  points: number;
-  label: string;
-  metadata: Record<string, unknown>;
-  createdAt: number;
+  id:        string;
+  type:      string;   // raw enum, e.g. "ROAR_POST", "TRIVIA_CORRECT", "AUDIO_DROP"
+  points:    number;
+  label:     string;   // human-readable, e.g. "Shared a ROAR Post"
+  metadata:  Record<string, unknown>;
+  createdAt: number;   // Unix ms
 }
 
 interface ActivityContextType {
-  activities: ActivityItem[];
-  loading: boolean;
-  refreshActivities: () => Promise<void>;
-  addLocalActivity: (activity: ActivityItem) => void;
+  activities:         ActivityItem[];
+  loading:            boolean;
+  refreshActivities:  () => Promise<void>;
+  addLocalActivity:   (activity: ActivityItem) => void;
 }
 
-const ActivityContext = createContext<ActivityContextType | undefined>(undefined);
-
+// ─── Module-level cache ───────────────────────────────────────────────────────
+// Survives re-renders; resets on page reload.
+// Keyed by userId so switching accounts always gets fresh data.
 let cache: { ts: number; userId: string; data: ActivityItem[] } | null = null;
-const CACHE_TTL = 30_000;
+const CACHE_TTL = 30_000; // 30 seconds
 
-const sameActivity = (a: ActivityItem, b: ActivityItem) => {
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+const sameActivity = (a: ActivityItem, b: ActivityItem): boolean => {
   const aTx = a.metadata?.transactionId;
   const bTx = b.metadata?.transactionId;
   return a.id === b.id || (typeof aTx === "string" && aTx === bTx);
 };
 
-const mergeActivities = (remote: ActivityItem[], local: ActivityItem[]) => {
+const mergeActivities = (
+  remote: ActivityItem[],
+  local: ActivityItem[]
+): ActivityItem[] => {
   const merged = [...remote];
   local.forEach((activity) => {
     if (!merged.some((item) => sameActivity(item, activity))) {
@@ -40,60 +59,102 @@ const mergeActivities = (remote: ActivityItem[], local: ActivityItem[]) => {
   return merged.sort((a, b) => b.createdAt - a.createdAt);
 };
 
-export const ActivityProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+// ─── Context ──────────────────────────────────────────────────────────────────
+const ActivityContext = createContext<ActivityContextType | undefined>(undefined);
+
+export const ActivityProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const { user, authReady } = useAuth();
   const [activities, setActivities] = useState<ActivityItem[]>([]);
-  const [loading, setLoading] = useState(false);
-  const inFlight = useRef(false);
+  const [loading, setLoading]       = useState(false);
+
+  const inFlight          = useRef(false);
   const localActivitiesRef = useRef<ActivityItem[]>([]);
 
+  // ── Fetch from API ──────────────────────────────────────────────────────────
   const fetchActivities = useCallback(async () => {
     const userId = user?.userId;
-    if (!userId) { setActivities([]); return; }
+    if (!userId) {
+      setActivities([]);
+      return;
+    }
 
-    if (cache && cache.userId === userId && Date.now() - cache.ts < CACHE_TTL) {
+    // Serve from cache if still fresh
+    if (
+      cache &&
+      cache.userId === userId &&
+      Date.now() - cache.ts < CACHE_TTL
+    ) {
       setActivities(cache.data);
       return;
     }
+
+    // Guard against concurrent fetches
     if (inFlight.current) return;
     inFlight.current = true;
     setLoading(true);
 
     try {
-      const res = await axios.get(`/api/user-activity?userId=${encodeURIComponent(userId)}&limit=50`);
+      const res = await axios.get(
+        `/api/user-activity?userId=${encodeURIComponent(userId)}&limit=50`
+      );
+
       if (res.data.success) {
-        const data = mergeActivities(res.data.activities, localActivitiesRef.current);
+        // Merge server data with any optimistic local additions, sort newest-first
+        const data = mergeActivities(
+          res.data.activities,
+          localActivitiesRef.current
+        );
         cache = { ts: Date.now(), userId, data };
         setActivities(data);
       }
     } catch (e) {
-      console.error("[ActivityContext]", e);
+      console.error("[ActivityContext] fetch error:", e);
     } finally {
       inFlight.current = false;
       setLoading(false);
     }
   }, [user?.userId]);
 
+  // ── Public API ──────────────────────────────────────────────────────────────
+
+  /** Force a fresh fetch, bypassing the cache. */
   const refreshActivities = useCallback(async () => {
     cache = null;
     await fetchActivities();
   }, [fetchActivities]);
 
-  const addLocalActivity = useCallback((activity: ActivityItem) => {
-    localActivitiesRef.current = mergeActivities([activity], localActivitiesRef.current);
-    setActivities((prev) => {
-      const data = mergeActivities(prev, [activity]);
-      if (user?.userId) cache = { ts: Date.now(), userId: user.userId, data };
-      return data;
-    });
-  }, [user?.userId]);
+  /**
+   * Optimistically add an activity before the server round-trip completes.
+   * Call this immediately after awarding points so FanZone updates instantly.
+   */
+  const addLocalActivity = useCallback(
+    (activity: ActivityItem) => {
+      localActivitiesRef.current = mergeActivities(
+        [activity],
+        localActivitiesRef.current
+      );
+      setActivities((prev) => {
+        const data = mergeActivities(prev, [activity]);
+        if (user?.userId) {
+          cache = { ts: Date.now(), userId: user.userId, data };
+        }
+        return data;
+      });
+    },
+    [user?.userId]
+  );
 
+  // Trigger fetch once auth is confirmed ready
   useEffect(() => {
     if (authReady) fetchActivities();
   }, [authReady, fetchActivities]);
 
   return (
-    <ActivityContext.Provider value={{ activities, loading, refreshActivities, addLocalActivity }}>
+    <ActivityContext.Provider
+      value={{ activities, loading, refreshActivities, addLocalActivity }}
+    >
       {children}
     </ActivityContext.Provider>
   );

@@ -2844,6 +2844,7 @@ function LiveCameraFeed({
                 <div className="h-full relative w-full">
                     {/* Jitsi SDK React component */}
                     <JitsiMeeting
+                        key={isModerator ? 'moderator' : 'viewer'}
                         domain="meet.uxexpert.in"
                         roomName={roomName}
                         configOverwrite={{

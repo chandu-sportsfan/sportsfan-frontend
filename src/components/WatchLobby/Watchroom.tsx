@@ -4629,6 +4629,46 @@ export default function WatchRoom({ room, onBack }: Props) {
                         </div>
                     )}
 
+                    {/* Zoom-style Viewer Reactions */}
+                    {!(userRole === 'Host' || userRole === 'Co-Host' || userRole === 'Moderator') && (
+                        <div className="flex flex-col gap-2.5 bg-[#141416] border border-white/5 rounded-xl p-3.5 mt-3 mx-4 sm:mx-6">
+                            <div className="flex items-center gap-1.5 text-gray-400 text-xs">
+                                <span className="font-extrabold uppercase tracking-widest text-[9px] bg-white/5 px-1.5 py-0.5 rounded text-white">Viewer Reactions</span>
+                                <span className="opacity-60 cursor-help flex items-center justify-center animate-pulse" title="Click to trigger animated reaction effects for everyone!">
+                                    <Info size={12} />
+                                </span>
+                            </div>
+                            <div className="flex items-center gap-2.5 overflow-x-auto scrollbar-hide py-1">
+                                {/* FIRE */}
+                                <button 
+                                    onClick={() => triggerMoment("FIRE")}
+                                    className="flex-shrink-0 flex items-center gap-2 bg-[#202023] hover:bg-[#2a2a2e] border border-white/5 rounded-full px-3.5 py-1.5 transition-all hover:scale-105 active:scale-95 text-xs font-semibold text-gray-200"
+                                >
+                                    <div className="w-5 h-5 rounded-full bg-orange-600 flex items-center justify-center text-[10px] text-white">🔥</div>
+                                    <span>Fire</span>
+                                </button>
+
+                                {/* CLAP */}
+                                <button 
+                                    onClick={() => triggerMoment("CLAP")}
+                                    className="flex-shrink-0 flex items-center gap-2 bg-[#202023] hover:bg-[#2a2a2e] border border-white/5 rounded-full px-3.5 py-1.5 transition-all hover:scale-105 active:scale-95 text-xs font-semibold text-gray-200"
+                                >
+                                    <div className="w-5 h-5 rounded-full bg-yellow-500 flex items-center justify-center text-[10px] text-white">👏</div>
+                                    <span>Clap</span>
+                                </button>
+
+                                {/* HEART */}
+                                <button 
+                                    onClick={() => triggerMoment("HEART")}
+                                    className="flex-shrink-0 flex items-center gap-2 bg-[#202023] hover:bg-[#2a2a2e] border border-white/5 rounded-full px-3.5 py-1.5 transition-all hover:scale-105 active:scale-95 text-xs font-semibold text-gray-200"
+                                >
+                                    <div className="w-5 h-5 rounded-full bg-red-600 flex items-center justify-center text-[10px] text-white">❤️</div>
+                                    <span>Heart</span>
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
                     {/* Mobile/tablet: tab content inline below tabs */}
                     <div className="relative z-20 flex flex-col gap-2 px-4 sm:px-6 py-3 border-b border-[#222] lg:hidden">
                         <div className="flex gap-2 overflow-x-auto scrollbar-hide py-1">

@@ -1,4 +1,5 @@
 "use client";
+// MainModules/Fanszone/page.tsx  (or wherever your FanZone page lives)
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useState, useMemo, useEffect, useRef } from "react";
@@ -9,107 +10,206 @@ import { useLeaderboard } from "@/context/LeaderboardContext";
 import {
   ChevronDown, Trophy, Share2, CheckCircle2,
   Award, TrendingUp, Play, ThumbsUp, FileText,
-  Gamepad2, UserPlus, LayoutGrid, Calendar, Filter,
+  Gamepad2, UserPlus, LayoutGrid, Calendar,
   X, Headphones,
-  Megaphone, MessagesSquare, Flame, Sparkles, Info, TrendingDown,
+  Megaphone, MessagesSquare, Flame, Sparkles, Info, TrendingDown, Brain,
 } from "lucide-react";
-// import BackButton from "@/src/components/ReusableComponent/BackButton";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TYPES
 // ─────────────────────────────────────────────────────────────────────────────
 type ActivityKey =
-  | "audioDrop" | "fanBattle" | "trivia" | "post" | "register"
-  | "invite" | "watchDrop" | "like" | "share" | "other";
-type TrendPeriod = "7D" | "30D" | "90D";
-type CategoryFilter = "All Activities" | "Content" | "Engagement" | "Fantasy" | "Trivia" | "Referral" | "Registration";
+  | "audioDrop"
+  | "fanBattleWin"
+  | "fanBattlePlay"
+  | "trivia"
+  | "post"
+  | "register"
+  | "invite"
+  | "roarHotTake"
+  | "roarPrediction"
+  | "roarDebate"
+  | "roarMemory"
+  | "roarPost"
+  | "watchDrop"
+  | "like"
+  | "share"
+  | "other";
+
+type TrendPeriod    = "7D" | "30D" | "90D";
+type CategoryFilter =
+  | "All Activities" | "Content" | "Engagement"
+  | "Fantasy" | "Trivia" | "Referral" | "Registration" | "ROAR";
 type DateFilter = "All Time" | "This Month" | "Last 7 Days" | "Last 30 Days";
 
 interface HistoryItem {
-  id: string;
-  key: ActivityKey;
-  action: string;
-  details: string;
-  points: number;
-  type: string;
-  source: string;
-  date: string;
-  timestamp: number;
-  time: string;
-  icon: React.ElementType;
-  color: string;
-  hexColor: string;
-  typeColor: string;
+  id:         string;
+  key:        ActivityKey;
+  action:     string;
+  details:    string;
+  points:     number;
+  type:       string;
+  source:     string;
+  date:       string;
+  timestamp:  number;
+  time:       string;
+  icon:       React.ElementType;
+  color:      string;
+  hexColor:   string;
+  typeColor:  string;
 }
 
 interface CategoryBreakdown {
-  label: string;
+  label:   string;
   percent: number;
-  color: string;
-  xp: string;
+  color:   string;
+  xp:      string;
   xpValue: number;
 }
 
 interface LeaderboardContextType {
   currentUserPoints: number;
-  currentUserRank: number;
+  currentUserRank:   number;
   previousUserRank?: number;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// ACTIVITY META
+// ROOT CAUSE FIX 1 — CENTRALISED TYPE → ActivityKey MAP
+//
+// Previously normalizeActivityKey() did substring matching on a concatenated
+// "type + label" string.  That caused:
+//   • ROAR_HOT_TAKE  → fell through to "other" (no "hot take" check existed)
+//   • ROAR_PREDICTION → matched "prediction" inside the trivia branch
+//   • ROAR_DEBATE    → matched "debate" inside the fanBattle branch
+//
+// The fix: check the raw type string against this map FIRST.  Fuzzy matching
+// is only used as a last resort for unknown/legacy type strings.
+// ─────────────────────────────────────────────────────────────────────────────
+const ACTIVITY_TYPE_MAP: Record<string, ActivityKey> = {
+  // Audio Drop — multiple aliases that appear in the wild
+  AUDIO_DROP:         "audioDrop",
+  LISTEN_COMPLETE:    "audioDrop",
+  LISTEN_AUDIO_DROP:  "audioDrop",
+
+  // Fan Battle
+  FAN_BATTLE_WIN:     "fanBattleWin",
+  FAN_BATTLE_PLAY:    "fanBattlePlay",
+
+  // Fan Zone Post
+  POST_CREATED:       "post",
+
+  // Trivia
+  TRIVIA_CORRECT:     "trivia",
+
+  // Account / Referral
+  REGISTRATION:       "register",
+  INVITE_ACCEPTED:    "invite",
+
+  // ROAR
+  ROAR_HOT_TAKE:      "roarHotTake",
+  ROAR_PREDICTION:    "roarPrediction",
+  ROAR_DEBATE:        "roarDebate",
+  ROAR_MEMORY:        "roarMemory",
+  ROAR_POST:          "roarPost",
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ROOT CAUSE FIX 2 — EXPANDED ACTIVITY_META
+//
+// Previously there was no entry for ROAR_HOT_TAKE, ROAR_PREDICTION,
+// ROAR_DEBATE, ROAR_MEMORY, or ROAR_POST, so they inherited the "other"
+// fallback: wrong icon, wrong colour, wrong category, and wrong type label
+// which broke the Earning History category filter.
 // ─────────────────────────────────────────────────────────────────────────────
 const ACTIVITY_META: Record<ActivityKey, {
-  action: string; type: string; icon: React.ElementType;
-  color: string; hexColor: string; typeColor: string;
+  action:    string;
+  type:      string;           // must match one of the CategoryFilter values
+  icon:      React.ElementType;
+  color:     string;           // Tailwind text class
+  hexColor:  string;           // literal hex for SVG / inline styles
+  typeColor: string;           // Tailwind badge classes
 }> = {
   audioDrop: {
-    action: "Audio Drops", type: "Content", icon: Headphones,
+    action: "Listened to Audio Drop", type: "Content", icon: Headphones,
     color: "text-sky-400", hexColor: "#38bdf8",
     typeColor: "text-sky-400 border-sky-400/30 bg-sky-400/5",
   },
-  fanBattle: {
-    action: "Fan Battles", type: "Fantasy", icon: Gamepad2,
+  fanBattleWin: {
+    action: "Won a Fan Battle", type: "Fantasy", icon: Trophy,
+    color: "text-yellow-400", hexColor: "#facc15",
+    typeColor: "text-yellow-400 border-yellow-400/30 bg-yellow-400/5",
+  },
+  fanBattlePlay: {
+    action: "Played a Fan Battle", type: "Fantasy", icon: Gamepad2,
     color: "text-yellow-500", hexColor: "#eab308",
     typeColor: "text-yellow-500 border-yellow-500/30 bg-yellow-500/5",
   },
   trivia: {
-    action: "Trivia", type: "Trivia", icon: CheckCircle2,
+    action: "Answered Trivia Correctly", type: "Trivia", icon: CheckCircle2,
     color: "text-violet-400", hexColor: "#a78bfa",
     typeColor: "text-violet-400 border-violet-400/30 bg-violet-400/5",
   },
   post: {
-    action: "Post Created", type: "Engagement", icon: FileText,
+    action: "Created a Fan Zone Post", type: "Engagement", icon: FileText,
     color: "text-rose-400", hexColor: "#fb7185",
     typeColor: "text-rose-400 border-rose-400/30 bg-rose-400/5",
   },
   register: {
-    action: "Registration", type: "Registration", icon: UserPlus,
+    action: "Joined SportsFan360", type: "Registration", icon: UserPlus,
     color: "text-emerald-500", hexColor: "#10b981",
     typeColor: "text-emerald-500 border-emerald-500/30 bg-emerald-500/5",
   },
   invite: {
-    action: "Invite Friend", type: "Referral", icon: UserPlus,
-    color: "text-emerald-500", hexColor: "#10b981",
-    typeColor: "text-emerald-500 border-emerald-500/30 bg-emerald-500/5",
+    action: "Friend Joined Via Invite", type: "Referral", icon: UserPlus,
+    color: "text-teal-400", hexColor: "#2dd4bf",
+    typeColor: "text-teal-400 border-teal-400/30 bg-teal-400/5",
   },
+
+  // ── ROAR activities — each with its own distinct icon, colour, category ──
+  roarHotTake: {
+    action: "Posted a ROAR Hot Take", type: "ROAR", icon: Flame,
+    color: "text-amber-500", hexColor: "#f59e0b",
+    typeColor: "text-amber-500 border-amber-500/30 bg-amber-500/5",
+  },
+  roarPrediction: {
+    action: "Made a ROAR Prediction", type: "ROAR", icon: TrendingUp,
+    color: "text-lime-400", hexColor: "#a3e635",
+    typeColor: "text-lime-400 border-lime-400/30 bg-lime-400/5",
+  },
+  roarDebate: {
+    action: "Started a ROAR Debate", type: "ROAR", icon: MessagesSquare,
+    color: "text-cyan-400", hexColor: "#22d3ee",
+    typeColor: "text-cyan-400 border-cyan-400/30 bg-cyan-400/5",
+  },
+  roarMemory: {
+    action: "Shared a ROAR Memory", type: "ROAR", icon: Sparkles,
+    color: "text-pink-400", hexColor: "#f472b6",
+    typeColor: "text-pink-400 border-pink-400/30 bg-pink-400/5",
+  },
+  roarPost: {
+    action: "Shared a ROAR Post", type: "ROAR", icon: Megaphone,
+    color: "text-orange-400", hexColor: "#fb923c",
+    typeColor: "text-orange-400 border-orange-400/30 bg-orange-400/5",
+  },
+
+  // Legacy / less-used
   watchDrop: {
-    action: "Watch Drops", type: "Content", icon: Play,
+    action: "Watched a Drop", type: "Content", icon: Play,
     color: "text-yellow-500", hexColor: "#eab308",
     typeColor: "text-yellow-500 border-yellow-500/30 bg-yellow-500/5",
   },
   like: {
-    action: "Post Like", type: "Engagement", icon: ThumbsUp,
+    action: "Liked a Post", type: "Engagement", icon: ThumbsUp,
     color: "text-rose-500", hexColor: "#f43f5e",
     typeColor: "text-rose-500 border-rose-500/30 bg-rose-500/5",
   },
   share: {
-    action: "Post Share", type: "Engagement", icon: Share2,
+    action: "Shared a Post", type: "Engagement", icon: Share2,
     color: "text-purple-500", hexColor: "#a855f7",
     typeColor: "text-purple-500 border-purple-500/30 bg-purple-500/5",
   },
   other: {
-    action: "Activity", type: "Activity", icon: Trophy,
+    action: "Activity", type: "Engagement", icon: Trophy,
     color: "text-gray-300", hexColor: "#d4d4d8",
     typeColor: "text-gray-300 border-gray-400/30 bg-white/5",
   },
@@ -118,44 +218,68 @@ const ACTIVITY_META: Record<ActivityKey, {
 // ─────────────────────────────────────────────────────────────────────────────
 // HELPERS
 // ─────────────────────────────────────────────────────────────────────────────
+
 function makeHistoryItem(
-  key: ActivityKey,
-  details: string,
-  points: number,
-  atDate?: Date,
-  id = `hi_${Date.now()}`,
-  action?: string,
-  source?: string
+  key:       ActivityKey,
+  details:   string,
+  points:    number,
+  atDate?:   Date,
+  id         = `hi_${Date.now()}`,
+  action?:   string,
+  source?:   string
 ): HistoryItem {
-  const d = atDate ?? new Date();
+  const d    = atDate ?? new Date();
   const meta = ACTIVITY_META[key];
   return {
     id, key,
-    action: action || meta.action,
+    action:    action || meta.action,
     details, points,
-    type: meta.type,
-    source: source || meta.type,
-    date: d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+    type:      meta.type,
+    source:    source || meta.type,
+    date:      d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
     timestamp: d.getTime(),
-    time: d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
-    icon: meta.icon,
-    color: meta.color,
-    hexColor: meta.hexColor,
+    time:      d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
+    icon:      meta.icon,
+    color:     meta.color,
+    hexColor:  meta.hexColor,
     typeColor: meta.typeColor,
   };
 }
 
+/**
+ * ROOT CAUSE FIX 3 — normalizeActivityKey
+ *
+ * Strategy (in priority order):
+ *   1. Direct lookup in ACTIVITY_TYPE_MAP using the raw `type` string.
+ *      This handles every known enum value precisely with zero ambiguity.
+ *   2. Fuzzy substring scan of the combined "type label" string.
+ *      Retained only as a safety net for unknown/legacy types.
+ */
 function normalizeActivityKey(type: string, label: string): ActivityKey {
+  // 1. Direct enum lookup — always preferred
+  const direct = ACTIVITY_TYPE_MAP[type.toUpperCase().replace(/-/g, "_")];
+  if (direct) return direct;
+
+  // 2. Fuzzy fallback — concatenate both fields, lowercase, normalise separators
   const value = `${type} ${label}`.toLowerCase().replace(/[_-]+/g, " ");
-  if (value.includes("audio") || value.includes("listen")) return "audioDrop";
-  if (value.includes("battle") || value.includes("fantasy") || value.includes("hot take") || value.includes("debate")) return "fanBattle";
-  if (value.includes("trivia") || value.includes("quiz") || value.includes("prediction")) return "trivia";
-  if (value.includes("register") || value.includes("signup") || value.includes("sign up") || value.includes("joined")) return "register";
+
+  if (value.includes("audio") || value.includes("listen"))   return "audioDrop";
+  if (value.includes("battle win"))                          return "fanBattleWin";
+  if (value.includes("battle play") || value.includes("fan battle")) return "fanBattlePlay";
+  if (value.includes("trivia") || value.includes("quiz"))   return "trivia";
+  if (value.includes("register") || value.includes("signup") ||
+      value.includes("sign up") || value.includes("joined")) return "register";
   if (value.includes("invite") || value.includes("referral")) return "invite";
-  if (value.includes("watch") || value.includes("video")) return "watchDrop";
-  if (value.includes("like")) return "like";
-  if (value.includes("share")) return "share";
-  if (value.includes("post") || value.includes("create post") || value.includes("memory") || value.includes("roar post")) return "post";
+  if (value.includes("hot take"))                            return "roarHotTake";
+  if (value.includes("prediction"))                          return "roarPrediction";
+  if (value.includes("debate"))                              return "roarDebate";
+  if (value.includes("memory"))                              return "roarMemory";
+  if (value.includes("roar post"))                           return "roarPost";
+  if (value.includes("watch") || value.includes("video"))   return "watchDrop";
+  if (value.includes("like"))                                return "like";
+  if (value.includes("share") && !value.includes("roar"))   return "share";
+  if (value.includes("post") || value.includes("create"))   return "post";
+
   return "other";
 }
 
@@ -186,14 +310,20 @@ function metadataText(metadata: ActivityItem["metadata"]) {
 }
 
 function activityToHistoryItem(activity: ActivityItem): HistoryItem {
-  const key = normalizeActivityKey(activity.type, activity.label);
+  const key       = normalizeActivityKey(activity.type, activity.label);
   const rawSource = activity.type || key;
-  const readable = readableSource(rawSource);
-  const details = metadataText(activity.metadata) || activity.label || readable;
+  const readable  = readableSource(rawSource);
+  const details   = metadataText(activity.metadata) || activity.label || readable;
+  const meta      = ACTIVITY_META[key];
   return makeHistoryItem(
     key, details, Number(activity.points) || 0,
     new Date(normalizeTimestamp(activity.createdAt)),
-    activity.id, activity.label || ACTIVITY_META[key].action, readable
+    activity.id,
+    // Prefer the human label that came from the server; fall back to our local map
+    activity.label && activity.label !== activity.type
+      ? activity.label
+      : meta.action,
+    readable
   );
 }
 
@@ -215,28 +345,34 @@ function calculateLevelData(totalXp: number) {
 function getEarningBreakdown(history: HistoryItem[]): CategoryBreakdown[] {
   if (!history.length) return [];
   const total = history.reduce((s, h) => s + h.points, 0);
+
+  // Group by ActivityKey so each distinct activity type gets its own slice
   const grouped: Record<string, { label: string; xpValue: number; color: string }> = {};
   history.forEach((h) => {
-    if (!grouped[h.key]) grouped[h.key] = { label: h.action, xpValue: 0, color: h.hexColor };
+    if (!grouped[h.key]) {
+      grouped[h.key] = { label: h.action, xpValue: 0, color: h.hexColor };
+    }
     grouped[h.key].xpValue += h.points;
   });
+
   return Object.values(grouped)
     .sort((a, b) => b.xpValue - a.xpValue)
     .map((g) => ({
-      label: g.label, color: g.color, xpValue: g.xpValue,
+      label:   g.label,
+      color:   g.color,
+      xpValue: g.xpValue,
       percent: total > 0 ? Math.round((g.xpValue / total) * 100) : 0,
-      xp: `+${g.xpValue.toLocaleString()} SXP`,
+      xp:      `+${g.xpValue.toLocaleString()} SXP`,
     }));
 }
 
-// Derives streak data purely from activityLog timestamps — no DB collection needed.
-// An "active" day = at least one activity logged that calendar day.
+// Streak data derived purely from activityLog timestamps — no extra DB call needed.
 function getDynamicStreakData(history: HistoryItem[]) {
-  const today = new Date();
-  const todayMid = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
-  const weekday = today.getDay();
+  const today      = new Date();
+  const todayMid   = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+  const weekday    = today.getDay();
   const adjustedDay = weekday === 0 ? 6 : weekday - 1; // Monday = 0
-  const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  const days       = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
   const historyDates = new Set(
     history.map((h) => {
@@ -245,15 +381,15 @@ function getDynamicStreakData(history: HistoryItem[]) {
     })
   );
 
-  // Calculate current streak (consecutive days with activity going back from today)
+  // Current streak (consecutive days with activity going back from today)
   let currentStreak = 0;
-  let checkDate = todayMid;
+  let checkDate     = todayMid;
   while (historyDates.has(checkDate)) {
     currentStreak++;
     checkDate -= 86400000;
   }
 
-  // Calculate longest streak from all history
+  // Longest streak from all history
   const sortedDates = Array.from(historyDates).sort();
   let longestStreak = 0, runStreak = 0, prevDate: number | null = null;
   for (const d of sortedDates) {
@@ -267,15 +403,15 @@ function getDynamicStreakData(history: HistoryItem[]) {
   }
 
   const streakMap = days.map((day, i) => {
-    const dayMid = todayMid + (i - adjustedDay) * 86400000;
+    const dayMid      = todayMid + (i - adjustedDay) * 86400000;
     const hasActivity = historyDates.has(dayMid);
-    const isPast = dayMid < todayMid;
+    const isPast      = dayMid < todayMid;
     return {
       day,
       isActive: hasActivity,
       isMissed: !hasActivity && isPast,
       isFuture: dayMid > todayMid,
-      isToday: dayMid === todayMid,
+      isToday:  dayMid === todayMid,
     };
   });
 
@@ -283,17 +419,21 @@ function getDynamicStreakData(history: HistoryItem[]) {
 }
 
 function getTrendAnalytics(history: HistoryItem[], period: TrendPeriod) {
-  const now = Date.now();
+  const now      = Date.now();
   const daysMap: Record<TrendPeriod, number> = { "7D": 7, "30D": 30, "90D": 90 };
-  const days = daysMap[period];
+  const days     = daysMap[period];
   const msPerDay = 86400000;
-  const currentStart = now - days * msPerDay;
+  const currentStart  = now - days * msPerDay;
   const previousStart = currentStart - days * msPerDay;
-  const BUCKETS = period === "7D" ? 7 : period === "30D" ? 10 : 9;
-  const bucketSize = (days * msPerDay) / BUCKETS;
-  const buckets = new Array(BUCKETS).fill(0);
-  let currentPts = 0, previousPts = 0;
 
+  // Use a sensible number of chart buckets per period
+  const BUCKETS    = period === "7D" ? 7 : period === "30D" ? 10 : 9;
+  const bucketSize = (days * msPerDay) / BUCKETS;
+  const buckets    = new Array(BUCKETS).fill(0);
+  let currentPts   = 0;
+  let previousPts  = 0;
+
+  // ALL activity types contribute — no filtering by type
   history.forEach((item) => {
     const t = item.timestamp;
     if (t >= currentStart && t <= now) {
@@ -305,14 +445,13 @@ function getTrendAnalytics(history: HistoryItem[], period: TrendPeriod) {
     }
   });
 
-  const percentChange = previousPts > 0
-    ? Math.round(((currentPts - previousPts) / previousPts) * 100)
-    : currentPts > 0 ? 100 : 0;
+  const percentChange =
+    previousPts > 0
+      ? Math.round(((currentPts - previousPts) / previousPts) * 100)
+      : currentPts > 0 ? 100 : 0;
 
-  // Build x-axis labels based on period
   const fmt = (d: Date, opts: Intl.DateTimeFormatOptions) =>
     d.toLocaleDateString("en-US", opts);
-  const nowDate = new Date(now);
 
   const labelsMap: Record<TrendPeriod, string[]> = {
     "7D": Array.from({ length: 7 }, (_, i) =>
@@ -322,11 +461,12 @@ function getTrendAnalytics(history: HistoryItem[], period: TrendPeriod) {
       fmt(new Date(now - 24 * msPerDay), { month: "short", day: "numeric" }),
       fmt(new Date(now - 18 * msPerDay), { month: "short", day: "numeric" }),
       fmt(new Date(now - 12 * msPerDay), { month: "short", day: "numeric" }),
-      fmt(new Date(now - 6 * msPerDay), { month: "short", day: "numeric" }),
+      fmt(new Date(now -  6 * msPerDay), { month: "short", day: "numeric" }),
       "Today",
     ],
     "90D": Array.from({ length: 4 }, (_, i) =>
-      fmt(new Date(now - (90 - i * 30) * msPerDay), { month: "short", day: "numeric" })).concat(["Today"]),
+      fmt(new Date(now - (90 - i * 30) * msPerDay), { month: "short", day: "numeric" })
+    ).concat(["Today"]),
   };
 
   const vsMap: Record<TrendPeriod, string> = {
@@ -344,21 +484,23 @@ function getTrendAnalytics(history: HistoryItem[], period: TrendPeriod) {
 }
 
 function applyFilters(
-  history: HistoryItem[],
+  history:        HistoryItem[],
   categoryFilter: CategoryFilter,
-  dateFilter: DateFilter
+  dateFilter:     DateFilter
 ): HistoryItem[] {
-  const now = Date.now();
-  const msPerDay = 86400000;
-  const thisMonthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).getTime();
+  const now          = Date.now();
+  const msPerDay     = 86400000;
+  const thisMonthStart = new Date(
+    new Date().getFullYear(), new Date().getMonth(), 1
+  ).getTime();
 
   return history.filter((item) => {
-    // Category filter
+    // Category
     if (categoryFilter !== "All Activities" && item.type !== categoryFilter) return false;
-    // Date filter
-    if (dateFilter === "Last 7 Days" && item.timestamp < now - 7 * msPerDay) return false;
+    // Date
+    if (dateFilter === "Last 7 Days"  && item.timestamp < now - 7  * msPerDay) return false;
     if (dateFilter === "Last 30 Days" && item.timestamp < now - 30 * msPerDay) return false;
-    if (dateFilter === "This Month" && item.timestamp < thisMonthStart) return false;
+    if (dateFilter === "This Month"   && item.timestamp < thisMonthStart)       return false;
     return true;
   });
 }
@@ -377,19 +519,18 @@ function getPreviousMonthLabel() {
 // STATIC DATA
 // ─────────────────────────────────────────────────────────────────────────────
 const earnPointsActions = [
-  { icon: Megaphone, title: "Post On ROAR", xp: "+2 SXP", desc: "Per post on ROAR", color: "text-orange-400", bg: "bg-orange-400/10" },
-  { icon: MessagesSquare, title: "Start a Debate", xp: "+2 SXP", desc: "Per debate started", color: "text-cyan-400", bg: "bg-cyan-400/10" },
-  { icon: Flame, title: "Posted Hot Take", xp: "+2 SXP", desc: "Per hot take posted", color: "text-amber-500", bg: "bg-amber-500/10" },
-  { icon: TrendingUp, title: "Prediction Sharing", xp: "+2 SXP", desc: "Per prediction shared", color: "text-lime-400", bg: "bg-lime-400/10" },
-  { icon: Sparkles, title: "Memory Shared", xp: "+2 SXP", desc: "Per memory shared", color: "text-pink-400", bg: "bg-pink-400/10" },
-  { icon: Headphones, title: "Listen Audio Drops", xp: "+2 SXP", desc: "Per drop (90%)", color: "text-sky-400", bg: "bg-sky-400/10" },
+  { icon: Megaphone,    title: "Post On ROAR",        xp: "+2 SXP", desc: "Per post on ROAR",       color: "text-orange-400", bg: "bg-orange-400/10" },
+  { icon: MessagesSquare, title: "Start a Debate",    xp: "+2 SXP", desc: "Per debate started",     color: "text-cyan-400",   bg: "bg-cyan-400/10" },
+  { icon: Flame,        title: "Post Hot Take",        xp: "+2 SXP", desc: "Per hot take posted",    color: "text-amber-500",  bg: "bg-amber-500/10" },
+  { icon: TrendingUp,   title: "Share Prediction",    xp: "+2 SXP", desc: "Per prediction shared",  color: "text-lime-400",   bg: "bg-lime-400/10" },
+  { icon: Sparkles,     title: "Share Memory",         xp: "+2 SXP", desc: "Per memory shared",      color: "text-pink-400",   bg: "bg-pink-400/10" },
+  { icon: Headphones,   title: "Listen Audio Drops",  xp: "+2 SXP", desc: "Per drop (90%)",         color: "text-sky-400",    bg: "bg-sky-400/10" },
 ];
 
 const buildFanZoneShareUrl = () => {
   if (typeof window === "undefined") return "";
   return `${window.location.origin}/MainModules/Fanszone`;
 };
-
 const buildFanZoneShareText = () => {
   const shareUrl = buildFanZoneShareUrl();
   return [
@@ -398,7 +539,6 @@ const buildFanZoneShareText = () => {
     `Join here: ${shareUrl}`,
   ].join("\n");
 };
-
 const copyToClipboard = async (text: string) => {
   try {
     await navigator.clipboard.writeText(text);
@@ -408,7 +548,7 @@ const copyToClipboard = async (text: string) => {
       const input = document.createElement("textarea");
       input.value = text;
       input.style.position = "fixed";
-      input.style.opacity = "0";
+      input.style.opacity  = "0";
       document.body.appendChild(input);
       input.focus();
       input.select();
@@ -423,26 +563,37 @@ const copyToClipboard = async (text: string) => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // DONUT CHART
-// Center value = This Month's points. Legend = all-time breakdown.
+// Center = This Month's points.  Slices = ALL activity types proportionally.
 // ─────────────────────────────────────────────────────────────────────────────
-function DonutChart({ data, centerPoints }: { data: CategoryBreakdown[]; centerPoints: string }) {
-  const RADIUS = 25.91549430918954;
+function DonutChart({
+  data,
+  centerPoints,
+}: {
+  data:          CategoryBreakdown[];
+  centerPoints:  string;
+}) {
+  const RADIUS        = 25.91549430918954;
   const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
-  let offsetPercent = 0;
+  let offsetPercent   = 0;
+
   const slices = data.map((slice) => {
     const dashLength = (slice.percent / 100) * CIRCUMFERENCE;
-    const gapLength = CIRCUMFERENCE - dashLength;
-    const rotation = (offsetPercent / 100) * 360 - 90;
-    offsetPercent += slice.percent;
+    const gapLength  = CIRCUMFERENCE - dashLength;
+    const rotation   = (offsetPercent / 100) * 360 - 90;
+    offsetPercent   += slice.percent;
     return { ...slice, dashLength, gapLength, rotation };
   });
+
   const isEmpty = data.length === 0;
 
   return (
     <div className="relative w-44 h-44 shrink-0 mx-auto sm:mx-0">
       <svg viewBox="0 0 100 100" className="w-full h-full -rotate-6">
         {isEmpty ? (
-          <circle cx="50" cy="50" r={RADIUS} fill="transparent" stroke="#27272a" strokeWidth="8" />
+          <circle
+            cx="50" cy="50" r={RADIUS} fill="transparent"
+            stroke="#27272a" strokeWidth="8"
+          />
         ) : (
           slices.map((slice, i) => (
             <circle
@@ -472,7 +623,7 @@ function BreakdownLegend({ data }: { data: CategoryBreakdown[] }) {
   if (data.length === 0) {
     return (
       <div className="space-y-3 opacity-40 w-full">
-        {["Audio Drops", "Fan Battles", "Trivia", "Post Created"].map((label, i) => (
+        {["Audio Drops", "Fan Battles", "Trivia", "ROAR Posts"].map((label, i) => (
           <div key={i} className="flex items-center gap-3 text-sm">
             <span className="w-2.5 h-2.5 rounded-full shrink-0 bg-zinc-700" />
             <span className="text-gray-600 flex-1">{label}</span>
@@ -485,8 +636,15 @@ function BreakdownLegend({ data }: { data: CategoryBreakdown[] }) {
   return (
     <div className="w-full space-y-3">
       {data.map((item, i) => (
-        <div key={i} className="grid items-start text-sm w-full" style={{ gridTemplateColumns: "10px 1fr auto", columnGap: "8px" }}>
-          <span className="w-2.5 h-2.5 rounded-full shrink-0 mt-0.5" style={{ backgroundColor: item.color }} />
+        <div
+          key={i}
+          className="grid items-start text-sm w-full"
+          style={{ gridTemplateColumns: "10px 1fr auto", columnGap: "8px" }}
+        >
+          <span
+            className="w-2.5 h-2.5 rounded-full shrink-0 mt-0.5"
+            style={{ backgroundColor: item.color }}
+          />
           <span className="text-gray-300 whitespace-normal break-words">{item.label}</span>
           <span className="whitespace-nowrap flex items-start justify-end" style={{ paddingLeft: "8px" }}>
             <span className="font-bold text-white">{item.percent}%</span>
@@ -500,14 +658,12 @@ function BreakdownLegend({ data }: { data: CategoryBreakdown[] }) {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TREND BAR CHART
-// Replaces the MiniTrendLine polyline. Bar chart is clearer for bucketed data.
 // ─────────────────────────────────────────────────────────────────────────────
 function TrendBarChart({
   data,
   labels,
-  period,
 }: {
-  data: number[];
+  data:   number[];
   labels: string[];
   period: TrendPeriod;
 }) {
@@ -516,13 +672,17 @@ function TrendBarChart({
 
   return (
     <div className="w-full">
-      {/* Bars */}
       <div className="flex items-end gap-1 h-24 w-full">
         {data.map((val, i) => {
-          const heightPct = hasData ? Math.max((val / maxVal) * 100, val > 0 ? 8 : 2) : 2;
+          const heightPct = hasData
+            ? Math.max((val / maxVal) * 100, val > 0 ? 8 : 2)
+            : 2;
           return (
-            <div key={i} className="flex-1 flex flex-col justify-end group relative" title={`${val} SXP`}>
-              {/* Tooltip */}
+            <div
+              key={i}
+              className="flex-1 flex flex-col justify-end group relative"
+              title={`${val} SXP`}
+            >
               {val > 0 && (
                 <div className="absolute -top-7 left-1/2 -translate-x-1/2 bg-[#27272a] text-white text-[9px] font-bold px-1.5 py-0.5 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
                   +{val} SXP
@@ -542,7 +702,6 @@ function TrendBarChart({
           );
         })}
       </div>
-      {/* X-axis labels — show subset to avoid crowding */}
       <div className="flex justify-between text-[9px] text-gray-500 font-bold mt-2 px-0.5">
         {labels.map((label, i) => (
           <span key={i}>{label}</span>
@@ -566,7 +725,13 @@ function InfoIcon() {
 // ─────────────────────────────────────────────────────────────────────────────
 // HISTORY TABLE
 // ─────────────────────────────────────────────────────────────────────────────
-function HistoryTable({ rows, loading }: { rows: HistoryItem[]; loading: boolean }) {
+function HistoryTable({
+  rows,
+  loading,
+}: {
+  rows:    HistoryItem[];
+  loading: boolean;
+}) {
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-left border-collapse">
@@ -581,12 +746,23 @@ function HistoryTable({ rows, loading }: { rows: HistoryItem[]; loading: boolean
         </thead>
         <tbody>
           {loading ? (
-            <tr><td colSpan={5} className="text-center text-gray-500 py-8 text-sm">Loading activity...</td></tr>
+            <tr>
+              <td colSpan={5} className="text-center text-gray-500 py-8 text-sm">
+                Loading activity...
+              </td>
+            </tr>
           ) : rows.length === 0 ? (
-            <tr><td colSpan={5} className="text-center text-gray-500 py-8 text-sm">No activity recorded yet.</td></tr>
+            <tr>
+              <td colSpan={5} className="text-center text-gray-500 py-8 text-sm">
+                No activity recorded yet.
+              </td>
+            </tr>
           ) : (
             rows.map((row) => (
-              <tr key={row.id} className="border-b border-white/5 hover:bg-white/5 transition-colors group">
+              <tr
+                key={row.id}
+                className="border-b border-white/5 hover:bg-white/5 transition-colors group"
+              >
                 <td className="py-3 px-2">
                   <p className="text-xs text-gray-300 font-medium">{row.date}</p>
                   <p className="text-[10px] text-gray-500">{row.time}</p>
@@ -594,12 +770,14 @@ function HistoryTable({ rows, loading }: { rows: HistoryItem[]; loading: boolean
                 <td className="py-3 px-2">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-lg bg-[#18181b] border border-white/10 flex items-center justify-center flex-shrink-0">
-                      <row.icon className="w-4 h-4 text-gray-400" />
+                      <row.icon className={`w-4 h-4 ${row.color}`} />
                     </div>
                     <span className="text-xs font-bold text-white">{row.action}</span>
                   </div>
                 </td>
-                <td className="py-3 px-2 text-xs text-gray-400 font-medium max-w-[180px] truncate">{row.details}</td>
+                <td className="py-3 px-2 text-xs text-gray-400 font-medium max-w-[180px] truncate">
+                  {row.details}
+                </td>
                 <td className="py-3 px-2 text-right">
                   <span className="text-xs font-black text-emerald-500">+{row.points}</span>
                 </td>
@@ -621,27 +799,28 @@ function HistoryTable({ rows, loading }: { rows: HistoryItem[]; loading: boolean
 // MAIN DASHBOARD
 // ─────────────────────────────────────────────────────────────────────────────
 export default function FanZoneDashboard() {
-  const [activeTab, setActiveTab] = useState("My Analytics");
-  const [trendPeriod, setTrendPeriod] = useState<TrendPeriod>("30D");
+  const [activeTab,       setActiveTab]       = useState("My Analytics");
+  const [trendPeriod,     setTrendPeriod]     = useState<TrendPeriod>("30D");
   const [showShareDialog, setShowShareDialog] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const [historyPage, setHistoryPage] = useState(1);
-  const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>("All Activities");
-  const [dateFilter, setDateFilter] = useState<DateFilter>("All Time");
+  const [copied,          setCopied]          = useState(false);
+  const [historyPage,     setHistoryPage]     = useState(1);
+  const [categoryFilter,  setCategoryFilter]  = useState<CategoryFilter>("All Activities");
+  const [dateFilter,      setDateFilter]      = useState<DateFilter>("All Time");
   const earningHistoryRef = useRef<HTMLDivElement>(null);
   const ITEMS_PER_PAGE = 20;
 
-  const contextData = useLeaderboard() as LeaderboardContextType | null;
-  const currentUserPoints = contextData?.currentUserPoints ?? 0;
-  const currentUserRank = contextData?.currentUserRank ?? 0;
+  const contextData        = useLeaderboard() as LeaderboardContextType | null;
+  const currentUserPoints  = contextData?.currentUserPoints ?? 0;
+  const currentUserRank    = contextData?.currentUserRank   ?? 0;
   const { activities, loading: activitiesLoading } = useActivity();
 
+  // Convert all ActivityItems to HistoryItems — no type filtering, no Audio-Drop special-casing
   const history = useMemo(
     () => activities.map(activityToHistoryItem).sort((a, b) => b.timestamp - a.timestamp),
     [activities]
   );
 
-  // Track rank changes across renders
+  // Track rank changes across renders for the rank delta widget
   const [rankSnapshot, setRankSnapshot] = useState({ prev: 0, current: 0 });
   useEffect(() => {
     if (currentUserRank === 0) return;
@@ -651,15 +830,17 @@ export default function FanZoneDashboard() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUserRank]);
 
-  const totalPoints = currentUserPoints > 0
+  const totalPoints  = currentUserPoints > 0
     ? currentUserPoints
     : history.reduce((s, h) => s + h.points, 0);
   const displayPoints = totalPoints.toLocaleString();
 
+  // All analytics derived from the full history — every activity type included
   const earningBreakdown = useMemo(() => getEarningBreakdown(history), [history]);
-  const trendAnalytics = useMemo(() => getTrendAnalytics(history, trendPeriod), [history, trendPeriod]);
-  const levelData = useMemo(() => calculateLevelData(totalPoints), [totalPoints]);
-  const { streakMap, currentStreak, longestStreak } = useMemo(() => getDynamicStreakData(history), [history]);
+  const trendAnalytics   = useMemo(() => getTrendAnalytics(history, trendPeriod), [history, trendPeriod]);
+  const levelData        = useMemo(() => calculateLevelData(totalPoints), [totalPoints]);
+  const { streakMap, currentStreak, longestStreak } =
+    useMemo(() => getDynamicStreakData(history), [history]);
 
   // Filtered history for Earning History tab
   const filteredHistory = useMemo(
@@ -672,10 +853,16 @@ export default function FanZoneDashboard() {
   );
   const hasMore = pagedHistory.length < filteredHistory.length;
 
+  // Recent activities — ALL types, newest 5
   const recentActivityList = useMemo(
     () => history.slice(0, 5).map((h) => ({
-      icon: h.icon, action: h.action, detail: h.details,
-      xp: h.points, time: h.time, color: h.color, hexColor: h.hexColor,
+      icon:     h.icon,
+      action:   h.action,
+      detail:   h.details,
+      xp:       h.points,
+      time:     h.time,
+      color:    h.color,
+      hexColor: h.hexColor,
     })),
     [history]
   );
@@ -685,29 +872,29 @@ export default function FanZoneDashboard() {
   const isRankUp = rankSnapshot.prev > 0 && rankSnapshot.current > 0
     && rankSnapshot.current < rankSnapshot.prev;
 
-  const currentMonthLabel = getCurrentMonthLabel();
+  const currentMonthLabel  = getCurrentMonthLabel();
   const previousMonthLabel = getPreviousMonthLabel();
-
-  const now = new Date();
-  const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
-  const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1).getTime();
+  const now               = new Date();
+  const thisMonthStart    = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+  const lastMonthStart    = new Date(now.getFullYear(), now.getMonth() - 1, 1).getTime();
 
   const thisMonthPoints = useMemo(
     () => history.filter((h) => h.timestamp >= thisMonthStart).reduce((s, h) => s + h.points, 0),
     [history, thisMonthStart]
   );
   const lastMonthPoints = useMemo(
-    () => history.filter((h) => h.timestamp >= lastMonthStart && h.timestamp < thisMonthStart).reduce((s, h) => s + h.points, 0),
+    () => history.filter((h) => h.timestamp >= lastMonthStart && h.timestamp < thisMonthStart)
+      .reduce((s, h) => s + h.points, 0),
     [history, lastMonthStart, thisMonthStart]
   );
-  const monthDiff = thisMonthPoints - lastMonthPoints;
+  const monthDiff      = thisMonthPoints - lastMonthPoints;
   const monthPctChange = lastMonthPoints > 0
     ? Math.round((monthDiff / lastMonthPoints) * 100)
     : thisMonthPoints > 0 ? 100 : 0;
   const displayMonthlyPoints = thisMonthPoints.toLocaleString();
 
   // ── Share helpers ──────────────────────────────────────────────────────────
-  const openShareDialog = () => { setShowShareDialog(true); setCopied(false); };
+  const openShareDialog  = () => { setShowShareDialog(true);  setCopied(false); };
   const closeShareDialog = () => { setShowShareDialog(false); setCopied(false); };
 
   const handleShareToWhatsApp = () =>
@@ -729,7 +916,7 @@ export default function FanZoneDashboard() {
     if (ok) { setCopied(true); setTimeout(() => setCopied(false), 1600); }
   };
 
-  // ── Sub-components ─────────────────────────────────────────────────────────
+  // ── Sub-components (defined inline so they close over the local state) ─────
 
   const StreakWidget = () => (
     <div className="bg-[#09090b] border border-white/10 rounded-2xl p-6">
@@ -740,7 +927,9 @@ export default function FanZoneDashboard() {
         <div>
           <div className="flex items-baseline gap-2">
             <h2 className="text-4xl font-black text-white">{currentStreak}</h2>
-            <span className="text-base font-medium text-gray-400">day{currentStreak !== 1 ? "s" : ""}</span>
+            <span className="text-base font-medium text-gray-400">
+              day{currentStreak !== 1 ? "s" : ""}
+            </span>
           </div>
           <p className="text-[10px] text-gray-500 font-medium mt-0.5 uppercase tracking-widest">Current</p>
         </div>
@@ -748,7 +937,9 @@ export default function FanZoneDashboard() {
         <div>
           <div className="flex items-baseline gap-2">
             <h2 className="text-2xl font-black text-amber-500">{longestStreak}</h2>
-            <span className="text-sm font-medium text-gray-400">day{longestStreak !== 1 ? "s" : ""}</span>
+            <span className="text-sm font-medium text-gray-400">
+              day{longestStreak !== 1 ? "s" : ""}
+            </span>
           </div>
           <p className="text-[10px] text-gray-500 font-medium mt-0.5 uppercase tracking-widest">Best</p>
         </div>
@@ -811,10 +1002,14 @@ export default function FanZoneDashboard() {
 
   const RecentActivityWidget = () => (
     <div className="bg-[#09090b] border border-white/10 rounded-2xl p-6 flex flex-col">
-      <h3 className="text-xs font-black tracking-widest text-gray-400 uppercase mb-6">Recent Activity</h3>
+      <h3 className="text-xs font-black tracking-widest text-gray-400 uppercase mb-6">
+        Recent Activity
+      </h3>
       <div className="flex-1 space-y-5">
         {recentActivityList.length === 0 ? (
-          <p className="text-sm text-gray-500 text-center py-4">No activity yet — start earning!</p>
+          <p className="text-sm text-gray-500 text-center py-4">
+            No activity yet — start earning!
+          </p>
         ) : (
           recentActivityList.map((item, i) => (
             <div key={i} className="flex items-center justify-between group">
@@ -824,11 +1019,15 @@ export default function FanZoneDashboard() {
                 </div>
                 <p className="text-sm truncate min-w-0">
                   <span className="font-bold text-white mr-1">{item.action}</span>
-                  <span className="text-gray-400">{item.detail}</span>
+                  {item.detail && (
+                    <span className="text-gray-400">{item.detail}</span>
+                  )}
                 </p>
               </div>
               <div className="text-right shrink-0 ml-3">
-                <p className="text-sm font-black" style={{ color: item.hexColor }}>+{item.xp} SXP</p>
+                <p className="text-sm font-black" style={{ color: item.hexColor }}>
+                  +{item.xp} SXP
+                </p>
                 <p className="text-[10px] text-gray-500 font-medium">{item.time}</p>
               </div>
             </div>
@@ -839,7 +1038,10 @@ export default function FanZoneDashboard() {
         onClick={() => {
           setActiveTab("Earning History");
           setHistoryPage(1);
-          setTimeout(() => earningHistoryRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+          setTimeout(
+            () => earningHistoryRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }),
+            50
+          );
         }}
         className="text-xs font-bold text-rose-500 hover:text-rose-400 text-center w-full mt-6 py-2 border border-rose-500/20 rounded-lg hover:bg-rose-500/5 transition-colors uppercase tracking-widest"
       >
@@ -851,12 +1053,12 @@ export default function FanZoneDashboard() {
   const shareButtons = (size: string) => (
     <>
       {[
-        { handler: handleShareToWhatsApp, src: "/images/share_whatsapp.png", alt: "WhatsApp" },
-        { handler: handleShareToThreads, src: "/images/share_thread.png", alt: "Threads" },
-        { handler: handleShareToInstagram, src: "/images/share_insta.png", alt: "Instagram" },
-        { handler: handleShareToLinkedIn, src: "/images/Share_linkedin.png", alt: "LinkedIn" },
-        { handler: handleShareToX, src: "/images/Share_X.png", alt: "X" },
-        { handler: handleCopyLink, src: "/images/share_copy_link.png", alt: "Copy" },
+        { handler: handleShareToWhatsApp,  src: "/images/share_whatsapp.png", alt: "WhatsApp" },
+        { handler: handleShareToThreads,   src: "/images/share_thread.png",   alt: "Threads"  },
+        { handler: handleShareToInstagram, src: "/images/share_insta.png",    alt: "Instagram"},
+        { handler: handleShareToLinkedIn,  src: "/images/Share_linkedin.png", alt: "LinkedIn" },
+        { handler: handleShareToX,         src: "/images/Share_X.png",        alt: "X"        },
+        { handler: handleCopyLink,         src: "/images/share_copy_link.png",alt: "Copy"     },
       ].map(({ handler, src, alt }) => (
         <button
           key={alt}
@@ -864,7 +1066,10 @@ export default function FanZoneDashboard() {
           className={`${size} shrink-0 rounded-full overflow-hidden bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center`}
           type="button"
         >
-          <Image src={src} alt={alt} width={36} height={36} className="w-full h-full object-cover rounded-full" />
+          <Image
+            src={src} alt={alt} width={36} height={36}
+            className="w-full h-full object-cover rounded-full"
+          />
         </button>
       ))}
     </>
@@ -875,7 +1080,6 @@ export default function FanZoneDashboard() {
   // ─────────────────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-[#050505] text-white font-sans selection:bg-rose-500/30 pb-20">
-      {/* <BackButton /> */}
       <main className="max-w-[1400px] mx-auto px-3 py-3 sm:p-6 space-y-4 sm:space-y-6">
 
         {/* ── HERO ── */}
@@ -887,7 +1091,9 @@ export default function FanZoneDashboard() {
           <div className="absolute inset-0 bg-gradient-to-r from-black via-rose-950/70 to-transparent" />
           <div className="relative z-10 px-5 py-4 w-full flex flex-row items-center justify-between gap-3">
             <div>
-              <h1 className="text-2xl sm:text-3xl font-black tracking-tighter text-white drop-shadow-lg leading-none">FAN ZONE</h1>
+              <h1 className="text-2xl sm:text-3xl font-black tracking-tighter text-white drop-shadow-lg leading-none">
+                FAN ZONE
+              </h1>
               <p className="text-xs sm:text-sm font-medium text-gray-300 mt-1">Earn SXP. Rule the Fan Zone.</p>
             </div>
           </div>
@@ -903,8 +1109,12 @@ export default function FanZoneDashboard() {
             <div className="flex-1">
               <h3 className="text-base font-bold text-white mb-1">You&apos;re doing great!</h3>
               <div className="flex justify-between items-end mb-2">
-                <p className="text-xs text-gray-400">{levelData.xpRemaining.toLocaleString()} SXP to Level {levelData.level + 1}</p>
-                <p className="text-xs font-bold text-gray-400">{levelData.currentLevelXp.toLocaleString()} / {levelData.xpForNextLevel.toLocaleString()}</p>
+                <p className="text-xs text-gray-400">
+                  {levelData.xpRemaining.toLocaleString()} SXP to Level {levelData.level + 1}
+                </p>
+                <p className="text-xs font-bold text-gray-400">
+                  {levelData.currentLevelXp.toLocaleString()} / {levelData.xpForNextLevel.toLocaleString()}
+                </p>
               </div>
               <div className="w-full h-1.5 bg-zinc-800 rounded-full overflow-hidden">
                 <div
@@ -929,7 +1139,8 @@ export default function FanZoneDashboard() {
               </h3>
               {rankDiff > 0 ? (
                 <p className={`text-xs font-bold flex items-center gap-1 mt-0.5 ${isRankUp ? "text-emerald-500" : "text-red-500"}`}>
-                  {isRankUp ? "↑" : "↓"} {rankDiff} <span className="text-gray-500 font-medium">This Month</span>
+                  {isRankUp ? "↑" : "↓"} {rankDiff}{" "}
+                  <span className="text-gray-500 font-medium">This Month</span>
                 </p>
               ) : (
                 <p className="text-xs text-gray-500 font-medium mt-0.5">— No Change</p>
@@ -937,7 +1148,7 @@ export default function FanZoneDashboard() {
             </div>
           </div>
 
-          {/* Elite Fan */}
+          {/* Total SXP */}
           <div className="bg-[#09090b] border border-white/10 rounded-2xl p-5 flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-full bg-purple-500/10 flex items-center justify-center border border-purple-500/20">
@@ -1023,7 +1234,7 @@ export default function FanZoneDashboard() {
                   </div>
                 </div>
 
-                {/* Middle: donut + legend */}
+                {/* Middle: donut + legend — ALL activity types */}
                 <div className="xl:col-span-5 border-t border-white/10 xl:border-t-0 xl:border-l pt-8 xl:pt-0 xl:pl-6 overflow-hidden">
                   <p className="text-[10px] font-black tracking-widest text-gray-500 uppercase mb-4 flex items-center gap-1.5">
                     Points by Activity (All Time) <InfoIcon />
@@ -1038,7 +1249,7 @@ export default function FanZoneDashboard() {
                   </div>
                 </div>
 
-                {/* Right: Trend graph — RESTORED */}
+                {/* Right: Trend graph — ALL activity types across all time ranges */}
                 <div className="xl:col-span-4 border-t xl:border-t-0 xl:border-l border-white/10 pt-8 xl:pt-0 xl:pl-6 flex flex-col justify-start w-full">
                   <div className="flex justify-between items-start mb-4">
                     <h3 className="text-[10px] font-black tracking-widest text-gray-500 uppercase flex items-center gap-1.5">
@@ -1050,7 +1261,9 @@ export default function FanZoneDashboard() {
                           key={range}
                           onClick={() => setTrendPeriod(range)}
                           className={`px-3 py-1 rounded-md text-xs font-bold transition-colors ${
-                            trendPeriod === range ? "bg-[#27272a] text-white shadow-sm" : "text-gray-500 hover:text-white"
+                            trendPeriod === range
+                              ? "bg-[#27272a] text-white shadow-sm"
+                              : "text-gray-500 hover:text-white"
                           }`}
                         >
                           {range}
@@ -1087,7 +1300,10 @@ export default function FanZoneDashboard() {
               </h3>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
                 {earnPointsActions.map((action, i) => (
-                  <div key={i} className="bg-[#18181b] border border-white/5 rounded-xl p-4 flex flex-col items-center justify-center text-center hover:bg-white/5 transition-colors cursor-pointer group">
+                  <div
+                    key={i}
+                    className="bg-[#18181b] border border-white/5 rounded-xl p-4 flex flex-col items-center justify-center text-center hover:bg-white/5 transition-colors cursor-pointer group"
+                  >
                     <div className={`w-10 h-10 rounded-full ${action.bg} flex items-center justify-center mb-3 group-hover:scale-110 transition-transform`}>
                       <action.icon className={`w-4 h-4 ${action.color}`} />
                     </div>
@@ -1099,7 +1315,7 @@ export default function FanZoneDashboard() {
               </div>
             </div>
 
-            {/* RECENT + STREAK + INVITE */}
+            {/* RECENT ACTIVITY + STREAK + INVITE */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <RecentActivityWidget />
               <div className="space-y-6">
@@ -1114,55 +1330,80 @@ export default function FanZoneDashboard() {
             TAB: EARNING HISTORY
         ════════════════════════════════════════ */}
         {activeTab === "Earning History" && (
-          <div ref={earningHistoryRef} className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div
+            ref={earningHistoryRef}
+            className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500"
+          >
             <div className="bg-[#09090b] border border-white/10 rounded-2xl p-6">
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                 <div>
                   <h3 className="text-lg font-black text-white mb-1">Earning History</h3>
-                  <p className="text-xs text-gray-400 font-medium">Track how you earn points across all activities.</p>
+                  <p className="text-xs text-gray-400 font-medium">
+                    Track how you earn points across all activities.
+                  </p>
                 </div>
                 <div className="text-right">
-                  <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Total Points Earned</p>
+                  <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">
+                    Total Points Earned
+                  </p>
                   <h3 className="text-2xl font-black text-emerald-500">{displayPoints} SXP</h3>
                 </div>
               </div>
 
-              {/* Filters */}
+              {/* Filters — "ROAR" category added to cover all ROAR activity types */}
               <div className="flex flex-wrap gap-3 mb-6">
                 <div className="relative w-48">
                   <LayoutGrid className="w-4 h-4 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2 z-10 pointer-events-none" />
                   <select
                     value={categoryFilter}
-                    onChange={(e) => { setCategoryFilter(e.target.value as CategoryFilter); setHistoryPage(1); }}
+                    onChange={(e) => {
+                      setCategoryFilter(e.target.value as CategoryFilter);
+                      setHistoryPage(1);
+                    }}
                     className="w-full bg-[#18181b] border border-white/10 text-xs font-bold rounded-xl pl-10 pr-8 py-3 text-white focus:outline-none focus:border-rose-500 appearance-none cursor-pointer"
                   >
-                    {(["All Activities", "Content", "Engagement", "Fantasy", "Trivia", "Referral", "Registration"] as CategoryFilter[]).map((v) => (
+                    {(
+                      [
+                        "All Activities", "Content", "Engagement",
+                        "Fantasy", "Trivia", "ROAR", "Referral", "Registration",
+                      ] as CategoryFilter[]
+                    ).map((v) => (
                       <option key={v}>{v}</option>
                     ))}
                   </select>
                   <ChevronDown className="w-4 h-4 text-gray-500 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" />
                 </div>
+
                 <div className="relative w-44">
                   <Calendar className="w-4 h-4 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2 z-10 pointer-events-none" />
                   <select
                     value={dateFilter}
-                    onChange={(e) => { setDateFilter(e.target.value as DateFilter); setHistoryPage(1); }}
+                    onChange={(e) => {
+                      setDateFilter(e.target.value as DateFilter);
+                      setHistoryPage(1);
+                    }}
                     className="w-full bg-[#18181b] border border-white/10 text-xs font-bold rounded-xl pl-10 pr-8 py-3 text-white focus:outline-none focus:border-rose-500 appearance-none cursor-pointer"
                   >
-                    {(["All Time", "This Month", "Last 7 Days", "Last 30 Days"] as DateFilter[]).map((v) => (
-                      <option key={v}>{v}</option>
-                    ))}
+                    {(["All Time", "This Month", "Last 7 Days", "Last 30 Days"] as DateFilter[]).map(
+                      (v) => <option key={v}>{v}</option>
+                    )}
                   </select>
                   <ChevronDown className="w-4 h-4 text-gray-500 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" />
                 </div>
+
                 {(categoryFilter !== "All Activities" || dateFilter !== "All Time") && (
                   <button
-                    onClick={() => { setCategoryFilter("All Activities"); setDateFilter("All Time"); setHistoryPage(1); }}
+                    onClick={() => {
+                      setCategoryFilter("All Activities");
+                      setDateFilter("All Time");
+                      setHistoryPage(1);
+                    }}
                     className="flex items-center gap-1.5 px-4 py-2.5 border border-white/10 rounded-xl text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 transition-colors bg-[#18181b]"
                   >
                     <X className="w-3 h-3" /> Clear
                   </button>
                 )}
+
                 <p className="text-xs text-gray-500 self-center ml-auto">
                   {filteredHistory.length} result{filteredHistory.length !== 1 ? "s" : ""}
                 </p>
@@ -1184,34 +1425,63 @@ export default function FanZoneDashboard() {
           </div>
         )}
 
-
         {/* ── Share Dialog ── */}
         {showShareDialog && (
           <>
-            <button type="button" className="fixed inset-0 z-40 bg-black/70 lg:hidden" onClick={closeShareDialog} />
-            <div className="fixed bottom-16 inset-x-4 z-50 mx-auto w-full max-w-[280px] rounded-2xl border border-white/10 bg-[#1a1a1e] p-3 shadow-2xl lg:hidden" onClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              className="fixed inset-0 z-40 bg-black/70 lg:hidden"
+              onClick={closeShareDialog}
+            />
+            <div
+              className="fixed bottom-16 inset-x-4 z-50 mx-auto w-full max-w-[280px] rounded-2xl border border-white/10 bg-[#1a1a1e] p-3 shadow-2xl lg:hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
               <div className="flex items-center justify-between mb-2">
                 <p className="text-white text-sm font-semibold">Share</p>
-                <button type="button" onClick={closeShareDialog} className="text-gray-400 hover:text-white">
-                  <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M15 5L5 15M5 5L15 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>
+                <button
+                  type="button"
+                  onClick={closeShareDialog}
+                  className="text-gray-400 hover:text-white"
+                >
+                  <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
+                    <path d="M15 5L5 15M5 5L15 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                  </svg>
                 </button>
               </div>
-              <div className="flex flex-row flex-nowrap items-center gap-1.5 mb-2 overflow-x-auto">{shareButtons("w-8 h-8")}</div>
+              <div className="flex flex-row flex-nowrap items-center gap-1.5 mb-2 overflow-x-auto">
+                {shareButtons("w-8 h-8")}
+              </div>
               {copied && <p className="text-xs text-emerald-400">Copied to clipboard</p>}
             </div>
-            <div className="hidden lg:flex fixed inset-0 z-50 items-center justify-center bg-black/60" onClick={closeShareDialog}>
-              <div className="bg-[#1a1a1e] rounded-2xl border border-white/10 p-4 w-[300px] shadow-2xl" onClick={(e) => e.stopPropagation()}>
+
+            <div
+              className="hidden lg:flex fixed inset-0 z-50 items-center justify-center bg-black/60"
+              onClick={closeShareDialog}
+            >
+              <div
+                className="bg-[#1a1a1e] rounded-2xl border border-white/10 p-4 w-[300px] shadow-2xl"
+                onClick={(e) => e.stopPropagation()}
+              >
                 <div className="flex items-center justify-between mb-3">
                   <p className="text-white text-sm font-semibold">Invite Friends</p>
-                  <button type="button" onClick={closeShareDialog} className="text-gray-400 hover:text-white">
-                    <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M15 5L5 15M5 5L15 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>
+                  <button
+                    type="button"
+                    onClick={closeShareDialog}
+                    className="text-gray-400 hover:text-white"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
+                      <path d="M15 5L5 15M5 5L15 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                    </svg>
                   </button>
                 </div>
                 <div className="rounded-xl border border-white/10 bg-[#111114] p-3 mb-3">
                   <p className="text-white text-sm font-semibold">Invite Friends & Earn</p>
                   <p className="text-white/45 text-[11px] mt-2 break-all">{buildFanZoneShareUrl()}</p>
                 </div>
-                <div className="flex flex-row flex-nowrap items-center gap-2 mb-2">{shareButtons("w-9 h-9")}</div>
+                <div className="flex flex-row flex-nowrap items-center gap-2 mb-2">
+                  {shareButtons("w-9 h-9")}
+                </div>
                 {copied && <p className="text-xs text-emerald-400">Copied to clipboard</p>}
               </div>
             </div>

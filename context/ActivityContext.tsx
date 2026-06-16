@@ -15,6 +15,7 @@ import {
 } from "react";
 import axios from "axios";
 import { useAuth } from "@/context/AuthContext";
+import { onSxpActivityRefresh } from "@/lib/sxpEvents";
 
 // ─── Public types ─────────────────────────────────────────────────────────────
 export interface ActivityItem {
@@ -38,6 +39,7 @@ interface ActivityContextType {
 // Keyed by userId so switching accounts always gets fresh data.
 let cache: { ts: number; userId: string; data: ActivityItem[] } | null = null;
 const CACHE_TTL = 30_000; // 30 seconds
+const ACTIVITY_FETCH_LIMIT = 200;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const sameActivity = (a: ActivityItem, b: ActivityItem): boolean => {
@@ -97,7 +99,7 @@ export const ActivityProvider: React.FC<{ children: React.ReactNode }> = ({
 
     try {
       const res = await axios.get(
-        `/api/user-activity?userId=${encodeURIComponent(userId)}&limit=50`
+        `/api/user-activity?userId=${encodeURIComponent(userId)}&limit=${ACTIVITY_FETCH_LIMIT}`
       );
 
       if (res.data.success) {
@@ -150,6 +152,12 @@ export const ActivityProvider: React.FC<{ children: React.ReactNode }> = ({
   useEffect(() => {
     if (authReady) fetchActivities();
   }, [authReady, fetchActivities]);
+
+  useEffect(() => {
+    return onSxpActivityRefresh(() => {
+      void refreshActivities();
+    });
+  }, [refreshActivities]);
 
   return (
     <ActivityContext.Provider

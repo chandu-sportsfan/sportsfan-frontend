@@ -2639,11 +2639,21 @@ function LiveCameraFeed({
     const isModerator = userRole === 'Host' || userRole === 'Co-Host' || userRole === 'Moderator';
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const handleApiReady = (api: any) => {
+    const handleApiReady = async (api: any) => {
         apiRef.current = api;
         if (onApiReady) {
             onApiReady(api);
         }
+        
+        // Sync initial state
+        try {
+            const audioMuted = await api.isAudioMuted();
+            setMicOn(!audioMuted);
+        } catch (err) {}
+        try {
+            const videoMuted = await api.isVideoMuted();
+            setVidOn(!videoMuted);
+        } catch (err) {}
         
         // Listen to Jitsi's internal mute status changes and synchronize state
         api.addListener("audioMuteStatusChanged", (data: { muted: boolean }) => {
@@ -3501,14 +3511,20 @@ export default function WatchRoom({ room, onBack }: Props) {
     const [vidOn, setVidOn] = useState(true);
 
     const toggleMic = () => {
-        if (jitsiApiRef.current) {
-            jitsiApiRef.current.executeCommand('toggleAudio');
+        const api = jitsiApiRef.current || jitsiApi;
+        if (api) {
+            api.executeCommand('toggleAudio');
+        } else {
+            console.warn("toggleMic: Jitsi API not ready");
         }
     };
 
     const toggleVid = () => {
-        if (jitsiApiRef.current) {
-            jitsiApiRef.current.executeCommand('toggleVideo');
+        const api = jitsiApiRef.current || jitsiApi;
+        if (api) {
+            api.executeCommand('toggleVideo');
+        } else {
+            console.warn("toggleVid: Jitsi API not ready");
         }
     };
 
@@ -4520,12 +4536,24 @@ export default function WatchRoom({ room, onBack }: Props) {
                                 telestratorActive={isTelestratorActive}
                                 telestratorStrokes={telestratorStrokes}
                                 onTelestratorStrokeAdded={(stroke) => triggerMoment("TEL_DRAW:" + JSON.stringify(stroke))}
-                                onTelestratorUndo={() => triggerMoment("TEL_UNDO")}
-                                onTelestratorClear={() => triggerMoment("TEL_CLEAR")}
-                                onTelestratorToggleActive={() => triggerMoment("TEL_TOGGLE:" + (!isTelestratorActive).toString())}
-                                onApiReady={(api) => {
+                                onApiReady={async (api) => {
                                     jitsiApiRef.current = api;
                                     setJitsiApi(api);
+                                    
+                                    // Query initial mute states to synchronize HTML Control Panel on mount
+                                    try {
+                                        const audioMuted = await api.isAudioMuted();
+                                        setMicOn(!audioMuted);
+                                    } catch (err) {
+                                        console.warn("Failed to get initial audio mute status:", err);
+                                    }
+                                    try {
+                                        const videoMuted = await api.isVideoMuted();
+                                        setVidOn(!videoMuted);
+                                    } catch (err) {
+                                        console.warn("Failed to get initial video mute status:", err);
+                                    }
+
                                     api.addListener("audioMuteStatusChanged", (data: { muted: boolean }) => {
                                         setMicOn(!data.muted);
                                     });

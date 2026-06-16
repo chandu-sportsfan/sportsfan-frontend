@@ -4203,6 +4203,18 @@ export default function WatchRoom({ room, onBack }: Props) {
     const totalPollsCount = predictions?.filter(p => p.question.startsWith("[Poll] ")).length || 0;
     const totalQuizCount = quizQuestions?.length || 0;
 
+    // Merge jitsi names + chat users to calculate total participant count dynamically
+    const jitsiNames = new Set((jitsiParticipants || []).map((p: any) => (p.displayName || p.formattedDisplayName || '').toLowerCase()));
+    const chatUsersList = Array.from(
+        new Set(
+            (chats || [])
+                .filter((c) => c.userName && c.userName.trim() !== "")
+                .map((c) => c.userName)
+        )
+    ).filter((u) => u !== userName);
+    const chatOnlyUsers = chatUsersList.filter(u => !jitsiNames.has(u.toLowerCase()));
+    const dynamicParticipantsCount = 1 + (jitsiParticipants?.length || 0) + chatOnlyUsers.length;
+
     const sidebarTabs = [
         { id: 'liveChat', label: 'Live Chat' },
         // Only show these tabs when the host has actually created content
@@ -4210,7 +4222,7 @@ export default function WatchRoom({ room, onBack }: Props) {
         ...(totalPollsCount > 0 ? [{ id: 'polls', label: activePollsCount > 0 ? `Polls (${activePollsCount})` : 'Polls' }] : []),
         ...(totalQuizCount > 0 ? [{ id: 'flashQuiz', label: activeQuizCount > 0 ? `Quiz (${activeQuizCount})` : 'Quiz' }] : []),
         ...(activeQnaSession ? [{ id: 'qna', label: 'Q&A' }] : []),
-        { id: 'participants', label: 'Participants' }
+        { id: 'participants', label: `Participants (${dynamicParticipantsCount})` }
     ];
 
     // Tab safety: fallback if activeTab is not in sidebarTabs list (e.g. if deleted or hidden)
@@ -4219,7 +4231,7 @@ export default function WatchRoom({ room, onBack }: Props) {
         if (!isTabAvailable) {
             setActiveTab('liveChat');
         }
-    }, [predictions, quizQuestions, activeTab]);
+    }, [predictions, quizQuestions, activeTab, jitsiParticipants, chats]);
 
     // Show loading state while room is being loaded
     if (!room) {

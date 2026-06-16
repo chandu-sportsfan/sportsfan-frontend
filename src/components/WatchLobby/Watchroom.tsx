@@ -2957,7 +2957,7 @@ function LiveCameraFeed({
 
                     {/* Mic, Video, Screen Share & Record buttons (Host/Mods ONLY) */}
                     {isModerator && (
-                        <div className="absolute top-1.5 right-1.5 flex items-center gap-1.5 z-30 bg-[#111]/80 backdrop-blur-md px-1.5 py-1 rounded-lg border border-white/10">
+                        <div className="absolute top-1.5 right-1.5 flex items-center gap-1.5 z-[9999] bg-[#111]/80 backdrop-blur-md px-1.5 py-1 rounded-lg border border-white/10">
                             <button
                                 type="button"
                                 onClick={toggleMic}
@@ -2991,7 +2991,7 @@ function LiveCameraFeed({
 
                     {/* Mic button overlay (Viewers ONLY) */}
                     {!isModerator && (
-                        <div className="absolute top-1.5 right-1.5 flex items-center gap-1.5 z-30 bg-[#111]/80 backdrop-blur-md px-1.5 py-1 rounded-lg border border-white/10">
+                        <div className="absolute top-1.5 right-1.5 flex items-center gap-1.5 z-[9999] bg-[#111]/80 backdrop-blur-md px-1.5 py-1 rounded-lg border border-white/10">
                             <button
                                 type="button"
                                 onClick={toggleMic}
@@ -3005,7 +3005,7 @@ function LiveCameraFeed({
 
                     {/* Premium Glassmorphic Recording Selector Popover */}
                     {isModerator && showRecordingOptions && customRecordingState === 'idle' && (
-                        <div className="absolute top-[40px] right-1.5 w-[160px] bg-[#111]/95 backdrop-blur-xl border border-white/15 rounded-xl shadow-2xl p-2.5 z-40 flex flex-col gap-2 animate-in fade-in slide-in-from-top-2 duration-200">
+                        <div className="absolute top-[40px] right-1.5 w-[160px] bg-[#111]/95 backdrop-blur-xl border border-white/15 rounded-xl shadow-2xl p-2.5 z-[9999] flex flex-col gap-2 animate-in fade-in slide-in-from-top-2 duration-200">
                             <div className="flex items-center justify-between text-[9px] text-white/50 font-bold uppercase tracking-wider px-1 pb-1 border-b border-white/5">
                                 <span>Record Session</span>
                                 <button 
@@ -4008,6 +4008,7 @@ export default function WatchRoom({ room, onBack }: Props) {
     // System-wide reactions sync via hidden chat events
     const processedChatReactions = useRef<Set<string>>(new Set());
     const hasLoadedInitialChats = useRef(false);
+    const mountTime = useRef<number>(Date.now());
 
     useEffect(() => {
         if (!chats || chats.length === 0) return;
@@ -4025,6 +4026,19 @@ export default function WatchRoom({ room, onBack }: Props) {
         chats.forEach((msg: any) => {
             if (msg.text?.startsWith('[SYSTEM_REACTION]:') && !processedChatReactions.current.has(msg.id)) {
                 processedChatReactions.current.add(msg.id);
+                
+                // Only process reactions that were sent AFTER the room was mounted
+                const msgTime = msg.createdAt 
+                    ? (typeof msg.createdAt === 'number' 
+                        ? msg.createdAt 
+                        : (msg.createdAt.seconds 
+                            ? msg.createdAt.seconds * 1000 
+                            : new Date(msg.createdAt).getTime()))
+                    : Date.now();
+                if (msgTime < mountTime.current - 3000) {
+                    return;
+                }
+
                 const reactionType = msg.text.replace('[SYSTEM_REACTION]:', '');
                 
                 if (reactionType.startsWith('KICK:')) {
@@ -4531,7 +4545,7 @@ export default function WatchRoom({ room, onBack }: Props) {
 
                     {/* Zoom-style Host Reactions */}
                     {(userRole === 'Host' || userRole === 'Co-Host' || userRole === 'Moderator') && (
-                        <div className="flex flex-col gap-2.5 bg-[#141416] border border-white/5 rounded-xl p-3.5 mt-3 mx-4 sm:mx-6">
+                        <div className="flex flex-col gap-1.5 lg:gap-2.5 bg-[#141416] border border-white/5 rounded-xl p-2 lg:p-3.5 mt-1.5 lg:mt-3 mx-3 sm:mx-4 lg:mx-6">
                             <div className="flex items-center gap-1.5 text-gray-400 text-xs">
                                 <span className="font-extrabold uppercase tracking-widest text-[9px] bg-white/5 px-1.5 py-0.5 rounded text-white">Host Reactions</span>
                                 <span className="opacity-60 cursor-help flex items-center justify-center animate-pulse" title="Click to trigger animated reaction effects for everyone!">
@@ -4543,7 +4557,7 @@ export default function WatchRoom({ room, onBack }: Props) {
                                 {/* WICKET */}
                                 <button 
                                     onClick={() => triggerMoment("WICKET")}
-                                    className="flex-shrink-0 flex items-center gap-2 bg-[#202023] hover:bg-[#2a2a2e] border border-white/5 rounded-full px-3.5 py-1.5 transition-all hover:scale-105 active:scale-95 text-xs font-semibold text-gray-200"
+                                    className="flex-shrink-0 flex items-center gap-1.5 bg-[#202023] hover:bg-[#2a2a2e] border border-white/5 rounded-full px-2.5 py-1 lg:px-3.5 lg:py-1.5 transition-all hover:scale-105 active:scale-95 text-[10px] lg:text-xs font-semibold text-gray-200"
                                 >
                                     <div className="w-5 h-5 rounded-full bg-pink-600 flex items-center justify-center text-[10px] text-white">🏏</div>
                                     <span>Wicket</span>
@@ -4552,7 +4566,7 @@ export default function WatchRoom({ room, onBack }: Props) {
                                 {/* SIX */}
                                 <button 
                                     onClick={() => triggerMoment("SIX")}
-                                    className="flex-shrink-0 flex items-center gap-2 bg-[#202023] hover:bg-[#2a2a2e] border border-white/5 rounded-full px-3.5 py-1.5 transition-all hover:scale-105 active:scale-95 text-xs font-semibold text-gray-200"
+                                    className="flex-shrink-0 flex items-center gap-1.5 bg-[#202023] hover:bg-[#2a2a2e] border border-white/5 rounded-full px-2.5 py-1 lg:px-3.5 lg:py-1.5 transition-all hover:scale-105 active:scale-95 text-[10px] lg:text-xs font-semibold text-gray-200"
                                 >
                                     <div className="w-5 h-5 rounded-full bg-purple-600 flex items-center justify-center text-[10px] font-black text-white">6</div>
                                     <span>Six</span>
@@ -4561,7 +4575,7 @@ export default function WatchRoom({ room, onBack }: Props) {
                                 {/* FOUR */}
                                 <button 
                                     onClick={() => triggerMoment("FOUR")}
-                                    className="flex-shrink-0 flex items-center gap-2 bg-[#202023] hover:bg-[#2a2a2e] border border-white/5 rounded-full px-3.5 py-1.5 transition-all hover:scale-105 active:scale-95 text-xs font-semibold text-gray-200"
+                                    className="flex-shrink-0 flex items-center gap-1.5 bg-[#202023] hover:bg-[#2a2a2e] border border-white/5 rounded-full px-2.5 py-1 lg:px-3.5 lg:py-1.5 transition-all hover:scale-105 active:scale-95 text-[10px] lg:text-xs font-semibold text-gray-200"
                                 >
                                     <div className="w-5 h-5 rounded-full bg-blue-600 flex items-center justify-center text-[10px] font-black text-white">4</div>
                                     <span>Four</span>
@@ -4570,7 +4584,7 @@ export default function WatchRoom({ room, onBack }: Props) {
                                 {/* TELESTRATOR / CHALKBOARD DRAW */}
                                 <button 
                                     onClick={() => triggerMoment("TEL_TOGGLE:" + (!isTelestratorActive).toString())}
-                                    className={`flex-shrink-0 flex items-center gap-2 border rounded-full px-3.5 py-1.5 transition-all hover:scale-105 active:scale-95 text-xs font-semibold ${
+                                    className={`flex-shrink-0 flex items-center gap-1.5 border rounded-full px-2.5 py-1 lg:px-3.5 lg:py-1.5 transition-all hover:scale-105 active:scale-95 text-[10px] lg:text-xs font-semibold ${
                                         isTelestratorActive 
                                             ? 'bg-green-600/20 border-green-500 text-green-400 shadow-[0_0_10px_rgba(34,197,94,0.3)] animate-pulse' 
                                             : 'bg-[#202023] hover:bg-[#2a2a2e] border-white/5 text-gray-200'
@@ -4583,7 +4597,7 @@ export default function WatchRoom({ room, onBack }: Props) {
                                 {/* GOAL */}
                                 <button 
                                     onClick={() => triggerMoment("GOAL")}
-                                    className="flex-shrink-0 flex items-center gap-2 bg-[#202023] hover:bg-[#2a2a2e] border border-white/5 rounded-full px-3.5 py-1.5 transition-all hover:scale-105 active:scale-95 text-xs font-semibold text-gray-200"
+                                    className="flex-shrink-0 flex items-center gap-1.5 bg-[#202023] hover:bg-[#2a2a2e] border border-white/5 rounded-full px-2.5 py-1 lg:px-3.5 lg:py-1.5 transition-all hover:scale-105 active:scale-95 text-[10px] lg:text-xs font-semibold text-gray-200"
                                 >
                                     <div className="w-5 h-5 rounded-full bg-green-600 flex items-center justify-center text-[10px] text-white">⚽</div>
                                     <span>Goal</span>
@@ -4592,7 +4606,7 @@ export default function WatchRoom({ room, onBack }: Props) {
                                 {/* FIRE */}
                                 <button 
                                     onClick={() => triggerMoment("FIRE")}
-                                    className="flex-shrink-0 flex items-center gap-2 bg-[#202023] hover:bg-[#2a2a2e] border border-white/5 rounded-full px-3.5 py-1.5 transition-all hover:scale-105 active:scale-95 text-xs font-semibold text-gray-200"
+                                    className="flex-shrink-0 flex items-center gap-1.5 bg-[#202023] hover:bg-[#2a2a2e] border border-white/5 rounded-full px-2.5 py-1 lg:px-3.5 lg:py-1.5 transition-all hover:scale-105 active:scale-95 text-[10px] lg:text-xs font-semibold text-gray-200"
                                 >
                                     <div className="w-5 h-5 rounded-full bg-orange-600 flex items-center justify-center text-[10px] text-white">🔥</div>
                                     <span>Fire</span>
@@ -4601,7 +4615,7 @@ export default function WatchRoom({ room, onBack }: Props) {
                                 {/* CLAP */}
                                 <button 
                                     onClick={() => triggerMoment("CLAP")}
-                                    className="flex-shrink-0 flex items-center gap-2 bg-[#202023] hover:bg-[#2a2a2e] border border-white/5 rounded-full px-3.5 py-1.5 transition-all hover:scale-105 active:scale-95 text-xs font-semibold text-gray-200"
+                                    className="flex-shrink-0 flex items-center gap-1.5 bg-[#202023] hover:bg-[#2a2a2e] border border-white/5 rounded-full px-2.5 py-1 lg:px-3.5 lg:py-1.5 transition-all hover:scale-105 active:scale-95 text-[10px] lg:text-xs font-semibold text-gray-200"
                                 >
                                     <div className="w-5 h-5 rounded-full bg-yellow-500 flex items-center justify-center text-[10px] text-white">👏</div>
                                     <span>Clap</span>
@@ -4610,7 +4624,7 @@ export default function WatchRoom({ room, onBack }: Props) {
                                 {/* HEART */}
                                 <button 
                                     onClick={() => triggerMoment("HEART")}
-                                    className="flex-shrink-0 flex items-center gap-2 bg-[#202023] hover:bg-[#2a2a2e] border border-white/5 rounded-full px-3.5 py-1.5 transition-all hover:scale-105 active:scale-95 text-xs font-semibold text-gray-200"
+                                    className="flex-shrink-0 flex items-center gap-1.5 bg-[#202023] hover:bg-[#2a2a2e] border border-white/5 rounded-full px-2.5 py-1 lg:px-3.5 lg:py-1.5 transition-all hover:scale-105 active:scale-95 text-[10px] lg:text-xs font-semibold text-gray-200"
                                 >
                                     <div className="w-5 h-5 rounded-full bg-red-600 flex items-center justify-center text-[10px] text-white">❤️</div>
                                     <span>Heart</span>
@@ -4619,7 +4633,7 @@ export default function WatchRoom({ room, onBack }: Props) {
                                 {/* DRUMROLL */}
                                 <button 
                                     onClick={() => triggerMoment("DRUMROLL")}
-                                    className="flex-shrink-0 flex items-center gap-2 bg-[#202023] hover:bg-[#2a2a2e] border border-white/5 rounded-full px-3.5 py-1.5 transition-all hover:scale-105 active:scale-95 text-xs font-semibold text-gray-200"
+                                    className="flex-shrink-0 flex items-center gap-1.5 bg-[#202023] hover:bg-[#2a2a2e] border border-white/5 rounded-full px-2.5 py-1 lg:px-3.5 lg:py-1.5 transition-all hover:scale-105 active:scale-95 text-[10px] lg:text-xs font-semibold text-gray-200"
                                 >
                                     <div className="w-5 h-5 rounded-full bg-yellow-600 flex items-center justify-center text-[10px] text-white">🥁</div>
                                     <span>Drumroll</span>
@@ -4631,7 +4645,7 @@ export default function WatchRoom({ room, onBack }: Props) {
 
                     {/* Zoom-style Viewer Reactions */}
                     {!(userRole === 'Host' || userRole === 'Co-Host' || userRole === 'Moderator') && (
-                        <div className="flex flex-col gap-2.5 bg-[#141416] border border-white/5 rounded-xl p-3.5 mt-3 mx-4 sm:mx-6">
+                        <div className="flex flex-col gap-1.5 lg:gap-2.5 bg-[#141416] border border-white/5 rounded-xl p-2 lg:p-3.5 mt-1.5 lg:mt-3 mx-3 sm:mx-4 lg:mx-6">
                             <div className="flex items-center gap-1.5 text-gray-400 text-xs">
                                 <span className="font-extrabold uppercase tracking-widest text-[9px] bg-white/5 px-1.5 py-0.5 rounded text-white">Viewer Reactions</span>
                                 <span className="opacity-60 cursor-help flex items-center justify-center animate-pulse" title="Click to trigger animated reaction effects for everyone!">
@@ -4642,7 +4656,7 @@ export default function WatchRoom({ room, onBack }: Props) {
                                 {/* FIRE */}
                                 <button 
                                     onClick={() => triggerMoment("FIRE")}
-                                    className="flex-shrink-0 flex items-center gap-2 bg-[#202023] hover:bg-[#2a2a2e] border border-white/5 rounded-full px-3.5 py-1.5 transition-all hover:scale-105 active:scale-95 text-xs font-semibold text-gray-200"
+                                    className="flex-shrink-0 flex items-center gap-1.5 bg-[#202023] hover:bg-[#2a2a2e] border border-white/5 rounded-full px-2.5 py-1 lg:px-3.5 lg:py-1.5 transition-all hover:scale-105 active:scale-95 text-[10px] lg:text-xs font-semibold text-gray-200"
                                 >
                                     <div className="w-5 h-5 rounded-full bg-orange-600 flex items-center justify-center text-[10px] text-white">🔥</div>
                                     <span>Fire</span>
@@ -4651,7 +4665,7 @@ export default function WatchRoom({ room, onBack }: Props) {
                                 {/* CLAP */}
                                 <button 
                                     onClick={() => triggerMoment("CLAP")}
-                                    className="flex-shrink-0 flex items-center gap-2 bg-[#202023] hover:bg-[#2a2a2e] border border-white/5 rounded-full px-3.5 py-1.5 transition-all hover:scale-105 active:scale-95 text-xs font-semibold text-gray-200"
+                                    className="flex-shrink-0 flex items-center gap-1.5 bg-[#202023] hover:bg-[#2a2a2e] border border-white/5 rounded-full px-2.5 py-1 lg:px-3.5 lg:py-1.5 transition-all hover:scale-105 active:scale-95 text-[10px] lg:text-xs font-semibold text-gray-200"
                                 >
                                     <div className="w-5 h-5 rounded-full bg-yellow-500 flex items-center justify-center text-[10px] text-white">👏</div>
                                     <span>Clap</span>
@@ -4660,7 +4674,7 @@ export default function WatchRoom({ room, onBack }: Props) {
                                 {/* HEART */}
                                 <button 
                                     onClick={() => triggerMoment("HEART")}
-                                    className="flex-shrink-0 flex items-center gap-2 bg-[#202023] hover:bg-[#2a2a2e] border border-white/5 rounded-full px-3.5 py-1.5 transition-all hover:scale-105 active:scale-95 text-xs font-semibold text-gray-200"
+                                    className="flex-shrink-0 flex items-center gap-1.5 bg-[#202023] hover:bg-[#2a2a2e] border border-white/5 rounded-full px-2.5 py-1 lg:px-3.5 lg:py-1.5 transition-all hover:scale-105 active:scale-95 text-[10px] lg:text-xs font-semibold text-gray-200"
                                 >
                                     <div className="w-5 h-5 rounded-full bg-red-600 flex items-center justify-center text-[10px] text-white">❤️</div>
                                     <span>Heart</span>

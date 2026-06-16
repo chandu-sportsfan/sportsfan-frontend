@@ -10,6 +10,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSearchParams } from "next/navigation";
 import axios from "axios";
+import { emitSxpActivityRefresh } from "@/lib/sxpEvents";
 
 import { GLOBAL_CSS } from "./constants/styles";
 import { NOTIFICATIONS_DATA } from "./constants";
@@ -468,6 +469,7 @@ export default function ROARApp() {
               quiz: "🧠 Flash Quiz launched · Let the fans answer!",
             };
             showToast(toastMap[postType] || "🔥 Your take is live");
+            emitSxpActivityRefresh();
             fetchPosts();
           }
         }

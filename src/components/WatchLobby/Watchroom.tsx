@@ -2857,6 +2857,14 @@ function LiveCameraFeed({
                         key={isModerator ? 'moderator' : 'viewer'}
                         domain="meet.uxexpert.in"
                         roomName={roomName}
+                        iframeProperties={{
+                            allow: "camera; microphone; display-capture; autoplay; clipboard-write",
+                            style: {
+                                width: '100%',
+                                height: '100%',
+                                border: 'none'
+                            }
+                        }}
                         configOverwrite={{
                             prejoinPageEnabled: false,
                             prejoinConfig: {

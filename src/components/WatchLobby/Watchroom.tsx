@@ -2984,6 +2984,7 @@ function LiveCameraFeed({
                                 }`}
                                 title={customRecordingState === 'recording' ? "Stop Recording" : "Start Recording Options"}
                             >
+                                <span className={`w-2.5 h-2.5 rounded-full ${customRecordingState === 'recording' ? "bg-white" : "bg-red-500"}`} />
                             </button>
                         </div>
                     )}

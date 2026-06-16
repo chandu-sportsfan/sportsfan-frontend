@@ -31,6 +31,7 @@ type ActivityKey =
   | "roarDebate"
   | "roarMemory"
   | "roarPost"
+  | "roarQuiz"
   | "roarReaction"   // FIX 2: added for ROAR_RAW_REACTIONS
   | "watchDrop"
   | "like"
@@ -89,9 +90,12 @@ const ACTIVITY_TYPE_MAP: Record<string, ActivityKey> = {
   // Fan Battle
   FAN_BATTLE_WIN:       "fanBattleWin",
   FAN_BATTLE_PLAY:      "fanBattlePlay",
+  CREATE_BATTLE:        "fanBattlePlay",
+  PLAY_BATTLE:          "fanBattlePlay",
 
   // Fan Zone Post
   POST_CREATED:         "post",
+  CREATE_POST:          "post",
 
   // Trivia
   TRIVIA_CORRECT:       "trivia",
@@ -106,6 +110,7 @@ const ACTIVITY_TYPE_MAP: Record<string, ActivityKey> = {
   ROAR_DEBATE:          "roarDebate",
   ROAR_MEMORY:          "roarMemory",
   ROAR_POST:            "roarPost",
+  ROAR_QUIZ:            "roarQuiz",
   ROAR_RAW_REACTIONS:   "roarReaction",  // FIX 2: was missing, now mapped
 };
 
@@ -186,6 +191,11 @@ const ACTIVITY_META: Record<ActivityKey, {
     color: "text-orange-400", hexColor: "#fb923c",
     typeColor: "text-orange-400 border-orange-400/30 bg-orange-400/5",
   },
+  roarQuiz: {
+    action: "Answered a ROAR Quiz", type: "ROAR", icon: Brain,
+    color: "text-emerald-400", hexColor: "#34d399",
+    typeColor: "text-emerald-400 border-emerald-400/30 bg-emerald-400/5",
+  },
   // FIX 2: new entry — was previously missing, causing ROAR_RAW_REACTIONS to
   // render as "other" (grey trophy icon, Engagement category, wrong badge).
   roarReaction: {
@@ -230,13 +240,17 @@ const SOURCE_LABEL_MAP: Record<string, string> = {
   ROAR_DEBATE:          "ROAR",
   ROAR_MEMORY:          "ROAR",
   ROAR_POST:            "ROAR",
+  ROAR_QUIZ:            "ROAR",
   ROAR_RAW_REACTIONS:   "ROAR",
   LISTEN_AUDIO_DROP:    "LISTEN AUDIO DROP",
   LISTEN_COMPLETE:      "LISTEN AUDIO DROP",
   AUDIO_DROP:           "LISTEN AUDIO DROP",
   FAN_BATTLE_WIN:       "FAN BATTLE",
   FAN_BATTLE_PLAY:      "FAN BATTLE",
+  CREATE_BATTLE:        "FAN BATTLE",
+  PLAY_BATTLE:          "FAN BATTLE",
   TRIVIA_CORRECT:       "TRIVIA",
+  CREATE_POST:          "FAN ZONE POST",
   POST_CREATED:         "FAN ZONE POST",
   REGISTRATION:         "REGISTRATION",
   INVITE_ACCEPTED:      "REFERRAL",

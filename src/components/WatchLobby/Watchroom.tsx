@@ -2897,6 +2897,7 @@ function LiveCameraFeed({
                                 iframe.style.width = '100%';
                                 iframe.style.height = '100%';
                                 iframe.style.border = 'none';
+                                iframe.setAttribute('allow', 'camera; microphone; display-capture; autoplay; clipboard-write');
                             }
                         }}
                     />

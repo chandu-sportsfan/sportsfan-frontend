@@ -3372,10 +3372,15 @@ function TabContent({
                                                    p.email?.toLowerCase() === room.hostUserId.toLowerCase()
                                                )) || 
                                                displayName.toLowerCase() === room?.name?.split(' ')[0]?.toLowerCase();
-                            const isCoHostUser = room?.coHostUserId && (
-                                                 displayName.toLowerCase() === room.coHostUserId.toLowerCase() ||
-                                                 p.email?.toLowerCase() === room.coHostUserId.toLowerCase()
-                                               );
+                            
+                            const coHostsList = room?.coHostUserId
+                                ? room.coHostUserId.split(",").map((id: string) => id.trim().toLowerCase())
+                                : [];
+                            const isCoHostUser = coHostsList.some(
+                                (id: string) =>
+                                    displayName.toLowerCase() === id ||
+                                    p.email?.toLowerCase() === id
+                            );
                             const role = isHostUser ? 'Host' : (isCoHostUser ? 'Co-Host' : 'Viewer');
                             return (
                                 <div key={p.id || p.displayName || Math.random()} className="flex items-center justify-between bg-[#1a1a1a] p-3 rounded-xl border border-[#333]">
@@ -3395,28 +3400,44 @@ function TabContent({
                                                     onClick={async () => {
                                                         try {
                                                             const fd = new FormData();
-                                                            const isAlreadyCoHost = room.coHostUserId?.toLowerCase() === displayName.toLowerCase() ||
-                                                                                   (p.email && room.coHostUserId?.toLowerCase() === p.email.toLowerCase());
-                                                            const targetValue = isAlreadyCoHost ? '' : (p.email && !p.email.toLowerCase().endsWith('@sportsfan360.com') ? p.email : displayName);
+                                                            const currentCoHosts = room.coHostUserId
+                                                                ? room.coHostUserId.split(",").map((id: string) => id.trim())
+                                                                : [];
+                                                            const userKey = (p.email && !p.email.toLowerCase().endsWith('@sportsfan360.com')) ? p.email : displayName;
+                                                            
+                                                            const isAlreadyCoHost = currentCoHosts.some(
+                                                                (id: string) => id.toLowerCase() === userKey.toLowerCase()
+                                                            );
+                                                            
+                                                            let newCoHosts: string[];
+                                                            if (isAlreadyCoHost) {
+                                                                newCoHosts = currentCoHosts.filter(
+                                                                    (id: string) => id.toLowerCase() !== userKey.toLowerCase()
+                                                                );
+                                                            } else {
+                                                                newCoHosts = [...currentCoHosts, userKey];
+                                                            }
+                                                            
+                                                            const targetValue = newCoHosts.join(",");
                                                             fd.set('coHostUserId', targetValue);
                                                             const res = await fetch(`/api/watch-along/${room.id}`, {
                                                                 method: 'PUT',
                                                                 body: fd
-                                                            });
-                                                            if (res.ok) {
-                                                                alert(isAlreadyCoHost ? `${displayName} is no longer Co-Host!` : `${displayName} is now Co-Host!`);
-                                                                if (room.id) await fetchRoomById(room.id);
-                                                            }
+                                                             });
+                                                             if (res.ok) {
+                                                                 alert(isAlreadyCoHost ? `${displayName} is no longer Co-Host!` : `${displayName} is now Co-Host!`);
+                                                                 if (room.id) await fetchRoomById(room.id);
+                                                             }
                                                         } catch (err) { console.error('Toggle Co-Host failed:', err); }
                                                     }}
                                                     className={`px-3 py-1 text-xs font-semibold rounded-full border transition-all flex items-center gap-1 ${
-                                                        room.coHostUserId?.toLowerCase() === displayName.toLowerCase() || (p.email && room.coHostUserId?.toLowerCase() === p.email.toLowerCase())
+                                                        isCoHostUser
                                                             ? 'bg-yellow-600 border-yellow-500 text-white'
                                                             : 'bg-[#222] hover:bg-yellow-600 border-[#444] text-white'
                                                     }`}
-                                                    title={room.coHostUserId?.toLowerCase() === displayName.toLowerCase() || (p.email && room.coHostUserId?.toLowerCase() === p.email.toLowerCase()) ? "Remove Co-Host" : "Make Co-Host"}
+                                                    title={isCoHostUser ? "Remove Co-Host" : "Make Co-Host"}
                                                 >
-                                                    <Crown size={10} /> {room.coHostUserId?.toLowerCase() === displayName.toLowerCase() || (p.email && room.coHostUserId?.toLowerCase() === p.email.toLowerCase()) ? "Co-Host" : "Make Co-Host"}
+                                                    <Crown size={10} /> {isCoHostUser ? "Co-Host" : "Make Co-Host"}
                                                 </button>
                                             )}
                                             <button
@@ -4072,7 +4093,8 @@ export default function WatchRoom({ room, onBack }: Props) {
 
         // 2. Co-Host check
         if (normalizedCoHostId) {
-            if (myUserId === normalizedCoHostId || myName === normalizedCoHostId || myEmail === normalizedCoHostId) {
+            const coHostsList = normalizedCoHostId.split(",").map(item => item.trim());
+            if (coHostsList.includes(myUserId) || coHostsList.includes(myName) || coHostsList.includes(myEmail)) {
                 isCoHost = true;
             }
         }

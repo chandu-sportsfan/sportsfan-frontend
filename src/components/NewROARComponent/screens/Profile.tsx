@@ -79,7 +79,7 @@ function AccuracyRing({ percent }: { percent: number }) {
     </div>
   );
 }
-
+//updated file code// 
 /** Pencil SVG icon */
 function PencilIcon() {
   return (

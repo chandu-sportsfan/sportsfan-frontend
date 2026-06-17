@@ -98,6 +98,7 @@ export default function ROARApp() {
     if (fan.username === currentUsername) {
       setActiveTab("profile");
       setOverlay(null);
+      setSelectedPost(null);
     } else {
       openProfile(fan.username);
     }
@@ -684,7 +685,7 @@ export default function ROARApp() {
                   right: 0,
                   bottom: 0,
                   background: "var(--bg-primary)",
-                  zIndex: 200,
+                  zIndex: 2000,
                   display: "flex",
                   flexDirection: "column",
                   overflowY: "auto",

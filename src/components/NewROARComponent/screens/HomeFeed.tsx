@@ -68,9 +68,9 @@ const copyToClipboard = async (text: string) => {
 interface QuizCardProps {
   item: any;
   index: number;
-  activeUsername: string;
   currentAvatarUrl?: string;
   onPostClick?: (post: any) => void;
+  onFanProfileClick?: (fan: any) => void;
   onToast: (m: string) => void;
   renderCardActions: (item: any) => React.ReactNode;
 }
@@ -81,6 +81,7 @@ function QuizCard({
   activeUsername,
   currentAvatarUrl,
   onPostClick,
+  onFanProfileClick,
   onToast,
   renderCardActions,
 }: QuizCardProps) {
@@ -252,7 +253,15 @@ function QuizCard({
       </div>
 
       {/* Author */}
-      <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 12 }}>
+      <div 
+        style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 12, cursor: onFanProfileClick ? "pointer" : "default" }}
+        onClick={(e) => {
+          if (onFanProfileClick) {
+            e.stopPropagation();
+            onFanProfileClick(item.fan);
+          }
+        }}
+      >
         <AvatarWithBadge
           username={item.fan.username}
           badge={item.fan.badge}
@@ -349,6 +358,7 @@ interface Props {
   onJoinRoom: (room?: any) => void;
   onLeaderboard: () => void;
   onFanProfile: () => void;
+  onFanProfileClick?: (fan: any) => void;
   onToast: (m: string) => void;
   extraItems: any[];
   showBanner: boolean;
@@ -370,6 +380,7 @@ export default function HomeFeed({
   onJoinRoom,
   onLeaderboard,
   onFanProfile,
+  onFanProfileClick,
   onToast,
   extraItems,
   showBanner,
@@ -916,6 +927,7 @@ export default function HomeFeed({
                 activeUsername={activeUsername}
                 currentAvatarUrl={currentAvatarUrl}
                 onPostClick={onPostClick}
+                onFanProfileClick={onFanProfileClick}
                 onToast={onToast}
                 renderCardActions={renderCardActions}
               />
@@ -958,7 +970,16 @@ export default function HomeFeed({
                   {item.following && <span style={{ marginLeft: "auto", fontSize: 9, padding: "3px 8px", borderRadius: 999, background: "rgba(233,30,140,0.15)", color: "var(--accent-magenta)" }}>Following</span>}
                 </div>
 
-                <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 12 }}>
+                {/* Author */}
+                <div 
+                  style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 12, cursor: onFanProfileClick ? "pointer" : "default" }}
+                  onClick={(e) => {
+                    if (onFanProfileClick) {
+                      e.stopPropagation();
+                      onFanProfileClick(item.fan);
+                    }
+                  }}
+                >
                   <AvatarWithBadge username={item.fan.username} badge={item.fan.badge} size="sm" avatarUrl={item.fan.avatarUrl} />
                   <div>
                     <p style={{ fontWeight: 700, fontSize: 13 }}>{item.fan.username}</p>

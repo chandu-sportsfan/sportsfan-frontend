@@ -90,6 +90,17 @@ export default function ROARApp() {
   const [overlay, setOverlay] = useState<string | null>(null);
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
   const [selectedPost, setSelectedPost] = useState<any | null>(null);
+  const [viewingFan, setViewingFan] = useState<any | null>(null);
+
+  const handleFanProfileClick = useCallback((fan: any) => {
+    if (fan.username === currentUsername) {
+      setActiveTab("profile");
+      setOverlay(null);
+    } else {
+      setViewingFan(fan);
+      setOverlay("viewing_profile");
+    }
+  }, [currentUsername]);
 
   // ── Compose ────────────────────────────────────────────────────────────────
   const [composeOpen, setComposeOpen] = useState(false);
@@ -599,6 +610,7 @@ export default function ROARApp() {
                     onToast={showToast}
                     onPostClick={(post) => setSelectedPost(post)}
                     onCompose={(type) => openCompose(type)}
+                    onFanProfileClick={handleFanProfileClick}
                     currentAvatarUrl={currentAvatarUrl}
                     onRegisterRefresh={(fn) => { roomRefreshRef.current = fn; }}
                     onRegisterReplyUpdate={(fn) => { roomReplyUpdateRef.current = fn; }}
@@ -631,6 +643,7 @@ export default function ROARApp() {
                       onDeletePost={handleDeletePost}
                       userSports={userSports}
                       onQuickCompose={(t) => openCompose(t)}
+                      onFanProfileClick={handleFanProfileClick}
                       currentUsername={currentUsername}
                       currentAvatarUrl={currentAvatarUrl}
                     />
@@ -656,6 +669,35 @@ export default function ROARApp() {
                       rooms={rooms}
                     />
                   )}
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Modals & Overlays above BottomNav */}
+            <AnimatePresence>
+              {overlay === "viewing_profile" && viewingFan && (
+                <motion.div
+                  key="viewing_profile"
+                  initial={{ opacity: 0, y: 50 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 50 }}
+                  style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    background: "var(--bg-primary)",
+                    zIndex: 200,
+                    display: "flex",
+                    flexDirection: "column",
+                  }}
+                >
+                  <Profile
+                    isViewingOther={true}
+                    fanData={viewingFan}
+                    onBack={() => { setOverlay(null); setViewingFan(null); }}
+                  />
                 </motion.div>
               )}
             </AnimatePresence>

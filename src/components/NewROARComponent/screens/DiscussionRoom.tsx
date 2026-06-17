@@ -420,6 +420,7 @@ interface Props {
   roomName?: string;
   onPostClick?: (post: any) => void;
   onCompose?: (type: string | null) => void;
+  onFanProfileClick?: (fan: any) => void;
   fanCount?: number;
   score?: string;
   scoreSubtitle?: string;
@@ -474,12 +475,12 @@ const postCardStyle = (type: string): React.CSSProperties => {
 // ── QuizCard — self-contained interactive quiz component ──────────────────────
 interface QuizCardProps {
   post: any;
-  onToast: (m: string) => void;
   onPostClick?: (post: any) => void;
+  onFanProfileClick?: (fan: any) => void;
   roomId?: string;
 }
 
-function QuizCard({ post, onToast, onPostClick, roomId }: QuizCardProps) {
+function QuizCard({ post, onToast, onPostClick, onFanProfileClick, roomId }: QuizCardProps) {
   const [selectedOption, setSelectedOption] = useState<string | null>(
     post.quizUserAnswer ?? null,
   );
@@ -614,7 +615,15 @@ function QuizCard({ post, onToast, onPostClick, roomId }: QuizCardProps) {
       </div>
 
       {/* Author */}
-      <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 12 }}>
+      <div 
+        style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 12, cursor: onFanProfileClick ? "pointer" : "default" }}
+        onClick={(e) => {
+          if (onFanProfileClick) {
+            e.stopPropagation();
+            onFanProfileClick(post.fan);
+          }
+        }}
+      >
         <AvatarWithBadge
           username={post.fan.username}
           badge={post.fan.badge}
@@ -708,6 +717,7 @@ function QuizCard({ post, onToast, onPostClick, roomId }: QuizCardProps) {
 
 export default function DiscussionRoom({
   onBack, onToast, roomId, roomName, onPostClick, onCompose,
+  onFanProfileClick,
   fanCount = 312, score, scoreSubtitle, currentAvatarUrl, onRegisterRefresh, onRegisterReplyUpdate,
 }: Props) {
   const [posts, setPosts] = useState<any[]>([]);
@@ -1199,6 +1209,7 @@ export default function DiscussionRoom({
                       post={p}
                       onToast={onToast}
                       onPostClick={onPostClick}
+                      onFanProfileClick={onFanProfileClick}
                       roomId={roomId}
                     />
                   </motion.div>
@@ -1449,7 +1460,15 @@ export default function DiscussionRoom({
                   })}
                 >
                   <div className="flex justify-between items-center">
-                    <div className="flex gap-2 items-center">
+                    <div 
+                      style={{ display: "flex", gap: 8, alignItems: "center", cursor: onFanProfileClick ? "pointer" : "default" }}
+                      onClick={(e) => {
+                        if (onFanProfileClick) {
+                          e.stopPropagation();
+                          onFanProfileClick(p.fan);
+                        }
+                      }}
+                    >
                       <AvatarWithBadge username={p.fan.username} badge={p.fan.badge} size="sm" avatarUrl={p.fan.avatarUrl} />
                       <div>
                         <p className="font-bold text-[13px]">{p.fan.username}</p>

@@ -124,9 +124,12 @@ const copyToClipboard = async (text: string) => {
       return false;
     }
   }
+  isViewingOther?: boolean;
+  fanData?: any;
+  onBack?: () => void;
 };
 
-export default function Profile({ userBadge, setUserBadge, onCompose, onToast, setOnboarded, onNavigateTab }: Props) {
+export default function Profile({ userBadge, setUserBadge, onCompose, onToast, setOnboarded, onNavigateTab, isViewingOther, fanData, onBack }: Props) {
   const [profileData, setProfileData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [predTab, setPredTab] = useState("All");
@@ -147,11 +150,33 @@ export default function Profile({ userBadge, setUserBadge, onCompose, onToast, s
 
   useEffect(() => {
     const fetchProfile = async () => {
+      if (isViewingOther && fanData) {
+        setProfileData({
+          user: {
+            ...fanData,
+            fanSince: "2023",
+            yearsFandom: 1,
+            reputationScore: 0,
+            accuracy: 0,
+            favPlayer: fanData.favPlayer || "",
+            about: fanData.about || ""
+          },
+          badges: [],
+          predictions: [],
+          hotTakes: [],
+          rival: null
+        });
+        if (fanData.badge) setUserBadge?.(fanData.badge);
+        setSelectedAvatar(fanData.avatarUrl || null);
+        setLoading(false);
+        return;
+      }
+
       try {
         const res = await axios.get("/api/roar/profile");
         if (res.data?.success) {
           setProfileData(res.data);
-          if (res.data.user?.badge) setUserBadge(res.data.user.badge);
+          if (res.data.user?.badge && setUserBadge) setUserBadge(res.data.user.badge);
           if (res.data.user?.username) setEditName(res.data.user.username);
           if (res.data.user?.favPlayer !== undefined) setEditFavPlayer(res.data.user.favPlayer || "");
           if (res.data.user?.about !== undefined) setEditAbout(res.data.user.about || "");
@@ -175,7 +200,7 @@ export default function Profile({ userBadge, setUserBadge, onCompose, onToast, s
       }
     };
     fetchProfile();
-  }, [setUserBadge, setOnboarded]);
+  }, [setUserBadge, setOnboarded, isViewingOther, fanData]);
 
   if (loading || !profileData) {
     return <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100%", color: "var(--text-muted)" }}>Loading profile...</div>;
@@ -274,7 +299,32 @@ export default function Profile({ userBadge, setUserBadge, onCompose, onToast, s
   return (
     <div className="screen-scroll">
       {/* ── Header ── */}
-      <BackButton />
+      {onBack && (
+        <button
+          onClick={onBack}
+          style={{
+            position: "absolute",
+            top: 20,
+            left: 20,
+            background: "rgba(0,0,0,0.4)",
+            border: "1px solid rgba(255,255,255,0.1)",
+            color: "white",
+            width: 36,
+            height: 36,
+            borderRadius: "50%",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer",
+            zIndex: 10,
+          }}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M15 19L8 12L15 5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+      )}
+      {!onBack && <BackButton />}
       <div style={{ padding: "24px 16px 0", textAlign: "center", position: "relative" }}>
         {/* Back Button */}
         <div style={{ display: "flex", justifyContent: "center", position: "relative", width: 96, margin: "0 auto" }}>
@@ -310,29 +360,31 @@ export default function Profile({ userBadge, setUserBadge, onCompose, onToast, s
           )}
 
           {/* Pencil edit button — top-right of avatar */}
-          <button
-            onClick={() => setAvatarPickerOpen(true)}
-            aria-label="Change avatar"
-            style={{
-              position: "absolute",
-              top: -6,
-              right: -6,
-              width: 26,
-              height: 26,
-              borderRadius: "50%",
-              background: "var(--accent-magenta)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              border: "2px solid var(--bg-primary)",
-              cursor: "pointer",
-              padding: 0,
-              boxShadow: "0 2px 10px rgba(233,30,140,0.6)",
-              zIndex: 2,
-            }}
-          >
-            <PencilIcon />
-          </button>
+          {!isViewingOther && (
+            <button
+              onClick={() => setAvatarPickerOpen(true)}
+              aria-label="Change avatar"
+              style={{
+                position: "absolute",
+                top: -6,
+                right: -6,
+                width: 26,
+                height: 26,
+                borderRadius: "50%",
+                background: "var(--accent-magenta)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                border: "2px solid var(--bg-primary)",
+                cursor: "pointer",
+                padding: 0,
+                boxShadow: "0 2px 10px rgba(233,30,140,0.6)",
+                zIndex: 2,
+              }}
+            >
+              <PencilIcon />
+            </button>
+          )}
         </div>
 
         <h1 className="font-display" style={{ fontSize: 32, letterSpacing: "0.04em", marginTop: 14, color: "#fff" }}>
@@ -363,7 +415,9 @@ export default function Profile({ userBadge, setUserBadge, onCompose, onToast, s
           ))}
         </div>
         <div style={{ display: "flex", gap: 10, justifyContent: "center", marginTop: 16 }}>
-          <button onClick={() => setEditOpen(true)} style={{ flex: 1, maxWidth: 140, padding: "10px 0", background: "none", border: "1px solid var(--border)", borderRadius: 24, color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Edit Profile</button>
+          {!isViewingOther && (
+            <button onClick={() => setEditOpen(true)} style={{ flex: 1, maxWidth: 140, padding: "10px 0", background: "none", border: "1px solid var(--border)", borderRadius: 24, color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Edit Profile</button>
+          )}
           <button onClick={openShareDialog} className="btn-gradient" style={{ flex: 1, maxWidth: 140, padding: "10px 0", border: "none", borderRadius: 24, color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Share Profile</button>
         </div>
       </div>

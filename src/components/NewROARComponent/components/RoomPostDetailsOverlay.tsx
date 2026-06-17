@@ -208,9 +208,11 @@ export default function RoomPostDetailsOverlay({
                             className="flex gap-2.5 items-center mb-3"
                             style={{ cursor: onFanProfileClick ? "pointer" : "default" }}
                             onClick={(e) => {
-                                if (onFanProfileClick && post.fan) {
+                                if (onFanProfileClick) {
                                     e.stopPropagation();
-                                    onFanProfileClick(post.fan);
+                                    onFanProfileClick(
+                                        post.fan || { username: post.authorUsername, badge: post.authorBadge, avatarUrl: post.authorAvatarUrl || post.avatarUrl }
+                                    );
                                 }
                             }}
                         >
@@ -341,9 +343,13 @@ export default function RoomPostDetailsOverlay({
                                             className="flex gap-2 items-center"
                                             style={{ cursor: onFanProfileClick ? "pointer" : "default" }}
                                             onClick={(e) => {
-                                                if (onFanProfileClick && comment.fan) {
+                                                if (onFanProfileClick) {
                                                     e.stopPropagation();
-                                                    onFanProfileClick(comment.fan);
+                                                    onFanProfileClick({
+                                                        username: comment.authorUsername,
+                                                        badge: comment.authorBadge,
+                                                        avatarUrl: comment.authorAvatarUrl || comment.avatarUrl,
+                                                    });
                                                 }
                                             }}
                                         >

@@ -784,9 +784,11 @@ export default function PostDetailsOverlay({
             <div 
               style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 12, cursor: onFanProfileClick ? "pointer" : "default" }}
               onClick={(e) => {
-                if (onFanProfileClick && post.fan) {
+                if (onFanProfileClick) {
                   e.stopPropagation();
-                  onFanProfileClick(post.fan);
+                  onFanProfileClick(
+                    post.fan || { username: post.authorUsername, badge: post.authorBadge, avatarUrl: post.authorAvatarUrl || post.avatarUrl }
+                  );
                 }
               }}
             >
@@ -855,9 +857,13 @@ export default function PostDetailsOverlay({
                       className="flex gap-2 items-center"
                       style={{ cursor: onFanProfileClick ? "pointer" : "default" }}
                       onClick={(e) => {
-                        if (onFanProfileClick && comment.fan) {
+                        if (onFanProfileClick) {
                           e.stopPropagation();
-                          onFanProfileClick(comment.fan);
+                          onFanProfileClick({
+                            username: comment.authorUsername,
+                            badge: comment.authorBadge,
+                            avatarUrl: comment.authorAvatarUrl || comment.avatarUrl,
+                          });
                         }
                       }}
                     >

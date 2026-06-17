@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import ActivityCard from "./ActivityCard";
-import { resolvePostContent } from "@/utils/contentResolver";
+import { resolvePostContent } from "@/context/ActivityContext";
 import type { ActivityItem, ProfileStats } from "@/context/ActivityContext";
 
 interface ActivityFeedProps {

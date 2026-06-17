@@ -356,15 +356,25 @@ export default function MainModulesLayout({
 
 
   return (
-    <div className="h-screen w-full bg-black text-white flex flex-col lg:flex-row overflow-hidden">
-      {renderSidebar()}
+    <>
+      <style>{`
+  body.roar-room-active .roar-bottom-nav { 
+    display: none !important; 
+  }
+  body.roar-room-active .roar-content-area {
+    padding-bottom: 0 !important;
+  }
+`}</style>
 
-      <main className="flex-1 min-w-0 w-full h-full flex flex-col overflow-hidden lg:pb-0">
-        <div className="relative z-60">
-          <Header />
-        </div>
+      <div className="h-screen w-full bg-black text-white flex flex-col lg:flex-row overflow-hidden">
+        {renderSidebar()}
 
-        {/* <div 
+        <main className="flex-1 min-w-0 w-full h-full flex flex-col overflow-hidden lg:pb-0">
+          <div className="relative z-60">
+            <Header />
+          </div>
+
+          {/* <div 
         className={`flex-1 min-h-0 overflow-x-hidden ${isROARPath ? "overflow-hidden h-full" : "overflow-y-auto"}`} 
         style={isROARPath ? { 
           paddingTop: 0,
@@ -393,7 +403,7 @@ export default function MainModulesLayout({
 
 
 
-        <div
+          {/* <div
           className={`flex-1 min-h-0 overflow-x-hidden ${isROARPath ? "overflow-hidden h-full" : "overflow-y-auto"}`}
           style={isROARPath ? {
             paddingTop: 0,
@@ -401,30 +411,39 @@ export default function MainModulesLayout({
             // ROAR screen) can read it to avoid rendering under the fixed nav.
             ["--roar-bottom-nav-height" as any]: "60px",
           } : {}}
-        >
-          {children}
-          {!isROARPath && (
-            <div className="hidden md:hidden lg:block">
-              <SportsFan360Footer />
-            </div>
-          )}
-        </div>
+        > */}
+          <div
+            className={`flex-1 min-h-0 overflow-x-hidden roar-content-area ${isROARPath ? "overflow-hidden h-full" : "overflow-y-auto"}`}
+            style={isROARPath ? {
+              paddingTop: 0,
+              // paddingBottom: "60px", // space for bottom nav normally
+              ["--roar-bottom-nav-height" as any]: "60px",
+            } : {}}
+          >
+            {children}
+            {!isROARPath && (
+              <div className="hidden md:hidden lg:block">
+                <SportsFan360Footer />
+              </div>
+            )}
+          </div>
 
-        {/* BottomNav — fixed at bottom, zIndex above ROAR content */}
-        <div
-          className="lg:hidden"
-          style={{
-            position: "fixed",
-            bottom: 0,
-            left: 0,
-            right: 0,
-            zIndex: 1001,
-            pointerEvents: "auto",
-          }}
-        >
-          <BottomNav />
-        </div>
-      </main>
-    </div>
+          {/* BottomNav — fixed at bottom, zIndex above ROAR content */}
+          <div
+            className="lg:hidden roar-bottom-nav"
+            style={{
+              position: "fixed",
+              bottom: 0,
+              left: 0,
+              right: 0,
+              zIndex: 1001,
+              pointerEvents: "auto",
+            }}
+          >
+            <BottomNav />
+          </div>
+        </main>
+      </div>
+    </>
   )
 }

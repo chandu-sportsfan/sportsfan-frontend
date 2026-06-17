@@ -62,8 +62,10 @@ export const GLOBAL_CSS = `
     left: 0;
     z-index: 9999;
     width: 100vw;
-    height: calc(100dvh - 60px);
-    min-height: calc(100dvh - 60px);
+    // height: calc(100dvh - 60px);
+    // min-height: calc(100dvh - 60px);
+    height: 100dvh;
+    min-height: 100dvh;
   }
   .roar-root.roar-room-active .roar-inner {
     height: calc(100dvh - 60px);

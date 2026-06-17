@@ -892,6 +892,7 @@ export default function ROARApp() {
     const fetchRooms = async () => {
       try {
         const res = await axios.get(`/api/roar/rooms?t=${Date.now()}`);
+        console.log("rooms res:", res);
         if (res.data?.success) {
           setRooms(res.data.rooms);
           setSelectedRoom(prev => {
@@ -948,6 +949,7 @@ export default function ROARApp() {
       return [...matchNotifs, ...nonMatch];
     });
   }, [rooms]); // eslint-disable-line react-hooks/exhaustive-deps
+
 
   // ── Actions ────────────────────────────────────────────────────────────────
   const handleVote = useCallback(async (postId: string, voteType: "agree" | "disagree" | null) => {
@@ -1061,6 +1063,13 @@ export default function ROARApp() {
   const isRoom     = overlay === "room";
   const isInfinity = overlay === "infinity";
   const isLB       = overlay === "leaderboard";
+  const isFullScreenOverlay = isRoom || isInfinity;
+
+   useEffect(() => {
+  if (isFullScreenOverlay) document.body.classList.add("roar-room-active");
+  else document.body.classList.remove("roar-room-active");
+  return () => document.body.classList.remove("roar-room-active");
+}, [isFullScreenOverlay]);
 
   // ── Loading spinner ────────────────────────────────────────────────────────
   if (!mounted || checkingProfile) {
@@ -1077,7 +1086,8 @@ export default function ROARApp() {
   }
 
   return (
-    <div className={`roar-root${isRoom ? " roar-room-active" : ""}`}>
+    // <div className={`roar-root${isRoom ? " roar-room-active" : ""}`}>
+    <div className={`roar-root${isFullScreenOverlay ? " roar-room-active" : ""}`}>
       <style dangerouslySetInnerHTML={{ __html: GLOBAL_CSS }} />
 
       <div className="roar-inner" ref={containerRef} style={{ height: "100%", display: "flex", flexDirection: "column", overflow: "hidden" }}>
@@ -1106,6 +1116,7 @@ export default function ROARApp() {
               ) : isInfinity ? (
                 // SF360 Infinity Room → original HomeFeed (all posts)
                 <motion.div key="infinity" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }} style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
+                  <style dangerouslySetInnerHTML={{ __html: `#global-header-desktop,#global-header-tablet,#global-header-mobile{display:none!important}` }} />
                   <HomeFeed
                     onJoinRoom={room => { if (room) setSelectedRoom(room); else if (rooms.length) setSelectedRoom(rooms[0]); setOverlay("room"); }}
                     onLeaderboard={() => setOverlay("leaderboard")}

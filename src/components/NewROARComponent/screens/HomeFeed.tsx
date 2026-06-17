@@ -1385,6 +1385,7 @@
 
 
 // components/NewROARComponent/screens/HomeFeed.tsx
+// components/NewROARComponent/screens/HomeFeed.tsx
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -1402,11 +1403,9 @@ import {
 import type { Room } from "../types";
 
 const COMPOSE_ACTIONS = [
-  { id: "hot_take",      label: "Hot Take",    Icon: Flame      },
-  { id: "prediction",    label: "Predict",      Icon: TrendingUp },
-  { id: "debate",        label: "Debate",       Icon: Zap        },
-  { id: "raw_reactions", label: "Raw Reactions",Icon: History    },
-  { id: "post",          label: "Post",         Icon: PenTool    },
+  { id: "post",       label: "Post",    Icon: PenTool    },
+  { id: "prediction", label: "Predict", Icon: TrendingUp },
+  { id: "debate",     label: "Debate",  Icon: Zap        },
 ];
 
 type ShareableRoarPost = {
@@ -1550,6 +1549,7 @@ export default function HomeFeed({
   const [uploading, setUploading]   = useState(false);
   const [attachedUrl, setAttachedUrl]   = useState<string | null>(null);
   const [attachedType, setAttachedType] = useState<"image" | "video" | null>(null);
+  const [selectedActionId, setSelectedActionId] = useState("post");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { try { setLocalUsername(localStorage.getItem("roar_username") || "RoarUser"); } catch {} }, []);
@@ -1693,7 +1693,6 @@ export default function HomeFeed({
   };
 
   return (
-    // Outer: flex column, fills its motion.div parent (which is flex:1 minHeight:0)
     <div style={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0, overflow: "hidden", position: "relative" }}>
 
       {/* Share dialog */}
@@ -1725,7 +1724,7 @@ export default function HomeFeed({
         </>
       )}
 
-      {/* HEADER */}
+      {/* ── HEADER ── */}
       <div style={{ flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px 12px", background: "rgba(14,14,20,0.98)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", borderBottom: "1px solid rgba(255,255,255,0.07)", zIndex: 30 }}>
         <button type="button" onClick={onBack} style={{ background: "none", border: "none", cursor: "pointer", color: "white", display: "flex", alignItems: "center", padding: 0, marginRight: 10 }}>
           <ChevronLeft size={26} />
@@ -1742,7 +1741,7 @@ export default function HomeFeed({
         </button>
       </div>
 
-      {/* POSTS FEED — flex:1 + minHeight:0 makes it fill remaining space and scroll */}
+      {/* ── POSTS FEED ── */}
       <div style={{
         flex: 1,
         minHeight: 0,
@@ -1885,10 +1884,7 @@ export default function HomeFeed({
         </div>
       </div>
 
-      {/* ── BOTTOM COMPOSER ──
-          flexShrink:0 as a flex-column sibling — naturally sits below the scroll
-          area. No position:sticky needed (and sticky breaks with overflow:hidden
-          parents anyway). This renders on both mobile and desktop. */}
+      {/* ── BOTTOM COMPOSER ── */}
       <div style={{
         flexShrink: 0,
         zIndex: 40,
@@ -1898,49 +1894,92 @@ export default function HomeFeed({
         borderTop: "1px solid rgba(255,255,255,0.07)",
         paddingBottom: "env(safe-area-inset-bottom, 8px)",
       }}>
-        {/* Input row */}
-        <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px 8px" }}>
-          <input
-            type="text"
-            value={input}
-            onChange={e => setInput(e.target.value)}
-            onKeyDown={e => e.key === "Enter" && sendQuickPost()}
-            placeholder="What's on your mind?"
-            disabled={uploading}
-            style={{ flex: 1, height: 42, borderRadius: 999, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", paddingLeft: 16, paddingRight: 12, color: "white", fontSize: 14, outline: "none" }}
-          />
-          <button type="button" onClick={() => triggerUpload("image")} disabled={uploading} style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.45)", padding: 4, display: "flex", alignItems: "center" }}>
-            <ImageIcon size={22} />
-          </button>
+
+        {/* Category pills */}
+        <div className="flex gap-1.5 py-1 px-2.5 overflow-x-auto" style={{ scrollbarWidth: "none" }}>
+          {COMPOSE_ACTIONS.map(({ id, label, Icon }) => {
+            const isActive = id === selectedActionId;
+            return (
+              <button
+                key={id}
+                type="button"
+                onClick={() => {
+                  if (id === "post") {
+                    setSelectedActionId("post");
+                  } else {
+                    setSelectedActionId(id);
+                    onQuickCompose?.(id);
+                    setSelectedActionId("post");
+                  }
+                }}
+                className={[
+                  "flex items-center gap-1 px-3 py-1.5 rounded-full text-[11px] font-bold whitespace-nowrap border transition-all duration-150 cursor-pointer shrink-0",
+                  isActive
+                    ? "border-[rgba(233,30,140,0.35)] bg-[rgba(233,30,140,0.12)] text-white"
+                    : "border-transparent bg-[rgba(255,255,255,0.04)] text-[rgba(255,255,255,0.6)]",
+                ].join(" ")}
+              >
+                <Icon size={13} />
+                {label}
+              </button>
+            );
+          })}
         </div>
 
         {/* Attached media preview */}
         {attachedUrl && (
-          <div style={{ margin: "0 14px 8px", padding: "8px 12px", borderRadius: 12, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              {attachedType === "image" ? <img src={attachedUrl} style={{ width: 40, height: 40, borderRadius: 8, objectFit: "cover" }} alt="" /> : <video src={attachedUrl} style={{ width: 40, height: 40, borderRadius: 8, objectFit: "cover" }} />}
-              <span style={{ fontSize: 12, color: "rgba(255,255,255,0.5)" }}>Media attached</span>
+          <div className="px-3 py-2 mx-3 mb-2 rounded-xl bg-[var(--bg-tertiary)] border border-[var(--border)] flex justify-between items-center">
+            <div className="flex items-center gap-2">
+              {attachedType === "image"
+                ? <img src={attachedUrl} className="w-10 h-10 rounded-lg object-cover" alt="Attached" />
+                : <video src={attachedUrl} className="w-10 h-10 rounded-lg object-cover" />}
+              <span className="text-xs text-[var(--text-secondary)]">Media attached</span>
             </div>
-            <button type="button" onClick={() => { setAttachedUrl(null); setAttachedType(null); }} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.4)", cursor: "pointer", fontSize: 16 }}>✕</button>
+            <button type="button" onClick={() => { setAttachedUrl(null); setAttachedType(null); }} className="bg-transparent border-none text-[var(--text-muted)] cursor-pointer">✕</button>
           </div>
         )}
 
-        {/* Category icon pill buttons */}
-        <div style={{ display: "flex", borderTop: "1px solid rgba(255,255,255,0.06)", padding: "8px 8px 10px" }}>
-          {COMPOSE_ACTIONS.map(({ id, label, Icon }) => (
-            <motion.button
-              key={id}
-              whileTap={{ scale: 0.9 }}
-              onClick={() => {
-                if (id === "post" && (input.trim() || attachedUrl)) { sendQuickPost(); }
-                else { onQuickCompose?.(id); }
-              }}
-              style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 5, padding: "6px 4px", background: "none", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, cursor: "pointer", margin: "0 3px", color: "rgba(255,255,255,0.75)" }}
-            >
-              <Icon size={18} />
-              <span style={{ fontSize: 10, fontWeight: 600, lineHeight: 1, textAlign: "center" }}>{label}</span>
-            </motion.button>
-          ))}
+        {/* Input row: image icon → input → send */}
+        <div className="flex gap-2 items-center px-3 pt-1 pb-2">
+          <button
+            type="button"
+            onClick={() => triggerUpload("image")}
+            disabled={uploading}
+            className="bg-transparent border-none text-[var(--text-muted)] cursor-pointer flex items-center p-1 shrink-0"
+          >
+            <ImageIcon size={20} />
+          </button>
+
+          <div className="flex-1 relative">
+            {input === "" && !uploading && (
+              <div className="absolute left-4 top-0 bottom-0 flex items-center pointer-events-none">
+                <span className="text-sm font-medium text-[rgba(255,255,255,0.35)]">
+                  Drop your take...
+                </span>
+              </div>
+            )}
+            <input
+              type="text"
+              disabled={uploading}
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && sendQuickPost()}
+              className="w-full h-11 rounded-[22px] bg-[var(--bg-secondary)] border border-[var(--border)] pl-4 pr-4 text-white text-base outline-none"
+            />
+          </div>
+
+          <motion.button
+            whileTap={{ scale: 0.96 }}
+            onClick={sendQuickPost}
+            disabled={uploading}
+            className={[
+              "w-11 h-11 rounded-full border-none text-white text-lg font-bold flex items-center justify-center cursor-pointer shrink-0",
+              "bg-[linear-gradient(135deg,#e91e8c,#ff6b35)]",
+              uploading ? "opacity-50" : "opacity-100",
+            ].join(" ")}
+          >
+            ↑
+          </motion.button>
         </div>
       </div>
 

@@ -58,6 +58,121 @@ const POST_TYPES = [
   "ROAR_DEBATE",
 ];
 
+// ─── Post Content Resolver (Content Resolution) ─────────────────────────────────
+export interface PostContentData {
+  id?: string;
+  type?: string;
+  statement?: string;
+  title?: string;
+  caption?: string;
+  description?: string;
+  agreeVotes?: number;
+  disagreeVotes?: number;
+  totalVotes?: number;
+  score?: number;
+  status?: "pending" | "correct" | "incorrect";
+  image?: string;
+  reaction?: string;
+  [key: string]: unknown;
+}
+
+// Cache to avoid fetching the same post multiple times
+const postCache = new Map<string, PostContentData>();
+
+/**
+ * Fetch post data from ROAR API using postId
+ */
+export async function resolvePostContent(
+  postId: string,
+  type: string
+): Promise<PostContentData> {
+  // Check cache first
+  if (postCache.has(postId)) {
+    return postCache.get(postId)!;
+  }
+
+  try {
+    // Try to fetch from ROAR post API
+    const response = await axios.get(`/api/roar/posts/${postId}`, {
+      timeout: 5000, // 5 second timeout
+    });
+
+    const data = response.data?.data || response.data;
+
+    // Cache the result
+    postCache.set(postId, data);
+
+    return data as PostContentData;
+  } catch (error) {
+    console.warn(`Failed to resolve post ${postId}:`, error);
+    // Return empty object on error - activity will still display
+    return {};
+  }
+}
+
+/**
+ * Batch resolve multiple post contents
+ */
+export async function resolveBatchPostContents(
+  postIds: string[]
+): Promise<Map<string, PostContentData>> {
+  const results = new Map<string, PostContentData>();
+
+  // Filter out already cached items
+  const uncached = postIds.filter((id) => !postCache.has(id));
+
+  // If all items are cached, return immediately
+  if (uncached.length === 0) {
+    postIds.forEach((id) => {
+      const cached = postCache.get(id);
+      if (cached) results.set(id, cached);
+    });
+    return results;
+  }
+
+  // Fetch uncached items in parallel (max 5 at a time to avoid overwhelming server)
+  const batchSize = 5;
+  for (let i = 0; i < uncached.length; i += batchSize) {
+    const batch = uncached.slice(i, i + batchSize);
+    const promises = batch.map((id) =>
+      resolvePostContent(id, "").then((data) => ({ id, data }))
+    );
+
+    const batchResults = await Promise.allSettled(promises);
+
+    batchResults.forEach((result) => {
+      if (result.status === "fulfilled") {
+        const { id, data } = result.value;
+        results.set(id, data);
+      }
+    });
+  }
+
+  // Add cached items to results
+  postIds.forEach((id) => {
+    if (!results.has(id)) {
+      const cached = postCache.get(id);
+      if (cached) results.set(id, cached);
+    }
+  });
+
+  return results;
+}
+
+/**
+ * Clear the post cache (useful for force refresh)
+ */
+export function clearPostCache() {
+  postCache.clear();
+}
+
+/**
+ * Preload posts for better performance
+ */
+export async function preloadPosts(postIds: string[]) {
+  await resolveBatchPostContents(postIds);
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const sameActivity = (a: ActivityItem, b: ActivityItem): boolean => {
   const aTx = a.metadata?.transactionId;

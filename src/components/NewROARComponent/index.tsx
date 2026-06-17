@@ -26,6 +26,7 @@ import Leaderboard from "./screens/Leaderboard";
 import Profile from "./screens/Profile";
 import type { Notification, Room } from "./types";
 import { useRoarNotifications } from "@/context/RoarNotificationsContext";
+import { RoarProfileProvider, useRoarProfileContext } from "@/context/RoarProfileContext";
 import RoomPostDetailsOverlay from "./components/RoomPostDetailsOverlay";
 
 
@@ -90,17 +91,17 @@ export default function ROARApp() {
   const [overlay, setOverlay] = useState<string | null>(null);
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
   const [selectedPost, setSelectedPost] = useState<any | null>(null);
-  const [viewingFan, setViewingFan] = useState<any | null>(null);
+
+  const { viewingUsername, profileData, openProfile, closeProfile } = useRoarProfileContext();
 
   const handleFanProfileClick = useCallback((fan: any) => {
     if (fan.username === currentUsername) {
       setActiveTab("profile");
       setOverlay(null);
     } else {
-      setViewingFan(fan);
-      setOverlay("viewing_profile");
+      openProfile(fan.username);
     }
-  }, [currentUsername]);
+  }, [currentUsername, openProfile]);
 
   // ── Compose ────────────────────────────────────────────────────────────────
   const [composeOpen, setComposeOpen] = useState(false);
@@ -674,7 +675,7 @@ export default function ROARApp() {
             </AnimatePresence>
 
             {/* Profile overlay — instant, no animation */}
-            {overlay === "viewing_profile" && viewingFan && (
+            {viewingUsername && profileData && (
               <div
                 style={{
                   position: "absolute",
@@ -691,8 +692,8 @@ export default function ROARApp() {
               >
                 <Profile
                   isViewingOther={true}
-                  fanData={viewingFan}
-                  onBack={() => { setOverlay(null); setViewingFan(null); }}
+                  fanData={profileData.user || { username: viewingUsername }}
+                  onBack={closeProfile}
                 />
               </div>
             )}

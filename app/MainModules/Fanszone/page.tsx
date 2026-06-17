@@ -480,13 +480,26 @@ function getTrendAnalytics(history: HistoryItem[], period: TrendPeriod) {
   const daysMap: Record<TrendPeriod, number> = { "7D": 7, "30D": 30, "90D": 90 };
   const days     = daysMap[period];
   const msPerDay = 86400000;
-  const currentStart  = now - days * msPerDay;
+  const today = new Date();
+
+  const todayMidnight = new Date(
+    today.getFullYear(),
+    today.getMonth(),
+    today.getDate()
+  ).getTime();
+
+  const currentStart = todayMidnight - (days - 1) * msPerDay;
   const previousStart = currentStart - days * msPerDay;
 
   // Use a sensible number of chart buckets per period
-  const BUCKETS = period === "7D" ? 7 : period === "30D" ? 6 : 5;
-  const bucketSize = (days * msPerDay) / BUCKETS;
-  const buckets    = new Array(BUCKETS).fill(0);
+  const bucketCount =
+  period === "7D"
+    ? 7
+    : period === "30D"
+    ? 30
+    : 90;
+
+  const buckets = new Array(bucketCount).fill(0);
   let currentPts   = 0;
   let previousPts  = 0;
 
@@ -495,8 +508,27 @@ function getTrendAnalytics(history: HistoryItem[], period: TrendPeriod) {
     const t = item.timestamp;
     if (t >= currentStart && t <= now) {
       currentPts += item.points;
-      const idx = Math.min(BUCKETS - 1, Math.floor((t - currentStart) / bucketSize));
-      buckets[idx] += item.points;
+      const activityDate = new Date(t);
+      const activityDay = new Date(
+        activityDate.getFullYear(),
+        activityDate.getMonth(),
+        activityDate.getDate()
+      ).getTime();
+
+      const startDay = new Date(currentStart);
+      const startDayMidnight = new Date(
+        startDay.getFullYear(),
+        startDay.getMonth(),
+        startDay.getDate()
+      ).getTime();
+
+      const idx = Math.floor(
+        (activityDay - startDayMidnight) / msPerDay
+      );
+
+      if (idx >= 0 && idx < bucketCount) {
+        buckets[idx] += item.points;
+      }
     } else if (t >= previousStart && t < currentStart) {
       previousPts += item.points;
     }
@@ -510,34 +542,35 @@ function getTrendAnalytics(history: HistoryItem[], period: TrendPeriod) {
   const fmt = (d: Date, opts: Intl.DateTimeFormatOptions) =>
     d.toLocaleDateString("en-US", opts);
 
-  const labelsMap: Record<TrendPeriod, string[]> = {
-    "7D": Array.from({ length: 7 }, (_, i) =>
-      fmt(new Date(now - (6 - i) * msPerDay), { weekday: "short" })),
-    "30D": [
-      fmt(new Date(now - 30 * msPerDay), { month: "short", day: "numeric" }),
-      fmt(new Date(now - 24 * msPerDay), { month: "short", day: "numeric" }),
-      fmt(new Date(now - 18 * msPerDay), { month: "short", day: "numeric" }),
-      fmt(new Date(now - 12 * msPerDay), { month: "short", day: "numeric" }),
-      fmt(new Date(now -  6 * msPerDay), { month: "short", day: "numeric" }),
-      "Today",
-    ],
-    "90D": Array.from({ length: 4 }, (_, i) =>
-      fmt(new Date(now - (90 - i * 30) * msPerDay), { month: "short", day: "numeric" })
-    ).concat(["Today"]),
-  };
+  const labels = buckets.map((_, index) => {
+  const d = new Date(currentStart + index * msPerDay);
+
+  if (period === "90D" && index % 15 !== 0) {
+    return "";
+  }
+
+  if (period === "30D" && index % 5 !== 0) {
+    return "";
+  }
+
+  return d.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  });
+});
 
   const vsMap: Record<TrendPeriod, string> = {
     "7D": "vs prev week", "30D": "vs prev month", "90D": "vs prev 90d",
   };
 
   return {
-    chartData: buckets,
-    percentChange,
-    isPositive: percentChange >= 0,
-    labels: labelsMap[period],
-    vsText: vsMap[period],
-    currentPts,
-  };
+  chartData: buckets,
+  percentChange,
+  isPositive: percentChange >= 0,
+  labels,
+  vsText: vsMap[period],
+  currentPts,
+};
 }
 
 function applyFilters(

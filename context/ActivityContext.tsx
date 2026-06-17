@@ -12,6 +12,7 @@ import {
   useEffect,
   useCallback,
   useRef,
+  useMemo,
 } from "react";
 import axios from "axios";
 import { useAuth } from "@/context/AuthContext";
@@ -27,9 +28,17 @@ export interface ActivityItem {
   createdAt: number;   // Unix ms
 }
 
+export interface ProfileStats {
+  posts:       number;
+  predictions: number;
+  hotTakes:    number;
+  flashQuiz:   number;
+}
+
 interface ActivityContextType {
   activities:         ActivityItem[];
   loading:            boolean;
+  profileStats:       ProfileStats;
   refreshActivities:  () => Promise<void>;
   addLocalActivity:   (activity: ActivityItem) => void;
 }
@@ -40,6 +49,14 @@ interface ActivityContextType {
 let cache: { ts: number; userId: string; data: ActivityItem[] } | null = null;
 const CACHE_TTL = 30_000; // 30 seconds
 const ACTIVITY_FETCH_LIMIT = 200;
+
+// ─── Stats Calculation Constants ───────────────────────────────────────────────
+const POST_TYPES = [
+  "ROAR_HOT_TAKE",
+  "ROAR_RAW_REACTIONS",
+  "ROAR_MEMORY",
+  "ROAR_DEBATE",
+];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const sameActivity = (a: ActivityItem, b: ActivityItem): boolean => {
@@ -61,6 +78,28 @@ const mergeActivities = (
   return merged.sort((a, b) => b.createdAt - a.createdAt);
 };
 
+/**
+ * Calculate profile stats from activities array.
+ * Returns zero counts if activities is empty or undefined.
+ */
+const calculateProfileStats = (activities: ActivityItem[]): ProfileStats => {
+  if (!activities || activities.length === 0) {
+    return {
+      posts: 0,
+      predictions: 0,
+      hotTakes: 0,
+      flashQuiz: 0,
+    };
+  }
+
+  return {
+    posts: activities.filter((a) => POST_TYPES.includes(a.type)).length,
+    predictions: activities.filter((a) => a.type === "ROAR_PREDICTION").length,
+    hotTakes: activities.filter((a) => a.type === "ROAR_HOT_TAKE").length,
+    flashQuiz: activities.filter((a) => a.type === "FLASH_QUIZ").length,
+  };
+};
+
 // ─── Context ──────────────────────────────────────────────────────────────────
 const ActivityContext = createContext<ActivityContextType | undefined>(undefined);
 
@@ -73,6 +112,12 @@ export const ActivityProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const inFlight          = useRef(false);
   const localActivitiesRef = useRef<ActivityItem[]>([]);
+
+  // ── Calculate memoized profile stats ────────────────────────────────────────
+  const profileStats = useMemo(
+    () => calculateProfileStats(activities),
+    [activities]
+  );
 
   // ── Fetch from API ──────────────────────────────────────────────────────────
   const fetchActivities = useCallback(async () => {
@@ -161,7 +206,7 @@ export const ActivityProvider: React.FC<{ children: React.ReactNode }> = ({
 
   return (
     <ActivityContext.Provider
-      value={{ activities, loading, refreshActivities, addLocalActivity }}
+      value={{ activities, loading, profileStats, refreshActivities, addLocalActivity }}
     >
       {children}
     </ActivityContext.Provider>

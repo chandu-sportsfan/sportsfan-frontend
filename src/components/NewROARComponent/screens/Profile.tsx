@@ -154,17 +154,17 @@ export default function Profile({ userBadge, setUserBadge, onCompose, onToast, s
         setProfileData({
           user: {
             ...fanData,
-            fanSince: "2023",
-            yearsFandom: 1,
             reputationScore: 0,
             accuracy: 0,
+            predictionCount: 0,
+            hotTakeCount: 0,
             favPlayer: fanData.favPlayer || "",
-            about: fanData.about || ""
+            about: fanData.about || "",
           },
           badges: [],
           predictions: [],
           hotTakes: [],
-          rival: null
+          rival: null,
         });
         if (fanData.badge) setUserBadge?.(fanData.badge);
         setSelectedAvatar(fanData.avatarUrl || null);
@@ -181,12 +181,9 @@ export default function Profile({ userBadge, setUserBadge, onCompose, onToast, s
           if (res.data.user?.favPlayer !== undefined) setEditFavPlayer(res.data.user.favPlayer || "");
           if (res.data.user?.about !== undefined) setEditAbout(res.data.user.about || "");
           if (res.data.user?.showPredHistory !== undefined) setEditShowPredHistory(res.data.user.showPredHistory !== false);
-          // Restore persisted avatar if any
           if (res.data.user?.avatarUrl) {
             setSelectedAvatar(res.data.user.avatarUrl);
-            try {
-              localStorage.setItem("roar_avatar_url", res.data.user.avatarUrl);
-            } catch { }
+            try { localStorage.setItem("roar_avatar_url", res.data.user.avatarUrl); } catch { }
           }
         }
       } catch (err: any) {
@@ -201,6 +198,7 @@ export default function Profile({ userBadge, setUserBadge, onCompose, onToast, s
     };
     fetchProfile();
   }, [setUserBadge, setOnboarded, isViewingOther, fanData]);
+
 
   if (loading || !profileData) {
     return <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100%", color: "var(--text-muted)" }}>Loading profile...</div>;

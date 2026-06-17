@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useState , useRef } from "react";
 import { motion } from "framer-motion";
 import axios from "axios";
 import html2canvas from "html2canvas";
 import type { ActivityItem } from "@/context/ActivityContext";
-
+// import { useState, useRef } from "react";
 interface ActivityCardProps {
   activity: ActivityItem;
   postData?: Record<string, unknown>;
@@ -77,8 +77,10 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
 }) => {
   const [loading, setLoading] = useState(false);
   const config = getActivityConfig(activity.type);
-  const cardRef = useState<HTMLDivElement | null>(null)[0];
+//   const cardRef = useState<HTMLDivElement | null>(null)[0];
 
+
+const cardRef = useRef<HTMLDivElement>(null);
   const handleShare = async () => {
     const shareText = `🏏 I posted a ROAR ${config.label} on Sportsfan360.\n⭐ Earned ${activity.points} points.`;
 
@@ -100,11 +102,12 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
   };
 
   const handleDownload = async () => {
-    if (!cardRef) return;
+    // if (!cardRef) return;
+    if (!cardRef.current) return;
 
     try {
       setLoading(true);
-      const canvas = await html2canvas(cardRef as HTMLElement, {
+     const canvas = await html2canvas(cardRef.current, {
         backgroundColor: "#16161f",
         scale: 2,
       });
@@ -122,7 +125,8 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
 
   return (
     <motion.div
-      ref={cardRef as any}
+    //   ref={cardRef as any}
+    ref={cardRef}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
@@ -230,13 +234,15 @@ function ActivityContent({
       return (
         <div style={{ fontSize: "13px", lineHeight: "1.5", color: "var(--text-primary)" }}>
           <p style={{ marginBottom: "12px" }}>
-            {postData?.statement || metadata.statement || "Posted a hot take on ROAR"}
+            {/* {postData?.statement || metadata.statement || "Posted a hot take on ROAR"} */}
+            {String(postData?.statement ?? metadata.statement ?? "Posted a hot take on ROAR")}
           </p>
           {postData?.agreeVotes !== undefined && postData?.disagreeVotes !== undefined && (
             <div style={{ display: "flex", gap: "16px", alignItems: "center", paddingTop: "12px" }}>
               <div style={{ textAlign: "center" }}>
                 <div style={{ fontSize: "12px", fontWeight: 700, color: "#00FF88" }}>
-                  {postData.agreeVotes || 0}
+                  {/* {postData.agreeVotes || 0} */}
+                  {Number(postData.agreeVotes ?? 0)}
                 </div>
                 <div style={{ fontSize: "10px", color: "var(--text-muted)", marginTop: "4px" }}>
                   Agree
@@ -244,7 +250,8 @@ function ActivityContent({
               </div>
               <div style={{ textAlign: "center" }}>
                 <div style={{ fontSize: "12px", fontWeight: 700, color: "#FF6B35" }}>
-                  {postData.disagreeVotes || 0}
+                  {/* {postData.disagreeVotes || 0} */}
+                  {Number(postData.disagreeVotes ?? 0)}
                 </div>
                 <div style={{ fontSize: "10px", color: "var(--text-muted)", marginTop: "4px" }}>
                   Disagree
@@ -259,10 +266,12 @@ function ActivityContent({
       return (
         <div style={{ fontSize: "13px", lineHeight: "1.5", color: "var(--text-primary)" }}>
           <p style={{ marginBottom: "8px", fontWeight: 700 }}>
-            {postData?.title || metadata.title || "Started a debate"}
+            {/* {postData?.title || metadata.title || "Started a debate"} */}
+            {String(postData?.title ?? metadata.title ?? "Started a debate")}
           </p>
           <p style={{ fontSize: "12px", color: "var(--text-muted)" }}>
-            {postData?.description || "Debate with other fans"}
+            {/* {postData?.description || "Debate with other fans"} */}
+            {String(postData?.description ?? "Debate with other fans")}
           </p>
         </div>
       );
@@ -271,10 +280,10 @@ function ActivityContent({
       return (
         <div style={{ fontSize: "13px", lineHeight: "1.5", color: "var(--text-primary)" }}>
           <p style={{ marginBottom: "8px" }}>
-            {postData?.caption || metadata.caption || "Shared a memorable moment"}
+            {String(postData?.caption ?? metadata.caption ?? "Shared a memorable moment")}
           </p>
           <div style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "8px" }}>
-            Sport: <span style={{ color: "#fff", textTransform: "capitalize" }}>{metadata.sport || "General"}</span>
+            Sport: <span style={{ color: "#fff", textTransform: "capitalize" }}>{String(metadata.sport ?? "General")}</span>
           </div>
         </div>
       );
@@ -283,7 +292,7 @@ function ActivityContent({
       return (
         <div style={{ fontSize: "13px", lineHeight: "1.5", color: "var(--text-primary)" }}>
           <p>
-            {postData?.reaction || metadata.reaction || "Shared a raw reaction"}
+            {String(postData?.reaction ?? metadata.reaction ?? "Shared a raw reaction")}
           </p>
         </div>
       );
@@ -292,7 +301,7 @@ function ActivityContent({
       return (
         <div style={{ fontSize: "13px", lineHeight: "1.5", color: "var(--text-primary)" }}>
           <p style={{ marginBottom: "8px" }}>
-            {postData?.statement || metadata.statement || "Made a prediction"}
+            {String(postData?.statement ?? metadata.statement ?? "Made a prediction")}
           </p>
           <div style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "8px" }}>
             Status: <span style={{ color: postData?.status === "correct" ? "#00FF88" : "#FF6B35" }}>
@@ -306,14 +315,14 @@ function ActivityContent({
       return (
         <div style={{ fontSize: "13px", lineHeight: "1.5", color: "var(--text-primary)" }}>
           <p style={{ marginBottom: "8px", fontWeight: 700 }}>
-            {postData?.title || metadata.title || "Took a Flash Quiz"}
+            {String(postData?.title ?? metadata.title ?? "Took a Flash Quiz")}
           </p>
           <div style={{ display: "flex", gap: "16px", fontSize: "12px", marginTop: "8px" }}>
             <div>
-              Score: <span style={{ color: "#00FF88", fontWeight: 700 }}>{postData?.score || 0}</span>
+              Score: <span style={{ color: "#00FF88", fontWeight: 700 }}>{Number(postData?.score ?? 0)}</span>
             </div>
             <div>
-              Points: <span style={{ color: "#FFB81C", fontWeight: 700 }}>+{postData?.points || activity.points}</span>
+              Points: <span style={{ color: "#FFB81C", fontWeight: 700 }}>+{Number(postData?.points ?? activity.points)}</span>
             </div>
           </div>
         </div>

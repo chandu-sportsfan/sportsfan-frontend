@@ -356,83 +356,71 @@ function metadataText(metadata: ActivityItem["metadata"]) {
     if (typeof value === "number") return String(value);
   }
   return "";
+}
 
-  function startOfDayLocal(date: Date) {
-    return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+function activityToHistoryItem(activity: ActivityItem): HistoryItem {
+  // Pass safe strings to prevent crashes
+  const safeType = activity.type || "";
+  const key      = normalizeActivityKey(safeType, activity.label);
+  const rawType  = (safeType || key).toUpperCase();
+
+  // FIX 6: Use the SOURCE_LABEL_MAP for a clean, consistent badge label.
+  const source   = SOURCE_LABEL_MAP[rawType] ?? readableSource(safeType || key);
+
+  // FIX 1: metadataText now picks up "sport", so ROAR details show the sport
+  const details  = metadataText(activity.metadata) || activity.label || source;
+
+  const meta     = ACTIVITY_META[key];
+  return makeHistoryItem(
+    key, details, Number(activity.points) || 0,
+    new Date(normalizeTimestamp(activity.createdAt)),
+    activity.id,
+    activity.label && activity.label !== activity.type
+      ? activity.label
+      : meta.action,
+    source
+  );
+}
+
+function calculateLevelData(totalXp: number) {
+  let level = 1, xpForNextLevel = 1000, xpAccumulated = 0;
+  while (totalXp >= xpAccumulated + xpForNextLevel) {
+    xpAccumulated += xpForNextLevel;
+    level++;
+    xpForNextLevel = level * 1000;
   }
+  const currentLevelXp = totalXp - xpAccumulated;
+  return {
+    level, currentLevelXp, xpForNextLevel,
+    xpRemaining: xpForNextLevel - currentLevelXp,
+    progressPercentage: Math.min(100, Math.round((currentLevelXp / xpForNextLevel) * 100)),
+  };
+}
 
-  function formatTrendLabel(date: Date, period: TrendPeriod) {
-    if (period === "7D") {
-      return date.toLocaleDateString("en-US", { weekday: "short" });
+// FIX 4: getEarningBreakdown now accepts the already-filtered (this-month)
+// history so the donut slices are consistent with the "This Month" centre label.
+function getEarningBreakdown(history: HistoryItem[]): CategoryBreakdown[] {
+  if (!history.length) return [];
+  const total = history.reduce((s, h) => s + h.points, 0);
+
+  // Group by ActivityKey so each distinct activity type gets its own slice
+  const grouped: Record<string, { label: string; xpValue: number; color: string }> = {};
+  history.forEach((h) => {
+    if (!grouped[h.key]) {
+      grouped[h.key] = { label: h.action, xpValue: 0, color: h.hexColor };
     }
-    if (period === "30D") {
-      return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-    }
-    return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-  }
+    grouped[h.key].xpValue += h.points;
+  });
 
-  function getTrendAnalytics(history: HistoryItem[], period: TrendPeriod) {
-    const msPerDay = 86400000;
-    const daysMap: Record<TrendPeriod, number> = { "7D": 7, "30D": 30, "90D": 90 };
-    const days = daysMap[period];
-
-    const todayStart = startOfDayLocal(new Date()).getTime();
-    const currentStart = todayStart - (days - 1) * msPerDay;
-    const previousStart = currentStart - days * msPerDay;
-
-    const dayTotals = new Map<number, number>();
-    const currentPoints = history.reduce((total, item) => {
-      const timestamp = Number(item.timestamp) || 0;
-      const dayStart = startOfDayLocal(new Date(timestamp)).getTime();
-      const points = Number(item.points) || 0;
-
-      if (dayStart >= currentStart && dayStart <= todayStart) {
-        dayTotals.set(dayStart, (dayTotals.get(dayStart) || 0) + points);
-        return total + points;
-      }
-      return total;
-    }, 0);
-
-    const previousPoints = history.reduce((total, item) => {
-      const timestamp = Number(item.timestamp) || 0;
-      const dayStart = startOfDayLocal(new Date(timestamp)).getTime();
-      const points = Number(item.points) || 0;
-
-      if (dayStart >= previousStart && dayStart < currentStart) {
-        return total + points;
-      }
-      return total;
-    }, 0);
-
-    const chartData = Array.from({ length: days }, (_, index) => {
-      const dayStart = currentStart + index * msPerDay;
-      return dayTotals.get(dayStart) || 0;
-    });
-
-    const labels = Array.from({ length: days }, (_, index) => {
-      const dayStart = currentStart + index * msPerDay;
-      return formatTrendLabel(new Date(dayStart), period);
-    });
-
-    const percentChange = previousPoints > 0
-      ? Math.round(((currentPoints - previousPoints) / previousPoints) * 100)
-      : currentPoints > 0 ? 100 : 0;
-
-    const vsMap: Record<TrendPeriod, string> = {
-      "7D": "vs prev 7d",
-      "30D": "vs prev 30d",
-      "90D": "vs prev 90d",
-    };
-
-    return {
-      chartData,
-      percentChange,
-      isPositive: percentChange >= 0,
-      labels,
-      vsText: vsMap[period],
-      currentPts: currentPoints,
-    };
-  }
+  return Object.values(grouped)
+    .sort((a, b) => b.xpValue - a.xpValue)
+    .map((g) => ({
+      label:   g.label,
+      color:   g.color,
+      xpValue: g.xpValue,
+      percent: total > 0 ? Math.round((g.xpValue / total) * 100) : 0,
+      xp:      `+${g.xpValue.toLocaleString()} SXP`,
+    }));
 }
 
 // Streak data derived purely from activityLog timestamps — no extra DB call needed.
@@ -485,6 +473,71 @@ function getDynamicStreakData(history: HistoryItem[]) {
   });
 
   return { streakMap, currentStreak, longestStreak };
+}
+
+function getTrendAnalytics(history: HistoryItem[], period: TrendPeriod) {
+  const now      = Date.now();
+  const daysMap: Record<TrendPeriod, number> = { "7D": 7, "30D": 30, "90D": 90 };
+  const days     = daysMap[period];
+  const msPerDay = 86400000;
+  const currentStart  = now - days * msPerDay;
+  const previousStart = currentStart - days * msPerDay;
+
+  // Use a sensible number of chart buckets per period
+  const BUCKETS = period === "7D" ? 7 : period === "30D" ? 6 : 5;
+  const bucketSize = (days * msPerDay) / BUCKETS;
+  const buckets    = new Array(BUCKETS).fill(0);
+  let currentPts   = 0;
+  let previousPts  = 0;
+
+  // ALL activity types contribute — no filtering by type
+  history.forEach((item) => {
+    const t = item.timestamp;
+    if (t >= currentStart && t <= now) {
+      currentPts += item.points;
+      const idx = Math.min(BUCKETS - 1, Math.floor((t - currentStart) / bucketSize));
+      buckets[idx] += item.points;
+    } else if (t >= previousStart && t < currentStart) {
+      previousPts += item.points;
+    }
+  });
+
+  const percentChange =
+    previousPts > 0
+      ? Math.round(((currentPts - previousPts) / previousPts) * 100)
+      : currentPts > 0 ? 100 : 0;
+
+  const fmt = (d: Date, opts: Intl.DateTimeFormatOptions) =>
+    d.toLocaleDateString("en-US", opts);
+
+  const labelsMap: Record<TrendPeriod, string[]> = {
+    "7D": Array.from({ length: 7 }, (_, i) =>
+      fmt(new Date(now - (6 - i) * msPerDay), { weekday: "short" })),
+    "30D": [
+      fmt(new Date(now - 30 * msPerDay), { month: "short", day: "numeric" }),
+      fmt(new Date(now - 24 * msPerDay), { month: "short", day: "numeric" }),
+      fmt(new Date(now - 18 * msPerDay), { month: "short", day: "numeric" }),
+      fmt(new Date(now - 12 * msPerDay), { month: "short", day: "numeric" }),
+      fmt(new Date(now -  6 * msPerDay), { month: "short", day: "numeric" }),
+      "Today",
+    ],
+    "90D": Array.from({ length: 4 }, (_, i) =>
+      fmt(new Date(now - (90 - i * 30) * msPerDay), { month: "short", day: "numeric" })
+    ).concat(["Today"]),
+  };
+
+  const vsMap: Record<TrendPeriod, string> = {
+    "7D": "vs prev week", "30D": "vs prev month", "90D": "vs prev 90d",
+  };
+
+  return {
+    chartData: buckets,
+    percentChange,
+    isPositive: percentChange >= 0,
+    labels: labelsMap[period],
+    vsText: vsMap[period],
+    currentPts,
+  };
 }
 
 function applyFilters(
@@ -664,50 +717,72 @@ function BreakdownLegend({ data }: { data: CategoryBreakdown[] }) {
 // ─────────────────────────────────────────────────────────────────────────────
 // TREND BAR CHART
 // ─────────────────────────────────────────────────────────────────────────────
-function TrendBarChart({
+function TrendLineChart({
   data,
   labels,
 }: {
-  data:   number[];
+  data: number[];
   labels: string[];
-  period: TrendPeriod;
 }) {
-  const maxVal  = Math.max(...data, 1);
-  const hasData = data.some((v) => v > 0);
+  const width = 100;
+  const height = 40;
+
+  const max = Math.max(...data, 1);
+
+  const points = data
+    .map((value, index) => {
+      const x = (index / (data.length - 1)) * width;
+      const y = height - (value / max) * height;
+      return `${x},${y}`;
+    })
+    .join(" ");
 
   return (
     <div className="w-full">
-      <div className="flex items-end gap-1 h-24 w-full">
-        {data.map((val, i) => {
-          const heightPct = hasData
-            ? Math.max((val / maxVal) * 100, val > 0 ? 8 : 2)
-            : 2;
+      <svg
+        viewBox={`0 0 ${width} ${height}`}
+        className="w-full h-28 overflow-visible"
+        preserveAspectRatio="none"
+      >
+        <defs>
+          <linearGradient id="trendFill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#f43f5e" stopOpacity="0.35" />
+            <stop offset="100%" stopColor="#f43f5e" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+
+        {/* Area Fill */}
+        <polygon
+          fill="url(#trendFill)"
+          points={`0,40 ${points} 100,40`}
+        />
+
+        {/* Line */}
+        <polyline
+          fill="none"
+          stroke="#f43f5e"
+          strokeWidth="2"
+          points={points}
+        />
+
+        {/* Dots */}
+        {data.map((value, index) => {
+          const x = (index / (data.length - 1)) * width;
+          const y = height - (value / max) * height;
+
           return (
-            <div
-              key={i}
-              className="flex-1 flex flex-col justify-end group relative"
-              title={`${val} SXP`}
-            >
-              {val > 0 && (
-                <div className="absolute -top-7 left-1/2 -translate-x-1/2 bg-[#27272a] text-white text-[9px] font-bold px-1.5 py-0.5 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-                  +{val} SXP
-                </div>
-              )}
-              <div
-                className="w-full rounded-t-sm transition-all duration-700 ease-out"
-                style={{
-                  height: `${heightPct}%`,
-                  background: val > 0
-                    ? "linear-gradient(to top, #be123c, #f43f5e)"
-                    : "#27272a",
-                  opacity: val > 0 ? 1 : 0.4,
-                }}
-              />
-            </div>
+            <circle
+              key={index}
+              cx={x}
+              cy={y}
+              r="1.5"
+              fill="#f43f5e"
+            />
           );
         })}
-      </div>
-      <div className="flex justify-between text-[9px] text-gray-500 font-bold mt-2 px-0.5">
+      </svg>
+
+      <div className="flex justify-between text-[9px] text-gray-500 font-bold mt-2">
         {labels.map((label, i) => (
           <span key={i}>{label}</span>
         ))}
@@ -1300,10 +1375,9 @@ export default function FanZoneDashboard() {
                       <span className="text-gray-500 font-medium ml-1">{trendAnalytics.vsText}</span>
                     </p>
                   </div>
-                  <TrendBarChart
+                  <TrendLineChart
                     data={trendAnalytics.chartData}
                     labels={trendAnalytics.labels}
-                    period={trendPeriod}
                   />
                 </div>
 

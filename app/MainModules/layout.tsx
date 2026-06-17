@@ -114,8 +114,8 @@ function HostSidebar({ user }: { user: UserProfile }) {
                 key={item.name}
                 href={item.href}
                 className={`flex items-center justify-center group-hover:justify-start gap-0 group-hover:gap-3 rounded-xl px-0 group-hover:px-3 py-2.5 w-10 group-hover:w-full mx-auto transition-all duration-300 ${isActive
-                    ? "bg-gradient-to-r from-orange-500/20 to-pink-600/20 text-white ring-1 ring-orange-400/30"
-                    : "text-gray-400 hover:text-white hover:bg-white/5"
+                  ? "bg-gradient-to-r from-orange-500/20 to-pink-600/20 text-white ring-1 ring-orange-400/30"
+                  : "text-gray-400 hover:text-white hover:bg-white/5"
                   }`}
               >
                 <span className={isActive ? "text-orange-400" : ""}>{item.icon}</span>
@@ -202,8 +202,8 @@ function UserSidebar() {
                 key={item.name}
                 href={item.href}
                 className={`mx-auto flex w-12 group-hover:w-full items-center justify-center group-hover:justify-start gap-0 group-hover:gap-3 rounded-xl px-0 group-hover:px-3 py-2.5 transition-all duration-300 ${isActive
-                    ? "text-pink-300 bg-pink-500/15 ring-1 ring-pink-400/40"
-                    : "text-gray-300 hover:text-pink-400 hover:bg-white/5"
+                  ? "text-pink-300 bg-pink-500/15 ring-1 ring-pink-400/40"
+                  : "text-gray-300 hover:text-pink-400 hover:bg-white/5"
                   }`}
               >
                 {typeof item.icon === "string" ? (
@@ -213,8 +213,8 @@ function UserSidebar() {
                     width={22}
                     height={22}
                     className={`shrink-0 transition-all duration-300 ${isActive
-                        ? "brightness-75 contrast-90 drop-shadow-[0_0_6px_rgba(244,114,182,0.5)]"
-                        : "brightness-55 contrast-90"
+                      ? "brightness-75 contrast-90 drop-shadow-[0_0_6px_rgba(244,114,182,0.5)]"
+                      : "brightness-55 contrast-90"
                       }`}
                   />
                 ) : (
@@ -305,72 +305,72 @@ export default function MainModulesLayout({
       </div>
     );
   }
-//   return (
-//     <div className="h-screen w-full bg-black text-white flex flex-col lg:flex-row overflow-hidden">
-//       {renderSidebar()}
+  //   return (
+  //     <div className="h-screen w-full bg-black text-white flex flex-col lg:flex-row overflow-hidden">
+  //       {renderSidebar()}
 
-//       <main className="flex-1 min-w-0 w-full h-full flex flex-col overflow-hidden lg:pb-0">
-//         <div className="relative z-60">
-//           <Header />
-//         </div>
-//       {/* <div className={`flex-1 min-h-0 overflow-x-hidden ${isROARPath ? "overflow-hidden h-full" : "overflow-y-auto"}`}> */}
-//       <div className={`flex-1 min-h-0 overflow-x-hidden ${isROARPath ? "overflow-hidden h-full" : "overflow-y-auto"}`} style={isROARPath ? { paddingTop: 0 } : {}}>
-//           {children}
-//           {!isROARPath && (
-//             <div className="hidden md:hidden lg:block">
-//               <SportsFan360Footer />
-//             </div>
-//           )}
-//         </div>
+  //       <main className="flex-1 min-w-0 w-full h-full flex flex-col overflow-hidden lg:pb-0">
+  //         <div className="relative z-60">
+  //           <Header />
+  //         </div>
+  //       {/* <div className={`flex-1 min-h-0 overflow-x-hidden ${isROARPath ? "overflow-hidden h-full" : "overflow-y-auto"}`}> */}
+  //       <div className={`flex-1 min-h-0 overflow-x-hidden ${isROARPath ? "overflow-hidden h-full" : "overflow-y-auto"}`} style={isROARPath ? { paddingTop: 0 } : {}}>
+  //           {children}
+  //           {!isROARPath && (
+  //             <div className="hidden md:hidden lg:block">
+  //               <SportsFan360Footer />
+  //             </div>
+  //           )}
+  //         </div>
 
-//         {/* <div className="fixed bottom-28 right-4 md:bottom-15 md:right-6 lg:bottom-5 lg:right-6 z-50"> */}
-//           {/* <button
-//             onClick={() => setIsInviteOpen(true)}
-//             className="group relative flex items-center justify-center w-7 h-7 lg:w-14 lg:h-14 rounded-full bg-gradient-to-r from-[#C9115F] to-[#e85d04] shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110 active:scale-95"
-//             aria-label="Invite a Friend"
-//           >
-//             <span className="absolute right-full mr-3 px-3 py-1.5 rounded-lg bg-gradient-to-r from-[#C9115F] to-[#e85d04] text-white text-xs font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
-//               Invite a Friend
-//             </span>
+  //         {/* <div className="fixed bottom-28 right-4 md:bottom-15 md:right-6 lg:bottom-5 lg:right-6 z-50"> */}
+  //           {/* <button
+  //             onClick={() => setIsInviteOpen(true)}
+  //             className="group relative flex items-center justify-center w-7 h-7 lg:w-14 lg:h-14 rounded-full bg-gradient-to-r from-[#C9115F] to-[#e85d04] shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110 active:scale-95"
+  //             aria-label="Invite a Friend"
+  //           >
+  //             <span className="absolute right-full mr-3 px-3 py-1.5 rounded-lg bg-gradient-to-r from-[#C9115F] to-[#e85d04] text-white text-xs font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+  //               Invite a Friend
+  //             </span>
 
-//             <UserPlus className="text-white w-3 h-3 md:w-4 md:h-4 lg:w-6 lg:h-6" />
-//           </button> */}
-//           {/* <GlobalActionBar /> */}
-//         {/* </div> */}
+  //             <UserPlus className="text-white w-3 h-3 md:w-4 md:h-4 lg:w-6 lg:h-6" />
+  //           </button> */}
+  //           {/* <GlobalActionBar /> */}
+  //         {/* </div> */}
 
-//         {/* BottomNav hidden for now — You and Alerts will integrate into global app profile/alerts */}
-//         <div className="lg:hidden">
-//           <BottomNav />
-//         </div>
-//       </main>
+  //         {/* BottomNav hidden for now — You and Alerts will integrate into global app profile/alerts */}
+  //         <div className="lg:hidden">
+  //           <BottomNav />
+  //         </div>
+  //       </main>
 
-//       {/* <InviteFriendModal
-//         open={isInviteOpen}
-//         onClose={() => setIsInviteOpen(false)}
-//         shareUrl={pathname}
-//       /> */}
-//     </div>
-//   );
-// }
+  //       {/* <InviteFriendModal
+  //         open={isInviteOpen}
+  //         onClose={() => setIsInviteOpen(false)}
+  //         shareUrl={pathname}
+  //       /> */}
+  //     </div>
+  //   );
+  // }
 
 
 
-return (
-  <div className="h-screen w-full bg-black text-white flex flex-col lg:flex-row overflow-hidden">
-    {renderSidebar()}
+  return (
+    <div className="h-screen w-full bg-black text-white flex flex-col lg:flex-row overflow-hidden">
+      {renderSidebar()}
 
-    <main className="flex-1 min-w-0 w-full h-full flex flex-col overflow-hidden lg:pb-0">
-      <div className="relative z-60">
-        <Header />
-      </div>
-      
-      <div 
+      <main className="flex-1 min-w-0 w-full h-full flex flex-col overflow-hidden lg:pb-0">
+        <div className="relative z-60">
+          <Header />
+        </div>
+
+        {/* <div 
         className={`flex-1 min-h-0 overflow-x-hidden ${isROARPath ? "overflow-hidden h-full" : "overflow-y-auto"}`} 
         style={isROARPath ? { 
           paddingTop: 0,
           paddingBottom: '70px'  // Space for bottom nav on mobile
         } : {}}
-      >
+       >
         {children}
         {!isROARPath && (
           <div className="hidden md:hidden lg:block">
@@ -379,7 +379,7 @@ return (
         )}
       </div>
 
-      {/* BottomNav - Fixed at bottom with high z-index */}
+      {/ BottomNav - Fixed at bottom with high z-index /}
       <div className="lg:hidden" style={{ 
         position: 'fixed', 
         bottom: 0, 
@@ -389,7 +389,42 @@ return (
         pointerEvents: 'auto'
       }}>
         <BottomNav />
-      </div>
-    </main>
-  </div>
-)}
+      </div> */}
+
+
+
+        <div
+          className={`flex-1 min-h-0 overflow-x-hidden ${isROARPath ? "overflow-hidden h-full" : "overflow-y-auto"}`}
+          style={isROARPath ? {
+            paddingTop: 0,
+            // Define the bottom nav height as a CSS var so RoomsHome (and any other
+            // ROAR screen) can read it to avoid rendering under the fixed nav.
+            ["--roar-bottom-nav-height" as any]: "60px",
+          } : {}}
+        >
+          {children}
+          {!isROARPath && (
+            <div className="hidden md:hidden lg:block">
+              <SportsFan360Footer />
+            </div>
+          )}
+        </div>
+
+        {/* BottomNav — fixed at bottom, zIndex above ROAR content */}
+        <div
+          className="lg:hidden"
+          style={{
+            position: "fixed",
+            bottom: 0,
+            left: 0,
+            right: 0,
+            zIndex: 1001,
+            pointerEvents: "auto",
+          }}
+        >
+          <BottomNav />
+        </div>
+      </main>
+    </div>
+  )
+}

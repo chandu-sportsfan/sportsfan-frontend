@@ -4,6 +4,7 @@ import axios from "axios";
 import Image from "next/image";
 import AvatarWithBadge from "../components/AvatarWithBadge";
 import { FilterPills } from "../components/shared";
+import ActivityFeed from "../components/ActivityFeed";
 import { BADGE_CONFIG, BADGE_DETAIL, BADGE_LABELS, BADGES_LIST, RIVAL, CURRENT_USER } from "../constants";
 import { fmt } from "../utils";
 import BackButton from "../../ReusableComponent/BackButton";
@@ -130,7 +131,7 @@ const copyToClipboard = async (text: string) => {
 };
 
 export default function Profile({ userBadge, setUserBadge, onCompose, onToast, setOnboarded, onNavigateTab, isViewingOther, fanData, onBack }: Props) {
-  const { profileStats } = useActivity();
+  const { profileStats, activities, loading: activityLoading } = useActivity();
   const [profileData, setProfileData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [predTab, setPredTab] = useState("All");
@@ -539,30 +540,13 @@ export default function Profile({ userBadge, setUserBadge, onCompose, onToast, s
       {/* ── Takes ── */}
       <div style={{ padding: "24px 16px 80px" }}>
         <h3 className="font-display" style={{ fontWeight: 700, fontSize: 18, color: "#fff", marginBottom: 12 }}>YOUR TAKES</h3>
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {hotTakes.length === 0 ? (
-            <p style={{ textAlign: "center", padding: "20px 0", color: "var(--text-muted)", fontSize: 13 }}>No hot takes created.</p>
-          ) : (
-            hotTakes.map((ht: any) => {
-              const agree = ht.agreeCount || 0;
-              const disagree = ht.disagreeCount || 0;
-              const total = agree + disagree || 1;
-              const agreePct = Math.round((agree / total) * 100) || 50;
-              return (
-                <div key={ht.id || ht.postId} className="glass-card" style={{ padding: 14, background: "rgba(22, 22, 31, 0.4)", border: "1px solid rgba(255,255,255,0.03)" }}>
-                  <p style={{ fontSize: 14, color: "#fff", lineHeight: 1.4, marginBottom: 10 }}>{ht.text}</p>
-                  <div style={{ position: "relative", width: "100%", height: 16, background: "rgba(255,255,255,0.06)", borderRadius: 8, overflow: "hidden" }}>
-                    <div style={{ height: "100%", width: `${agreePct}%`, background: "var(--accent-gradient)", transition: "width 1s" }} />
-                    <div style={{ position: "absolute", inset: 0, display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0 8px", fontSize: 9, fontWeight: 700, color: "#fff" }}>
-                      <span>{agreePct}% Agree</span>
-                      <span>{100 - agreePct}% Disagree</span>
-                    </div>
-                  </div>
-                </div>
-              );
-            })
-          )}
-        </div>
+        <ActivityFeed
+          activities={activities}
+          loading={loading}
+          onActivityAction={(action, activity) => {
+            onToast(`Activity ${action}d successfully!`);
+          }}
+        />
       </div>
 
       {/* ════════════════════════════════════════

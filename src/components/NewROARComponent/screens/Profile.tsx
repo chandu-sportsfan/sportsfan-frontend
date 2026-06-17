@@ -4,7 +4,7 @@ import axios from "axios";
 import Image from "next/image";
 import AvatarWithBadge from "../components/AvatarWithBadge";
 import { FilterPills } from "../components/shared";
-// import ActivityFeed from "../components/ActivityFeed";
+import ActivityFeed from "../components/ActivityFeed";
 import { BADGE_CONFIG, BADGE_DETAIL, BADGE_LABELS, BADGES_LIST, RIVAL, CURRENT_USER } from "../constants";
 import { fmt } from "../utils";
 import BackButton from "../../ReusableComponent/BackButton";
@@ -540,13 +540,13 @@ export default function Profile({ userBadge, setUserBadge, onCompose, onToast, s
       {/* ── Takes ── */}
       <div style={{ padding: "24px 16px 80px" }}>
         <h3 className="font-display" style={{ fontWeight: 700, fontSize: 18, color: "#fff", marginBottom: 12 }}>YOUR TAKES</h3>
-        {/* <ActivityFeed
+        <ActivityFeed
           activities={activities}
-          loading={loading}
+          loading={activityLoading}
           onActivityAction={(action, activity) => {
             onToast(`Activity ${action}d successfully!`);
           }}
-        /> */}
+        />
       </div>
 
       {/* ════════════════════════════════════════

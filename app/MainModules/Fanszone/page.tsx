@@ -356,71 +356,83 @@ function metadataText(metadata: ActivityItem["metadata"]) {
     if (typeof value === "number") return String(value);
   }
   return "";
-}
 
-function activityToHistoryItem(activity: ActivityItem): HistoryItem {
-  // Pass safe strings to prevent crashes
-  const safeType = activity.type || "";
-  const key      = normalizeActivityKey(safeType, activity.label);
-  const rawType  = (safeType || key).toUpperCase();
-
-  // FIX 6: Use the SOURCE_LABEL_MAP for a clean, consistent badge label.
-  const source   = SOURCE_LABEL_MAP[rawType] ?? readableSource(safeType || key);
-
-  // FIX 1: metadataText now picks up "sport", so ROAR details show the sport
-  const details  = metadataText(activity.metadata) || activity.label || source;
-
-  const meta     = ACTIVITY_META[key];
-  return makeHistoryItem(
-    key, details, Number(activity.points) || 0,
-    new Date(normalizeTimestamp(activity.createdAt)),
-    activity.id,
-    activity.label && activity.label !== activity.type
-      ? activity.label
-      : meta.action,
-    source
-  );
-}
-
-function calculateLevelData(totalXp: number) {
-  let level = 1, xpForNextLevel = 1000, xpAccumulated = 0;
-  while (totalXp >= xpAccumulated + xpForNextLevel) {
-    xpAccumulated += xpForNextLevel;
-    level++;
-    xpForNextLevel = level * 1000;
+  function startOfDayLocal(date: Date) {
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate());
   }
-  const currentLevelXp = totalXp - xpAccumulated;
-  return {
-    level, currentLevelXp, xpForNextLevel,
-    xpRemaining: xpForNextLevel - currentLevelXp,
-    progressPercentage: Math.min(100, Math.round((currentLevelXp / xpForNextLevel) * 100)),
-  };
-}
 
-// FIX 4: getEarningBreakdown now accepts the already-filtered (this-month)
-// history so the donut slices are consistent with the "This Month" centre label.
-function getEarningBreakdown(history: HistoryItem[]): CategoryBreakdown[] {
-  if (!history.length) return [];
-  const total = history.reduce((s, h) => s + h.points, 0);
-
-  // Group by ActivityKey so each distinct activity type gets its own slice
-  const grouped: Record<string, { label: string; xpValue: number; color: string }> = {};
-  history.forEach((h) => {
-    if (!grouped[h.key]) {
-      grouped[h.key] = { label: h.action, xpValue: 0, color: h.hexColor };
+  function formatTrendLabel(date: Date, period: TrendPeriod) {
+    if (period === "7D") {
+      return date.toLocaleDateString("en-US", { weekday: "short" });
     }
-    grouped[h.key].xpValue += h.points;
-  });
+    if (period === "30D") {
+      return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    }
+    return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  }
 
-  return Object.values(grouped)
-    .sort((a, b) => b.xpValue - a.xpValue)
-    .map((g) => ({
-      label:   g.label,
-      color:   g.color,
-      xpValue: g.xpValue,
-      percent: total > 0 ? Math.round((g.xpValue / total) * 100) : 0,
-      xp:      `+${g.xpValue.toLocaleString()} SXP`,
-    }));
+  function getTrendAnalytics(history: HistoryItem[], period: TrendPeriod) {
+    const msPerDay = 86400000;
+    const daysMap: Record<TrendPeriod, number> = { "7D": 7, "30D": 30, "90D": 90 };
+    const days = daysMap[period];
+
+    const todayStart = startOfDayLocal(new Date()).getTime();
+    const currentStart = todayStart - (days - 1) * msPerDay;
+    const previousStart = currentStart - days * msPerDay;
+
+    const dayTotals = new Map<number, number>();
+    const currentPoints = history.reduce((total, item) => {
+      const timestamp = Number(item.timestamp) || 0;
+      const dayStart = startOfDayLocal(new Date(timestamp)).getTime();
+      const points = Number(item.points) || 0;
+
+      if (dayStart >= currentStart && dayStart <= todayStart) {
+        dayTotals.set(dayStart, (dayTotals.get(dayStart) || 0) + points);
+        return total + points;
+      }
+      return total;
+    }, 0);
+
+    const previousPoints = history.reduce((total, item) => {
+      const timestamp = Number(item.timestamp) || 0;
+      const dayStart = startOfDayLocal(new Date(timestamp)).getTime();
+      const points = Number(item.points) || 0;
+
+      if (dayStart >= previousStart && dayStart < currentStart) {
+        return total + points;
+      }
+      return total;
+    }, 0);
+
+    const chartData = Array.from({ length: days }, (_, index) => {
+      const dayStart = currentStart + index * msPerDay;
+      return dayTotals.get(dayStart) || 0;
+    });
+
+    const labels = Array.from({ length: days }, (_, index) => {
+      const dayStart = currentStart + index * msPerDay;
+      return formatTrendLabel(new Date(dayStart), period);
+    });
+
+    const percentChange = previousPoints > 0
+      ? Math.round(((currentPoints - previousPoints) / previousPoints) * 100)
+      : currentPoints > 0 ? 100 : 0;
+
+    const vsMap: Record<TrendPeriod, string> = {
+      "7D": "vs prev 7d",
+      "30D": "vs prev 30d",
+      "90D": "vs prev 90d",
+    };
+
+    return {
+      chartData,
+      percentChange,
+      isPositive: percentChange >= 0,
+      labels,
+      vsText: vsMap[period],
+      currentPts: currentPoints,
+    };
+  }
 }
 
 // Streak data derived purely from activityLog timestamps — no extra DB call needed.
@@ -473,71 +485,6 @@ function getDynamicStreakData(history: HistoryItem[]) {
   });
 
   return { streakMap, currentStreak, longestStreak };
-}
-
-function getTrendAnalytics(history: HistoryItem[], period: TrendPeriod) {
-  const now      = Date.now();
-  const daysMap: Record<TrendPeriod, number> = { "7D": 7, "30D": 30, "90D": 90 };
-  const days     = daysMap[period];
-  const msPerDay = 86400000;
-  const currentStart  = now - days * msPerDay;
-  const previousStart = currentStart - days * msPerDay;
-
-  // Use a sensible number of chart buckets per period
-  const BUCKETS    = period === "7D" ? 7 : period === "30D" ? 10 : 9;
-  const bucketSize = (days * msPerDay) / BUCKETS;
-  const buckets    = new Array(BUCKETS).fill(0);
-  let currentPts   = 0;
-  let previousPts  = 0;
-
-  // ALL activity types contribute — no filtering by type
-  history.forEach((item) => {
-    const t = item.timestamp;
-    if (t >= currentStart && t <= now) {
-      currentPts += item.points;
-      const idx = Math.min(BUCKETS - 1, Math.floor((t - currentStart) / bucketSize));
-      buckets[idx] += item.points;
-    } else if (t >= previousStart && t < currentStart) {
-      previousPts += item.points;
-    }
-  });
-
-  const percentChange =
-    previousPts > 0
-      ? Math.round(((currentPts - previousPts) / previousPts) * 100)
-      : currentPts > 0 ? 100 : 0;
-
-  const fmt = (d: Date, opts: Intl.DateTimeFormatOptions) =>
-    d.toLocaleDateString("en-US", opts);
-
-  const labelsMap: Record<TrendPeriod, string[]> = {
-    "7D": Array.from({ length: 7 }, (_, i) =>
-      fmt(new Date(now - (6 - i) * msPerDay), { weekday: "short" })),
-    "30D": [
-      fmt(new Date(now - 30 * msPerDay), { month: "short", day: "numeric" }),
-      fmt(new Date(now - 24 * msPerDay), { month: "short", day: "numeric" }),
-      fmt(new Date(now - 18 * msPerDay), { month: "short", day: "numeric" }),
-      fmt(new Date(now - 12 * msPerDay), { month: "short", day: "numeric" }),
-      fmt(new Date(now -  6 * msPerDay), { month: "short", day: "numeric" }),
-      "Today",
-    ],
-    "90D": Array.from({ length: 4 }, (_, i) =>
-      fmt(new Date(now - (90 - i * 30) * msPerDay), { month: "short", day: "numeric" })
-    ).concat(["Today"]),
-  };
-
-  const vsMap: Record<TrendPeriod, string> = {
-    "7D": "vs prev week", "30D": "vs prev month", "90D": "vs prev 90d",
-  };
-
-  return {
-    chartData: buckets,
-    percentChange,
-    isPositive: percentChange >= 0,
-    labels: labelsMap[period],
-    vsText: vsMap[period],
-    currentPts,
-  };
 }
 
 function applyFilters(

@@ -739,6 +739,7 @@ export default function ROARApp() {
                   onDeletePost={handleDeletePost}
                   currentUsername={currentUsername}
                   currentAvatarUrl={currentAvatarUrl}
+                  onFanProfileClick={handleFanProfileClick}
                 />
               ) : (
                 <PostDetailsOverlay
@@ -749,6 +750,7 @@ export default function ROARApp() {
                   onDeletePost={handleDeletePost}
                   currentUsername={currentUsername}
                   currentAvatarUrl={currentAvatarUrl}
+                  onFanProfileClick={handleFanProfileClick}
                 />
               )
             )}

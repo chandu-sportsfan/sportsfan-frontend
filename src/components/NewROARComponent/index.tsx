@@ -675,7 +675,7 @@ export default function ROARApp() {
             </AnimatePresence>
 
             {/* Profile overlay — instant, no animation */}
-            {viewingUsername && profileData && (
+            {viewingUsername && (
               <div
                 style={{
                   position: "absolute",
@@ -692,7 +692,7 @@ export default function ROARApp() {
               >
                 <Profile
                   isViewingOther={true}
-                  fanData={profileData.user || { username: viewingUsername }}
+                  fanData={profileData?.user || { username: viewingUsername }}
                   onBack={closeProfile}
                 />
               </div>

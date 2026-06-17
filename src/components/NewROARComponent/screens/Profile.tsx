@@ -158,6 +158,19 @@ export default function Profile({ userBadge, setUserBadge, onCompose, onToast, s
           setProfileData(contextProfileData);
           if (contextProfileData.user?.badge) setUserBadge?.(contextProfileData.user.badge);
           setSelectedAvatar(contextProfileData.user?.avatarUrl || null);
+        } else if (!contextLoading && fanData) {
+          // Fallback if fetch failed or returned null
+          setProfileData({
+            user: {
+              username: fanData.username || "Unknown Fan",
+              badge: fanData.badge || "RISING_FAN",
+              reputationScore: 0,
+              accuracy: 0,
+              predictionCount: 0,
+              hotTakeCount: 0,
+            },
+            badges: [], predictions: [], hotTakes: [], rival: null
+          });
         }
         setLoading(contextLoading);
         return;

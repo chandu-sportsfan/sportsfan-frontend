@@ -35,6 +35,9 @@ interface Props {
   onToast: (m: string) => void;
   setOnboarded?: (b: boolean) => void;
   onNavigateTab?: (tab: string) => void;
+  isViewingOther?: boolean;
+  fanData?: any;
+  onBack?: () => void;
 }
 
 interface RoarShareUser {
@@ -124,9 +127,6 @@ const copyToClipboard = async (text: string) => {
       return false;
     }
   }
-  isViewingOther?: boolean;
-  fanData?: any;
-  onBack?: () => void;
 };
 
 export default function Profile({ userBadge, setUserBadge, onCompose, onToast, setOnboarded, onNavigateTab, isViewingOther, fanData, onBack }: Props) {

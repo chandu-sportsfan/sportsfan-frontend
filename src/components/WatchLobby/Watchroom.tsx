@@ -2639,11 +2639,21 @@ function LiveCameraFeed({
     const isModerator = userRole === 'Host' || userRole === 'Co-Host' || userRole === 'Moderator';
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const handleApiReady = (api: any) => {
+    const handleApiReady = async (api: any) => {
         apiRef.current = api;
         if (onApiReady) {
             onApiReady(api);
         }
+        
+        // Sync initial state
+        try {
+            const audioMuted = await api.isAudioMuted();
+            setMicOn(!audioMuted);
+        } catch (err) {}
+        try {
+            const videoMuted = await api.isVideoMuted();
+            setVidOn(!videoMuted);
+        } catch (err) {}
         
         // Listen to Jitsi's internal mute status changes and synchronize state
         api.addListener("audioMuteStatusChanged", (data: { muted: boolean }) => {
@@ -2844,8 +2854,17 @@ function LiveCameraFeed({
                 <div className="h-full relative w-full">
                     {/* Jitsi SDK React component */}
                     <JitsiMeeting
+                        key={isModerator ? 'moderator' : 'viewer'}
                         domain="meet.uxexpert.in"
                         roomName={roomName}
+                        iframeProperties={{
+                            allow: "camera; microphone; display-capture; autoplay; clipboard-write",
+                            style: {
+                                width: '100%',
+                                height: '100%',
+                                border: 'none'
+                            }
+                        }}
                         configOverwrite={{
                             prejoinPageEnabled: false,
                             prejoinConfig: {
@@ -2877,7 +2896,7 @@ function LiveCameraFeed({
                             JITSI_WATERMARK_LINK: '',
                             TOOLBAR_BUTTONS: isModerator 
                                 ? ['microphone', 'camera', 'desktop', 'fullscreen', 'hangup', 'chat', 'settings', 'raisehand', 'videoquality', 'participants-pane', 'recording', 'localrecording', 'select-background'] 
-                                : [],
+                                : ['microphone', 'hangup'],
                             FILM_STRIP_MAX_HEIGHT: isModerator ? undefined : 0,
                             DISABLE_VIDEO_BACKGROUND: true,
                         }}
@@ -2896,6 +2915,7 @@ function LiveCameraFeed({
                                 iframe.style.width = '100%';
                                 iframe.style.height = '100%';
                                 iframe.style.border = 'none';
+                                iframe.setAttribute('allow', 'camera; microphone; display-capture; autoplay; clipboard-write');
                             }
                         }}
                     />
@@ -2954,25 +2974,9 @@ function LiveCameraFeed({
 
 
 
-                    {/* Mic, Video, Screen Share & Record buttons (Host/Mods ONLY) */}
+                    {/* Record button (Host/Mods ONLY) */}
                     {isModerator && (
-                        <div className="absolute top-1.5 right-1.5 flex items-center gap-1.5 z-30 bg-[#111]/80 backdrop-blur-md px-1.5 py-1 rounded-lg border border-white/10">
-                            <button
-                                type="button"
-                                onClick={toggleMic}
-                                className={`w-6 h-6 rounded-md flex items-center justify-center transition-all hover:scale-110 ${micOn ? "bg-white/20 text-white" : "bg-red-600 text-white"}`}
-                                title="Toggle Microphone"
-                            >
-                                {micOn ? <Mic size={12} /> : <MicOff size={12} />}
-                            </button>
-                            <button
-                                type="button"
-                                onClick={toggleVid}
-                                className={`w-6 h-6 rounded-md flex items-center justify-center transition-all hover:scale-110 ${vidOn ? "bg-white/20 text-white" : "bg-red-600 text-white"}`}
-                                title="Toggle Camera"
-                            >
-                                {vidOn ? <Video size={12} /> : <VideoOff size={12} />}
-                            </button>
+                        <div className="absolute top-1.5 right-1.5 flex items-center gap-1.5 z-[9999] bg-[#111]/80 backdrop-blur-md px-1.5 py-1 rounded-lg border border-white/10">
                             <button
                                 type="button"
                                 onClick={toggleRecording}
@@ -2983,14 +2987,16 @@ function LiveCameraFeed({
                                 }`}
                                 title={customRecordingState === 'recording' ? "Stop Recording" : "Start Recording Options"}
                             >
-                                <CircleDot size={12} className={customRecordingState === 'recording' ? "text-white" : "text-red-500"} />
+                                <span className={`w-2.5 h-2.5 rounded-full ${customRecordingState === 'recording' ? "bg-white" : "bg-red-500"}`} />
                             </button>
                         </div>
                     )}
 
+
+
                     {/* Premium Glassmorphic Recording Selector Popover */}
                     {isModerator && showRecordingOptions && customRecordingState === 'idle' && (
-                        <div className="absolute top-[40px] right-1.5 w-[160px] bg-[#111]/95 backdrop-blur-xl border border-white/15 rounded-xl shadow-2xl p-2.5 z-40 flex flex-col gap-2 animate-in fade-in slide-in-from-top-2 duration-200">
+                        <div className="absolute top-[40px] right-1.5 w-[160px] bg-[#111]/95 backdrop-blur-xl border border-white/15 rounded-xl shadow-2xl p-2.5 z-[9999] flex flex-col gap-2 animate-in fade-in slide-in-from-top-2 duration-200">
                             <div className="flex items-center justify-between text-[9px] text-white/50 font-bold uppercase tracking-wider px-1 pb-1 border-b border-white/5">
                                 <span>Record Session</span>
                                 <button 
@@ -3359,10 +3365,15 @@ function TabContent({
                                                    p.email?.toLowerCase() === room.hostUserId.toLowerCase()
                                                )) || 
                                                displayName.toLowerCase() === room?.name?.split(' ')[0]?.toLowerCase();
-                            const isCoHostUser = room?.coHostUserId && (
-                                                 displayName.toLowerCase() === room.coHostUserId.toLowerCase() ||
-                                                 p.email?.toLowerCase() === room.coHostUserId.toLowerCase()
-                                               );
+                            
+                            const coHostsList = room?.coHostUserId
+                                ? room.coHostUserId.split(",").map((id: string) => id.trim().toLowerCase())
+                                : [];
+                            const isCoHostUser = coHostsList.some(
+                                (id: string) =>
+                                    displayName.toLowerCase() === id ||
+                                    p.email?.toLowerCase() === id
+                            );
                             const role = isHostUser ? 'Host' : (isCoHostUser ? 'Co-Host' : 'Viewer');
                             return (
                                 <div key={p.id || p.displayName || Math.random()} className="flex items-center justify-between bg-[#1a1a1a] p-3 rounded-xl border border-[#333]">
@@ -3382,28 +3393,44 @@ function TabContent({
                                                     onClick={async () => {
                                                         try {
                                                             const fd = new FormData();
-                                                            const isAlreadyCoHost = room.coHostUserId?.toLowerCase() === displayName.toLowerCase() ||
-                                                                                   (p.email && room.coHostUserId?.toLowerCase() === p.email.toLowerCase());
-                                                            const targetValue = isAlreadyCoHost ? '' : (p.email && !p.email.toLowerCase().endsWith('@sportsfan360.com') ? p.email : displayName);
+                                                            const currentCoHosts = room.coHostUserId
+                                                                ? room.coHostUserId.split(",").map((id: string) => id.trim())
+                                                                : [];
+                                                            const userKey = (p.email && !p.email.toLowerCase().endsWith('@sportsfan360.com')) ? p.email : displayName;
+                                                            
+                                                            const isAlreadyCoHost = currentCoHosts.some(
+                                                                (id: string) => id.toLowerCase() === userKey.toLowerCase()
+                                                            );
+                                                            
+                                                            let newCoHosts: string[];
+                                                            if (isAlreadyCoHost) {
+                                                                newCoHosts = currentCoHosts.filter(
+                                                                    (id: string) => id.toLowerCase() !== userKey.toLowerCase()
+                                                                );
+                                                            } else {
+                                                                newCoHosts = [...currentCoHosts, userKey];
+                                                            }
+                                                            
+                                                            const targetValue = newCoHosts.join(",");
                                                             fd.set('coHostUserId', targetValue);
                                                             const res = await fetch(`/api/watch-along/${room.id}`, {
                                                                 method: 'PUT',
                                                                 body: fd
-                                                            });
-                                                            if (res.ok) {
-                                                                alert(isAlreadyCoHost ? `${displayName} is no longer Co-Host!` : `${displayName} is now Co-Host!`);
-                                                                if (room.id) await fetchRoomById(room.id);
-                                                            }
+                                                             });
+                                                             if (res.ok) {
+                                                                 alert(isAlreadyCoHost ? `${displayName} is no longer Co-Host!` : `${displayName} is now Co-Host!`);
+                                                                 if (room.id) await fetchRoomById(room.id);
+                                                             }
                                                         } catch (err) { console.error('Toggle Co-Host failed:', err); }
                                                     }}
                                                     className={`px-3 py-1 text-xs font-semibold rounded-full border transition-all flex items-center gap-1 ${
-                                                        room.coHostUserId?.toLowerCase() === displayName.toLowerCase() || (p.email && room.coHostUserId?.toLowerCase() === p.email.toLowerCase())
+                                                        isCoHostUser
                                                             ? 'bg-yellow-600 border-yellow-500 text-white'
                                                             : 'bg-[#222] hover:bg-yellow-600 border-[#444] text-white'
                                                     }`}
-                                                    title={room.coHostUserId?.toLowerCase() === displayName.toLowerCase() || (p.email && room.coHostUserId?.toLowerCase() === p.email.toLowerCase()) ? "Remove Co-Host" : "Make Co-Host"}
+                                                    title={isCoHostUser ? "Remove Co-Host" : "Make Co-Host"}
                                                 >
-                                                    <Crown size={10} /> {room.coHostUserId?.toLowerCase() === displayName.toLowerCase() || (p.email && room.coHostUserId?.toLowerCase() === p.email.toLowerCase()) ? "Co-Host" : "Make Co-Host"}
+                                                    <Crown size={10} /> {isCoHostUser ? "Co-Host" : "Make Co-Host"}
                                                 </button>
                                             )}
                                             <button
@@ -3488,6 +3515,26 @@ export default function WatchRoom({ room, onBack }: Props) {
     const [jitsiParticipants, setJitsiParticipants] = useState<any[]>([]);
     const jitsiApiRef = useRef<any>(null);
     const [jitsiApi, setJitsiApi] = useState<any>(null);
+    const [micOn, setMicOn] = useState(true);
+    const [vidOn, setVidOn] = useState(true);
+
+    const toggleMic = () => {
+        const api = jitsiApiRef.current || jitsiApi;
+        if (api) {
+            api.executeCommand('toggleAudio');
+        } else {
+            console.warn("toggleMic: Jitsi API not ready");
+        }
+    };
+
+    const toggleVid = () => {
+        const api = jitsiApiRef.current || jitsiApi;
+        if (api) {
+            api.executeCommand('toggleVideo');
+        } else {
+            console.warn("toggleVid: Jitsi API not ready");
+        }
+    };
 
     // Creation Modals Visibility
     const [showPredictionModal, setShowPredictionModal] = useState(false);
@@ -3972,6 +4019,7 @@ export default function WatchRoom({ room, onBack }: Props) {
     // System-wide reactions sync via hidden chat events
     const processedChatReactions = useRef<Set<string>>(new Set());
     const hasLoadedInitialChats = useRef(false);
+    const mountTime = useRef<number>(Date.now());
 
     useEffect(() => {
         if (!chats || chats.length === 0) return;
@@ -3989,6 +4037,19 @@ export default function WatchRoom({ room, onBack }: Props) {
         chats.forEach((msg: any) => {
             if (msg.text?.startsWith('[SYSTEM_REACTION]:') && !processedChatReactions.current.has(msg.id)) {
                 processedChatReactions.current.add(msg.id);
+                
+                // Only process reactions that were sent AFTER the room was mounted
+                const msgTime = msg.createdAt 
+                    ? (typeof msg.createdAt === 'number' 
+                        ? msg.createdAt 
+                        : (msg.createdAt.seconds 
+                            ? msg.createdAt.seconds * 1000 
+                            : new Date(msg.createdAt).getTime()))
+                    : Date.now();
+                if (msgTime < mountTime.current - 3000) {
+                    return;
+                }
+
                 const reactionType = msg.text.replace('[SYSTEM_REACTION]:', '');
                 
                 if (reactionType.startsWith('KICK:')) {
@@ -4006,8 +4067,20 @@ export default function WatchRoom({ room, onBack }: Props) {
         });
     }, [chats, userName, onBack]);
 
-    // No body overflow lock — let the page scroll naturally.
-    // The watchroom uses flex layout so internal panels handle their own scroll.
+    // Request camera/mic permissions at the parent level on mount to ensure iOS Safari 
+    // authorizes the domain before loading the Jitsi cross-origin iframe.
+    useEffect(() => {
+        if (typeof navigator !== 'undefined' && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            navigator.mediaDevices.getUserMedia({ audio: true, video: true })
+                .then(stream => {
+                    // Immediately stop the tracks to release the hardware devices
+                    stream.getTracks().forEach(track => track.stop());
+                })
+                .catch(err => {
+                    console.warn("Parent-level media permission request was declined or failed:", err);
+                });
+        }
+    }, []);
 
     useEffect(() => {
         setIsMounted(true);
@@ -4059,7 +4132,8 @@ export default function WatchRoom({ room, onBack }: Props) {
 
         // 2. Co-Host check
         if (normalizedCoHostId) {
-            if (myUserId === normalizedCoHostId || myName === normalizedCoHostId || myEmail === normalizedCoHostId) {
+            const coHostsList = normalizedCoHostId.split(",").map(item => item.trim());
+            if (coHostsList.includes(myUserId) || coHostsList.includes(myName) || coHostsList.includes(myEmail)) {
                 isCoHost = true;
             }
         }
@@ -4129,6 +4203,18 @@ export default function WatchRoom({ room, onBack }: Props) {
     const totalPollsCount = predictions?.filter(p => p.question.startsWith("[Poll] ")).length || 0;
     const totalQuizCount = quizQuestions?.length || 0;
 
+    // Merge jitsi names + chat users to calculate total participant count dynamically
+    const jitsiNames = new Set((jitsiParticipants || []).map((p: any) => (p.displayName || p.formattedDisplayName || '').toLowerCase()));
+    const chatUsersList = Array.from(
+        new Set(
+            (chats || [])
+                .filter((c) => c.userName && c.userName.trim() !== "")
+                .map((c) => c.userName)
+        )
+    ).filter((u) => u !== userName);
+    const chatOnlyUsers = chatUsersList.filter(u => !jitsiNames.has(u.toLowerCase()));
+    const dynamicParticipantsCount = 1 + (jitsiParticipants?.length || 0) + chatOnlyUsers.length;
+
     const sidebarTabs = [
         { id: 'liveChat', label: 'Live Chat' },
         // Only show these tabs when the host has actually created content
@@ -4136,7 +4222,7 @@ export default function WatchRoom({ room, onBack }: Props) {
         ...(totalPollsCount > 0 ? [{ id: 'polls', label: activePollsCount > 0 ? `Polls (${activePollsCount})` : 'Polls' }] : []),
         ...(totalQuizCount > 0 ? [{ id: 'flashQuiz', label: activeQuizCount > 0 ? `Quiz (${activeQuizCount})` : 'Quiz' }] : []),
         ...(activeQnaSession ? [{ id: 'qna', label: 'Q&A' }] : []),
-        { id: 'participants', label: 'Participants' }
+        { id: 'participants', label: `Participants (${dynamicParticipantsCount})` }
     ];
 
     // Tab safety: fallback if activeTab is not in sidebarTabs list (e.g. if deleted or hidden)
@@ -4145,7 +4231,7 @@ export default function WatchRoom({ room, onBack }: Props) {
         if (!isTabAvailable) {
             setActiveTab('liveChat');
         }
-    }, [predictions, quizQuestions, activeTab]);
+    }, [predictions, quizQuestions, activeTab, jitsiParticipants, chats]);
 
     // Show loading state while room is being loaded
     if (!room) {
@@ -4387,7 +4473,7 @@ export default function WatchRoom({ room, onBack }: Props) {
                 <div className="flex flex-col flex-1 lg:min-w-0 overflow-y-auto">
 
                     {/* Video player */}
-                    <div className="relative w-full aspect-video bg-[#1a0a14] overflow-hidden">
+                    <div className="relative w-full aspect-video bg-[#1a0a14] overflow-hidden shrink-0">
                         {liveMatch?.videoUrl ? (
                             <>
                                 <VideoPlayer
@@ -4470,12 +4556,30 @@ export default function WatchRoom({ room, onBack }: Props) {
                                 telestratorActive={isTelestratorActive}
                                 telestratorStrokes={telestratorStrokes}
                                 onTelestratorStrokeAdded={(stroke) => triggerMoment("TEL_DRAW:" + JSON.stringify(stroke))}
-                                onTelestratorUndo={() => triggerMoment("TEL_UNDO")}
-                                onTelestratorClear={() => triggerMoment("TEL_CLEAR")}
-                                onTelestratorToggleActive={() => triggerMoment("TEL_TOGGLE:" + (!isTelestratorActive).toString())}
-                                onApiReady={(api) => {
+                                onApiReady={async (api) => {
                                     jitsiApiRef.current = api;
                                     setJitsiApi(api);
+                                    
+                                    // Query initial mute states to synchronize HTML Control Panel on mount
+                                    try {
+                                        const audioMuted = await api.isAudioMuted();
+                                        setMicOn(!audioMuted);
+                                    } catch (err) {
+                                        console.warn("Failed to get initial audio mute status:", err);
+                                    }
+                                    try {
+                                        const videoMuted = await api.isVideoMuted();
+                                        setVidOn(!videoMuted);
+                                    } catch (err) {
+                                        console.warn("Failed to get initial video mute status:", err);
+                                    }
+
+                                    api.addListener("audioMuteStatusChanged", (data: { muted: boolean }) => {
+                                        setMicOn(!data.muted);
+                                    });
+                                    api.addListener("videoMuteStatusChanged", (data: { muted: boolean }) => {
+                                        setVidOn(!data.muted);
+                                    });
                                 }}
                                 onReactionReceived={(reaction) => {
                                     triggerMoment(reaction, false);
@@ -4492,9 +4596,50 @@ export default function WatchRoom({ room, onBack }: Props) {
                         </div>
                     </div>
 
+                    {/* HTML Audio/Video Control Panel (100% click-reliable on all devices, no overlap) */}
+                    {userName && (
+                        <div className="flex flex-row items-center justify-between gap-3 bg-[#141416] border border-white/5 rounded-xl p-3 mt-3 mx-3 sm:mx-4 lg:mx-6 shadow-2xl">
+                            <div className="flex items-center gap-2">
+                                <span className={`w-2 h-2 rounded-full ${micOn ? "bg-green-500 animate-pulse" : "bg-red-500"}`} />
+                                <span className="text-[10px] font-extrabold uppercase tracking-wider text-gray-300">
+                                    {micOn ? "Mic Active" : "Mic Muted"}
+                                </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    type="button"
+                                    onClick={toggleMic}
+                                    className={`flex items-center justify-center gap-1.5 px-3 py-1.5 border rounded-xl text-[10px] font-black uppercase tracking-wider transition-all duration-200 active:scale-95 cursor-pointer ${
+                                        micOn 
+                                            ? "bg-green-600/10 border-green-500/30 text-green-400 hover:bg-green-600/20" 
+                                            : "bg-red-600 border-red-500 text-white hover:bg-red-700"
+                                    }`}
+                                >
+                                    {micOn ? <Mic size={12} /> : <MicOff size={12} />}
+                                    <span>{micOn ? "Mute" : "Unmute"}</span>
+                                </button>
+
+                                {(userRole === 'Host' || userRole === 'Co-Host' || userRole === 'Moderator') && (
+                                    <button
+                                        type="button"
+                                        onClick={toggleVid}
+                                        className={`flex items-center justify-center gap-1.5 px-3 py-1.5 border rounded-xl text-[10px] font-black uppercase tracking-wider transition-all duration-200 active:scale-95 cursor-pointer ${
+                                            vidOn 
+                                                ? "bg-green-600/10 border-green-500/30 text-green-400 hover:bg-green-600/20" 
+                                                : "bg-red-600 border-red-500 text-white hover:bg-red-700"
+                                        }`}
+                                    >
+                                        {vidOn ? <Video size={12} /> : <VideoOff size={12} />}
+                                        <span>{vidOn ? "Stop Cam" : "Start Cam"}</span>
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
                     {/* Zoom-style Host Reactions */}
                     {(userRole === 'Host' || userRole === 'Co-Host' || userRole === 'Moderator') && (
-                        <div className="flex flex-col gap-2.5 bg-[#141416] border border-white/5 rounded-xl p-3.5 mt-3 mx-4 sm:mx-6">
+                        <div className="flex flex-col gap-1.5 lg:gap-2.5 bg-[#141416] border border-white/5 rounded-xl p-2 lg:p-3.5 mt-1.5 lg:mt-3 mx-3 sm:mx-4 lg:mx-6">
                             <div className="flex items-center gap-1.5 text-gray-400 text-xs">
                                 <span className="font-extrabold uppercase tracking-widest text-[9px] bg-white/5 px-1.5 py-0.5 rounded text-white">Host Reactions</span>
                                 <span className="opacity-60 cursor-help flex items-center justify-center animate-pulse" title="Click to trigger animated reaction effects for everyone!">
@@ -4506,7 +4651,7 @@ export default function WatchRoom({ room, onBack }: Props) {
                                 {/* WICKET */}
                                 <button 
                                     onClick={() => triggerMoment("WICKET")}
-                                    className="flex-shrink-0 flex items-center gap-2 bg-[#202023] hover:bg-[#2a2a2e] border border-white/5 rounded-full px-3.5 py-1.5 transition-all hover:scale-105 active:scale-95 text-xs font-semibold text-gray-200"
+                                    className="flex-shrink-0 flex items-center gap-1.5 bg-[#202023] hover:bg-[#2a2a2e] border border-white/5 rounded-full px-2.5 py-1 lg:px-3.5 lg:py-1.5 transition-all hover:scale-105 active:scale-95 text-[10px] lg:text-xs font-semibold text-gray-200"
                                 >
                                     <div className="w-5 h-5 rounded-full bg-pink-600 flex items-center justify-center text-[10px] text-white">🏏</div>
                                     <span>Wicket</span>
@@ -4515,7 +4660,7 @@ export default function WatchRoom({ room, onBack }: Props) {
                                 {/* SIX */}
                                 <button 
                                     onClick={() => triggerMoment("SIX")}
-                                    className="flex-shrink-0 flex items-center gap-2 bg-[#202023] hover:bg-[#2a2a2e] border border-white/5 rounded-full px-3.5 py-1.5 transition-all hover:scale-105 active:scale-95 text-xs font-semibold text-gray-200"
+                                    className="flex-shrink-0 flex items-center gap-1.5 bg-[#202023] hover:bg-[#2a2a2e] border border-white/5 rounded-full px-2.5 py-1 lg:px-3.5 lg:py-1.5 transition-all hover:scale-105 active:scale-95 text-[10px] lg:text-xs font-semibold text-gray-200"
                                 >
                                     <div className="w-5 h-5 rounded-full bg-purple-600 flex items-center justify-center text-[10px] font-black text-white">6</div>
                                     <span>Six</span>
@@ -4524,7 +4669,7 @@ export default function WatchRoom({ room, onBack }: Props) {
                                 {/* FOUR */}
                                 <button 
                                     onClick={() => triggerMoment("FOUR")}
-                                    className="flex-shrink-0 flex items-center gap-2 bg-[#202023] hover:bg-[#2a2a2e] border border-white/5 rounded-full px-3.5 py-1.5 transition-all hover:scale-105 active:scale-95 text-xs font-semibold text-gray-200"
+                                    className="flex-shrink-0 flex items-center gap-1.5 bg-[#202023] hover:bg-[#2a2a2e] border border-white/5 rounded-full px-2.5 py-1 lg:px-3.5 lg:py-1.5 transition-all hover:scale-105 active:scale-95 text-[10px] lg:text-xs font-semibold text-gray-200"
                                 >
                                     <div className="w-5 h-5 rounded-full bg-blue-600 flex items-center justify-center text-[10px] font-black text-white">4</div>
                                     <span>Four</span>
@@ -4533,7 +4678,7 @@ export default function WatchRoom({ room, onBack }: Props) {
                                 {/* TELESTRATOR / CHALKBOARD DRAW */}
                                 <button 
                                     onClick={() => triggerMoment("TEL_TOGGLE:" + (!isTelestratorActive).toString())}
-                                    className={`flex-shrink-0 flex items-center gap-2 border rounded-full px-3.5 py-1.5 transition-all hover:scale-105 active:scale-95 text-xs font-semibold ${
+                                    className={`flex-shrink-0 flex items-center gap-1.5 border rounded-full px-2.5 py-1 lg:px-3.5 lg:py-1.5 transition-all hover:scale-105 active:scale-95 text-[10px] lg:text-xs font-semibold ${
                                         isTelestratorActive 
                                             ? 'bg-green-600/20 border-green-500 text-green-400 shadow-[0_0_10px_rgba(34,197,94,0.3)] animate-pulse' 
                                             : 'bg-[#202023] hover:bg-[#2a2a2e] border-white/5 text-gray-200'
@@ -4546,7 +4691,7 @@ export default function WatchRoom({ room, onBack }: Props) {
                                 {/* GOAL */}
                                 <button 
                                     onClick={() => triggerMoment("GOAL")}
-                                    className="flex-shrink-0 flex items-center gap-2 bg-[#202023] hover:bg-[#2a2a2e] border border-white/5 rounded-full px-3.5 py-1.5 transition-all hover:scale-105 active:scale-95 text-xs font-semibold text-gray-200"
+                                    className="flex-shrink-0 flex items-center gap-1.5 bg-[#202023] hover:bg-[#2a2a2e] border border-white/5 rounded-full px-2.5 py-1 lg:px-3.5 lg:py-1.5 transition-all hover:scale-105 active:scale-95 text-[10px] lg:text-xs font-semibold text-gray-200"
                                 >
                                     <div className="w-5 h-5 rounded-full bg-green-600 flex items-center justify-center text-[10px] text-white">⚽</div>
                                     <span>Goal</span>
@@ -4555,7 +4700,7 @@ export default function WatchRoom({ room, onBack }: Props) {
                                 {/* FIRE */}
                                 <button 
                                     onClick={() => triggerMoment("FIRE")}
-                                    className="flex-shrink-0 flex items-center gap-2 bg-[#202023] hover:bg-[#2a2a2e] border border-white/5 rounded-full px-3.5 py-1.5 transition-all hover:scale-105 active:scale-95 text-xs font-semibold text-gray-200"
+                                    className="flex-shrink-0 flex items-center gap-1.5 bg-[#202023] hover:bg-[#2a2a2e] border border-white/5 rounded-full px-2.5 py-1 lg:px-3.5 lg:py-1.5 transition-all hover:scale-105 active:scale-95 text-[10px] lg:text-xs font-semibold text-gray-200"
                                 >
                                     <div className="w-5 h-5 rounded-full bg-orange-600 flex items-center justify-center text-[10px] text-white">🔥</div>
                                     <span>Fire</span>
@@ -4564,7 +4709,7 @@ export default function WatchRoom({ room, onBack }: Props) {
                                 {/* CLAP */}
                                 <button 
                                     onClick={() => triggerMoment("CLAP")}
-                                    className="flex-shrink-0 flex items-center gap-2 bg-[#202023] hover:bg-[#2a2a2e] border border-white/5 rounded-full px-3.5 py-1.5 transition-all hover:scale-105 active:scale-95 text-xs font-semibold text-gray-200"
+                                    className="flex-shrink-0 flex items-center gap-1.5 bg-[#202023] hover:bg-[#2a2a2e] border border-white/5 rounded-full px-2.5 py-1 lg:px-3.5 lg:py-1.5 transition-all hover:scale-105 active:scale-95 text-[10px] lg:text-xs font-semibold text-gray-200"
                                 >
                                     <div className="w-5 h-5 rounded-full bg-yellow-500 flex items-center justify-center text-[10px] text-white">👏</div>
                                     <span>Clap</span>
@@ -4573,7 +4718,7 @@ export default function WatchRoom({ room, onBack }: Props) {
                                 {/* HEART */}
                                 <button 
                                     onClick={() => triggerMoment("HEART")}
-                                    className="flex-shrink-0 flex items-center gap-2 bg-[#202023] hover:bg-[#2a2a2e] border border-white/5 rounded-full px-3.5 py-1.5 transition-all hover:scale-105 active:scale-95 text-xs font-semibold text-gray-200"
+                                    className="flex-shrink-0 flex items-center gap-1.5 bg-[#202023] hover:bg-[#2a2a2e] border border-white/5 rounded-full px-2.5 py-1 lg:px-3.5 lg:py-1.5 transition-all hover:scale-105 active:scale-95 text-[10px] lg:text-xs font-semibold text-gray-200"
                                 >
                                     <div className="w-5 h-5 rounded-full bg-red-600 flex items-center justify-center text-[10px] text-white">❤️</div>
                                     <span>Heart</span>
@@ -4582,12 +4727,52 @@ export default function WatchRoom({ room, onBack }: Props) {
                                 {/* DRUMROLL */}
                                 <button 
                                     onClick={() => triggerMoment("DRUMROLL")}
-                                    className="flex-shrink-0 flex items-center gap-2 bg-[#202023] hover:bg-[#2a2a2e] border border-white/5 rounded-full px-3.5 py-1.5 transition-all hover:scale-105 active:scale-95 text-xs font-semibold text-gray-200"
+                                    className="flex-shrink-0 flex items-center gap-1.5 bg-[#202023] hover:bg-[#2a2a2e] border border-white/5 rounded-full px-2.5 py-1 lg:px-3.5 lg:py-1.5 transition-all hover:scale-105 active:scale-95 text-[10px] lg:text-xs font-semibold text-gray-200"
                                 >
                                     <div className="w-5 h-5 rounded-full bg-yellow-600 flex items-center justify-center text-[10px] text-white">🥁</div>
                                     <span>Drumroll</span>
                                 </button>
 
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Zoom-style Viewer Reactions */}
+                    {!(userRole === 'Host' || userRole === 'Co-Host' || userRole === 'Moderator') && (
+                        <div className="flex flex-col gap-1.5 lg:gap-2.5 bg-[#141416] border border-white/5 rounded-xl p-2 lg:p-3.5 mt-1.5 lg:mt-3 mx-3 sm:mx-4 lg:mx-6">
+                            <div className="flex items-center gap-1.5 text-gray-400 text-xs">
+                                <span className="font-extrabold uppercase tracking-widest text-[9px] bg-white/5 px-1.5 py-0.5 rounded text-white">Viewer Reactions</span>
+                                <span className="opacity-60 cursor-help flex items-center justify-center animate-pulse" title="Click to trigger animated reaction effects for everyone!">
+                                    <Info size={12} />
+                                </span>
+                            </div>
+                            <div className="flex items-center gap-2.5 overflow-x-auto scrollbar-hide py-1">
+                                {/* FIRE */}
+                                <button 
+                                    onClick={() => triggerMoment("FIRE")}
+                                    className="flex-shrink-0 flex items-center gap-1.5 bg-[#202023] hover:bg-[#2a2a2e] border border-white/5 rounded-full px-2.5 py-1 lg:px-3.5 lg:py-1.5 transition-all hover:scale-105 active:scale-95 text-[10px] lg:text-xs font-semibold text-gray-200"
+                                >
+                                    <div className="w-5 h-5 rounded-full bg-orange-600 flex items-center justify-center text-[10px] text-white">🔥</div>
+                                    <span>Fire</span>
+                                </button>
+
+                                {/* CLAP */}
+                                <button 
+                                    onClick={() => triggerMoment("CLAP")}
+                                    className="flex-shrink-0 flex items-center gap-1.5 bg-[#202023] hover:bg-[#2a2a2e] border border-white/5 rounded-full px-2.5 py-1 lg:px-3.5 lg:py-1.5 transition-all hover:scale-105 active:scale-95 text-[10px] lg:text-xs font-semibold text-gray-200"
+                                >
+                                    <div className="w-5 h-5 rounded-full bg-yellow-500 flex items-center justify-center text-[10px] text-white">👏</div>
+                                    <span>Clap</span>
+                                </button>
+
+                                {/* HEART */}
+                                <button 
+                                    onClick={() => triggerMoment("HEART")}
+                                    className="flex-shrink-0 flex items-center gap-1.5 bg-[#202023] hover:bg-[#2a2a2e] border border-white/5 rounded-full px-2.5 py-1 lg:px-3.5 lg:py-1.5 transition-all hover:scale-105 active:scale-95 text-[10px] lg:text-xs font-semibold text-gray-200"
+                                >
+                                    <div className="w-5 h-5 rounded-full bg-red-600 flex items-center justify-center text-[10px] text-white">❤️</div>
+                                    <span>Heart</span>
+                                </button>
                             </div>
                         </div>
                     )}
@@ -4624,7 +4809,7 @@ export default function WatchRoom({ room, onBack }: Props) {
                             </div>
                         )}
                     </div>
-                    <div className="flex-1 flex flex-col min-h-0 lg:hidden relative">
+                    <div className="flex-1 flex flex-col min-h-[300px] lg:min-h-0 lg:hidden relative">
                         <TabContent activeTab={activeTab} matchId={room.liveMatchId} userName={userName} userRole={userRole} room={room} jitsiParticipants={jitsiParticipants} jitsiApi={jitsiApi} chats={chats} qnaList={qnaList} setQnaList={setQnaList} answeringQuestion={answeringQuestion} setAnsweringQuestion={setAnsweringQuestion} qnaInput={qnaInput} setQnaInput={setQnaInput} sendChatMessage={sendChatMessage} />
                     </div>
                 </div>

@@ -758,6 +758,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSearchParams } from "next/navigation";
 import axios from "axios";
+import { emitSxpActivityRefresh } from "@/lib/sxpEvents";
 
 import { GLOBAL_CSS } from "./constants/styles";
 import { NOTIFICATIONS_DATA } from "./constants";
@@ -774,6 +775,7 @@ import Leaderboard from "./screens/Leaderboard";
 import Profile from "./screens/Profile";
 import type { Notification, Room } from "./types";
 import { useRoarNotifications } from "@/context/RoarNotificationsContext";
+import { RoarProfileProvider, useRoarProfileContext } from "@/context/RoarProfileContext";
 import RoomPostDetailsOverlay from "./components/RoomPostDetailsOverlay";
 
 export default function ROARApp() {
@@ -828,6 +830,18 @@ export default function ROARApp() {
   const [overlay, setOverlay]           = useState<string | null>(null);
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
   const [selectedPost, setSelectedPost] = useState<any | null>(null);
+
+  const { viewingUsername, profileData, openProfile, closeProfile } = useRoarProfileContext();
+
+  const handleFanProfileClick = useCallback((fan: any) => {
+    if (fan.username === currentUsername) {
+      setActiveTab("profile");
+      setOverlay(null);
+      setSelectedPost(null);
+    } else {
+      openProfile(fan.username);
+    }
+  }, [currentUsername, openProfile]);
 
   // ── Compose ────────────────────────────────────────────────────────────────
   const [composeOpen, setComposeOpen]   = useState(false);

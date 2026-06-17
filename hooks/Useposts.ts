@@ -3,6 +3,9 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import type { Post } from "@/types/PostPolls";
 import axios from "axios";
+import { useLeaderboard } from "@/context/LeaderboardContext";
+import { useActivity } from "@/context/ActivityContext";
+import { emitSxpActivityRefresh } from "@/lib/sxpEvents";
 
 export function usePosts() {
   const [posts, setPosts] = useState<Post[]>([]);
@@ -13,6 +16,8 @@ export function usePosts() {
     lastDocId: string;
     lastDocCreatedAt: number;
   } | null>(null);
+  const { addLocalPoints } = useLeaderboard();
+  const { addLocalActivity, refreshActivities } = useActivity();
 
   const fetchPosts = useCallback(async (reset = false) => {
     setLoading(true);
@@ -52,7 +57,27 @@ export function usePosts() {
         const newPost = json.data as Post;
         setPosts((prev) => [newPost, ...prev]);
         try {
-          if (newPost.id) await awardPostPoints(userId, userName, userEmail, newPost.id);
+          if (newPost.id) {
+            const postId = newPost.id;
+            const transactionId = `${userId}_${postId}_CREATE_POST`;
+
+            await awardPostPoints(userId, userName, userEmail, postId);
+
+            addLocalPoints(12);
+            addLocalActivity({
+              id: transactionId,
+              type: "CREATE_POST",
+              points: 12,
+              label: "Created a Fan Zone post",
+              metadata: {
+                postId,
+                transactionId,
+              },
+              createdAt: Date.now(),
+            });
+            emitSxpActivityRefresh();
+            await refreshActivities();
+          }
         } catch (pointsErr) {
           console.warn("[usePosts] Failed to award points:", pointsErr);
         }
@@ -65,7 +90,7 @@ export function usePosts() {
         setLoading(false);
       }
     },
-    []
+    [addLocalActivity, addLocalPoints, refreshActivities]
   );
 
   const deletePost = useCallback(async (id: string) => {
@@ -232,7 +257,8 @@ async function awardPostPoints(
   userName: string,
   userEmail: string | undefined,
   postId: string
-) {
+) 
+{
   await axios.post("/api/user-points", {
     actualUserId: userId,
     userName,

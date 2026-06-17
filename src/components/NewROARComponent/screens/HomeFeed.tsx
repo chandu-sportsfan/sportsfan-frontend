@@ -1390,6 +1390,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import axios from "axios";
+import { emitSxpActivityRefresh } from "@/lib/sxpEvents";
 import AvatarWithBadge from "../components/AvatarWithBadge";
 import { SplitBar } from "../components/shared";
 import { FEED_POSTS, BADGE_LABELS } from "../constants";

@@ -69,7 +69,8 @@ const MOCK_ROOMS: Record<string, Room> = {
 export default function WatchRoomPage() {
   const params = useParams();
   const router = useRouter();
-  const roomId = params?.id as string;
+  const rawRoomId = params?.id as string;
+  const roomId = rawRoomId ? rawRoomId.split('?')[0] : "";
   
   const [hasJoined, setHasJoined] = useState(false);
   

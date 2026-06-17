@@ -1222,11 +1222,6 @@
 
 
 
-
-// components/NewROARComponent/screens/DiscussionRoom.tsx
-// Bottom composer: "What's on your mind?" input + 5 icon category buttons.
-// No category dropdown in header.
-
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";

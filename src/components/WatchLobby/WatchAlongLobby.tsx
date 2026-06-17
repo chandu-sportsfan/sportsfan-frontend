@@ -517,7 +517,7 @@ function ExpertCard({
                         </span>
                     )}
                 </div>
-                <div>
+                <div className="pr-20 sm:pr-28">
                     <p className="text-base font-bold text-white">{room.name}</p>
                     <p className="text-xs text-gray-400">{room.role}</p>
                     <span

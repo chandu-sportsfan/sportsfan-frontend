@@ -873,6 +873,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import React, { useEffect, useState, useRef } from "react";
 import axios from "axios";
 import { useAuth } from "@/context/AuthContext";
+import { emitSxpActivityRefresh } from "@/lib/sxpEvents";
 
 type AnswerState = "idle" | "correct" | "incorrect";
 
@@ -1863,6 +1864,10 @@ const TriviaQuestion: React.FC = () => {
         incorrectCount: prev.incorrectCount + (isCorrect ? 0 : 1),
         answeredCount: prev.answeredCount + 1,
       }));
+
+      if ((response.pointsEarned ?? 0) > 0) {
+        emitSxpActivityRefresh();
+      }
     } catch (e) {
       console.error("Submit error:", e);
       setHasAnsweredCurrent(false);

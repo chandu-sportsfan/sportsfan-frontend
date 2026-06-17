@@ -673,34 +673,29 @@ export default function ROARApp() {
               )}
             </AnimatePresence>
 
-            {/* Modals & Overlays above BottomNav */}
-            <AnimatePresence>
-              {overlay === "viewing_profile" && viewingFan && (
-                <motion.div
-                  key="viewing_profile"
-                  initial={{ opacity: 0, y: 50 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 50 }}
-                  style={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    background: "var(--bg-primary)",
-                    zIndex: 200,
-                    display: "flex",
-                    flexDirection: "column",
-                  }}
-                >
-                  <Profile
-                    isViewingOther={true}
-                    fanData={viewingFan}
-                    onBack={() => { setOverlay(null); setViewingFan(null); }}
-                  />
-                </motion.div>
-              )}
-            </AnimatePresence>
+            {/* Profile overlay — instant, no animation */}
+            {overlay === "viewing_profile" && viewingFan && (
+              <div
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  background: "var(--bg-primary)",
+                  zIndex: 200,
+                  display: "flex",
+                  flexDirection: "column",
+                  overflowY: "auto",
+                }}
+              >
+                <Profile
+                  isViewingOther={true}
+                  fanData={viewingFan}
+                  onBack={() => { setOverlay(null); setViewingFan(null); }}
+                />
+              </div>
+            )}
 
             {/* PostDetailsOverlay lives INSIDE the main content div so it sits
                 within roar-inner's bounds — the app header and sidebar remain

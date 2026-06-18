@@ -33,6 +33,8 @@ export interface ProfileStats {
   predictions: number;
   hotTakes:    number;
   flashQuiz:   number;
+  debates:     number;
+  totalActivity: number;
 }
 
 interface ActivityContextType {
@@ -204,14 +206,25 @@ const calculateProfileStats = (activities: ActivityItem[]): ProfileStats => {
       predictions: 0,
       hotTakes: 0,
       flashQuiz: 0,
+      debates: 0,
+      totalActivity: 0,
     };
   }
 
+  const debates = activities.filter((a) => a.type === "ROAR_DEBATE").length;
+  const predictions = activities.filter((a) => a.type === "ROAR_PREDICTION").length;
+  const hotTakes = activities.filter((a) => a.type === "ROAR_HOT_TAKE").length;
+  const flashQuiz = activities.filter((a) => a.type === "FLASH_QUIZ").length;
+  // Total = all meaningful activity types (excluding internal types)
+  const totalActivity = debates + predictions + hotTakes + flashQuiz + activities.filter((a) => a.type === "ROAR_MEMORY" || a.type === "ROAR_RAW_REACTIONS").length;
+
   return {
     posts: activities.filter((a) => POST_TYPES.includes(a.type)).length,
-    predictions: activities.filter((a) => a.type === "ROAR_PREDICTION").length,
-    hotTakes: activities.filter((a) => a.type === "ROAR_HOT_TAKE").length,
-    flashQuiz: activities.filter((a) => a.type === "FLASH_QUIZ").length,
+    predictions,
+    hotTakes,
+    flashQuiz,
+    debates,
+    totalActivity,
   };
 };
 

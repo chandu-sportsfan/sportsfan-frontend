@@ -12,9 +12,11 @@ import {
   useEffect,
   useCallback,
   useRef,
+  useMemo,
 } from "react";
 import axios from "axios";
 import { useAuth } from "@/context/AuthContext";
+import { onSxpActivityRefresh } from "@/lib/sxpEvents";
 
 // ─── Public types ─────────────────────────────────────────────────────────────
 export interface ActivityItem {
@@ -26,9 +28,17 @@ export interface ActivityItem {
   createdAt: number;   // Unix ms
 }
 
+export interface ProfileStats {
+  posts:       number;
+  predictions: number;
+  hotTakes:    number;
+  flashQuiz:   number;
+}
+
 interface ActivityContextType {
   activities:         ActivityItem[];
   loading:            boolean;
+  profileStats:       ProfileStats;
   refreshActivities:  () => Promise<void>;
   addLocalActivity:   (activity: ActivityItem) => void;
 }
@@ -38,6 +48,130 @@ interface ActivityContextType {
 // Keyed by userId so switching accounts always gets fresh data.
 let cache: { ts: number; userId: string; data: ActivityItem[] } | null = null;
 const CACHE_TTL = 30_000; // 30 seconds
+const ACTIVITY_FETCH_LIMIT = 200;
+
+// ─── Stats Calculation Constants ───────────────────────────────────────────────
+const POST_TYPES = [
+  "ROAR_HOT_TAKE",
+  "ROAR_RAW_REACTIONS",
+  "ROAR_MEMORY",
+  "ROAR_DEBATE",
+];
+
+// ─── Post Content Resolver (Content Resolution) ─────────────────────────────────
+export interface PostContentData {
+  id?: string;
+  type?: string;
+  statement?: string;
+  title?: string;
+  caption?: string;
+  description?: string;
+  agreeVotes?: number;
+  disagreeVotes?: number;
+  totalVotes?: number;
+  score?: number;
+  status?: "pending" | "correct" | "incorrect";
+  image?: string;
+  reaction?: string;
+  [key: string]: unknown;
+}
+
+// Cache to avoid fetching the same post multiple times
+const postCache = new Map<string, PostContentData>();
+
+/**
+ * Fetch post data from ROAR API using postId
+ */
+export async function resolvePostContent(
+  postId: string,
+  type: string
+): Promise<PostContentData> {
+  // Check cache first
+  if (postCache.has(postId)) {
+    return postCache.get(postId)!;
+  }
+
+  try {
+    // Try to fetch from ROAR post API
+    const response = await axios.get(`/api/roar/posts/${postId}`, {
+      timeout: 5000, // 5 second timeout
+    });
+
+    const data = response.data?.data || response.data;
+
+    // Cache the result
+    postCache.set(postId, data);
+
+    return data as PostContentData;
+  } catch (error) {
+    console.warn(`Failed to resolve post ${postId}:`, error);
+    // Return empty object on error - activity will still display
+    return {};
+  }
+}
+
+/**
+ * Batch resolve multiple post contents
+ */
+export async function resolveBatchPostContents(
+  postIds: string[]
+): Promise<Map<string, PostContentData>> {
+  const results = new Map<string, PostContentData>();
+
+  // Filter out already cached items
+  const uncached = postIds.filter((id) => !postCache.has(id));
+
+  // If all items are cached, return immediately
+  if (uncached.length === 0) {
+    postIds.forEach((id) => {
+      const cached = postCache.get(id);
+      if (cached) results.set(id, cached);
+    });
+    return results;
+  }
+
+  // Fetch uncached items in parallel (max 5 at a time to avoid overwhelming server)
+  const batchSize = 5;
+  for (let i = 0; i < uncached.length; i += batchSize) {
+    const batch = uncached.slice(i, i + batchSize);
+    const promises = batch.map((id) =>
+      resolvePostContent(id, "").then((data) => ({ id, data }))
+    );
+
+    const batchResults = await Promise.allSettled(promises);
+
+    batchResults.forEach((result) => {
+      if (result.status === "fulfilled") {
+        const { id, data } = result.value;
+        results.set(id, data);
+      }
+    });
+  }
+
+  // Add cached items to results
+  postIds.forEach((id) => {
+    if (!results.has(id)) {
+      const cached = postCache.get(id);
+      if (cached) results.set(id, cached);
+    }
+  });
+
+  return results;
+}
+
+/**
+ * Clear the post cache (useful for force refresh)
+ */
+export function clearPostCache() {
+  postCache.clear();
+}
+
+/**
+ * Preload posts for better performance
+ */
+export async function preloadPosts(postIds: string[]) {
+  await resolveBatchPostContents(postIds);
+}
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const sameActivity = (a: ActivityItem, b: ActivityItem): boolean => {
@@ -59,6 +193,28 @@ const mergeActivities = (
   return merged.sort((a, b) => b.createdAt - a.createdAt);
 };
 
+/**
+ * Calculate profile stats from activities array.
+ * Returns zero counts if activities is empty or undefined.
+ */
+const calculateProfileStats = (activities: ActivityItem[]): ProfileStats => {
+  if (!activities || activities.length === 0) {
+    return {
+      posts: 0,
+      predictions: 0,
+      hotTakes: 0,
+      flashQuiz: 0,
+    };
+  }
+
+  return {
+    posts: activities.filter((a) => POST_TYPES.includes(a.type)).length,
+    predictions: activities.filter((a) => a.type === "ROAR_PREDICTION").length,
+    hotTakes: activities.filter((a) => a.type === "ROAR_HOT_TAKE").length,
+    flashQuiz: activities.filter((a) => a.type === "FLASH_QUIZ").length,
+  };
+};
+
 // ─── Context ──────────────────────────────────────────────────────────────────
 const ActivityContext = createContext<ActivityContextType | undefined>(undefined);
 
@@ -71,6 +227,12 @@ export const ActivityProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const inFlight          = useRef(false);
   const localActivitiesRef = useRef<ActivityItem[]>([]);
+
+  // ── Calculate memoized profile stats ────────────────────────────────────────
+  const profileStats = useMemo(
+    () => calculateProfileStats(activities),
+    [activities]
+  );
 
   // ── Fetch from API ──────────────────────────────────────────────────────────
   const fetchActivities = useCallback(async () => {
@@ -97,7 +259,7 @@ export const ActivityProvider: React.FC<{ children: React.ReactNode }> = ({
 
     try {
       const res = await axios.get(
-        `/api/user-activity?userId=${encodeURIComponent(userId)}&limit=50`
+        `/api/user-activity?userId=${encodeURIComponent(userId)}&limit=${ACTIVITY_FETCH_LIMIT}`
       );
 
       if (res.data.success) {
@@ -151,9 +313,15 @@ export const ActivityProvider: React.FC<{ children: React.ReactNode }> = ({
     if (authReady) fetchActivities();
   }, [authReady, fetchActivities]);
 
+  useEffect(() => {
+    return onSxpActivityRefresh(() => {
+      void refreshActivities();
+    });
+  }, [refreshActivities]);
+
   return (
     <ActivityContext.Provider
-      value={{ activities, loading, refreshActivities, addLocalActivity }}
+      value={{ activities, loading, profileStats, refreshActivities, addLocalActivity }}
     >
       {children}
     </ActivityContext.Provider>
@@ -164,4 +332,5 @@ export const useActivity = () => {
   const ctx = useContext(ActivityContext);
   if (!ctx) throw new Error("useActivity must be used within ActivityProvider");
   return ctx;
+  
 };

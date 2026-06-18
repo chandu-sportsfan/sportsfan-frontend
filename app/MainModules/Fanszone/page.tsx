@@ -31,6 +31,7 @@ type ActivityKey =
   | "roarDebate"
   | "roarMemory"
   | "roarPost"
+  | "roarQuiz"
   | "roarReaction"   // FIX 2: added for ROAR_RAW_REACTIONS
   | "watchDrop"
   | "like"
@@ -89,9 +90,12 @@ const ACTIVITY_TYPE_MAP: Record<string, ActivityKey> = {
   // Fan Battle
   FAN_BATTLE_WIN:       "fanBattleWin",
   FAN_BATTLE_PLAY:      "fanBattlePlay",
+  CREATE_BATTLE:        "fanBattlePlay",
+  PLAY_BATTLE:          "fanBattlePlay",
 
   // Fan Zone Post
   POST_CREATED:         "post",
+  CREATE_POST:          "post",
 
   // Trivia
   TRIVIA_CORRECT:       "trivia",
@@ -106,6 +110,7 @@ const ACTIVITY_TYPE_MAP: Record<string, ActivityKey> = {
   ROAR_DEBATE:          "roarDebate",
   ROAR_MEMORY:          "roarMemory",
   ROAR_POST:            "roarPost",
+  ROAR_QUIZ:            "roarQuiz",
   ROAR_RAW_REACTIONS:   "roarReaction",  // FIX 2: was missing, now mapped
 };
 
@@ -186,6 +191,11 @@ const ACTIVITY_META: Record<ActivityKey, {
     color: "text-orange-400", hexColor: "#fb923c",
     typeColor: "text-orange-400 border-orange-400/30 bg-orange-400/5",
   },
+  roarQuiz: {
+    action: "Answered a ROAR Quiz", type: "ROAR", icon: Brain,
+    color: "text-emerald-400", hexColor: "#34d399",
+    typeColor: "text-emerald-400 border-emerald-400/30 bg-emerald-400/5",
+  },
   // FIX 2: new entry — was previously missing, causing ROAR_RAW_REACTIONS to
   // render as "other" (grey trophy icon, Engagement category, wrong badge).
   roarReaction: {
@@ -230,13 +240,17 @@ const SOURCE_LABEL_MAP: Record<string, string> = {
   ROAR_DEBATE:          "ROAR",
   ROAR_MEMORY:          "ROAR",
   ROAR_POST:            "ROAR",
+  ROAR_QUIZ:            "ROAR",
   ROAR_RAW_REACTIONS:   "ROAR",
   LISTEN_AUDIO_DROP:    "LISTEN AUDIO DROP",
   LISTEN_COMPLETE:      "LISTEN AUDIO DROP",
   AUDIO_DROP:           "LISTEN AUDIO DROP",
   FAN_BATTLE_WIN:       "FAN BATTLE",
   FAN_BATTLE_PLAY:      "FAN BATTLE",
+  CREATE_BATTLE:        "FAN BATTLE",
+  PLAY_BATTLE:          "FAN BATTLE",
   TRIVIA_CORRECT:       "TRIVIA",
+  CREATE_POST:          "FAN ZONE POST",
   POST_CREATED:         "FAN ZONE POST",
   REGISTRATION:         "REGISTRATION",
   INVITE_ACCEPTED:      "REFERRAL",
@@ -466,13 +480,26 @@ function getTrendAnalytics(history: HistoryItem[], period: TrendPeriod) {
   const daysMap: Record<TrendPeriod, number> = { "7D": 7, "30D": 30, "90D": 90 };
   const days     = daysMap[period];
   const msPerDay = 86400000;
-  const currentStart  = now - days * msPerDay;
+  const today = new Date();
+
+  const todayMidnight = new Date(
+    today.getFullYear(),
+    today.getMonth(),
+    today.getDate()
+  ).getTime();
+
+  const currentStart = todayMidnight - (days - 1) * msPerDay;
   const previousStart = currentStart - days * msPerDay;
 
   // Use a sensible number of chart buckets per period
-  const BUCKETS    = period === "7D" ? 7 : period === "30D" ? 10 : 9;
-  const bucketSize = (days * msPerDay) / BUCKETS;
-  const buckets    = new Array(BUCKETS).fill(0);
+  const bucketCount =
+  period === "7D"
+    ? 7
+    : period === "30D"
+    ? 30
+    : 90;
+
+  const buckets = new Array(bucketCount).fill(0);
   let currentPts   = 0;
   let previousPts  = 0;
 
@@ -481,8 +508,27 @@ function getTrendAnalytics(history: HistoryItem[], period: TrendPeriod) {
     const t = item.timestamp;
     if (t >= currentStart && t <= now) {
       currentPts += item.points;
-      const idx = Math.min(BUCKETS - 1, Math.floor((t - currentStart) / bucketSize));
-      buckets[idx] += item.points;
+      const activityDate = new Date(t);
+      const activityDay = new Date(
+        activityDate.getFullYear(),
+        activityDate.getMonth(),
+        activityDate.getDate()
+      ).getTime();
+
+      const startDay = new Date(currentStart);
+      const startDayMidnight = new Date(
+        startDay.getFullYear(),
+        startDay.getMonth(),
+        startDay.getDate()
+      ).getTime();
+
+      const idx = Math.floor(
+        (activityDay - startDayMidnight) / msPerDay
+      );
+
+      if (idx >= 0 && idx < bucketCount) {
+        buckets[idx] += item.points;
+      }
     } else if (t >= previousStart && t < currentStart) {
       previousPts += item.points;
     }
@@ -496,34 +542,35 @@ function getTrendAnalytics(history: HistoryItem[], period: TrendPeriod) {
   const fmt = (d: Date, opts: Intl.DateTimeFormatOptions) =>
     d.toLocaleDateString("en-US", opts);
 
-  const labelsMap: Record<TrendPeriod, string[]> = {
-    "7D": Array.from({ length: 7 }, (_, i) =>
-      fmt(new Date(now - (6 - i) * msPerDay), { weekday: "short" })),
-    "30D": [
-      fmt(new Date(now - 30 * msPerDay), { month: "short", day: "numeric" }),
-      fmt(new Date(now - 24 * msPerDay), { month: "short", day: "numeric" }),
-      fmt(new Date(now - 18 * msPerDay), { month: "short", day: "numeric" }),
-      fmt(new Date(now - 12 * msPerDay), { month: "short", day: "numeric" }),
-      fmt(new Date(now -  6 * msPerDay), { month: "short", day: "numeric" }),
-      "Today",
-    ],
-    "90D": Array.from({ length: 4 }, (_, i) =>
-      fmt(new Date(now - (90 - i * 30) * msPerDay), { month: "short", day: "numeric" })
-    ).concat(["Today"]),
-  };
+  const labels = buckets.map((_, index) => {
+  const d = new Date(currentStart + index * msPerDay);
+
+  if (period === "90D" && index % 15 !== 0) {
+    return "";
+  }
+
+  if (period === "30D" && index % 5 !== 0) {
+    return "";
+  }
+
+  return d.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  });
+});
 
   const vsMap: Record<TrendPeriod, string> = {
     "7D": "vs prev week", "30D": "vs prev month", "90D": "vs prev 90d",
   };
 
   return {
-    chartData: buckets,
-    percentChange,
-    isPositive: percentChange >= 0,
-    labels: labelsMap[period],
-    vsText: vsMap[period],
-    currentPts,
-  };
+  chartData: buckets,
+  percentChange,
+  isPositive: percentChange >= 0,
+  labels,
+  vsText: vsMap[period],
+  currentPts,
+};
 }
 
 function applyFilters(
@@ -703,50 +750,72 @@ function BreakdownLegend({ data }: { data: CategoryBreakdown[] }) {
 // ─────────────────────────────────────────────────────────────────────────────
 // TREND BAR CHART
 // ─────────────────────────────────────────────────────────────────────────────
-function TrendBarChart({
+function TrendLineChart({
   data,
   labels,
 }: {
-  data:   number[];
+  data: number[];
   labels: string[];
-  period: TrendPeriod;
 }) {
-  const maxVal  = Math.max(...data, 1);
-  const hasData = data.some((v) => v > 0);
+  const width = 100;
+  const height = 40;
+
+  const max = Math.max(...data, 1);
+
+  const points = data
+    .map((value, index) => {
+      const x = (index / (data.length - 1)) * width;
+      const y = height - (value / max) * height;
+      return `${x},${y}`;
+    })
+    .join(" ");
 
   return (
     <div className="w-full">
-      <div className="flex items-end gap-1 h-24 w-full">
-        {data.map((val, i) => {
-          const heightPct = hasData
-            ? Math.max((val / maxVal) * 100, val > 0 ? 8 : 2)
-            : 2;
+      <svg
+        viewBox={`0 0 ${width} ${height}`}
+        className="w-full h-28 overflow-visible"
+        preserveAspectRatio="none"
+      >
+        <defs>
+          <linearGradient id="trendFill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#f43f5e" stopOpacity="0.35" />
+            <stop offset="100%" stopColor="#f43f5e" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+
+        {/* Area Fill */}
+        <polygon
+          fill="url(#trendFill)"
+          points={`0,40 ${points} 100,40`}
+        />
+
+        {/* Line */}
+        <polyline
+          fill="none"
+          stroke="#f43f5e"
+          strokeWidth="2"
+          points={points}
+        />
+
+        {/* Dots */}
+        {data.map((value, index) => {
+          const x = (index / (data.length - 1)) * width;
+          const y = height - (value / max) * height;
+
           return (
-            <div
-              key={i}
-              className="flex-1 flex flex-col justify-end group relative"
-              title={`${val} SXP`}
-            >
-              {val > 0 && (
-                <div className="absolute -top-7 left-1/2 -translate-x-1/2 bg-[#27272a] text-white text-[9px] font-bold px-1.5 py-0.5 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-                  +{val} SXP
-                </div>
-              )}
-              <div
-                className="w-full rounded-t-sm transition-all duration-700 ease-out"
-                style={{
-                  height: `${heightPct}%`,
-                  background: val > 0
-                    ? "linear-gradient(to top, #be123c, #f43f5e)"
-                    : "#27272a",
-                  opacity: val > 0 ? 1 : 0.4,
-                }}
-              />
-            </div>
+            <circle
+              key={index}
+              cx={x}
+              cy={y}
+              r="1.5"
+              fill="#f43f5e"
+            />
           );
         })}
-      </div>
-      <div className="flex justify-between text-[9px] text-gray-500 font-bold mt-2 px-0.5">
+      </svg>
+
+      <div className="flex justify-between text-[9px] text-gray-500 font-bold mt-2">
         {labels.map((label, i) => (
           <span key={i}>{label}</span>
         ))}
@@ -1339,10 +1408,9 @@ export default function FanZoneDashboard() {
                       <span className="text-gray-500 font-medium ml-1">{trendAnalytics.vsText}</span>
                     </p>
                   </div>
-                  <TrendBarChart
+                  <TrendLineChart
                     data={trendAnalytics.chartData}
                     labels={trendAnalytics.labels}
-                    period={trendPeriod}
                   />
                 </div>
 

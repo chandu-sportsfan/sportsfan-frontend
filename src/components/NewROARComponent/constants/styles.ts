@@ -117,6 +117,10 @@ export const GLOBAL_CSS = `
   box-sizing: border-box;
   -webkit-tap-highlight-color: transparent;
 }
+  .roar-root {
+  touch-action: pan-y;
+}
+  
 .roar-root *::-webkit-scrollbar { width:0; height:0; }
 .roar-root textarea,
 .roar-root input,

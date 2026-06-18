@@ -992,46 +992,46 @@ export const UPCOMING_MATCHES = [
 ];
 
 export const COMPOSE_OPTIONS = [
-  { id: "hot_take",  emoji: "🔥", title: "Drop a Hot Take",    desc: "Say what others won't" },
-  { id: "prediction",emoji: "📊", title: "Make a Prediction",  desc: "Put your reputation on the line" },
-  { id: "debate",    emoji: "⚡", title: "Start a Debate",      desc: "Two sides. One winner." },
+  { id: "hot_take", emoji: "🔥", title: "Drop a Hot Take", desc: "Say what others won't" },
+  { id: "prediction", emoji: "📊", title: "Make a Prediction", desc: "Put your reputation on the line" },
+  { id: "debate", emoji: "⚡", title: "Start a Debate", desc: "Two sides. One winner." },
   // { id: "memory",    emoji: "🕰", title: "Share a Memory",      desc: "Flashback moment" },
   { id: "raw_reactions", emoji: "🎭", title: "Raw Reactions", desc: "Share your raw reaction to a moment" },
-  { id: "post",      emoji: "✏️", title: "Post",                desc: "Share photos, videos or GIFs" },
-  { id: "quiz",      emoji: "🧠", title: "Flash Quiz",          desc: "Test your fans with a quick quiz" },
+  { id: "post", emoji: "✏️", title: "Post", desc: "Share photos, videos or GIFs" },
+  { id: "quiz", emoji: "🧠", title: "Flash Quiz", desc: "Test your fans with a quick quiz" },
 ];
 
 export const RADIAL_OPTS = [
-  { id: "hot_take",   label: "Hot Take",    emoji: "🔥" },
-  { id: "prediction", label: "Predict",     emoji: "📊" },
-  { id: "debate",     label: "Debate",      emoji: "⚡" },
+  { id: "post", label: "Post", emoji: "✏️" },
+  { id: "hot_take", label: "Hot Take", emoji: "🔥" },
+  { id: "prediction", label: "Predict", emoji: "📊" },
+  { id: "debate", label: "Debate", emoji: "⚡" },
   { id: "raw_reactions", label: "Raw Reactions", emoji: "🕰" },
-  { id: "post",       label: "Post",        emoji: "✏️" },
-  { id: "quiz",       label: "Flash Quiz",  emoji: "🧠" },
+  { id: "quiz", label: "Flash Quiz", emoji: "🧠" },
 ];
 
 export const FEED_FILTERS = ["For You", "Cricket", "Football", "Live", "Predictions"];
 
 export const NAV_TABS = [
-  { id: "home",    label: "Home",   icon: "🏠" },
-  { id: "discuss", label: "Discuss",icon: "💬" },
-  { id: "compose", label: "",       icon: "+" },
-  { id: "profile", label: "You",    icon: "👤" },
-  { id: "alerts",  label: "Alerts", icon: "🔔" },
+  { id: "home", label: "Home", icon: "🏠" },
+  { id: "discuss", label: "Discuss", icon: "💬" },
+  { id: "compose", label: "", icon: "+" },
+  { id: "profile", label: "You", icon: "👤" },
+  { id: "alerts", label: "Alerts", icon: "🔔" },
 ];
 
 export const NOTIF_FILTERS = ["All", "Predictions", "Challenges", "Badges", "Match"];
 
 export const TYPE_STYLES: Record<string, any> = {
-  PREDICTION_OK:   { color: "var(--correct-green)", label: "PREDICTION ✓", pulse: false },
-  PREDICTION_FAIL: { color: "var(--wrong-red)",     label: "PREDICTION ✗", pulse: false },
-  CHALLENGE:       { color: "var(--accent-magenta)",label: "CHALLENGE",     pulse: false },
-  HEATING_UP:      { color: "var(--accent-orange)", label: "HEATING UP",    pulse: false },
-  MATCH_LIVE:      { color: "var(--live-green)",    label: "MATCH LIVE",    pulse: true  },
-  BADGE:           { color: "var(--gold)",          label: "BADGE",         pulse: false },
-  RIVAL:           { color: "var(--accent-magenta)",label: "RIVAL",         pulse: false },
-  FAN_OF_WEEK:     { color: "var(--gold)",          label: "FAN OF WEEK",   pulse: false },
-  WEEKLY:          { color: "#9C27B0",              label: "BOLD CALL",     pulse: false },
+  PREDICTION_OK: { color: "var(--correct-green)", label: "PREDICTION ✓", pulse: false },
+  PREDICTION_FAIL: { color: "var(--wrong-red)", label: "PREDICTION ✗", pulse: false },
+  CHALLENGE: { color: "var(--accent-magenta)", label: "CHALLENGE", pulse: false },
+  HEATING_UP: { color: "var(--accent-orange)", label: "HEATING UP", pulse: false },
+  MATCH_LIVE: { color: "var(--live-green)", label: "MATCH LIVE", pulse: true },
+  BADGE: { color: "var(--gold)", label: "BADGE", pulse: false },
+  RIVAL: { color: "var(--accent-magenta)", label: "RIVAL", pulse: false },
+  FAN_OF_WEEK: { color: "var(--gold)", label: "FAN OF WEEK", pulse: false },
+  WEEKLY: { color: "#9C27B0", label: "BOLD CALL", pulse: false },
 };
 
 export const LB_TABS = ["All Time", "This Month", "Cricket", "Football"];

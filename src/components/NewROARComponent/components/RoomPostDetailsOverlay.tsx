@@ -20,6 +20,7 @@ interface Props {
     onDeletePost?: (id: string, roomId?: string) => void;
     currentUsername?: string;
     currentAvatarUrl?: string;
+    onFanProfileClick?: (fan: any) => void;
 }
 
 interface MentionUser {
@@ -40,6 +41,7 @@ export default function RoomPostDetailsOverlay({
     onDeletePost,
     currentUsername,
     currentAvatarUrl,
+    onFanProfileClick,
 }: Props) {
     const [comments, setComments] = useState<any[]>([]);
     const [commentText, setCommentText] = useState("");
@@ -202,7 +204,18 @@ export default function RoomPostDetailsOverlay({
                 {/* Scrollable content */}
                 <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden [-webkit-overflow-scrolling:touch] px-5 pt-4 pb-4 bg-gradient-to-b from-[#050508] to-[#0b0b12]">
                     <div className="p-4 mb-5 bg-white/[0.03] border border-white/[0.06] rounded-[20px]">
-                        <div className="flex gap-2.5 items-center mb-3">
+                        <div 
+                            className="flex gap-2.5 items-center mb-3"
+                            style={{ cursor: onFanProfileClick ? "pointer" : "default" }}
+                            onClick={(e) => {
+                                if (onFanProfileClick) {
+                                    e.stopPropagation();
+                                    onFanProfileClick(
+                                        post.fan || { username: post.authorUsername, badge: post.authorBadge, avatarUrl: post.authorAvatarUrl || post.avatarUrl }
+                                    );
+                                }
+                            }}
+                        >
                             <AvatarWithBadge
                                 username={post.fan?.username || post.authorUsername}
                                 badge={post.fan?.badge || post.authorBadge}
@@ -326,7 +339,20 @@ export default function RoomPostDetailsOverlay({
                                 <div key={comment.commentId} className={`relative p-3 px-[14px] rounded-2xl bg-white/[0.03] border border-white/[0.05] flex flex-col gap-1.5 ${isReply ? "ml-6" : "ml-0"}`}>
                                     {isReply && <div className="absolute -left-[14px] top-[-12px] bottom-1/2 w-3 border-l-[1.5px] border-b-[1.5px] border-white/[0.12] rounded-bl-lg pointer-events-none" />}
                                     <div className="flex justify-between items-center">
-                                        <div className="flex gap-2 items-center">
+                                        <div 
+                                            className="flex gap-2 items-center"
+                                            style={{ cursor: onFanProfileClick ? "pointer" : "default" }}
+                                            onClick={(e) => {
+                                                if (onFanProfileClick) {
+                                                    e.stopPropagation();
+                                                    onFanProfileClick({
+                                                        username: comment.authorUsername,
+                                                        badge: comment.authorBadge,
+                                                        avatarUrl: comment.authorAvatarUrl || comment.avatarUrl,
+                                                    });
+                                                }
+                                            }}
+                                        >
                                             <AvatarWithBadge username={comment.authorUsername} badge={comment.authorBadge} size="sm" avatarUrl={comment.authorAvatarUrl || comment.avatarUrl || (comment.authorUsername === activeUsername ? userAvatarUrl : undefined)} />
                                             <p className="font-bold text-[12px] text-white m-0">{comment.authorUsername}</p>
                                         </div>

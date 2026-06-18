@@ -19,6 +19,8 @@ import { FifaPlayerProfileProvider } from "@/context/FifaPlayerProfileContext";
 import { RoarNotificationsProvider } from "@/context/RoarNotificationsContext"; // Import your Activity Context
 import { ActivityProvider } from "@/context/ActivityContext";
 import { RoarRoomProvider } from "@/context/RoarRoomContext";
+import { RoarProfileProvider } from "@/context/RoarProfileContext";
+import { Suspense } from "react";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -71,8 +73,12 @@ export default function RootLayout({
                                   <WPLPlayerProfileProvider>
                                     <FifaPlayerProfileProvider>
                                       <RoarNotificationsProvider>
-                                        {/* <main>{children}</main> */}
-                                        <main className="h-full flex flex-col">{children}</main>
+                                        <Suspense fallback={<div>Loading...</div>}>
+                                          <RoarProfileProvider>
+                                            {/* <main>{children}</main> */}
+                                            <main className="h-full flex flex-col">{children}</main>
+                                          </RoarProfileProvider>
+                                        </Suspense>
                                         </RoarNotificationsProvider>
                                     </FifaPlayerProfileProvider>
                                   </WPLPlayerProfileProvider>

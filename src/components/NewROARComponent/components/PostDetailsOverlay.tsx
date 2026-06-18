@@ -529,178 +529,6 @@
 //                     className={`relative p-3 px-[14px] rounded-2xl bg-white/[0.03] border border-white/[0.05] flex flex-col gap-1.5 ${isReply ? "ml-6" : "ml-0"
 //                       }`}
 //                   >
-//                     {isReply && (
-//                       <div className="absolute -left-[14px] top-[-12px] bottom-1/2 w-3 border-l-[1.5px] border-b-[1.5px] border-white/[0.12] rounded-bl-lg pointer-events-none" />
-//                     )}
-//                     <div className="flex justify-between items-center">
-//                       <div className="flex gap-2 items-center">
-//                         <AvatarWithBadge
-//                           username={comment.authorUsername}
-//                           badge={comment.authorBadge}
-//                           size="sm"
-//                           avatarUrl={
-//                             comment.authorAvatarUrl ||
-//                             comment.avatarUrl ||
-//                             (comment.authorUsername === activeUsername ? userAvatarUrl : undefined)
-//                           }
-//                         />
-//                         <p className="font-bold text-[12px] text-white m-0">
-//                           {comment.authorUsername}
-//                         </p>
-//                       </div>
-//                       <div className="flex items-center gap-2">
-//                         <span className="text-[9px] text-[#4A4A62]">
-//                           {formatTimeAgo(comment.createdAt)}
-//                         </span>
-//                         {comment.authorUsername === activeUsername && (
-//                           <button
-//                             onClick={async (e) => {
-//                               e.stopPropagation();
-//                               if (window.confirm("Delete comment?")) {
-//                                 try {
-//                                   await axios.delete(
-//                                     `/api/roar/posts/${post.id}/comments/${comment.commentId}`,
-//                                   );
-//                                   onToast("Deleted");
-//                                   fetchComments();
-//                                 } catch {
-//                                   onToast("Failed");
-//                                 }
-//                               }
-//                             }}
-//                             className="bg-transparent border-none text-[#f87171] cursor-pointer flex items-center p-0.5"
-//                           >
-//                             <Trash2 size={12} />
-//                           </button>
-//                         )}
-//                       </div>
-//                     </div>
-//                     <p className="text-[13px] text-[#F5F5FA] leading-[1.4] my-1">
-//                       {comment.text}
-//                     </p>
-//                     <div className="flex gap-[14px] items-center mt-1">
-//                       <button
-//                         onClick={() => reactToComment(comment.commentId)}
-//                         className={`bg-transparent border-none cursor-pointer flex items-center gap-1 text-[12px] p-0 ${comment.heartCount > 0 ? "text-white" : "text-[#4A4A62]"
-//                           }`}
-//                       >
-//                         🤍 {comment.heartCount ?? 0}
-//                       </button>
-//                       <button
-//                         onClick={() => handleReply(comment.authorUsername)}
-//                         className="bg-transparent border-none cursor-pointer text-[11px] text-[#4A4A62] font-semibold p-0"
-//                       >
-//                         Reply
-//                       </button>
-//                     </div>
-//                   </div>
-//                 );
-//               })
-//             )}
-//           </div>
-//         </div>
-
-//         {/* Composer with mention popup */}
-//         <div
-//           className={`shrink-0 bg-[rgba(5,5,8,0.97)] border-t border-[#252538] relative z-10 ${isMobile
-//               ? "pb-[calc(env(safe-area-inset-bottom,12px)+70px)]"
-//               : "pb-[env(safe-area-inset-bottom,12px)]"
-//             }`}
-//         >
-//           {replyTo && (
-//             <div className="flex items-center gap-1.5 px-4 pt-1.5">
-//               <span className="text-[11px] text-[#9494AD]">Replying to</span>
-//               <span className="inline-flex items-center gap-1 bg-[rgba(233,30,140,0.15)] border border-[rgba(233,30,140,0.35)] rounded-full py-0.5 pl-1.5 pr-2 text-[12px] font-bold text-[#E91E8C] max-w-[160px] overflow-hidden text-ellipsis whitespace-nowrap">
-//                 @{replyTo}
-//                 <button
-//                   onClick={clearReply}
-//                   className="bg-transparent border-none p-0 cursor-pointer text-[#E91E8C] flex items-center ml-0.5 shrink-0"
-//                 >
-//                   <X size={11} />
-//                 </button>
-//               </span>
-//             </div>
-//           )}
-
-//           {/* Mention Popup */}
-//           {showMentionPopup && mentionUsers.length > 0 && (
-//             <div className="absolute bottom-full left-4 right-4 mb-2 bg-[#181c24] rounded-2xl border border-[rgba(200,112,90,0.2)] overflow-hidden z-20 shadow-[0_8px_32px_rgba(0,0,0,0.4)] max-h-[300px] overflow-y-auto">
-//               {mentionUsers.map((user, idx) => {
-//                 const displayName =
-//                   user.username ||
-//                   user.name ||
-//                   `${user.firstName || ""} ${user.lastName || ""}`.trim() ||
-//                   user.email?.split("@")[0] ||
-//                   "user";
-//                 const isSelected = idx === mentionIndex;
-//                 return (
-//                   <button
-//                     key={user.userId}
-//                     onClick={() => insertMention(user)}
-//                     onMouseEnter={() => setMentionIndex(idx)}
-//                     className={`flex items-center gap-3 px-4 py-2.5 w-full border-none cursor-pointer transition-colors duration-150 ${isSelected ? "bg-[rgba(200,112,90,0.15)]" : "bg-transparent"
-//                       }`}
-//                   >
-//                     <AvatarWithBadge
-//                       username={displayName}
-//                       badge="RISING_FAN"
-//                       size="sm"
-//                       avatarUrl={user.avatarUrl}
-//                     />
-//                     <div className="flex-1 text-left">
-//                       <p className="font-semibold text-[13px] text-white m-0">{displayName}</p>
-//                       {user.email && (
-//                         <p className="text-[10px] text-[#7a6a65] m-0">{user.email}</p>
-//                       )}
-//                     </div>
-//                     <User size={14} className="text-[#c8705a]" />
-//                   </button>
-//                 );
-//               })}
-//             </div>
-//           )}
-
-//           <div className="flex gap-2 items-center px-4 pt-2.5 pb-3 relative">
-//             <AvatarWithBadge
-//               username={userUsername}
-//               badge={userBadge}
-//               size="sm"
-//               avatarUrl={userAvatarUrl}
-//             />
-//             <div className="flex-1 relative">
-//               <input
-//                 ref={inputRef}
-//                 type="text"
-//                 placeholder={replyTo ? "Write your reply…" : "Share your opinion..."}
-//                 value={commentText}
-//                 onChange={handleInputChange}
-//                 onKeyDown={handleKeyDown}
-//                 className="w-full h-10 rounded-full bg-[#0E0E14] border border-[#252538] pl-4 pr-4 text-white text-[16px] outline-none"
-//               />
-//               <div className="absolute -bottom-5 left-4 text-[10px] text-[#7a6a65]">
-//                 Type to search for users...
-//               </div>
-//             </div>
-//             <button
-//               onClick={submitComment}
-//               disabled={loading || !canSubmit}
-//               className={`w-[38px] h-[38px] rounded-full bg-[#E91E8C] border-none text-white flex items-center justify-center shrink-0 transition-opacity duration-200 ${canSubmit ? "cursor-pointer opacity-100" : "cursor-default opacity-50"
-//                 }`}
-//             >
-//               {loading ? <Loader2 size={16} className="animate-spin" /> : "↑"}
-//             </button>
-//           </div>
-//         </div>
-//       </div>
-//     </AnimatePresence>
-//   );
-// }
-
-
-
-
-
-
 /**
  * PostDetailsOverlay — HomeFeed variant.
  * Uses position:fixed, offset by the global header + sidebar on desktop,
@@ -723,6 +551,7 @@ interface Props {
   onDeletePost?: (id: string, roomId?: string) => void;
   currentUsername?: string;
   currentAvatarUrl?: string;
+  onFanProfileClick?: (fan: any) => void;
 }
 
 interface MentionUser {
@@ -743,6 +572,7 @@ export default function PostDetailsOverlay({
   onDeletePost,
   currentUsername,
   currentAvatarUrl,
+  onFanProfileClick,
 }: Props) {
   const [comments, setComments] = useState<any[]>([]);
   const [commentText, setCommentText] = useState("");
@@ -815,7 +645,7 @@ export default function PostDetailsOverlay({
         .filter((u: MentionUser) => {
           const key = u.userId || u.username;
           if (!key || seen.has(key)) return false;
-          const dn = u.username || u.name || `${u.firstName || ""} ${u.lastName || ""}`.trim();
+          const dn = u.username || u.name || `${u.firstName || ""}${u.lastName || ""}`.trim();
           if (dn.includes("_")) return false;
           seen.add(key); return true;
         }));
@@ -951,7 +781,17 @@ export default function PostDetailsOverlay({
 
         <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden [-webkit-overflow-scrolling:touch] px-5 pt-4 pb-4 bg-gradient-to-b from-[#050508] to-[#0b0b12]">
           <div className="p-4 mb-5 bg-white/[0.03] border border-white/[0.06] rounded-[20px]">
-            <div className="flex gap-2.5 items-center mb-3">
+            <div 
+              style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 12, cursor: onFanProfileClick ? "pointer" : "default" }}
+              onClick={(e) => {
+                if (onFanProfileClick) {
+                  e.stopPropagation();
+                  onFanProfileClick(
+                    post.fan || { username: post.authorUsername, badge: post.authorBadge, avatarUrl: post.authorAvatarUrl || post.avatarUrl }
+                  );
+                }
+              }}
+            >
               <AvatarWithBadge
                 username={post.fan?.username || post.authorUsername}
                 badge={post.fan?.badge || post.authorBadge}
@@ -1013,7 +853,20 @@ export default function PostDetailsOverlay({
                 <div key={comment.commentId} className={`relative p-3 px-[14px] rounded-2xl bg-white/[0.03] border border-white/[0.05] flex flex-col gap-1.5 ${isReply ? "ml-6" : "ml-0"}`}>
                   {isReply && <div className="absolute -left-[14px] top-[-12px] bottom-1/2 w-3 border-l-[1.5px] border-b-[1.5px] border-white/[0.12] rounded-bl-lg pointer-events-none" />}
                   <div className="flex justify-between items-center">
-                    <div className="flex gap-2 items-center">
+                    <div 
+                      className="flex gap-2 items-center"
+                      style={{ cursor: onFanProfileClick ? "pointer" : "default" }}
+                      onClick={(e) => {
+                        if (onFanProfileClick) {
+                          e.stopPropagation();
+                          onFanProfileClick({
+                            username: comment.authorUsername,
+                            badge: comment.authorBadge,
+                            avatarUrl: comment.authorAvatarUrl || comment.avatarUrl,
+                          });
+                        }
+                      }}
+                    >
                       <AvatarWithBadge username={comment.authorUsername} badge={comment.authorBadge} size="sm" avatarUrl={comment.authorAvatarUrl || comment.avatarUrl || (comment.authorUsername === activeUsername ? userAvatarUrl : undefined)} />
                       <p className="font-bold text-[12px] text-white m-0">{comment.authorUsername}</p>
                     </div>

@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
 import Image from "next/image";
 import AvatarWithBadge from "../components/AvatarWithBadge";
-import { FilterPills } from "../components/shared";
 import ActivityFeed from "../components/ActivityFeed";
 import { BADGE_CONFIG, BADGE_DETAIL, BADGE_LABELS, BADGES_LIST, RIVAL, CURRENT_USER } from "../constants";
 import { fmt } from "../utils";
@@ -134,13 +133,10 @@ export default function Profile({ userBadge, setUserBadge, onCompose, onToast, s
   const { profileStats, activities, loading: activityLoading } = useActivity();
   const [profileData, setProfileData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [predTab, setPredTab] = useState("All");
   const [badgeModal, setBadgeModal] = useState<any>(null);
   const [editOpen, setEditOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [fanMatchOpen, setFanMatchOpen] = useState(false);
-  const [rivalFollowed, setRivalFollowed] = useState(false);
   const [editName, setEditName] = useState("");
   const [editFavPlayer, setEditFavPlayer] = useState("");
   const [editAbout, setEditAbout] = useState("");
@@ -165,8 +161,6 @@ export default function Profile({ userBadge, setUserBadge, onCompose, onToast, s
           },
           badges: [],
           predictions: [],
-          hotTakes: [],
-          rival: null,
         });
         if (fanData.badge) setUserBadge?.(fanData.badge);
         setSelectedAvatar(fanData.avatarUrl || null);
@@ -209,15 +203,9 @@ export default function Profile({ userBadge, setUserBadge, onCompose, onToast, s
   const user = profileData.user || CURRENT_USER;
   const badges = profileData.badges?.length > 0 ? profileData.badges : BADGES_LIST;
   const predictions = profileData.predictions || [];
-  const hotTakes = profileData.hotTakes || [];
-  const rival = profileData.rival || RIVAL;
 
-  const filteredPreds = predictions.filter((p: any) =>
-    predTab === "All" ||
-    (predTab === "Correct" && (p.status === "settled_correct" || p.status === "CORRECT")) ||
-    (predTab === "Wrong" && (p.status === "settled_wrong" || p.status === "WRONG")) ||
-    (predTab === "Pending" && (p.status === "active" || p.status === "PENDING")),
-  );
+  // Filter activities to show only predictions for "Your Calls" section
+  const predictionActivities = activities.filter((a: any) => a.type === "ROAR_PREDICTION");
 
   const unlocked = badges.filter((b: any) => b.unlocked).length;
 
@@ -422,97 +410,61 @@ export default function Profile({ userBadge, setUserBadge, onCompose, onToast, s
         </div>
       </div>
 
-      {/* ── Stats (4-col) ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, padding: "20px 16px 0" }}>
+      {/* ── Stats (3-col) ── */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, padding: "20px 16px 0" }}>
         <div className="glass-card" style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "10px 4px", minHeight: 74 }}>
-          <span className="font-display" style={{ fontSize: 22, color: "#fff", lineHeight: 1 }}>{profileStats.posts}</span>
-          <span style={{ fontSize: 9, color: "var(--text-muted)", marginTop: 4 }}>Posts</span>
+          <span className="font-display" style={{ fontSize: 22, color: "#fff", lineHeight: 1 }}>{profileStats.totalActivity}</span>
+          <span style={{ fontSize: 9, color: "var(--text-muted)", marginTop: 4 }}>Activities</span>
         </div>
         {[
-          { value: profileStats.predictions, label: "Predictions" },
-          { value: profileStats.hotTakes, label: "Hot Takes" },
-          { value: profileStats.flashQuiz, label: "Flash Quiz" },
+          { value: 68, label: "Prediction Accuracy" },
+          { value: profileStats.debates, label: "Debates" },
         ].map(({ value, label }) => (
           <div key={label} className="glass-card" style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "10px 4px", minHeight: 74, textAlign: "center" }}>
-            <span className="font-display" style={{ fontSize: 22, color: "#fff", lineHeight: 1 }}>{value}</span>
+            <span className="font-display" style={{ fontSize: 22, color: "#fff", lineHeight: 1 }}>{typeof value === "number" && label === "Prediction Accuracy" ? `${value}%` : value}</span>
             <span style={{ fontSize: 9, color: "var(--text-muted)", marginTop: 4 }}>{label}</span>
           </div>
         ))}
       </div>
 
-      {/* ── Rival ── */}
-      <div style={{ padding: "24px 16px 0" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-          <h3 className="font-display" style={{ fontWeight: 700, fontSize: 18, color: "var(--accent-magenta)", letterSpacing: "0.05em" }}>YOUR RIVAL THIS MONTH</h3>
-          <span style={{ fontSize: 11, color: "var(--accent-magenta)", fontWeight: 600, cursor: "pointer" }} onClick={() => setFanMatchOpen(true)}>See Fan Match →</span>
-        </div>
-        <div className="gradient-border" style={{ padding: 16, background: "rgba(22, 22, 31, 0.6)" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <AvatarWithBadge username={rival.fan?.username || RIVAL.fan.username} badge={rival.badge || RIVAL.badge} size="md" />
-            <div>
-              <h4 className="font-display" style={{ fontSize: 16, color: "#fff", letterSpacing: "0.03em" }}>
-                {(rival.fan?.username || RIVAL.fan.username).toUpperCase()} · {BADGE_LABELS[rival.badge || RIVAL.badge]?.toUpperCase()}
-              </h4>
-              <div style={{ display: "flex", gap: 12, marginTop: 4 }}>
-                <span style={{ fontSize: 10, color: "var(--text-secondary)" }}><strong style={{ color: "#fff" }}>{rival.disagreements || RIVAL.disagreements}</strong> DISAGREEMENTS</span>
-                <span style={{ fontSize: 10, color: "var(--text-secondary)" }}>They won: <strong style={{ color: "var(--wrong-red)" }}>{rival.rivalWins || RIVAL.rivalWins}</strong></span>
-                <span style={{ fontSize: 10, color: "var(--text-secondary)" }}>You won: <strong style={{ color: "var(--correct-green)" }}>{rival.yourWins || RIVAL.yourWins}</strong></span>
-              </div>
-            </div>
-          </div>
-          <p style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 12, fontStyle: "italic", lineHeight: 1.4, paddingLeft: 8, borderLeft: "2px solid var(--accent-magenta)" }}>
-            {rival.topDisagreement || RIVAL.topDisagreement}
-          </p>
-          <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
-            <button onClick={() => setRivalFollowed(!rivalFollowed)} style={{ flex: 1, padding: "8px 0", fontSize: 12, fontWeight: 700, border: "1px solid var(--border)", background: rivalFollowed ? "rgba(255,255,255,0.08)" : "none", color: "#fff", borderRadius: 20, cursor: "pointer" }}>
-              {rivalFollowed ? "✓ Following" : "Follow Rival"}
-            </button>
-            <button onClick={() => onToast("Challenged rival to a prediction duel!")} className="btn-gradient" style={{ flex: 1, padding: "8px 0", fontSize: 12, borderRadius: 20, border: "none", cursor: "pointer" }}>
-              CHALLENGE →
-            </button>
-          </div>
-        </div>
-      </div>
-
       {/* ── Badges ── */}
       <div style={{ padding: "24px 16px 0" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-          <h3 className="font-display" style={{ fontWeight: 700, fontSize: 18, color: "#fff" }}>
-            YOUR BADGES <span style={{ color: "var(--text-muted)" }}>{unlocked}/{badges.length}</span>
-          </h3>
-        </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, padding: "4px 8px" }}>
-          {badges.map((b: any) => {
-            const cfg = BADGE_CONFIG[b.badgeId || b.id] || BADGE_CONFIG.RISING_FAN;
-            const isUnlocked = b.unlocked;
-            return (
-              <div key={b.badgeId || b.id} onClick={() => setBadgeModal(b)} style={{ display: "flex", flexDirection: "column", alignItems: "center", cursor: "pointer", opacity: isUnlocked ? 1 : 0.4 }}>
-                <div style={{ position: "relative", width: 68, height: 76, background: isUnlocked && cfg.gradient ? `linear-gradient(135deg, ${cfg.gradient[0]}, ${cfg.gradient[1] || cfg.gradient[0]})` : "rgba(255,255,255,0.06)", clipPath: "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: isUnlocked ? "0 4px 12px rgba(0,0,0,0.3)" : "none" }}>
-                  <div style={{ position: "absolute", inset: 2, background: isUnlocked ? "none" : "var(--bg-primary)", clipPath: "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28 }}>
-                    {cfg.icon}
+        {unlocked > 0 && (
+          <>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+              <h3 className="font-display" style={{ fontWeight: 700, fontSize: 18, color: "#fff" }}>
+                YOUR BADGES
+              </h3>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, padding: "4px 8px" }}>
+              {badges.filter((b: any) => b.unlocked).map((b: any) => {
+                const cfg = BADGE_CONFIG[b.badgeId || b.id] || BADGE_CONFIG.RISING_FAN;
+                return (
+                  <div key={b.badgeId || b.id} onClick={() => setBadgeModal(b)} style={{ display: "flex", flexDirection: "column", alignItems: "center", cursor: "pointer" }}>
+                    <div style={{ position: "relative", width: 68, height: 76, background: cfg.gradient ? `linear-gradient(135deg, ${cfg.gradient[0]}, ${cfg.gradient[1] || cfg.gradient[0]})` : "rgba(255,255,255,0.06)", clipPath: "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 12px rgba(0,0,0,0.3)" }}>
+                      <div style={{ position: "absolute", inset: 2, background: "none", clipPath: "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28 }}>
+                        {cfg.icon}
+                      </div>
+                    </div>
+                    <span style={{ fontSize: 10, fontWeight: 700, color: "#fff", marginTop: 8, textAlign: "center" }}>{cfg.name?.toUpperCase()}</span>
                   </div>
-                </div>
-                <span style={{ fontSize: 10, fontWeight: 700, color: "#fff", marginTop: 8, textAlign: "center" }}>{cfg.name?.toUpperCase()}</span>
-              </div>
-            );
-          })}
-        </div>
+                );
+              })}
+            </div>
+          </>
+        )}
       </div>
 
       {/* ── Calls ── */}
       <div style={{ padding: "24px 16px 0" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
           <h3 className="font-display" style={{ fontWeight: 700, fontSize: 18, color: "#fff" }}>YOUR CALLS</h3>
-          <span style={{ fontSize: 11, color: "var(--live-green)", fontWeight: 700 }}>{profileStats.posts > 0 ? Math.round((profileStats.predictions / profileStats.posts) * 100) : 0}% accurate</span>
-        </div>
-        <div style={{ overflow: "hidden", paddingBottom: 10 }}>
-          <FilterPills options={["All", "Correct", "Wrong", "Pending"]} active={predTab} onChange={setPredTab} />
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {filteredPreds.length === 0 ? (
+          {predictionActivities.length === 0 ? (
             <p style={{ textAlign: "center", padding: "20px 0", color: "var(--text-muted)", fontSize: 13 }}>No calls found.</p>
           ) : (
-            filteredPreds.map((p: any) => {
+            predictionActivities.map((p: any) => {
               const isCorrect = p.status === "CORRECT" || p.status === "settled_correct";
               const isWrong = p.status === "WRONG" || p.status === "settled_wrong";
               const statusText = isCorrect ? "CORRECT" : isWrong ? "WRONG" : "PENDING";
@@ -523,7 +475,7 @@ export default function Profile({ userBadge, setUserBadge, onCompose, onToast, s
                     <span style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)" }}>{p.matchId || "GENERAL"}</span>
                     <span style={{ fontSize: 10, fontWeight: 900, color: statusColor, background: `${statusColor}18`, padding: "2px 6px", borderRadius: 4 }}>{statusText}</span>
                   </div>
-                  <p style={{ fontSize: 14, color: "#fff", lineHeight: 1.4 }}>{p.text}</p>
+                  <p style={{ fontSize: 14, color: "#fff", lineHeight: 1.4 }}>{p.text || p.label}</p>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 10 }}>
                     <span style={{ fontSize: 10, color: "var(--text-muted)" }}>
                       {p.createdAt ? new Date(p.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "Today"}
@@ -541,7 +493,7 @@ export default function Profile({ userBadge, setUserBadge, onCompose, onToast, s
       <div style={{ padding: "24px 16px 80px" }}>
         <h3 className="font-display" style={{ fontWeight: 700, fontSize: 18, color: "#fff", marginBottom: 12 }}>YOUR TAKES</h3>
         <ActivityFeed
-          activities={activities}
+          activities={activities.filter((a) => a.type === "ROAR_DEBATE")}
           loading={activityLoading}
           onActivityAction={(action, activity) => {
             onToast(`Activity ${action}d successfully!`);
@@ -851,40 +803,6 @@ export default function Profile({ userBadge, setUserBadge, onCompose, onToast, s
                 <div style={{ height: "100%", width: `${badgeModal.progress}%`, background: "var(--accent-magenta)" }} />
               </div>
               <p style={{ fontSize: 11, color: "var(--text-muted)" }}>Progress: {badgeModal.progress}%</p>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* ── Fan Match Modal ── */}
-      <AnimatePresence>
-        {fanMatchOpen && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setFanMatchOpen(false)} style={{ position: "absolute", inset: 0, zIndex: 110, background: "rgba(0,0,0,0.85)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
-            <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }} onClick={(e) => e.stopPropagation()} className="glass-card" style={{ width: "100%", maxWidth: 320, padding: 20, background: "var(--bg-secondary)" }}>
-              <h3 className="font-display" style={{ fontSize: 24, marginBottom: 4, textAlign: "center", color: "#fff" }}>YOUR FAN MATCH TRIBE</h3>
-              <p style={{ fontSize: 11, color: "var(--text-secondary)", textAlign: "center", lineHeight: 1.4, marginBottom: 16 }}>We analyzed your takes & predictions to find similar fans.</p>
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                {[
-                  { username: "Rahul_77", badge: "BOLD_CALLER", similarity: 72 },
-                  { username: "StatsKing_99", badge: "ORACLE", similarity: 68 },
-                  { username: "MumbaiMagic", badge: "RISING_FAN", similarity: 61 },
-                ].map((fan) => (
-                  <div key={fan.username} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 12px", borderRadius: 16, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.04)" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                      <AvatarWithBadge username={fan.username} badge={fan.badge} size="sm" />
-                      <div>
-                        <h4 className="font-display" style={{ fontSize: 14, color: "#fff" }}>{fan.username.toUpperCase()}</h4>
-                        <p style={{ fontSize: 10, color: "var(--text-muted)" }}>{BADGE_LABELS[fan.badge]}</p>
-                      </div>
-                    </div>
-                    <div style={{ textAlign: "right" }}>
-                      <span style={{ background: "var(--accent-gradient)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", fontSize: 16, fontWeight: 800 }}>{fan.similarity}%</span>
-                      <p style={{ fontSize: 8, color: "var(--text-muted)" }}>Match</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <button onClick={() => setFanMatchOpen(false)} className="btn-gradient" style={{ width: "100%", marginTop: 18, padding: "12px 0", border: "none", borderRadius: 12, cursor: "pointer", fontSize: 13 }}>Close Tribe</button>
             </motion.div>
           </motion.div>
         )}

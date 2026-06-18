@@ -947,7 +947,7 @@
 
 
 
-// PostDetailsOverlay.tsx — replace the entire file with this
+// PostDetailsOverlay.tsx — 
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { AnimatePresence } from "framer-motion";

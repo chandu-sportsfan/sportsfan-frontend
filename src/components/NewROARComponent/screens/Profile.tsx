@@ -73,7 +73,7 @@ function AccuracyRing({ percent }: { percent: number }) {
       </svg>
       <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", lineHeight: 1 }}>
         <span className="font-display" style={{ fontSize: 13, fontWeight: "bold", color: "#fff" }}>{displayPercent}%</span>
-        <span style={{ fontSize: 7, color: "var(--text-muted)", marginTop: 2 }}>Accuracy</span>
+        <span style={{ fontSize: 7, color: "#fff", marginTop: 2 }}>Accuracy</span>
       </div>
     </div>
   );
@@ -378,7 +378,7 @@ export default function Profile({ userBadge, setUserBadge, onCompose, onToast, s
         <h1 className="font-display" style={{ fontSize: 32, letterSpacing: "0.04em", marginTop: 14, color: "#fff" }}>
           {user.username ? user.username.toUpperCase() : "ROARFAN"}
         </h1>
-        <p style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 2 }}>@{user.handle || CURRENT_USER.handle}</p>
+        <p style={{ fontSize: 13, color: "#fff", marginTop: 2 }}>@{user.handle || CURRENT_USER.handle}</p>
 
         <p style={{ fontSize: 13, color: "var(--text-secondary)", marginTop: 6 }}>
           Fan since {user.fanSince || CURRENT_USER.fanSince} · {user.yearsFandom || CURRENT_USER.yearsFandom || 1} years · {BADGE_LABELS[userBadge]}
@@ -414,7 +414,7 @@ export default function Profile({ userBadge, setUserBadge, onCompose, onToast, s
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, padding: "20px 16px 0" }}>
         <div className="glass-card" style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "10px 4px", minHeight: 74 }}>
           <span className="font-display" style={{ fontSize: 22, color: "#fff", lineHeight: 1 }}>{profileStats.totalActivity}</span>
-          <span style={{ fontSize: 9, color: "var(--text-muted)", marginTop: 4 }}>Activities</span>
+          <span style={{ fontSize: 9, color: "#fff", marginTop: 4 }}>Activities</span>
         </div>
         {[
           { value: 68, label: "Prediction Accuracy" },
@@ -422,7 +422,7 @@ export default function Profile({ userBadge, setUserBadge, onCompose, onToast, s
         ].map(({ value, label }) => (
           <div key={label} className="glass-card" style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "10px 4px", minHeight: 74, textAlign: "center" }}>
             <span className="font-display" style={{ fontSize: 22, color: "#fff", lineHeight: 1 }}>{typeof value === "number" && label === "Prediction Accuracy" ? `${value}%` : value}</span>
-            <span style={{ fontSize: 9, color: "var(--text-muted)", marginTop: 4 }}>{label}</span>
+            <span style={{ fontSize: 9, color: "#fff", marginTop: 4 }}>{label}</span>
           </div>
         ))}
       </div>
@@ -472,15 +472,15 @@ export default function Profile({ userBadge, setUserBadge, onCompose, onToast, s
               return (
                 <div key={p.id || p.postId} className="glass-card" style={{ padding: 14, background: "rgba(22, 22, 31, 0.4)", border: "1px solid rgba(255,255,255,0.03)" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                    <span style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)" }}>{p.matchId || "GENERAL"}</span>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: "#fff" }}>{p.matchId || "GENERAL"}</span>
                     <span style={{ fontSize: 10, fontWeight: 900, color: statusColor, background: `${statusColor}18`, padding: "2px 6px", borderRadius: 4 }}>{statusText}</span>
                   </div>
                   <p style={{ fontSize: 14, color: "#fff", lineHeight: 1.4 }}>{p.text || p.label}</p>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 10 }}>
-                    <span style={{ fontSize: 10, color: "var(--text-muted)" }}>
+                    <span style={{ fontSize: 10, color: "#fff" }}>
                       {p.createdAt ? new Date(p.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "Today"}
                     </span>
-                    <button onClick={() => onToast("Shared call legacy link!")} style={{ background: "none", border: "none", color: "var(--text-muted)", fontSize: 10, cursor: "pointer", textDecoration: "underline" }}>Share</button>
+                    <button onClick={() => onToast("Shared call legacy link!")} style={{ background: "none", border: "none", color: "#fff", fontSize: 10, cursor: "pointer", textDecoration: "underline" }}>Share</button>
                   </div>
                 </div>
               );

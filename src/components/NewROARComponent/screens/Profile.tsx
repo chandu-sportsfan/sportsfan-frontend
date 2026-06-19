@@ -145,7 +145,7 @@ export default function Profile({
   const handleBack = onBack ?? onClose;
 
   // Activity context — only relevant for own profile but safe to call always
-  const { profileStats, activities, loading: activityLoading, badges: contextBadges } = useActivity();
+  const { profileStats, activities, loading: activityLoading, badges: contextBadges, refreshActivities } = useActivity();
 
   const [profileData, setProfileData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -226,6 +226,13 @@ export default function Profile({
     fetchProfile();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [viewingProfile, isViewingOther, fanData]);
+
+  // Refresh activities when viewing own profile
+  useEffect(() => {
+    if (!isOtherProfile) {
+      refreshActivities();
+    }
+  }, [isOtherProfile, refreshActivities]);
 
   if (loading || !profileData) {
     return (

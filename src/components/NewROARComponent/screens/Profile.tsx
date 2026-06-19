@@ -416,7 +416,7 @@
 //       )}
 
 //       {/* ── Badges ───────────────────────────────────────────────────────── */}
-//       {unlocked > 0 && (
+//       {badges && badges.length > 0 && (
 //         <div style={{ padding: "24px 16px 0" }}>
 //           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
 //             <h3 className="font-display" style={{ fontWeight: 700, fontSize: 18, color: "#fff" }}>
@@ -1337,7 +1337,7 @@ const [activeActivityTab, setActiveActivityTab] = useState<"posts"|"predictions"
         {/* ── Posts tab ── */}
         {activeActivityTab === "posts" && (() => {
           const postActivities = !isOtherProfile
-            ? activities.filter((a: any) => ["ROAR_POST","ROAR_MEMORY","ROAR_RAW_REACTIONS","ROAR_QUIZ"].includes(a.type))
+            ? activities.filter((a: any) => ["ROAR_POST","ROAR_MEMORY","ROAR_RAW_REACTIONS","ROAR_QUIZ","ROAR_DEBATE","ROAR_PREDICTION"].includes(a.type))
             : [];
           if (!isOtherProfile && activityLoading) {
             return <p style={{ textAlign: "center", padding: "24px 0", color: "rgba(255,255,255,0.4)", fontSize: 13 }}>Loading...</p>;
@@ -1364,7 +1364,7 @@ const [activeActivityTab, setActiveActivityTab] = useState<"posts"|"predictions"
                         color: "var(--pending-amber, #F59E0B)",
                         background: "rgba(245,158,11,0.12)",
                         padding: "2px 7px", borderRadius: 4,
-                      }}>POST</span>
+                      }}>{p.type === "ROAR_PREDICTION" ? "PREDICTION" : p.type === "ROAR_DEBATE" ? "DEBATE" : "POST"}</span>
                     </div>
                     <p style={{ fontSize: 14, color: "#fff", lineHeight: 1.45, margin: "0 0 8px" }}>
                       {p.metadata?.statement || p.label || "Post"}

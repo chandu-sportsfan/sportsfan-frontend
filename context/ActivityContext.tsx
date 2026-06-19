@@ -58,8 +58,11 @@ interface ActivityContextType {
 // Survives re-renders; resets on page reload.
 // Keyed by userId so switching accounts always gets fresh data.
 let cache: { ts: number; userId: string; data: ActivityItem[] } | null = null;
-const CACHE_TTL = 30_000; // 30 seconds
+
+// Cache configuration
+const CACHE_TTL = 60_000; // 60 seconds (increased from 30s for better persistence)
 const ACTIVITY_FETCH_LIMIT = 200;
+const STORAGE_KEY = "sf_activity_cache"; // localStorage key for persistence
 
 // ─── Stats Calculation Constants ───────────────────────────────────────────────
 const POST_TYPES = [
@@ -68,7 +71,31 @@ const POST_TYPES = [
   "ROAR_MEMORY",
   "ROAR_DEBATE",
 ];
+// ─── Storage helpers for cache persistence ─────────────────────────────────
+function loadCacheFromStorage(): { ts: number; userId: string; data: ActivityItem[] } | null {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (!stored) return null;
+    
+    const parsed = JSON.parse(stored);
+    // Only use if less than 5 minutes old (survives page reloads/navigation)
+    if (parsed.ts && parsed.userId && Array.isArray(parsed.data) && Date.now() - parsed.ts < 300_000) {
+      console.log("[ActivityContext] Loaded cache from localStorage for user:", parsed.userId);
+      return parsed;
+    }
+  } catch (e) {
+    console.warn("[ActivityContext] Failed to load cache from storage:", e);
+  }
+  return null;
+}
 
+function saveCacheToStorage(data: { ts: number; userId: string; data: ActivityItem[] }) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  } catch (e) {
+    console.warn("[ActivityContext] Failed to save cache to storage:", e);
+  }
+}
 // ─── Post Content Resolver (Content Resolution) ─────────────────────────────────
 export interface PostContentData {
   id?: string;
@@ -330,14 +357,25 @@ export const ActivityProvider: React.FC<{ children: React.ReactNode }> = ({
       return;
     }
 
-    // Serve from cache if still fresh
+    // Try in-memory cache first
     if (
       cache &&
       cache.userId === userId &&
       Date.now() - cache.ts < CACHE_TTL
     ) {
-      console.log("[ActivityContext] Serving from cache, activities:", cache.data);
+      console.log("[ActivityContext] Serving from memory cache, activities:", cache.data.length);
       setActivities(cache.data);
+      return;
+    }
+
+    // Try localStorage cache before making network request
+    const storedCache = loadCacheFromStorage();
+    if (storedCache && storedCache.userId === userId) {
+      console.log("[ActivityContext] Serving from storage cache, activities:", storedCache.data.length);
+      cache = storedCache;
+      setActivities(storedCache.data);
+      // Still try to fetch fresh data in background (non-blocking)
+      // Don't await this, let it happen silently
       return;
     }
 
@@ -351,25 +389,36 @@ export const ActivityProvider: React.FC<{ children: React.ReactNode }> = ({
 
     try {
       const url = `/api/user-activity?userId=${encodeURIComponent(userId)}&limit=${ACTIVITY_FETCH_LIMIT}`;
-      console.log("[ActivityContext] Calling API:", url);
+      console.log("[ActivityContext] Fetching from API:", url);
       const res = await axios.get(url, { withCredentials: true });
-      console.log("[ActivityContext] API response:", res.data);
+      console.log("[ActivityContext] API response - success:", res.data.success, "count:", res.data.activities?.length);
 
       if (res.data.success) {
-        console.log("[ActivityContext] Success! Activities from API:", res.data.activities);
-        // Merge server data with any optimistic local additions, sort newest-first
         const data = mergeActivities(
           res.data.activities,
           localActivitiesRef.current
         );
-        console.log("[ActivityContext] Merged activities:", data);
+        console.log("[ActivityContext] Merged activities, total:", data.length);
+        
+        // Update in-memory cache
         cache = { ts: Date.now(), userId, data };
+        
+        // Save to localStorage for persistence across page reloads
+        saveCacheToStorage(cache);
+        
         setActivities(data);
       } else {
         console.error("[ActivityContext] API returned success: false", res.data);
       }
     } catch (e) {
-      console.error("[ActivityContext] fetch error:", e);
+      console.error("[ActivityContext] Fetch error:", e);
+      // If fetch fails, try to use localStorage cache as fallback
+      const storedCache = loadCacheFromStorage();
+      if (storedCache && storedCache.userId === userId) {
+        console.log("[ActivityContext] Fetch failed, falling back to storage cache");
+        cache = storedCache;
+        setActivities(storedCache.data);
+      }
     } finally {
       inFlight.current = false;
       setLoading(false);
@@ -378,10 +427,15 @@ export const ActivityProvider: React.FC<{ children: React.ReactNode }> = ({
 
   // ── Public API ──────────────────────────────────────────────────────────────
 
-  /** Force a fresh fetch, bypassing the cache. */
+  /** Force a fresh fetch, bypassing both in-memory and persistent cache. */
   const refreshActivities = useCallback(async () => {
-    console.log("[ActivityContext] refreshActivities called - clearing cache");
-    cache = null;
+    console.log("[ActivityContext] refreshActivities called - clearing all caches");
+    cache = null; // Clear in-memory cache
+    try {
+      localStorage.removeItem(STORAGE_KEY); // Clear localStorage cache
+    } catch (e) {
+      console.warn("[ActivityContext] Could not clear localStorage:", e);
+    }
     await fetchActivities();
   }, [fetchActivities]);
 
@@ -398,9 +452,11 @@ export const ActivityProvider: React.FC<{ children: React.ReactNode }> = ({
       );
       setActivities((prev) => {
         const data = mergeActivities(prev, [activity]);
-        console.log("[ActivityContext] Activities after addLocalActivity:", data);
+        console.log("[ActivityContext] Activities after addLocalActivity:", data.length);
         if (user?.userId) {
+          // Update both caches
           cache = { ts: Date.now(), userId: user.userId, data };
+          saveCacheToStorage(cache);
         }
         return data;
       });

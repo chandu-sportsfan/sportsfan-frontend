@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import axios from "axios";
 import html2canvas from "html2canvas";
 import type { ActivityItem } from "@/context/ActivityContext";
+import posthog from 'posthog-js';
 // import { useState, useRef } from "react";
 interface ActivityCardProps {
   activity: ActivityItem;
@@ -82,6 +83,11 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
 
 const cardRef = useRef<HTMLDivElement>(null);
   const handleShare = async () => {
+    posthog.capture("content_shared", {
+      activity_id: activity.id,
+      activity_type: activity.type
+    });
+
     const shareText = `🏏 I posted a ROAR ${config.label} on Sportsfan360.\n⭐ Earned ${activity.points} points.`;
 
     if (navigator.share) {

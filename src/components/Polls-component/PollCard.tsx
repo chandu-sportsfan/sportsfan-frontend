@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Poll, PollOption } from "@/types/Polls";
+import posthog from 'posthog-js';
 
 // ─── Props 
 //__
@@ -158,6 +159,12 @@ export default function PollCard({ poll, onVote, userId }: PollCardProps) {
       
       // Mark in localStorage immediately
       markLocalVoted(poll.id, userId);
+      
+      posthog.capture("poll_voted", {
+        poll_id: poll.id,
+        poll_type: poll.type,
+        option_id: optionId
+      });
       
       try {
         await onVote?.(poll.id, optionId, userId || undefined);

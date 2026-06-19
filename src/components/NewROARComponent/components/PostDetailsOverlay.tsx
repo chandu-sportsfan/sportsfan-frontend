@@ -542,6 +542,7 @@ import AvatarWithBadge from "./AvatarWithBadge";
 import { SplitBar } from "./shared";
 import { clamp, formatTimeAgo } from "../utils";
 import { ChevronLeft, Trash2, X, User, Loader2 } from "lucide-react";
+import posthog from 'posthog-js';
 
 interface Props {
   post: any;
@@ -624,8 +625,16 @@ export default function PostDetailsOverlay({
       });
       ro.observe(sidebar);
     }
+
+    if (post?.id) {
+      posthog.capture("content_completed", {
+        post_id: post.id,
+        post_type: post.type || "unknown"
+      });
+    }
+
     return () => { window.removeEventListener("resize", measure); ro?.disconnect(); };
-  }, []);
+  }, [post?.id, post?.type]);
 
   const hasUnderscore = (u: any) => {
     const n = u.username || u.name || `${u.firstName || ""} ${u.lastName || ""}`.trim();

@@ -1,3 +1,4 @@
+"use client";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
@@ -166,7 +167,7 @@ export default function Profile({
   const [editShowPredHistory, setEditShowPredHistory] = useState(true);
   const [avatarPickerOpen, setAvatarPickerOpen] = useState(false);
   const [selectedAvatar, setSelectedAvatar] = useState<string | null>(null);
-
+const [activeActivityTab, setActiveActivityTab] = useState<"posts"|"predictions"|"debates">("posts");
   // ── Data fetching ──────────────────────────────────────────────────────────
   // For OWN profile: Use ONLY ActivityContext (no additional API calls needed)
   // For OTHER profiles: Fetch their public profile data
@@ -329,117 +330,247 @@ export default function Profile({
     padding: "0 14px", color: "white", fontSize: 15, marginBottom: 16,
   };
 
+  // ── Activity tab state ─────────────────────────────────────────────────────
+  // const [activeActivityTab, setActiveActivityTab] = useState<"posts"|"predictions"|"debates">("posts");
+
+  // ── Points bar (reputation capped at some max for display) ─────────────────
+  const repScore = isOtherProfile ? (user.reputationScore ?? 0) : (profileStats.totalActivity * 2);
+  const repMax   = Math.max(repScore, 500);
+  const repPct   = Math.round((repScore / repMax) * 100);
+
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <div className="screen-scroll">
 
-      {/* Header / back button */}
-      {isOtherProfile ? (
-        <div style={{ padding: "14px 16px", background: "rgba(14,14,20,0.98)", backdropFilter: "blur(20px)", borderBottom: "1px solid rgba(255,255,255,0.07)", display: "flex", alignItems: "center", gap: 12 }}>
-          <button onClick={handleBack} style={{ background: "none", border: "none", cursor: "pointer", color: "white", padding: 0 }}>
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 18l-6-6 6-6" /></svg>
-          </button>
-          <h3 style={{ color: "white", margin: 0, fontSize: 18 }}>Profile</h3>
-        </div>
-      ) : (
-        <BackButton />
-      )}
+      {/* ── Top header bar ───────────────────────────────────────────────── */}
+      <div style={{
+        display: "flex", alignItems: "center", gap: 10,
+        padding: "14px 16px 12px",
+        background: "rgba(10,10,16,0.97)",
+        backdropFilter: "blur(20px)",
+        borderBottom: "1px solid rgba(255,255,255,0.06)",
+        position: "sticky", top: 0, zIndex: 50,
+      }}>
+        <button
+          onClick={isOtherProfile ? handleBack : undefined}
+          style={{ background: "none", border: "none", cursor: "pointer", color: "white", padding: "4px 2px", display: "flex", alignItems: "center" }}
+        >
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M15 18l-6-6 6-6" />
+          </svg>
+        </button>
+        <h3 style={{ color: "white", margin: 0, fontSize: 17, fontWeight: 700, letterSpacing: "0.01em" }}>Profile</h3>
+      </div>
 
       {/* ── Hero ─────────────────────────────────────────────────────────── */}
-      <div style={{ padding: "24px 16px 0", textAlign: "center", position: "relative" }}>
-        <div style={{ display: "flex", justifyContent: "center", position: "relative", width: 96, margin: "0 auto" }}>
-          {selectedAvatar ? (
-            <div style={{ position: "relative", width: 96, height: 96 }}>
-              <img src={selectedAvatar} alt="avatar" style={{ width: 96, height: 96, borderRadius: "50%", objectFit: "cover", border: "3px solid var(--accent-magenta)" }} />
-              <div style={{ position: "absolute", bottom: 0, left: 0, fontSize: 18, lineHeight: 1 }}>{BADGE_CONFIG[userBadge]?.icon}</div>
-            </div>
-          ) : (
-            <AvatarWithBadge username={user.username ?? CURRENT_USER.username} badge={userBadge} size="lg" />
-          )}
+      <div style={{ padding: "28px 20px 0", textAlign: "center" }}>
+        {/* Avatar */}
+        <div style={{ position: "relative", width: 100, height: 100, margin: "0 auto 14px" }}>
+          {/* Yellow ring */}
+          <div style={{
+            position: "absolute", inset: -4,
+            borderRadius: "50%",
+            background: "conic-gradient(#FFD700 0%, #FFA500 40%, #FFD700 70%, #FFA500 100%)",
+            zIndex: 0,
+          }} />
+          {/* Inner dark gap */}
+          <div style={{ position: "absolute", inset: -1, borderRadius: "50%", background: "rgba(10,10,16,0.97)", zIndex: 1 }} />
+          {/* Avatar image */}
+          <div style={{ position: "relative", zIndex: 2, width: "100%", height: "100%", borderRadius: "50%", overflow: "hidden", background: "#1a1a2e" }}>
+            {selectedAvatar ? (
+              <img src={selectedAvatar} alt="avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            ) : (
+              <AvatarWithBadge username={user.username ?? CURRENT_USER.username} badge={userBadge} size="lg" />
+            )}
+          </div>
+          {/* Edit pencil */}
           {!isOtherProfile && (
-            <button onClick={() => setAvatarPickerOpen(true)} aria-label="Change avatar"
-              style={{ position: "absolute", top: -6, right: -6, width: 26, height: 26, borderRadius: "50%", background: "var(--accent-magenta)", display: "flex", alignItems: "center", justifyContent: "center", border: "2px solid var(--bg-primary)", cursor: "pointer", padding: 0, boxShadow: "0 2px 10px rgba(233,30,140,0.6)", zIndex: 2 }}>
+            <button
+              onClick={() => setAvatarPickerOpen(true)}
+              aria-label="Change avatar"
+              style={{
+                position: "absolute", bottom: 2, right: 2, zIndex: 10,
+                width: 24, height: 24, borderRadius: "50%",
+                background: "var(--accent-magenta)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                border: "2px solid rgba(10,10,16,0.97)", cursor: "pointer", padding: 0,
+                boxShadow: "0 2px 8px rgba(233,30,140,0.7)",
+              }}
+            >
               <PencilIcon />
             </button>
           )}
         </div>
 
-        <h1 className="font-display" style={{ fontSize: 32, letterSpacing: "0.04em", marginTop: 14, color: "#fff" }}>
+        {/* Name */}
+        <h1 className="font-display" style={{ fontSize: 26, fontWeight: 900, letterSpacing: "0.04em", color: "#fff", margin: "0 0 4px" }}>
           {(user.username ?? "ROARFAN").toUpperCase()}
         </h1>
-        <p style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 2 }}>@{user.handle ?? CURRENT_USER.handle}</p>
-        <p style={{ fontSize: 13, color: "#fff", marginTop: 6 }}>
-          Fan since {user.fanSince ?? CURRENT_USER.fanSince} · {user.yearsFandom ?? 1} years · {BADGE_LABELS[userBadge]}
+
+        {/* Subtitle: badge label · sport */}
+        <p style={{ fontSize: 13, color: "rgba(255,255,255,0.55)", margin: "0 0 4px" }}>
+          {BADGE_LABELS[userBadge] ?? "Fan"}
+          {(user.favPlayer || editFavPlayer) ? "" : ""}
         </p>
+
+        {/* Fav player */}
         {(user.favPlayer || editFavPlayer) && (
-          <p style={{ fontSize: 13, color: "var(--text-secondary)", marginTop: 5 }}>
-            ⭐ Favourite player: <strong style={{ color: "var(--text-primary)" }}>{user.favPlayer || editFavPlayer}</strong>
+          <p style={{ fontSize: 13, color: "rgba(255,255,255,0.7)", margin: "2px 0 0" }}>
+            Favourite player: <strong style={{ color: "#fff" }}>{user.favPlayer || editFavPlayer}</strong>
           </p>
         )}
+
+        {/* About */}
         {(user.about || editAbout) && (
-          <p style={{ fontSize: 13, color: "var(--text-secondary)", marginTop: 5, maxWidth: 280, margin: "5px auto 0", lineHeight: 1.5 }}>
+          <p style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", marginTop: 6, lineHeight: 1.5, maxWidth: 270, margin: "6px auto 0" }}>
             {user.about || editAbout}
           </p>
         )}
 
-        <div style={{ display: "flex", justifyContent: "center", gap: 6, marginTop: 10 }}>
-          {["var(--accent-magenta)", "var(--teal)", "var(--accent-orange)"].map((bg, i) => (
-            <div key={i} style={{ width: 8, height: 8, borderRadius: "50%", background: bg }} />
-          ))}
-        </div>
-
-        <div style={{ display: "flex", gap: 10, justifyContent: "center", marginTop: 16 }}>
+        {/* Edit / Share buttons */}
+        <div style={{ display: "flex", gap: 10, justifyContent: "center", marginTop: 18 }}>
           {!isOtherProfile && (
-            <button onClick={() => setEditOpen(true)} style={{ flex: 1, maxWidth: 140, padding: "10px 0", background: "none", border: "1px solid var(--border)", borderRadius: 24, color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+            <button
+              onClick={() => setEditOpen(true)}
+              style={{
+                padding: "9px 22px",
+                background: "none",
+                border: "1px solid rgba(255,255,255,0.22)",
+                borderRadius: 22, color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer",
+                letterSpacing: "0.01em",
+              }}
+            >
               Edit Profile
             </button>
           )}
-          <button onClick={() => { setShareOpen(true); setCopied(false); }} className="btn-gradient"
-            style={{ flex: 1, maxWidth: 140, padding: "10px 0", border: "none", borderRadius: 24, color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+          <button
+            onClick={() => { setShareOpen(true); setCopied(false); }}
+            className="btn-gradient"
+            style={{
+              padding: "9px 22px", border: "none",
+              borderRadius: 22, color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer",
+              letterSpacing: "0.01em",
+            }}
+          >
             Share Profile
           </button>
         </div>
       </div>
 
-      {/* ── Stats ────────────────────────────────────────────────────────── */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, padding: "20px 16px 0" }}>
-        <div className="glass-card" style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "10px 4px", minHeight: 74, textAlign: "center" }}>
-          <span className="font-display" style={{ fontSize: 28, color: "#fff", lineHeight: 1 }}>{isOtherProfile ? (user.totalActivity ?? (user.predictionCount ?? 0) + (user.hotTakeCount ?? 0)) : profileStats.totalActivity}</span>
-          <span style={{ fontSize: 11, color: "#fff", marginTop: 6 }}>Activities</span>
-        </div>
+      {/* ── Stats row (4 tiles) ───────────────────────────────────────────── */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6, padding: "22px 14px 0" }}>
         {[
-          { value: "N/A", label: "Prediction %" },
-          { value: "N/A", label: "Debate %" },
-        ].map(({ value, label }) => (
-          <div key={label} className="glass-card" style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "10px 4px", minHeight: 74, textAlign: "center" }}>
-            <span className="font-display" style={{ fontSize: 18, color: "#fff", lineHeight: 1 }}>{value}</span>
-            <span style={{ fontSize: 9, color: "#fff", marginTop: 4 }}>{label}</span>
+          {
+            value: isOtherProfile ? (user.totalActivity ?? 0) : profileStats.posts,
+            label: "Posts",
+            accent: false,
+          },
+          {
+            value: isOtherProfile ? (user.hotTakeCount ?? 0) : profileStats.debates,
+            label: "Debates",
+            accent: false,
+          },
+          {
+            value: isOtherProfile ? (user.predictionCount ?? 0) : profileStats.predictions,
+            label: "Predictions",
+            accent: true,
+          },
+          {
+            value: isOtherProfile
+              ? `${user.accuracy ?? 0}%`
+              : (profileStats.predictions > 0 ? `${Math.round((profileStats.predictions / Math.max(profileStats.totalActivity, 1)) * 100)}%` : "N/A"),
+            label: "Accuracy",
+            accent: true,
+          },
+        ].map(({ value, label, accent }) => (
+          <div
+            key={label}
+            className="glass-card"
+            style={{
+              display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+              padding: "10px 4px", minHeight: 66, textAlign: "center",
+              background: "rgba(18,18,26,0.7)",
+              border: "1px solid rgba(255,255,255,0.06)",
+              borderRadius: 14,
+              position: "relative", overflow: "hidden",
+            }}
+          >
+            {accent && (
+              <div style={{
+                position: "absolute", top: 6, right: 6,
+                width: 18, height: 18, borderRadius: "50%",
+                background: "var(--accent-magenta)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 10, fontWeight: 900, color: "#fff",
+              }}>A</div>
+            )}
+            <span className="font-display" style={{ fontSize: 22, color: "#fff", lineHeight: 1, fontWeight: 800 }}>{value}</span>
+            <span style={{ fontSize: 10, color: "rgba(255,255,255,0.5)", marginTop: 5 }}>{label}</span>
           </div>
         ))}
       </div>
 
-
-      {/* ── Badges ───────────────────────────────────────────────────────── */}
-      {ownedBadges.length > 0 && (
-        <div style={{ padding: "24px 16px 0" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-            <h3 className="font-display" style={{ fontWeight: 700, fontSize: 18, color: "#fff" }}>
-              {isOtherProfile ? "BADGES" : `YOUR BADGES `}
-              <span style={{ color: "var(--text-muted)" }}>{ownedBadges.length}</span>
-            </h3>
+      {/* ── ROAR Points bar ──────────────────────────────────────────────── */}
+      <div style={{ padding: "18px 14px 0" }}>
+        <div style={{
+          background: "rgba(18,18,26,0.7)",
+          border: "1px solid rgba(255,255,255,0.06)",
+          borderRadius: 14, padding: "14px 16px",
+        }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+            <span style={{ fontSize: 13, fontWeight: 700, color: "#fff" }}>Roar Points</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: "#fff" }}>{repScore} points</span>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, padding: "4px 8px" }}>
+          <div style={{ height: 10, background: "rgba(255,255,255,0.08)", borderRadius: 5, overflow: "hidden" }}>
+            <div style={{
+              height: "100%",
+              width: `${repPct}%`,
+              background: "linear-gradient(90deg, #E91E8C 0%, #FF6B35 100%)",
+              borderRadius: 5,
+              transition: "width 1s ease",
+            }} />
+          </div>
+        </div>
+      </div>
+
+      {/* ── Badges Earned (horizontal scroll) ───────────────────────────── */}
+      {ownedBadges.length > 0 && (
+        <div style={{ padding: "18px 0 0" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0 14px", marginBottom: 12 }}>
+            <span style={{ fontSize: 14, fontWeight: 700, color: "#fff" }}>
+              Badges Earned
+            </span>
+            <button
+              onClick={() => {}}
+              style={{ background: "none", border: "none", color: "rgba(255,255,255,0.45)", fontSize: 13, cursor: "pointer", padding: 0 }}
+            >
+              View all
+            </button>
+          </div>
+          <div style={{ display: "flex", gap: 14, overflowX: "auto", padding: "4px 14px 8px", scrollbarWidth: "none" }}>
             {ownedBadges.map((b: any) => {
               const cfg = BADGE_CONFIG[b.badgeId ?? b.id] ?? BADGE_CONFIG.RISING_FAN;
               return (
-                <div key={b.badgeId ?? b.id} onClick={() => setBadgeModal(b)}
-                  style={{ display: "flex", flexDirection: "column", alignItems: "center", cursor: "pointer" }}>
-                  <div style={{ position: "relative", width: 68, height: 76, background: cfg.gradient ? `linear-gradient(135deg,${cfg.gradient[0]},${cfg.gradient[1] ?? cfg.gradient[0]})` : "rgba(255,255,255,0.06)", clipPath: "polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 12px rgba(0,0,0,0.3)" }}>
-                    <div style={{ position: "absolute", inset: 2, background: "none", clipPath: "polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28 }}>
-                      {cfg.icon}
-                    </div>
+                <div
+                  key={b.badgeId ?? b.id}
+                  onClick={() => setBadgeModal(b)}
+                  style={{ display: "flex", flexDirection: "column", alignItems: "center", cursor: "pointer", flexShrink: 0, width: 68 }}
+                >
+                  <div style={{
+                    width: 60, height: 68,
+                    background: cfg.gradient
+                      ? `linear-gradient(135deg,${cfg.gradient[0]},${cfg.gradient[1] ?? cfg.gradient[0]})`
+                      : "rgba(233,30,140,0.9)",
+                    clipPath: "polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%)",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    boxShadow: "0 4px 14px rgba(0,0,0,0.4)",
+                    fontSize: 24,
+                  }}>
+                    {cfg.icon}
                   </div>
-                  <span style={{ fontSize: 10, fontWeight: 700, color: "#fff", marginTop: 8, textAlign: "center" }}>{cfg.name?.toUpperCase()}</span>
+                  <span style={{ fontSize: 9, fontWeight: 700, color: "rgba(255,255,255,0.7)", marginTop: 6, textAlign: "center", lineHeight: 1.2 }}>
+                    {cfg.name?.toUpperCase() ?? "BADGE"}
+                  </span>
                 </div>
               );
             })}
@@ -447,96 +578,169 @@ export default function Profile({
         </div>
       )}
 
-      {/* ── Calls ────────────────────────────────────────────────────────── */}
-      <div style={{ padding: "24px 16px 0" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-          <h3 className="font-display" style={{ fontWeight: 700, fontSize: 18, color: "#fff" }}>
-            {isOtherProfile ? "CALLS" : "YOUR CALLS"}
-          </h3>
-        </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {!isOtherProfile && activityLoading ? (
-            <p style={{ textAlign: "center", padding: "20px 0", color: "var(--text-muted)", fontSize: 13 }}>Loading your calls...</p>
-          ) : filteredPreds.length === 0 ? (
-            <p style={{ textAlign: "center", padding: "20px 0", color: "var(--text-muted)", fontSize: 13 }}>No calls found.</p>
-          ) : filteredPreds.map((p: any) => {
-            const isCorrect = p.status === "CORRECT" || p.status === "settled_correct";
-            const isWrong   = p.status === "WRONG"   || p.status === "settled_wrong";
-            const status    = isCorrect ? "CORRECT" : isWrong ? "WRONG" : "PENDING";
-            const color     = isCorrect ? "var(--correct-green)" : isWrong ? "var(--wrong-red)" : "var(--pending-amber)";
-            return (
-              <div key={p.id ?? p.postId} className="glass-card" style={{ padding: 14, background: "rgba(22,22,31,0.4)", border: "1px solid rgba(255,255,255,0.03)" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: "#fff" }}>{p.matchId ?? "GENERAL"}</span>
-                  <span style={{ fontSize: 10, fontWeight: 900, color, background: `${color}18`, padding: "2px 6px", borderRadius: 4 }}>{status}</span>
-                </div>
-                <p style={{ fontSize: 14, color: "#fff", lineHeight: 1.4 }}>{p.text ?? p.label}</p>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 10 }}>
-                  <span style={{ fontSize: 10, color: "#fff" }}>
-                    {p.createdAt ? new Date(p.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "Today"}
-                  </span>
-                  <button onClick={() => onToast("Shared call!")} style={{ background: "none", border: "none", color: "var(--text-muted)", fontSize: 10, cursor: "pointer", textDecoration: "underline" }}>Share</button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
+      {/* ── Your Activity (tabbed: Posts / Predictions / Debates) ────────── */}
+      <div style={{ padding: "18px 14px 0" }}>
+        <span style={{ fontSize: 14, fontWeight: 700, color: "#fff" }}>Your Activity</span>
 
-      {/* ── Takes ────────────────────────────────────────────────────────── */}
-      <div style={{ padding: "24px 16px 80px" }}>
-        <h3 className="font-display" style={{ fontWeight: 700, fontSize: 18, color: "#fff", marginBottom: 12 }}>
-          {isOtherProfile ? "TAKES" : "YOUR TAKES"}
-        </h3>
-        {/* Own profile: render debates from ActivityContext */}
-        {!isOtherProfile ? (
-          <>
-            {activityLoading ? (
-              <p style={{ textAlign: "center", padding: "20px 0", color: "var(--text-muted)", fontSize: 13 }}>Loading your takes...</p>
+        {/* Tab pills */}
+        <div style={{ display: "flex", gap: 8, marginTop: 12, marginBottom: 14 }}>
+          {(["posts", "predictions", "debates"] as const).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveActivityTab(tab)}
+              style={{
+                padding: "7px 16px",
+                borderRadius: 20,
+                border: "none",
+                cursor: "pointer",
+                fontSize: 13,
+                fontWeight: 600,
+                background: activeActivityTab === tab
+                  ? "#fff"
+                  : "rgba(255,255,255,0.08)",
+                color: activeActivityTab === tab ? "#0a0a10" : "rgba(255,255,255,0.6)",
+                transition: "all 0.18s",
+              }}
+            >
+              {tab.charAt(0).toUpperCase() + tab.slice(1)}
+            </button>
+          ))}
+        </div>
+
+        {/* ── Posts tab ── */}
+        {activeActivityTab === "posts" && (() => {
+          const postActivities = !isOtherProfile
+            ? activities.filter((a: any) => ["ROAR_POST","ROAR_MEMORY","ROAR_RAW_REACTIONS","ROAR_QUIZ"].includes(a.type))
+            : [];
+          if (!isOtherProfile && activityLoading) {
+            return <p style={{ textAlign: "center", padding: "24px 0", color: "rgba(255,255,255,0.4)", fontSize: 13 }}>Loading...</p>;
+          }
+          if (postActivities.length === 0) {
+            return <p style={{ textAlign: "center", padding: "24px 0", color: "rgba(255,255,255,0.4)", fontSize: 13 }}>No posts yet.</p>;
+          }
+          return (
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {postActivities
+                .sort((a: any, b: any) => (b.createdAt || 0) - (a.createdAt || 0))
+                .map((p: any) => (
+                  <div key={p.id} style={{
+                    background: "rgba(18,18,26,0.7)",
+                    border: "1px solid rgba(255,255,255,0.06)",
+                    borderRadius: 14, padding: "14px 16px",
+                  }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
+                      <span style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.4)", letterSpacing: "0.06em" }}>
+                        {p.metadata?.sport?.toUpperCase() ?? "GENERAL"}
+                      </span>
+                      <span style={{
+                        fontSize: 10, fontWeight: 800,
+                        color: "var(--pending-amber, #F59E0B)",
+                        background: "rgba(245,158,11,0.12)",
+                        padding: "2px 7px", borderRadius: 4,
+                      }}>POST</span>
+                    </div>
+                    <p style={{ fontSize: 14, color: "#fff", lineHeight: 1.45, margin: "0 0 8px" }}>
+                      {p.metadata?.statement || p.label || "Post"}
+                    </p>
+                    <span style={{ fontSize: 11, color: "rgba(255,255,255,0.35)" }}>
+                      {p.createdAt ? new Date(p.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "Today"}
+                    </span>
+                  </div>
+                ))}
+            </div>
+          );
+        })()}
+
+        {/* ── Predictions tab ── */}
+        {activeActivityTab === "predictions" && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {!isOtherProfile && activityLoading ? (
+              <p style={{ textAlign: "center", padding: "24px 0", color: "rgba(255,255,255,0.4)", fontSize: 13 }}>Loading your calls...</p>
+            ) : filteredPreds.length === 0 ? (
+              <p style={{ textAlign: "center", padding: "24px 0", color: "rgba(255,255,255,0.4)", fontSize: 13 }}>No predictions yet.</p>
+            ) : filteredPreds.map((p: any) => {
+              const isCorrect = p.status === "CORRECT" || p.status === "settled_correct";
+              const isWrong   = p.status === "WRONG"   || p.status === "settled_wrong";
+              const status    = isCorrect ? "CORRECT" : isWrong ? "WRONG" : "PENDING";
+              const statusColor = isCorrect ? "#22C55E" : isWrong ? "#EF4444" : "#F59E0B";
+              return (
+                <div key={p.id ?? p.postId} style={{
+                  background: "rgba(18,18,26,0.7)",
+                  border: "1px solid rgba(255,255,255,0.06)",
+                  borderRadius: 14, padding: "14px 16px",
+                }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
+                    <span style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.4)", letterSpacing: "0.06em" }}>
+                      {p.matchId ?? "GENERAL"}
+                    </span>
+                    <span style={{
+                      fontSize: 10, fontWeight: 800, color: statusColor,
+                      background: `${statusColor}18`, padding: "2px 7px", borderRadius: 4,
+                    }}>{status}</span>
+                  </div>
+                  <p style={{ fontSize: 14, color: "#fff", lineHeight: 1.45, margin: "0 0 8px" }}>
+                    {p.text ?? p.label}
+                  </p>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{ fontSize: 11, color: "rgba(255,255,255,0.35)" }}>
+                      {p.createdAt ? new Date(p.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "Today"}
+                    </span>
+                    <button
+                      onClick={() => onToast("Shared call!")}
+                      style={{ background: "none", border: "none", color: "rgba(255,255,255,0.35)", fontSize: 11, cursor: "pointer", textDecoration: "underline" }}
+                    >Share</button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* ── Debates tab ── */}
+        {activeActivityTab === "debates" && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10, paddingBottom: 80 }}>
+            {!isOtherProfile && activityLoading ? (
+              <p style={{ textAlign: "center", padding: "24px 0", color: "rgba(255,255,255,0.4)", fontSize: 13 }}>Loading your takes...</p>
             ) : debateActivities.length === 0 ? (
-              <p style={{ textAlign: "center", padding: "20px 0", color: "var(--text-muted)", fontSize: 13 }}>No debates started yet.</p>
+              <p style={{ textAlign: "center", padding: "24px 0", color: "rgba(255,255,255,0.4)", fontSize: 13 }}>No debates started yet.</p>
             ) : (
               debateActivities
+                .slice()
                 .sort((a: any, b: any) => (b.createdAt || 0) - (a.createdAt || 0))
                 .map((debate: any) => (
-                  <div key={debate.id} className="glass-card" style={{ padding: 14, background: "rgba(22,22,31,0.4)", border: "1px solid rgba(255,255,255,0.03)", marginBottom: 10 }}>
-                    <p style={{ fontSize: 14, color: "#fff", lineHeight: 1.4, marginBottom: 10 }}>
-                      {(debate.metadata?.statement || debate.label || "Debate").trim()}
-                    </p>
-                    {debate.metadata?.sideA && debate.metadata?.sideB && (
-                      <div style={{ fontSize: 11, color: "var(--text-muted)", lineHeight: 1.6 }}>
-                        <div style={{ marginBottom: 6 }}>
-                          <strong>{debate.metadata.sideA}</strong> vs <strong>{debate.metadata.sideB}</strong>
-                        </div>
-                      </div>
-                    )}
-                    <div style={{ fontSize: 10, color: "#fff", marginTop: 8 }}>
-                      {debate.createdAt ? new Date(debate.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "Today"}
+                  <div key={debate.id} style={{
+                    background: "rgba(18,18,26,0.7)",
+                    border: "1px solid rgba(255,255,255,0.06)",
+                    borderRadius: 14, padding: "14px 16px",
+                  }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
+                      <span style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.4)", letterSpacing: "0.06em" }}>
+                        {(debate.metadata?.sport ?? debate.sport ?? "GENERAL").toUpperCase()}
+                      </span>
+                      <span style={{
+                        fontSize: 10, fontWeight: 800,
+                        color: "#A78BFA",
+                        background: "rgba(167,139,250,0.12)",
+                        padding: "2px 7px", borderRadius: 4,
+                      }}>DEBATE</span>
                     </div>
+                    <p style={{ fontSize: 14, color: "#fff", lineHeight: 1.45, margin: "0 0 8px" }}>
+                      {(debate.metadata?.statement || debate.text || debate.label || "Debate").trim()}
+                    </p>
+                    {(debate.metadata?.sideA || debate.sideA) && (debate.metadata?.sideB || debate.sideB) && (
+                      <p style={{ fontSize: 12, color: "rgba(255,255,255,0.45)", marginBottom: 8 }}>
+                        <strong style={{ color: "rgba(255,255,255,0.7)" }}>{debate.metadata?.sideA ?? debate.sideA}</strong>
+                        {" vs "}
+                        <strong style={{ color: "rgba(255,255,255,0.7)" }}>{debate.metadata?.sideB ?? debate.sideB}</strong>
+                      </p>
+                    )}
+                    <span style={{ fontSize: 11, color: "rgba(255,255,255,0.35)" }}>
+                      {debate.createdAt ? new Date(debate.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "Today"}
+                    </span>
                   </div>
                 ))
             )}
-          </>
-        ) : debateActivities.length === 0 ? (
-          <p style={{ textAlign: "center", padding: "20px 0", color: "var(--text-muted)", fontSize: 13 }}>No hot takes yet.</p>
-        ) : (
-          debateActivities.map((debate: any) => (
-            <div key={debate.id} className="glass-card" style={{ padding: 14, background: "rgba(22,22,31,0.4)", border: "1px solid rgba(255,255,255,0.03)", marginBottom: 10 }}>
-              <p style={{ fontSize: 14, color: "#fff", lineHeight: 1.4, marginBottom: 10 }}>
-                {debate.text || debate.label}
-              </p>
-              {debate.sideA && debate.sideB && (
-                <div style={{ fontSize: 11, color: "var(--text-muted)", lineHeight: 1.6 }}>
-                  <div style={{ marginBottom: 6 }}>
-                    <strong>{debate.sideA}</strong> vs <strong>{debate.sideB}</strong>
-                  </div>
-                </div>
-              )}
-              <div style={{ fontSize: 10, color: "#fff", marginTop: 8 }}>
-                {debate.createdAt ? new Date(debate.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "Today"}
-              </div>
-            </div>
-          ))
+          </div>
         )}
       </div>
 

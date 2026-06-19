@@ -227,9 +227,10 @@ export default function Profile({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [viewingProfile, isViewingOther, fanData]);
 
-  // Refresh activities when viewing own profile
+  // For own profile: ALWAYS fetch fresh from database (never use cache)
   useEffect(() => {
     if (!isOtherProfile) {
+      // Force fresh database fetch - clear any cached data
       refreshActivities();
     }
   }, [isOtherProfile, refreshActivities]);
@@ -432,13 +433,15 @@ export default function Profile({
 
       {/* ── Calls ────────────────────────────────────────────────────────── */}
       <div style={{ padding: "24px 16px 0" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
           <h3 className="font-display" style={{ fontWeight: 700, fontSize: 18, color: "#fff" }}>
             {isOtherProfile ? "CALLS" : "YOUR CALLS"}
           </h3>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {filteredPreds.length === 0 ? (
+          {!isOtherProfile && activityLoading ? (
+            <p style={{ textAlign: "center", padding: "20px 0", color: "var(--text-muted)", fontSize: 13 }}>Loading your calls...</p>
+          ) : filteredPreds.length === 0 ? (
             <p style={{ textAlign: "center", padding: "20px 0", color: "var(--text-muted)", fontSize: 13 }}>No calls found.</p>
           ) : filteredPreds.map((p: any) => {
             const isCorrect = p.status === "CORRECT" || p.status === "settled_correct";
@@ -472,7 +475,9 @@ export default function Profile({
         {/* Own profile: render debates from ActivityContext */}
         {!isOtherProfile ? (
           <>
-            {activities.filter((a: any) => a.type === "ROAR_DEBATE").length === 0 ? (
+            {activityLoading ? (
+              <p style={{ textAlign: "center", padding: "20px 0", color: "var(--text-muted)", fontSize: 13 }}>Loading your takes...</p>
+            ) : activities.filter((a: any) => a.type === "ROAR_DEBATE").length === 0 ? (
               <p style={{ textAlign: "center", padding: "20px 0", color: "var(--text-muted)", fontSize: 13 }}>No debates started yet.</p>
             ) : (
               activities

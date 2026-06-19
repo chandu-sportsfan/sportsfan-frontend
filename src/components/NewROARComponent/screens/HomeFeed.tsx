@@ -1561,7 +1561,11 @@ export default function HomeFeed({
   useEffect(() => { try { setLocalUsername(localStorage.getItem("roar_username") || "RoarUser"); } catch { } }, []);
   const activeUsername = propUsername || localUsername;
 
-  const openShareDialog = (post: ShareableRoarPost) => { setSharePost(post); setCopied(false); };
+  const openShareDialog = (post: ShareableRoarPost) => { 
+    setSharePost(post); 
+    setCopied(false); 
+    try { posthog.capture("content_shared", { post_id: post.id }); } catch(e) {}
+  };
   const closeShareDialog = () => { setSharePost(null); setCopied(false); };
   const handleShareToWhatsApp = () => { if (!sharePost) return; window.open(`https://wa.me/?text=${encodeURIComponent(buildRoarPostShareText(sharePost))}`, "_blank"); };
   const handleShareToThreads = () => { if (!sharePost) return; window.open(`https://www.threads.net/intent/post?text=${encodeURIComponent(buildRoarPostShareText(sharePost))}`, "_blank"); };

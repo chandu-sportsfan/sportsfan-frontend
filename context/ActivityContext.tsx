@@ -576,8 +576,13 @@ const calculateProfileStats = (activities: ActivityItem[]): ProfileStats => {
   // Total = all meaningful activity types (excluding internal types)
   const totalActivity = debates + predictions + hotTakes + flashQuiz + activities.filter((a) => a.type === "ROAR_MEMORY" || a.type === "ROAR_RAW_REACTIONS").length;
 
+  // `posts` should represent the total user-created content: posts + debates + predictions.
+  // Build a set of content types (POST_TYPES may include debates/hot-takes) and include predictions.
+  const contentTypes = new Set<string>([...POST_TYPES, "ROAR_PREDICTION"]);
+  const postsCount = activities.filter((a) => contentTypes.has(a.type)).length;
+
   return {
-    posts: activities.filter((a) => POST_TYPES.includes(a.type)).length,
+    posts: postsCount,
     predictions,
     hotTakes,
     flashQuiz,

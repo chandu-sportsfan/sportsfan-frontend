@@ -323,7 +323,9 @@ export const ActivityProvider: React.FC<{ children: React.ReactNode }> = ({
   // ── Fetch from API ──────────────────────────────────────────────────────────
   const fetchActivities = useCallback(async () => {
     const userId = user?.userId;
+    console.log("[ActivityContext] fetchActivities called, userId:", userId);
     if (!userId) {
+      console.log("[ActivityContext] No userId, setting empty activities");
       setActivities([]);
       return;
     }
@@ -334,29 +336,37 @@ export const ActivityProvider: React.FC<{ children: React.ReactNode }> = ({
       cache.userId === userId &&
       Date.now() - cache.ts < CACHE_TTL
     ) {
+      console.log("[ActivityContext] Serving from cache, activities:", cache.data);
       setActivities(cache.data);
       return;
     }
 
     // Guard against concurrent fetches
-    if (inFlight.current) return;
+    if (inFlight.current) {
+      console.log("[ActivityContext] Fetch already in flight, returning");
+      return;
+    }
     inFlight.current = true;
     setLoading(true);
 
     try {
-      const res = await axios.get(
-        `/api/user-activity?userId=${encodeURIComponent(userId)}&limit=${ACTIVITY_FETCH_LIMIT}`,
-        { withCredentials: true }
-      );
+      const url = `/api/user-activity?userId=${encodeURIComponent(userId)}&limit=${ACTIVITY_FETCH_LIMIT}`;
+      console.log("[ActivityContext] Calling API:", url);
+      const res = await axios.get(url, { withCredentials: true });
+      console.log("[ActivityContext] API response:", res.data);
 
       if (res.data.success) {
+        console.log("[ActivityContext] Success! Activities from API:", res.data.activities);
         // Merge server data with any optimistic local additions, sort newest-first
         const data = mergeActivities(
           res.data.activities,
           localActivitiesRef.current
         );
+        console.log("[ActivityContext] Merged activities:", data);
         cache = { ts: Date.now(), userId, data };
         setActivities(data);
+      } else {
+        console.error("[ActivityContext] API returned success: false", res.data);
       }
     } catch (e) {
       console.error("[ActivityContext] fetch error:", e);
@@ -370,6 +380,7 @@ export const ActivityProvider: React.FC<{ children: React.ReactNode }> = ({
 
   /** Force a fresh fetch, bypassing the cache. */
   const refreshActivities = useCallback(async () => {
+    console.log("[ActivityContext] refreshActivities called - clearing cache");
     cache = null;
     await fetchActivities();
   }, [fetchActivities]);
@@ -380,12 +391,14 @@ export const ActivityProvider: React.FC<{ children: React.ReactNode }> = ({
    */
   const addLocalActivity = useCallback(
     (activity: ActivityItem) => {
+      console.log("[ActivityContext] addLocalActivity called with:", activity);
       localActivitiesRef.current = mergeActivities(
         [activity],
         localActivitiesRef.current
       );
       setActivities((prev) => {
         const data = mergeActivities(prev, [activity]);
+        console.log("[ActivityContext] Activities after addLocalActivity:", data);
         if (user?.userId) {
           cache = { ts: Date.now(), userId: user.userId, data };
         }
@@ -397,11 +410,17 @@ export const ActivityProvider: React.FC<{ children: React.ReactNode }> = ({
 
   // Trigger fetch once auth is confirmed ready
   useEffect(() => {
-    if (authReady) fetchActivities();
-  }, [authReady, fetchActivities]);
+    console.log("[ActivityContext] Auth check - authReady:", authReady, "userId:", user?.userId);
+    if (authReady) {
+      console.log("[ActivityContext] Auth ready, fetching activities");
+      fetchActivities();
+    }
+  }, [authReady, fetchActivities, user?.userId]);
 
   useEffect(() => {
+    console.log("[ActivityContext] Registering SXP activity refresh listener");
     return onSxpActivityRefresh(() => {
+      console.log("[ActivityContext] SXP refresh event received, calling refreshActivities");
       void refreshActivities();
     });
   }, [refreshActivities]);

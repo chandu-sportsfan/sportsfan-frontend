@@ -4,7 +4,7 @@ import axios from "axios";
 import Image from "next/image";
 import AvatarWithBadge from "../components/AvatarWithBadge";
 import ActivityFeed from "../components/ActivityFeed";
-import { FilterPills } from "../components/shared";
+// FilterPills removed: Calls now shows only predictions created by the user
 import { BADGE_CONFIG, BADGE_DETAIL, BADGE_LABELS, BADGES_LIST, RIVAL, CURRENT_USER } from "../constants";
 import { fmt } from "../utils";
 import BackButton from "../../ReusableComponent/BackButton";
@@ -145,11 +145,11 @@ export default function Profile({
   const handleBack = onBack ?? onClose;
 
   // Activity context — only relevant for own profile but safe to call always
-  const { profileStats, activities, loading: activityLoading } = useActivity();
+  const { profileStats, activities, loading: activityLoading, badges: contextBadges } = useActivity();
 
   const [profileData, setProfileData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [predTab, setPredTab] = useState("All");
+  // Calls: no tabs — show predictions created by the user only
   const [badgeModal, setBadgeModal] = useState<any>(null);
   const [editOpen, setEditOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
@@ -236,22 +236,36 @@ export default function Profile({
   }
 
   const user = profileData.user ?? CURRENT_USER;
-  const badges = profileData.badges?.length ? profileData.badges : BADGES_LIST;
+  
+  // ── Room-aware badge selection ─────────────────────────────────────────────
+  // For own profile: use badges calculated from ActivityContext (room activities)
+  // For other profiles: use badges from API data
+  const badgesToDisplay = !isOtherProfile && contextBadges?.length > 0
+    ? contextBadges
+    : (profileData.badges?.length ? profileData.badges : BADGES_LIST);
+  
   const predictions: any[] = profileData.predictions ?? [];
   const hotTakes: any[] = profileData.hotTakes ?? [];
   const rival = profileData.rival ?? RIVAL;
-  const unlocked = badges.filter((b: any) => b.unlocked).length;
+  const ownedBadges = badgesToDisplay.filter((b: any) => b.unlocked);
 
-  // For own-profile, supplement predictions from activity context if API returned none
+  // ── Room-aware predictions ────────────────────────────────────────────────
+  // For own profile: use predictions from ActivityContext
+  // For other profiles: use predictions from API data
   const predictionActivities = activities.filter((a: any) => a.type === "ROAR_PREDICTION");
-  const displayPredictions = predictions.length ? predictions : predictionActivities;
+  const displayPredictions = !isOtherProfile && predictionActivities.length > 0
+    ? predictionActivities.map((a: any) => ({
+        id: a.id,
+        postId: a.metadata?.postId,
+        label: a.label,
+        text: a.label,
+        status: "PENDING",
+        createdAt: a.createdAt,
+      }))
+    : (predictions.length > 0 ? predictions : predictionActivities);
 
-  const filteredPreds = displayPredictions.filter((p: any) =>
-    predTab === "All" ||
-    (predTab === "Correct" && (p.status === "settled_correct" || p.status === "CORRECT")) ||
-    (predTab === "Wrong" && (p.status === "settled_wrong" || p.status === "WRONG")) ||
-    (predTab === "Pending" && (p.status === "active" || p.status === "PENDING")),
-  );
+  // Show predictions created by the user, newest first
+  const filteredPreds = (displayPredictions || []).slice().sort((a: any, b: any) => (b.createdAt || 0) - (a.createdAt || 0));
 
   // ── Avatar ─────────────────────────────────────────────────────────────────
   const handleAvatarSelect = async (src: string) => {
@@ -365,18 +379,25 @@ export default function Profile({
       {/* ── Stats ────────────────────────────────────────────────────────── */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, padding: "20px 16px 0" }}>
         <div className="glass-card" style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "10px 4px", minHeight: 74 }}>
-          <AccuracyRing percent={user.accuracy ?? 0} />
+          <span className="font-display" style={{ fontSize: 28, color: "#fff", lineHeight: 1 }}>{isOtherProfile ? (user.totalActivity ?? (user.predictionCount ?? 0) + (user.hotTakeCount ?? 0)) : profileStats.totalActivity}</span>
+          <span style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 6 }}>Activities</span>
         </div>
         {[
-          { value: isOtherProfile ? (user.predictionCount ?? 0) : profileStats.totalActivity, label: "Predictions" },
-          { value: isOtherProfile ? (user.hotTakeCount ?? 0) : profileStats.debates, label: "Hot Takes" },
-          { value: fmt(user.reputationScore ?? 0), label: "Rep" },
+          { value: "N/A", label: "Prediction %" },
+          { value: "N/A", label: "Debate %" },
         ].map(({ value, label }) => (
           <div key={label} className="glass-card" style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "10px 4px", minHeight: 74, textAlign: "center" }}>
-            <span className="font-display" style={{ fontSize: 22, color: "#fff", lineHeight: 1 }}>{value}</span>
+            <span className="font-display" style={{ fontSize: 18, color: "#fff", lineHeight: 1 }}>{value}</span>
             <span style={{ fontSize: 9, color: "var(--text-muted)", marginTop: 4 }}>{label}</span>
           </div>
         ))}
+        {/* Rep: only show when > 0 */}
+        {((user.reputationScore ?? 0) > 0) && (
+          <div className="glass-card" style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "10px 4px", minHeight: 74, textAlign: "center" }}>
+            <span className="font-display" style={{ fontSize: 22, color: "#fff", lineHeight: 1 }}>{fmt(user.reputationScore ?? 0)}</span>
+            <span style={{ fontSize: 9, color: "var(--text-muted)", marginTop: 4 }}>Rep</span>
+          </div>
+        )}
       </div>
 
       {/* ── Rival (own profile only) ──────────────────────────────────────── */}
@@ -416,23 +437,22 @@ export default function Profile({
       )}
 
       {/* ── Badges ───────────────────────────────────────────────────────── */}
-      {unlocked > 0 && (
+      {ownedBadges.length > 0 && (
         <div style={{ padding: "24px 16px 0" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
             <h3 className="font-display" style={{ fontWeight: 700, fontSize: 18, color: "#fff" }}>
               {isOtherProfile ? "BADGES" : `YOUR BADGES `}
-              <span style={{ color: "var(--text-muted)" }}>{unlocked}/{badges.length}</span>
+              <span style={{ color: "var(--text-muted)" }}>{ownedBadges.length}</span>
             </h3>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, padding: "4px 8px" }}>
-            {badges.map((b: any) => {
+            {ownedBadges.map((b: any) => {
               const cfg = BADGE_CONFIG[b.badgeId ?? b.id] ?? BADGE_CONFIG.RISING_FAN;
-              const isUnlocked = b.unlocked;
               return (
                 <div key={b.badgeId ?? b.id} onClick={() => setBadgeModal(b)}
-                  style={{ display: "flex", flexDirection: "column", alignItems: "center", cursor: "pointer", opacity: isUnlocked ? 1 : 0.4 }}>
-                  <div style={{ position: "relative", width: 68, height: 76, background: isUnlocked && cfg.gradient ? `linear-gradient(135deg,${cfg.gradient[0]},${cfg.gradient[1] ?? cfg.gradient[0]})` : "rgba(255,255,255,0.06)", clipPath: "polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: isUnlocked ? "0 4px 12px rgba(0,0,0,0.3)" : "none" }}>
-                    <div style={{ position: "absolute", inset: 2, background: isUnlocked ? "none" : "var(--bg-primary)", clipPath: "polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28 }}>
+                  style={{ display: "flex", flexDirection: "column", alignItems: "center", cursor: "pointer" }}>
+                  <div style={{ position: "relative", width: 68, height: 76, background: cfg.gradient ? `linear-gradient(135deg,${cfg.gradient[0]},${cfg.gradient[1] ?? cfg.gradient[0]})` : "rgba(255,255,255,0.06)", clipPath: "polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 12px rgba(0,0,0,0.3)" }}>
+                    <div style={{ position: "absolute", inset: 2, background: "none", clipPath: "polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28 }}>
                       {cfg.icon}
                     </div>
                   </div>
@@ -446,14 +466,10 @@ export default function Profile({
 
       {/* ── Calls ────────────────────────────────────────────────────────── */}
       <div style={{ padding: "24px 16px 0" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
           <h3 className="font-display" style={{ fontWeight: 700, fontSize: 18, color: "#fff" }}>
             {isOtherProfile ? "CALLS" : "YOUR CALLS"}
           </h3>
-          <span style={{ fontSize: 11, color: "var(--live-green)", fontWeight: 700 }}>{user.accuracy ?? 0}% accurate</span>
-        </div>
-        <div style={{ overflow: "hidden", paddingBottom: 10 }}>
-          <FilterPills options={["All", "Correct", "Wrong", "Pending"]} active={predTab} onChange={setPredTab} />
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {filteredPreds.length === 0 ? (

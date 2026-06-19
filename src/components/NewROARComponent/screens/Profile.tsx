@@ -344,7 +344,7 @@ export default function Profile({
           {(user.username ?? "ROARFAN").toUpperCase()}
         </h1>
         <p style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 2 }}>@{user.handle ?? CURRENT_USER.handle}</p>
-        <p style={{ fontSize: 13, color: "var(--text-secondary)", marginTop: 6 }}>
+        <p style={{ fontSize: 13, color: "#fff", marginTop: 6 }}>
           Fan since {user.fanSince ?? CURRENT_USER.fanSince} · {user.yearsFandom ?? 1} years · {BADGE_LABELS[userBadge]}
         </p>
         {(user.favPlayer || editFavPlayer) && (
@@ -378,10 +378,10 @@ export default function Profile({
       </div>
 
       {/* ── Stats ────────────────────────────────────────────────────────── */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, padding: "20px 16px 0" }}>
-        <div className="glass-card" style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "10px 4px", minHeight: 74 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, padding: "20px 16px 0" }}>
+        <div className="glass-card" style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "10px 4px", minHeight: 74, textAlign: "center" }}>
           <span className="font-display" style={{ fontSize: 28, color: "#fff", lineHeight: 1 }}>{isOtherProfile ? (user.totalActivity ?? (user.predictionCount ?? 0) + (user.hotTakeCount ?? 0)) : profileStats.totalActivity}</span>
-          <span style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 6 }}>Activities</span>
+          <span style={{ fontSize: 11, color: "#fff", marginTop: 6 }}>Activities</span>
         </div>
         {[
           { value: "N/A", label: "Prediction %" },
@@ -389,53 +389,11 @@ export default function Profile({
         ].map(({ value, label }) => (
           <div key={label} className="glass-card" style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "10px 4px", minHeight: 74, textAlign: "center" }}>
             <span className="font-display" style={{ fontSize: 18, color: "#fff", lineHeight: 1 }}>{value}</span>
-            <span style={{ fontSize: 9, color: "var(--text-muted)", marginTop: 4 }}>{label}</span>
+            <span style={{ fontSize: 9, color: "#fff", marginTop: 4 }}>{label}</span>
           </div>
         ))}
-        {/* Rep: only show when > 0 */}
-        {((user.reputationScore ?? 0) > 0) && (
-          <div className="glass-card" style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "10px 4px", minHeight: 74, textAlign: "center" }}>
-            <span className="font-display" style={{ fontSize: 22, color: "#fff", lineHeight: 1 }}>{fmt(user.reputationScore ?? 0)}</span>
-            <span style={{ fontSize: 9, color: "var(--text-muted)", marginTop: 4 }}>Rep</span>
-          </div>
-        )}
       </div>
 
-      {/* ── Rival (own profile only) ──────────────────────────────────────── */}
-      {!isOtherProfile && (
-        <div style={{ padding: "24px 16px 0" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-            <h3 className="font-display" style={{ fontWeight: 700, fontSize: 18, color: "var(--accent-magenta)", letterSpacing: "0.05em" }}>YOUR RIVAL THIS MONTH</h3>
-            <span style={{ fontSize: 11, color: "var(--accent-magenta)", fontWeight: 600, cursor: "pointer" }} onClick={() => setFanMatchOpen(true)}>See Fan Match →</span>
-          </div>
-          <div className="gradient-border" style={{ padding: 16, background: "rgba(22,22,31,0.6)" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <AvatarWithBadge username={rival.fan?.username ?? RIVAL.fan.username} badge={rival.badge ?? RIVAL.badge} size="md" />
-              <div>
-                <h4 className="font-display" style={{ fontSize: 16, color: "#fff", letterSpacing: "0.03em" }}>
-                  {(rival.fan?.username ?? RIVAL.fan.username).toUpperCase()} · {(BADGE_LABELS[rival.badge ?? RIVAL.badge] ?? "").toUpperCase()}
-                </h4>
-                <div style={{ display: "flex", gap: 12, marginTop: 4 }}>
-                  <span style={{ fontSize: 10, color: "var(--text-secondary)" }}><strong style={{ color: "#fff" }}>{rival.disagreements ?? RIVAL.disagreements}</strong> DISAGREEMENTS</span>
-                  <span style={{ fontSize: 10, color: "var(--text-secondary)" }}>They won: <strong style={{ color: "var(--wrong-red)" }}>{rival.rivalWins ?? RIVAL.rivalWins}</strong></span>
-                  <span style={{ fontSize: 10, color: "var(--text-secondary)" }}>You won: <strong style={{ color: "var(--correct-green)" }}>{rival.yourWins ?? RIVAL.yourWins}</strong></span>
-                </div>
-              </div>
-            </div>
-            <p style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 12, fontStyle: "italic", lineHeight: 1.4, paddingLeft: 8, borderLeft: "2px solid var(--accent-magenta)" }}>
-              {rival.topDisagreement ?? RIVAL.topDisagreement}
-            </p>
-            <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
-              <button onClick={() => setRivalFollowed(!rivalFollowed)} style={{ flex: 1, padding: "8px 0", fontSize: 12, fontWeight: 700, border: "1px solid var(--border)", background: rivalFollowed ? "rgba(255,255,255,0.08)" : "none", color: "#fff", borderRadius: 20, cursor: "pointer" }}>
-                {rivalFollowed ? "✓ Following" : "Follow Rival"}
-              </button>
-              <button onClick={() => onToast("Challenged rival to a prediction duel!")} className="btn-gradient" style={{ flex: 1, padding: "8px 0", fontSize: 12, borderRadius: 20, border: "none", cursor: "pointer" }}>
-                CHALLENGE →
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* ── Badges ───────────────────────────────────────────────────────── */}
       {ownedBadges.length > 0 && (
@@ -483,12 +441,12 @@ export default function Profile({
             return (
               <div key={p.id ?? p.postId} className="glass-card" style={{ padding: 14, background: "rgba(22,22,31,0.4)", border: "1px solid rgba(255,255,255,0.03)" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)" }}>{p.matchId ?? "GENERAL"}</span>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: "#fff" }}>{p.matchId ?? "GENERAL"}</span>
                   <span style={{ fontSize: 10, fontWeight: 900, color, background: `${color}18`, padding: "2px 6px", borderRadius: 4 }}>{status}</span>
                 </div>
                 <p style={{ fontSize: 14, color: "#fff", lineHeight: 1.4 }}>{p.text ?? p.label}</p>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 10 }}>
-                  <span style={{ fontSize: 10, color: "var(--text-muted)" }}>
+                  <span style={{ fontSize: 10, color: "#fff" }}>
                     {p.createdAt ? new Date(p.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "Today"}
                   </span>
                   <button onClick={() => onToast("Shared call!")} style={{ background: "none", border: "none", color: "var(--text-muted)", fontSize: 10, cursor: "pointer", textDecoration: "underline" }}>Share</button>
@@ -525,7 +483,7 @@ export default function Profile({
                         </div>
                       </div>
                     )}
-                    <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 8 }}>
+                    <div style={{ fontSize: 10, color: "#fff", marginTop: 8 }}>
                       {debate.createdAt ? new Date(debate.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "Today"}
                     </div>
                   </div>

@@ -1,3 +1,5 @@
+import posthog from "posthog-js";
+// // // //chandu's code
 
 // // components/NewROARComponent/screens/HomeFeed.tsx
 // // CHANGES vs original:

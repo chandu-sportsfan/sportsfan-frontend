@@ -250,19 +250,20 @@ export default function Profile({
   const ownedBadges = badgesToDisplay.filter((b: any) => b.unlocked);
 
   // ── Room-aware predictions ────────────────────────────────────────────────
-  // For own profile: use predictions from ActivityContext
+  // For own profile: ALWAYS use predictions from ActivityContext (room-aware, live data)
   // For other profiles: use predictions from API data
   const predictionActivities = activities.filter((a: any) => a.type === "ROAR_PREDICTION");
-  const displayPredictions = !isOtherProfile && predictionActivities.length > 0
+  const displayPredictions = !isOtherProfile
     ? predictionActivities.map((a: any) => ({
         id: a.id,
         postId: a.metadata?.postId,
         label: a.label,
-        text: a.label,
-        status: "PENDING",
+        // Use statement from metadata if available, otherwise use label
+        text: (a.metadata?.statement || a.label || "").trim() || `Prediction: ${a.label}`,
+        status: a.metadata?.status || "PENDING",
         createdAt: a.createdAt,
       }))
-    : (predictions.length > 0 ? predictions : predictionActivities);
+    : (predictions || []);
 
   // Show predictions created by the user, newest first
   const filteredPreds = (displayPredictions || []).slice().sort((a: any, b: any) => (b.createdAt || 0) - (a.createdAt || 0));
@@ -503,30 +504,53 @@ export default function Profile({
         <h3 className="font-display" style={{ fontWeight: 700, fontSize: 18, color: "#fff", marginBottom: 12 }}>
           {isOtherProfile ? "TAKES" : "YOUR TAKES"}
         </h3>
-        {/* Own profile: use ActivityFeed from context. Other profile: render from fetched hotTakes */}
+        {/* Own profile: render debates from ActivityContext */}
         {!isOtherProfile ? (
-          <ActivityFeed
-            activities={activities.filter((a: any) => a.type === "ROAR_DEBATE")}
-            loading={activityLoading}
-            onActivityAction={() => onToast("Done!")}
-          />
+          <>
+            {activities.filter((a: any) => a.type === "ROAR_DEBATE").length === 0 ? (
+              <p style={{ textAlign: "center", padding: "20px 0", color: "var(--text-muted)", fontSize: 13 }}>No debates started yet.</p>
+            ) : (
+              activities
+                .filter((a: any) => a.type === "ROAR_DEBATE")
+                .sort((a: any, b: any) => (b.createdAt || 0) - (a.createdAt || 0))
+                .map((debate: any) => (
+                  <div key={debate.id} className="glass-card" style={{ padding: 14, background: "rgba(22,22,31,0.4)", border: "1px solid rgba(255,255,255,0.03)", marginBottom: 10 }}>
+                    <p style={{ fontSize: 14, color: "#fff", lineHeight: 1.4, marginBottom: 10 }}>
+                      {(debate.metadata?.statement || debate.label || "Debate").trim()}
+                    </p>
+                    {debate.metadata?.sideA && debate.metadata?.sideB && (
+                      <div style={{ fontSize: 11, color: "var(--text-muted)", lineHeight: 1.6 }}>
+                        <div style={{ marginBottom: 6 }}>
+                          <strong>{debate.metadata.sideA}</strong> vs <strong>{debate.metadata.sideB}</strong>
+                        </div>
+                      </div>
+                    )}
+                    <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 8 }}>
+                      {debate.createdAt ? new Date(debate.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "Today"}
+                    </div>
+                  </div>
+                ))
+            )}
+          </>
         ) : hotTakes.length === 0 ? (
           <p style={{ textAlign: "center", padding: "20px 0", color: "var(--text-muted)", fontSize: 13 }}>No hot takes yet.</p>
-        ) : hotTakes.map((ht: any) => {
-          const agree = ht.agreeCount ?? 0, disagree = ht.disagreeCount ?? 0, total = agree + disagree || 1;
-          const pct = Math.round((agree / total) * 100) || 50;
-          return (
-            <div key={ht.id ?? ht.postId} className="glass-card" style={{ padding: 14, background: "rgba(22,22,31,0.4)", border: "1px solid rgba(255,255,255,0.03)", marginBottom: 10 }}>
-              <p style={{ fontSize: 14, color: "#fff", lineHeight: 1.4, marginBottom: 10 }}>{ht.text}</p>
-              <div style={{ position: "relative", width: "100%", height: 16, background: "rgba(255,255,255,0.06)", borderRadius: 8, overflow: "hidden" }}>
-                <div style={{ height: "100%", width: `${pct}%`, background: "var(--accent-gradient)", transition: "width 1s" }} />
-                <div style={{ position: "absolute", inset: 0, display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0 8px", fontSize: 9, fontWeight: 700, color: "#fff" }}>
-                  <span>{pct}% Agree</span><span>{100 - pct}% Disagree</span>
+        ) : (
+          hotTakes.map((ht: any) => {
+            const agree = ht.agreeCount ?? 0, disagree = ht.disagreeCount ?? 0, total = agree + disagree || 1;
+            const pct = Math.round((agree / total) * 100) || 50;
+            return (
+              <div key={ht.id ?? ht.postId} className="glass-card" style={{ padding: 14, background: "rgba(22,22,31,0.4)", border: "1px solid rgba(255,255,255,0.03)", marginBottom: 10 }}>
+                <p style={{ fontSize: 14, color: "#fff", lineHeight: 1.4, marginBottom: 10 }}>{ht.text}</p>
+                <div style={{ position: "relative", width: "100%", height: 16, background: "rgba(255,255,255,0.06)", borderRadius: 8, overflow: "hidden" }}>
+                  <div style={{ height: "100%", width: `${pct}%`, background: "var(--accent-gradient)", transition: "width 1s" }} />
+                  <div style={{ position: "absolute", inset: 0, display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0 8px", fontSize: 9, fontWeight: 700, color: "#fff" }}>
+                    <span>{pct}% Agree</span><span>{100 - pct}% Disagree</span>
+                  </div>
                 </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })
+        )}
       </div>
 
       {/* ═══════════════════════════════════════════════════════════════════

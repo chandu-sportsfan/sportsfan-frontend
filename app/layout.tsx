@@ -16,11 +16,12 @@ import { LeaderboardProvider } from "@/context/LeaderboardContext";
 import { AIChatProvider } from "@/context/AskAIChatContext";
 import { WPLPlayerProfileProvider } from "@/context/Wplplayerprofilecontext";
 import { FifaPlayerProfileProvider } from "@/context/FifaPlayerProfileContext";
-import { RoarNotificationsProvider } from "@/context/RoarNotificationsContext"; // Import your Activity Context
+import { RoarNotificationsProvider } from "@/context/RoarNotificationsContext";
 import { ActivityProvider } from "@/context/ActivityContext";
 import { RoarRoomProvider } from "@/context/RoarRoomContext";
 import { RoarProfileProvider } from "@/context/RoarProfileContext";
 import { Suspense } from "react";
+import { UserProfileProvider } from "@/context/UserProfileContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -65,7 +66,7 @@ export default function RootLayout({
                   <GlobalSearchProvider>
                     <AudioProvider>
                       <LeaderboardProvider>
-                        <ActivityProvider> 
+                        <ActivityProvider>
                           <VideoProvider>
                             <PlaysProvider>
                               <ScriptsProvider>
@@ -75,11 +76,12 @@ export default function RootLayout({
                                       <RoarNotificationsProvider>
                                         <Suspense fallback={<div>Loading...</div>}>
                                           <RoarProfileProvider>
-                                            {/* <main>{children}</main> */}
+                                            <UserProfileProvider>
                                             <main className="h-full flex flex-col">{children}</main>
+                                            </UserProfileProvider>
                                           </RoarProfileProvider>
                                         </Suspense>
-                                        </RoarNotificationsProvider>
+                                      </RoarNotificationsProvider>
                                     </FifaPlayerProfileProvider>
                                   </WPLPlayerProfileProvider>
                                 </AIChatProvider>

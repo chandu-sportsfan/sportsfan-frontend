@@ -57,6 +57,7 @@ export const RoarProfileProvider = ({ children }: { children: ReactNode }) => {
       setLoading(true);
       try {
         const res = await axios.get(`/api/roar/fans/${encodeURIComponent(viewingUsername)}/profile`);
+       
         if (res.data?.success) {
           setProfileData(res.data);
         } else {

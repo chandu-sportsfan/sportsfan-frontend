@@ -33,12 +33,23 @@ export interface ProfileStats {
   predictions: number;
   hotTakes:    number;
   flashQuiz:   number;
+  debates:     number;
+  totalActivity: number;
+}
+
+export interface BadgeItem {
+  id:         string;
+  name:       string;
+  unlocked:   boolean;
+  unlockedAt?: number;
+  progress?:  number;
 }
 
 interface ActivityContextType {
   activities:         ActivityItem[];
   loading:            boolean;
   profileStats:       ProfileStats;
+  badges:             BadgeItem[];
   refreshActivities:  () => Promise<void>;
   addLocalActivity:   (activity: ActivityItem) => void;
 }
@@ -95,6 +106,7 @@ export async function resolvePostContent(
     // Try to fetch from ROAR post API
     const response = await axios.get(`/api/roar/posts/${postId}`, {
       timeout: 5000, // 5 second timeout
+      withCredentials: true,
     });
 
     const data = response.data?.data || response.data;
@@ -193,6 +205,7 @@ const mergeActivities = (
   return merged.sort((a, b) => b.createdAt - a.createdAt);
 };
 
+// ── Calculate profile stats from activities array ──────────────────────────────
 /**
  * Calculate profile stats from activities array.
  * Returns zero counts if activities is empty or undefined.
@@ -204,15 +217,83 @@ const calculateProfileStats = (activities: ActivityItem[]): ProfileStats => {
       predictions: 0,
       hotTakes: 0,
       flashQuiz: 0,
+      debates: 0,
+      totalActivity: 0,
     };
   }
 
+  const debates = activities.filter((a) => a.type === "ROAR_DEBATE").length;
+  const predictions = activities.filter((a) => a.type === "ROAR_PREDICTION").length;
+  const hotTakes = activities.filter((a) => a.type === "ROAR_HOT_TAKE").length;
+  const flashQuiz = activities.filter((a) => a.type === "FLASH_QUIZ").length;
+  // Total = all meaningful activity types (excluding internal types)
+  const totalActivity = debates + predictions + hotTakes + flashQuiz + activities.filter((a) => a.type === "ROAR_MEMORY" || a.type === "ROAR_RAW_REACTIONS").length;
+
   return {
     posts: activities.filter((a) => POST_TYPES.includes(a.type)).length,
-    predictions: activities.filter((a) => a.type === "ROAR_PREDICTION").length,
-    hotTakes: activities.filter((a) => a.type === "ROAR_HOT_TAKE").length,
-    flashQuiz: activities.filter((a) => a.type === "FLASH_QUIZ").length,
+    predictions,
+    hotTakes,
+    flashQuiz,
+    debates,
+    totalActivity,
   };
+};
+
+// ── Calculate badges from room activities ──────────────────────────────────────
+/**
+ * Calculate badges based on user's aggregated room activities.
+ * Awards badges for milestones reached across all rooms.
+ */
+const calculateBadgesFromActivities = (activities: ActivityItem[]): BadgeItem[] => {
+  const postCount = activities.filter((a) =>
+    ["ROAR_POST", "ROAR_HOT_TAKE", "ROAR_MEMORY"].includes(a.type)
+  ).length;
+
+  const predictionCount = activities.filter((a) => a.type === "ROAR_PREDICTION").length;
+  const debateCount = activities.filter((a) => a.type === "ROAR_DEBATE").length;
+  const totalActivities = activities.length;
+
+  const firstActivityTime = activities.length > 0 ? activities[activities.length - 1].createdAt : undefined;
+
+  return [
+    {
+      id: "FIRST_POST",
+      name: "First Post",
+      unlocked: postCount >= 1,
+      unlockedAt: postCount >= 1 ? firstActivityTime : undefined,
+      progress: postCount,
+    },
+    {
+      id: "POST_10",
+      name: "10 Posts",
+      unlocked: postCount >= 10,
+      progress: Math.min(postCount, 10),
+    },
+    {
+      id: "PREDICTION_EXPERT",
+      name: "Prediction Expert",
+      unlocked: predictionCount >= 5,
+      progress: Math.min(predictionCount, 5),
+    },
+    {
+      id: "DEBATE_STARTER",
+      name: "Debate Starter",
+      unlocked: debateCount >= 3,
+      progress: Math.min(debateCount, 3),
+    },
+    {
+      id: "ACTIVE_CONTRIBUTOR",
+      name: "Active Contributor",
+      unlocked: totalActivities >= 20,
+      progress: Math.min(totalActivities, 20),
+    },
+    {
+      id: "TOP_FAN",
+      name: "Top Fan",
+      unlocked: totalActivities >= 50,
+      progress: Math.min(totalActivities, 50),
+    },
+  ];
 };
 
 // ─── Context ──────────────────────────────────────────────────────────────────
@@ -228,9 +309,14 @@ export const ActivityProvider: React.FC<{ children: React.ReactNode }> = ({
   const inFlight          = useRef(false);
   const localActivitiesRef = useRef<ActivityItem[]>([]);
 
-  // ── Calculate memoized profile stats ────────────────────────────────────────
+  // ── Calculate memoized profile stats and badges ─────────────────────────────
   const profileStats = useMemo(
     () => calculateProfileStats(activities),
+    [activities]
+  );
+
+  const badges = useMemo(
+    () => calculateBadgesFromActivities(activities),
     [activities]
   );
 
@@ -259,7 +345,8 @@ export const ActivityProvider: React.FC<{ children: React.ReactNode }> = ({
 
     try {
       const res = await axios.get(
-        `/api/user-activity?userId=${encodeURIComponent(userId)}&limit=${ACTIVITY_FETCH_LIMIT}`
+        `/api/user-activity?userId=${encodeURIComponent(userId)}&limit=${ACTIVITY_FETCH_LIMIT}`,
+        { withCredentials: true }
       );
 
       if (res.data.success) {
@@ -321,7 +408,7 @@ export const ActivityProvider: React.FC<{ children: React.ReactNode }> = ({
 
   return (
     <ActivityContext.Provider
-      value={{ activities, loading, profileStats, refreshActivities, addLocalActivity }}
+      value={{ activities, loading, profileStats, badges, refreshActivities, addLocalActivity }}
     >
       {children}
     </ActivityContext.Provider>

@@ -1003,11 +1003,11 @@ export const COMPOSE_OPTIONS = [
 
 export const RADIAL_OPTS = [
   { id: "post", label: "Post", emoji: "✏️" },
-  { id: "hot_take", label: "Hot Take", emoji: "🔥" },
+  // { id: "hot_take", label: "Hot Take", emoji: "🔥" },
   { id: "prediction", label: "Predict", emoji: "📊" },
   { id: "debate", label: "Debate", emoji: "⚡" },
-  { id: "raw_reactions", label: "Raw Reactions", emoji: "🕰" },
-  { id: "quiz", label: "Flash Quiz", emoji: "🧠" },
+  // { id: "raw_reactions", label: "Raw Reactions", emoji: "🕰" },
+  // { id: "quiz", label: "Flash Quiz", emoji: "🧠" },
 ];
 
 export const FEED_FILTERS = ["For You", "Cricket", "Football", "Live", "Predictions"];

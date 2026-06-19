@@ -19,7 +19,7 @@ export default function ProfilePage() {
       const data = await res.json();
 
       setProfile(data);
-      console.log("profile", data);
+      console.log("profile111", data);
       if (data?.user?.badge) {
         setUserBadge(data.user.badge);
       }

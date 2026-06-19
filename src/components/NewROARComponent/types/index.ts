@@ -1,3 +1,4 @@
+//components/NewROARComponent/types/index.ts
 export interface Fan {
   username: string;
   badge: string;

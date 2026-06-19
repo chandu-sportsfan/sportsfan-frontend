@@ -144,18 +144,22 @@ export default function Profile({
   const isOtherProfile = !!(viewingProfile || isViewingOther);
   const handleBack = onBack ?? onClose;
 
-  // Activity context — only relevant for own profile but safe to call always
+  // Activity context — provides activities, badges, and stats
   const { profileStats, activities, loading: activityLoading, badges: contextBadges, refreshActivities } = useActivity();
 
-  const [profileData, setProfileData] = useState<any>(null);
+  // Profile metadata state (only for own profile — user info, avatar, bio)
+  const [profileMetadata, setProfileMetadata] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  // Calls: no tabs — show predictions created by the user only
+  
+  // Modal states
   const [badgeModal, setBadgeModal] = useState<any>(null);
   const [editOpen, setEditOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [fanMatchOpen, setFanMatchOpen] = useState(false);
   const [rivalFollowed, setRivalFollowed] = useState(false);
+  
+  // Edit form state
   const [editName, setEditName] = useState("");
   const [editFavPlayer, setEditFavPlayer] = useState("");
   const [editAbout, setEditAbout] = useState("");
@@ -164,40 +168,20 @@ export default function Profile({
   const [selectedAvatar, setSelectedAvatar] = useState<string | null>(null);
 
   // ── Data fetching ──────────────────────────────────────────────────────────
+  // For OWN profile: Use ONLY ActivityContext (no additional API calls needed)
+  // For OTHER profiles: Fetch their public profile data
   useEffect(() => {
-    const fetchProfile = async () => {
+    const fetchProfileData = async () => {
       setLoading(true);
       try {
-        // Convention B: pre-fetched fanData provided by caller
-        if (isViewingOther && fanData) {
-          setProfileData({
-            user: {
-              ...fanData,
-              reputationScore: fanData.reputationScore ?? 0,
-              accuracy: fanData.accuracy ?? 0,
-              predictionCount: fanData.predictionCount ?? 0,
-              hotTakeCount: fanData.hotTakeCount ?? 0,
-            },
-            badges: fanData.badges ?? [],
-            predictions: fanData.predictions ?? [],
-            hotTakes: fanData.hotTakes ?? [],
-            rival: fanData.rival ?? null,
-          });
-          if (fanData.badge) setUserBadge(fanData.badge);
-          setSelectedAvatar(fanData.avatarUrl ?? null);
-          setLoading(false);
-          return;
-        }
-
-        // Convention A: username string — fetch from API
-        const url = viewingProfile
-          ? `/api/roar/fans/${encodeURIComponent(viewingProfile)}/profile`
-          : "/api/roar/profile";
-
-        const res = await axios.get(url);
-        if (res.data?.success) {
-          setProfileData(res.data);
-          if (!isOtherProfile) {
+        // Own profile: get metadata from /api/roar/profile but use ActivityContext for activities
+        if (!isOtherProfile) {
+          const res = await axios.get("/api/roar/profile", { withCredentials: true });
+          if (res.data?.success) {
+            setProfileMetadata({
+              user: res.data.user || {},
+              rival: res.data.rival || null,
+            });
             if (res.data.user?.badge) setUserBadge(res.data.user.badge);
             if (res.data.user?.username) setEditName(res.data.user.username);
             setEditFavPlayer(res.data.user?.favPlayer ?? "");
@@ -207,6 +191,34 @@ export default function Profile({
               setSelectedAvatar(res.data.user.avatarUrl);
               try { localStorage.setItem("roar_avatar_url", res.data.user.avatarUrl); } catch { }
             }
+          }
+          setLoading(false);
+          return;
+        }
+
+        // Other profile: fetch their public profile data
+        if (fanData) {
+          // Pre-fetched data provided by caller
+          setProfileMetadata({
+            user: fanData || {},
+            rival: fanData.rival || null,
+          });
+          if (fanData.badge) setUserBadge(fanData.badge);
+          if (fanData.avatarUrl) setSelectedAvatar(fanData.avatarUrl);
+          setLoading(false);
+          return;
+        }
+
+        if (viewingProfile) {
+          // Fetch from API
+          const res = await axios.get(`/api/roar/fans/${encodeURIComponent(viewingProfile)}/profile`);
+          if (res.data?.success) {
+            setProfileMetadata({
+              user: res.data.user || {},
+              rival: res.data.rival || null,
+            });
+            if (res.data.user?.badge) setUserBadge(res.data.user.badge);
+            if (res.data.user?.avatarUrl) setSelectedAvatar(res.data.user.avatarUrl);
           }
         }
       } catch (err: any) {
@@ -223,19 +235,19 @@ export default function Profile({
         setLoading(false);
       }
     };
-    fetchProfile();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [viewingProfile, isViewingOther, fanData]);
 
-  // For own profile: ALWAYS fetch fresh from database (never use cache)
+    fetchProfileData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viewingProfile, isViewingOther, fanData, isOtherProfile]);
+
+  // For own profile: Ensure activities are always fresh (refresh on mount)
   useEffect(() => {
-    if (!isOtherProfile) {
-      // Force fresh database fetch - clear any cached data
+    if (!isOtherProfile && refreshActivities) {
       refreshActivities();
     }
   }, [isOtherProfile, refreshActivities]);
 
-  if (loading || !profileData) {
+  if (loading || !profileMetadata) {
     return (
       <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100%", color: "var(--text-muted)" }}>
         Loading profile...
@@ -243,38 +255,42 @@ export default function Profile({
     );
   }
 
-  const user = profileData.user ?? CURRENT_USER;
-  
-  // ── Room-aware badge selection ─────────────────────────────────────────────
-  // For own profile: use badges calculated from ActivityContext (room activities)
-  // For other profiles: use badges from API data
+  const user = profileMetadata.user ?? CURRENT_USER;
+
+  // ── For own profile: Use badges from ActivityContext (calculated from activities)
+  // ── For other profiles: Use badges from API response (already in user object)
   const badgesToDisplay = !isOtherProfile && contextBadges?.length > 0
     ? contextBadges
-    : (profileData.badges?.length ? profileData.badges : BADGES_LIST);
-  
-  const predictions: any[] = profileData.predictions ?? [];
-  const hotTakes: any[] = profileData.hotTakes ?? [];
-  const rival = profileData.rival ?? RIVAL;
-  const ownedBadges = badgesToDisplay.filter((b: any) => b.unlocked);
+    : (user?.badges?.length ? user.badges : BADGES_LIST);
 
-  // ── Room-aware predictions ────────────────────────────────────────────────
-  // For own profile: ALWAYS use predictions from ActivityContext (room-aware, live data)
-  // For other profiles: use predictions from API data
-  const predictionActivities = activities.filter((a: any) => a.type === "ROAR_PREDICTION");
+  const ownedBadges = badgesToDisplay.filter((b: any) => b.unlocked);
+  const rival = profileMetadata.rival ?? RIVAL;
+
+  // ── Extract predictions and debates from activities ────────────────────────
+  // For own profile: ALWAYS use ActivityContext activities (room-aware)
+  // For other profiles: Use predictions/hotTakes from their profile API response
+  const predictionActivities = !isOtherProfile
+    ? activities.filter((a: any) => a.type === "ROAR_PREDICTION")
+    : (profileMetadata?.predictions || []);
+
   const displayPredictions = !isOtherProfile
     ? predictionActivities.map((a: any) => ({
         id: a.id,
         postId: a.metadata?.postId,
         label: a.label,
-        // Use statement from metadata if available, otherwise use label
         text: (a.metadata?.statement || a.label || "").trim() || `Prediction: ${a.label}`,
         status: a.metadata?.status || "PENDING",
         createdAt: a.createdAt,
       }))
-    : (predictions || []);
+    : predictionActivities;
 
-  // Show predictions created by the user, newest first
   const filteredPreds = (displayPredictions || []).slice().sort((a: any, b: any) => (b.createdAt || 0) - (a.createdAt || 0));
+
+  // For own profile: Extract debates from ActivityContext
+  // For other profiles: Use hotTakes from the profile API response
+  const debateActivities = !isOtherProfile
+    ? activities.filter((a: any) => a.type === "ROAR_DEBATE")
+    : (profileMetadata?.hotTakes || []);
 
   // ── Avatar ─────────────────────────────────────────────────────────────────
   const handleAvatarSelect = async (src: string) => {
@@ -477,11 +493,10 @@ export default function Profile({
           <>
             {activityLoading ? (
               <p style={{ textAlign: "center", padding: "20px 0", color: "var(--text-muted)", fontSize: 13 }}>Loading your takes...</p>
-            ) : activities.filter((a: any) => a.type === "ROAR_DEBATE").length === 0 ? (
+            ) : debateActivities.length === 0 ? (
               <p style={{ textAlign: "center", padding: "20px 0", color: "var(--text-muted)", fontSize: 13 }}>No debates started yet.</p>
             ) : (
-              activities
-                .filter((a: any) => a.type === "ROAR_DEBATE")
+              debateActivities
                 .sort((a: any, b: any) => (b.createdAt || 0) - (a.createdAt || 0))
                 .map((debate: any) => (
                   <div key={debate.id} className="glass-card" style={{ padding: 14, background: "rgba(22,22,31,0.4)", border: "1px solid rgba(255,255,255,0.03)", marginBottom: 10 }}>
@@ -502,24 +517,26 @@ export default function Profile({
                 ))
             )}
           </>
-        ) : hotTakes.length === 0 ? (
+        ) : debateActivities.length === 0 ? (
           <p style={{ textAlign: "center", padding: "20px 0", color: "var(--text-muted)", fontSize: 13 }}>No hot takes yet.</p>
         ) : (
-          hotTakes.map((ht: any) => {
-            const agree = ht.agreeCount ?? 0, disagree = ht.disagreeCount ?? 0, total = agree + disagree || 1;
-            const pct = Math.round((agree / total) * 100) || 50;
-            return (
-              <div key={ht.id ?? ht.postId} className="glass-card" style={{ padding: 14, background: "rgba(22,22,31,0.4)", border: "1px solid rgba(255,255,255,0.03)", marginBottom: 10 }}>
-                <p style={{ fontSize: 14, color: "#fff", lineHeight: 1.4, marginBottom: 10 }}>{ht.text}</p>
-                <div style={{ position: "relative", width: "100%", height: 16, background: "rgba(255,255,255,0.06)", borderRadius: 8, overflow: "hidden" }}>
-                  <div style={{ height: "100%", width: `${pct}%`, background: "var(--accent-gradient)", transition: "width 1s" }} />
-                  <div style={{ position: "absolute", inset: 0, display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0 8px", fontSize: 9, fontWeight: 700, color: "#fff" }}>
-                    <span>{pct}% Agree</span><span>{100 - pct}% Disagree</span>
+          debateActivities.map((debate: any) => (
+            <div key={debate.id} className="glass-card" style={{ padding: 14, background: "rgba(22,22,31,0.4)", border: "1px solid rgba(255,255,255,0.03)", marginBottom: 10 }}>
+              <p style={{ fontSize: 14, color: "#fff", lineHeight: 1.4, marginBottom: 10 }}>
+                {debate.text || debate.label}
+              </p>
+              {debate.sideA && debate.sideB && (
+                <div style={{ fontSize: 11, color: "var(--text-muted)", lineHeight: 1.6 }}>
+                  <div style={{ marginBottom: 6 }}>
+                    <strong>{debate.sideA}</strong> vs <strong>{debate.sideB}</strong>
                   </div>
                 </div>
+              )}
+              <div style={{ fontSize: 10, color: "#fff", marginTop: 8 }}>
+                {debate.createdAt ? new Date(debate.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "Today"}
               </div>
-            );
-          })
+            </div>
+          ))
         )}
       </div>
 
@@ -590,7 +607,7 @@ export default function Profile({
               </label>
               <motion.button whileTap={{ scale: 0.97 }} className="btn-gradient"
                 onClick={async () => {
-                  setProfileData((prev: any) => ({ ...prev, user: { ...(prev?.user ?? {}), username: editName, favPlayer: editFavPlayer, about: editAbout, showPredHistory: editShowPredHistory } }));
+                  setProfileMetadata((prev: any) => ({ ...prev, user: { ...(prev?.user ?? {}), username: editName, favPlayer: editFavPlayer, about: editAbout, showPredHistory: editShowPredHistory } }));
                   setEditOpen(false);
                   onToast("Profile updated successfully");
                   try { await axios.patch("/api/roar/profile", { username: editName, favPlayer: editFavPlayer, about: editAbout, showPredHistory: editShowPredHistory }); } catch { }

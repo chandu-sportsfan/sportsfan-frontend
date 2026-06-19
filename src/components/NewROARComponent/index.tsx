@@ -507,7 +507,6 @@ import type { Notification, Room } from "./types";
 import { useRoarNotifications } from "@/context/RoarNotificationsContext";
 import { RoarProfileProvider, useRoarProfileContext } from "@/context/RoarProfileContext";
 import RoomPostDetailsOverlay from "./components/RoomPostDetailsOverlay";
-import { useActivity } from "@/context/ActivityContext";
 
 export default function ROARApp() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -563,7 +562,6 @@ export default function ROARApp() {
   const [selectedPost, setSelectedPost] = useState<any | null>(null);
 
   const { viewingUsername, profileData, openProfile, closeProfile } = useRoarProfileContext();
-  const { addLocalActivity } = useActivity();
 
   const handleFanProfileClick = useCallback((fan: any) => {
     if (fan.username === currentUsername) {
@@ -759,36 +757,7 @@ export default function ROARApp() {
           mediaUrls: payload.mediaUrls, sideA: payload.sideA, sideB: payload.sideB,
           memGifUrl: payload.gifUrl ?? undefined, memTag: payload.sf360Tag ?? undefined,
         });
-        if (res.data?.success) { 
-          showToast("Post is live in room!"); 
-          roomRefreshRef.current?.();
-          
-          // Add activity labels and points mapping
-          const activityTypeMap: Record<string, { type: string; points: number; label: string }> = {
-            prediction: { type: "ROAR_PREDICTION", points: 2, label: "Made a ROAR Prediction" },
-            debate: { type: "ROAR_DEBATE", points: 2, label: `Started a ROAR Debate${payload.sideA ? ` (${payload.sideA} vs ${payload.sideB})` : ""}` },
-            hot_take: { type: "ROAR_HOT_TAKE", points: 2, label: "Posted a ROAR Hot Take" },
-          };
-          
-          // Trigger activity refresh for predictions and debates so they appear in profile
-          if (activityTypeMap[postType]) {
-            const activity = activityTypeMap[postType];
-            const msgId = res.data?.msgId;
-            const transactionId = msgId ? `roar_room_${msgId}` : `opt-${Date.now()}`;
-            
-            // Add optimistic activity immediately
-            addLocalActivity({
-              id: transactionId,
-              type: activity.type,
-              points: activity.points,
-              label: activity.label,
-              metadata: { roomId: selectedRoom!.roomId, transactionId },
-              createdAt: Date.now(),
-            });
-            // Refresh after backend has time to process
-            setTimeout(() => emitSxpActivityRefresh(), 500);
-          }
-        }
+        if (res.data?.success) { showToast("Post is live in room!"); roomRefreshRef.current?.(); }
       } else {
         const res = await axios.post("/api/roar/posts", {
           type: postType,
@@ -802,35 +771,10 @@ export default function ROARApp() {
           const toastMap: Record<string, string> = { hot_take: "🔥 Hot Take is live", prediction: "📊 Prediction posted", debate: "⚡ Debate started", raw_reactions: "🎭 Raw Reaction shared", post: "✏️ Post is live", quiz: "🧠 Flash Quiz launched!" };
           showToast(toastMap[postType] || "🔥 Your take is live");
           fetchPosts();
-          
-          // Add activity labels and points mapping for non-room posts
-          const activityTypeMap: Record<string, { type: string; points: number; label: string }> = {
-            prediction: { type: "ROAR_PREDICTION", points: 2, label: "Made a ROAR Prediction" },
-            debate: { type: "ROAR_DEBATE", points: 2, label: `Started a ROAR Debate${payload.sideA ? ` (${payload.sideA} vs ${payload.sideB})` : ""}` },
-            hot_take: { type: "ROAR_HOT_TAKE", points: 2, label: "Posted a ROAR Hot Take" },
-          };
-          
-          // Trigger activity refresh for predictions and debates so they appear in profile
-          if (activityTypeMap[postType]) {
-            const activity = activityTypeMap[postType];
-            const transactionId = `roar_post_${res.data?.postId || Date.now()}`;
-            
-            // Add optimistic activity immediately
-            addLocalActivity({
-              id: transactionId,
-              type: activity.type,
-              points: activity.points,
-              label: activity.label,
-              metadata: { transactionId },
-              createdAt: Date.now(),
-            });
-            // Refresh after backend has time to process
-            setTimeout(() => emitSxpActivityRefresh(), 500);
-          }
         }
       }
     } catch { showToast("Failed to create post"); }
-  }, [showToast, fetchPosts, overlay, selectedRoom, addLocalActivity]);
+  }, [showToast, fetchPosts, overlay, selectedRoom]);
 
   const handleTab = (tab: string) => {
     setOverlay(null);

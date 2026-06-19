@@ -956,7 +956,6 @@ import AvatarWithBadge from "./AvatarWithBadge";
 import { SplitBar } from "./shared";
 import { clamp, formatTimeAgo } from "../utils";
 import { ChevronLeft, Trash2, X, User, Loader2 } from "lucide-react";
-import posthog from 'posthog-js';
 
 interface Props {
   post: any;
@@ -1010,40 +1009,6 @@ export default function PostDetailsOverlay({
   const [cursorPosition, setCursorPosition] = useState(0);
   const [allUsers, setAllUsers] = useState<MentionUser[]>([]);
 
-  useEffect(() => {
-    const measure = () => {
-      const mobile = window.innerWidth < 768;
-      setIsMobile(mobile);
-      const header = document.querySelector("header");
-      setHeaderHeight(header ? header.getBoundingClientRect().height : 0);
-      if (!mobile) {
-        const sidebar = document.querySelector("aside");
-        setSidebarWidth(sidebar ? sidebar.getBoundingClientRect().width : 84);
-      } else {
-        setSidebarWidth(0);
-      }
-    };
-    measure();
-    window.addEventListener("resize", measure);
-    const sidebar = document.querySelector("aside");
-    let ro: ResizeObserver | null = null;
-    if (sidebar) {
-      ro = new ResizeObserver(entries => {
-        if (window.innerWidth < 768) return;
-        setSidebarWidth(entries[0]?.contentRect.width ?? 0);
-      });
-      ro.observe(sidebar);
-    }
-
-    if (post?.id) {
-      posthog.capture("content_completed", {
-        post_id: post.id,
-        post_type: post.type || "unknown"
-      });
-    }
-
-    return () => { window.removeEventListener("resize", measure); ro?.disconnect(); };
-  }, [post?.id, post?.type]);
   const hasUnderscore = (u: any) => {
     const n = u.username || u.name || `${u.firstName || ""} ${u.lastName || ""}`.trim();
     return n.includes("_") || (u.email || "").split("@")[0].includes("_");

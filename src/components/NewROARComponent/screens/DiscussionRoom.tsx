@@ -1562,11 +1562,7 @@ export default function DiscussionRoom({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pendingLikes = useRef<Set<string>>(new Set());
 
-  const openShareDialog = (post: ShareableRoarPost) => { 
-    setSharePost(post); 
-    setCopied(false); 
-    try { posthog.capture("content_shared", { post_id: post.id }); } catch(e) {}
-  };
+  const openShareDialog = (post: ShareableRoarPost) => { setSharePost(post); setCopied(false); };
   const closeShareDialog = () => { setSharePost(null); setCopied(false); };
   const handleShareToWhatsApp = () => { if (!sharePost) return; window.open(`https://wa.me/?text=${encodeURIComponent(buildRoarPostShareText(sharePost))}`, "_blank"); };
   const handleShareToThreads = () => { if (!sharePost) return; window.open(`https://www.threads.net/intent/post?text=${encodeURIComponent(buildRoarPostShareText(sharePost))}`, "_blank"); };
@@ -1977,7 +1973,6 @@ export default function DiscussionRoom({
                         </button>
                         <button onClick={e => { e.stopPropagation(); openShareDialog(p); }} style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", color: "#9494ad", fontSize: 13, fontWeight: 600 }}>
                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" /></svg>
-                          <span>Share</span>
                         </button>
                       </div>
                     </div>
@@ -2122,7 +2117,6 @@ export default function DiscussionRoom({
                       </button>
                       <button onClick={e => { e.stopPropagation(); openShareDialog(p); }} style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", color: "#9494ad", fontSize: 13, fontWeight: 600 }}>
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" /></svg>
-                        <span>Share</span>
                       </button>
                     </div>
                   </div>

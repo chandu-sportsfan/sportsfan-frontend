@@ -335,7 +335,7 @@ export default function MainModulesLayout({
 
   //             <UserPlus className="text-white w-3 h-3 md:w-4 md:h-4 lg:w-6 lg:h-6" />
   //           </button> */}
-  //           {/* <GlobalActionBar /> */}
+            //  <GlobalActionBar /> 
   //         {/* </div> */}
 
   //         {/* BottomNav hidden for now — You and Alerts will integrate into global app profile/alerts */}
@@ -427,7 +427,6 @@ export default function MainModulesLayout({
               </div>
             )}
           </div>
-
           {/* BottomNav — fixed at bottom, zIndex above ROAR content */}
           <div
             className="lg:hidden roar-bottom-nav"

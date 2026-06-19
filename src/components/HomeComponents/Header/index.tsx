@@ -1654,7 +1654,7 @@ export default function Header() {
         </div>
       </header>
 
-      <div className="h-[104px] md:hidden" aria-hidden="true" />
+      <div className="h-[104px] md:hidden roar-header-spacer" aria-hidden="true" />
     </>
   );
 }

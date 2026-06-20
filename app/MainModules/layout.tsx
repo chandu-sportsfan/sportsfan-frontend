@@ -182,7 +182,8 @@ function UserSidebar() {
   ];
 
   return (
-    <aside className="group hidden lg:flex lg:flex-col w-[84px] hover:w-[248px] shrink-0 border-r border-pink-500/20 sticky top-0 h-screen transition-all duration-300 ease-out bg-gradient-to-b from-zinc-950 via-black to-zinc-950">
+    // <aside className="group hidden lg:flex lg:flex-col w-[84px] hover:w-[248px] shrink-0 border-r border-pink-500/20 sticky top-0 h-screen transition-all duration-300 ease-out bg-gradient-to-b from-zinc-950 via-black to-zinc-950">
+    <aside className="group hidden lg:flex lg:flex-col w-[84px] hover:w-[248px] shrink-0 border-r border-pink-500/20 sticky top-0 h-screen transition-all duration-300 ease-out bg-gradient-to-b from-zinc-950 via-black to-zinc-950 z-40">
       <div className="h-full overflow-y-auto px-3 py-4">
         <Link href="/MainModules/ROAR" className="mb-8 h-10 flex items-center justify-center group-hover:justify-start transition-all duration-300 rounded-xl hover:bg-white/5 px-0 group-hover:px-3">
           <Image src="/images/Logo.png" alt="SportsFan360 logo" width={34} height={40} className="shrink-0" />
@@ -242,6 +243,7 @@ export default function MainModulesLayout({
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [isInviteOpen, setIsInviteOpen] = useState(false);
+  const [isSidebarHovered, setIsSidebarHovered] = useState(false); 
 
   useEffect(() => {
     async function fetchCurrentUser() {
@@ -286,6 +288,11 @@ export default function MainModulesLayout({
 
   const isWatchRoom = pathname && pathname.includes("/MainModules/WatchAlong/room/");
   const isROARPath = pathname === "/MainModules/ROAR" || pathname?.startsWith("/MainModules/ROAR/");
+  const isProfilePath = pathname === "/MainModules/Profile" || pathname?.startsWith("/MainModules/Profile/");
+  const isAskAIPath = pathname === "/MainModules/AskAI" || pathname?.startsWith("/MainModules/AskAI/");
+  const isWatchAlongPath = pathname === "/MainModules/WatchAlong" || pathname?.startsWith("/MainModules/WatchAlong/");
+  const isFanszonePath = pathname === "/MainModules/Fanszone" || pathname?.startsWith("/MainModules/Fanszone/");
+
 
   if (isWatchRoom) {
     return (
@@ -335,7 +342,7 @@ export default function MainModulesLayout({
 
   //             <UserPlus className="text-white w-3 h-3 md:w-4 md:h-4 lg:w-6 lg:h-6" />
   //           </button> */}
-            //  <GlobalActionBar /> 
+  //  <GlobalActionBar /> 
   //         {/* </div> */}
 
   //         {/* BottomNav hidden for now — You and Alerts will integrate into global app profile/alerts */}
@@ -367,12 +374,25 @@ export default function MainModulesLayout({
 `}</style>
 
       <div className="h-screen w-full bg-black text-white flex flex-col lg:flex-row overflow-hidden">
-        {renderSidebar()}
+        {/* {renderSidebar()} */}
+         <div
+      onMouseEnter={() => setIsSidebarHovered(true)}
+      onMouseLeave={() => setIsSidebarHovered(false)}
+      className="contents"
+    >
+      {renderSidebar()}
+    </div>
 
-        <main className="flex-1 min-w-0 w-full h-full flex flex-col overflow-hidden lg:pb-0">
-          <div className="relative z-60">
-            <Header />
-          </div>
+        {/* <main className="flex-1 min-w-0 w-full h-full flex flex-col overflow-hidden lg:pb-0"> */}
+        <main
+  className="flex-1 min-w-0 w-full h-full flex flex-col overflow-hidden lg:pb-0"
+  style={{ ["--sidebar-width" as any]: isSidebarHovered ? "248px" : "84px" }}
+>
+          {!isProfilePath && !isAskAIPath && !isWatchAlongPath && !isFanszonePath && (
+            <div className="relative z-60">
+              <Header />
+            </div>
+          )}
 
           {/* <div 
         className={`flex-1 min-h-0 overflow-x-hidden ${isROARPath ? "overflow-hidden h-full" : "overflow-y-auto"}`} 

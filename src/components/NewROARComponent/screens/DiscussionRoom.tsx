@@ -1,4 +1,4 @@
-import posthog from "posthog-js";
+// import posthog from "posthog-js";
 // // // chandu's code
 
 
@@ -89,6 +89,21 @@ import posthog from "posthog-js";
 //   fan?: { username?: string };
 // };
 
+// function displayUsername(raw: string | undefined | null): string {
+//   if (!raw) return "RoarUser";
+//   const trimmed = raw.trim();
+//   if (!trimmed) return "RoarUser";
+//   if (!trimmed.includes("_")) return trimmed;
+
+//   const spaced = trimmed.replace(/_+/g, " ").replace(/\s+/g, " ").trim();
+//   if (!spaced) return "RoarUser";
+
+//   return spaced
+//     .split(" ")
+//     .map((word) => (/[A-Z]/.test(word) ? word : word.charAt(0).toUpperCase() + word.slice(1)))
+//     .join(" ");
+// }
+
 // const buildRoarPostShareUrl = (post: ShareableRoarPost) => {
 //   if (typeof window === "undefined") return "";
 //   const targetUrl = new URL(`${window.location.origin}/MainModules/ROAR`);
@@ -98,7 +113,7 @@ import posthog from "posthog-js";
 
 // const buildRoarPostShareText = (post: ShareableRoarPost) => {
 //   const shareUrl = buildRoarPostShareUrl(post);
-//   const author = post?.fan?.username || post?.authorUsername || "a Sportsfan";
+//   const author = displayUsername(post?.fan?.username || post?.authorUsername || "a Sportsfan");
 //   return [`Check out this ROAR post by ${author}`, post?.text || "Join the conversation on Sportsfan ROAR.", `View post: ${shareUrl}`].filter(Boolean).join("\n");
 // };
 
@@ -1266,9 +1281,6 @@ import posthog from "posthog-js";
 
 
 
-
-
-
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
@@ -1427,7 +1439,7 @@ function InlineCommentInput({
   );
 }
 
-// ── QuizCard ─────────────────────────────────────────────────────────────────
+// ── QuizCard 
 interface QuizCardProps {
   post: any;
   onToast: (m: string) => void;
@@ -1443,6 +1455,21 @@ type ShareableRoarPost = {
   fan?: { username?: string };
 };
 
+function displayUsername(raw: string | undefined | null): string {
+  if (!raw) return "RoarUser";
+  const trimmed = raw.trim();
+  if (!trimmed) return "RoarUser";
+  if (!trimmed.includes("_")) return trimmed;
+
+  const spaced = trimmed.replace(/_+/g, " ").replace(/\s+/g, " ").trim();
+  if (!spaced) return "RoarUser";
+
+  return spaced
+    .split(" ")
+    .map((word) => (/[A-Z]/.test(word) ? word : word.charAt(0).toUpperCase() + word.slice(1)))
+    .join(" ");
+}
+
 const buildRoarPostShareUrl = (post: ShareableRoarPost) => {
   if (typeof window === "undefined") return "";
   const targetUrl = new URL(`${window.location.origin}/MainModules/ROAR`);
@@ -1452,7 +1479,7 @@ const buildRoarPostShareUrl = (post: ShareableRoarPost) => {
 
 const buildRoarPostShareText = (post: ShareableRoarPost) => {
   const shareUrl = buildRoarPostShareUrl(post);
-  const author = post?.fan?.username || post?.authorUsername || "a Sportsfan";
+  const author = displayUsername(post?.fan?.username || post?.authorUsername || "a Sportsfan");
   return [`Check out this ROAR post by ${author}`, post?.text || "Join the conversation on Sportsfan ROAR.", `View post: ${shareUrl}`].filter(Boolean).join("\n");
 };
 
@@ -1472,8 +1499,8 @@ function QuizCard({ post, onToast, onPostClick, roomId, onFanProfile }: QuizCard
       if (res.data?.success || res.data?.message === "Already answered") {
         setRevealedCorrect(res.data.correctOption);
         setParticipants(res.data.quizParticipants ?? participants + 1);
-        if (res.data.isCorrect) onToast("✅ Correct! +2 points awarded");
-        else onToast(`❌ Wrong! Correct answer was ${res.data.correctOption}`);
+        if (res.data.isCorrect) onToast("Correct! +2 points awarded");
+        else onToast(`Wrong! Correct answer was ${res.data.correctOption}`);
       }
     } catch { setSelectedOption(null); onToast("Failed to submit answer"); }
     finally { setSubmitting(false); }
@@ -1634,7 +1661,7 @@ export default function DiscussionRoom({
               const isPending = pendingLikes.current.has(m.msgId);
               return {
                 id: m.msgId,
-                fan: { username: m.authorUsername, badge: m.authorBadge, avatarUrl: m.authorAvatarUrl || m.avatarUrl || (m.authorUsername === userUsername ? userAvatarUrl : undefined) },
+                fan: { username: displayUsername(m.authorUsername), badge: m.authorBadge, avatarUrl: m.authorAvatarUrl || m.avatarUrl || (m.authorUsername === userUsername ? userAvatarUrl : undefined) },
                 text: m.text,
                 fireCount: m.fireCount || 0,
                 nochanceCount: m.noChanceCount || 0,
@@ -1720,7 +1747,7 @@ export default function DiscussionRoom({
         const m = res.data.message;
         setPosts(p => [{
           id: m.msgId,
-          fan: { username: m.authorUsername, badge: m.authorBadge, avatarUrl: m.authorAvatarUrl || m.avatarUrl || (m.authorUsername === userUsername ? userAvatarUrl : undefined) },
+          fan: { username: displayUsername(m.authorUsername), badge: m.authorBadge, avatarUrl: m.authorAvatarUrl || m.avatarUrl || (m.authorUsername === userUsername ? userAvatarUrl : undefined) },
           text: m.text, fireCount: 0, nochanceCount: 0, heartCount: 0, userLiked: false, replyCount: 0,
           agreeCount: 0, disagreeCount: 0, userVote: null, sideA: m.sideA ?? null, sideB: m.sideB ?? null,
           timeAgo: "now", createdAt: m.createdAt || Date.now(), type: m.type, mediaUrls: m.mediaUrls,
@@ -1892,7 +1919,7 @@ export default function DiscussionRoom({
 
                 return (
                   <motion.div key={p.id} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22 }} className="glass-card p-4 cursor-pointer"
-                    style={{ background: "linear-gradient(135deg,rgba(233,30,140,0.08),rgba(233,30,140,0.02))", border: "1px solid rgba(233,30,140,0.18)" }}
+                    // style={{ background: "linear-gradient(135deg,rgba(233,30,140,0.08),rgba(233,30,140,0.02))", border: "1px solid rgba(233,30,140,0.18)" }}
                     onClick={() => onPostClick?.({ id: p.id, text: p.text, fan: p.fan, timeAgo: p.timeAgo, createdAt: p.createdAt, type: "debate", isDbPost: true, roomId, mediaUrls: p.mediaUrls, sideA, sideB })}
                   >
                     <div style={{ display: "flex", gap: 6, marginBottom: 8, alignItems: "center" }}>
@@ -1983,21 +2010,21 @@ export default function DiscussionRoom({
 
               /* ── DEFAULT (post / hottake / prediction / raw_reactions) ── */
               return (
-                <motion.div key={p.id} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22 }} className="glass-card p-3 cursor-pointer" style={postCardStyle(p.type)}
+                <motion.div key={p.id} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22 }} className="glass-card p-3 cursor-pointer"
                   onClick={() => onPostClick?.({ id: p.id, text: p.text, fan: p.fan, timeAgo: p.timeAgo, createdAt: p.createdAt, type: p.type || "post", isDbPost: true, roomId, mediaUrls: p.mediaUrls })}
                 >
-                  <div className="flex justify-between items-center cursor-pointer" onClick={(e) => { e.stopPropagation(); onFanProfile?.(p.fan); }}>
-                    <div className="flex gap-2 items-center">
-                      <AvatarWithBadge username={p.fan.username} badge={p.fan.badge} size="sm" avatarUrl={p.fan.avatarUrl} />
-                      <div><p className="font-bold text-[13px]">{p.fan.username}</p><p className="text-[10px] text-[var(--text-muted)]">{p.timeAgo}</p></div>
-                    </div>
-                    {p.type && (
+                  {p.type && (
+                    <div className="flex gap-1.5 mb-2 flex-wrap">
                       <span className={typeBadgeClass(p.type)}>
                         {p.type === "post" ? "✏️ POST" : p.type === "hottake" ? "🔥 HOT TAKE" : p.type === "prediction" ? "📊 PREDICT" : p.type === "debate" ? "⚡ DEBATE" : p.type === "raw_reactions" ? "🕰 Raw REACTIONS" : p.type.toUpperCase()}
                       </span>
-                    )}
+                    </div>
+                  )}
+                  <div className="flex gap-2 items-center cursor-pointer" onClick={(e) => { e.stopPropagation(); onFanProfile?.(p.fan); }}>
+                    <AvatarWithBadge username={p.fan.username} badge={p.fan.badge} size="sm" avatarUrl={p.fan.avatarUrl} />
+                    <div><p className="font-bold text-[13px]">{p.fan.username}</p><p className="text-[10px] text-[var(--text-muted)]">{p.timeAgo}</p></div>
                   </div>
-                  <p className="text-sm leading-snug mt-2" style={{ color: MODE_COLOR[p.type] || "white" }}>{p.text}</p>
+                  <p className="text-sm leading-snug mt-2 text-white">{p.text}</p>
                   {p.type === "raw_reactions" && p.memGifUrl && <img src={p.memGifUrl} alt="reaction gif" style={{ width: "100%", maxHeight: 180, objectFit: "cover", borderRadius: 12, marginTop: 8 }} />}
                   {p.type === "raw_reactions" && p.memTag && <span style={{ display: "inline-block", marginTop: 8, fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 999, background: "rgba(0,232,198,0.12)", color: "#00e8c6", border: "1px solid rgba(0,232,198,0.3)", letterSpacing: "0.04em" }}>#{p.memTag}</span>}
 
@@ -2129,16 +2156,16 @@ export default function DiscussionRoom({
       </div>
 
       {/* ── CATEGORY PILLS ── */}
-      <div className="flex gap-1.5 py-1 px-2.5 overflow-x-auto" style={{ scrollbarWidth: "none" }}>
+      <div className="flex justify-start gap-1.5 py-1 px-2.5 overflow-x-auto" style={{ scrollbarWidth: "none" }}>
         {RADIAL_OPTS.map((q) => {
           const isActive = q.id === selectedActionId;
           return (
             <button key={q.id} type="button"
               onClick={() => { if (q.id === "post") { onCompose?.(q.id); setSelectedActionId("post"); return; } setSelectedActionId(q.id); onCompose?.(q.id); setSelectedActionId("post"); }}
-              className={["flex items-center gap-1 px-3 py-1.5 rounded-full text-[11px] font-bold whitespace-nowrap border transition-all duration-150 cursor-pointer shrink-0", isActive ? "border-[rgba(233,30,140,0.35)] bg-[rgba(233,30,140,0.12)]" : "border-transparent bg-[rgba(255,255,255,0.04)] text-[rgba(255,255,255,0.6)]"].join(" ")}
+              className={["flex items-center justify-start gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold whitespace-nowrap border transition-all duration-150 cursor-pointer shrink-0", isActive ? "border-[rgba(233,30,140,0.35)] bg-[rgba(233,30,140,0.12)]" : "border-transparent bg-[rgba(255,255,255,0.04)] text-[rgba(255,255,255,0.6)]"].join(" ")}
             >
               {composeIconMap[q.id] || <span>{q.emoji}</span>}
-              {q.label}
+              <span>{q.label}</span>
             </button>
           );
         })}

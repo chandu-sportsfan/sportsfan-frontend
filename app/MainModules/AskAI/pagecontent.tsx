@@ -477,6 +477,7 @@ import React, { useState, useRef, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { useAIChat } from '@/context/AskAIChatContext'
 import { useAuth } from '@/context/AuthContext'
+import Link from 'next/link'
 
 const SUGGESTIONS = [
   "Who won the 2024 Women's T20 World Cup?",
@@ -792,6 +793,71 @@ export default function AskAI() {
         </div>
       )}
 
+       {/* Header bar */}
+<style>{`
+  .askai-bar {
+    left: 0;
+  }
+  @media (min-width: 1024px) {
+    .askai-bar {
+      left: var(--sidebar-width, 84px);
+    }
+  }
+`}</style>
+
+{/* Header bar */}
+<div
+  className="askai-bar"
+  style={{
+    position: "fixed",
+    top: 0,
+    right: 0,
+    zIndex: 200,
+    display: "flex",
+    alignItems: "center",
+    gap: 10,
+    padding: "14px 16px 12px",
+    background: "rgba(0,0,0,0.95)",
+    backdropFilter: "blur(20px)",
+    borderBottom: "1px solid rgba(255,255,255,0.06)",
+    transition: "left 0.3s ease-out",
+  }}
+>
+  <Link href="/MainModules/ROAR" style={{
+    display: "flex",
+    alignItems: "center",
+    gap: 10,
+    textDecoration: "none",
+    color: "white"
+  }}>
+    <button
+      style={{
+        background: "none",
+        border: "none",
+        cursor: "pointer",
+        color: "white",
+        padding: "4px 2px",
+        display: "flex",
+        alignItems: "center"
+      }}
+    >
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M15 18l-6-6 6-6" />
+      </svg>
+    </button>
+    <h3 style={{
+      color: "white",
+      margin: 0,
+      fontSize: 17,
+      fontWeight: 700,
+      letterSpacing: "0.01em"
+    }}>
+      Ask AI
+    </h3>
+  </Link>
+</div>
+<div style={{ height: 56, flexShrink: 0 }} />
+
       {/* Conversation area */}
       {hasMessages && (
         <div ref={messagesRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-1 w-full [&::-webkit-scrollbar]:hidden [scrollbar-width:none]">
@@ -837,7 +903,7 @@ export default function AskAI() {
       )}
 
       {/* Input area */}
-      <div className="px-4 pb-8 pt-2 flex flex-col gap-3">
+      <div className="px-4 pb-1 pt-2 flex flex-col gap-3">
 
         {/* Input bar */}
         <div className="flex items-center gap-2 bg-white/10 rounded-2xl px-3 py-2 border border-white/10">

@@ -743,6 +743,7 @@ import ReactionsDialog from "../components/ReactionsDialog";
 import { SplitBar } from "../components/shared";
 import { FEED_POSTS, BADGE_LABELS } from "../constants";
 import { fmt, clamp, formatTimeAgo } from "../utils";
+import { useUserProfile } from "@/context/UserProfileContext";
 import {
   Heart, Share2, Flame, TrendingUp, Zap, History, PenTool,
   MessageSquare, Trash2, Brain, Users, CheckCircle2, XCircle,
@@ -755,6 +756,21 @@ const COMPOSE_ACTIONS = [
   { id: "prediction", label: "Predict", Icon: TrendingUp },
   { id: "debate", label: "Debate", Icon: Zap },
 ];
+
+function displayUsername(raw: string | undefined | null): string {
+  if (!raw) return "RoarUser";
+  const trimmed = raw.trim();
+  if (!trimmed) return "RoarUser";
+  if (!trimmed.includes("_")) return trimmed;
+
+  const spaced = trimmed.replace(/_+/g, " ").replace(/\s+/g, " ").trim();
+  if (!spaced) return "RoarUser";
+
+  return spaced
+    .split(" ")
+    .map((word) => (/[A-Z]/.test(word) ? word : word.charAt(0).toUpperCase() + word.slice(1)))
+    .join(" ");
+}
 
 type ShareableRoarPost = {
   id?: string | number;
@@ -801,6 +817,8 @@ function QuizCard({ item, index, activeUsername, currentAvatarUrl, onPostClick, 
   const [participants, setParticipants] = useState<number>(item.quizParticipants ?? 0);
   const hasAnswered = selectedOption !== null;
   const quizOptions: { label: string; text: string }[] = item.quizOptions ?? [];
+  const { userProfile } = useUserProfile();
+  const resolvedAvatarUrl = currentAvatarUrl || userProfile?.avatarUrl || userProfile?.avatar || undefined;
 
   const handleOptionClick = useCallback(async (label: string) => {
     if (hasAnswered || submitting) return;
@@ -810,8 +828,8 @@ function QuizCard({ item, index, activeUsername, currentAvatarUrl, onPostClick, 
       if (res.data?.success || res.data?.message === "Already answered") {
         setRevealedCorrect(res.data.correctOption);
         setParticipants(res.data.quizParticipants ?? participants + 1);
-        if (res.data.isCorrect) onToast("✅ Correct! +2 points awarded");
-        else onToast(`❌ Wrong! Correct answer was ${res.data.correctOption}`);
+        if (res.data.isCorrect) onToast("Correct! +2 points awarded");
+        else onToast(`Wrong! Correct answer was ${res.data.correctOption}`);
       }
     } catch { setSelectedOption(null); onToast("Failed to submit answer"); }
     finally { setSubmitting(false); }
@@ -842,7 +860,8 @@ function QuizCard({ item, index, activeUsername, currentAvatarUrl, onPostClick, 
         {hasAnswered && revealedCorrect && <span style={{ fontSize: 10, fontWeight: 700, color: selectedOption === revealedCorrect ? "#00E8C6" : "#F44336", marginLeft: "auto" }}>{selectedOption === revealedCorrect ? "✓ Correct!" : "✗ Wrong"}</span>}
       </div>
       <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 12 }}>
-        <AvatarWithBadge username={item.fan.username} badge={item.fan.badge} size="sm" avatarUrl={item.fan.username === activeUsername ? currentAvatarUrl : item.fan.avatarUrl} />
+        {/* <AvatarWithBadge username={item.fan.username} badge={item.fan.badge} size="sm" avatarUrl={item.fan.username === activeUsername ? currentAvatarUrl : item.fan.avatarUrl} /> */}
+        <AvatarWithBadge username={item.fan.username} badge={item.fan.badge} size="sm" avatarUrl={item.fan.avatarUrl} />
         <div><p style={{ fontWeight: 700, fontSize: 13 }}>{item.fan.username}</p><p style={{ fontSize: 10, color: "var(--text-secondary)" }}>{BADGE_LABELS[item.fan.badge]} · {item.fan.team} • {formatTimeAgo(item.createdAt)}</p></div>
       </div>
       <p style={{ fontWeight: 700, fontSize: 15, lineHeight: 1.5, marginBottom: 14, color: "#F5F5FA", cursor: "pointer" }} onClick={() => onPostClick?.(item)}>{item.quizQuestion || item.text}</p>
@@ -978,7 +997,7 @@ export default function HomeFeed({
   const pendingReactRef = useRef<Record<string, boolean>>({});
   const [lastActionAt, setLastActionAt] = useState<Record<string, number>>({});
   const [pcts, setPcts] = useState<Record<string, number>>({});
-  const [localUsername, setLocalUsername] = useState("RoarUser");
+  // const [localUsername, setLocalUsername] = useState("RoarUser");
   const [sharePost, setSharePost] = useState<ShareableRoarPost | null>(null);
   const [copied, setCopied] = useState(false);
   const [input, setInput] = useState("");
@@ -993,10 +1012,15 @@ export default function HomeFeed({
   // ── NEW: reactions dialog state ───────────────────────────────────────────
   const [reactionsPostId, setReactionsPostId] = useState<string | null>(null);
 
-  useEffect(() => { try { setLocalUsername(localStorage.getItem("roar_username") || "RoarUser"); } catch { } }, []);
+  // useEffect(() => { try { setLocalUsername(localStorage.getItem("roar_username") || "RoarUser"); } catch { } }, []);
   // Keep ref mirror in sync so handleReact always reads fresh values
   useEffect(() => { localLikesRef.current = localLikes; }, [localLikes]);
-  const activeUsername = propUsername || localUsername;
+  // const activeUsername = propUsername || localUsername;
+ const { userProfile } = useUserProfile();
+const activeUsername = propUsername || userProfile?.username || userProfile?.name || "RoarUser";
+const resolvedAvatarUrl = currentAvatarUrl || userProfile?.avatarUrl || userProfile?.avatar || undefined;
+const currentUserId = userProfile?.actualUserId;
+console.log("currentUserId:", currentUserId, "first post authorUid:", dbPosts[0]?.authorUid, "match:", dbPosts[0]?.authorUid === currentUserId);
 
   const openShareDialog = (post: ShareableRoarPost) => { setSharePost(post); setCopied(false); };
   const closeShareDialog = () => { setSharePost(null); setCopied(false); };
@@ -1079,12 +1103,12 @@ export default function HomeFeed({
 
     // Optimistic update
     const newReaction = sameReaction ? null : reaction;
-    const newLiked    = newReaction !== null;
-    const countDelta  = newLiked && !wasLiked ? 1 : (!newLiked && wasLiked ? -1 : 0);
+    const newLiked = newReaction !== null;
+    const countDelta = newLiked && !wasLiked ? 1 : (!newLiked && wasLiked ? -1 : 0);
     const optimisticState = {
       userLiked: newLiked,
       likeCount: Math.max(0, prev.likeCount + countDelta),
-      reaction:  newReaction,
+      reaction: newReaction,
     };
 
     setLocalLikes(p => ({ ...p, [itemId]: optimisticState }));
@@ -1125,7 +1149,7 @@ export default function HomeFeed({
         text, roomId: dbPost?.roomId,
       });
       if (res.data?.success) {
-        onToast("💬 Comment posted!");
+        onToast("Comment posted!");
         if (onQuickComment) await onQuickComment(postId, text);
       } else { onToast("Failed to post comment"); }
     } catch { onToast("Failed to post comment"); }
@@ -1228,7 +1252,7 @@ export default function HomeFeed({
     const ag = p.agreeCount ?? 0; const di = p.disagreeCount ?? 0; const tot = ag + di;
     return {
       id: p.postId, type: p.type, sport: p.sport || "cricket",
-      fan: { username: p.authorUsername || "RoarUser", badge: p.authorBadge || "RISING_FAN", team: p.sport === "cricket" ? "India" : "MCFC", avatarUrl: p.authorAvatarUrl || p.avatarUrl || (p.authorUsername === activeUsername ? currentAvatarUrl : undefined) },
+      fan: { username: displayUsername(p.authorUsername), badge: p.authorBadge || "RISING_FAN", team: p.sport === "cricket" ? "India" : "MCFC", avatarUrl: p.authorAvatarUrl || p.avatarUrl || (p.authorUid && p.authorUid === currentUserId ? resolvedAvatarUrl : undefined) },
       text: p.text, agreePercent: tot > 0 ? Math.round((ag / tot) * 100) : 50,
       agreeCount: ag, disagreeCount: di, fanCount: tot + (p.type === "hot_take" ? 47 : 1240),
       replies: p.replyCount ?? 0, following: false, isLive: false,
@@ -1310,7 +1334,7 @@ export default function HomeFeed({
           {allPosts.map((item, i) => {
 
             if (item.type === "quiz") {
-              return <QuizCard key={item.id} item={item} index={i} activeUsername={activeUsername} currentAvatarUrl={currentAvatarUrl} onPostClick={onPostClick} onToast={onToast} renderCardActions={renderCardActions} />;
+              return <QuizCard key={item.id} item={item} index={i} activeUsername={activeUsername} currentAvatarUrl={resolvedAvatarUrl} onPostClick={onPostClick} onToast={onToast} renderCardActions={renderCardActions} />;
             }
 
             if (item.type === "hot_take" || item.type === "prediction" || item.type === "post") {
@@ -1326,7 +1350,9 @@ export default function HomeFeed({
                     {item.type !== "post" && <span style={{ fontSize: 10, fontWeight: 800, padding: "3px 8px", borderRadius: 4, background: item.sport === "cricket" ? "rgba(34,197,94,0.1)" : "rgba(59,130,246,0.1)", color: item.sport === "cricket" ? "#22c55e" : "#60a5fa", border: `1px solid ${item.sport === "cricket" ? "rgba(34,197,94,0.2)" : "rgba(59,130,246,0.2)"}`, textTransform: "uppercase" }}>{item.sport === "cricket" ? "🏏 Cricket" : "⚽ Football"}</span>}
                   </div>
                   <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 12 }}
-                   onClick={(e) => { e.stopPropagation(); onFanProfile?.(item.fan); }}>
+                    onClick={(e) => { e.stopPropagation(); onFanProfile?.(item.fan); }}>
+                    {/* <AvatarWithBadge username={item.fan.username} badge={item.fan.badge} size="sm" avatarUrl={item.fan.avatarUrl} /> */}
+                    {/* <AvatarWithBadge username={item.fan.username} badge={item.fan.badge} size="sm" avatarUrl={item.fan.username === activeUsername ? resolvedAvatarUrl : item.fan.avatarUrl} /> */}
                     <AvatarWithBadge username={item.fan.username} badge={item.fan.badge} size="sm" avatarUrl={item.fan.avatarUrl} />
                     <div><p style={{ fontWeight: 700, fontSize: 13 }}>{item.fan.username}</p><p style={{ fontSize: 10, color: "var(--text-secondary)" }}>{BADGE_LABELS[item.fan.badge]} · {item.fan.team} • {formatTimeAgo(item.createdAt)}</p></div>
                   </div>
@@ -1401,6 +1427,8 @@ export default function HomeFeed({
                     {hasVoted && <span style={{ fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 4, background: "rgba(233,30,140,0.08)", color: "var(--accent-magenta)", border: "1px solid rgba(233,30,140,0.2)" }}>🗳️ Already Voted</span>}
                   </div>
                   <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 10 }} onClick={(e) => { e.stopPropagation(); onFanProfile?.(item.fan); }}>
+                    {/* <AvatarWithBadge username={item.fan.username} badge={item.fan.badge} size="sm" avatarUrl={item.fan.avatarUrl} /> */}
+                    {/* <AvatarWithBadge username={item.fan.username} badge={item.fan.badge} size="sm" avatarUrl={item.fan.username === activeUsername ? resolvedAvatarUrl : item.fan.avatarUrl} /> */}
                     <AvatarWithBadge username={item.fan.username} badge={item.fan.badge} size="sm" avatarUrl={item.fan.avatarUrl} />
                     <div><p style={{ fontWeight: 700, fontSize: 13 }}>{item.fan.username}</p><p style={{ fontSize: 10, color: "var(--text-secondary)" }}>{BADGE_LABELS[item.fan.badge]} · {item.fan.team} • {formatTimeAgo(item.createdAt)}</p></div>
                   </div>
@@ -1477,6 +1505,8 @@ export default function HomeFeed({
                     <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.06em", padding: "3px 8px", borderRadius: 4, textTransform: "uppercase", background: "rgba(0,232,198,0.1)", color: "var(--teal)", border: "1px solid rgba(0,232,198,0.25)" }}>🕰 Raw Reactions</span>
                   </div>
                   <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 12 }}>
+                    {/* <AvatarWithBadge username={item.fan.username} badge={item.fan.badge} size="sm" avatarUrl={item.fan.avatarUrl} /> */}
+                    {/* <AvatarWithBadge username={item.fan.username} badge={item.fan.badge} size="sm" avatarUrl={item.fan.username === activeUsername ? resolvedAvatarUrl : item.fan.avatarUrl} /> */}
                     <AvatarWithBadge username={item.fan.username} badge={item.fan.badge} size="sm" avatarUrl={item.fan.avatarUrl} />
                     <div><p style={{ fontWeight: 700, fontSize: 13 }}>{item.fan.username}</p><p style={{ fontSize: 10, color: "var(--text-secondary)" }}>{BADGE_LABELS[item.fan.badge]} • {formatTimeAgo(item.createdAt)}</p></div>
                   </div>

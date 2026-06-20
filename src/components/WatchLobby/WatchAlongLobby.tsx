@@ -1,65 +1,3 @@
-// "use client";
-
-// import { useWatchAlong, Room, Match } from "@/context/WatchAlongContext";
-// import { ArrowLeft } from "lucide-react";
-// import { useState, useEffect } from "react";
-
-// const tabs = ["Match Predictions", "Goal Reactions", "Fan Leaderboard", "Highlights"];
-
-// type Props = {
-//     onEnterRoom: (roomId: string) => void;
-// };
-
-// export default function WatchAlongLobby({ onEnterRoom }: Props) {
-//     const [activeTab, setActiveTab] = useState(0);
-//     const {
-//         rooms,
-//         fetchRooms,
-//         matches,
-//         fetchMatches,
-//         loading,
-//         error
-//     } = useWatchAlong();
-
-//     useEffect(() => {
-//         fetchRooms();
-//         fetchMatches();
-//     }, [fetchRooms, fetchMatches]);
-
-//     // Get match details for a room
-//     const getMatchForRoom = (liveMatchId: string) => {
-//         return matches.find(m => m.id === liveMatchId);
-//     };
-
-//     if (loading && rooms.length === 0) {
-//         return (
-//             <div className="min-h-screen bg-[#111] text-white font-sans flex items-center justify-center">
-//                 <div className="text-center">
-//                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500 mx-auto mb-4"></div>
-//                     <p className="text-gray-400">Loading watch along rooms...</p>
-//                 </div>
-//             </div>
-//         );
-//     }
-
-//     if (error) {
-//         return (
-//             <div className="min-h-screen bg-[#111] text-white font-sans flex items-center justify-center">
-//                 <div className="text-center">
-//                     <p className="text-red-400 mb-4">{error}</p>
-//                     <button
-//                         onClick={() => {
-//                             fetchRooms();
-//                             fetchMatches();
-//                         }}
-//                         className="bg-pink-500 px-4 py-2 rounded text-white hover:bg-pink-600"
-//                     >
-//                         Retry
-//                     </button>
-//                 </div>
-//             </div>
-//         );
-//     }
 
 "use client";
 
@@ -69,7 +7,7 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useAuth } from "@/context/AuthContext";
-import BackButton from "../ReusableComponent/BackButton";
+// import BackButton from "../ReusableComponent/BackButton";
 
 const tabs = ["Live Rooms"/*, "Goal Reactions", "Fan Leaderboard", "Highlights"*/];
 
@@ -237,15 +175,81 @@ export default function WatchAlongLobby({ onEnterRoom }: Props) {
 
     return (
         <div className="relative min-h-screen bg-black text-white font-sans flex justify-center w-full">
+            
             <div className="w-full max-w-7xl mx-auto pt-8 pb-24 px-4 lg:px-8">
-                <BackButton />
+                {/* <BackButton /> */}
 
+        <style>{`
+  .watch-along-bar {
+    left: 0;
+  }
+  @media (min-width: 1024px) {
+    .watch-along-bar {
+      left: var(--sidebar-width, 84px);
+    }
+  }
+`}</style>
+
+{/* Fixed Back + Title bar */}
+<div 
+    className="watch-along-bar"
+    style={{
+        position: "fixed",
+        top: 0,
+        right: 0,
+        zIndex: 200,
+        display: "flex",
+        alignItems: "center",
+        gap: 10,
+        padding: "14px 16px 12px",
+        background: "rgba(0,0,0,0.95)",
+        backdropFilter: "blur(20px)",
+        borderBottom: "1px solid rgba(255,255,255,0.06)",
+        transition: "left 0.3s ease-out",
+    }}>
+            <Link href="/MainModules/ROAR" style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                textDecoration: "none",
+                color: "white"
+            }}>
+                <button
+                    style={{
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
+                        color: "white",
+                        padding: "4px 2px",
+                        display: "flex",
+                        alignItems: "center"
+                    }}
+                >
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M15 18l-6-6 6-6" />
+      </svg>
+                </button>
+                <h3 style={{
+                    color: "white",
+                    margin: 0,
+                    fontSize: 17,
+                    fontWeight: 700,
+                    letterSpacing: "0.01em"
+                }}>
+                    Watch Along
+                </h3>
+            </Link>
+        </div>
+
+        {/* Spacer so content doesn't sit under the fixed bar */}
+        <div style={{ height: 56 }} />
 
                 {/* Header Section */}
                 <div className="mb-6 flex flex-col items-center">
-                    <h1 className="text-3xl font-bold uppercase tracking-wider text-[#e5003d]" style={{ fontFamily: "'Bebas Neue', sans-serif" }}>
+                    
+                    {/* <h1 className="text-3xl font-bold uppercase tracking-wider text-[#e5003d]" style={{ fontFamily: "'Bebas Neue', sans-serif" }}>
                         Watch Along
-                    </h1>
+                    </h1> */}
                     <div
                         style={{
                             height: "2px",
@@ -257,7 +261,7 @@ export default function WatchAlongLobby({ onEnterRoom }: Props) {
                     />
                     <div className="flex items-center gap-2 mt-4">
                         <span className="w-2.5 h-2.5 rounded-full bg-[#e5003d] animate-pulse" />
-                        <span className="text-sm font-semibold text-gray-400">Watch Along – Women's T20 World Cup & FIFA</span>
+                        <span className="text-sm font-semibold text-gray-400">Women's T20 World Cup & FIFA</span>
                     </div>
                 </div>
 

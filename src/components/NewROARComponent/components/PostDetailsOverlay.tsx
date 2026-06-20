@@ -956,6 +956,7 @@ import AvatarWithBadge from "./AvatarWithBadge";
 import { SplitBar } from "./shared";
 import { clamp, formatTimeAgo } from "../utils";
 import { ChevronLeft, Trash2, X, User, Loader2 } from "lucide-react";
+import { useUserProfile } from "@/context/UserProfileContext";
 
 interface Props {
   post: any;
@@ -992,10 +993,14 @@ export default function PostDetailsOverlay({
   const [commentText, setCommentText] = useState("");
   const [replyTo, setReplyTo] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [userUsername, setUserUsername] = useState("RoarUser");
-  const activeUsername = currentUsername || userUsername;
-  const [userBadge, setUserBadge] = useState("RISING_FAN");
-  const [userAvatarUrl, setUserAvatarUrl] = useState<string | undefined>(currentAvatarUrl);
+  // const [userUsername, setUserUsername] = useState("RoarUser");
+  // const activeUsername = currentUsername || userUsername;
+  // const [userBadge, setUserBadge] = useState("RISING_FAN");
+  // const [userAvatarUrl, setUserAvatarUrl] = useState<string | undefined>(currentAvatarUrl);
+  const { userProfile } = useUserProfile();
+  const activeUsername = currentUsername || userProfile?.username || userProfile?.name || "RoarUser";
+  const userBadge = userProfile?.badge || "RISING_FAN";
+  const userAvatarUrl = currentAvatarUrl || userProfile?.avatarUrl || userProfile?.avatar || undefined;
   const [votes, setVotes] = useState<Record<string, boolean | null>>(() =>
     post.userVote ? { [post.id]: post.userVote === "agree" } : {},
   );
@@ -1031,16 +1036,16 @@ export default function PostDetailsOverlay({
           if (dn.includes("_")) return false;
           seen.add(key); return true;
         }));
-    }).catch(() => {});
+    }).catch(() => { });
   }, [activeUsername]);
 
-  useEffect(() => {
-    try {
-      setUserUsername(localStorage.getItem("roar_username") || "RoarUser");
-      setUserBadge(localStorage.getItem("roar_badge") || "RISING_FAN");
-      setUserAvatarUrl(currentAvatarUrl || localStorage.getItem("roar_avatar_url") || undefined);
-    } catch {}
-  }, [currentAvatarUrl]);
+  // useEffect(() => {
+  //   try {
+  //     setUserUsername(localStorage.getItem("roar_username") || "RoarUser");
+  //     setUserBadge(localStorage.getItem("roar_badge") || "RISING_FAN");
+  //     setUserAvatarUrl(currentAvatarUrl || localStorage.getItem("roar_avatar_url") || undefined);
+  //   } catch {}
+  // }, [currentAvatarUrl]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -1053,7 +1058,7 @@ export default function PostDetailsOverlay({
       if (!afterAt.includes(" ")) {
         const filtered = afterAt.trim() === ""
           ? allUsers.slice(0, 8)
-          : allUsers.filter(u => `${u.username||""} ${u.firstName||""} ${u.lastName||""} ${u.email||""}`.toLowerCase().includes(afterAt.toLowerCase())).slice(0, 8);
+          : allUsers.filter(u => `${u.username || ""} ${u.firstName || ""} ${u.lastName || ""} ${u.email || ""}`.toLowerCase().includes(afterAt.toLowerCase())).slice(0, 8);
         setMentionUsers(filtered); setShowMentionPopup(filtered.length > 0); setMentionIndex(0); return;
       }
     }
@@ -1061,7 +1066,7 @@ export default function PostDetailsOverlay({
   };
 
   const insertMention = (user: MentionUser) => {
-    const dn = user.username || user.name || `${user.firstName||""} ${user.lastName||""}`.trim() || user.email?.split("@")[0] || "user";
+    const dn = user.username || user.name || `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.email?.split("@")[0] || "user";
     const mt = `@${dn} `;
     const before = commentText.slice(0, cursorPosition);
     const at = before.lastIndexOf("@");
@@ -1072,8 +1077,8 @@ export default function PostDetailsOverlay({
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (showMentionPopup && mentionUsers.length > 0) {
-      if (e.key === "ArrowDown") { e.preventDefault(); setMentionIndex(p => (p+1) % mentionUsers.length); }
-      else if (e.key === "ArrowUp") { e.preventDefault(); setMentionIndex(p => (p-1+mentionUsers.length) % mentionUsers.length); }
+      if (e.key === "ArrowDown") { e.preventDefault(); setMentionIndex(p => (p + 1) % mentionUsers.length); }
+      else if (e.key === "ArrowUp") { e.preventDefault(); setMentionIndex(p => (p - 1 + mentionUsers.length) % mentionUsers.length); }
       else if (e.key === "Enter" || e.key === "Tab") { e.preventDefault(); if (mentionUsers[mentionIndex]) insertMention(mentionUsers[mentionIndex]); }
       else if (e.key === "Escape") { setShowMentionPopup(false); setMentionUsers([]); }
     } else if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submitComment(); }
@@ -1084,7 +1089,7 @@ export default function PostDetailsOverlay({
     try {
       const res = await axios.get(`/api/roar/posts/${post.id}/comments`, { params: { roomId: post.roomId } });
       if (res.data?.success) setComments(res.data.comments);
-    } catch {}
+    } catch { }
   }, [post]);
 
   useEffect(() => { fetchComments(); }, [fetchComments]);
@@ -1107,7 +1112,7 @@ export default function PostDetailsOverlay({
     try {
       const res = await axios.post(`/api/roar/posts/${post.id}/comments/${commentId}/react`);
       if (res.data?.success) setComments(p => p.map(c => c.commentId === commentId ? { ...c, heartCount: res.data.heartCount } : c));
-    } catch {}
+    } catch { }
   };
 
   const userVote = votes[post.id];
@@ -1267,7 +1272,7 @@ export default function PostDetailsOverlay({
           {showMentionPopup && mentionUsers.length > 0 && (
             <div className="absolute bottom-full left-4 right-4 mb-2 bg-[#181c24] rounded-2xl border border-[rgba(200,112,90,0.2)] overflow-hidden z-20 shadow-[0_8px_32px_rgba(0,0,0,0.4)] max-h-[300px] overflow-y-auto">
               {mentionUsers.map((user, idx) => {
-                const dn = user.username || user.name || `${user.firstName||""} ${user.lastName||""}`.trim() || user.email?.split("@")[0] || "user";
+                const dn = user.username || user.name || `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.email?.split("@")[0] || "user";
                 return (
                   <button key={user.userId} onClick={() => insertMention(user)} onMouseEnter={() => setMentionIndex(idx)}
                     className={`flex items-center gap-3 px-4 py-2.5 w-full border-none cursor-pointer transition-colors duration-150 ${idx === mentionIndex ? "bg-[rgba(200,112,90,0.15)]" : "bg-transparent"}`}>
@@ -1284,7 +1289,7 @@ export default function PostDetailsOverlay({
           )}
           <p className="px-5 pt-2 pb-0 m-0 text-[10px] text-[#7a6a65]">Type @ to mention someone</p>
           <div className="flex gap-2 items-center px-4 pt-1.5 pb-1">
-            <AvatarWithBadge username={userUsername} badge={userBadge} size="sm" avatarUrl={userAvatarUrl} />
+            <AvatarWithBadge username={activeUsername} badge={userBadge} size="sm" avatarUrl={userAvatarUrl} />
             <div className="flex-1">
               <input ref={inputRef} type="text" placeholder={replyTo ? "Write your reply…" : "Share your opinion..."} value={commentText}
                 onChange={handleInputChange} onKeyDown={handleKeyDown}

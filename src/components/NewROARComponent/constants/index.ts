@@ -1004,7 +1004,7 @@ export const COMPOSE_OPTIONS = [
 export const RADIAL_OPTS = [
   { id: "post", label: "Post", emoji: "✏️" },
   // { id: "hot_take", label: "Hot Take", emoji: "🔥" },
-  { id: "prediction", label: "Predict", emoji: "📊" },
+  { id: "prediction", label: "Prediction", emoji: "📊" },
   { id: "debate", label: "Debate", emoji: "⚡" },
   // { id: "raw_reactions", label: "Raw Reactions", emoji: "🕰" },
   // { id: "quiz", label: "Flash Quiz", emoji: "🧠" },

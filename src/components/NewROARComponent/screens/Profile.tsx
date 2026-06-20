@@ -703,7 +703,8 @@ import { fmt } from "../utils";
 import BackButton from "../../ReusableComponent/BackButton";
 import { useActivity } from "@/context/ActivityContext";
 import firstRoarColor from "/public/images/Frame 1984081839.png";
-import firstRoarGray  from "/public/images/image 189.png";
+import firstRoarGray from "/public/images/image 189.png";
+import Link from "next/link";
 
 // ─── Avatar images (base64) ─────────────────────────────────────────────────
 const avatar1 = "data:image/png;base64,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";
@@ -845,7 +846,7 @@ export default function Profile({
   // Profile metadata state (only for own profile — user info, avatar, bio)
   const [profileMetadata, setProfileMetadata] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  
+
   // Modal states
   const [badgeModal, setBadgeModal] = useState<any>(null);
   const [editOpen, setEditOpen] = useState(false);
@@ -853,7 +854,7 @@ export default function Profile({
   const [copied, setCopied] = useState(false);
   const [fanMatchOpen, setFanMatchOpen] = useState(false);
   const [rivalFollowed, setRivalFollowed] = useState(false);
-  
+
   // Edit form state
   const [editName, setEditName] = useState("");
   const [editFavPlayer, setEditFavPlayer] = useState("");
@@ -861,7 +862,7 @@ export default function Profile({
   const [editShowPredHistory, setEditShowPredHistory] = useState(true);
   const [avatarPickerOpen, setAvatarPickerOpen] = useState(false);
   const [selectedAvatar, setSelectedAvatar] = useState<string | null>(null);
-const [activeActivityTab, setActiveActivityTab] = useState<"posts"|"predictions"|"debates">("posts");
+  const [activeActivityTab, setActiveActivityTab] = useState<"posts" | "predictions" | "debates">("posts");
   // ── Data fetching ──────────────────────────────────────────────────────────
   // For OWN profile: Use ONLY ActivityContext (no additional API calls needed)
   // For OTHER profiles: Fetch their public profile data
@@ -970,13 +971,13 @@ const [activeActivityTab, setActiveActivityTab] = useState<"posts"|"predictions"
 
   const displayPredictions = !isOtherProfile
     ? predictionActivities.map((a: any) => ({
-        id: a.id,
-        postId: a.metadata?.postId,
-        label: a.label,
-        text: (a.metadata?.statement || a.label || "").trim() || `Prediction: ${a.label}`,
-        status: a.metadata?.status || "PENDING",
-        createdAt: a.createdAt,
-      }))
+      id: a.id,
+      postId: a.metadata?.postId,
+      label: a.label,
+      text: (a.metadata?.statement || a.label || "").trim() || `Prediction: ${a.label}`,
+      status: a.metadata?.status || "PENDING",
+      createdAt: a.createdAt,
+    }))
     : predictionActivities;
 
   const filteredPreds = (displayPredictions || []).slice().sort((a: any, b: any) => (b.createdAt || 0) - (a.createdAt || 0));
@@ -1000,11 +1001,11 @@ const [activeActivityTab, setActiveActivityTab] = useState<"posts"|"predictions"
   // ── Share ──────────────────────────────────────────────────────────────────
   const shareActions = [
     { alt: "WhatsApp", src: "/images/share_whatsapp.png", handler: () => window.open(`https://wa.me/?text=${encodeURIComponent(buildShareText(user, userBadge))}`, "_blank") },
-    { alt: "Threads",  src: "/images/share_thread.png",   handler: () => window.open(`https://www.threads.net/intent/post?text=${encodeURIComponent(buildShareText(user, userBadge))}`, "_blank") },
-    { alt: "Instagram",src: "/images/share_insta.png",    handler: async () => { await copyToClipboard(buildShareText(user, userBadge)); setCopied(true); setTimeout(() => setCopied(false), 1600); window.open("https://www.instagram.com/", "_blank"); } },
+    { alt: "Threads", src: "/images/share_thread.png", handler: () => window.open(`https://www.threads.net/intent/post?text=${encodeURIComponent(buildShareText(user, userBadge))}`, "_blank") },
+    { alt: "Instagram", src: "/images/share_insta.png", handler: async () => { await copyToClipboard(buildShareText(user, userBadge)); setCopied(true); setTimeout(() => setCopied(false), 1600); window.open("https://www.instagram.com/", "_blank"); } },
     { alt: "LinkedIn", src: "/images/Share_linkedin.png", handler: () => window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(buildShareUrl(user))}`, "_blank") },
-    { alt: "X",        src: "/images/Share_X.png",        handler: () => window.open(`https://x.com/intent/tweet?text=${encodeURIComponent(buildShareText(user, userBadge))}`, "_blank") },
-    { alt: "Copy",     src: "/images/share_copy_link.png", handler: async () => { const ok = await copyToClipboard(buildShareText(user, userBadge)); if (ok) { setCopied(true); setTimeout(() => setCopied(false), 1600); onToast("Link copied!"); } } },
+    { alt: "X", src: "/images/Share_X.png", handler: () => window.open(`https://x.com/intent/tweet?text=${encodeURIComponent(buildShareText(user, userBadge))}`, "_blank") },
+    { alt: "Copy", src: "/images/share_copy_link.png", handler: async () => { const ok = await copyToClipboard(buildShareText(user, userBadge)); if (ok) { setCopied(true); setTimeout(() => setCopied(false), 1600); onToast("Link copied!"); } } },
   ];
 
   const ShareButtons = ({ size }: { size: string }) => (
@@ -1029,8 +1030,8 @@ const [activeActivityTab, setActiveActivityTab] = useState<"posts"|"predictions"
 
   // ── Points bar (reputation capped at some max for display) ─────────────────
   const repScore = isOtherProfile ? (user.reputationScore ?? 0) : (profileStats.totalActivity * 2);
-  const repMax   = Math.max(repScore, 500);
-  const repPct   = Math.round((repScore / repMax) * 100);
+  const repMax = Math.max(repScore, 500);
+  const repPct = Math.round((repScore / repMax) * 100);
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
@@ -1038,22 +1039,49 @@ const [activeActivityTab, setActiveActivityTab] = useState<"posts"|"predictions"
 
       {/* ── Top header bar ───────────────────────────────────────────────── */}
       <div style={{
-        display: "flex", alignItems: "center", gap: 10,
+        display: "flex",
+        alignItems: "center",
+        gap: 10,
         padding: "14px 16px 12px",
         background: "rgba(10,10,16,0.97)",
         backdropFilter: "blur(20px)",
         borderBottom: "1px solid rgba(255,255,255,0.06)",
-        position: "sticky", top: 0, zIndex: 50,
+        position: "sticky",
+        top: 0,
+        zIndex: 50,
       }}>
-        <button
-          onClick={isOtherProfile ? handleBack : undefined}
-          style={{ background: "none", border: "none", cursor: "pointer", color: "white", padding: "4px 2px", display: "flex", alignItems: "center" }}
-        >
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M15 18l-6-6 6-6" />
-          </svg>
-        </button>
-        <h3 style={{ color: "white", margin: 0, fontSize: 17, fontWeight: 700, letterSpacing: "0.01em" }}>Profile</h3>
+        <Link href="/MainModules/ROAR" style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 10,
+          textDecoration: "none",
+          color: "white"
+        }}>
+          <button
+            style={{
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              color: "white",
+              padding: "4px 2px",
+              display: "flex",
+              alignItems: "center"
+            }}
+          >
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M15 18l-6-6 6-6" />
+            </svg>
+          </button>
+          <h3 style={{
+            color: "white",
+            margin: 0,
+            fontSize: 17,
+            fontWeight: 700,
+            letterSpacing: "0.01em"
+          }}>
+            Profile
+          </h3>
+        </Link>
       </div>
 
       {/* ── Hero ─────────────────────────────────────────────────────────── */}
@@ -1228,82 +1256,82 @@ const [activeActivityTab, setActiveActivityTab] = useState<"posts"|"predictions"
       </div>
 
       {/* ── Badges Earned (horizontal scroll) ───────────────────────────── */}
-{/* ── Your Badges ───────────────────────────────────────────────────── */}
-<div style={{ padding: "18px 0 0" }}>
-  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0 14px", marginBottom: 12 }}>
-    <span style={{ fontSize: 14, fontWeight: 700, color: "#fff" }}>Your Badges</span>
-  </div>
-  <div style={{ display: "flex", gap: 14, overflowX: "auto", padding: "4px 14px 8px", scrollbarWidth: "none" }}>
-
-    {/* Owned badges */}
-    {ownedBadges.map((b: any) => {
-      const cfg = BADGE_CONFIG[b.badgeId ?? b.id] ?? BADGE_CONFIG.RISING_FAN;
-      return (
-        <div
-          key={b.badgeId ?? b.id}
-          onClick={() => setBadgeModal(b)}
-          style={{ display: "flex", flexDirection: "column", alignItems: "center", cursor: "pointer", flexShrink: 0, width: 72 }}
-        >
-          <div style={{
-            width: 64, height: 64,
-            background: cfg.gradient
-              ? `linear-gradient(135deg,${cfg.gradient[0]},${cfg.gradient[1] ?? cfg.gradient[0]})`
-              : "rgba(233,30,140,0.9)",
-            clipPath: "polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            boxShadow: "0 4px 14px rgba(0,0,0,0.4)",
-            fontSize: 24,
-          }}>
-            {cfg.icon}
-          </div>
-          <span style={{ fontSize: 9, fontWeight: 700, color: "rgba(255,255,255,0.7)", marginTop: 6, textAlign: "center", lineHeight: 1.2 }}>
-            {cfg.name?.toUpperCase() ?? "BADGE"}
-          </span>
+      {/* ── Your Badges ───────────────────────────────────────────────────── */}
+      <div style={{ padding: "18px 0 0" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0 14px", marginBottom: 12 }}>
+          <span style={{ fontSize: 14, fontWeight: 700, color: "#fff" }}>Your Badges</span>
         </div>
-      );
-    })}
+        <div style={{ display: "flex", gap: 14, overflowX: "auto", padding: "4px 14px 8px", scrollbarWidth: "none" }}>
 
-    {/* First Roar — always shown, color if owned else gray */}
-    {(() => {
-      const owned = ownedBadges.some((b: any) => (b.badgeId ?? b.id) === "FIRST_ROAR");
-      return (
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0, width: 72 }}>
-          <img
-            src={owned ? "/images/Frame 1984081839.png" : "/images/image 189.png"}
-            alt="First Roar"
-            style={{ width: 64, height: 64, objectFit: "contain" }}
-          />
-          <span style={{ fontSize: 9, fontWeight: 700, color: owned ? "rgba(255,255,255,0.85)" : "rgba(255,255,255,0.35)", marginTop: 6, textAlign: "center", lineHeight: 1.2 }}>
-            FIRST ROAR
-          </span>
-        </div>
-      );
-    })()}
+          {/* Owned badges */}
+          {ownedBadges.map((b: any) => {
+            const cfg = BADGE_CONFIG[b.badgeId ?? b.id] ?? BADGE_CONFIG.RISING_FAN;
+            return (
+              <div
+                key={b.badgeId ?? b.id}
+                onClick={() => setBadgeModal(b)}
+                style={{ display: "flex", flexDirection: "column", alignItems: "center", cursor: "pointer", flexShrink: 0, width: 72 }}
+              >
+                <div style={{
+                  width: 64, height: 64,
+                  background: cfg.gradient
+                    ? `linear-gradient(135deg,${cfg.gradient[0]},${cfg.gradient[1] ?? cfg.gradient[0]})`
+                    : "rgba(233,30,140,0.9)",
+                  clipPath: "polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  boxShadow: "0 4px 14px rgba(0,0,0,0.4)",
+                  fontSize: 24,
+                }}>
+                  {cfg.icon}
+                </div>
+                <span style={{ fontSize: 9, fontWeight: 700, color: "rgba(255,255,255,0.7)", marginTop: 6, textAlign: "center", lineHeight: 1.2 }}>
+                  {cfg.name?.toUpperCase() ?? "BADGE"}
+                </span>
+              </div>
+            );
+          })}
 
-    {/* 3 locked placeholder badges */}
-    {[
-      { label: "PLAY MORE" },
-      { label: "PLAY MORE" },
-      { label: "PLAY MORE" },
-    ].map((_, i) => (
-      <div key={`locked-${i}`} style={{ display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0, width: 72 }}>
-        <div style={{
-          width: 64, height: 64,
-          background: "rgba(255,255,255,0.07)",
-          clipPath: "polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%)",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          fontSize: 22,
-        }}>
-          🔒
+          {/* First Roar — always shown, color if owned else gray */}
+          {(() => {
+            const owned = ownedBadges.some((b: any) => (b.badgeId ?? b.id) === "FIRST_ROAR");
+            return (
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0, width: 72 }}>
+                <img
+                  src={owned ? "/images/Frame 1984081839.png" : "/images/image 189.png"}
+                  alt="First Roar"
+                  style={{ width: 64, height: 64, objectFit: "contain" }}
+                />
+                <span style={{ fontSize: 9, fontWeight: 700, color: owned ? "rgba(255,255,255,0.85)" : "rgba(255,255,255,0.35)", marginTop: 6, textAlign: "center", lineHeight: 1.2 }}>
+                  FIRST ROAR
+                </span>
+              </div>
+            );
+          })()}
+
+          {/* 3 locked placeholder badges */}
+          {[
+            { label: "PLAY MORE" },
+            { label: "PLAY MORE" },
+            { label: "PLAY MORE" },
+          ].map((_, i) => (
+            <div key={`locked-${i}`} style={{ display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0, width: 72 }}>
+              <div style={{
+                width: 64, height: 64,
+                background: "rgba(255,255,255,0.07)",
+                clipPath: "polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 22,
+              }}>
+                🔒
+              </div>
+              <span style={{ fontSize: 9, fontWeight: 700, color: "rgba(255,255,255,0.2)", marginTop: 6, textAlign: "center", lineHeight: 1.2 }}>
+                PLAY MORE
+              </span>
+            </div>
+          ))}
+
         </div>
-        <span style={{ fontSize: 9, fontWeight: 700, color: "rgba(255,255,255,0.2)", marginTop: 6, textAlign: "center", lineHeight: 1.2 }}>
-          PLAY MORE
-        </span>
       </div>
-    ))}
-
-  </div>
-</div>
 
       {/* ── Your Activity (tabbed: Posts / Predictions / Debates) ────────── */}
       <div style={{ padding: "18px 14px 0" }}>
@@ -1337,7 +1365,7 @@ const [activeActivityTab, setActiveActivityTab] = useState<"posts"|"predictions"
         {/* ── Posts tab ── */}
         {activeActivityTab === "posts" && (() => {
           const postActivities = !isOtherProfile
-            ? activities.filter((a: any) => ["ROAR_POST","ROAR_MEMORY","ROAR_RAW_REACTIONS","ROAR_QUIZ","ROAR_DEBATE","ROAR_PREDICTION"].includes(a.type))
+            ? activities.filter((a: any) => ["ROAR_POST", "ROAR_MEMORY", "ROAR_RAW_REACTIONS", "ROAR_QUIZ", "ROAR_DEBATE", "ROAR_PREDICTION"].includes(a.type))
             : [];
           if (!isOtherProfile && activityLoading) {
             return <p style={{ textAlign: "center", padding: "24px 0", color: "rgba(255,255,255,0.4)", fontSize: 13 }}>Loading...</p>;
@@ -1387,8 +1415,8 @@ const [activeActivityTab, setActiveActivityTab] = useState<"posts"|"predictions"
               <p style={{ textAlign: "center", padding: "24px 0", color: "rgba(255,255,255,0.4)", fontSize: 13 }}>No predictions yet.</p>
             ) : filteredPreds.map((p: any) => {
               const isCorrect = p.status === "CORRECT" || p.status === "settled_correct";
-              const isWrong   = p.status === "WRONG"   || p.status === "settled_wrong";
-              const status    = isCorrect ? "CORRECT" : isWrong ? "WRONG" : "PENDING";
+              const isWrong = p.status === "WRONG" || p.status === "settled_wrong";
+              const status = isCorrect ? "CORRECT" : isWrong ? "WRONG" : "PENDING";
               const statusColor = isCorrect ? "#22C55E" : isWrong ? "#EF4444" : "#F59E0B";
               return (
                 <div key={p.id ?? p.postId} style={{

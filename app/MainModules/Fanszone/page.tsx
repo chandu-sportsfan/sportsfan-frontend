@@ -13,6 +13,7 @@ import {
   Gamepad2, UserPlus, LayoutGrid, Calendar,
   X, Headphones,
   Megaphone, MessagesSquare, Flame, Sparkles, Info, TrendingDown, Brain,
+  ArrowLeft,
 } from "lucide-react";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1206,6 +1207,71 @@ export default function FanZoneDashboard() {
   return (
     <div className="min-h-screen bg-[#050505] text-white font-sans selection:bg-rose-500/30 pb-20">
       <main className="max-w-[1400px] mx-auto px-3 py-3 sm:p-6 space-y-4 sm:space-y-6">
+
+      <style>{`
+  .fanzone-bar {
+    left: 0;
+  }
+  @media (min-width: 1024px) {
+    .fanzone-bar {
+      left: var(--sidebar-width, 84px);
+    }
+  }
+`}</style>
+
+<div
+    className="fanzone-bar"
+    style={{
+        position: "fixed",
+        top: 0,
+        right: 0,
+        zIndex: 200,
+        display: "flex",
+        alignItems: "center",
+        gap: 10,
+        padding: "14px 16px 12px",
+        background: "rgba(0,0,0,0.95)",
+        backdropFilter: "blur(20px)",
+        borderBottom: "1px solid rgba(255,255,255,0.06)",
+        transition: "left 0.3s ease-out",
+    }}
+>
+            <Link href="/MainModules/ROAR" style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                textDecoration: "none",
+                color: "white"
+            }}>
+                <button
+                    style={{
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
+                        color: "white",
+                        padding: "4px 2px",
+                        display: "flex",
+                        alignItems: "center"
+                    }}
+                >
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M15 18l-6-6 6-6" />
+      </svg>
+                </button>
+                <h3 style={{
+                    color: "white",
+                    margin: 0,
+                    fontSize: 17,
+                    fontWeight: 700,
+                    letterSpacing: "0.01em"
+                }}>
+                    Fans Zone
+                </h3>
+            </Link>
+        </div>
+
+         <div style={{ height: 56 }} />
+
 
         {/* ── HERO ── */}
         <div className="relative rounded-xl overflow-hidden border border-white/10 bg-[#09090b] flex items-center min-h-[90px]">

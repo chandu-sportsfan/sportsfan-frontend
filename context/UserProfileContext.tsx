@@ -4,6 +4,8 @@ import { createContext, useContext, useState, useEffect, ReactNode } from "react
 import axios from "axios";
 
 interface UserProfile {
+  actualUserId?: string; 
+   username?: string;  
   avatarUrl?: string;
   avatar?: string;   // Google photo URL fallback
   name?: string;
@@ -32,8 +34,11 @@ export const UserProfileProvider = ({ children }: { children: ReactNode }) => {
     try {
       const res = await axios.get("/api/roar/profile");
       const data = res.data;
+      console.log("profile data:", data);
       if (data?.user) {
         setUserProfile({
+          actualUserId: data.user.actualUserId,
+           username: data.user.username,
           avatarUrl: data.user.avatarUrl,   // base64 data URI
           avatar: data.user.avatar,          // Google CDN URL (fallback)
           name: data.user.name,

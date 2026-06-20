@@ -900,7 +900,7 @@ export default function ROARApp() {
                     dbPosts={dbPosts}
                     onPostClick={post => setSelectedPost(post)}
                     onVote={handleVote}
-                    onLike={handleLike}
+                    // onLike={handleLike}
                     onDeletePost={handleDeletePost}
                     userSports={userSports}
                     onQuickCompose={t => openCompose(t)}

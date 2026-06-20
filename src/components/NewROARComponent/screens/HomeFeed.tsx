@@ -1248,7 +1248,7 @@ console.log("currentUserId:", currentUserId, "first post authorUid:", dbPosts[0]
     return {
       id: p.postId, type: p.type, sport: p.sport || "cricket", 
       authorUid: p.authorUid,
-      fan: { username: displayUsername(p.authorUsername), badge: p.authorBadge || "RISING_FAN", team: p.sport === "cricket" ? "India" : "MCFC", avatarUrl: p.authorAvatarUrl || p.avatarUrl || (p.authorUid && p.authorUid === currentUserId ? resolvedAvatarUrl : undefined) },
+      fan: { username: displayUsername(p.authorUsername), authorUid: p.authorUid, badge: p.authorBadge || "RISING_FAN", team: p.sport === "cricket" ? "India" : "MCFC", avatarUrl: p.authorAvatarUrl || p.avatarUrl || (p.authorUid && p.authorUid === currentUserId ? resolvedAvatarUrl : undefined) },
       text: p.text, agreePercent: tot > 0 ? Math.round((ag / tot) * 100) : 50,
       agreeCount: ag, disagreeCount: di, fanCount: tot + (p.type === "hot_take" ? 47 : 1240),
       replies: p.replyCount ?? 0, following: false, isLive: false,

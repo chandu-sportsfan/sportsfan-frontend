@@ -519,10 +519,12 @@ import type { Notification, Room } from "./types";
 import { useRoarNotifications } from "@/context/RoarNotificationsContext";
 import { RoarProfileProvider, useRoarProfileContext } from "@/context/RoarProfileContext";
 import RoomPostDetailsOverlay from "./components/RoomPostDetailsOverlay";
+import { useRouter } from "next/navigation";
 
 export default function ROARApp() {
   const containerRef = useRef<HTMLDivElement>(null);
   const searchParams = useSearchParams();
+  const router = useRouter();
   const [likingPosts, setLikingPosts] = useState<Set<string>>(new Set());
   const roomRefreshRef = useRef<(() => void) | null>(null);
   const roomReplyUpdateRef = useRef<((postId: string, count: number) => void) | null>(null);
@@ -534,6 +536,7 @@ export default function ROARApp() {
   const [userBadge, setUserBadge]         = useState("RISING_FAN");
   const [userSports, setUserSports]       = useState<string[]>([]);
   const [currentUsername, setCurrentUsername] = useState("RoarUser");
+  const [currentUserId, setCurrentUserId] = useState<string | undefined>();
   const [currentAvatarUrl, setCurrentAvatarUrl] = useState<string | undefined>();
 
   useEffect(() => {
@@ -546,6 +549,7 @@ export default function ROARApp() {
           setUserBadge(res.data.user.badge || "RISING_FAN");
           setUserSports(res.data.user.sports ?? []);
           setCurrentUsername(res.data.user.username || "RoarUser");
+           setCurrentUserId(res.data.user.actualUserId);
           setCurrentAvatarUrl(res.data.user.avatarUrl || undefined);
           try {
             localStorage.setItem("roar_v2_complete", "1");
@@ -573,17 +577,30 @@ export default function ROARApp() {
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
   const [selectedPost, setSelectedPost] = useState<any | null>(null);
 
-  const { viewingUsername, profileData, openProfile, closeProfile } = useRoarProfileContext();
+  const { viewingUserId, profileData, openProfile, closeProfile } = useRoarProfileContext();
 
-  const handleFanProfileClick = useCallback((fan: any) => {
-    if (fan.username === currentUsername) {
-      setActiveTab("profile");
-      setOverlay(null);
-      setSelectedPost(null);
-    } else {
-      openProfile(fan.username);
-    }
-  }, [currentUsername, openProfile]);
+ 
+
+//  const handleFanProfileClick = useCallback((fan: any) => {
+//   if (fan.authorUid && fan.authorUid === currentUserId) {
+//     setActiveTab("profile"); setOverlay(null); setSelectedPost(null);
+//   } else {
+//     openProfile(fan.authorUid);
+//   }
+// }, [currentUserId, openProfile]);
+
+const handleFanProfileClick = useCallback((fan: any) => {
+//   setOverlay(null); setSelectedPost(null);
+//   openProfile(fan.authorUid);
+// }, [currentUserId, openProfile]);
+  if (fan.authorUid && fan.authorUid === currentUserId) {
+    router.push("/MainModules/Profile");
+  } else {
+    setOverlay(null); setSelectedPost(null);
+    openProfile(fan.authorUid);
+  }
+}, [currentUserId, openProfile, router]);
+
 
   // ── Compose ────────────────────────────────────────────────────────────────
   const [composeOpen, setComposeOpen]   = useState(false);
@@ -806,7 +823,8 @@ export default function ROARApp() {
   const isLB       = overlay === "leaderboard";
   const isFullScreenOverlay = isRoom || isInfinity;
   // Onboarding should also hide the global header / bottom nav, same as room/infinity overlays.
-  const hideChrome = isFullScreenOverlay || !onboarded;
+  // const hideChrome = isFullScreenOverlay || !onboarded;
+  const hideChrome = isFullScreenOverlay || !onboarded || !!viewingUserId;
 
    useEffect(() => {
   if (hideChrome) document.body.classList.add("roar-room-active");
@@ -858,7 +876,7 @@ export default function ROARApp() {
         {onboarded && (
           <div style={{ position: "relative", zIndex: 1, flex: 1, minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}>
             <AnimatePresence mode="wait">
-              {viewingUsername ? (
+              {viewingUserId ? (
                 // ── Viewing another user's profile ──
                 <motion.div 
                   key="viewing-profile" 
@@ -875,7 +893,7 @@ export default function ROARApp() {
                     onToast={showToast}
                     setOnboarded={setOnboarded}
                     onNavigateTab={handleTab}
-                    viewingProfile={viewingUsername}
+                    viewingProfile={viewingUserId}
                     onClose={closeProfile}
                   />
                 </motion.div>
@@ -900,7 +918,7 @@ export default function ROARApp() {
                     dbPosts={dbPosts}
                     onPostClick={post => setSelectedPost(post)}
                     onVote={handleVote}
-                    onLike={handleLike}
+                    // onLike={handleLike}
                     onDeletePost={handleDeletePost}
                     userSports={userSports}
                     onQuickCompose={t => openCompose(t)}

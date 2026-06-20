@@ -907,7 +907,8 @@ export default function Profile({
 
         if (viewingProfile) {
           // Fetch from API
-          const res = await axios.get(`/api/roar/fans/${encodeURIComponent(viewingProfile)}/profile`);
+          // const res = await axios.get(`/api/roar/fans/${encodeURIComponent(viewingProfile)}/profile`);
+           const res = await axios.get(`/api/roar/profile?userId=${encodeURIComponent(viewingProfile)}`);
           if (res.data?.success) {
             setProfileMetadata({
               user: res.data.user || {},

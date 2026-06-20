@@ -1125,7 +1125,7 @@ console.log("currentUserId:", currentUserId, "first post authorUid:", dbPosts[0]
         }
 
         onReact?.(itemId, newReaction);
-        onLike?.(itemId); // backward compat
+        // onLike?.(itemId); // backward compat
       } catch {
         // Rollback optimistic update on failure
         setLocalLikes(p => ({ ...p, [itemId]: prev }));
@@ -1182,7 +1182,8 @@ console.log("currentUserId:", currentUserId, "first post authorUid:", dbPosts[0]
     const lo = localLikes[item.id];
     const currentReaction: Reaction | null = lo !== undefined ? lo.reaction : ((item.userReaction as Reaction) ?? null);
     const likeCount = lo !== undefined ? lo.likeCount : (item.likeCount ?? 0);
-    const isAuthor = activeUsername === (item.authorUsername ?? item.fan?.username);
+    // const isAuthor = activeUsername === (item.authorUsername ?? item.fan?.username);
+    const isAuthor = !!item.authorUid && item.authorUid === currentUserId;
 
     return (
       <div style={{ display: "flex", gap: 14, marginTop: 12, borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 12, alignItems: "center" }}>
@@ -1207,7 +1208,7 @@ console.log("currentUserId:", currentUserId, "first post authorUid:", dbPosts[0]
         </button>
 
         {/* ── View Reactions (author only, LinkedIn-style) ── */}
-        {isAuthor && likeCount > 0 && (
+        {likeCount > 0 && (
           <motion.button
             whileTap={{ scale: 0.93 }}
             onClick={e => { e.stopPropagation(); setReactionsPostId(item.id); }}
@@ -1245,8 +1246,9 @@ console.log("currentUserId:", currentUserId, "first post authorUid:", dbPosts[0]
   const mappedDbPosts = dbPosts.map(p => {
     const ag = p.agreeCount ?? 0; const di = p.disagreeCount ?? 0; const tot = ag + di;
     return {
-      id: p.postId, type: p.type, sport: p.sport || "cricket",
-      fan: { username: displayUsername(p.authorUsername), badge: p.authorBadge || "RISING_FAN", team: p.sport === "cricket" ? "India" : "MCFC", avatarUrl: p.authorAvatarUrl || p.avatarUrl || (p.authorUid && p.authorUid === currentUserId ? resolvedAvatarUrl : undefined) },
+      id: p.postId, type: p.type, sport: p.sport || "cricket", 
+      authorUid: p.authorUid,
+      fan: { username: displayUsername(p.authorUsername), authorUid: p.authorUid, badge: p.authorBadge || "RISING_FAN", team: p.sport === "cricket" ? "India" : "MCFC", avatarUrl: p.authorAvatarUrl || p.avatarUrl || (p.authorUid && p.authorUid === currentUserId ? resolvedAvatarUrl : undefined) },
       text: p.text, agreePercent: tot > 0 ? Math.round((ag / tot) * 100) : 50,
       agreeCount: ag, disagreeCount: di, fanCount: tot + (p.type === "hot_take" ? 47 : 1240),
       replies: p.replyCount ?? 0, following: false, isLive: false,
@@ -1412,7 +1414,8 @@ console.log("currentUserId:", currentUserId, "first post authorUid:", dbPosts[0]
               const liveTotal = (item.agreeCount ?? 0) + (item.disagreeCount ?? 0);
               const agrPct = liveTotal > 0 ? Math.round(((item.agreeCount ?? 0) / liveTotal) * 100) : 50;
               const disAgrPct = 100 - agrPct;
-              const isAuthor = activeUsername === (item.authorUsername ?? item.fan?.username);
+              // const isAuthor = activeUsername === (item.authorUsername ?? item.fan?.username);
+              const isAuthor = !!item.authorUid && item.authorUid === currentUserId;
 
               return (
                 <motion.div key={item.id} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }} className="glass-card" style={{ padding: 16, cursor: "pointer" }} onClick={() => onPostClick?.(item)}>

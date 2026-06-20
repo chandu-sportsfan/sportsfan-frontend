@@ -722,13 +722,7 @@ import posthog from "posthog-js";
 
 
 // components/NewROARComponent/screens/HomeFeed.tsx
-// CHANGES vs previous version:
-//   • Import ReactionPicker, ReactionsDialog, type Reaction
-//   • localLikes now stores `reaction` field alongside userLiked/likeCount
-//   • renderCardActions: heart button → <ReactionPicker>
-//   • "View Reactions" button on posts where user is author (like LinkedIn)
-//   • ReactionsDialog rendered at bottom of tree
-//   • onLike prop replaced with onReact(id, reaction | null) — update parent call-site
+
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";

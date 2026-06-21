@@ -931,6 +931,7 @@
 
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { usePostHog } from "posthog-js/react";
 import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
 import AvatarWithBadge from "../components/AvatarWithBadge";
@@ -1245,10 +1246,12 @@ export default function DiscussionRoom({
   const listRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const phog = usePostHog();
+
   const openShareDialog = (post: ShareableRoarPost) => { 
     setSharePost(post); 
     setCopied(false);
-    try { posthog.capture("content_shared", { post_id: post.id }); } catch(e) {}
+    if (phog) { phog.capture("content_shared", { post_id: post.id }); }
   };
   const closeShareDialog = () => { setSharePost(null); setCopied(false); };
   const handleShareToWhatsApp = () => { if (!sharePost) return; window.open(`https://wa.me/?text=${encodeURIComponent(buildRoarPostShareText(sharePost))}`, "_blank"); };

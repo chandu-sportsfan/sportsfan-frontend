@@ -1,4 +1,4 @@
-import posthog from "posthog-js";
+import { usePostHog } from "posthog-js/react";
 // // // //chandu's code
 
 // // components/NewROARComponent/screens/HomeFeed.tsx
@@ -1016,10 +1016,12 @@ const resolvedAvatarUrl = currentAvatarUrl || userProfile?.avatarUrl || userProf
 const currentUserId = userProfile?.actualUserId;
 console.log("currentUserId:", currentUserId, "first post authorUid:", dbPosts[0]?.authorUid, "match:", dbPosts[0]?.authorUid === currentUserId);
 
+  const phog = usePostHog();
+
   const openShareDialog = (post: ShareableRoarPost) => { 
     setSharePost(post); 
     setCopied(false);
-    try { posthog.capture("content_shared", { post_id: post.id }); } catch(e) {}
+    if (phog) { phog.capture("content_shared", { post_id: post.id }); }
   };
   const closeShareDialog = () => { setSharePost(null); setCopied(false); };
   const handleShareToWhatsApp = () => { if (!sharePost) return; window.open(`https://wa.me/?text=${encodeURIComponent(buildRoarPostShareText(sharePost))}`, "_blank"); };

@@ -908,7 +908,7 @@ export default function Profile({
         if (viewingProfile) {
           // Fetch from API
           // const res = await axios.get(`/api/roar/fans/${encodeURIComponent(viewingProfile)}/profile`);
-           const res = await axios.get(`/api/roar/profile?userId=${encodeURIComponent(viewingProfile)}`);
+          const res = await axios.get(`/api/roar/profile?userId=${encodeURIComponent(viewingProfile)}`);
           if (res.data?.success) {
             setProfileMetadata({
               user: res.data.user || {},
@@ -1184,23 +1184,23 @@ export default function Profile({
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6, padding: "22px 14px 0" }}>
         {[
           {
-            value: isOtherProfile ? (user.totalActivity ?? 0) : profileStats.posts,
+            value: isOtherProfile ? (user.activityCounts?.total ?? 0) : profileStats.posts,
             label: "Posts",
             accent: false,
           },
           {
-            value: isOtherProfile ? (user.hotTakeCount ?? 0) : profileStats.debates,
+            value: isOtherProfile ? (user.activityCounts?.ROAR_DEBATE ?? 0) : profileStats.debates,
             label: "Debates",
             accent: false,
           },
           {
-            value: isOtherProfile ? (user.predictionCount ?? 0) : profileStats.predictions,
+            value: isOtherProfile ? (user.activityCounts?.ROAR_PREDICTION ?? 0) : profileStats.predictions,
             label: "Predictions",
             accent: true,
           },
           {
             value: isOtherProfile
-              ? `${user.accuracy ?? 0}%`
+              ? "N/A"  // accuracy isn't tracked anywhere real yet — see note below
               : (profileStats.predictions > 0 ? `${Math.round((profileStats.predictions / Math.max(profileStats.totalActivity, 1)) * 100)}%` : "N/A"),
             label: "Accuracy",
             accent: true,
@@ -1549,7 +1549,7 @@ export default function Profile({
             onClick={() => setEditOpen(false)}>
             <motion.div initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }} transition={{ type: "spring", damping: 28, stiffness: 300 }}
               onClick={(e) => e.stopPropagation()}
-              style={{ width: "100%", background: "rgba(18,18,28,0.98)", borderRadius: "28px 28px 0 0", border: "1px solid rgba(255,255,255,0.08)", padding: "20px 20px 36px", maxHeight: "90vh", overflowY: "auto" }}>
+              style={{ width: "100%", background: "rgba(18,18,28,0.98)", borderRadius: "28px 28px 0 0", border: "1px solid rgba(255,255,255,0.08)", padding: "20px 20px 40px", maxHeight: "90vh", overflowY: "auto", paddingBottom: "80px", }}>
               <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}>
                 <div style={{ width: 36, height: 4, borderRadius: 2, background: "rgba(255,255,255,0.18)" }} />
               </div>

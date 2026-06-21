@@ -589,18 +589,22 @@ export default function ROARApp() {
 //   }
 // }, [currentUserId, openProfile]);
 
+// const handleFanProfileClick = useCallback((fan: any) => {
+//   if (fan.authorUid && fan.authorUid === currentUserId) {
+//     router.push("/MainModules/Profile");
+//   } else {
+//     setOverlay(null); setSelectedPost(null);
+//     openProfile(fan.authorUid);
+//   }
+// }, [currentUserId, openProfile, router]);
+
 const handleFanProfileClick = useCallback((fan: any) => {
-//   setOverlay(null); setSelectedPost(null);
-//   openProfile(fan.authorUid);
-// }, [currentUserId, openProfile]);
   if (fan.authorUid && fan.authorUid === currentUserId) {
     router.push("/MainModules/Profile");
   } else {
-    setOverlay(null); setSelectedPost(null);
     openProfile(fan.authorUid);
   }
 }, [currentUserId, openProfile, router]);
-
 
   // ── Compose ────────────────────────────────────────────────────────────────
   const [composeOpen, setComposeOpen]   = useState(false);
@@ -633,7 +637,8 @@ const handleFanProfileClick = useCallback((fan: any) => {
 
   const fetchPosts = useCallback(async () => {
     try {
-      const res = await axios.get(`/api/roar/posts?t=${Date.now()}`);
+      // const res = await axios.get(`/api/roar/posts?t=${Date.now()}`);
+       const res = await axios.get(`/api/roar/posts?t=${Date.now()}&limit=15`);
       if (res.data?.success) setDbPosts(res.data.posts);
     } catch (err) { console.error("Failed to fetch posts:", err); }
   }, []);

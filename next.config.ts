@@ -6,6 +6,7 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  skipTrailingSlashRedirect: true,
   async rewrites() {
     const apiTarget =
       process.env.NEXT_PUBLIC_BACKEND_URL ||

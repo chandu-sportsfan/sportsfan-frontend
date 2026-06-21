@@ -1,4 +1,4 @@
-import posthog from "posthog-js";
+import { usePostHog } from "posthog-js/react";
 // // // //chandu's code
 
 // // components/NewROARComponent/screens/HomeFeed.tsx
@@ -1953,7 +1953,13 @@ export default function HomeFeed({
   const resolvedAvatarUrl = currentAvatarUrl || userProfile?.avatarUrl || userProfile?.avatar || undefined;
   const currentUserId = userProfile?.actualUserId;
 
-  const openShareDialog = (post: ShareableRoarPost) => { setSharePost(post); setCopied(false); };
+  const phog = usePostHog();
+
+  const openShareDialog = (post: ShareableRoarPost) => { 
+    setSharePost(post); 
+    setCopied(false);
+    if (phog) { phog.capture("content_shared", { post_id: post.id }); }
+  };
   const closeShareDialog = () => { setSharePost(null); setCopied(false); };
   const handleShareToWhatsApp = () => { if (!sharePost) return; window.open(`https://wa.me/?text=${encodeURIComponent(buildRoarPostShareText(sharePost))}`, "_blank"); };
   const handleShareToThreads = () => { if (!sharePost) return; window.open(`https://www.threads.net/intent/post?text=${encodeURIComponent(buildRoarPostShareText(sharePost))}`, "_blank"); };
@@ -2018,6 +2024,14 @@ export default function HomeFeed({
     setLastActionAt(p => ({ ...p, [id]: Date.now() }));
     setPcts(p => ({ ...p, [id]: clamp(initialAgreePercent + (agree ? 3 : -3), 1, 99) }));
     if (isDbPost && onVote) onVote(id, agree ? "agree" : "disagree");
+    const item = dbPosts.find(x => x.id === id);
+    if (phog) {
+      phog.capture("poll_voted", {
+        poll_id: id,
+        poll_type: item?.type || "prediction",
+        option_id: agree ? "agree" : "disagree"
+      });
+    }
     setInlineCommentPostId(id);
   };
 

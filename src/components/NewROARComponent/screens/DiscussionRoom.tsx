@@ -1089,6 +1089,7 @@
 
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { usePostHog } from "posthog-js/react";
 import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
 import AvatarWithBadge from "../components/AvatarWithBadge";
@@ -2015,6 +2016,13 @@ export default function DiscussionRoom({
                               if (hasVoted) return;
                               try {
                                 await axios.post(`/api/roar/rooms/${roomId}/messages/${p.id}/vote`, { vote: voteVal });
+                                // if (phog) {
+                                //   phog.capture("poll_voted", {
+                                //     poll_id: p.id,
+                                //     poll_type: "debate_vs",
+                                //     option_id: voteVal
+                                //   });
+                                // }
                                 setPosts(prev => prev.map(x => x.id !== p.id ? x : { ...x, userVote: voteVal, agreeCount: (x.agreeCount ?? 0) + (voteVal === "agree" ? 1 : 0), disagreeCount: (x.disagreeCount ?? 0) + (voteVal === "disagree" ? 1 : 0) }));
                                 setInlineCommentPostId(p.id);
                               } catch { onToast("You've already voted!!"); }
@@ -2113,6 +2121,13 @@ export default function DiscussionRoom({
                                 if (hasVoted) return;
                                 try {
                                   await axios.post(`/api/roar/rooms/${roomId}/messages/${p.id}/vote`, { vote: agree ? "agree" : "disagree" });
+                                  // if (phog) {
+                                  //   phog.capture("poll_voted", {
+                                  //     poll_id: p.id,
+                                  //     poll_type: p.type || "prediction",
+                                  //     option_id: agree ? "agree" : "disagree"
+                                  //   });
+                                  // }
                                   setPosts(prev => prev.map(x => x.id !== p.id ? x : { ...x, userVote: agree ? "agree" : "disagree", agreeCount: (x.agreeCount ?? 0) + (agree ? 1 : 0), disagreeCount: (x.disagreeCount ?? 0) + (!agree ? 1 : 0) }));
                                   setInlineCommentPostId(p.id);
                                 } catch { onToast("You've already voted!!"); }
@@ -2177,6 +2192,13 @@ export default function DiscussionRoom({
                                 if (hasVoted) return;
                                 try {
                                   await axios.post(`/api/roar/rooms/${roomId}/messages/${p.id}/vote`, { vote: agree ? "agree" : "disagree" });
+                                  // if (phog) {
+                                  //   phog.capture("poll_voted", {
+                                  //     poll_id: p.id,
+                                  //     poll_type: p.type || "hot_take",
+                                  //     option_id: agree ? "agree" : "disagree"
+                                  //   });
+                                  // }
                                   setPosts(prev => prev.map(x => x.id !== p.id ? x : { ...x, userVote: agree ? "agree" : "disagree", agreeCount: (x.agreeCount ?? 0) + (agree ? 1 : 0), disagreeCount: (x.disagreeCount ?? 0) + (!agree ? 1 : 0) }));
                                 } catch { onToast("Failed to submit vote"); }
                               }}

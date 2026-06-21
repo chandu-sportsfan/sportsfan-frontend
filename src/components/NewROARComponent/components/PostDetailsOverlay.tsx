@@ -951,6 +951,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { AnimatePresence } from "framer-motion";
+import { usePostHog } from "posthog-js/react";
 import axios from "axios";
 import AvatarWithBadge from "./AvatarWithBadge";
 import { SplitBar } from "./shared";
@@ -1019,7 +1020,11 @@ export default function PostDetailsOverlay({
     return n.includes("_") || (u.email || "").split("@")[0].includes("_");
   };
 
+  const phog = usePostHog();
+
   useEffect(() => {
+    // Fire content_completed when user opens a post
+    if (phog) { phog.capture("content_completed", { post_id: post?.id }); }
     axios.get("/api/users", { withCredentials: true }).then(res => {
       if (!res.data?.users) return;
       const seen = new Set<string>();

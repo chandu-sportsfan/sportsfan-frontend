@@ -1016,7 +1016,11 @@ const resolvedAvatarUrl = currentAvatarUrl || userProfile?.avatarUrl || userProf
 const currentUserId = userProfile?.actualUserId;
 console.log("currentUserId:", currentUserId, "first post authorUid:", dbPosts[0]?.authorUid, "match:", dbPosts[0]?.authorUid === currentUserId);
 
-  const openShareDialog = (post: ShareableRoarPost) => { setSharePost(post); setCopied(false); };
+  const openShareDialog = (post: ShareableRoarPost) => { 
+    setSharePost(post); 
+    setCopied(false);
+    try { posthog.capture("content_shared", { post_id: post.id }); } catch(e) {}
+  };
   const closeShareDialog = () => { setSharePost(null); setCopied(false); };
   const handleShareToWhatsApp = () => { if (!sharePost) return; window.open(`https://wa.me/?text=${encodeURIComponent(buildRoarPostShareText(sharePost))}`, "_blank"); };
   const handleShareToThreads = () => { if (!sharePost) return; window.open(`https://www.threads.net/intent/post?text=${encodeURIComponent(buildRoarPostShareText(sharePost))}`, "_blank"); };

@@ -1245,7 +1245,11 @@ export default function DiscussionRoom({
   const listRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const openShareDialog = (post: ShareableRoarPost) => { setSharePost(post); setCopied(false); };
+  const openShareDialog = (post: ShareableRoarPost) => { 
+    setSharePost(post); 
+    setCopied(false);
+    try { posthog.capture("content_shared", { post_id: post.id }); } catch(e) {}
+  };
   const closeShareDialog = () => { setSharePost(null); setCopied(false); };
   const handleShareToWhatsApp = () => { if (!sharePost) return; window.open(`https://wa.me/?text=${encodeURIComponent(buildRoarPostShareText(sharePost))}`, "_blank"); };
   const handleShareToThreads = () => { if (!sharePost) return; window.open(`https://www.threads.net/intent/post?text=${encodeURIComponent(buildRoarPostShareText(sharePost))}`, "_blank"); };

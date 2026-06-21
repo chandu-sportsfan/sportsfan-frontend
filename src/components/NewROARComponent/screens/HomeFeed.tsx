@@ -1086,6 +1086,14 @@ console.log("currentUserId:", currentUserId, "first post authorUid:", dbPosts[0]
     setLastActionAt(p => ({ ...p, [id]: Date.now() }));
     setPcts(p => ({ ...p, [id]: clamp(initialAgreePercent + (agree ? 3 : -3), 1, 99) }));
     if (isDbPost && onVote) onVote(id, agree ? "agree" : "disagree");
+    const item = dbPosts.find(x => x.id === id);
+    if (phog) {
+      phog.capture("poll_voted", {
+        poll_id: id,
+        poll_type: item?.type || "prediction",
+        option_id: agree ? "agree" : "disagree"
+      });
+    }
     setInlineCommentPostId(id);
   };
 

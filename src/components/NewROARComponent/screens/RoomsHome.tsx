@@ -1,5 +1,4 @@
 
-// // components/NewROARComponent/screens/RoomsHome.tsx
 
 // import { useRef } from "react";
 // import { motion } from "framer-motion";
@@ -50,11 +49,8 @@
 // }
 
 // function Thumbnail({ room }: { room: Room }) {
-//   // Use sport from API, fall back to "default"
 //   const sport    = (room.sport ?? "default").toLowerCase();
 //   const gradient = SPORT_GRADIENT[sport] ?? SPORT_GRADIENT.default;
-//   // Use icon from API if present, else nothing (image takes over)
-// //   const emoji    = room.icon ?? "";
 //   const imgSrc   =
 //     ROOM_IMAGE[room.roomId] ??
 //     SPORT_IMAGE[sport] ??
@@ -74,8 +70,6 @@
 //         }}
 //       />
 //       <div className="absolute inset-0 bg-black/15 rounded-2xl" />
-
-    
 //     </div>
 //   );
 // }
@@ -116,25 +110,31 @@
 
 //   const sport = (room.sport ?? "default").toLowerCase();
 
+//   const handleCardClick = () => {
+//     if (isFuture) { 
+//       onToast("This room hasn't started yet."); 
+//       return; 
+//     }
+//     onJoin(room);
+//   };
+
 //   return (
 //     <motion.div
 //       initial={{ opacity: 0, y: 14 }}
 //       animate={{ opacity: 1, y: 0 }}
 //       transition={{ delay: index * 0.07 }}
-//       className="flex gap-4 items-center py-3.5 border-b border-white/[0.06]"
+//       className="flex gap-4 items-center py-3.5 border-b border-white/[0.06] cursor-pointer hover:bg-white/[0.02] transition-colors duration-150"
+//       onClick={handleCardClick}
 //     >
 //       <Thumbnail room={room} />
 
-   
 //       <div className="flex-1 min-w-0">
 //         {/* Name + sport badge on same row */}
-//          {sport !== "default" && <SportBadge sport={sport} />}
+//         {sport !== "default" && <SportBadge sport={sport} />}
 //         <div className="flex items-center gap-2 mb-1 min-w-0">
-              
 //           <p className="text-[15px] font-extrabold text-white whitespace-nowrap">
 //             {room.name}
 //           </p>
-       
 //         </div>
 
 //         <p className="text-xs text-white/45 mb-2 leading-snug line-clamp-2">
@@ -147,7 +147,8 @@
 
 //         <motion.button
 //           whileTap={{ scale: 0.96 }}
-//           onClick={() => {
+//           onClick={(e) => {
+//             e.stopPropagation(); // Prevent triggering the card click twice
 //             if (isFuture) { onToast("This room hasn't started yet."); return; }
 //             onJoin(room);
 //           }}
@@ -218,9 +219,9 @@
 
 
 
-
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
+import axios from "axios";
 import type { Room } from "../types";
 
 const SPORT_GRADIENT: Record<string, string> = {
@@ -248,21 +249,55 @@ const INFINITY_ROOM: Room = {
   fanCount:    27,
 };
 
-const DOT_COLORS = ["#e91e8c", "#ff6b35", "#00e8c6"];
+interface ActiveFan {
+  uid: string;
+  username: string;
+  avatarUrl?: string | null;
+  badge?: string | null;
+}
 
-function StackedAvatars({ count }: { count: number }) {
+function StackedAvatars({ fans, count, loaded }: { fans: ActiveFan[]; count: number; loaded: boolean }) {
+  // Falls back to placeholder dots (no number) only while presence hasn't
+  // loaded yet for this room. Once `loaded` is true we always show the
+  // real count — never the stale room.fanCount — so the number can't
+  // flash from a wrong value to the right one a moment later.
+  const DOT_COLORS = ["#e91e8c", "#ff6b35", "#00e8c6"];
+  const hasFans = fans.length > 0;
+
   return (
     <div className="flex items-center gap-1.5">
       <div className="flex">
-        {DOT_COLORS.map((c, i) => (
-          <div
-            key={i}
-            className="w-6 h-6 rounded-full border-2 border-[#0e0e14] relative"
-            style={{ background: c, marginLeft: i === 0 ? 0 : -8, zIndex: DOT_COLORS.length - i }}
-          />
-        ))}
+        {hasFans
+          ? fans.slice(0, 3).map((fan, i) => (
+            <div
+              key={fan.uid}
+              className="w-6 h-6 rounded-full border-2 border-[#0e0e14] relative overflow-hidden flex items-center justify-center"
+              style={{
+                marginLeft: i === 0 ? 0 : -8,
+                zIndex: 3 - i,
+                background: fan.avatarUrl ? undefined : "linear-gradient(135deg,#e91e8c,#ff6b35)",
+              }}
+            >
+              {fan.avatarUrl ? (
+                <img src={fan.avatarUrl} alt={fan.username} className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-[9px] font-extrabold text-white">{fan.username?.[0]?.toUpperCase() || "?"}</span>
+              )}
+            </div>
+          ))
+          : DOT_COLORS.map((c, i) => (
+            <div
+              key={i}
+              className="w-6 h-6 rounded-full border-2 border-[#0e0e14] relative"
+              style={{ background: c, marginLeft: i === 0 ? 0 : -8, zIndex: DOT_COLORS.length - i, opacity: loaded ? 1 : 0.35 }}
+            />
+          ))}
       </div>
-      <span className="text-xs font-semibold text-white/45">+{count} fans</span>
+      {loaded ? (
+        <span className="text-xs font-semibold text-white/45">+{count} fans</span>
+      ) : (
+        <span className="text-xs font-semibold text-white/25">···</span>
+      )}
     </div>
   );
 }
@@ -317,17 +352,27 @@ function RoomCard({
   index,
   onJoin,
   onToast,
+  presence,
 }: {
   room: Room;
   index: number;
   onJoin: (r: Room) => void;
   onToast: (m: string) => void;
+  presence?: { fanCount: number; fans: ActiveFan[] };
 }) {
   const isFuture =
     room.scheduledStartTime !== undefined &&
     room.scheduledStartTime > Date.now();
 
   const sport = (room.sport ?? "default").toLowerCase();
+  // `presence` is undefined until the batched presence-preview call resolves
+  // for this room. Don't fall back to room.fanCount (a stale snapshot from
+  // the initial /api/roar/rooms list) — that's exactly what caused the
+  // count to show one number then visibly jump to the real one a moment
+  // later. Show the loading state instead until live data exists.
+  const presenceLoaded = presence !== undefined;
+  const liveFanCount = presence?.fanCount ?? 0;
+  const liveFans = presence?.fans ?? [];
 
   const handleCardClick = () => {
     if (isFuture) { 
@@ -361,7 +406,7 @@ function RoomCard({
         </p>
 
         <div className="mb-2.5">
-          <StackedAvatars count={room.fanCount ?? 27} />
+          <StackedAvatars fans={liveFans} count={liveFanCount} loaded={presenceLoaded} />
         </div>
 
         <motion.button
@@ -393,12 +438,37 @@ interface Props {
 
 export default function RoomsHome({ rooms, onJoinRoom, onToast }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [presenceByRoom, setPresenceByRoom] = useState<
+    Record<string, { fanCount: number; fans: ActiveFan[] }>
+  >({});
 
   const apiRooms = rooms.filter(
     (r) => r.roomId !== "mock-cricket" && r.roomId !== "mock-football" && r.roomId !== INFINITY_ROOM.roomId,
   );
 
   const allRooms = [INFINITY_ROOM, ...apiRooms];
+
+  // Single batched call for all visible rooms' active-fan previews,
+  // instead of one request per RoomCard — avoids a request waterfall as
+  // the room list grows. Re-polled so avatar stacks stay live while this
+  // screen is open.
+  useEffect(() => {
+    const roomIds = allRooms.map((r) => r.roomId);
+    if (roomIds.length === 0) return;
+
+    let cancelled = false;
+    const fetchPreview = async () => {
+      try {
+        const res = await axios.post("/api/roar/rooms/presence-preview", { roomIds });
+        if (!cancelled && res.data?.success) setPresenceByRoom(res.data.rooms);
+      } catch (e) { console.error("Presence preview failed:", e); }
+    };
+
+    fetchPreview();
+    const iv = setInterval(fetchPreview, 20_000);
+    return () => { cancelled = true; clearInterval(iv); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rooms.length]);
 
   return (
     <div
@@ -427,7 +497,14 @@ export default function RoomsHome({ rooms, onJoinRoom, onToast }: Props) {
         }}
       >
         {allRooms.map((room, i) => (
-          <RoomCard key={room.roomId} room={room} index={i} onJoin={onJoinRoom} onToast={onToast} />
+          <RoomCard
+            key={room.roomId}
+            room={room}
+            index={i}
+            onJoin={onJoinRoom}
+            onToast={onToast}
+            presence={presenceByRoom[room.roomId]}
+          />
         ))}
         <div style={{ height: 86 }} />
       </div>

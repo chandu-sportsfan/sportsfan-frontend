@@ -1,3 +1,4 @@
+
 // "use client";
 // // context/ActivityContext.tsx
 // //
@@ -17,34 +18,35 @@
 // import axios from "axios";
 // import { useAuth } from "@/context/AuthContext";
 // import { onSxpActivityRefresh } from "@/lib/sxpEvents";
-// import type { BadgeEntry } from "@/src/components/NewROARComponent/constants/index"; // adjust path to your actual types file
-// import { BADGES_LIST } from "@/src/components/NewROARComponent/constants/index"; // adjust path
+// import type { BadgeEntry } from "@/src/components/NewROARComponent/types/index";
+// import { BADGES_LIST } from "@/src/components/NewROARComponent/constants/index";
+
 // // ─── Public types ─────────────────────────────────────────────────────────────
 // export interface ActivityItem {
-//   id:        string;
-//   type:      string;   // raw enum, e.g. "ROAR_POST", "TRIVIA_CORRECT", "AUDIO_DROP"
-//   points:    number;
-//   label:     string;   // human-readable, e.g. "Shared a ROAR Post"
-//   metadata:  Record<string, unknown>;
+//   id: string;
+//   type: string;   // raw enum, e.g. "ROAR_POST", "TRIVIA_CORRECT", "AUDIO_DROP"
+//   points: number;
+//   label: string;   // human-readable, e.g. "Shared a ROAR Post"
+//   metadata: Record<string, unknown>;
 //   createdAt: number;   // Unix ms
 // }
 
 // export interface ProfileStats {
-//   posts:       number;
+//   posts: number;
 //   predictions: number;
-//   hotTakes:    number;
-//   flashQuiz:   number;
-//   debates:     number;
+//   hotTakes: number;
+//   flashQuiz: number;
+//   debates: number;
 //   totalActivity: number;
 // }
 
 // interface ActivityContextType {
-//   activities:         ActivityItem[];
-//   loading:            boolean;
-//   profileStats:       ProfileStats;
-//   badges:             BadgeEntry[];   
-//   refreshActivities:  () => Promise<void>;
-//   addLocalActivity:   (activity: ActivityItem) => void;
+//   activities: ActivityItem[];
+//   loading: boolean;
+//   profileStats: ProfileStats;
+//   badges: BadgeEntry[];
+//   refreshActivities: () => Promise<void>;
+//   addLocalActivity: (activity: ActivityItem) => void;
 // }
 
 // // ─── Module-level cache ───────────────────────────────────────────────────────
@@ -163,16 +165,12 @@
 //   return results;
 // }
 
-// /**
-//  * Clear the post cache (useful for force refresh)
-//  */
+
 // export function clearPostCache() {
 //   postCache.clear();
 // }
 
-// /**
-//  * Preload posts for better performance
-//  */
+
 // export async function preloadPosts(postIds: string[]) {
 //   await resolveBatchPostContents(postIds);
 // }
@@ -197,10 +195,7 @@
 //   return merged.sort((a, b) => b.createdAt - a.createdAt);
 // };
 
-// /**
-//  * Calculate profile stats from activities array.
-//  * Returns zero counts if activities is empty or undefined.
-//  */
+
 // const calculateProfileStats = (activities: ActivityItem[]): ProfileStats => {
 //   if (!activities || activities.length === 0) {
 //     return {
@@ -220,8 +215,13 @@
 //   // Total = all meaningful activity types (excluding internal types)
 //   const totalActivity = debates + predictions + hotTakes + flashQuiz + activities.filter((a) => a.type === "ROAR_MEMORY" || a.type === "ROAR_RAW_REACTIONS").length;
 
+//   // `posts` should represent the total user-created content: posts + debates + predictions.
+//   // Build a set of content types (POST_TYPES may include debates/hot-takes) and include predictions.
+//   const contentTypes = new Set<string>([...POST_TYPES, "ROAR_PREDICTION"]);
+//   const postsCount = activities.filter((a) => contentTypes.has(a.type)).length;
+
 //   return {
-//     posts: activities.filter((a) => POST_TYPES.includes(a.type)).length,
+//     posts: postsCount,
 //     predictions,
 //     hotTakes,
 //     flashQuiz,
@@ -238,16 +238,57 @@
 // }) => {
 //   const { user, authReady } = useAuth();
 //   const [activities, setActivities] = useState<ActivityItem[]>([]);
-//   const [loading, setLoading]       = useState(false);
+//   const [loading, setLoading] = useState(false);
+//   const [serverCounts, setServerCounts] = useState<Record<string, number>>({});
 
-//   const inFlight          = useRef(false);
+//   const inFlight = useRef(false);
 //   const localActivitiesRef = useRef<ActivityItem[]>([]);
 
 //   // ── Calculate memoized profile stats ────────────────────────────────────────
-//   const profileStats = useMemo(
-//     () => calculateProfileStats(activities),
-//     [activities]
-//   );
+//   // const profileStats = useMemo(
+//   //   () => calculateProfileStats(activities),
+//   //   [activities]
+//   // );
+
+//  const profileStats = useMemo(() => {
+//   const hasServerCounts = Object.keys(serverCounts).length > 0;
+//   if (!hasServerCounts) return calculateProfileStats(activities);
+
+//   const debates       = serverCounts["ROAR_DEBATE"] ?? 0;
+//   const predictions   = serverCounts["ROAR_PREDICTION"] ?? 0;
+//   const hotTakes       = serverCounts["ROAR_HOT_TAKE"] ?? 0;
+//   const flashQuiz       = serverCounts["FLASH_QUIZ"] ?? 0;
+//   const roarMemory       = serverCounts["ROAR_MEMORY"] ?? 0;
+//   const rawReactions     = serverCounts["ROAR_RAW_REACTIONS"] ?? 0;
+//   const roarPost           = serverCounts["ROAR_POST"] ?? 0;
+//   const roarQuiz             = serverCounts["ROAR_QUIZ"] ?? 0;
+
+//   // Posts tab = every content-creation type, matching the exact filter
+//   // Profile.tsx's "Posts" tab uses: ROAR_POST, ROAR_MEMORY,
+//   // ROAR_RAW_REACTIONS, ROAR_QUIZ, ROAR_DEBATE, ROAR_PREDICTION.
+//   // NOTE: ROAR_HOT_TAKE is intentionally excluded — Profile.tsx's own
+//   // filter list doesn't include it either, even though hotTakes is
+//   // tracked as its own stat.
+//   const posts = roarPost + roarMemory + rawReactions + roarQuiz + debates + predictions;
+
+//   return {
+//     posts,
+//     predictions,
+//     hotTakes,
+//     flashQuiz,
+//     debates,
+//     totalActivity: debates + predictions + hotTakes + flashQuiz + roarMemory + rawReactions + roarPost + roarQuiz,
+//   };
+// }, [serverCounts, activities]);
+
+//   // ── Badges ───────────────────────────────────────────────────────────────────
+//   // NOTE: this is currently a straight pass-through of the static BADGES_LIST
+//   // fixture (id/unlocked/progress hardcoded in constants.ts). It is NOT yet
+//   // derived from `activities` or `profileStats` — real per-badge unlock rules
+//   // (accuracy thresholds, sport-specific counts, majority-disagreement tracking,
+//   // tenure dates, etc.) aren't represented in ActivityItem yet. Wiring this up
+//   // to be live will require defining those rules explicitly per badge.
+//   const badges = useMemo(() => BADGES_LIST, []);
 
 //   // ── Fetch from API ──────────────────────────────────────────────────────────
 //   const fetchActivities = useCallback(async () => {
@@ -285,6 +326,7 @@
 //         );
 //         cache = { ts: Date.now(), userId, data };
 //         setActivities(data);
+//         setServerCounts(res.data.counts ?? {});
 //       }
 //     } catch (e) {
 //       console.error("[ActivityContext] fetch error:", e);
@@ -294,18 +336,15 @@
 //     }
 //   }, [user?.userId]);
 
-//   // ── Public API ──────────────────────────────────────────────────────────────
+//   // ── Public API 
 
-//   /** Force a fresh fetch, bypassing the cache. */
+  
 //   const refreshActivities = useCallback(async () => {
 //     cache = null;
 //     await fetchActivities();
 //   }, [fetchActivities]);
 
-//   /**
-//    * Optimistically add an activity before the server round-trip completes.
-//    * Call this immediately after awarding points so FanZone updates instantly.
-//    */
+  
 //   const addLocalActivity = useCallback(
 //     (activity: ActivityItem) => {
 //       localActivitiesRef.current = mergeActivities(
@@ -336,7 +375,7 @@
 
 //   return (
 //     <ActivityContext.Provider
-//       value={{ activities, loading, profileStats, refreshActivities, addLocalActivity }}
+//       value={{ activities, loading, profileStats, badges, refreshActivities, addLocalActivity }}
 //     >
 //       {children}
 //     </ActivityContext.Provider>
@@ -347,7 +386,7 @@
 //   const ctx = useContext(ActivityContext);
 //   if (!ctx) throw new Error("useActivity must be used within ActivityProvider");
 //   return ctx;
-  
+
 // };
 
 
@@ -377,30 +416,30 @@ import { BADGES_LIST } from "@/src/components/NewROARComponent/constants/index";
 
 // ─── Public types ─────────────────────────────────────────────────────────────
 export interface ActivityItem {
-  id:        string;
-  type:      string;   // raw enum, e.g. "ROAR_POST", "TRIVIA_CORRECT", "AUDIO_DROP"
-  points:    number;
-  label:     string;   // human-readable, e.g. "Shared a ROAR Post"
-  metadata:  Record<string, unknown>;
+  id: string;
+  type: string;   // raw enum, e.g. "ROAR_POST", "TRIVIA_CORRECT", "AUDIO_DROP"
+  points: number;
+  label: string;   // human-readable, e.g. "Shared a ROAR Post"
+  metadata: Record<string, unknown>;
   createdAt: number;   // Unix ms
 }
 
 export interface ProfileStats {
-  posts:       number;
+  posts: number;
   predictions: number;
-  hotTakes:    number;
-  flashQuiz:   number;
-  debates:     number;
+  hotTakes: number;
+  flashQuiz: number;
+  debates: number;
   totalActivity: number;
 }
 
 interface ActivityContextType {
-  activities:         ActivityItem[];
-  loading:            boolean;
-  profileStats:       ProfileStats;
-  badges:             BadgeEntry[];
-  refreshActivities:  () => Promise<void>;
-  addLocalActivity:   (activity: ActivityItem) => void;
+  activities: ActivityItem[];
+  loading: boolean;
+  profileStats: ProfileStats;
+  badges: BadgeEntry[];
+  refreshActivities: () => Promise<void>;
+  addLocalActivity: (activity: ActivityItem) => void;
 }
 
 // ─── Module-level cache ───────────────────────────────────────────────────────
@@ -411,6 +450,12 @@ const CACHE_TTL = 30_000; // 30 seconds
 const ACTIVITY_FETCH_LIMIT = 200;
 
 // ─── Stats Calculation Constants ───────────────────────────────────────────────
+// NOTE: ROAR_DEBATE here covers "debate created". Debate *participation*
+// (voting on a debate) is tracked under the separate ROAR_DEBATE_PARTICIPATE
+// key (see lib/userPoints.ts / lib/roarPoints.ts on the backend) and is
+// summed in alongside ROAR_DEBATE wherever a "debates" total is shown to the
+// user — both in the calculateProfileStats() raw-log fallback below and in
+// the serverCounts-driven branch of the profileStats memo further down.
 const POST_TYPES = [
   "ROAR_HOT_TAKE",
   "ROAR_RAW_REACTIONS",
@@ -519,16 +564,12 @@ export async function resolveBatchPostContents(
   return results;
 }
 
-/**
- * Clear the post cache (useful for force refresh)
- */
+
 export function clearPostCache() {
   postCache.clear();
 }
 
-/**
- * Preload posts for better performance
- */
+
 export async function preloadPosts(postIds: string[]) {
   await resolveBatchPostContents(postIds);
 }
@@ -553,10 +594,7 @@ const mergeActivities = (
   return merged.sort((a, b) => b.createdAt - a.createdAt);
 };
 
-/**
- * Calculate profile stats from activities array.
- * Returns zero counts if activities is empty or undefined.
- */
+
 const calculateProfileStats = (activities: ActivityItem[]): ProfileStats => {
   if (!activities || activities.length === 0) {
     return {
@@ -569,7 +607,12 @@ const calculateProfileStats = (activities: ActivityItem[]): ProfileStats => {
     };
   }
 
-  const debates = activities.filter((a) => a.type === "ROAR_DEBATE").length;
+  // Debates = created (ROAR_DEBATE) + voted on (ROAR_DEBATE_PARTICIPATE).
+  // These are two distinct activityLog entry types on the backend; both
+  // count toward the "Debates" total shown to the user.
+  const debates = activities.filter(
+    (a) => a.type === "ROAR_DEBATE" || a.type === "ROAR_DEBATE_PARTICIPATE"
+  ).length;
   const predictions = activities.filter((a) => a.type === "ROAR_PREDICTION").length;
   const hotTakes = activities.filter((a) => a.type === "ROAR_HOT_TAKE").length;
   const flashQuiz = activities.filter((a) => a.type === "FLASH_QUIZ").length;
@@ -578,6 +621,10 @@ const calculateProfileStats = (activities: ActivityItem[]): ProfileStats => {
 
   // `posts` should represent the total user-created content: posts + debates + predictions.
   // Build a set of content types (POST_TYPES may include debates/hot-takes) and include predictions.
+  // NOTE: POST_TYPES intentionally still only contains "ROAR_DEBATE" (debate
+  // creation), not "ROAR_DEBATE_PARTICIPATE" — voting on someone else's
+  // debate isn't "creating content" for the Posts tab's purposes, even
+  // though it does count toward the Debates tab above.
   const contentTypes = new Set<string>([...POST_TYPES, "ROAR_PREDICTION"]);
   const postsCount = activities.filter((a) => contentTypes.has(a.type)).length;
 
@@ -599,16 +646,58 @@ export const ActivityProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const { user, authReady } = useAuth();
   const [activities, setActivities] = useState<ActivityItem[]>([]);
-  const [loading, setLoading]       = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [serverCounts, setServerCounts] = useState<Record<string, number>>({});
 
-  const inFlight          = useRef(false);
+  const inFlight = useRef(false);
   const localActivitiesRef = useRef<ActivityItem[]>([]);
 
   // ── Calculate memoized profile stats ────────────────────────────────────────
-  const profileStats = useMemo(
-    () => calculateProfileStats(activities),
-    [activities]
-  );
+  // const profileStats = useMemo(
+  //   () => calculateProfileStats(activities),
+  //   [activities]
+  // );
+
+ const profileStats = useMemo(() => {
+  const hasServerCounts = Object.keys(serverCounts).length > 0;
+  if (!hasServerCounts) return calculateProfileStats(activities);
+
+  // Debates = created (ROAR_DEBATE) + voted on (ROAR_DEBATE_PARTICIPATE).
+  // Two separate activityCounts keys on the backend (see lib/userPoints.ts /
+  // lib/roarPoints.ts), summed here so the user sees one combined total.
+  const debatesCreated      = serverCounts["ROAR_DEBATE"] ?? 0;
+  const debatesParticipated = serverCounts["ROAR_DEBATE_PARTICIPATE"] ?? 0;
+  const debates             = debatesCreated + debatesParticipated;
+
+  const predictions   = serverCounts["ROAR_PREDICTION"] ?? 0;
+  const hotTakes       = serverCounts["ROAR_HOT_TAKE"] ?? 0;
+  const flashQuiz       = serverCounts["FLASH_QUIZ"] ?? 0;
+  const roarMemory       = serverCounts["ROAR_MEMORY"] ?? 0;
+  const rawReactions     = serverCounts["ROAR_RAW_REACTIONS"] ?? 0;
+  const roarPost           = serverCounts["ROAR_POST"] ?? 0;
+  const roarQuiz             = serverCounts["ROAR_QUIZ"] ?? 0;
+
+  // Posts tab = every content-creation type, matching the exact filter
+  // Profile.tsx's "Posts" tab uses: ROAR_POST, ROAR_MEMORY,
+  // ROAR_RAW_REACTIONS, ROAR_QUIZ, ROAR_DEBATE, ROAR_PREDICTION.
+  // NOTE: ROAR_HOT_TAKE is intentionally excluded — Profile.tsx's own
+  // filter list doesn't include it either, even though hotTakes is
+  // tracked as its own stat. ROAR_DEBATE_PARTICIPATE is also intentionally
+  // excluded from Posts — voting on a debate isn't content creation, it
+  // only counts toward the Debates total above. Posts therefore uses
+  // debatesCreated (not the combined `debates`) to avoid double-counting
+  // participation as a "post".
+  const posts = roarPost + roarMemory + rawReactions + roarQuiz + debatesCreated + predictions;
+
+  return {
+    posts,
+    predictions,
+    hotTakes,
+    flashQuiz,
+    debates,
+    totalActivity: debates + predictions + hotTakes + flashQuiz + roarMemory + rawReactions + roarPost + roarQuiz,
+  };
+}, [serverCounts, activities]);
 
   // ── Badges ───────────────────────────────────────────────────────────────────
   // NOTE: this is currently a straight pass-through of the static BADGES_LIST
@@ -646,7 +735,7 @@ export const ActivityProvider: React.FC<{ children: React.ReactNode }> = ({
       const res = await axios.get(
         `/api/user-activity?userId=${encodeURIComponent(userId)}&limit=${ACTIVITY_FETCH_LIMIT}`
       );
-     
+
       if (res.data.success) {
         // Merge server data with any optimistic local additions, sort newest-first
         const data = mergeActivities(
@@ -655,6 +744,7 @@ export const ActivityProvider: React.FC<{ children: React.ReactNode }> = ({
         );
         cache = { ts: Date.now(), userId, data };
         setActivities(data);
+        setServerCounts(res.data.counts ?? {});
       }
     } catch (e) {
       console.error("[ActivityContext] fetch error:", e);
@@ -664,18 +754,15 @@ export const ActivityProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   }, [user?.userId]);
 
-  // ── Public API ──────────────────────────────────────────────────────────────
+  // ── Public API 
 
-  /** Force a fresh fetch, bypassing the cache. */
+  
   const refreshActivities = useCallback(async () => {
     cache = null;
     await fetchActivities();
   }, [fetchActivities]);
 
-  /**
-   * Optimistically add an activity before the server round-trip completes.
-   * Call this immediately after awarding points so FanZone updates instantly.
-   */
+  
   const addLocalActivity = useCallback(
     (activity: ActivityItem) => {
       localActivitiesRef.current = mergeActivities(
@@ -717,5 +804,5 @@ export const useActivity = () => {
   const ctx = useContext(ActivityContext);
   if (!ctx) throw new Error("useActivity must be used within ActivityProvider");
   return ctx;
-  
+
 };

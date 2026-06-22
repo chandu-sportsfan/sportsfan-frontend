@@ -521,6 +521,31 @@ import { RoarProfileProvider, useRoarProfileContext } from "@/context/RoarProfil
 import RoomPostDetailsOverlay from "./components/RoomPostDetailsOverlay";
 import { useRouter } from "next/navigation";
 
+ 
+const useVisibilityInterval = (callback: () => void, delay: number) => {
+  const savedCallback = useRef(callback);
+  useEffect(() => { savedCallback.current = callback; }, [callback]);
+
+  useEffect(() => {
+    if (delay === null) return;
+    let id: NodeJS.Timeout;
+
+    const start = () => { id = setInterval(() => {
+      if (!document.hidden) savedCallback.current();
+    }, delay); };
+
+    const handleVisibility = () => {
+      clearInterval(id);
+      if (!document.hidden) { savedCallback.current(); start(); }
+    };
+
+    start();
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => { clearInterval(id); document.removeEventListener("visibilitychange", handleVisibility); };
+  }, [delay]);
+};
+
+
 export default function ROARApp() {
   const containerRef = useRef<HTMLDivElement>(null);
   const searchParams = useSearchParams();
@@ -538,6 +563,8 @@ export default function ROARApp() {
   const [currentUsername, setCurrentUsername] = useState("RoarUser");
   const [currentUserId, setCurrentUserId] = useState<string | undefined>();
   const [currentAvatarUrl, setCurrentAvatarUrl] = useState<string | undefined>();
+
+
 
   useEffect(() => {
     setMounted(true);
@@ -635,13 +662,40 @@ const handleFanProfileClick = useCallback((fan: any) => {
   const [rooms, setRooms]     = useState<Room[]>([]);
   const [dbPosts, setDbPosts] = useState<any[]>([]);
 
+  // const fetchPosts = useCallback(async () => {
+  //   try {
+  //     // const res = await axios.get(`/api/roar/posts?t=${Date.now()}`);
+  //      const res = await axios.get(`/api/roar/posts?t=${Date.now()}&limit=15`);
+  //     if (res.data?.success) setDbPosts(res.data.posts);
+  //   } catch (err) { console.error("Failed to fetch posts:", err); }
+  // }, []);
+
   const fetchPosts = useCallback(async () => {
     try {
-      // const res = await axios.get(`/api/roar/posts?t=${Date.now()}`);
-       const res = await axios.get(`/api/roar/posts?t=${Date.now()}&limit=15`);
+      const res = await axios.get(`/api/roar/posts?t=${Date.now()}&limit=15`);
       if (res.data?.success) setDbPosts(res.data.posts);
     } catch (err) { console.error("Failed to fetch posts:", err); }
   }, []);
+
+  const fetchRooms = useCallback(async () => {
+    try {
+      const res = await axios.get(`/api/roar/rooms?t=${Date.now()}`);
+      if (res.data?.success) {
+        setRooms(res.data.rooms);
+        setSelectedRoom(prev => {
+          if (prev) return prev;
+          return res.data.rooms.length > 0 ? res.data.rooms[0] : null;
+        });
+      }
+    } catch (err) { console.error("Failed to fetch rooms:", err); }
+  }, []);
+
+  const combinedFetch = useCallback(() => {
+    fetchRooms(); fetchPosts();
+  }, [fetchRooms, fetchPosts]);
+
+   useVisibilityInterval(combinedFetch, 30000);
+
 
   useEffect(() => {
     const postId = searchParams.get("postId");
@@ -653,18 +707,18 @@ const handleFanProfileClick = useCallback((fan: any) => {
   useEffect(() => {
     if (!onboarded) return;
 
-    const fetchRooms = async () => {
-      try {
-        const res = await axios.get(`/api/roar/rooms?t=${Date.now()}`);
-        if (res.data?.success) {
-          setRooms(res.data.rooms);
-          setSelectedRoom(prev => {
-            if (prev) return prev;
-            return res.data.rooms.length > 0 ? res.data.rooms[0] : null;
-          });
-        }
-      } catch (err) { console.error("Failed to fetch rooms:", err); }
-    };
+    // const fetchRooms = async () => {
+    //   try {
+    //     const res = await axios.get(`/api/roar/rooms?t=${Date.now()}`);
+    //     if (res.data?.success) {
+    //       setRooms(res.data.rooms);
+    //       setSelectedRoom(prev => {
+    //         if (prev) return prev;
+    //         return res.data.rooms.length > 0 ? res.data.rooms[0] : null;
+    //       });
+    //     }
+    //   } catch (err) { console.error("Failed to fetch rooms:", err); }
+    // };
 
     const fetchUserSports = async () => {
       try {
@@ -681,8 +735,12 @@ const handleFanProfileClick = useCallback((fan: any) => {
     };
 
     fetchRooms(); fetchPosts(); fetchUserSports();
-    const interval = setInterval(() => { fetchRooms(); fetchPosts(); }, 5000);
-    return () => clearInterval(interval);
+    // const interval = setInterval(() => { fetchRooms(); fetchPosts(); }, 5000);
+    // const interval = setInterval(() => { fetchRooms(); fetchPosts(); }, 30000);
+    // return () => clearInterval(interval);
+//     const combinedFetch = useCallback(() => { fetchRooms(); fetchPosts(); }, [fetchRooms, fetchPosts]);
+// useVisibilityInterval(combinedFetch, 30000);
+
   }, [onboarded, fetchPosts]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
@@ -745,7 +803,8 @@ const handleFanProfileClick = useCallback((fan: any) => {
       }
       return post;
     }));
-    try { await axios.post(`/api/roar/posts/${postId}/like`); fetchPosts(); }
+    // try { await axios.post(`/api/roar/posts/${postId}/like`); fetchPosts(); }
+    try { await axios.post(`/api/roar/posts/${postId}/like`); }
     catch {
       setDbPosts(prev => prev.map(post => {
         if (post.postId === postId || post._id === postId) {

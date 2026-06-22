@@ -1421,6 +1421,30 @@ function QuizCard({ post, onToast, onPostClick, roomId, onFanProfile }: QuizCard
 }
 
 // ── Main DiscussionRoom ───────────────────────────────────────────────────────
+// ── Visibility-aware interval hook ───────────────────────────────────────────
+function useVisibilityInterval(callback: () => void, delay: number) {
+  const savedCallback = useRef(callback);
+  useEffect(() => { savedCallback.current = callback; }, [callback]);
+
+  useEffect(() => {
+    let id: ReturnType<typeof setInterval>;
+    const start = () => {
+      id = setInterval(() => {
+        if (!document.hidden) savedCallback.current();
+      }, delay);
+    };
+    const handleVisibility = () => {
+      clearInterval(id);
+      if (!document.hidden) { savedCallback.current(); start(); }
+    };
+    start();
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
+  }, [delay]);
+}
 
 export default function DiscussionRoom({
   onBack, onToast, roomId, roomName, onPostClick, onCompose,
@@ -1456,6 +1480,8 @@ export default function DiscussionRoom({
   const localReactionsRef = useRef<Record<string, { reaction: Reaction | null; heartCount: number }>>({});
   const pendingReactRef = useRef<Record<string, boolean>>({});
   const [reactionsMsgId, setReactionsMsgId] = useState<string | null>(null);
+
+
 
   useEffect(() => { localReactionsRef.current = localReactions; }, [localReactions]);
 
@@ -1502,7 +1528,7 @@ export default function DiscussionRoom({
             .filter(m => !seenIds.has(m.msgId))
             .map((m: any) => ({
               id: m.msgId,
-              fan: { username: displayUsername(m.authorUsername),  authorUid: m.authorUid, badge: m.authorBadge, avatarUrl: m.authorAvatarUrl || m.avatarUrl || (m.authorUsername === userUsername ? userAvatarUrl : undefined) },
+              fan: { username: displayUsername(m.authorUsername), authorUid: m.authorUid, badge: m.authorBadge, avatarUrl: m.authorAvatarUrl || m.avatarUrl || (m.authorUsername === userUsername ? userAvatarUrl : undefined) },
               text: m.text,
               fireCount: m.fireCount || 0,
               nochanceCount: m.noChanceCount || 0,
@@ -1634,7 +1660,10 @@ export default function DiscussionRoom({
     // Heartbeat every 25s: well under the 60s server-side TTL, so a single
     // missed beat (e.g. a slow network tick) doesn't drop the user from
     // the active list.
-    const heartbeat = setInterval(() => { join(); refreshActiveFans(); }, 25_000);
+    // const heartbeat = setInterval(() => { join(); refreshActiveFans(); }, 25_000);
+    const heartbeat = setInterval(() => {
+      if (!document.hidden) { join(); refreshActiveFans(); }
+    }, 60_000);
 
     window.addEventListener("beforeunload", leaveBeacon);
     return () => {
@@ -1668,7 +1697,7 @@ export default function DiscussionRoom({
               const isPending = pendingReactRef.current[m.msgId];
               return {
                 id: m.msgId,
-                fan: { username: displayUsername(m.authorUsername),  authorUid: m.authorUid, badge: m.authorBadge, avatarUrl: m.authorAvatarUrl || m.avatarUrl || (m.authorUsername === userUsername ? userAvatarUrl : undefined) },
+                fan: { username: displayUsername(m.authorUsername), authorUid: m.authorUid, badge: m.authorBadge, avatarUrl: m.authorAvatarUrl || m.avatarUrl || (m.authorUsername === userUsername ? userAvatarUrl : undefined) },
                 text: m.text,
                 fireCount: m.fireCount || 0,
                 nochanceCount: m.noChanceCount || 0,
@@ -1706,7 +1735,15 @@ export default function DiscussionRoom({
 
   useEffect(() => { onRegisterRefresh?.(fetchMsgs); }, [fetchMsgs, onRegisterRefresh]);
   useEffect(() => { onRegisterReplyUpdate?.((postId, count) => { setPosts(p => p.map(x => x.id === postId ? { ...x, replyCount: count } : x)); }); }, [onRegisterReplyUpdate]);
-  useEffect(() => { if (!roomId) return; fetchMsgs(); const iv = setInterval(fetchMsgs, 3000); return () => clearInterval(iv); }, [fetchMsgs, roomId]);
+  // useEffect(() => { if (!roomId) return; fetchMsgs(); 
+  // const iv = setInterval(fetchMsgs, 15000); return () => clearInterval(iv); },
+  useEffect(() => {
+    if (!roomId) return;
+    fetchMsgs();
+  }, [fetchMsgs, roomId]);
+
+  useVisibilityInterval(fetchMsgs, 15000);
+
   useEffect(() => { if (!loading && listRef.current) setTimeout(() => listRef.current?.scrollTo({ top: 0 }), 50); }, [loading]);
 
   // ── Reaction handler (mirrors HomeFeed.tsx's handleReact) ───────────────────
@@ -1797,7 +1834,7 @@ export default function DiscussionRoom({
         const m = res.data.message;
         setPosts(p => [{
           id: m.msgId,
-          fan: { username: displayUsername(m.authorUsername),  authorUid: m.authorUid, badge: m.authorBadge, avatarUrl: m.authorAvatarUrl || m.avatarUrl || (m.authorUsername === userUsername ? userAvatarUrl : undefined) },
+          fan: { username: displayUsername(m.authorUsername), authorUid: m.authorUid, badge: m.authorBadge, avatarUrl: m.authorAvatarUrl || m.avatarUrl || (m.authorUsername === userUsername ? userAvatarUrl : undefined) },
           text: m.text, fireCount: 0, nochanceCount: 0, heartCount: 0, userReaction: null, replyCount: 0,
           agreeCount: 0, disagreeCount: 0, userVote: null, sideA: m.sideA ?? null, sideB: m.sideB ?? null,
           timeAgo: "now", createdAt: m.createdAt || Date.now(), type: m.type, mediaUrls: m.mediaUrls,

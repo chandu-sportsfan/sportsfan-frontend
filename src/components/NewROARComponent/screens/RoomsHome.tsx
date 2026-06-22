@@ -465,8 +465,12 @@ export default function RoomsHome({ rooms, onJoinRoom, onToast }: Props) {
     };
 
     fetchPreview();
-    const iv = setInterval(fetchPreview, 20_000);
-    return () => { cancelled = true; clearInterval(iv); };
+    // const iv = setInterval(fetchPreview, 20_000);
+    // return () => { cancelled = true; clearInterval(iv); };
+    const iv = setInterval(() => {
+  if (!document.hidden) fetchPreview();
+}, 30_000);
+return () => { cancelled = true; clearInterval(iv); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rooms.length]);
 

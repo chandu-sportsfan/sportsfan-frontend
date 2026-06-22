@@ -5,10 +5,11 @@ import { useRouter } from "next/navigation";
 import { useState, useMemo, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
+// import { Trophy, ArrowUpRight } from "lucide-react";
 import { type ActivityItem, useActivity } from "@/context/ActivityContext";
 import { useLeaderboard } from "@/context/LeaderboardContext";
 import {
-  ChevronDown, Trophy, Share2, CheckCircle2,
+  ChevronDown, Trophy, ArrowUpRight, Share2, CheckCircle2,
   Award, TrendingUp, Play, ThumbsUp, FileText,
   Gamepad2, UserPlus, LayoutGrid, Calendar,
   X, Headphones,
@@ -351,11 +352,25 @@ function metadataText(metadata: ActivityItem["metadata"]) {
     "matchName", "question", "resourceName", "name", "transactionId",
     "sport",   // FIX 1: ROAR activities carry { postId, sport }
   ];
+  // Primary textual field (title/postTitle/etc.)
+  let primary = "";
   for (const key of keys) {
     const value = metadata?.[key];
-    if (typeof value === "string" && value.trim()) return value.trim();
-    if (typeof value === "number") return String(value);
+    if (typeof value === "string" && value.trim()) {
+      primary = value.trim();
+      break;
+    }
+    if (typeof value === "number") {
+      primary = String(value);
+      break;
+    }
   }
+
+  // Room-related fallbacks / suffix
+  const room = metadata?.roomName || metadata?.room || metadata?.room_label || metadata?.roomId;
+  if (primary && room) return `${primary} — ${room}`;
+  if (primary) return primary;
+  if (typeof room === "string") return room;
   return "";
 }
 
@@ -996,6 +1011,8 @@ export default function FanZoneDashboard() {
     [history]
   );
 
+  // roomGroups removed: room activity will be surfaced inline in existing UI
+
   const rankDiff = rankSnapshot.prev > 0 && rankSnapshot.current > 0
     ? Math.abs(rankSnapshot.prev - rankSnapshot.current) : 0;
   const isRankUp = rankSnapshot.prev > 0 && rankSnapshot.current > 0
@@ -1319,51 +1336,78 @@ export default function FanZoneDashboard() {
           </div>
 
           {/* Rank */}
-          <div className="bg-[#09090b] border border-white/10 rounded-2xl p-5 flex items-center gap-4">
-            <div className="w-12 h-12 rounded-full bg-yellow-500/10 flex items-center justify-center border border-yellow-500/20">
-              <Trophy className="w-6 h-6 text-yellow-500" />
-            </div>
-            <div>
-              <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Your Rank</p>
-              <h3 className="text-2xl font-black text-white leading-tight">
-                {rankSnapshot.current > 0 ? `#${rankSnapshot.current}` : "—"}
-              </h3>
-              {rankDiff > 0 ? (
-                <p className={`text-xs font-bold flex items-center gap-1 mt-0.5 ${isRankUp ? "text-emerald-500" : "text-red-500"}`}>
-                  {isRankUp ? "↑" : "↓"} {rankDiff}{" "}
-                  <span className="text-gray-500 font-medium">This Month</span>
-                </p>
-              ) : (
-                <p className="text-xs text-gray-500 font-medium mt-0.5">— No Change</p>
-              )}
-            </div>
-          </div>
+         {/* Rank */}
+<div className="relative overflow-hidden rounded-2xl border border-yellow-500/20 bg-gradient-to-br from-[#0f0c00] via-[#09090b] to-[#09090b] p-5">
+  <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(234,179,8,0.12),transparent_60%)]" />
+
+  <div className="relative flex items-center gap-5">
+    <div className="w-16 h-16 rounded-2xl bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center">
+      <Trophy className="w-8 h-8 text-yellow-500" />
+    </div>
+
+    <div className="flex-1">
+      <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-yellow-500/70">
+        Your Rank
+      </p>
+
+      <div className="flex items-end gap-3 mt-1">
+        <h3 className="text-5xl font-black text-white leading-none">
+          {rankSnapshot.current > 0 ? rankSnapshot.current : "—"}
+        </h3>
+      </div>
+    </div>
+  </div>
+</div>
 
           {/* Total SXP */}
-          <div className="bg-[#09090b] border border-white/10 rounded-2xl p-5 flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-full bg-purple-500/10 flex items-center justify-center border border-purple-500/20">
-                <Award className="w-6 h-6 text-purple-500" />
-              </div>
-              <div>
-                <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Total SXP</p>
-                <h3 className="text-base font-bold text-white">{displayPoints}</h3>
-                <p className="text-xs text-gray-500 font-medium mt-0.5">All Time</p>
-              </div>
-            </div>
-          </div>
+          {/* Total SXP */}
+<div className="relative overflow-hidden rounded-2xl border border-purple-500/20 bg-gradient-to-br from-[#0b0715] via-[#09090b] to-[#09090b] p-5">
+  <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(168,85,247,0.12),transparent_60%)]" />
+
+  <div className="relative flex items-center gap-5">
+    <div className="w-16 h-16 rounded-2xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center">
+      <Award className="w-8 h-8 text-purple-500" />
+    </div>
+
+    <div className="flex-1">
+      <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-purple-400/70">
+        Total SXP
+      </p>
+
+      <h3 className="text-5xl font-black text-white leading-none mt-1">
+        {displayPoints}
+      </h3>
+
+      <p className="text-xs text-gray-500 font-medium mt-2 uppercase tracking-wider">
+        All Time
+      </p>
+    </div>
+  </div>
+</div>
 
           {/* Leaderboard link */}
-          <Link
-            href="/MainModules/Leaderboard"
-            className="bg-[#09090b] border border-white/10 hover:border-rose-500/50 rounded-2xl p-5 flex flex-col items-center justify-center group hover:scale-[1.02] transition-all cursor-pointer relative overflow-hidden"
-          >
-            <div className="absolute inset-0 bg-rose-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-            <Trophy className="w-7 h-7 text-rose-500 mb-1.5 group-hover:scale-110 group-hover:-translate-y-1 transition-all duration-300 relative z-10" />
-            <h3 className="text-sm font-black text-white text-center leading-tight tracking-wide relative z-10">
-              Live<br />Leaderboard
-            </h3>
-          </Link>
+         <Link
+  href="/MainModules/Leaderboard"
+  className="bg-[#09090b] border border-rose-500/30 hover:border-rose-500 rounded-2xl p-5 flex flex-col items-center justify-center group hover:scale-[1.02] transition-all cursor-pointer relative overflow-hidden"
+>
+  <div className="absolute inset-0 bg-gradient-to-br from-rose-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+
+  <div className="absolute top-3 right-3">
+    <ArrowUpRight className="w-4 h-4 text-rose-400 opacity-70 group-hover:opacity-100" />
+  </div>
+
+  <Trophy className="w-7 h-7 text-rose-500 mb-1.5 group-hover:scale-110 transition-all duration-300 relative z-10" />
+
+  <h3 className="text-sm font-black text-white text-center leading-tight tracking-wide relative z-10">
+    Global
+    <br />
+    Leaderboard
+  </h3>
+
+  <span className="mt-2 text-[10px] font-bold uppercase tracking-widest text-rose-400 relative z-10">
+    Climb The Ranks →
+  </span>
+</Link>
         </div>
 
         {/* ── TABS ── */}
@@ -1402,6 +1446,7 @@ export default function FanZoneDashboard() {
                   <div className="inline-block bg-[#18181b] border border-white/10 text-sm font-bold rounded-xl px-4 py-2 text-white mb-6">
                     {currentMonthLabel}
                   </div>
+                  
                   <div className="space-y-6">
                     <div>
                       <p className="text-xs text-gray-400 font-medium mb-1">This Month</p>

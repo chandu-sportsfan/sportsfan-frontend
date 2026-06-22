@@ -11,7 +11,7 @@ import React, {
 } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useLeaderboard } from '@/context/LeaderboardContext';
-import { ChevronLeft, Trophy, Star, Crown, ArrowUp, ArrowDown, Minus } from 'lucide-react';
+import { ChevronLeft, ChevronDown, Trophy, Star, Crown, ArrowUp, ArrowDown, Minus, Search, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 interface LeaderboardUser {
@@ -193,6 +193,12 @@ const GlobalLeaderboard: React.FC = () => {
 
   const RANK_SNAPSHOT_KEY = 'gl_rank_snapshot';
 
+  // UI state: search, pagination/expand
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [visibleLimit, setVisibleLimit] = useState<number>(15);
+  const [expanded, setExpanded] = useState<boolean>(false);
+  const PAGE_INCREMENT = 15;
+
   // Confetti on open — identical to original
   useEffect(() => {
     setShowConfetti(true);
@@ -316,6 +322,50 @@ const GlobalLeaderboard: React.FC = () => {
       flashRed: false,
     }));
   }, [animatedList, safeLeaderboard]);
+
+  // Precompute sorted user list and visible slice (search + pagination + current-user visibility)
+  const allUsers = useMemo(() => {
+    return displayList.slice().sort((a, b) => a.rank - b.rank);
+  }, [displayList]);
+
+  const normalizedQuery = (searchQuery || "").trim().toLowerCase();
+
+  const matchedUsers = useMemo(() => {
+    if (!normalizedQuery) return allUsers;
+    return allUsers.filter((u) => (u.userName || '').toLowerCase().includes(normalizedQuery));
+  }, [allUsers, normalizedQuery]);
+
+  const visibleList = useMemo(() => {
+    // Searching: show matched users (paginated)
+    if (normalizedQuery) {
+      return matchedUsers.slice(0, visibleLimit);
+    }
+
+    // Not searching: show top N, but always ensure current user visible
+    const total = allUsers.length;
+    const limit = Math.max(1, visibleLimit);
+
+    // If current user is outside the default window and we're not expanded,
+    // show 1..(limit-1) then the current user's row as the final row.
+    if (!expanded && user && user.userId && (userRank() > limit)) {
+      const top = allUsers.slice(0, limit - 1);
+      const current = allUsers.find((u) => sameUserId(u.userId, user.userId));
+      if (current) {
+        // Ensure we don't duplicate if current appears in top
+        const inTop = top.some((t) => sameUserId(t.userId, current.userId));
+        if (!inTop) return [...top, current];
+      }
+      return top;
+    }
+
+    // Default: show up to limit (expanded or not controls limit value)
+    return allUsers.slice(0, Math.min(limit, total));
+  }, [allUsers, matchedUsers, normalizedQuery, visibleLimit, expanded, user]);
+
+  function userRank() {
+    const r = (user && allUsers.find((u) => sameUserId(u.userId, user.userId))?.rank) ?? 0;
+    return r;
+  }
 
   // ── Loading — identical to original ───────────────────────────────────────
   if (loading && safeLeaderboard.length === 0) {
@@ -536,6 +586,47 @@ const GlobalLeaderboard: React.FC = () => {
           .gl-rank-col   { width: 60px; }
           .gl-col-rank   { width: 60px; }
         }
+        .gl-search { width: 100%; max-width: 360px; padding: 10px 12px; padding-left: 40px; height: 40px; border-radius: 12px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); color: rgba(255,255,255,0.95); font-size: 13px; transition: box-shadow 0.18s, border-color 0.18s, transform 0.12s; }
+        .gl-search:hover { transform: translateY(-1px); }
+        .gl-search:focus { outline: none; box-shadow: 0 10px 30px rgba(225,29,72,0.07); border-color: rgba(225,29,72,0.22); backdrop-filter: blur(6px); }
+        .gl-search::placeholder { color: rgba(255,255,255,0.45); font-style: italic; }
+        .gl-search-wrap { position: relative; display: inline-flex; align-items: center; width: 520px; max-width: calc(100% - 40px); gap: 8px; padding: 10px 12px; border-radius: 22px; background: linear-gradient(180deg, rgba(6,6,8,0.86), rgba(10,10,12,0.78)); border: 1px solid rgba(225,29,72,0.12); box-shadow: inset 0 -6px 18px rgba(0,0,0,0.6), 0 8px 40px rgba(225,29,72,0.04); }
+        .gl-search-wrap::after { content: ''; position: absolute; inset: -2px; border-radius: 24px; pointer-events: none; filter: blur(8px); opacity: 0.9; box-shadow: 0 0 32px rgba(225,29,72,0.12); }
+        .gl-search-wrap:focus-within { border-color: rgba(225,29,72,0.28); box-shadow: inset 0 -6px 20px rgba(0,0,0,0.6), 0 18px 60px rgba(225,29,72,0.12); transform: translateY(-2px); }
+        .gl-search-wrap:focus-within .gl-search-icon { color: #fff; transform: translateY(-50%) scale(1.06); }
+        .gl-search-icon { margin-left: 8px; color: rgba(255,255,255,0.65); transition: color 0.14s, transform 0.14s; }
+        .gl-search { width: 100%; max-width: 460px; padding: 8px 8px 8px 6px; height: 44px; border-radius: 12px; background: transparent; border: none; color: rgba(255,255,255,0.95); font-size: 15px; font-weight: 500; }
+        .gl-clear-btn { margin-right: 6px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.03); color: rgba(255,255,255,0.65); cursor: pointer; padding: 6px; border-radius: 8px; transition: background 0.12s, color 0.12s; }
+        .gl-clear-btn:hover { background: rgba(255,255,255,0.04); color: #fff; }
+        .gl-match-count { font-family: var(--gl-font-display); font-weight: 800; font-size: 12px; color: rgba(255,255,255,0.9); background: rgba(0,0,0,0.18); padding: 6px 8px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.04); margin-left: 6px; }
+        @media (max-width: 900px) { .gl-search-wrap { width: 380px; } }
+        @media (max-width: 540px) { .gl-search-wrap { width: calc(100% - 32px); margin: 8px 16px 0 0; } .gl-search { max-width: 100%; } }
+        .gl-load-more { display: inline-flex; align-items: center; gap: 8px; margin: 18px auto 0; padding: 10px 14px; border-radius: 12px; background: rgba(225,29,72,0.06); color: #e11d48; font-weight: 800; cursor: pointer; border: 1px solid rgba(225,29,72,0.12); }
+        /* Responsive layout tweaks */
+        @media (max-width: 1100px) {
+          .gl-wrap { padding-left: 12px; padding-right: 12px; }
+        }
+        @media (max-width: 900px) {
+          .gl-header { flex-direction: column; align-items: stretch; gap: 12px; }
+          .gl-title-row { align-items: flex-start; }
+          .gl-stat-card { align-self: stretch; width: 100%; display: flex; justify-content: space-between; padding: 14px 16px; }
+          .gl-title { font-size: clamp(20px, 6vw, 34px); }
+          .gl-subtitle { font-size: 12px; }
+          .gl-search-wrap { width: 100%; margin: 6px 0 0 0; }
+          .gl-table-wrap { margin-top: 8px; }
+        }
+        @media (max-width: 640px) {
+          .gl-col-headers { padding: 10px 12px; }
+          .gl-col-header { font-size: 8px; }
+          .gl-row { padding: 10px 12px; }
+          .gl-rank-text { font-size: 16px; }
+          .gl-pts-value { font-size: 16px; }
+          .gl-search-wrap { padding: 8px; border-radius: 12px; }
+          .gl-title { font-size: 22px; }
+          .gl-stat-card { padding: 12px; }
+          .gl-live-pill { margin-top: 6px; }
+          .gl-load-more { padding: 8px 12px; }
+        }
       `}</style>
 
       <div className="gl-wrap">
@@ -544,7 +635,7 @@ const GlobalLeaderboard: React.FC = () => {
           <div>
             <button onClick={() => router.push('/MainModules/Fanszone')} className="gl-back-btn">
               <ChevronLeft size={14} />
-              Back to Fanzone
+              Back
             </button>
             <div className="gl-title-row">
               <div className="gl-title-icon">
@@ -577,6 +668,35 @@ const GlobalLeaderboard: React.FC = () => {
           </div>
         </div>
 
+        {/* Insert search under the title (just below Live Rankings) */}
+        <div style={{ marginTop: 8, marginBottom: 16 }}>
+          <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
+            <div className="gl-search-wrap" role="search">
+              <Search className="gl-search-icon" size={18} />
+              <input
+                type="search"
+                aria-label="Search fans"
+                role="searchbox"
+                autoComplete="off"
+                className="gl-search"
+                placeholder="Search fans by name..."
+                value={searchQuery}
+                onChange={(e) => { setSearchQuery(e.target.value); setVisibleLimit(15); setExpanded(false); }}
+              />
+              {searchQuery ? (
+                <button
+                  aria-label="Clear search"
+                  className="gl-clear-btn"
+                  onClick={() => { setSearchQuery(''); setVisibleLimit(15); setExpanded(false); }}
+                >
+                  <X size={14} />
+                </button>
+              ) : null}
+              {normalizedQuery ? <span className="gl-match-count">{matchedUsers.length}</span> : null}
+            </div>
+          </div>
+        </div>
+
         {/* ── TABLE ── */}
         <div className="gl-table-wrap">
           <div className="gl-col-headers">
@@ -587,8 +707,8 @@ const GlobalLeaderboard: React.FC = () => {
           </div>
 
           <div className="gl-list" ref={containerRef}>
-            {displayList.length > 0 ? (
-              displayList.map((u) => {
+            {visibleList.length > 0 ? (
+              visibleList.map((u) => {
                 const isCurrentUser = sameUserId(u.userId, user?.userId);
                 const rank = u.rank;
                 const isMovingUp   = u.animatingUp;
@@ -671,6 +791,30 @@ const GlobalLeaderboard: React.FC = () => {
               </div>
             )}
           </div>
+        </div>
+        {/* Load more / Collapse control */}
+        <div style={{ display: 'flex', justifyContent: 'center' }}>
+          {((normalizedQuery ? matchedUsers.length : allUsers.length) > visibleList.length) || visibleLimit > 15 ? (
+            <button
+              className="gl-load-more"
+              type="button"
+              onClick={() => {
+                const total = normalizedQuery ? matchedUsers.length : allUsers.length;
+                if (visibleLimit >= total) {
+                  // collapse
+                  setVisibleLimit(15);
+                  setExpanded(false);
+                } else {
+                  const next = Math.min(total, visibleLimit + PAGE_INCREMENT);
+                  setVisibleLimit(next);
+                  setExpanded(next >= total);
+                }
+              }}
+            >
+              {visibleLimit >= (normalizedQuery ? matchedUsers.length : allUsers.length) ? 'Collapse' : 'Load more'}
+              <ChevronDown size={14} />
+            </button>
+          ) : null}
         </div>
       </div>
     </>

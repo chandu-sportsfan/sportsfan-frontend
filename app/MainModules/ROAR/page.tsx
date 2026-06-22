@@ -1,16 +1,50 @@
-"use client";
+// "use client";
+// import ROARApp from "@/src/components/NewROARComponent";
+// import { Suspense } from "react";
 
+// export default function ROARPage() {
+//   return (
+//     <div style={{
+//       display: "flex",
+//       flexDirection: "column",
+//       flex: 1,
+//       minHeight: 0,
+//       height: "100%",
+//       width: "100%",
+//       overflow: "hidden",
+//       position: "relative",
+//     }}>
+//       <Suspense fallback={null}>
+//         <ROARApp />
+//       </Suspense>
+//     </div>
+//   );
+// }
+
+
+//MainModules/ROAR/page.tsx
+"use client";
 import ROARApp from "@/src/components/NewROARComponent";
 import { Suspense } from "react";
 
 export default function ROARPage() {
   return (
-    <div className="relative w-full" style={{ padding: "32px 16px 60px", maxWidth: "1280px", margin: "0 auto" }}>
-      <div style={{ height: "calc(100vh - 140px)", minHeight: "600px", borderRadius: "24px", overflow: "hidden" }}>
-        <Suspense fallback={<div style={{ padding: 20, color: "white", textAlign: "center" }}>Loading ROAR...</div>}>
-          <ROARApp />
-        </Suspense>
-      </div>
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        width: "100%",
+        // Use dvh so mobile Safari's collapsing toolbar is accounted for.
+        // On desktop this resolves the same as 100%.
+        height: "100%",
+        minHeight: 0,
+        overflow: "hidden",
+        position: "relative",
+      }}
+    >
+      <Suspense fallback={null}>
+        <ROARApp />
+      </Suspense>
     </div>
   );
 }

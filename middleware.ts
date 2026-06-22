@@ -16,6 +16,7 @@ const publicRoutes = [
     '/api/auth/verify-otp',
     '/api/watch-along',
     '/images',
+    '/ingest', // Allow PostHog tracking events to bypass login
 ];
 
 export async function middleware(request: NextRequest) {

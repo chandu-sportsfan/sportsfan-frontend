@@ -6,6 +6,7 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  skipTrailingSlashRedirect: true,
   async rewrites() {
     const apiTarget =
       process.env.NEXT_PUBLIC_BACKEND_URL ||
@@ -14,6 +15,19 @@ const nextConfig = {
 
     return {
       beforeFiles: [
+        // ── PostHog Reverse Proxy ──
+        {
+          source: "/ingest/static/:path*",
+          destination: "https://us-assets.i.posthog.com/static/:path*",
+        },
+        {
+          source: "/ingest/:path*",
+          destination: "https://us.i.posthog.com/:path*",
+        },
+        {
+          source: "/ingest/decide",
+          destination: "https://us.i.posthog.com/decide",
+        },
         // ── Auth routes → proxy to admin panel ──
         {
           source: "/api/auth/login",

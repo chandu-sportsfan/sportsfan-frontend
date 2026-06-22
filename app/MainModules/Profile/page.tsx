@@ -1,5 +1,4 @@
 "use client";
-"use client";
 
 import { useEffect, useState } from "react";
 import ProfilePageInner from "../../../src/components/NewROARComponent/screens/Profile";
@@ -19,7 +18,6 @@ export default function ProfilePage() {
       const data = await res.json();
 
       setProfile(data);
-      console.log("profile", data);
       if (data?.user?.badge) {
         setUserBadge(data.user.badge);
       }
@@ -29,8 +27,15 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className="roar-root">
+    <div className="roar-root roar-profile-page">
       <style dangerouslySetInnerHTML={{ __html: GLOBAL_CSS }} />
+      <style dangerouslySetInnerHTML={{
+        __html: `
+          .roar-profile-page .screen-scroll {
+            padding-top: 0 !important;
+          }
+        `
+      }} />
 
       <ProfilePageInner
         userBadge={userBadge}
@@ -42,6 +47,4 @@ export default function ProfilePage() {
       />
     </div>
   );
-
-
 }

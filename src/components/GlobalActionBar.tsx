@@ -87,7 +87,7 @@ export default function GlobalActionBar() {
       </div> */}
 
       {/* Create Post Button — above feedback button */}
-      {/* <div className="fixed bottom-15 right-4 md:bottom-15 md:right-6 lg:bottom-15 lg:right-6 z-50">
+      <div className="fixed bottom-15 right-4 md:bottom-15 md:right-6 lg:bottom-15 lg:right-6 z-50">
         <button
           onClick={() => setDialogOpen(true)}
           className="group relative flex items-center justify-center w-7 h-7 md:w-12 md:h-12 lg:w-12 lg:h-12 rounded-full bg-gradient-to-r from-[#C9115F] to-[#e85d04]  border border-white/15 shadow-lg hover:shadow-xl hover:border-[#C9115F]/60 hover:bg-[#C9115F]/10 transition-all duration-300 hover:scale-110 active:scale-95"
@@ -97,10 +97,10 @@ export default function GlobalActionBar() {
           <span className="absolute right-full mr-3 px-3 py-1.5 rounded-lg bg-gradient-to-r from-[#C9115F] to-[#e85d04]  text-white text-xs font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
             Create Post
           </span>
-          // <Plus className="text-white/70 group-hover:text-[#C9115F] w-3 h-3 md:w-6 md:h-6 lg:w-6 lg:h-6 transition-colors duration-200" /> 
+           <Plus className="text-white/70 group-hover:text-[#C9115F] w-3 h-3 md:w-6 md:h-6 lg:w-6 lg:h-6 transition-colors duration-200" /> 
           <img src="/images/posticon.png" className="text-white/70 group-hover:text-[#C9115F] w-5 h-5 md:w-6 md:h-6 lg:w-6 lg:h-6 transition-colors duration-200" />
         </button>
-      </div> */}
+      </div>
 
       {/* Create Post Dialog */}
       <CreatePostDialog

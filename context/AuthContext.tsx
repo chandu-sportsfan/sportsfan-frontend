@@ -162,6 +162,9 @@ interface User {
     role: string;
     userId?: string;
     uid?: string;
+    avatar?: string;
+    photoURL?: string;
+    firstName?: string;
 }
 
 interface AuthContextType {
@@ -219,6 +222,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                             name: fullName,
                             role: u.role || "user",
                             userId: u.userId || session.user.email,
+                            avatar: u.avatar || "",
+                            photoURL: u.photoURL || "",
                         };
                         setUser(normalised);
                         console.log("Google user verified via backend, user set:", normalised);

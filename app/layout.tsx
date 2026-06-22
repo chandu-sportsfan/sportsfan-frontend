@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import Script from "next/script";
 import { Geist, Geist_Mono } from "next/font/google";
+import { PostHogProvider } from "@/context/PostHogContext";
 import "./globals.css";
 import { ClubProfileProvider } from "@/context/ClubProfileContext";
 import { WatchAlongProvider } from "@/context/WatchAlongContext";
@@ -16,8 +16,12 @@ import { LeaderboardProvider } from "@/context/LeaderboardContext";
 import { AIChatProvider } from "@/context/AskAIChatContext";
 import { WPLPlayerProfileProvider } from "@/context/Wplplayerprofilecontext";
 import { FifaPlayerProfileProvider } from "@/context/FifaPlayerProfileContext";
-import { RoarNotificationsProvider } from "@/context/RoarNotificationsContext"; // Import your Activity Context
+import { RoarNotificationsProvider } from "@/context/RoarNotificationsContext";
 import { ActivityProvider } from "@/context/ActivityContext";
+import { RoarRoomProvider } from "@/context/RoarRoomContext";
+import { RoarProfileProvider } from "@/context/RoarProfileContext";
+import { Suspense } from "react";
+import { UserProfileProvider } from "@/context/UserProfileContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -37,15 +41,6 @@ export const metadata: Metadata = {
   },
 };
 
-const posthogScript = `
-  !function(t,e){var o,n,p,r;e.__SV||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}p=t.createElement("script"),p.type="text/javascript",p.async=!0,p.src=s,r=t.getElementsByTagName("script")[0],r.parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+".people (stub)"},o="capture identify alias people.set people.set_once set_config register register_once unregister opt_out_capturing has_opted_out_capturing opt_in_capturing reset isFeatureEnabled onFeatureFlags getFeatureFlag getFeatureFlagPayload reloadFeatureFlags group updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures getActiveMatchingSurveys getDoubleOptInConsent".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1}(document,window.posthog||[]);
-  posthog.init('phc_AHSjFWHPMvbFSQaBGTTGAni9KjyVQyTvJDrwCSHY5kwa', {
-    api_host: 'https://us.i.posthog.com',
-    person_profiles: 'identified_only'
-  });
-`;
-
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -53,17 +48,16 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head>
-        <Script
-          id="posthog-init"
-          strategy="afterInteractive"
-          dangerouslySetInnerHTML={{ __html: posthogScript }}
-        />
-      </head>
-      <body
+
+      {/* <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased !p-0 overflow-x-hidden`}
         suppressHydrationWarning
-      >
+      > */}
+      <body
+  className={`${geistSans.variable} ${geistMono.variable} antialiased !p-0 overflow-hidden h-full`}
+  suppressHydrationWarning
+>
+        <PostHogProvider>
         <SessionProvider>
           <AuthProvider>
             <ClubProfileProvider>
@@ -72,7 +66,7 @@ export default function RootLayout({
                   <GlobalSearchProvider>
                     <AudioProvider>
                       <LeaderboardProvider>
-                        <ActivityProvider> 
+                        <ActivityProvider>
                           <VideoProvider>
                             <PlaysProvider>
                               <ScriptsProvider>
@@ -80,8 +74,14 @@ export default function RootLayout({
                                   <WPLPlayerProfileProvider>
                                     <FifaPlayerProfileProvider>
                                       <RoarNotificationsProvider>
-                                        <main>{children}</main>
-                                        </RoarNotificationsProvider>
+                                        <Suspense fallback={<div>Loading...</div>}>
+                                          <RoarProfileProvider>
+                                            <UserProfileProvider>
+                                            <main className="h-full flex flex-col">{children}</main>
+                                            </UserProfileProvider>
+                                          </RoarProfileProvider>
+                                        </Suspense>
+                                      </RoarNotificationsProvider>
                                     </FifaPlayerProfileProvider>
                                   </WPLPlayerProfileProvider>
                                 </AIChatProvider>
@@ -97,6 +97,7 @@ export default function RootLayout({
             </ClubProfileProvider>
           </AuthProvider>
         </SessionProvider>
+        </PostHogProvider>
       </body>
     </html>
   );

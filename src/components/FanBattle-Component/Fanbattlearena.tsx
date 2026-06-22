@@ -7,6 +7,7 @@ import axios from "axios";
 import CreateBattle from "./CreateBattle";
 import { useAuth } from "@/context/AuthContext";
 import { useLeaderboard } from "@/context/LeaderboardContext";
+import { emitSxpActivityRefresh } from "@/lib/sxpEvents";
 import { Pencil, Users } from "lucide-react";
 
 interface PlayerProfile {
@@ -953,6 +954,7 @@ const recordVote = useCallback(
           if (direction === "right") {
             const pts = res.data.playerPointsAwarded || 15;
             showToast(`+${pts} pts for ${item.name}!`, "success");
+            emitSxpActivityRefresh();
             setVotedPlayerIds((prev) => new Set([...prev, item.id]));
             setBattleStats((prev) => ({
               voted: prev.voted + 1,

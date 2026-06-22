@@ -1,5 +1,3 @@
-
-
 "use client";
 
 import React, {
@@ -215,7 +213,7 @@ const refreshLeaderboard = useCallback(async () => {
 }, [user?.userId, fetchGlobalLeaderboard]);
 
 const addLocalPoints = useCallback((points: number) => {
-  const userId = user?.userId || user?.uid || user?.email;
+  const userId = user?.userId;
   if (!userId || !points) return;
   const delta = Number(points) || 0;
 
@@ -248,7 +246,7 @@ const addLocalPoints = useCallback((points: number) => {
       ),
     };
   }
-}, [currentUserRank, user?.email, user?.uid, user?.userId]);
+}, [currentUserRank, user?.userId]);
 
   // Only fires when auth is confirmed ready — avoids spurious calls with
   // undefined userId during the initial auth hydration.

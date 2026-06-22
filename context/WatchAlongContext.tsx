@@ -694,8 +694,8 @@ export const WatchAlongProvider = ({ children }: { children: ReactNode }) => {
     const fetchRoomById = useCallback(async (roomId: string) => {
         try {
             setError(null);
-
-            const res = await axios.get(`/api/watch-along/${roomId}`);
+            const cleanRoomId = roomId ? roomId.split('?')[0] : "";
+            const res = await axios.get(`/api/watch-along/${cleanRoomId}`);
             if (res.data.success) {
                 setCurrentRoom(res.data.room);
             }

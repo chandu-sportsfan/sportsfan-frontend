@@ -1091,6 +1091,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { usePostHog } from "posthog-js/react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useUserProfile } from "@/context/UserProfileContext";
 import axios from "axios";
 import AvatarWithBadge from "../components/AvatarWithBadge";
 import ReactionPicker, { type Reaction } from "../components/ReactionPicker";
@@ -1466,6 +1467,8 @@ export default function DiscussionRoom({
   const [liveCount, setLiveCount] = useState<number>(fanCount ?? 0);
   const [sharePost, setSharePost] = useState<ShareableRoarPost | null>(null);
   const [copied, setCopied] = useState(false);
+  const { userProfile } = useUserProfile();
+  const currentUserId = userProfile?.actualUserId;
 
   const [inlineCommentPostId, setInlineCommentPostId] = useState<string | null>(null);
 
@@ -1663,7 +1666,7 @@ export default function DiscussionRoom({
     // const heartbeat = setInterval(() => { join(); refreshActiveFans(); }, 25_000);
     const heartbeat = setInterval(() => {
       if (!document.hidden) { join(); refreshActiveFans(); }
-    }, 60_000);
+    }, 30_000);
 
     window.addEventListener("beforeunload", leaveBeacon);
     return () => {
@@ -2113,6 +2116,23 @@ export default function DiscussionRoom({
                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" /></svg>
                         </button>
                         {renderReactionsTrigger(p)}
+                        {currentUserId && p.fan?.authorUid === currentUserId && (
+                          <button
+                            onClick={async e => {
+                              e.stopPropagation();
+                              if (!window.confirm("Delete this post?")) return;
+                              try {
+                                await axios.delete(`/api/roar/rooms/${roomId}/messages/${p.id}`);
+                                setPosts(prev => prev.filter(x => x.id !== p.id));
+                              } catch { onToast("Failed to delete post"); }
+                            }}
+                            style={{ display: "flex", alignItems: "center", justifyContent: "center", background: "none", border: "none", cursor: "pointer", color: "#f87171", marginLeft: "auto", padding: 4, borderRadius: "50%" }}
+                          >
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" /><path d="M10 11v6" /><path d="M14 11v6" /><path d="M9 6V4h6v2" />
+                            </svg>
+                          </button>
+                        )}
                       </div>
                     </div>
                   </motion.div>
@@ -2261,6 +2281,23 @@ export default function DiscussionRoom({
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" /></svg>
                       </button>
                       {renderReactionsTrigger(p)}
+                      {currentUserId && p.fan?.authorUid === currentUserId && (
+                        <button
+                          onClick={async e => {
+                            e.stopPropagation();
+                            if (!window.confirm("Delete this post?")) return;
+                            try {
+                              await axios.delete(`/api/roar/rooms/${roomId}/messages/${p.id}`);
+                              setPosts(prev => prev.filter(x => x.id !== p.id));
+                            } catch { onToast("Failed to delete post"); }
+                          }}
+                          style={{ display: "flex", alignItems: "center", justifyContent: "center", background: "none", border: "none", cursor: "pointer", color: "#f87171", marginLeft: "auto", padding: 4, borderRadius: "50%" }}
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" /><path d="M10 11v6" /><path d="M14 11v6" /><path d="M9 6V4h6v2" />
+                          </svg>
+                        </button>
+                      )}
                     </div>
                   </div>
                 </motion.div>

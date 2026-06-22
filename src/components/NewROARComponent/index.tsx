@@ -1,5 +1,6 @@
 
 
+
 // // Home tab now shows RoomsHome (rooms list).
 // // Entering a room shows DiscussionRoom with icon-pill composer.
 
@@ -26,10 +27,37 @@
 // import { useRoarNotifications } from "@/context/RoarNotificationsContext";
 // import { RoarProfileProvider, useRoarProfileContext } from "@/context/RoarProfileContext";
 // import RoomPostDetailsOverlay from "./components/RoomPostDetailsOverlay";
+// import { useRouter } from "next/navigation";
+
+ 
+// const useVisibilityInterval = (callback: () => void, delay: number) => {
+//   const savedCallback = useRef(callback);
+//   useEffect(() => { savedCallback.current = callback; }, [callback]);
+
+//   useEffect(() => {
+//     if (delay === null) return;
+//     let id: NodeJS.Timeout;
+
+//     const start = () => { id = setInterval(() => {
+//       if (!document.hidden) savedCallback.current();
+//     }, delay); };
+
+//     const handleVisibility = () => {
+//       clearInterval(id);
+//       if (!document.hidden) { savedCallback.current(); start(); }
+//     };
+
+//     start();
+//     document.addEventListener("visibilitychange", handleVisibility);
+//     return () => { clearInterval(id); document.removeEventListener("visibilitychange", handleVisibility); };
+//   }, [delay]);
+// };
+
 
 // export default function ROARApp() {
 //   const containerRef = useRef<HTMLDivElement>(null);
 //   const searchParams = useSearchParams();
+//   const router = useRouter();
 //   const [likingPosts, setLikingPosts] = useState<Set<string>>(new Set());
 //   const roomRefreshRef = useRef<(() => void) | null>(null);
 //   const roomReplyUpdateRef = useRef<((postId: string, count: number) => void) | null>(null);
@@ -41,7 +69,10 @@
 //   const [userBadge, setUserBadge]         = useState("RISING_FAN");
 //   const [userSports, setUserSports]       = useState<string[]>([]);
 //   const [currentUsername, setCurrentUsername] = useState("RoarUser");
+//   const [currentUserId, setCurrentUserId] = useState<string | undefined>();
 //   const [currentAvatarUrl, setCurrentAvatarUrl] = useState<string | undefined>();
+
+
 
 //   useEffect(() => {
 //     setMounted(true);
@@ -53,6 +84,7 @@
 //           setUserBadge(res.data.user.badge || "RISING_FAN");
 //           setUserSports(res.data.user.sports ?? []);
 //           setCurrentUsername(res.data.user.username || "RoarUser");
+//            setCurrentUserId(res.data.user.actualUserId);
 //           setCurrentAvatarUrl(res.data.user.avatarUrl || undefined);
 //           try {
 //             localStorage.setItem("roar_v2_complete", "1");
@@ -80,17 +112,34 @@
 //   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
 //   const [selectedPost, setSelectedPost] = useState<any | null>(null);
 
-//   const { viewingUsername, profileData, openProfile, closeProfile } = useRoarProfileContext();
+//   const { viewingUserId, profileData, openProfile, closeProfile } = useRoarProfileContext();
 
-//   const handleFanProfileClick = useCallback((fan: any) => {
-//     if (fan.username === currentUsername) {
-//       setActiveTab("profile");
-//       setOverlay(null);
-//       setSelectedPost(null);
-//     } else {
-//       openProfile(fan.username);
-//     }
-//   }, [currentUsername, openProfile]);
+ 
+
+// //  const handleFanProfileClick = useCallback((fan: any) => {
+// //   if (fan.authorUid && fan.authorUid === currentUserId) {
+// //     setActiveTab("profile"); setOverlay(null); setSelectedPost(null);
+// //   } else {
+// //     openProfile(fan.authorUid);
+// //   }
+// // }, [currentUserId, openProfile]);
+
+// // const handleFanProfileClick = useCallback((fan: any) => {
+// //   if (fan.authorUid && fan.authorUid === currentUserId) {
+// //     router.push("/MainModules/Profile");
+// //   } else {
+// //     setOverlay(null); setSelectedPost(null);
+// //     openProfile(fan.authorUid);
+// //   }
+// // }, [currentUserId, openProfile, router]);
+
+// const handleFanProfileClick = useCallback((fan: any) => {
+//   if (fan.authorUid && fan.authorUid === currentUserId) {
+//     router.push("/MainModules/Profile");
+//   } else {
+//     openProfile(fan.authorUid);
+//   }
+// }, [currentUserId, openProfile, router]);
 
 //   // ── Compose ────────────────────────────────────────────────────────────────
 //   const [composeOpen, setComposeOpen]   = useState(false);
@@ -121,12 +170,40 @@
 //   const [rooms, setRooms]     = useState<Room[]>([]);
 //   const [dbPosts, setDbPosts] = useState<any[]>([]);
 
+//   // const fetchPosts = useCallback(async () => {
+//   //   try {
+//   //     // const res = await axios.get(`/api/roar/posts?t=${Date.now()}`);
+//   //      const res = await axios.get(`/api/roar/posts?t=${Date.now()}&limit=15`);
+//   //     if (res.data?.success) setDbPosts(res.data.posts);
+//   //   } catch (err) { console.error("Failed to fetch posts:", err); }
+//   // }, []);
+
 //   const fetchPosts = useCallback(async () => {
 //     try {
-//       const res = await axios.get(`/api/roar/posts?t=${Date.now()}`);
+//       const res = await axios.get(`/api/roar/posts?t=${Date.now()}&limit=15`);
 //       if (res.data?.success) setDbPosts(res.data.posts);
 //     } catch (err) { console.error("Failed to fetch posts:", err); }
 //   }, []);
+
+//   const fetchRooms = useCallback(async () => {
+//     try {
+//       const res = await axios.get(`/api/roar/rooms?t=${Date.now()}`);
+//       if (res.data?.success) {
+//         setRooms(res.data.rooms);
+//         setSelectedRoom(prev => {
+//           if (prev) return prev;
+//           return res.data.rooms.length > 0 ? res.data.rooms[0] : null;
+//         });
+//       }
+//     } catch (err) { console.error("Failed to fetch rooms:", err); }
+//   }, []);
+
+//   const combinedFetch = useCallback(() => {
+//     fetchRooms(); fetchPosts();
+//   }, [fetchRooms, fetchPosts]);
+
+//    useVisibilityInterval(combinedFetch, 30000);
+
 
 //   useEffect(() => {
 //     const postId = searchParams.get("postId");
@@ -138,18 +215,18 @@
 //   useEffect(() => {
 //     if (!onboarded) return;
 
-//     const fetchRooms = async () => {
-//       try {
-//         const res = await axios.get(`/api/roar/rooms?t=${Date.now()}`);
-//         if (res.data?.success) {
-//           setRooms(res.data.rooms);
-//           setSelectedRoom(prev => {
-//             if (prev) return prev;
-//             return res.data.rooms.length > 0 ? res.data.rooms[0] : null;
-//           });
-//         }
-//       } catch (err) { console.error("Failed to fetch rooms:", err); }
-//     };
+//     // const fetchRooms = async () => {
+//     //   try {
+//     //     const res = await axios.get(`/api/roar/rooms?t=${Date.now()}`);
+//     //     if (res.data?.success) {
+//     //       setRooms(res.data.rooms);
+//     //       setSelectedRoom(prev => {
+//     //         if (prev) return prev;
+//     //         return res.data.rooms.length > 0 ? res.data.rooms[0] : null;
+//     //       });
+//     //     }
+//     //   } catch (err) { console.error("Failed to fetch rooms:", err); }
+//     // };
 
 //     const fetchUserSports = async () => {
 //       try {
@@ -166,8 +243,12 @@
 //     };
 
 //     fetchRooms(); fetchPosts(); fetchUserSports();
-//     const interval = setInterval(() => { fetchRooms(); fetchPosts(); }, 5000);
-//     return () => clearInterval(interval);
+//     // const interval = setInterval(() => { fetchRooms(); fetchPosts(); }, 5000);
+//     // const interval = setInterval(() => { fetchRooms(); fetchPosts(); }, 30000);
+//     // return () => clearInterval(interval);
+// //     const combinedFetch = useCallback(() => { fetchRooms(); fetchPosts(); }, [fetchRooms, fetchPosts]);
+// // useVisibilityInterval(combinedFetch, 30000);
+
 //   }, [onboarded, fetchPosts]); // eslint-disable-line react-hooks/exhaustive-deps
 
 //   useEffect(() => {
@@ -230,7 +311,8 @@
 //       }
 //       return post;
 //     }));
-//     try { await axios.post(`/api/roar/posts/${postId}/like`); fetchPosts(); }
+//     // try { await axios.post(`/api/roar/posts/${postId}/like`); fetchPosts(); }
+//     try { await axios.post(`/api/roar/posts/${postId}/like`); }
 //     catch {
 //       setDbPosts(prev => prev.map(post => {
 //         if (post.postId === postId || post._id === postId) {
@@ -312,12 +394,15 @@
 //   const isInfinity = overlay === "infinity";
 //   const isLB       = overlay === "leaderboard";
 //   const isFullScreenOverlay = isRoom || isInfinity;
+//   // Onboarding should also hide the global header / bottom nav, same as room/infinity overlays.
+//   // const hideChrome = isFullScreenOverlay || !onboarded;
+//   const hideChrome = isFullScreenOverlay || !onboarded || !!viewingUserId;
 
 //    useEffect(() => {
-//   if (isFullScreenOverlay) document.body.classList.add("roar-room-active");
+//   if (hideChrome) document.body.classList.add("roar-room-active");
 //   else document.body.classList.remove("roar-room-active");
 //   return () => document.body.classList.remove("roar-room-active");
-// }, [isFullScreenOverlay]);
+// }, [hideChrome]);
 
 //   // ── Loading spinner ────────────────────────────────────────────────────────
 //   if (!mounted || checkingProfile) {
@@ -335,7 +420,7 @@
 
 //   return (
 //     // <div className={`roar-root${isRoom ? " roar-room-active" : ""}`}>
-//     <div className={`roar-root${isFullScreenOverlay ? " roar-room-active" : ""}`}>
+//     <div className={`roar-root${hideChrome ? " roar-room-active" : ""}`}>
 //       <style dangerouslySetInnerHTML={{ __html: GLOBAL_CSS }} />
 
 //       <div className="roar-inner" ref={containerRef} style={{ height: "100%", display: "flex", flexDirection: "column", overflow: "hidden" }}>
@@ -352,12 +437,18 @@
 
 //         <Toast message={toast.message} visible={toast.visible} />
 
-//         {!onboarded && <Onboarding onComplete={completeOnboarding} />}
+//         {!onboarded && (
+//           <>
+//             {/* Hide global header (desktop/tablet/mobile) and its mobile spacer while onboarding runs */}
+//             <style dangerouslySetInnerHTML={{ __html: `#global-header-desktop,#global-header-tablet,#global-header-mobile,.roar-header-spacer{display:none!important}` }} />
+//             <Onboarding onComplete={completeOnboarding} />
+//           </>
+//         )}
 
 //         {onboarded && (
 //           <div style={{ position: "relative", zIndex: 1, flex: 1, minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}>
 //             <AnimatePresence mode="wait">
-//               {viewingUsername ? (
+//               {viewingUserId ? (
 //                 // ── Viewing another user's profile ──
 //                 <motion.div 
 //                   key="viewing-profile" 
@@ -374,7 +465,7 @@
 //                     onToast={showToast}
 //                     setOnboarded={setOnboarded}
 //                     onNavigateTab={handleTab}
-//                     viewingProfile={viewingUsername}
+//                     viewingProfile={viewingUserId}
 //                     onClose={closeProfile}
 //                   />
 //                 </motion.div>
@@ -399,7 +490,7 @@
 //                     dbPosts={dbPosts}
 //                     onPostClick={post => setSelectedPost(post)}
 //                     onVote={handleVote}
-//                     onLike={handleLike}
+//                     // onLike={handleLike}
 //                     onDeletePost={handleDeletePost}
 //                     userSports={userSports}
 //                     onQuickCompose={t => openCompose(t)}
@@ -521,30 +612,6 @@ import { RoarProfileProvider, useRoarProfileContext } from "@/context/RoarProfil
 import RoomPostDetailsOverlay from "./components/RoomPostDetailsOverlay";
 import { useRouter } from "next/navigation";
 
- 
-const useVisibilityInterval = (callback: () => void, delay: number) => {
-  const savedCallback = useRef(callback);
-  useEffect(() => { savedCallback.current = callback; }, [callback]);
-
-  useEffect(() => {
-    if (delay === null) return;
-    let id: NodeJS.Timeout;
-
-    const start = () => { id = setInterval(() => {
-      if (!document.hidden) savedCallback.current();
-    }, delay); };
-
-    const handleVisibility = () => {
-      clearInterval(id);
-      if (!document.hidden) { savedCallback.current(); start(); }
-    };
-
-    start();
-    document.addEventListener("visibilitychange", handleVisibility);
-    return () => { clearInterval(id); document.removeEventListener("visibilitychange", handleVisibility); };
-  }, [delay]);
-};
-
 
 export default function ROARApp() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -564,8 +631,6 @@ export default function ROARApp() {
   const [currentUserId, setCurrentUserId] = useState<string | undefined>();
   const [currentAvatarUrl, setCurrentAvatarUrl] = useState<string | undefined>();
 
-
-
   useEffect(() => {
     setMounted(true);
     const checkProfile = async () => {
@@ -576,7 +641,7 @@ export default function ROARApp() {
           setUserBadge(res.data.user.badge || "RISING_FAN");
           setUserSports(res.data.user.sports ?? []);
           setCurrentUsername(res.data.user.username || "RoarUser");
-           setCurrentUserId(res.data.user.actualUserId);
+          setCurrentUserId(res.data.user.actualUserId);
           setCurrentAvatarUrl(res.data.user.avatarUrl || undefined);
           try {
             localStorage.setItem("roar_v2_complete", "1");
@@ -606,32 +671,13 @@ export default function ROARApp() {
 
   const { viewingUserId, profileData, openProfile, closeProfile } = useRoarProfileContext();
 
- 
-
-//  const handleFanProfileClick = useCallback((fan: any) => {
-//   if (fan.authorUid && fan.authorUid === currentUserId) {
-//     setActiveTab("profile"); setOverlay(null); setSelectedPost(null);
-//   } else {
-//     openProfile(fan.authorUid);
-//   }
-// }, [currentUserId, openProfile]);
-
-// const handleFanProfileClick = useCallback((fan: any) => {
-//   if (fan.authorUid && fan.authorUid === currentUserId) {
-//     router.push("/MainModules/Profile");
-//   } else {
-//     setOverlay(null); setSelectedPost(null);
-//     openProfile(fan.authorUid);
-//   }
-// }, [currentUserId, openProfile, router]);
-
-const handleFanProfileClick = useCallback((fan: any) => {
-  if (fan.authorUid && fan.authorUid === currentUserId) {
-    router.push("/MainModules/Profile");
-  } else {
-    openProfile(fan.authorUid);
-  }
-}, [currentUserId, openProfile, router]);
+  const handleFanProfileClick = useCallback((fan: any) => {
+    if (fan.authorUid && fan.authorUid === currentUserId) {
+      router.push("/MainModules/Profile");
+    } else {
+      openProfile(fan.authorUid);
+    }
+  }, [currentUserId, openProfile, router]);
 
   // ── Compose ────────────────────────────────────────────────────────────────
   const [composeOpen, setComposeOpen]   = useState(false);
@@ -662,14 +708,6 @@ const handleFanProfileClick = useCallback((fan: any) => {
   const [rooms, setRooms]     = useState<Room[]>([]);
   const [dbPosts, setDbPosts] = useState<any[]>([]);
 
-  // const fetchPosts = useCallback(async () => {
-  //   try {
-  //     // const res = await axios.get(`/api/roar/posts?t=${Date.now()}`);
-  //      const res = await axios.get(`/api/roar/posts?t=${Date.now()}&limit=15`);
-  //     if (res.data?.success) setDbPosts(res.data.posts);
-  //   } catch (err) { console.error("Failed to fetch posts:", err); }
-  // }, []);
-
   const fetchPosts = useCallback(async () => {
     try {
       const res = await axios.get(`/api/roar/posts?t=${Date.now()}&limit=15`);
@@ -690,35 +728,9 @@ const handleFanProfileClick = useCallback((fan: any) => {
     } catch (err) { console.error("Failed to fetch rooms:", err); }
   }, []);
 
-  const combinedFetch = useCallback(() => {
-    fetchRooms(); fetchPosts();
-  }, [fetchRooms, fetchPosts]);
-
-   useVisibilityInterval(combinedFetch, 30000);
-
-
-  useEffect(() => {
-    const postId = searchParams.get("postId");
-    if (!postId || !onboarded || dbPosts.length === 0) return;
-    const target = dbPosts.find(p => p.postId === postId || p.id === postId);
-    if (target) { setSelectedPost(target); window.history.replaceState(null, "", window.location.pathname); }
-  }, [searchParams, onboarded, dbPosts]);
-
+  // ── Initial load on boot ───────────────────────────────────────────────────
   useEffect(() => {
     if (!onboarded) return;
-
-    // const fetchRooms = async () => {
-    //   try {
-    //     const res = await axios.get(`/api/roar/rooms?t=${Date.now()}`);
-    //     if (res.data?.success) {
-    //       setRooms(res.data.rooms);
-    //       setSelectedRoom(prev => {
-    //         if (prev) return prev;
-    //         return res.data.rooms.length > 0 ? res.data.rooms[0] : null;
-    //       });
-    //     }
-    //   } catch (err) { console.error("Failed to fetch rooms:", err); }
-    // };
 
     const fetchUserSports = async () => {
       try {
@@ -735,13 +747,20 @@ const handleFanProfileClick = useCallback((fan: any) => {
     };
 
     fetchRooms(); fetchPosts(); fetchUserSports();
-    // const interval = setInterval(() => { fetchRooms(); fetchPosts(); }, 5000);
-    // const interval = setInterval(() => { fetchRooms(); fetchPosts(); }, 30000);
-    // return () => clearInterval(interval);
-//     const combinedFetch = useCallback(() => { fetchRooms(); fetchPosts(); }, [fetchRooms, fetchPosts]);
-// useVisibilityInterval(combinedFetch, 30000);
-
   }, [onboarded, fetchPosts]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Fetch fresh posts every time user opens the feed ──────────────────────
+  // No background polling — data is fetched on demand only.
+  useEffect(() => {
+    if (overlay === "infinity" && onboarded) fetchPosts();
+  }, [overlay]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    const postId = searchParams.get("postId");
+    if (!postId || !onboarded || dbPosts.length === 0) return;
+    const target = dbPosts.find(p => p.postId === postId || p.id === postId);
+    if (target) { setSelectedPost(target); window.history.replaceState(null, "", window.location.pathname); }
+  }, [searchParams, onboarded, dbPosts]);
 
   useEffect(() => {
     const syncAvatar = (event?: Event) => {
@@ -803,7 +822,6 @@ const handleFanProfileClick = useCallback((fan: any) => {
       }
       return post;
     }));
-    // try { await axios.post(`/api/roar/posts/${postId}/like`); fetchPosts(); }
     try { await axios.post(`/api/roar/posts/${postId}/like`); }
     catch {
       setDbPosts(prev => prev.map(post => {
@@ -816,7 +834,7 @@ const handleFanProfileClick = useCallback((fan: any) => {
       showToast("Failed to like post");
     }
     finally { setLikingPosts(prev => { const s = new Set(prev); s.delete(postId); return s; }); }
-  }, [showToast, likingPosts, fetchPosts]);
+  }, [showToast, likingPosts]);
 
   const handleDeletePost = useCallback(async (postId: string, roomId?: string) => {
     try {
@@ -886,15 +904,13 @@ const handleFanProfileClick = useCallback((fan: any) => {
   const isInfinity = overlay === "infinity";
   const isLB       = overlay === "leaderboard";
   const isFullScreenOverlay = isRoom || isInfinity;
-  // Onboarding should also hide the global header / bottom nav, same as room/infinity overlays.
-  // const hideChrome = isFullScreenOverlay || !onboarded;
   const hideChrome = isFullScreenOverlay || !onboarded || !!viewingUserId;
 
-   useEffect(() => {
-  if (hideChrome) document.body.classList.add("roar-room-active");
-  else document.body.classList.remove("roar-room-active");
-  return () => document.body.classList.remove("roar-room-active");
-}, [hideChrome]);
+  useEffect(() => {
+    if (hideChrome) document.body.classList.add("roar-room-active");
+    else document.body.classList.remove("roar-room-active");
+    return () => document.body.classList.remove("roar-room-active");
+  }, [hideChrome]);
 
   // ── Loading spinner ────────────────────────────────────────────────────────
   if (!mounted || checkingProfile) {
@@ -911,7 +927,6 @@ const handleFanProfileClick = useCallback((fan: any) => {
   }
 
   return (
-    // <div className={`roar-root${isRoom ? " roar-room-active" : ""}`}>
     <div className={`roar-root${hideChrome ? " roar-room-active" : ""}`}>
       <style dangerouslySetInnerHTML={{ __html: GLOBAL_CSS }} />
 
@@ -931,7 +946,6 @@ const handleFanProfileClick = useCallback((fan: any) => {
 
         {!onboarded && (
           <>
-            {/* Hide global header (desktop/tablet/mobile) and its mobile spacer while onboarding runs */}
             <style dangerouslySetInnerHTML={{ __html: `#global-header-desktop,#global-header-tablet,#global-header-mobile,.roar-header-spacer{display:none!important}` }} />
             <Onboarding onComplete={completeOnboarding} />
           </>
@@ -941,13 +955,12 @@ const handleFanProfileClick = useCallback((fan: any) => {
           <div style={{ position: "relative", zIndex: 1, flex: 1, minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}>
             <AnimatePresence mode="wait">
               {viewingUserId ? (
-                // ── Viewing another user's profile ──
-                <motion.div 
-                  key="viewing-profile" 
-                  initial={{ opacity: 0 }} 
-                  animate={{ opacity: 1 }} 
-                  exit={{ opacity: 0 }} 
-                  transition={{ duration: 0.18 }} 
+                <motion.div
+                  key="viewing-profile"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.18 }}
                   style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}
                 >
                   <Profile
@@ -966,7 +979,6 @@ const handleFanProfileClick = useCallback((fan: any) => {
                   <Leaderboard onBack={() => setOverlay(null)} onCompose={() => openCompose("prediction")} />
                 </motion.div>
               ) : isInfinity ? (
-                // SF360 Infinity Room → original HomeFeed (all posts)
                 <motion.div key="infinity" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }} style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
                   <style dangerouslySetInnerHTML={{ __html: `#global-header-desktop,#global-header-tablet,#global-header-mobile{display:none!important}` }} />
                   <HomeFeed
@@ -982,7 +994,6 @@ const handleFanProfileClick = useCallback((fan: any) => {
                     dbPosts={dbPosts}
                     onPostClick={post => setSelectedPost(post)}
                     onVote={handleVote}
-                    // onLike={handleLike}
                     onDeletePost={handleDeletePost}
                     userSports={userSports}
                     onQuickCompose={t => openCompose(t)}
@@ -1012,13 +1023,11 @@ const handleFanProfileClick = useCallback((fan: any) => {
                 </motion.div>
               ) : (
                 <motion.div key={activeTab} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }} style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
-                  {/* HOME TAB → RoomsHome */}
                   {activeTab === "home" && (
                     <RoomsHome
                       rooms={rooms}
                       onJoinRoom={room => {
                         if (room?.roomId === "sf360-infinity") {
-                          // Infinity Room = the old HomeFeed (all posts)
                           setOverlay("infinity");
                         } else {
                           if (room) setSelectedRoom(room);

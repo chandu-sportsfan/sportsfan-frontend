@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
 import Image from "next/image";
+import { ChevronLeft } from "lucide-react";
 import AvatarWithBadge from "../components/AvatarWithBadge";
 import { FilterPills } from "../components/shared";
 import { BADGE_CONFIG, BADGE_DETAIL, BADGE_LABELS, BADGES_LIST, RIVAL, CURRENT_USER } from "../constants";
@@ -268,6 +269,15 @@ export default function Profile({ userBadge, setUserBadge, onCompose, onToast, s
     } catch (err) {
       console.error("Avatar sync failed (non-critical):", err);
     }
+  };
+
+  const handleBack = () => {
+    if (typeof window === "undefined") return;
+    if (window.history.length > 1) {
+      window.history.back();
+      return;
+    }
+    window.location.href = "/MainModules/ROAR";
   };
 
   return (

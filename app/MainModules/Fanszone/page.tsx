@@ -16,7 +16,7 @@ import {
 // 
 // TYPES
 // 
-type ActivityKey = "audioDrop" | "fanBattle" | "trivia" | "post" | "register" | "invite" | "watchDrop" | "like" | "share" | "other";
+type ActivityKey = "audioDrop" | "fanBattle" | "trivia" | "post" | "register" | "invite" | "watchDrop" | "like" | "share" | "hotTake" | "debate" | "prediction" | "memory" | "roarPost" | "other";
 type TrendPeriod = "7D" | "30D" | "90D";
 
 interface HistoryItem {
@@ -104,6 +104,31 @@ const ACTIVITY_META: Record<ActivityKey, {
     color: "text-gray-300", hexColor: "#d4d4d8",
     typeColor: "text-gray-300 border-gray-400/30 bg-white/5",
   },
+  hotTake: {
+    action: "Hot Take", type: "Hot Take", icon: Flame,
+    color: "text-amber-500", hexColor: "#f59e0b",
+    typeColor: "text-amber-500 border-amber-500/30 bg-amber-500/5",
+  },
+  debate: {
+    action: "Debate", type: "Debate", icon: MessagesSquare,
+    color: "text-cyan-400", hexColor: "#22d3ee",
+    typeColor: "text-cyan-400 border-cyan-400/30 bg-cyan-400/5",
+  },
+  prediction: {
+    action: "Prediction", type: "Prediction", icon: TrendingUp,
+    color: "text-lime-400", hexColor: "#a3e635",
+    typeColor: "text-lime-400 border-lime-400/30 bg-lime-400/5",
+  },
+  memory: {
+    action: "Memory", type: "Memory", icon: Sparkles,
+    color: "text-pink-400", hexColor: "#f472b6",
+    typeColor: "text-pink-400 border-pink-400/30 bg-pink-400/5",
+  },
+  roarPost: {
+    action: "Post On ROAR", type: "ROAR Post", icon: Megaphone,
+    color: "text-orange-400", hexColor: "#fb923c",
+    typeColor: "text-orange-400 border-orange-400/30 bg-orange-400/5",
+  },
 };
 
 function makeHistoryItem(
@@ -144,16 +169,18 @@ function normalizeActivityKey(type: string, label: string): ActivityKey {
   if (value.includes("invite") || value.includes("referral")) return "invite";
   if (value.includes("watch") || value.includes("video")) return "watchDrop";
   if (value.includes("like")) return "like";
-  if (value.includes("share")) return "share";
-  if (value.includes("post") || value.includes("create post")) return "post";
 
-  // ── ROAR activity types ──────────────────────────────────────────
-  if (value.includes("roar hot take") || value.includes("hot take")) return "fanBattle";
-  if (value.includes("roar prediction") || value.includes("prediction")) return "trivia";
-  if (value.includes("roar debate") || value.includes("debate")) return "fanBattle";
-  if (value.includes("roar memory") || value.includes("memory")) return "post";
-  if (value.includes("roar post")) return "post";
-  
+  // ── ROAR activity types — specific keys matching How You Earn icons ──
+  if (value.includes("hot take")) return "hotTake";
+  if (value.includes("debate")) return "debate";
+  if (value.includes("prediction")) return "prediction";
+  if (value.includes("memory")) return "memory";
+  if (value.includes("roar post") || value.includes("post on roar")) return "roarPost";
+  // "shared a post on roar" or any post/share on roar → megaphone
+  if (value.includes("shared a post") || value.includes("share") && value.includes("roar")) return "roarPost";
+  if (value.includes("share")) return "share";
+  if (value.includes("post") || value.includes("create post")) return "roarPost";
+
   return "other";
 }
 
@@ -330,7 +357,7 @@ function DonutChart({ data, centerPoints }: { data: CategoryBreakdown[]; centerP
   });
   const isEmpty = data.length === 0;
   return (
-    <div className="relative w-56 h-56 sm:w-44 sm:h-44 xl:w-44 xl:h-44 shrink-0 mx-auto sm:mx-0">
+    <div className="relative w-44 h-44 shrink-0 mx-auto sm:mx-0">
       <svg viewBox="0 0 100 100" className="w-full h-full">
         {isEmpty ? (
           <circle cx="50" cy="50" r={RADIUS} fill="transparent" stroke="#27272a" strokeWidth="8" />
@@ -481,7 +508,7 @@ const buildFanZoneShareUrl = () => {
 const buildFanZoneShareText = () => {
   const shareUrl = buildFanZoneShareUrl();
   return [
-    "Join me on Sportsfan Fan zone",
+    "Join me on Sportsfan Fanszone",
     "Earn SXP, track your fan activity, and climb the leaderboard.",
     `Join here: ${shareUrl}`,
   ].filter(Boolean).join("\n");
@@ -670,7 +697,7 @@ export default function FanZoneDashboard() {
   */
 
   const InviteWidget = () => (
-    <div className="bg-[#09090b] border border-rose-500/20 rounded-2xl p-6 flex items-center justify-between overflow-hidden relative group cursor-pointer hover:border-rose-500/50 transition-colors">
+    <div className="bg-[#09090b] border border-rose-500/20 rounded-2xl p-4 sm:p-6 flex items-center justify-between overflow-hidden relative group cursor-pointer hover:border-rose-500/50 transition-colors">
       <div className="absolute right-0 top-1/2 -translate-y-1/2 opacity-30 group-hover:scale-110 transition-transform duration-500 translate-x-4">
         <UserPlus className="w-32 h-32 text-rose-500" />
       </div>
@@ -692,22 +719,25 @@ export default function FanZoneDashboard() {
   );
 
   const RecentActivityWidget = () => (
-    <div className="bg-[#09090b] border border-white/10 rounded-2xl p-6 flex flex-col">
-      <h3 className="text-xs font-black tracking-widest text-gray-400 uppercase mb-6">Recent Activity</h3>
-      <div className="flex-1 space-y-5">
+    <div className="bg-[#09090b] border border-white/10 rounded-2xl p-4 sm:p-6 flex flex-col">
+      <h3 className="text-xs font-black tracking-widest text-gray-400 uppercase mb-3 sm:mb-6">Recent Activity</h3>
+      <div className="flex-1 space-y-3 sm:space-y-5">
         {recentActivityList.length === 0 ? (
           <p className="text-sm text-gray-500 text-center py-4">No activity yet — start earning!</p>
         ) : (
           recentActivityList.map((item, i) => (
             <div key={i} className="flex items-center justify-between group">
-              <div className="flex items-center gap-4 min-w-0">
-                <div className={`w-8 h-8 rounded-full bg-[#18181b] border border-white/5 flex items-center justify-center shrink-0 ${item.color}`}>
-                  <item.icon className="w-4 h-4" />
+              <div className="flex items-center gap-3 min-w-0">
+                <div
+                  className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 border border-white/10"
+                  style={{ backgroundColor: `${item.hexColor}20` }}
+                >
+                  <item.icon className="w-4 h-4" style={{ color: item.hexColor }} />
                 </div>
-                <p className="text-sm truncate min-w-0">
-                  <span className="font-bold text-white mr-1">{item.action}</span>
-                  <span className="text-gray-400">{item.detail}</span>
-                </p>
+                <div className="min-w-0">
+                  <p className="text-xs font-bold text-white truncate">{item.action}</p>
+                  <p className="text-[10px] text-gray-500 truncate">{item.detail}</p>
+                </div>
               </div>
               <div className="text-right shrink-0 ml-3">
                 <p className="text-sm font-black" style={{ color: item.hexColor }}>+{item.xp} SXP</p>
@@ -733,51 +763,79 @@ export default function FanZoneDashboard() {
   );
 
   const HistoryTable = ({ rows }: { rows: HistoryItem[] }) => (
-    <div className="overflow-x-auto">
-      <table className="w-full text-left border-collapse">
-        <thead>
-          <tr className="border-b border-white/10">
-            <th className="py-4 px-2 text-[10px] font-black text-gray-500 uppercase tracking-widest w-40">Date</th>
-            <th className="py-4 px-2 text-[10px] font-black text-gray-500 uppercase tracking-widest">Activity</th>
-            <th className="py-4 px-2 text-[10px] font-black text-gray-500 uppercase tracking-widest">Details</th>
-            <th className="py-4 px-2 text-[10px] font-black text-gray-500 uppercase tracking-widest text-right">Points</th>
-            <th className="py-4 px-2 pl-8 text-[10px] font-black text-gray-500 uppercase tracking-widest w-40">Source</th>
-          </tr>
-        </thead>
-        <tbody>
-          {activitiesLoading ? (
-            <tr><td colSpan={5} className="text-center text-gray-500 py-8 text-sm">Loading activity sources...</td></tr>
-          ) : rows.length === 0 ? (
-            <tr><td colSpan={5} className="text-center text-gray-500 py-8 text-sm">No activity recorded yet.</td></tr>
-          ) : (
-            rows.map((row) => (
-              <tr key={row.id} className="border-b border-white/5 hover:bg-white/5 transition-colors group">
-                <td className="py-3 px-2">
-                  <p className="text-xs text-gray-300 font-medium">{row.date}</p>
-                  <p className="text-[10px] text-gray-500">{row.time}</p>
-                </td>
-                <td className="py-3 px-2">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-[#18181b] border border-white/10 flex items-center justify-center flex-shrink-0 group-hover:border-white/20 transition-colors">
-                      <row.icon className="w-4 h-4 text-gray-400" />
-                    </div>
-                    <span className="text-xs font-bold text-white">{row.action}</span>
+    <div className="space-y-1">
+      {/* Table header — hidden on mobile, shown on sm+ */}
+      <div className="hidden sm:grid grid-cols-[1fr_2fr_2fr_auto_auto] gap-4 px-4 pb-2 border-b border-white/10">
+        <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Date</span>
+        <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Activity</span>
+        <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Details</span>
+        <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest text-right">Points</span>
+        <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Source</span>
+      </div>
+
+      {activitiesLoading ? (
+        <div className="text-center text-gray-500 py-10 text-sm">Loading activity...</div>
+      ) : rows.length === 0 ? (
+        <div className="text-center text-gray-500 py-10 text-sm">No activity recorded yet.</div>
+      ) : (
+        rows.map((row) => (
+          <div
+            key={row.id}
+            className="group rounded-xl hover:bg-white/[0.04] transition-colors px-4 py-3 border border-transparent hover:border-white/[0.06]"
+          >
+            {/* Mobile layout */}
+            <div className="flex items-center justify-between sm:hidden">
+              <div className="flex items-center gap-3 min-w-0">
+                <div
+                  className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 border border-white/10"
+                  style={{ backgroundColor: `${row.hexColor}20` }}
+                >
+                  <row.icon className="w-4 h-4" style={{ color: row.hexColor }} />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs font-bold text-white truncate">{row.action}</p>
+                  <div className="flex items-center gap-1 mt-0.5">
+                    <row.icon className="w-2.5 h-2.5 shrink-0" style={{ color: row.hexColor }} />
+                    <p className="text-[10px] truncate" style={{ color: row.hexColor }}>{row.source}</p>
                   </div>
-                </td>
-                <td className="py-3 px-2 text-xs text-gray-400 font-medium">{row.details}</td>
-                <td className="py-3 px-2 text-right">
-                  <span className="text-xs font-black text-emerald-500">+{row.points}</span>
-                </td>
-                <td className="py-3 px-2 pl-8">
-                  <span className={`inline-flex items-center justify-center px-2.5 py-1 rounded-md text-[10px] font-bold border ${row.typeColor}`}>
-                    {row.source}
-                  </span>
-                </td>
-              </tr>
-            ))
-          )}
-        </tbody>
-      </table>
+                </div>
+              </div>
+              <div className="text-right shrink-0 ml-3">
+                <p className="text-sm font-black text-emerald-400">+{row.points} SXP</p>
+                <p className="text-[10px] text-gray-500">{row.date}</p>
+              </div>
+            </div>
+
+            {/* Desktop layout: grid row */}
+            <div className="hidden sm:grid grid-cols-[1fr_2fr_2fr_auto_auto] gap-4 items-center">
+              {/* Date */}
+              <div>
+                <p className="text-xs text-gray-300 font-medium">{row.date}</p>
+                <p className="text-[10px] text-gray-500 mt-0.5">{row.time}</p>
+              </div>
+              {/* Activity */}
+              <div className="flex items-center gap-3">
+                <div
+                  className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 border border-white/10 group-hover:border-white/20 transition-colors"
+                  style={{ backgroundColor: `${row.hexColor}20` }}
+                >
+                  <row.icon className="w-4 h-4" style={{ color: row.hexColor }} />
+                </div>
+                <span className="text-xs font-bold text-white">{row.action}</span>
+              </div>
+              {/* Details */}
+              <span className="text-xs text-gray-400 font-medium truncate">{row.details}</span>
+              {/* Points */}
+              <span className="text-sm font-black text-emerald-400 text-right whitespace-nowrap">+{row.points} SXP</span>
+              {/* Source badge with icon */}
+              <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold border whitespace-nowrap ${row.typeColor}`}>
+                <row.icon className="w-3 h-3 shrink-0" />
+                {row.source}
+              </span>
+            </div>
+          </div>
+        ))
+      )}
     </div>
   );
 
@@ -850,7 +908,7 @@ export default function FanZoneDashboard() {
             </div>
           </div>
 
-          <div className="bg-[#09090b] border border-white/10 rounded-2xl p-5 flex items-center gap-4">
+          <div className="bg-[#09090b] border border-white/10 rounded-2xl p-3 sm:p-5 flex items-center gap-3 sm:gap-4">
             <div className="w-12 h-12 rounded-full bg-yellow-500/10 flex items-center justify-center border border-yellow-500/20">
               <Trophy className="w-6 h-6 text-yellow-500" />
             </div>
@@ -893,7 +951,7 @@ export default function FanZoneDashboard() {
 
           <Link
             href="/MainModules/Leaderboard"
-            className="bg-[#09090b] border border-white/10 hover:border-rose-500/50 rounded-2xl p-5 flex flex-col items-center justify-center group hover:scale-[1.02] transition-all cursor-pointer relative overflow-hidden"
+            className="bg-[#09090b] border border-white/10 hover:border-rose-500/50 rounded-2xl p-3 sm:p-5 flex flex-col items-center justify-center group hover:scale-[1.02] transition-all cursor-pointer relative overflow-hidden"
           >
             <div className="absolute inset-0 bg-rose-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
             <Trophy className="w-7 h-7 text-rose-500 mb-1.5 group-hover:scale-110 group-hover:-translate-y-1 transition-all duration-300 relative z-10" />
@@ -928,68 +986,64 @@ export default function FanZoneDashboard() {
             TAB: MY ANALYTICS
         ══════════════════════════════════════ */}
         {activeTab === "My Analytics" && (
-          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="space-y-3 sm:space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
 
             {/* OVERVIEW CARD */}
-            <div className="bg-[#09090b] border border-white/10 rounded-2xl p-6 md:p-8">
+            <div className="bg-[#09090b] border border-white/10 rounded-2xl p-4 sm:p-6 md:p-8">
               {/* ── Overview heading InfoIcon COMMENTED OUT ──
               <h3 className="text-[10px] font-black tracking-widest text-gray-500 uppercase mb-8 flex items-center gap-1.5">
                 Overview <InfoIcon />
               </h3>
               */}
-              <h3 className="text-[10px] font-black tracking-widest text-gray-500 uppercase mb-8">
-                Overview
-              </h3>
+              {/* Overview label + month label side by side */}
+              <div className="flex items-center justify-between mb-3 sm:mb-6">
+                <h3 className="text-[10px] font-black tracking-widest text-gray-500 uppercase">Overview</h3>
+                <div className="bg-[#18181b] border border-white/10 text-xs font-bold rounded-xl px-3 py-1.5 text-white">
+                  {currentMonthLabel}
+                </div>
+              </div>
 
-              <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 lg:gap-12 items-center">
+              <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 sm:gap-8 lg:gap-12 items-center">
 
-                {/* Left: month stats */}
+                {/* Left: month stats — All Time first, This Month second */}
                 <div className="xl:col-span-3 w-full">
-                  <div className="inline-block bg-[#18181b] border border-white/10 text-sm font-bold rounded-xl px-4 py-2 text-white mb-6">
-                    {currentMonthLabel}
-                  </div>
-                  <div className="space-y-6">
-                    <div>
-                      <p className="text-xs text-gray-400 font-medium mb-1">This Month</p>
-                      <div className="flex items-end gap-3 flex-wrap">
-                        <h4 className="text-3xl font-black text-white leading-none">
-                          {thisMonthPoints.toLocaleString()} SXP
-                        </h4>
-                        {/* ── Date comparison label COMMENTED OUT ──
-                        <span
-                          className="text-xs font-bold mb-0.5"
-                          style={{ color: monthPctChange >= 0 ? "#10b981" : "#f43f5e" }}
-                        >
-                          {monthPctChange >= 0 ? "↑" : "↓"} {Math.abs(monthPctChange)}%{" "}
-                          <span className="text-gray-500 font-medium">vs {previousMonthLabel}</span>
-                        </span>
-                        */}
-                      </div>
-                    </div>
-                    <div>
+                  <div className="grid grid-cols-2 xl:grid-cols-1 gap-3 xl:gap-6">
+                    <div className="bg-[#18181b] xl:bg-transparent rounded-xl p-3 xl:p-0">
                       <p className="text-xs text-gray-400 font-medium mb-1">All Time</p>
-                      <div className="flex items-end gap-3 flex-wrap">
-                        <h4 className="text-3xl font-black text-white leading-none">{displayPoints} SXP</h4>
-                        {/* ── "Since Apr 2026" date label COMMENTED OUT ──
-                        <span className="text-xs text-gray-500 font-medium mb-0.5">Since Apr 2026</span>
-                        */}
-                      </div>
+                      <h4 className="text-xl sm:text-2xl xl:text-3xl font-black text-white leading-none">{displayPoints} SXP</h4>
+                      {/* ── "Since Apr 2026" date label COMMENTED OUT ──
+                      <span className="text-xs text-gray-500 font-medium mb-0.5">Since Apr 2026</span>
+                      */}
+                    </div>
+                    <div className="bg-[#18181b] xl:bg-transparent rounded-xl p-3 xl:p-0">
+                      <p className="text-xs text-gray-400 font-medium mb-1">This Month</p>
+                      <h4 className="text-xl sm:text-2xl xl:text-3xl font-black text-white leading-none">
+                        {thisMonthPoints.toLocaleString()} SXP
+                      </h4>
+                      {/* ── Date comparison label COMMENTED OUT ──
+                      <span
+                        className="text-xs font-bold mb-0.5"
+                        style={{ color: monthPctChange >= 0 ? "#10b981" : "#f43f5e" }}
+                      >
+                        {monthPctChange >= 0 ? "↑" : "↓"} {Math.abs(monthPctChange)}%{" "}
+                        <span className="text-gray-500 font-medium">vs {previousMonthLabel}</span>
+                      </span>
+                      */}
                     </div>
                   </div>
                 </div>
 
                 {/* ─────────────────────────────────────────────
-                    Middle: donut + legend
-                    Stack on mobile, side-by-side on xl
+                    Middle: donut on top, legend below
                 ───────────────────────────────────────────── */}
-                <div className="xl:col-span-5 border-t border-white/10 xl:border-t-0 xl:border-l pt-8 xl:pt-0 xl:pl-4 overflow-hidden">
-                  <div className="flex flex-col items-center xl:flex-row xl:items-center xl:justify-start gap-4 xl:gap-1">
-                    {/* Donut — centered on mobile, flush-left on xl */}
-                    <div className="shrink-0 mx-auto xl:mx-0">
+                <div className="xl:col-span-5 border-t border-white/10 xl:border-t-0 xl:border-l pt-4 xl:pt-0 xl:pl-4 overflow-hidden">
+                  <div className="flex flex-col items-center gap-4">
+                    {/* Donut centered */}
+                    <div className="shrink-0">
                       <DonutChart data={earningBreakdown} centerPoints={displayMonthlyPoints} />
                     </div>
-                    {/* Legend — label wraps freely, never overflows or overlaps */}
-                    <div className="w-full xl:flex-1 min-w-0 xl:pl-2">
+                    {/* Legend below donut */}
+                    <div className="w-full min-w-0">
                       <BreakdownLegend data={earningBreakdown} />
                     </div>
                   </div>
@@ -1037,25 +1091,25 @@ export default function FanZoneDashboard() {
             </div>
 
             {/* HOW YOU EARN */}
-            <div className="bg-[#09090b] border border-white/10 rounded-2xl p-6">
+            <div className="bg-[#09090b] border border-white/10 rounded-2xl p-4 sm:p-6">
               {/* ── HOW YOU EARN heading InfoIcon COMMENTED OUT ──
               <h3 className="text-xs font-black tracking-widest text-gray-400 uppercase mb-6 flex items-center gap-1.5">
                 How You Earn Points <InfoIcon />
               </h3>
               */}
-              <h3 className="text-xs font-black tracking-widest text-gray-400 uppercase mb-6">
+              <h3 className="text-xs font-black tracking-widest text-gray-400 uppercase mb-3 sm:mb-6">
                 How You Earn Points
               </h3>
-              <div className="flex flex-col lg:flex-row gap-6">
-                <div className="flex-1 grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="flex flex-col lg:flex-row gap-3 sm:gap-6">
+                <div className="flex-1 grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-4">
                   {earnPointsActions.map((action, i) => (
-                    <div key={i} className="bg-[#18181b] border border-white/5 rounded-xl p-4 flex flex-col items-center justify-center text-center hover:bg-white/5 transition-colors cursor-pointer group">
-                      <div className={`w-10 h-10 rounded-full ${action.bg} flex items-center justify-center mb-3 group-hover:scale-110 transition-transform`}>
-                        <action.icon className={`w-4 h-4 ${action.color}`} />
+                    <div key={i} className="bg-[#18181b] border border-white/5 rounded-xl p-2 sm:p-4 flex flex-col items-center justify-center text-center hover:bg-white/5 transition-colors cursor-pointer group">
+                      <div className={`w-7 h-7 sm:w-10 sm:h-10 rounded-full ${action.bg} flex items-center justify-center mb-1.5 sm:mb-3 group-hover:scale-110 transition-transform`}>
+                        <action.icon className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${action.color}`} />
                       </div>
-                      <h4 className="text-xs font-bold text-gray-300 mb-1">{action.title}</h4>
-                      <p className={`text-sm font-black ${action.color} mb-1`}>{action.xp}</p>
-                      <p className="text-[10px] text-gray-500">{action.desc}</p>
+                      <h4 className="text-[10px] sm:text-xs font-bold text-gray-300 mb-0.5 sm:mb-1 leading-tight">{action.title}</h4>
+                      <p className={`text-xs sm:text-sm font-black ${action.color} mb-0.5 sm:mb-1`}>{action.xp}</p>
+                      <p className="text-[9px] sm:text-[10px] text-gray-500 hidden sm:block">{action.desc}</p>
                     </div>
                   ))}
                 </div>
@@ -1080,7 +1134,7 @@ export default function FanZoneDashboard() {
             </div>
 
             {/* RECENT + INVITE */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-6">
               <RecentActivityWidget />
               <div className="space-y-6">
                 {/* <StreakWidget /> */}
@@ -1094,8 +1148,8 @@ export default function FanZoneDashboard() {
             TAB: EARNING HISTORY
         ══════════════════════════════════════ */}
         {activeTab === "Earning History" && (
-          <div ref={earningHistoryRef} className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="bg-[#09090b] border border-white/10 rounded-2xl p-6">
+          <div ref={earningHistoryRef} className="space-y-3 sm:space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="bg-[#09090b] border border-white/10 rounded-2xl p-4 sm:p-6">
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                 <div>
                   <h3 className="text-lg font-black text-white mb-1">Earning History</h3>

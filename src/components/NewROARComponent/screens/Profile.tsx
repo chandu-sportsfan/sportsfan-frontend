@@ -1220,7 +1220,7 @@ export default function Profile({
             {accent && (() => {
   const tooltipText = label === "Predictions"
     ? "Counts every prediction poll you've participated in — either created or voted on."
-    : "Your correct prediction rate out of all settled predictions & debates you participated in.";
+    : "Your correct Accuracy rate out of all settled predictions & debates you participated in.";
   return (
     <div
       style={{ position: "absolute", top: 6, right: 6 }}

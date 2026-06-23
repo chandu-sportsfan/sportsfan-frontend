@@ -1176,7 +1176,7 @@ export default function Profile({
           {
             value: isOtherProfile ? (user.activityCounts?.total ?? 0) : profileStats.posts,
             label: "Posts",
-            accent: false,
+            accent: true,
           },
           // {
           //   value: isOtherProfile ? (user.activityCounts?.ROAR_DEBATE ?? 0) : profileStats.debates,
@@ -1188,7 +1188,7 @@ export default function Profile({
               ? (user.activityCounts?.ROAR_DEBATE_PARTICIPATE ?? 0)
               : activities.filter((a: any) => a.type === "ROAR_DEBATE_PARTICIPATE").length,
             label: "Debates",
-            accent: false,
+            accent: true,
           },
           {
             value: isOtherProfile
@@ -1218,9 +1218,15 @@ export default function Profile({
             }}
           >
             {accent && (() => {
-  const tooltipText = label === "Predictions"
-    ? "Counts every prediction poll you've participated in — either created or voted on."
-    : "Your correct Accuracy rate out of all settled predictions & debates you participated in.";
+  
+  const tooltipText =
+  label === "Posts"
+    ? "Count of all debates, predictions, and posts you've created."
+    : label === "Predictions"
+    ? "Count all predictions you've participated in."
+    : label === "Debates"
+    ? "Count all debates you've participated in."
+    : "Your accuracy rate across resolved predictions and debates.";
   return (
     <div
       style={{ position: "absolute", top: 6, right: 6 }}

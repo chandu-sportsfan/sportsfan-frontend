@@ -4323,7 +4323,7 @@ export default function WatchRoom({ room, onBack }: Props) {
                                 }}
                                 className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-600/10 border border-purple-500/30 hover:bg-purple-600/20 active:scale-95 text-purple-400 hover:text-purple-300 text-xs font-black uppercase tracking-wider rounded-xl transition-all duration-300 shadow-[0_0_15px_rgba(147,51,234,0.15)] cursor-pointer"
                             >
-                                🗣️ ROAR Feed
+                                ROAR Feed
                             </button>
                         </Link>
                     )}

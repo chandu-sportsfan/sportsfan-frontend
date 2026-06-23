@@ -1174,48 +1174,64 @@ const postCardStyle = (type: string): React.CSSProperties => {
   return {};
 };
 
-// ── ActiveFansStack ───────────────────────────────────────────────────────────
-// Small stacked-avatar row used under the room header. Uses raw <img>/initial
-// circles rather than AvatarWithBadge to keep the row compact — the dialog
-// itself (ActiveFansDialog) uses the real AvatarWithBadge component.
+// ── ActiveFansStack 
 function ActiveFansStack({
-  fans, count, onClick,
-}: { fans: { uid: string; username: string; avatarUrl?: string | null }[]; count: number; onClick: () => void }) {
-  if (count === 0) return null;
+  fans, count, totalJoinCount, onClick,
+}: {
+  fans: { uid: string; username: string; avatarUrl?: string | null }[];
+  count: number;
+  totalJoinCount?: number;
+  onClick: () => void;
+}) {
+  if (count === 0 && !totalJoinCount) return null;
+
+  const formatCount = (n: number) =>
+    n >= 1000 ? `${(n / 1000).toFixed(1)}k` : `${n}`;
+
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      style={{
-        display: "flex", alignItems: "center", gap: 8,
-        background: "none", border: "none", cursor: "pointer", padding: 0,
-      }}
-    >
-      <div style={{ display: "flex" }}>
-        {fans.slice(0, 3).map((fan, i) => (
-          <div
-            key={fan.uid}
-            style={{
-              width: 22, height: 22, borderRadius: "50%",
-              border: "2px solid #0e0e14", overflow: "hidden",
-              marginLeft: i === 0 ? 0 : -8, zIndex: 3 - i,
-              background: "linear-gradient(135deg,#e91e8c,#ff6b35)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              flexShrink: 0,
-            }}
-          >
-            {fan.avatarUrl ? (
-              <img src={fan.avatarUrl} alt={fan.username} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-            ) : (
-              <span style={{ fontSize: 9, fontWeight: 800, color: "#fff" }}>{fan.username?.[0]?.toUpperCase() || "?"}</span>
-            )}
-          </div>
-        ))}
-      </div>
-      <span style={{ fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.5)" }}>
-        {count} active now
-      </span>
-    </button>
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+      {/* Left: stacked avatars + active count */}
+      <button
+        type="button"
+        onClick={onClick}
+        style={{
+          display: "flex", alignItems: "center", gap: 8,
+          background: "none", border: "none", cursor: "pointer", padding: 0,
+        }}
+      >
+        <div style={{ display: "flex" }}>
+          {fans.slice(0, 3).map((fan, i) => (
+            <div
+              key={fan.uid}
+              style={{
+                width: 22, height: 22, borderRadius: "50%",
+                border: "2px solid #0e0e14", overflow: "hidden",
+                marginLeft: i === 0 ? 0 : -8, zIndex: 3 - i,
+                background: "linear-gradient(135deg,#e91e8c,#ff6b35)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                flexShrink: 0,
+              }}
+            >
+              {fan.avatarUrl ? (
+                <img src={fan.avatarUrl} alt={fan.username} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              ) : (
+                <span style={{ fontSize: 9, fontWeight: 800, color: "#fff" }}>{fan.username?.[0]?.toUpperCase() || "?"}</span>
+              )}
+            </div>
+          ))}
+        </div>
+        <span style={{ fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.5)" }}>
+          <span style={{ color: "#fff", fontWeight: 700 }}>{formatCount(count)}</span> active now
+        </span>
+      </button>
+
+      {/* Right: total joined */}
+      {totalJoinCount !== undefined && totalJoinCount > 0 && (
+        <span style={{ fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.5)" }}>
+          Total Joined <span style={{ color: "#fff", fontWeight: 700 }}>{formatCount(totalJoinCount)}</span>
+        </span>
+      )}
+    </div>
   );
 }
 
@@ -1469,6 +1485,7 @@ export default function DiscussionRoom({
   const [selectedActionId, setSelectedActionId] = useState("post");
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [liveCount, setLiveCount] = useState<number>(fanCount ?? 0);
+  const [totalJoinCount, setTotalJoinCount] = useState<number>(0);
   const [sharePost, setSharePost] = useState<ShareableRoarPost | null>(null);
   const [copied, setCopied] = useState(false);
   const { userProfile } = useUserProfile();
@@ -1644,19 +1661,42 @@ export default function DiscussionRoom({
   useEffect(() => {
     if (!roomId) return;
 
+    // const join = async () => {
+    //   try {
+    //     const res = await axios.post(`/api/roar/rooms/${roomId}/presence`);
+    //     if (res.data?.success) setLiveCount(res.data.fanCount);
+    //   } catch (e) { console.error("Join failed:", e); }
+    // };
     const join = async () => {
       try {
         const res = await axios.post(`/api/roar/rooms/${roomId}/presence`);
-        if (res.data?.success) setLiveCount(res.data.fanCount);
+        if (res.data?.success) {
+          setLiveCount(res.data.fanCount);
+          if (res.data.totalJoinCount !== undefined) {
+            setTotalJoinCount(res.data.totalJoinCount); // ← new
+          }
+        }
       } catch (e) { console.error("Join failed:", e); }
     };
 
+    // const refreshActiveFans = async () => {
+    //   try {
+    //     const res = await axios.get(`/api/roar/rooms/${roomId}/presence`);
+    //     if (res.data?.success) {
+    //       setActiveFans(res.data.fans ?? []);
+    //       setLiveCount(res.data.fanCount ?? 0);
+    //     }
+    //   } catch (e) { console.error("Active fans fetch failed:", e); }
+    // };
     const refreshActiveFans = async () => {
       try {
         const res = await axios.get(`/api/roar/rooms/${roomId}/presence`);
         if (res.data?.success) {
           setActiveFans(res.data.fans ?? []);
           setLiveCount(res.data.fanCount ?? 0);
+          if (res.data.totalJoinCount !== undefined) {
+            setTotalJoinCount(res.data.totalJoinCount); // ← new
+          }
         }
       } catch (e) { console.error("Active fans fetch failed:", e); }
     };
@@ -2077,7 +2117,7 @@ export default function DiscussionRoom({
       )}
 
       {/* ── HEADER ── */}
-      <div className="shrink-0 px-4 py-3 bg-[rgba(14,14,20,0.98)] backdrop-blur-[20px] border-b border-[var(--border)]" style={{ overflow: "visible", position: "relative", zIndex: 40 }}>
+      {/* <div className="shrink-0 px-4 py-3 bg-[rgba(14,14,20,0.98)] backdrop-blur-[20px] border-b border-[var(--border)]" style={{ overflow: "visible", position: "relative", zIndex: 40 }}>
         <div className="flex justify-between items-start">
           <div className="flex items-center gap-3 flex-1 min-w-0">
             <button type="button" onPointerDown={handleBack} onClick={handleBack} className="bg-transparent border-none cursor-pointer text-white flex items-center p-0 flex-shrink-0" style={{ touchAction: "manipulation", WebkitTapHighlightColor: "transparent" }}>
@@ -2088,14 +2128,14 @@ export default function DiscussionRoom({
               <div className="flex items-center gap-1.5 mt-1">
                 <span className="live-pulse w-1.5 h-1.5 rounded-full bg-[var(--live-green)] inline-block flex-shrink-0" />
                 <span className="text-[10px] font-bold text-[var(--live-green)] flex-shrink-0">LIVE</span>
-                <span className="text-[11px] text-white text-[var(--text-muted)] truncate">· {fmt(liveCount)} joined</span>
+                {/* <span className="text-[11px] text-white text-[var(--text-muted)] truncate">· {fmt(liveCount)} joined</span> //
               </div>
             </div>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0 ml-2">
             {watchAlongRoomId && (
-              <button 
-                type="button" 
+              <button
+                type="button"
                 onClick={() => router.push(`/MainModules/WatchAlong/room/${watchAlongRoomId}`)}
                 className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500 text-white transition-all cursor-pointer shadow-[0_2px_10px_rgba(219,39,119,0.3)] hover:scale-105 active:scale-95"
               >
@@ -2118,11 +2158,81 @@ export default function DiscussionRoom({
           <div className="flex justify-between text-[10px] text-[var(--text-muted)] mb-1"><span>Room Energy</span></div>
           <div className="room-energy-bar room-energy-fast rounded-full" />
         </div>
+      </div> */}
+
+      {/* ── HEADER ── */}
+      <div className="shrink-0 px-4 py-3 bg-[rgba(14,14,20,0.98)] backdrop-blur-[20px] border-b border-[var(--border)]" style={{ overflow: "visible", position: "relative", zIndex: 40 }}>
+        <div className="flex justify-between items-start gap-2">
+          {/* LEFT: back + room name + watchalong */}
+          <div className="flex items-center gap-3 min-w-0 flex-1">
+            <button
+              type="button"
+              onPointerDown={handleBack}
+              onClick={handleBack}
+              className="bg-transparent border-none cursor-pointer text-white flex items-center p-0 flex-shrink-0"
+              style={{ touchAction: "manipulation", WebkitTapHighlightColor: "transparent" }}
+            >
+              <ChevronLeft size={24} />
+            </button>
+            <div className="text-left pt-0.5 min-w-0 flex-1">
+              <p className="font-display text-2xl tracking-[0.04em] m-0 leading-tight text-white font-extrabold uppercase truncate">
+                {roomName || "WORLDCUP"}
+              </p>
+              <div className="flex items-center gap-2 mt-1 flex-wrap ml-auto">
+                <div className="flex items-center gap-1.5">
+                  <span className="live-pulse w-1.5 h-1.5 rounded-full bg-[var(--live-green)] inline-block flex-shrink-0" />
+                  <span className="text-[10px] font-bold text-[var(--live-green)] flex-shrink-0">LIVE</span>
+                </div>
+                {watchAlongRoomId && (
+                  <button
+                    type="button"
+                    onClick={() => router.push(`/MainModules/WatchAlong/room/${watchAlongRoomId}`)}
+                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500 text-white transition-all cursor-pointer shadow-[0_2px_10px_rgba(219,39,119,0.3)] active:scale-95 whitespace-nowrap"
+                  >
+                    <span>Watchalong</span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse inline-block flex-shrink-0" />
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* RIGHT: share + score only */}
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <button
+              type="button"
+              onClick={shareRoomLink}
+              className="flex-shrink-0 bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.12)] rounded-[10px] p-2 cursor-pointer text-[rgba(255,255,255,0.75)] flex items-center justify-center hover:bg-[rgba(255,255,255,0.1)] transition-colors"
+              style={{ width: "36px", height: "36px" }}
+            >
+              <Share2 size={18} />
+            </button>
+            {(score || scoreSubtitle) && (
+              <div className="text-right pr-1 flex-shrink-0">
+                {score && <div className="font-display text-[24px] text-[var(--accent-yellow)] leading-none">{score}</div>}
+                {scoreSubtitle && <div className="text-[11px] text-[var(--text-secondary)] mt-0.5">{scoreSubtitle}</div>}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="mt-3">
+          <div className="flex justify-between text-[10px] text-[var(--text-muted)] mb-1">
+            <span>Room Energy</span>
+          </div>
+          <div className="room-energy-bar room-energy-fast rounded-full" />
+        </div>
       </div>
 
       {/* ── ACTIVE FANS ── */}
       <div className="shrink-0 px-4 py-2 bg-[rgba(14,14,20,0.98)] border-b border-[var(--border)]">
-        <ActiveFansStack fans={activeFans} count={liveCount} onClick={() => setActiveFansOpen(true)} />
+        {/* <ActiveFansStack fans={activeFans} count={liveCount} onClick={() => setActiveFansOpen(true)} /> */}
+        <ActiveFansStack
+          fans={activeFans}
+          count={liveCount}
+          totalJoinCount={totalJoinCount}
+          onClick={() => setActiveFansOpen(true)}
+        />
       </div>
 
       {/* ── FEED ── */}

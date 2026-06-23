@@ -1218,15 +1218,19 @@ export default function Profile({
             }}
           >
             {accent && (() => {
-  
   const tooltipText =
-  label === "Posts"
-    ? "Count of all debates, predictions, and posts you've created."
-    : label === "Predictions"
-    ? "Count all predictions you've participated in."
-    : label === "Debates"
-    ? "Count all debates you've participated in."
-    : "Your accuracy rate across resolved predictions and debates.";
+    label === "Posts"
+      ? "Count of all debates, predictions, and posts you've created."
+      : label === "Predictions"
+      ? "Count all predictions you've participated in."
+      : label === "Debates"
+      ? "Count all debates you've participated in."
+      : "Your accuracy rate across resolved predictions and debates.";
+
+  // Posts is the leftmost tile — anchor tooltip to the left so it opens
+  // rightward instead of overflowing off the left edge of the screen.
+  const isLeftmost = label === "Posts";
+
   return (
     <div
       style={{ position: "absolute", top: 6, right: 6 }}
@@ -1238,6 +1242,10 @@ export default function Profile({
         const tip = (e.currentTarget as HTMLElement).querySelector('.stat-tip') as HTMLElement;
         if (tip) tip.style.display = "none";
       }}
+      onTouchStart={(e) => {
+        const tip = (e.currentTarget as HTMLElement).querySelector('.stat-tip') as HTMLElement;
+        if (tip) tip.style.display = tip.style.display === "block" ? "none" : "block";
+      }}
     >
       <div style={{
         width: 18, height: 18, borderRadius: "50%",
@@ -1246,25 +1254,27 @@ export default function Profile({
         fontSize: 10, fontWeight: 900, color: "#fff",
         cursor: "pointer",
       }}>i</div>
-      
+
       <div className="stat-tip" style={{
-  display: "none",
-  position: "absolute",
-  bottom: 24,      // ← was top: 24
-  right: 0,
-  width: 180,
-  background: "rgba(20,20,30,0.97)",
-  border: "1px solid rgba(255,255,255,0.12)",
-  borderRadius: 10,
-  padding: "8px 10px",
-  fontSize: 11,
-  color: "rgba(255,255,255,0.82)",
-  lineHeight: 1.5,
-  zIndex: 9999,    // ← raise z-index
-  pointerEvents: "none",
-  whiteSpace: "normal",
-  boxShadow: "0 4px 16px rgba(0,0,0,0.5)",
-}}>{tooltipText}</div>
+        display: "none",
+        position: "absolute",
+        bottom: 24,
+        left: isLeftmost ? 0 : "auto",
+        right: isLeftmost ? "auto" : 0,
+        width: 170,
+        maxWidth: "calc(100vw - 32px)",
+        background: "rgba(20,20,30,0.97)",
+        border: "1px solid rgba(255,255,255,0.12)",
+        borderRadius: 10,
+        padding: "8px 10px",
+        fontSize: 11,
+        color: "rgba(255,255,255,0.82)",
+        lineHeight: 1.5,
+        zIndex: 9999,
+        pointerEvents: "none",
+        whiteSpace: "normal",
+        boxShadow: "0 4px 16px rgba(0,0,0,0.5)",
+      }}>{tooltipText}</div>
     </div>
   );
 })()}

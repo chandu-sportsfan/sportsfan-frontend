@@ -416,33 +416,22 @@
 //       )}
 
 //       {/* ── Badges ───────────────────────────────────────────────────────── */}
-//       {badges && badges.length > 0 && (
-//         <div style={{ padding: "24px 16px 0" }}>
-//           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-//             <h3 className="font-display" style={{ fontWeight: 700, fontSize: 18, color: "#fff" }}>
-//               {isOtherProfile ? "BADGES" : `YOUR BADGES `}
-//               <span style={{ color: "var(--text-muted)" }}>{unlocked}/{badges.length}</span>
-//             </h3>
-//           </div>
-//           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, padding: "4px 8px" }}>
-//             {badges.map((b: any) => {
-//               const cfg = BADGE_CONFIG[b.badgeId ?? b.id] ?? BADGE_CONFIG.RISING_FAN;
-//               const isUnlocked = b.unlocked;
-//               return (
-//                 <div key={b.badgeId ?? b.id} onClick={() => setBadgeModal(b)}
-//                   style={{ display: "flex", flexDirection: "column", alignItems: "center", cursor: "pointer", opacity: isUnlocked ? 1 : 0.4 }}>
-//                   <div style={{ position: "relative", width: 68, height: 76, background: isUnlocked && cfg.gradient ? `linear-gradient(135deg,${cfg.gradient[0]},${cfg.gradient[1] ?? cfg.gradient[0]})` : "rgba(255,255,255,0.06)", clipPath: "polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: isUnlocked ? "0 4px 12px rgba(0,0,0,0.3)" : "none" }}>
-//                     <div style={{ position: "absolute", inset: 2, background: isUnlocked ? "none" : "var(--bg-primary)", clipPath: "polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28 }}>
-//                       {cfg.icon}
-//                     </div>
-//                   </div>
-//                   <span style={{ fontSize: 10, fontWeight: 700, color: "#fff", marginTop: 8, textAlign: "center" }}>{cfg.name?.toUpperCase()}</span>
-//                 </div>
-//               );
-//             })}
-//           </div>
+//       <div style={{ padding: "24px 16px 0" }}>
+//         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+//           <h3 className="font-display" style={{ fontWeight: 700, fontSize: 18, color: "#fff" }}>
+//             {isOtherProfile ? "BADGES" : `YOUR BADGES `}
+//           </h3>
 //         </div>
-//       )}
+//         <div style={{ display: "flex", justifyContent: "center", padding: "4px 8px" }}>
+//           <Image
+//             src="/images/pasted2.png"
+//             alt="Badge"
+//             width={120}
+//             height={120}
+//             style={{ objectFit: "contain" }}
+//           />
+//         </div>
+//       </div>
 
 //       {/* ── Calls ────────────────────────────────────────────────────────── */}
 //       <div style={{ padding: "24px 16px 0" }}>
@@ -1274,70 +1263,23 @@ export default function Profile({
         </div>
         <div style={{ display: "flex", gap: 14, overflowX: "auto", padding: "4px 14px 8px", scrollbarWidth: "none" }}>
 
-          {/* Owned badges */}
-          {ownedBadges.map((b: any) => {
-            const cfg = BADGE_CONFIG[b.badgeId ?? b.id] ?? BADGE_CONFIG.RISING_FAN;
-            return (
-              <div
-                key={b.badgeId ?? b.id}
-                onClick={() => setBadgeModal(b)}
-                style={{ display: "flex", flexDirection: "column", alignItems: "center", cursor: "pointer", flexShrink: 0, width: 72 }}
-              >
-                <div style={{
-                  width: 64, height: 64,
-                  background: cfg.gradient
-                    ? `linear-gradient(135deg,${cfg.gradient[0]},${cfg.gradient[1] ?? cfg.gradient[0]})`
-                    : "rgba(233,30,140,0.9)",
-                  clipPath: "polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%)",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  boxShadow: "0 4px 14px rgba(0,0,0,0.4)",
-                  fontSize: 24,
-                }}>
-                  {cfg.icon}
-                </div>
-                <span style={{ fontSize: 9, fontWeight: 700, color: "rgba(255,255,255,0.7)", marginTop: 6, textAlign: "center", lineHeight: 1.2 }}>
-                  {cfg.name?.toUpperCase() ?? "BADGE"}
-                </span>
-              </div>
-            );
-          })}
+          {/* First Roar tiger badge */}
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0, width: 72 }}>
+            <img
+              src="/images/Frame 1984081839.png"
+              alt="First Roar"
+              style={{ width: 64, height: 64, objectFit: "contain" }}
+            />
+          </div>
 
-          {/* First Roar — always shown, color if owned else gray */}
-          {(() => {
-            const owned = ownedBadges.some((b: any) => (b.badgeId ?? b.id) === "FIRST_ROAR");
-            return (
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0, width: 72 }}>
-                <img
-                  src={owned ? "/images/Frame 1984081839.png" : "/images/image 189.png"}
-                  alt="First Roar"
-                  style={{ width: 64, height: 64, objectFit: "contain" }}
-                />
-                <span style={{ fontSize: 9, fontWeight: 700, color: owned ? "rgba(255,255,255,0.85)" : "rgba(255,255,255,0.35)", marginTop: 6, textAlign: "center", lineHeight: 1.2 }}>
-                  FIRST ROAR
-                </span>
-              </div>
-            );
-          })()}
-
-          {/* 3 locked placeholder badges */}
-          {[
-            { label: "PLAY MORE" },
-            { label: "PLAY MORE" },
-            { label: "PLAY MORE" },
-          ].map((_, i) => (
-            <div key={`locked-${i}`} style={{ display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0, width: 72 }}>
-              <div style={{
-                width: 64, height: 64,
-                background: "rgba(255,255,255,0.07)",
-                clipPath: "polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%)",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: 22,
-              }}>
-                🔒
-              </div>
-              <span style={{ fontSize: 9, fontWeight: 700, color: "rgba(255,255,255,0.2)", marginTop: 6, textAlign: "center", lineHeight: 1.2 }}>
-                PLAY MORE
-              </span>
+          {/* 4 grayed out First Roar badges */}
+          {[...Array(4)].map((_, i) => (
+            <div key={`gray-roar-${i}`} style={{ display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0, width: 72 }}>
+              <img
+                src="/images/image 189.png"
+                alt="First Roar Gray"
+                style={{ width: 64, height: 64, objectFit: "contain" }}
+              />
             </div>
           ))}
 

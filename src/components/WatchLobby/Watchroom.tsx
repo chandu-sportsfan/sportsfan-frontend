@@ -4314,14 +4314,29 @@ export default function WatchRoom({ room, onBack }: Props) {
                     )}
                     <span className="text-sm font-bold">{room.name || "Watch Room"}</span>
                 </div>
-                <button
-                    onClick={handleShare}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-pink-600/10 border border-pink-500/30 hover:bg-pink-600/20 active:scale-95 text-pink-400 hover:text-pink-300 text-xs font-black uppercase tracking-wider rounded-xl transition-all duration-300 shadow-[0_0_15px_rgba(236,72,153,0.15)] hover:shadow-[0_0_20px_rgba(236,72,153,0.25)] cursor-pointer"
-                    title="Copy Invite Link"
-                >
-                    <Share2 size={13} className="animate-pulse" />
-                    <span>Share</span>
-                </button>
+                <div className="flex items-center gap-2">
+                    {room.roarRoomId && (
+                        <Link href="/MainModules/ROAR">
+                            <button
+                                onClick={() => {
+                                    try { localStorage.setItem("roar_auto_join_room_id", room.roarRoomId!); } catch (e) {}
+                                }}
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-600/10 border border-purple-500/30 hover:bg-purple-600/20 active:scale-95 text-purple-400 hover:text-purple-300 text-xs font-black uppercase tracking-wider rounded-xl transition-all duration-300 shadow-[0_0_15px_rgba(147,51,234,0.15)] cursor-pointer"
+                            >
+                                🗣️ ROAR Feed
+                            </button>
+                        </Link>
+                    )}
+                    <button
+                        onClick={handleShare}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-pink-600/10 border border-pink-500/30 hover:bg-pink-600/20 active:scale-95 text-pink-400 hover:text-pink-300 text-xs font-black uppercase tracking-wider rounded-xl transition-all duration-300 shadow-[0_0_15px_rgba(236,72,153,0.15)] hover:shadow-[0_0_20px_rgba(236,72,153,0.25)] cursor-pointer"
+                        title="Copy Invite Link"
+                    >
+                        <Share2 size={13} className="animate-pulse" />
+                        <span>Share</span>
+                    </button>
+                </div>
+
             </div>
 
             {/* ── Score bar ── */}

@@ -94,6 +94,7 @@ export interface Room {
     displayPicture: string;
     hostUserId?: string;   // The Google user ID of the person who created this room
     coHostUserId?: string; // The Google user ID of the co-host if one is designated
+    roarRoomId?: string;   // Synced ROAR Room ID
     createdAt?: number;
     updatedAt?: number;
 }

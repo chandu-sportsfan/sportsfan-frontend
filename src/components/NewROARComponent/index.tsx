@@ -722,8 +722,9 @@ export default function ROARApp() {
       if (res.data?.success) {
         setRooms(res.data.rooms);
         setSelectedRoom(prev => {
-          if (prev) return prev;
-          return res.data.rooms.length > 0 ? res.data.rooms[0] : null;
+          if (!prev) return res.data.rooms.length > 0 ? res.data.rooms[0] : null;
+          const updated = res.data.rooms.find((r: any) => r.roomId === prev.roomId);
+          return updated || prev;
         });
       }
     } catch (err) { console.error("Failed to fetch rooms:", err); }
@@ -784,6 +785,23 @@ export default function ROARApp() {
   }, [searchParams, onboarded, dbPosts]);
 
   useEffect(() => {
+    if (!onboarded || rooms.length === 0) return;
+    try {
+      const autoJoinId = localStorage.getItem("roar_auto_join_room_id");
+      if (autoJoinId) {
+        const matched = rooms.find(r => r.roomId === autoJoinId);
+        if (matched) {
+          setSelectedRoom(matched);
+          setOverlay("room");
+          localStorage.removeItem("roar_auto_join_room_id");
+        }
+      }
+    } catch (e) {
+      console.error("Failed to auto-join room from localStorage:", e);
+    }
+  }, [onboarded, rooms]);
+
+  useEffect(() => {
     const syncAvatar = (event?: Event) => {
       const custom = event as CustomEvent<{ avatarUrl?: string }> | undefined;
       try { setCurrentAvatarUrl(custom?.detail?.avatarUrl || localStorage.getItem("roar_avatar_url") || undefined); }
@@ -810,6 +828,25 @@ export default function ROARApp() {
       return [...matchNotifs, ...nonMatch];
     });
   }, [rooms]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Auto-join room from localStorage if roar_auto_join_room_id is present
+  useEffect(() => {
+    if (!rooms.length) return;
+    try {
+      const autoJoinRoomId = localStorage.getItem("roar_auto_join_room_id");
+      if (autoJoinRoomId) {
+        const matchedRoom = rooms.find(r => r.roomId === autoJoinRoomId);
+        if (matchedRoom) {
+          setSelectedRoom(matchedRoom);
+          setOverlay("room");
+          localStorage.removeItem("roar_auto_join_room_id");
+        }
+      }
+    } catch (e) {
+      console.error("Failed to auto-join ROAR room", e);
+    }
+  }, [rooms]);
+
 
 
   // ── Actions ────────────────────────────────────────────────────────────────
@@ -1145,6 +1182,7 @@ export default function ROARApp() {
                     fanCount={selectedRoom?.fanCount}
                     score={selectedRoom?.score}
                     scoreSubtitle={selectedRoom?.scoreSubtitle}
+                    watchAlongRoomId={selectedRoom?.watchAlongRoomId}
                     onBack={() => { setOverlay(null); setActiveTab("home"); }}
                     onToast={showToast}
                     onPostClick={post => setSelectedPost(post)}

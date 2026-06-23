@@ -1214,18 +1214,54 @@ export default function Profile({
               background: "rgba(18,18,26,0.7)",
               border: "1px solid rgba(255,255,255,0.06)",
               borderRadius: 14,
-              position: "relative", overflow: "hidden",
+              position: "relative", overflow: "visible",
             }}
           >
-            {accent && (
-              <div style={{
-                position: "absolute", top: 6, right: 6,
-                width: 18, height: 18, borderRadius: "50%",
-                background: "var(--accent-magenta)",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: 10, fontWeight: 900, color: "#fff",
-              }}>A</div>
-            )}
+            {accent && (() => {
+  const tooltipText = label === "Predictions"
+    ? "Counts every prediction poll you've participated in — either created or voted on."
+    : "Your correct prediction rate out of all settled predictions & debates you participated in.";
+  return (
+    <div
+      style={{ position: "absolute", top: 6, right: 6 }}
+      onMouseEnter={(e) => {
+        const tip = (e.currentTarget as HTMLElement).querySelector('.stat-tip') as HTMLElement;
+        if (tip) tip.style.display = "block";
+      }}
+      onMouseLeave={(e) => {
+        const tip = (e.currentTarget as HTMLElement).querySelector('.stat-tip') as HTMLElement;
+        if (tip) tip.style.display = "none";
+      }}
+    >
+      <div style={{
+        width: 18, height: 18, borderRadius: "50%",
+        background: "var(--accent-magenta)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        fontSize: 10, fontWeight: 900, color: "#fff",
+        cursor: "pointer",
+      }}>i</div>
+      
+      <div className="stat-tip" style={{
+  display: "none",
+  position: "absolute",
+  bottom: 24,      // ← was top: 24
+  right: 0,
+  width: 180,
+  background: "rgba(20,20,30,0.97)",
+  border: "1px solid rgba(255,255,255,0.12)",
+  borderRadius: 10,
+  padding: "8px 10px",
+  fontSize: 11,
+  color: "rgba(255,255,255,0.82)",
+  lineHeight: 1.5,
+  zIndex: 9999,    // ← raise z-index
+  pointerEvents: "none",
+  whiteSpace: "normal",
+  boxShadow: "0 4px 16px rgba(0,0,0,0.5)",
+}}>{tooltipText}</div>
+    </div>
+  );
+})()}
             <span className="font-display" style={{ fontSize: 22, color: "#fff", lineHeight: 1, fontWeight: 800 }}>{value}</span>
             <span style={{ fontSize: 10, color: "rgba(255,255,255,0.5)", marginTop: 5 }}>{label}</span>
           </div>

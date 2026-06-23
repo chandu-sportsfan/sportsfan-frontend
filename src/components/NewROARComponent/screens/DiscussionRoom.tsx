@@ -1818,7 +1818,8 @@ export default function DiscussionRoom({
                 const isPending = pendingReactRef.current[m.msgId];
                 return {
                   id: m.msgId,
-                  fan: { username: displayUsername(m.authorUsername), authorUid: m.authorUid, badge: m.authorBadge, avatarUrl: m.authorAvatarUrl || m.avatarUrl },
+                  // fan: { username: displayUsername(m.authorUsername), authorUid: m.authorUid, badge: m.authorBadge, avatarUrl: m.authorAvatarUrl || m.avatarUrl },
+                  fan: { username: displayUsername(m.authorUsername), authorUid: m.authorUid, badge: m.authorBadge, avatarUrl: m.authorUid === currentUserId ? (userAvatarUrl || m.authorAvatarUrl || m.avatarUrl) : (m.authorAvatarUrl || m.avatarUrl) },
                   text: m.text,
                   fireCount: m.fireCount || 0,
                   nochanceCount: m.noChanceCount || 0,
@@ -1861,7 +1862,8 @@ export default function DiscussionRoom({
               .filter((m: any) => !existingIds.has(m.msgId))
               .map((m: any) => ({
                 id: m.msgId,
-                fan: { username: displayUsername(m.authorUsername), authorUid: m.authorUid, badge: m.authorBadge, avatarUrl: m.authorAvatarUrl || m.avatarUrl },
+                // fan: { username: displayUsername(m.authorUsername), authorUid: m.authorUid, badge: m.authorBadge, avatarUrl: m.authorAvatarUrl || m.avatarUrl },
+                fan: { username: displayUsername(m.authorUsername), authorUid: m.authorUid, badge: m.authorBadge, avatarUrl: m.authorUid === currentUserId ? (userAvatarUrl || m.authorAvatarUrl || m.avatarUrl) : (m.authorAvatarUrl || m.avatarUrl) },
                 text: m.text,
                 fireCount: m.fireCount || 0,
                 nochanceCount: m.noChanceCount || 0,
@@ -1894,7 +1896,8 @@ export default function DiscussionRoom({
       }
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
-  }, [roomId, userAvatarUrl, userUsername]);
+  // }, [roomId, userAvatarUrl, userUsername]);
+  }, [roomId, userAvatarUrl, userUsername, currentUserId]);
 
   useEffect(() => { onRegisterRefresh?.(fetchMsgs); }, [fetchMsgs, onRegisterRefresh]);
   useEffect(() => { onRegisterReplyUpdate?.((postId, count) => { setPosts(p => p.map(x => x.id === postId ? { ...x, replyCount: count } : x)); }); }, [onRegisterReplyUpdate]);

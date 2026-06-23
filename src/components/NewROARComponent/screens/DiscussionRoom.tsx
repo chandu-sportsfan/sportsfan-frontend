@@ -1469,6 +1469,7 @@ export default function DiscussionRoom({
   const [copied, setCopied] = useState(false);
   const { userProfile } = useUserProfile();
   const currentUserId = userProfile?.actualUserId;
+  const latestCreatedAtRef = useRef<number | null>(null);
 
   const [inlineCommentPostId, setInlineCommentPostId] = useState<string | null>(null);
 
@@ -1664,14 +1665,27 @@ export default function DiscussionRoom({
     // missed beat (e.g. a slow network tick) doesn't drop the user from
     // the active list.
     // const heartbeat = setInterval(() => { join(); refreshActiveFans(); }, 25_000);
+    // const heartbeat = setInterval(() => {
+    //   if (!document.hidden) { join(); refreshActiveFans(); }
+    // }, 30_000);
     const heartbeat = setInterval(() => {
-      if (!document.hidden) { join(); refreshActiveFans(); }
+      if (!document.hidden) join();
     }, 30_000);
 
+    const fanRefresh = setInterval(() => {
+      if (!document.hidden) refreshActiveFans();
+    }, 120_000);
+
     window.addEventListener("beforeunload", leaveBeacon);
+    // return () => {
+    //   leaveAxios();
+    //   clearInterval(heartbeat);
+    //   window.removeEventListener("beforeunload", leaveBeacon);
+    // };
     return () => {
       leaveAxios();
       clearInterval(heartbeat);
+      clearInterval(fanRefresh);
       window.removeEventListener("beforeunload", leaveBeacon);
     };
   }, [roomId]);
@@ -1683,39 +1697,139 @@ export default function DiscussionRoom({
     } catch { }
   }, [currentAvatarUrl]);
 
+  // const fetchMsgs = useCallback(async () => {
+  //   if (!roomId) return;
+  //   try {
+  //     const res = await axios.get(`/api/roar/rooms/${roomId}/messages?t=${Date.now()}`);
+  //     if (res.data?.success) {
+  //       setPosts(prev => {
+  //         const prevMap = Object.fromEntries(prev.map(p => [p.id, p]));
+  //         return [...res.data.messages]
+  //           .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+  //           .map((m: any) => {
+  //             const existing = prevMap[m.msgId];
+  //             // While a reaction call is in-flight for this message, keep
+  //             // showing the optimistic local state instead of letting the
+  //             // 3s poll stomp it with a possibly-stale server value.
+  //             const isPending = pendingReactRef.current[m.msgId];
+  //             return {
+  //               id: m.msgId,
+  //               fan: { username: displayUsername(m.authorUsername), authorUid: m.authorUid, badge: m.authorBadge, avatarUrl: m.authorAvatarUrl || m.avatarUrl || (m.authorUsername === userUsername ? userAvatarUrl : undefined) },
+  //               text: m.text,
+  //               fireCount: m.fireCount || 0,
+  //               nochanceCount: m.noChanceCount || 0,
+  //               // Aggregate reaction counter (any of the 5 types), not heart-specific despite the field name.
+  //               heartCount: isPending ? (existing?.heartCount ?? m.heartCount ?? 0) : (m.heartCount ?? 0),
+  //               // userReaction replaces the old boolean userLiked — the
+  //               // actual reaction type the current user picked, or null.
+  //               userReaction: isPending ? (existing?.userReaction ?? null) : (m.userReaction ?? null),
+  //               replyCount: Math.max(m.replyCount ?? 0, existing?.replyCount ?? 0),
+  //               agreeCount: m.agreeCount ?? 0,
+  //               disagreeCount: m.disagreeCount ?? 0,
+  //               userVote: m.userVote ?? null,
+  //               sideA: m.sideA ?? null,
+  //               sideB: m.sideB ?? null,
+  //               timeAgo: new Date(m.createdAt).toLocaleDateString([], { month: "short", day: "numeric" }) + " · " + new Date(m.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+  //               createdAt: m.createdAt,
+  //               type: m.type,
+  //               mediaUrls: m.mediaUrls,
+  //               quizQuestion: m.quizQuestion,
+  //               quizOptions: m.quizOptions,
+  //               quizCorrectOption: m.quizCorrectOption,
+  //               quizUserAnswer: m.quizUserAnswer ?? null,
+  //               quizTimer: m.quizTimer,
+  //               quizPoints: m.quizPoints,
+  //               quizParticipants: m.quizParticipants ?? 0,
+  //               memGifUrl: m.memGifUrl ?? null,
+  //               memTag: m.memTag ?? null,
+  //             };
+  //           });
+  //       });
+  //     }
+  //   } catch (e) { console.error(e); }
+  //   finally { setLoading(false); }
+  // }, [roomId, userAvatarUrl, userUsername]);
+
+
   const fetchMsgs = useCallback(async () => {
     if (!roomId) return;
     try {
-      const res = await axios.get(`/api/roar/rooms/${roomId}/messages?t=${Date.now()}`);
+      const url = latestCreatedAtRef.current
+        ? `/api/roar/rooms/${roomId}/messages?since=${latestCreatedAtRef.current}&t=${Date.now()}`
+        : `/api/roar/rooms/${roomId}/messages?t=${Date.now()}`;
+
+      const res = await axios.get(url);
       if (res.data?.success) {
-        setPosts(prev => {
-          const prevMap = Object.fromEntries(prev.map(p => [p.id, p]));
-          return [...res.data.messages]
-            .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-            .map((m: any) => {
-              const existing = prevMap[m.msgId];
-              // While a reaction call is in-flight for this message, keep
-              // showing the optimistic local state instead of letting the
-              // 3s poll stomp it with a possibly-stale server value.
-              const isPending = pendingReactRef.current[m.msgId];
-              return {
+        const incoming: any[] = res.data.messages ?? [];
+
+        if (latestCreatedAtRef.current === null) {
+          // Initial load — full replace, set cursor to newest message
+          setPosts(prev => {
+            const prevMap = Object.fromEntries(prev.map(p => [p.id, p]));
+            return [...res.data.messages]
+              .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+              .map((m: any) => {
+                // ... your existing message mapping
+                const existing = prevMap[m.msgId];
+                const isPending = pendingReactRef.current[m.msgId];
+                return {
+                  id: m.msgId,
+                  fan: { username: displayUsername(m.authorUsername), authorUid: m.authorUid, badge: m.authorBadge, avatarUrl: m.authorAvatarUrl || m.avatarUrl },
+                  text: m.text,
+                  fireCount: m.fireCount || 0,
+                  nochanceCount: m.noChanceCount || 0,
+                  heartCount: isPending ? (existing?.heartCount ?? m.heartCount ?? 0) : (m.heartCount ?? 0),
+                  userReaction: isPending ? (existing?.userReaction ?? null) : (m.userReaction ?? null),
+                  replyCount: Math.max(m.replyCount ?? 0, existing?.replyCount ?? 0),
+                  agreeCount: m.agreeCount ?? 0,
+                  disagreeCount: m.disagreeCount ?? 0,
+                  userVote: m.userVote ?? null,
+                  sideA: m.sideA ?? null,
+                  sideB: m.sideB ?? null,
+                  timeAgo: new Date(m.createdAt).toLocaleDateString([], { month: "short", day: "numeric" }) + " · " + new Date(m.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+                  createdAt: m.createdAt,
+                  type: m.type,
+                  mediaUrls: m.mediaUrls,
+                  quizQuestion: m.quizQuestion,
+                  quizOptions: m.quizOptions,
+                  quizCorrectOption: m.quizCorrectOption,
+                  quizUserAnswer: m.quizUserAnswer ?? null,
+                  quizTimer: m.quizTimer,
+                  quizPoints: m.quizPoints,
+                  quizParticipants: m.quizParticipants ?? 0,
+                  memGifUrl: m.memGifUrl ?? null,
+                  memTag: m.memTag ?? null,
+                };
+              });
+          });
+
+          if (incoming.length > 0) {
+            latestCreatedAtRef.current = Math.max(...incoming.map(m => m.createdAt));
+          }
+
+        } else if (incoming.length > 0) {
+          // Poll — only new messages came back, prepend them
+          latestCreatedAtRef.current = Math.max(...incoming.map((m: any) => m.createdAt));
+
+          setPosts(prev => {
+            const existingIds = new Set(prev.map(p => p.id));
+            const fresh = incoming
+              .filter((m: any) => !existingIds.has(m.msgId))
+              .map((m: any) => ({
                 id: m.msgId,
-                fan: { username: displayUsername(m.authorUsername), authorUid: m.authorUid, badge: m.authorBadge, avatarUrl: m.authorAvatarUrl || m.avatarUrl || (m.authorUsername === userUsername ? userAvatarUrl : undefined) },
+                fan: { username: displayUsername(m.authorUsername), authorUid: m.authorUid, badge: m.authorBadge, avatarUrl: m.authorAvatarUrl || m.avatarUrl },
                 text: m.text,
                 fireCount: m.fireCount || 0,
                 nochanceCount: m.noChanceCount || 0,
-                // Aggregate reaction counter (any of the 5 types), not heart-specific despite the field name.
-                heartCount: isPending ? (existing?.heartCount ?? m.heartCount ?? 0) : (m.heartCount ?? 0),
-                // userReaction replaces the old boolean userLiked — the
-                // actual reaction type the current user picked, or null.
-                userReaction: isPending ? (existing?.userReaction ?? null) : (m.userReaction ?? null),
-                replyCount: Math.max(m.replyCount ?? 0, existing?.replyCount ?? 0),
+                heartCount: m.heartCount ?? 0,
+                userReaction: m.userReaction ?? null,
+                replyCount: m.replyCount ?? 0,
                 agreeCount: m.agreeCount ?? 0,
                 disagreeCount: m.disagreeCount ?? 0,
                 userVote: m.userVote ?? null,
                 sideA: m.sideA ?? null,
                 sideB: m.sideB ?? null,
-                timeAgo: new Date(m.createdAt).toLocaleDateString([], { month: "short", day: "numeric" }) + " · " + new Date(m.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+                timeAgo: "now",
                 createdAt: m.createdAt,
                 type: m.type,
                 mediaUrls: m.mediaUrls,
@@ -1728,9 +1842,11 @@ export default function DiscussionRoom({
                 quizParticipants: m.quizParticipants ?? 0,
                 memGifUrl: m.memGifUrl ?? null,
                 memTag: m.memTag ?? null,
-              };
-            });
-        });
+              }));
+            return fresh.length > 0 ? [...fresh, ...prev] : prev;
+          });
+        }
+        // incoming.length === 0 on a poll → nothing to do, no state update
       }
     } catch (e) { console.error(e); }
     finally { setLoading(false); }

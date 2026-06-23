@@ -1,7 +1,7 @@
 // components/NewROARComponent/screens/HomeFeed.tsx
 
 import { usePostHog } from "posthog-js/react";
-import { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import axios from "axios";
@@ -253,13 +253,14 @@ interface Props {
   onDeletePost?: (id: string) => void; userSports?: string[]; onQuickCompose?: (t: string) => void;
   currentUsername?: string; currentAvatarUrl?: string; onBack?: () => void;
   onQuickComment?: (postId: string, text: string) => Promise<void>;
+  onHandlePost?: (payload: any) => Promise<void>;
 }
 
 export default function HomeFeed({
   onJoinRoom, onLeaderboard, onFanProfile, onToast, extraItems, showBanner, onDismissBanner,
   userBadge, rooms = [], dbPosts = [], onPostClick, onVote, onLike, onReact, onDeletePost,
   userSports = [], onQuickCompose, currentUsername: propUsername, currentAvatarUrl, onBack,
-  onQuickComment,
+  onQuickComment, onHandlePost,
 }: Props) {
   const [votes, setVotes] = useState<Record<string, boolean | null>>({});
   const [localLikes, setLocalLikes] = useState<Record<string, { userLiked: boolean; likeCount: number; reaction: Reaction | null }>>({});
@@ -295,17 +296,41 @@ export default function HomeFeed({
   const loadingMoreRef = useRef(false); // mirrors loadingMore for the observer callback (avoids stale closure)
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+  const dbPostsRef = useRef<any[]>([]);
+useEffect(() => { dbPostsRef.current = dbPosts; }, [dbPosts]);
 
   // Seed the cursor from page 1 once dbPosts first arrives, so the very
   // first "load more" continues immediately after the parent's initial 15
   // rather than re-fetching from the top.
+  // const cursorSeededRef = useRef(false);
+  // useEffect(() => {
+  //   if (cursorSeededRef.current || dbPosts.length === 0) return;
+  //   // const last = dbPosts[dbPosts.length - 1];
+  //   // cursorRef.current = last?.createdAt ?? null;
+  //   // cursorSeededRef.current = true;
+  //   // // If page 1 came back under PAGE_SIZE, there's nothing more to fetch.
+  //   // if (dbPosts.length < PAGE_SIZE) setHasMore(false);
+  //    // Sort ascending so the cursor always points to the oldest post
+  //   // in page 1, regardless of the optimistic prepend order.
+  //   const sorted = [...dbPosts].sort((a, b) =>
+  //     (a.createdAt ?? 0) - (b.createdAt ?? 0));
+  //   cursorRef.current = sorted[0]?.createdAt ?? null;
+  //   cursorSeededRef.current = true;
+  //   if (dbPosts.length < PAGE_SIZE) setHasMore(false);
+  // }, [dbPosts]);
+
   const cursorSeededRef = useRef(false);
+  const lastDbPostsLengthRef = useRef(0);
   useEffect(() => {
-    if (cursorSeededRef.current || dbPosts.length === 0) return;
-    const last = dbPosts[dbPosts.length - 1];
-    cursorRef.current = last?.createdAt ?? null;
+    if (dbPosts.length === 0) return;
+    const lengthDelta = dbPosts.length - lastDbPostsLengthRef.current;
+    const shouldReseed = !cursorSeededRef.current || lengthDelta > 1;
+    lastDbPostsLengthRef.current = dbPosts.length;
+    if (!shouldReseed) return;
+    const sorted = [...dbPosts].sort((a, b) =>
+      (a.createdAt ?? 0) - (b.createdAt ?? 0));
+    cursorRef.current = sorted[0]?.createdAt ?? null;
     cursorSeededRef.current = true;
-    // If page 1 came back under PAGE_SIZE, there's nothing more to fetch.
     if (dbPosts.length < PAGE_SIZE) setHasMore(false);
   }, [dbPosts]);
 
@@ -322,7 +347,8 @@ export default function HomeFeed({
         setMorePosts(prev => {
           // De-dupe defensively in case a post already appeared on page 1
           // (e.g. it was created between the parent's poll ticks).
-          const seenIds = new Set([...dbPosts, ...prev].map(p => p.postId ?? p.id));
+          // const seenIds = new Set([...dbPosts, ...prev].map(p => p.postId ?? p.id));
+           const seenIds = new Set([...dbPostsRef.current, ...prev].map(p => p.postId ?? p.id));
           const fresh = newPosts.filter(p => !seenIds.has(p.postId));
           return [...prev, ...fresh];
         });
@@ -341,7 +367,7 @@ export default function HomeFeed({
       loadingMoreRef.current = false;
       setLoadingMore(false);
     }
-  }, [hasMore, dbPosts]);
+  }, [hasMore]);
 
   // IntersectionObserver on a sentinel placed after the last rendered post.
   // No "load more" button and no end-of-feed text — just the spinner that
@@ -525,14 +551,35 @@ export default function HomeFeed({
     finally { setUploading(false); if (e.target) e.target.value = ""; }
   };
 
+  // const sendQuickPost = async () => {
+  //   const text = input.trim();
+  //   if (!text && !attachedUrl) return;
+  //   try {
+  //     await axios.post("/api/roar/posts", { type: "post", text: text || "Shared media", sport: "cricket", mediaUrls: attachedUrl ? [attachedUrl] : undefined });
+  //     onToast("Post is live!"); setInput(""); setAttachedUrl(null); setAttachedType(null);
+  //   } catch { onToast("Failed to post"); }
+  // };
+
+
   const sendQuickPost = async () => {
-    const text = input.trim();
-    if (!text && !attachedUrl) return;
+  const text = input.trim();
+  if (!text && !attachedUrl) return;
+  setInput(""); setAttachedUrl(null); setAttachedType(null); // clear immediately
+  if (onHandlePost) {
+    await onHandlePost({
+      type: selectedActionId === "post" ? "post" : selectedActionId,
+      text: text || "Shared media",
+      sport: "cricket",
+      mediaUrls: attachedUrl ? [attachedUrl] : undefined,
+    });
+  } else {
+    // fallback if prop not wired yet
     try {
       await axios.post("/api/roar/posts", { type: "post", text: text || "Shared media", sport: "cricket", mediaUrls: attachedUrl ? [attachedUrl] : undefined });
-      onToast("✏️ Post is live!"); setInput(""); setAttachedUrl(null); setAttachedType(null);
+      onToast("Post is live!");
     } catch { onToast("Failed to post"); }
-  };
+  }
+};
 
   const renderCardActions = (item: any) => {
     const lo = localLikes[item.id];
@@ -614,10 +661,16 @@ export default function HomeFeed({
     };
   };
 
-  const mappedDbPosts = dbPosts.map(mapDbPost);
-  const mappedMorePosts = morePosts.map(mapDbPost);
+  // const mappedDbPosts = dbPosts.map(mapDbPost);
+  // const mappedMorePosts = morePosts.map(mapDbPost);
 
-  const allPosts = [...mappedDbPosts, ...mappedMorePosts, ...extraItems, ...FEED_POSTS];
+  // const allPosts = [...mappedDbPosts, ...mappedMorePosts, ...extraItems, ...FEED_POSTS];
+  const mappedDbPosts = useMemo(() => dbPosts.map(mapDbPost), [dbPosts, currentUserId, resolvedAvatarUrl]);
+const mappedMorePosts = useMemo(() => morePosts.map(mapDbPost), [morePosts, currentUserId, resolvedAvatarUrl]);
+const allPosts = useMemo(
+  () => [...mappedDbPosts, ...mappedMorePosts, ...extraItems, ...FEED_POSTS],
+  [mappedDbPosts, mappedMorePosts, extraItems]
+);
 
   const shareRoomLink = () => {
     if (typeof navigator !== "undefined" && navigator.share) {
@@ -782,12 +835,12 @@ export default function HomeFeed({
                   {item.text && <p style={{ fontWeight: 600, fontSize: 14, lineHeight: 1.4, marginBottom: 12, color: "var(--text-primary)" }}>{item.text}</p>}
                   <div style={{ display: "flex", gap: 8, alignItems: "stretch", marginBottom: 10 }}>
                     {[{ agree: true, side: item.sideA || "Side A", color: "var(--accent-magenta)", bg: "rgba(233,30,140,0.08)", border: "rgba(233,30,140,0.3)", voted: votedA }, { agree: false, side: item.sideB || "Side B", color: "#60a5fa", bg: "rgba(59,130,246,0.08)", border: "rgba(59,130,246,0.3)", voted: votedB }].map(({ agree, side, color, bg, border, voted }, idx) => (
-                      <>
+                      <React.Fragment key={String(agree)}>
                         {idx === 1 && <div key="vs" style={{ display: "flex", alignItems: "center", padding: "0 4px" }}><span className="font-display" style={{ fontSize: 16, color: "var(--text-muted)" }}>VS</span></div>}
                         <motion.button key={String(agree)} onClick={e => { e.stopPropagation(); if (!hasVoted) vote(item.id, agree, item.agreePercent || 50, item.userVote, item.isDbPost); }} disabled={hasVoted} style={{ flex: 1, padding: 12, borderRadius: 14, textAlign: "center", background: voted ? color : bg, border: `2px solid ${voted ? color : border}`, color: voted ? "white" : "var(--text-primary)", cursor: hasVoted ? "not-allowed" : "pointer", transition: "all 0.2s", opacity: hasVoted && !voted ? 0.35 : 1 }}>
                           <p style={{ fontSize: 13, fontWeight: 700, margin: 0 }}>{voted ? "✓ " : ""}{side}</p>
                         </motion.button>
-                      </>
+                       </React.Fragment>
                     ))}
                   </div>
                   <div style={{ marginBottom: 10 }}>

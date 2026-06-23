@@ -50,6 +50,7 @@ export interface Room {
   scheduledStartTime?: number;
   score?: string;
   scoreSubtitle?: string;
+  watchAlongRoomId?: string;
 }
 
 export interface Notification {

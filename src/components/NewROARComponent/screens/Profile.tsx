@@ -1176,7 +1176,7 @@ export default function Profile({
           {
             value: isOtherProfile ? (user.activityCounts?.total ?? 0) : profileStats.posts,
             label: "Posts",
-            accent: false,
+            accent: true,
           },
           // {
           //   value: isOtherProfile ? (user.activityCounts?.ROAR_DEBATE ?? 0) : profileStats.debates,
@@ -1188,7 +1188,7 @@ export default function Profile({
               ? (user.activityCounts?.ROAR_DEBATE_PARTICIPATE ?? 0)
               : activities.filter((a: any) => a.type === "ROAR_DEBATE_PARTICIPATE").length,
             label: "Debates",
-            accent: false,
+            accent: true,
           },
           {
             value: isOtherProfile
@@ -1214,18 +1214,70 @@ export default function Profile({
               background: "rgba(18,18,26,0.7)",
               border: "1px solid rgba(255,255,255,0.06)",
               borderRadius: 14,
-              position: "relative", overflow: "hidden",
+              position: "relative", overflow: "visible",
             }}
           >
-            {accent && (
-              <div style={{
-                position: "absolute", top: 6, right: 6,
-                width: 18, height: 18, borderRadius: "50%",
-                background: "var(--accent-magenta)",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: 10, fontWeight: 900, color: "#fff",
-              }}>A</div>
-            )}
+            {accent && (() => {
+  const tooltipText =
+    label === "Posts"
+      ? "Count of all debates, predictions, and posts you've created."
+      : label === "Predictions"
+      ? "Count all predictions you've participated in."
+      : label === "Debates"
+      ? "Count all debates you've participated in."
+      : "Your accuracy rate across resolved predictions and debates.";
+
+  // Posts is the leftmost tile — anchor tooltip to the left so it opens
+  // rightward instead of overflowing off the left edge of the screen.
+  const isLeftmost = label === "Posts";
+
+  return (
+    <div
+      style={{ position: "absolute", top: 6, right: 6 }}
+      onMouseEnter={(e) => {
+        const tip = (e.currentTarget as HTMLElement).querySelector('.stat-tip') as HTMLElement;
+        if (tip) tip.style.display = "block";
+      }}
+      onMouseLeave={(e) => {
+        const tip = (e.currentTarget as HTMLElement).querySelector('.stat-tip') as HTMLElement;
+        if (tip) tip.style.display = "none";
+      }}
+      onTouchStart={(e) => {
+        const tip = (e.currentTarget as HTMLElement).querySelector('.stat-tip') as HTMLElement;
+        if (tip) tip.style.display = tip.style.display === "block" ? "none" : "block";
+      }}
+    >
+      <div style={{
+        width: 18, height: 18, borderRadius: "50%",
+        background: "var(--accent-magenta)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        fontSize: 10, fontWeight: 900, color: "#fff",
+        cursor: "pointer",
+      }}>i</div>
+
+      <div className="stat-tip" style={{
+        display: "none",
+        position: "absolute",
+        bottom: 24,
+        left: isLeftmost ? 0 : "auto",
+        right: isLeftmost ? "auto" : 0,
+        width: 170,
+        maxWidth: "calc(100vw - 32px)",
+        background: "rgba(20,20,30,0.97)",
+        border: "1px solid rgba(255,255,255,0.12)",
+        borderRadius: 10,
+        padding: "8px 10px",
+        fontSize: 11,
+        color: "rgba(255,255,255,0.82)",
+        lineHeight: 1.5,
+        zIndex: 9999,
+        pointerEvents: "none",
+        whiteSpace: "normal",
+        boxShadow: "0 4px 16px rgba(0,0,0,0.5)",
+      }}>{tooltipText}</div>
+    </div>
+  );
+})()}
             <span className="font-display" style={{ fontSize: 22, color: "#fff", lineHeight: 1, fontWeight: 800 }}>{value}</span>
             <span style={{ fontSize: 10, color: "rgba(255,255,255,0.5)", marginTop: 5 }}>{label}</span>
           </div>

@@ -1089,6 +1089,7 @@
 
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { usePostHog } from "posthog-js/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useUserProfile } from "@/context/UserProfileContext";
@@ -1121,6 +1122,7 @@ interface Props {
   onRegisterRefresh?: (fn: () => void) => void;
   onRegisterReplyUpdate?: (fn: (postId: string, count: number) => void) => void;
   onFanProfile?: (fan: any) => void;
+  watchAlongRoomId?: string;
 }
 
 const MODE_COLOR: Record<string, string> = {
@@ -1450,8 +1452,10 @@ function useVisibilityInterval(callback: () => void, delay: number) {
 export default function DiscussionRoom({
   onBack, onToast, roomId, roomName, onPostClick, onCompose,
   fanCount = 312, score, scoreSubtitle, currentAvatarUrl, onRegisterRefresh, onRegisterReplyUpdate,
-  onFanProfile,
+  onFanProfile, watchAlongRoomId
 }: Props) {
+  const router = useRouter();
+  console.log("DiscussionRoom mount/render | watchAlongRoomId:", watchAlongRoomId);
   const [posts, setPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [input, setInput] = useState("");
@@ -2089,6 +2093,16 @@ export default function DiscussionRoom({
             </div>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+            {watchAlongRoomId && (
+              <button 
+                type="button" 
+                onClick={() => router.push(`/MainModules/WatchAlong/room/${watchAlongRoomId}`)}
+                className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500 text-white transition-all cursor-pointer shadow-[0_2px_10px_rgba(219,39,119,0.3)] hover:scale-105 active:scale-95"
+              >
+                <span>Watchalong</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse inline-block" />
+              </button>
+            )}
             <button type="button" onClick={shareRoomLink} className="flex-shrink-0 bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.12)] rounded-[10px] p-2 cursor-pointer text-[rgba(255,255,255,0.75)] flex items-center justify-center hover:bg-[rgba(255,255,255,0.1)] transition-colors" style={{ width: "36px", height: "36px" }}>
               <Share2 size={18} />
             </button>

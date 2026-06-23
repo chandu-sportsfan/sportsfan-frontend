@@ -279,9 +279,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                         }),
                     });
                     const data = await res.json();
+                    const sanitizedId = user.email.toLowerCase().replace(/[^a-zA-Z0-9]/g, "_");
                     token.dbUser = {
                         email: user.email,
-                        userId: data.userId,
+                        userId: data.userId || sanitizedId,  // ← never falls back to raw email
                         firstName: data.firstName,
                         lastName: data.lastName,
                         role: data.role || "user",
@@ -289,6 +290,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                     };
                 } catch (error) {
                     console.error("[JWT] error:", error);
+                    token.dbUser = {
+                        email: user.email,
+                        userId: user.email.toLowerCase().replace(/[^a-zA-Z0-9]/g, "_"),
+                        role: "user",
+                        status: "active",
+                    };
                 }
             }
             return token;
@@ -304,10 +311,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             return session;
         },
 
-        // ✅ FIXED: Dynamic redirect callback
+        //  FIXED: Dynamic redirect callback
         async redirect({ url, baseUrl }) {
             console.log('Redirect callback - url:', url, 'baseUrl:', baseUrl);
-            
+
             // Allows relative callback URLs
             if (url.startsWith("/")) {
                 return `${baseUrl}${url}`;

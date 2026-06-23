@@ -634,33 +634,72 @@ export default function ROARApp() {
 
   useEffect(() => {
     setMounted(true);
+    // const checkProfile = async () => {
+    //   try {
+    //     const res = await axios.get("/api/roar/profile");
+    //     if (res.data?.success) {
+    //       setOnboarded(true);
+    //       setUserBadge(res.data.user.badge || "RISING_FAN");
+    //       setUserSports(res.data.user.sports ?? []);
+    //       setCurrentUsername(res.data.user.username || "RoarUser");
+    //       setCurrentUserId(res.data.user.actualUserId);
+    //       setCurrentAvatarUrl(res.data.user.avatarUrl || undefined);
+    //       try {
+    //         localStorage.setItem("roar_v2_complete", "1");
+    //         localStorage.setItem("roar_badge", res.data.user.badge || "RISING_FAN");
+    //         localStorage.setItem("roar_username", res.data.user.username || "RoarUser");
+    //         if (res.data.user.avatarUrl) localStorage.setItem("roar_avatar_url", res.data.user.avatarUrl);
+    //       } catch { }
+    //     } else { setOnboarded(false); }
+    //   } catch (err: any) {
+    //     const status = err.response?.status;
+    //     if (status === 404 || status === 401) { setOnboarded(false); }
+    //     else {
+    //       let hasLocal = false; let badge = "RISING_FAN";
+    //       try { hasLocal = !!localStorage.getItem("roar_v2_complete"); badge = localStorage.getItem("roar_badge") || "RISING_FAN"; } catch { }
+    //       setOnboarded(hasLocal); setUserBadge(badge);
+    //     }
+    //   } finally { setChecking(false); }
+    // };
     const checkProfile = async () => {
+  try {
+    const res = await axios.get("/api/roar/profile");
+    if (res.data?.success) {
+      const u = res.data.user;
+      setUserBadge(u.badge || "RISING_FAN");
+      setUserSports(u.sports ?? []);
+      setCurrentUsername(u.username || "RoarUser");
+      setCurrentUserId(u.actualUserId);
+      setCurrentAvatarUrl(u.avatarUrl || undefined);
       try {
-        const res = await axios.get("/api/roar/profile");
-        if (res.data?.success) {
-          setOnboarded(true);
-          setUserBadge(res.data.user.badge || "RISING_FAN");
-          setUserSports(res.data.user.sports ?? []);
-          setCurrentUsername(res.data.user.username || "RoarUser");
-          setCurrentUserId(res.data.user.actualUserId);
-          setCurrentAvatarUrl(res.data.user.avatarUrl || undefined);
-          try {
-            localStorage.setItem("roar_v2_complete", "1");
-            localStorage.setItem("roar_badge", res.data.user.badge || "RISING_FAN");
-            localStorage.setItem("roar_username", res.data.user.username || "RoarUser");
-            if (res.data.user.avatarUrl) localStorage.setItem("roar_avatar_url", res.data.user.avatarUrl);
-          } catch { }
-        } else { setOnboarded(false); }
-      } catch (err: any) {
-        const status = err.response?.status;
-        if (status === 404 || status === 401) { setOnboarded(false); }
-        else {
-          let hasLocal = false; let badge = "RISING_FAN";
-          try { hasLocal = !!localStorage.getItem("roar_v2_complete"); badge = localStorage.getItem("roar_badge") || "RISING_FAN"; } catch { }
-          setOnboarded(hasLocal); setUserBadge(badge);
-        }
-      } finally { setChecking(false); }
-    };
+        localStorage.setItem("roar_v2_complete", "1");
+        localStorage.setItem("roar_badge", u.badge || "RISING_FAN");
+        localStorage.setItem("roar_username", u.username || "RoarUser");
+        if (u.avatarUrl) localStorage.setItem("roar_avatar_url", u.avatarUrl);
+      } catch {}
+      setOnboarded(true);
+      setChecking(false);
+    } else {
+      setOnboarded(false);
+      setChecking(false);
+    }
+  } catch (err: any) {
+    const status = err.response?.status;
+    if (status === 404 || status === 401) {
+      setOnboarded(false);
+      setChecking(false);
+    } else {
+      let hasLocal = false; let badge = "RISING_FAN";
+      try {
+        hasLocal = !!localStorage.getItem("roar_v2_complete");
+        badge = localStorage.getItem("roar_badge") || "RISING_FAN";
+      } catch {}
+      setOnboarded(hasLocal);
+      setUserBadge(badge);
+      setChecking(false);
+    }
+  }
+};
     checkProfile();
   }, []);
 
@@ -735,7 +774,8 @@ export default function ROARApp() {
 
     const fetchUserSports = async () => {
       try {
-        const res = await axios.get("/api/roar/profile");
+        // const res = await axios.get("/api/roar/profile");
+        const res = await axios.get("/api/roar/profile", { withCredentials: true });
         if (res.data?.success) {
           setUserSports(res.data.user.sports ?? []);
           setUserBadge(res.data.user.badge || "RISING_FAN");

@@ -533,7 +533,7 @@ export default function LoginCard() {
             </div>
         );
     }
-
+//done
     // Render Normal Login Form
     return (
         <div className="min-h-screen w-full flex flex-col items-center justify-center gap-6 relative bg-gradient-to-b from-[#3a0000] via-black to-[#120000] px-4 py-8">

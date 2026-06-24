@@ -1555,9 +1555,15 @@ export default function DiscussionRoom({
               id: m.msgId,
               fan: { username: displayUsername(m.authorUsername), authorUid: m.authorUid, badge: m.authorBadge, avatarUrl: m.authorAvatarUrl || m.avatarUrl || (m.authorUsername === userUsername ? userAvatarUrl : undefined) },
               text: m.text,
-              fireCount: m.fireCount || 0,
-              nochanceCount: m.noChanceCount || 0,
+              // fireCount: m.fireCount || 0,
+              // nochanceCount: m.noChanceCount || 0,
+              // heartCount: m.heartCount ?? 0,
+              fireCount: m.fireCount ?? 0,
               heartCount: m.heartCount ?? 0,
+              mindblownCount: m.mindblownCount ?? 0,
+              goatCount: m.goatCount ?? 0,
+              clapCount: m.clapCount ?? 0,
+              nochanceCount: m.noChanceCount ?? 0,
               userReaction: m.userReaction ?? null,
               replyCount: m.replyCount ?? 0,
               agreeCount: m.agreeCount ?? 0,
@@ -1660,6 +1666,10 @@ export default function DiscussionRoom({
   // other users' avatars update live in this view without a page reload.
   useEffect(() => {
     if (!roomId) return;
+    // Reset stale data from previous room immediately
+    setActiveFans([]);
+    setLiveCount(0);
+    setTotalJoinCount(0);
 
     // const join = async () => {
     //   try {
@@ -1821,9 +1831,15 @@ export default function DiscussionRoom({
                   // fan: { username: displayUsername(m.authorUsername), authorUid: m.authorUid, badge: m.authorBadge, avatarUrl: m.authorAvatarUrl || m.avatarUrl },
                   fan: { username: displayUsername(m.authorUsername), authorUid: m.authorUid, badge: m.authorBadge, avatarUrl: m.authorUid === currentUserId ? (userAvatarUrl || m.authorAvatarUrl || m.avatarUrl) : (m.authorAvatarUrl || m.avatarUrl) },
                   text: m.text,
-                  fireCount: m.fireCount || 0,
-                  nochanceCount: m.noChanceCount || 0,
-                  heartCount: isPending ? (existing?.heartCount ?? m.heartCount ?? 0) : (m.heartCount ?? 0),
+                  // fireCount: m.fireCount || 0,
+                  // nochanceCount: m.noChanceCount || 0,
+                  // heartCount: isPending ? (existing?.heartCount ?? m.heartCount ?? 0) : (m.heartCount ?? 0),
+                  fireCount: m.fireCount ?? 0,
+                  heartCount: m.heartCount ?? 0,
+                  mindblownCount: m.mindblownCount ?? 0,
+                  goatCount: m.goatCount ?? 0,
+                  clapCount: m.clapCount ?? 0,
+                  nochanceCount: m.noChanceCount ?? 0,
                   userReaction: isPending ? (existing?.userReaction ?? null) : (m.userReaction ?? null),
                   replyCount: Math.max(m.replyCount ?? 0, existing?.replyCount ?? 0),
                   agreeCount: m.agreeCount ?? 0,
@@ -1865,9 +1881,15 @@ export default function DiscussionRoom({
                 // fan: { username: displayUsername(m.authorUsername), authorUid: m.authorUid, badge: m.authorBadge, avatarUrl: m.authorAvatarUrl || m.avatarUrl },
                 fan: { username: displayUsername(m.authorUsername), authorUid: m.authorUid, badge: m.authorBadge, avatarUrl: m.authorUid === currentUserId ? (userAvatarUrl || m.authorAvatarUrl || m.avatarUrl) : (m.authorAvatarUrl || m.avatarUrl) },
                 text: m.text,
-                fireCount: m.fireCount || 0,
-                nochanceCount: m.noChanceCount || 0,
+                // fireCount: m.fireCount || 0,
+                // nochanceCount: m.noChanceCount || 0,
+                // heartCount: m.heartCount ?? 0,
+                fireCount: m.fireCount ?? 0,
                 heartCount: m.heartCount ?? 0,
+                mindblownCount: m.mindblownCount ?? 0,
+                goatCount: m.goatCount ?? 0,
+                clapCount: m.clapCount ?? 0,
+                nochanceCount: m.noChanceCount ?? 0,
                 userReaction: m.userReaction ?? null,
                 replyCount: m.replyCount ?? 0,
                 agreeCount: m.agreeCount ?? 0,
@@ -1896,7 +1918,7 @@ export default function DiscussionRoom({
       }
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
-  // }, [roomId, userAvatarUrl, userUsername]);
+    // }, [roomId, userAvatarUrl, userUsername]);
   }, [roomId, userAvatarUrl, userUsername, currentUserId]);
 
   useEffect(() => { onRegisterRefresh?.(fetchMsgs); }, [fetchMsgs, onRegisterRefresh]);
@@ -2001,7 +2023,15 @@ export default function DiscussionRoom({
         setPosts(p => [{
           id: m.msgId,
           fan: { username: displayUsername(m.authorUsername), authorUid: m.authorUid, badge: m.authorBadge, avatarUrl: m.authorAvatarUrl || m.avatarUrl || (m.authorUsername === userUsername ? userAvatarUrl : undefined) },
-          text: m.text, fireCount: 0, nochanceCount: 0, heartCount: 0, userReaction: null, replyCount: 0,
+          text: m.text,
+          // fireCount: 0, nochanceCount: 0, heartCount: 0,
+          fireCount: m.fireCount ?? 0,
+          heartCount: m.heartCount ?? 0,
+          mindblownCount: m.mindblownCount ?? 0,
+          goatCount: m.goatCount ?? 0,
+          clapCount: m.clapCount ?? 0,
+          nochanceCount: m.noChanceCount ?? 0,
+          userReaction: null, replyCount: 0,
           agreeCount: 0, disagreeCount: 0, userVote: null, sideA: m.sideA ?? null, sideB: m.sideB ?? null,
           timeAgo: "now", createdAt: m.createdAt || Date.now(), type: m.type, mediaUrls: m.mediaUrls,
           quizQuestion: m.quizQuestion, quizOptions: m.quizOptions, quizCorrectOption: m.quizCorrectOption,
@@ -2058,10 +2088,61 @@ export default function DiscussionRoom({
     );
   };
 
+  // const renderReactionsTrigger = (p: any) => {
+  //   const lo = localReactions[p.id];
+  //   const heartCount = lo !== undefined ? lo.heartCount : (p.heartCount ?? 0);
+  //   if (heartCount === 0) return null;
+
+  //   return (
+  //     <motion.button
+  //       whileTap={{ scale: 0.93 }}
+  //       onClick={e => { e.stopPropagation(); setReactionsMsgId(p.id); }}
+  //       style={{
+  //         display: "flex", alignItems: "center", gap: 4,
+  //         background: "none", border: "none", cursor: "pointer",
+  //         color: "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: 700,
+  //         marginLeft: "auto",
+  //       }}
+  //       title="See who reacted"
+  //     >
+  //       <BarChart2 size={13} />
+  //       <span>Reactions</span>
+  //     </motion.button>
+  //   );
+  // };
+
+  const REACTION_EMOJI: Record<string, string> = {
+    fire: "🔥",
+    heart: "❤️",
+    mindblown: "🤯",
+    goat: "🐐",
+    clap: "👏",
+  };
+
   const renderReactionsTrigger = (p: any) => {
     const lo = localReactions[p.id];
     const heartCount = lo !== undefined ? lo.heartCount : (p.heartCount ?? 0);
     if (heartCount === 0) return null;
+
+    // Build reaction types from per-type counts on the post
+    const typeMap: Record<string, number> = {
+      fire: p.fireCount ?? 0,
+      heart: p.heartCount ?? 0,
+      mindblown: p.mindblownCount ?? 0,
+      goat: p.goatCount ?? 0,
+      clap: p.clapCount ?? 0,
+    };
+
+    // Override with local optimistic state
+    if (lo?.reaction) {
+      typeMap[lo.reaction] = Math.max(1, typeMap[lo.reaction] ?? 0);
+    }
+
+    const activeTypes = Object.entries(typeMap)
+      .filter(([_, count]) => count > 0)
+      .sort((a, b) => b[1] - a[1])  // most reacted first
+      .slice(0, 3)
+      .map(([type]) => type);
 
     return (
       <motion.button
@@ -2070,16 +2151,37 @@ export default function DiscussionRoom({
         style={{
           display: "flex", alignItems: "center", gap: 4,
           background: "none", border: "none", cursor: "pointer",
-          color: "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: 700,
-          marginLeft: "auto",
+          marginLeft: "auto", padding: 0,
         }}
         title="See who reacted"
       >
-        <BarChart2 size={13} />
-        <span>Reactions</span>
+        <div style={{ display: "flex" }}>
+          {activeTypes.map((type, i) => (
+            <div
+              key={type}
+              style={{
+                width: 20, height: 20, borderRadius: "50%",
+                background: "#1e1e2a",
+                border: "1.5px solid rgba(255,255,255,0.1)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 11,
+                marginLeft: i === 0 ? 0 : -6,
+                zIndex: activeTypes.length - i,
+                position: "relative",
+              }}
+            >
+              {REACTION_EMOJI[type] ?? "❤️"}
+            </div>
+          ))}
+        </div>
+        <span style={{ fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.5)" }}>
+          {heartCount}
+        </span>
       </motion.button>
     );
   };
+
+
 
   return (
     <div className="flex flex-col w-full bg-[#0e0e14]" style={{ height: "100%", overflow: "hidden" }}>

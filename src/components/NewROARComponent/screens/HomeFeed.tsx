@@ -297,7 +297,7 @@ export default function HomeFeed({
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const dbPostsRef = useRef<any[]>([]);
-useEffect(() => { dbPostsRef.current = dbPosts; }, [dbPosts]);
+  useEffect(() => { dbPostsRef.current = dbPosts; }, [dbPosts]);
 
   // Seed the cursor from page 1 once dbPosts first arrives, so the very
   // first "load more" continues immediately after the parent's initial 15
@@ -348,7 +348,7 @@ useEffect(() => { dbPostsRef.current = dbPosts; }, [dbPosts]);
           // De-dupe defensively in case a post already appeared on page 1
           // (e.g. it was created between the parent's poll ticks).
           // const seenIds = new Set([...dbPosts, ...prev].map(p => p.postId ?? p.id));
-           const seenIds = new Set([...dbPostsRef.current, ...prev].map(p => p.postId ?? p.id));
+          const seenIds = new Set([...dbPostsRef.current, ...prev].map(p => p.postId ?? p.id));
           const fresh = newPosts.filter(p => !seenIds.has(p.postId));
           return [...prev, ...fresh];
         });
@@ -398,8 +398,8 @@ useEffect(() => { dbPostsRef.current = dbPosts; }, [dbPosts]);
 
   const phog = usePostHog();
 
-  const openShareDialog = (post: ShareableRoarPost) => { 
-    setSharePost(post); 
+  const openShareDialog = (post: ShareableRoarPost) => {
+    setSharePost(post);
     setCopied(false);
     if (phog) { phog.capture("content_shared", { post_id: post.id }); }
   };
@@ -562,24 +562,24 @@ useEffect(() => { dbPostsRef.current = dbPosts; }, [dbPosts]);
 
 
   const sendQuickPost = async () => {
-  const text = input.trim();
-  if (!text && !attachedUrl) return;
-  setInput(""); setAttachedUrl(null); setAttachedType(null); // clear immediately
-  if (onHandlePost) {
-    await onHandlePost({
-      type: selectedActionId === "post" ? "post" : selectedActionId,
-      text: text || "Shared media",
-      sport: "cricket",
-      mediaUrls: attachedUrl ? [attachedUrl] : undefined,
-    });
-  } else {
-    // fallback if prop not wired yet
-    try {
-      await axios.post("/api/roar/posts", { type: "post", text: text || "Shared media", sport: "cricket", mediaUrls: attachedUrl ? [attachedUrl] : undefined });
-      onToast("Post is live!");
-    } catch { onToast("Failed to post"); }
-  }
-};
+    const text = input.trim();
+    if (!text && !attachedUrl) return;
+    setInput(""); setAttachedUrl(null); setAttachedType(null); // clear immediately
+    if (onHandlePost) {
+      await onHandlePost({
+        type: selectedActionId === "post" ? "post" : selectedActionId,
+        text: text || "Shared media",
+        sport: "cricket",
+        mediaUrls: attachedUrl ? [attachedUrl] : undefined,
+      });
+    } else {
+      // fallback if prop not wired yet
+      try {
+        await axios.post("/api/roar/posts", { type: "post", text: text || "Shared media", sport: "cricket", mediaUrls: attachedUrl ? [attachedUrl] : undefined });
+        onToast("Post is live!");
+      } catch { onToast("Failed to post"); }
+    }
+  };
 
   const renderCardActions = (item: any) => {
     const lo = localLikes[item.id];
@@ -606,7 +606,7 @@ useEffect(() => { dbPostsRef.current = dbPosts; }, [dbPosts]);
           <Share2 size={16} />
         </button>
 
-        {likeCount > 0 && (
+        {/* {likeCount > 0 && (
           <motion.button
             whileTap={{ scale: 0.93 }}
             onClick={e => { e.stopPropagation(); setReactionsPostId(item.id); }}
@@ -621,7 +621,76 @@ useEffect(() => { dbPostsRef.current = dbPosts; }, [dbPosts]);
             <BarChart2 size={13} />
             <span>Reactions</span>
           </motion.button>
-        )}
+        )} */}
+
+        {likeCount > 0 && (() => {
+          const REACTION_EMOJI: Record<string, string> = {
+            heart: "❤️", fire: "🔥", mindblown: "🤯", goat: "🐐", clap: "👏", nochance: "🙅",
+          };
+
+          // Build top-3 reaction types by count, descending
+          const reactionCounts: Record<string, number> = {
+            heart: item.heartCount ?? 0,
+            fire: item.fireCount ?? 0,
+            mindblown: item.mindblownCount ?? 0,
+            goat: item.goatCount ?? 0,
+            clap: item.clapCount ?? 0,
+            nochance: item.nochanceCount ?? 0,
+          };
+
+          const topReactions = Object.entries(reactionCounts)
+            .filter(([, count]) => count > 0)
+            .sort(([, a], [, b]) => b - a)
+            .slice(0, 3)
+            .map(([type]) => type);
+
+          // Fallback: if no individual counts mapped yet, show current reaction
+          if (topReactions.length === 0 && currentReaction) {
+            topReactions.push(currentReaction);
+          }
+
+          return (
+            <motion.button
+              whileTap={{ scale: 0.93 }}
+              onClick={e => { e.stopPropagation(); setReactionsPostId(item.id); }}
+              style={{
+                display: "flex", alignItems: "center", gap: 4,
+                background: "none", border: "none", cursor: "pointer",
+                marginLeft: "auto", padding: 0,
+              }}
+              title="See who reacted"
+            >
+              {/* Stacked emoji circles */}
+              <div style={{ display: "flex", alignItems: "center" }}>
+                {topReactions.map((type, idx) => (
+                  <div
+                    key={type}
+                    style={{
+                      width: 20, height: 20, borderRadius: "50%",
+                      background: "rgba(255,255,255,0.1)",
+                      border: "1.5px solid rgba(0,0,0,0.4)",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      fontSize: 11, lineHeight: 1,
+                      marginLeft: idx === 0 ? 0 : -6,
+                      zIndex: topReactions.length - idx,
+                      position: "relative",
+                    }}
+                  >
+                    {REACTION_EMOJI[type] ?? "❤️"}
+                  </div>
+                ))}
+              </div>
+              {/* Count */}
+              <span style={{
+                fontSize: 12, fontWeight: 700,
+                color: "rgba(255,255,255,0.55)",
+                marginLeft: 3,
+              }}>
+                {likeCount}
+              </span>
+            </motion.button>
+          );
+        })()}
 
         {isAuthor && (
           <button
@@ -654,6 +723,12 @@ useEffect(() => { dbPostsRef.current = dbPosts; }, [dbPosts]);
       mediaUrls: p.mediaUrls, memGifUrl: p.memGifUrl, memTag: p.memTag,
       likeCount: p.likeCount ?? 0, userLiked: p.userLiked ?? false,
       userReaction: p.userReaction ?? null,
+      fireCount: p.fireCount ?? p.fire_count ?? 0,
+      heartCount: p.heartCount ?? p.heart_count ?? 0,
+      mindblownCount: p.mindblownCount ?? p.mind_blown_count ?? p.mindBlownCount ?? 0,
+      goatCount: p.goatCount ?? p.goat_count ?? 0,
+      clapCount: p.clapCount ?? p.clap_count ?? 0,
+      nochanceCount: p.nochanceCount ?? p.no_chance_count ?? p.noChanceCount ?? 0,
       createdAt: p.createdAt,
       quizQuestion: p.quizQuestion, quizOptions: p.quizOptions, quizCorrectOption: p.quizCorrectOption,
       quizUserAnswer: p.quizUserAnswer, quizTimer: p.quizTimer, quizPoints: p.quizPoints, quizParticipants: p.quizParticipants ?? 0,
@@ -666,11 +741,11 @@ useEffect(() => { dbPostsRef.current = dbPosts; }, [dbPosts]);
 
   // const allPosts = [...mappedDbPosts, ...mappedMorePosts, ...extraItems, ...FEED_POSTS];
   const mappedDbPosts = useMemo(() => dbPosts.map(mapDbPost), [dbPosts, currentUserId, resolvedAvatarUrl]);
-const mappedMorePosts = useMemo(() => morePosts.map(mapDbPost), [morePosts, currentUserId, resolvedAvatarUrl]);
-const allPosts = useMemo(
-  () => [...mappedDbPosts, ...mappedMorePosts, ...extraItems, ...FEED_POSTS],
-  [mappedDbPosts, mappedMorePosts, extraItems]
-);
+  const mappedMorePosts = useMemo(() => morePosts.map(mapDbPost), [morePosts, currentUserId, resolvedAvatarUrl]);
+  const allPosts = useMemo(
+    () => [...mappedDbPosts, ...mappedMorePosts, ...extraItems, ...FEED_POSTS],
+    [mappedDbPosts, mappedMorePosts, extraItems]
+  );
 
   const shareRoomLink = () => {
     if (typeof navigator !== "undefined" && navigator.share) {
@@ -840,7 +915,7 @@ const allPosts = useMemo(
                         <motion.button key={String(agree)} onClick={e => { e.stopPropagation(); if (!hasVoted) vote(item.id, agree, item.agreePercent || 50, item.userVote, item.isDbPost); }} disabled={hasVoted} style={{ flex: 1, padding: 12, borderRadius: 14, textAlign: "center", background: voted ? color : bg, border: `2px solid ${voted ? color : border}`, color: voted ? "white" : "var(--text-primary)", cursor: hasVoted ? "not-allowed" : "pointer", transition: "all 0.2s", opacity: hasVoted && !voted ? 0.35 : 1 }}>
                           <p style={{ fontSize: 13, fontWeight: 700, margin: 0 }}>{voted ? "✓ " : ""}{side}</p>
                         </motion.button>
-                       </React.Fragment>
+                      </React.Fragment>
                     ))}
                   </div>
                   <div style={{ marginBottom: 10 }}>

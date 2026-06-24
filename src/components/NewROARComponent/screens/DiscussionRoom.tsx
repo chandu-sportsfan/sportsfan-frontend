@@ -1492,6 +1492,7 @@ export default function DiscussionRoom({
   const currentUserId = userProfile?.actualUserId;
   const latestCreatedAtRef = useRef<number | null>(null);
   const sendingRef = useRef(false);
+  const [isSending, setIsSending] = useState(false);
   const [inlineCommentPostId, setInlineCommentPostId] = useState<string | null>(null);
 
   // ── Active fans (presence) state ────────────────────────────────────────────
@@ -2031,15 +2032,55 @@ export default function DiscussionRoom({
     finally { setUploading(false); if (e.target) e.target.value = ""; }
   };
 
+  // const send = async () => {
+  //   if (!roomId) return;
+  //   const text = input.trim();
+  //   if (!text && !attachedUrl) return;
+  //   if (sendingRef.current) return; // guard against double submit
+  //   sendingRef.current = true;
+  //   try {
+  //     const res = await axios.post(`/api/roar/rooms/${roomId}/messages`, { text: text || "Shared media", type: mode, mediaUrls: attachedUrl ? [attachedUrl] : undefined });
+      // if (res.data?.success) {
+      //   const m = res.data.message;
+      //   setPosts(p => [{
+      //     id: m.msgId,
+      //     fan: { username: displayUsername(m.authorUsername), authorUid: m.authorUid, badge: m.authorBadge, avatarUrl: m.authorAvatarUrl || m.avatarUrl || (m.authorUsername === userUsername ? userAvatarUrl : undefined) },
+      //     text: m.text,
+      //     // fireCount: 0, nochanceCount: 0, heartCount: 0,
+      //     fireCount: m.fireCount ?? 0,
+      //     heartCount: m.heartCount ?? 0,
+      //     mindblownCount: m.mindblownCount ?? 0,
+      //     goatCount: m.goatCount ?? 0,
+      //     clapCount: m.clapCount ?? 0,
+      //     nochanceCount: m.noChanceCount ?? 0,
+      //     userReaction: null, replyCount: 0,
+      //     agreeCount: 0, disagreeCount: 0, userVote: null, sideA: m.sideA ?? null, sideB: m.sideB ?? null,
+      //     timeAgo: "now", createdAt: m.createdAt || Date.now(), type: m.type, mediaUrls: m.mediaUrls,
+      //     quizQuestion: m.quizQuestion, quizOptions: m.quizOptions, quizCorrectOption: m.quizCorrectOption,
+      //     quizUserAnswer: m.quizUserAnswer ?? null, quizTimer: m.quizTimer, quizPoints: m.quizPoints,
+      //     quizParticipants: m.quizParticipants ?? 0, memGifUrl: m.memGifUrl ?? null, memTag: m.memTag ?? null,
+      //   }, ...p]);
+      //   setInput(""); setAttachedUrl(null); setAttachedType(null);
+      //   setTimeout(() => listRef.current?.scrollTo({ top: 0, behavior: "smooth" }), 50);
+      // }
+  //   } catch { onToast("Failed to send message"); }
+  //   finally { sendingRef.current = false; } 
+  // };
+
   const send = async () => {
-    if (!roomId) return;
-    const text = input.trim();
-    if (!text && !attachedUrl) return;
-    if (sendingRef.current) return; // guard against double submit
-    sendingRef.current = true;
-    try {
-      const res = await axios.post(`/api/roar/rooms/${roomId}/messages`, { text: text || "Shared media", type: mode, mediaUrls: attachedUrl ? [attachedUrl] : undefined });
-      if (res.data?.success) {
+  if (!roomId) return;
+  const text = input.trim();
+  if (!text && !attachedUrl) return;
+  if (sendingRef.current) return;
+  sendingRef.current = true;
+  setIsSending(true);
+  try {
+    const res = await axios.post(`/api/roar/rooms/${roomId}/messages`, {
+      text: text || "Shared media",
+      type: mode,
+      mediaUrls: attachedUrl ? [attachedUrl] : undefined,
+    });
+       if (res.data?.success) {
         const m = res.data.message;
         setPosts(p => [{
           id: m.msgId,
@@ -2062,9 +2103,12 @@ export default function DiscussionRoom({
         setInput(""); setAttachedUrl(null); setAttachedType(null);
         setTimeout(() => listRef.current?.scrollTo({ top: 0, behavior: "smooth" }), 50);
       }
-    } catch { onToast("Failed to send message"); }
-    finally { sendingRef.current = false; } 
-  };
+  } catch { onToast("Failed to send message"); }
+  finally {
+    sendingRef.current = false;
+    setIsSending(false);
+  }
+};
 
   const copyToClipboard = async (text: string) => {
     try { await navigator.clipboard.writeText(text); return true; }
@@ -2725,7 +2769,7 @@ export default function DiscussionRoom({
                 )}
                 <input type="text" disabled={uploading} value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === "Enter" && send()} className="w-full h-11 rounded-[22px] bg-[var(--bg-secondary)] border border-[var(--border)] pl-4 pr-4 text-white text-base outline-none" />
               </div>
-              <motion.button whileTap={{ scale: 0.96 }} onClick={send} disabled={uploading || sendingRef.current} className={["w-11 h-11 rounded-full border-none text-white text-lg font-bold flex items-center justify-center cursor-pointer shrink-0", "bg-[linear-gradient(135deg,#e91e8c,#ff6b35)]", uploading ? "opacity-50" : "opacity-100"].join(" ")}>↑</motion.button>
+              <motion.button whileTap={{ scale: 0.96 }} onClick={send} disabled={uploading || isSending} className={["w-11 h-11 rounded-full border-none text-white text-lg font-bold flex items-center justify-center cursor-pointer shrink-0", "bg-[linear-gradient(135deg,#e91e8c,#ff6b35)]", uploading ? "opacity-50" : "opacity-100"].join(" ")}>↑</motion.button>
             </div>
           </>
         )}

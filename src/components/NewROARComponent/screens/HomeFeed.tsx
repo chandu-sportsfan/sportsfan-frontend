@@ -562,12 +562,15 @@ export default function HomeFeed({
   // };
 
 
-  const sendQuickPost = async () => {
-    const text = input.trim();
-    if (!text && !attachedUrl) return;
-     if (sendingRef.current) return;
+ const sendQuickPost = async () => {
+  const text = input.trim();
+  if (!text && !attachedUrl) return;
+  if (sendingRef.current) return;
   sendingRef.current = true;
-    setInput(""); setAttachedUrl(null); setAttachedType(null); // clear immediately
+
+  setInput(""); setAttachedUrl(null); setAttachedType(null);
+
+  try {
     if (onHandlePost) {
       await onHandlePost({
         type: selectedActionId === "post" ? "post" : selectedActionId,
@@ -576,14 +579,20 @@ export default function HomeFeed({
         mediaUrls: attachedUrl ? [attachedUrl] : undefined,
       });
     } else {
-      // fallback if prop not wired yet
-      try {
-        await axios.post("/api/roar/posts", { type: "post", text: text || "Shared media", sport: "cricket", mediaUrls: attachedUrl ? [attachedUrl] : undefined });
-        onToast("Post is live!");
-      } catch { onToast("Failed to post"); }
-       finally { sendingRef.current = false; } 
+      await axios.post("/api/roar/posts", {
+        type: "post",
+        text: text || "Shared media",
+        sport: "cricket",
+        mediaUrls: attachedUrl ? [attachedUrl] : undefined,
+      });
+      onToast("Post is live!");
     }
-  };
+  } catch {
+    onToast("Failed to post");
+  } finally {
+    sendingRef.current = false;
+  }
+};
 
   // Cache: postId → top reaction types (up to 3), fetched once per session
   const topReactionsCache = useRef<Record<string, string[]>>({});

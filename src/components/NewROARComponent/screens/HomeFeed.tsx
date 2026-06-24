@@ -278,6 +278,7 @@ export default function HomeFeed({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [inlineCommentPostId, setInlineCommentPostId] = useState<string | null>(null);
   const [votersPostId, setVotersPostId] = useState<string | null>(null);
+  const sendingRef = useRef(false);
 
   const [reactionsPostId, setReactionsPostId] = useState<string | null>(null);
 
@@ -439,7 +440,7 @@ export default function HomeFeed({
     setVotes(prev => {
       const next = { ...prev };
       allIncoming.forEach(p => {
-        const id = p.postId; if (nowMs - (lastActionAt[id] || 0) < 60000) return;
+        const id = p.postId; if (nowMs - (lastActionAt[id] || 0) < 8000) return;
         if (p.userVote === "agree") next[id] = true;
         else if (p.userVote === "disagree") next[id] = false;
         else next[id] = null;
@@ -449,7 +450,7 @@ export default function HomeFeed({
     setLocalLikes(prev => {
       const next = { ...prev };
       allIncoming.forEach(p => {
-        const id = p.postId; if (nowMs - (lastActionAt[id] || 0) < 60000) return;
+        const id = p.postId; if (nowMs - (lastActionAt[id] || 0) < 8000) return;
         next[id] = {
           userLiked: p.userLiked ?? false,
           likeCount: p.likeCount ?? 0,
@@ -564,6 +565,8 @@ export default function HomeFeed({
   const sendQuickPost = async () => {
     const text = input.trim();
     if (!text && !attachedUrl) return;
+     if (sendingRef.current) return;
+  sendingRef.current = true;
     setInput(""); setAttachedUrl(null); setAttachedType(null); // clear immediately
     if (onHandlePost) {
       await onHandlePost({
@@ -578,6 +581,7 @@ export default function HomeFeed({
         await axios.post("/api/roar/posts", { type: "post", text: text || "Shared media", sport: "cricket", mediaUrls: attachedUrl ? [attachedUrl] : undefined });
         onToast("Post is live!");
       } catch { onToast("Failed to post"); }
+       finally { sendingRef.current = false; } 
     }
   };
 

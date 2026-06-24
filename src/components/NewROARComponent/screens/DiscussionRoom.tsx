@@ -1491,7 +1491,7 @@ export default function DiscussionRoom({
   const { userProfile } = useUserProfile();
   const currentUserId = userProfile?.actualUserId;
   const latestCreatedAtRef = useRef<number | null>(null);
-
+  const sendingRef = useRef(false);
   const [inlineCommentPostId, setInlineCommentPostId] = useState<string | null>(null);
 
   // ── Active fans (presence) state ────────────────────────────────────────────
@@ -1528,27 +1528,27 @@ export default function DiscussionRoom({
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
   const topReactionsCache = useRef<Record<string, string[]>>({});
-const [topReactionsMap, setTopReactionsMap] = useState<Record<string, string[]>>({});
+  const [topReactionsMap, setTopReactionsMap] = useState<Record<string, string[]>>({});
 
-const fetchTopReactions = useCallback(async (msgId: string) => {
-  if (topReactionsCache.current[msgId] !== undefined) return;
-  topReactionsCache.current[msgId] = [];
-  try {
-    const url = `/api/roar/posts/${msgId}/reactions${roomId ? `?roomId=${encodeURIComponent(roomId)}` : ""}`;
-    const res = await axios.get(url);
-    const reactors: { reaction: string }[] = res.data?.reactors ?? [];
-    const counts: Record<string, number> = {};
-    reactors.forEach(r => { counts[r.reaction] = (counts[r.reaction] ?? 0) + 1; });
-    const top = Object.entries(counts)
-      .sort(([, a], [, b]) => b - a)
-      .slice(0, 3)
-      .map(([type]) => type);
-    topReactionsCache.current[msgId] = top;
-    setTopReactionsMap(prev => ({ ...prev, [msgId]: top }));
-  } catch {
+  const fetchTopReactions = useCallback(async (msgId: string) => {
+    if (topReactionsCache.current[msgId] !== undefined) return;
     topReactionsCache.current[msgId] = [];
-  }
-}, [roomId]);
+    try {
+      const url = `/api/roar/posts/${msgId}/reactions${roomId ? `?roomId=${encodeURIComponent(roomId)}` : ""}`;
+      const res = await axios.get(url);
+      const reactors: { reaction: string }[] = res.data?.reactors ?? [];
+      const counts: Record<string, number> = {};
+      reactors.forEach(r => { counts[r.reaction] = (counts[r.reaction] ?? 0) + 1; });
+      const top = Object.entries(counts)
+        .sort(([, a], [, b]) => b - a)
+        .slice(0, 3)
+        .map(([type]) => type);
+      topReactionsCache.current[msgId] = top;
+      setTopReactionsMap(prev => ({ ...prev, [msgId]: top }));
+    } catch {
+      topReactionsCache.current[msgId] = [];
+    }
+  }, [roomId]);
 
   const loadMoreMsgs = useCallback(async () => {
     if (!roomId || loadingMoreMsgsRef.current || !hasMoreMsgs) return;
@@ -2035,6 +2035,8 @@ const fetchTopReactions = useCallback(async (msgId: string) => {
     if (!roomId) return;
     const text = input.trim();
     if (!text && !attachedUrl) return;
+    if (sendingRef.current) return; // guard against double submit
+    sendingRef.current = true;
     try {
       const res = await axios.post(`/api/roar/rooms/${roomId}/messages`, { text: text || "Shared media", type: mode, mediaUrls: attachedUrl ? [attachedUrl] : undefined });
       if (res.data?.success) {
@@ -2061,6 +2063,7 @@ const fetchTopReactions = useCallback(async (msgId: string) => {
         setTimeout(() => listRef.current?.scrollTo({ top: 0, behavior: "smooth" }), 50);
       }
     } catch { onToast("Failed to send message"); }
+    finally { sendingRef.current = false; } 
   };
 
   const copyToClipboard = async (text: string) => {
@@ -2130,64 +2133,64 @@ const fetchTopReactions = useCallback(async (msgId: string) => {
   //   );
   // };
 
-const REACTION_EMOJI: Record<string, string> = {
-  fire: "🔥", heart: "❤️", mindblown: "🤯", goat: "🐐", clap: "👏", nochance: "🙅",
-  laugh: "😂", sad: "😢", thumb: "👍",
-};
+  const REACTION_EMOJI: Record<string, string> = {
+    fire: "🔥", heart: "❤️", mindblown: "🤯", goat: "🐐", clap: "👏", nochance: "🙅",
+    laugh: "😂", sad: "😢", thumb: "👍",
+  };
 
-const renderReactionsTrigger = (p: any) => {
-  const lo = localReactions[p.id];
-  const heartCount = lo !== undefined ? lo.heartCount : (p.heartCount ?? 0);
-  if (heartCount === 0) return null;
+  const renderReactionsTrigger = (p: any) => {
+    const lo = localReactions[p.id];
+    const heartCount = lo !== undefined ? lo.heartCount : (p.heartCount ?? 0);
+    if (heartCount === 0) return null;
 
-  const topReactions = topReactionsMap[p.id] ?? [];
-  if (topReactions.length === 0 && !topReactionsCache.current[p.id]) {
-    fetchTopReactions(p.id);
-  }
+    const topReactions = topReactionsMap[p.id] ?? [];
+    if (topReactions.length === 0 && !topReactionsCache.current[p.id]) {
+      fetchTopReactions(p.id);
+    }
 
-  const currentReaction = lo?.reaction ?? p.userReaction ?? null;
-  const displayReactions = topReactions.length > 0
-    ? topReactions
-    : currentReaction ? [currentReaction] : [];
+    const currentReaction = lo?.reaction ?? p.userReaction ?? null;
+    const displayReactions = topReactions.length > 0
+      ? topReactions
+      : currentReaction ? [currentReaction] : [];
 
-  if (displayReactions.length === 0) return null;
+    if (displayReactions.length === 0) return null;
 
-  return (
-    <motion.button
-      whileTap={{ scale: 0.93 }}
-      onClick={e => { e.stopPropagation(); setReactionsMsgId(p.id); }}
-      style={{
-        display: "flex", alignItems: "center", gap: 4,
-        background: "none", border: "none", cursor: "pointer",
-        marginLeft: "auto", padding: 0,
-      }}
-      title="See who reacted"
-    >
-      <div style={{ display: "flex" }}>
-        {displayReactions.map((type, i) => (
-          <div
-            key={type}
-            style={{
-              width: 20, height: 20, borderRadius: "50%",
-              background: "#1e1e2a",
-              border: "1.5px solid rgba(255,255,255,0.1)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: 11,
-              marginLeft: i === 0 ? 0 : -6,
-              zIndex: displayReactions.length - i,
-              position: "relative",
-            }}
-          >
-            {REACTION_EMOJI[type] ?? "❤️"}
-          </div>
-        ))}
-      </div>
-      {/* <span style={{ fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.5)", marginLeft: 3 }}>
+    return (
+      <motion.button
+        whileTap={{ scale: 0.93 }}
+        onClick={e => { e.stopPropagation(); setReactionsMsgId(p.id); }}
+        style={{
+          display: "flex", alignItems: "center", gap: 4,
+          background: "none", border: "none", cursor: "pointer",
+          marginLeft: "auto", padding: 0,
+        }}
+        title="See who reacted"
+      >
+        <div style={{ display: "flex" }}>
+          {displayReactions.map((type, i) => (
+            <div
+              key={type}
+              style={{
+                width: 20, height: 20, borderRadius: "50%",
+                background: "#1e1e2a",
+                border: "1.5px solid rgba(255,255,255,0.1)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 11,
+                marginLeft: i === 0 ? 0 : -6,
+                zIndex: displayReactions.length - i,
+                position: "relative",
+              }}
+            >
+              {REACTION_EMOJI[type] ?? "❤️"}
+            </div>
+          ))}
+        </div>
+        {/* <span style={{ fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.5)", marginLeft: 3 }}>
         {heartCount}
       </span> */}
-    </motion.button>
-  );
-};
+      </motion.button>
+    );
+  };
 
 
   return (
@@ -2722,7 +2725,7 @@ const renderReactionsTrigger = (p: any) => {
                 )}
                 <input type="text" disabled={uploading} value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === "Enter" && send()} className="w-full h-11 rounded-[22px] bg-[var(--bg-secondary)] border border-[var(--border)] pl-4 pr-4 text-white text-base outline-none" />
               </div>
-              <motion.button whileTap={{ scale: 0.96 }} onClick={send} disabled={uploading} className={["w-11 h-11 rounded-full border-none text-white text-lg font-bold flex items-center justify-center cursor-pointer shrink-0", "bg-[linear-gradient(135deg,#e91e8c,#ff6b35)]", uploading ? "opacity-50" : "opacity-100"].join(" ")}>↑</motion.button>
+              <motion.button whileTap={{ scale: 0.96 }} onClick={send} disabled={uploading || sendingRef.current} className={["w-11 h-11 rounded-full border-none text-white text-lg font-bold flex items-center justify-center cursor-pointer shrink-0", "bg-[linear-gradient(135deg,#e91e8c,#ff6b35)]", uploading ? "opacity-50" : "opacity-100"].join(" ")}>↑</motion.button>
             </div>
           </>
         )}

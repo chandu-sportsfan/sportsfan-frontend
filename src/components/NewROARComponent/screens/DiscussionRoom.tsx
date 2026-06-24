@@ -1527,6 +1527,29 @@ export default function DiscussionRoom({
   const loadingMoreMsgsRef = useRef(false);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
+  const topReactionsCache = useRef<Record<string, string[]>>({});
+const [topReactionsMap, setTopReactionsMap] = useState<Record<string, string[]>>({});
+
+const fetchTopReactions = useCallback(async (msgId: string) => {
+  if (topReactionsCache.current[msgId] !== undefined) return;
+  topReactionsCache.current[msgId] = [];
+  try {
+    const url = `/api/roar/posts/${msgId}/reactions${roomId ? `?roomId=${encodeURIComponent(roomId)}` : ""}`;
+    const res = await axios.get(url);
+    const reactors: { reaction: string }[] = res.data?.reactors ?? [];
+    const counts: Record<string, number> = {};
+    reactors.forEach(r => { counts[r.reaction] = (counts[r.reaction] ?? 0) + 1; });
+    const top = Object.entries(counts)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 3)
+      .map(([type]) => type);
+    topReactionsCache.current[msgId] = top;
+    setTopReactionsMap(prev => ({ ...prev, [msgId]: top }));
+  } catch {
+    topReactionsCache.current[msgId] = [];
+  }
+}, [roomId]);
+
   const loadMoreMsgs = useCallback(async () => {
     if (!roomId || loadingMoreMsgsRef.current || !hasMoreMsgs) return;
 
@@ -1659,11 +1682,7 @@ export default function DiscussionRoom({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // ── Presence: join + heartbeat + live active-fans list ──────────────────────
-  // Replaces the old fire-and-forget join-only effect. Now also GETs the
-  // active fan list (for the avatar row + dialog) and re-POSTs on an
-  // interval so the server-side TTL never expires a still-open tab, and so
-  // other users' avatars update live in this view without a page reload.
+
   useEffect(() => {
     if (!roomId) return;
     // Reset stale data from previous room immediately
@@ -2111,76 +2130,64 @@ export default function DiscussionRoom({
   //   );
   // };
 
-  const REACTION_EMOJI: Record<string, string> = {
-    fire: "🔥",
-    heart: "❤️",
-    mindblown: "🤯",
-    goat: "🐐",
-    clap: "👏",
-  };
+const REACTION_EMOJI: Record<string, string> = {
+  fire: "🔥", heart: "❤️", mindblown: "🤯", goat: "🐐", clap: "👏", nochance: "🙅",
+  laugh: "😂", sad: "😢", thumb: "👍",
+};
 
-  const renderReactionsTrigger = (p: any) => {
-    const lo = localReactions[p.id];
-    const heartCount = lo !== undefined ? lo.heartCount : (p.heartCount ?? 0);
-    if (heartCount === 0) return null;
+const renderReactionsTrigger = (p: any) => {
+  const lo = localReactions[p.id];
+  const heartCount = lo !== undefined ? lo.heartCount : (p.heartCount ?? 0);
+  if (heartCount === 0) return null;
 
-    // Build reaction types from per-type counts on the post
-    const typeMap: Record<string, number> = {
-      fire: p.fireCount ?? 0,
-      heart: p.heartCount ?? 0,
-      mindblown: p.mindblownCount ?? 0,
-      goat: p.goatCount ?? 0,
-      clap: p.clapCount ?? 0,
-    };
+  const topReactions = topReactionsMap[p.id] ?? [];
+  if (topReactions.length === 0 && !topReactionsCache.current[p.id]) {
+    fetchTopReactions(p.id);
+  }
 
-    // Override with local optimistic state
-    if (lo?.reaction) {
-      typeMap[lo.reaction] = Math.max(1, typeMap[lo.reaction] ?? 0);
-    }
+  const currentReaction = lo?.reaction ?? p.userReaction ?? null;
+  const displayReactions = topReactions.length > 0
+    ? topReactions
+    : currentReaction ? [currentReaction] : [];
 
-    const activeTypes = Object.entries(typeMap)
-      .filter(([_, count]) => count > 0)
-      .sort((a, b) => b[1] - a[1])  // most reacted first
-      .slice(0, 3)
-      .map(([type]) => type);
+  if (displayReactions.length === 0) return null;
 
-    return (
-      <motion.button
-        whileTap={{ scale: 0.93 }}
-        onClick={e => { e.stopPropagation(); setReactionsMsgId(p.id); }}
-        style={{
-          display: "flex", alignItems: "center", gap: 4,
-          background: "none", border: "none", cursor: "pointer",
-          marginLeft: "auto", padding: 0,
-        }}
-        title="See who reacted"
-      >
-        <div style={{ display: "flex" }}>
-          {activeTypes.map((type, i) => (
-            <div
-              key={type}
-              style={{
-                width: 20, height: 20, borderRadius: "50%",
-                background: "#1e1e2a",
-                border: "1.5px solid rgba(255,255,255,0.1)",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: 11,
-                marginLeft: i === 0 ? 0 : -6,
-                zIndex: activeTypes.length - i,
-                position: "relative",
-              }}
-            >
-              {REACTION_EMOJI[type] ?? "❤️"}
-            </div>
-          ))}
-        </div>
-        <span style={{ fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.5)" }}>
-          {heartCount}
-        </span>
-      </motion.button>
-    );
-  };
-
+  return (
+    <motion.button
+      whileTap={{ scale: 0.93 }}
+      onClick={e => { e.stopPropagation(); setReactionsMsgId(p.id); }}
+      style={{
+        display: "flex", alignItems: "center", gap: 4,
+        background: "none", border: "none", cursor: "pointer",
+        marginLeft: "auto", padding: 0,
+      }}
+      title="See who reacted"
+    >
+      <div style={{ display: "flex" }}>
+        {displayReactions.map((type, i) => (
+          <div
+            key={type}
+            style={{
+              width: 20, height: 20, borderRadius: "50%",
+              background: "#1e1e2a",
+              border: "1.5px solid rgba(255,255,255,0.1)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: 11,
+              marginLeft: i === 0 ? 0 : -6,
+              zIndex: displayReactions.length - i,
+              position: "relative",
+            }}
+          >
+            {REACTION_EMOJI[type] ?? "❤️"}
+          </div>
+        ))}
+      </div>
+      {/* <span style={{ fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.5)", marginLeft: 3 }}>
+        {heartCount}
+      </span> */}
+    </motion.button>
+  );
+};
 
 
   return (

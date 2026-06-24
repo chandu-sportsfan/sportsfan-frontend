@@ -581,6 +581,30 @@ export default function HomeFeed({
     }
   };
 
+  // Cache: postId → top reaction types (up to 3), fetched once per session
+  const topReactionsCache = useRef<Record<string, string[]>>({});
+  const [topReactionsMap, setTopReactionsMap] = useState<Record<string, string[]>>({});
+
+  const fetchTopReactions = useCallback(async (postId: string) => {
+    if (topReactionsCache.current[postId] !== undefined) return; // already fetched or in-flight
+    topReactionsCache.current[postId] = []; // mark in-flight
+    try {
+      const res = await axios.get(`/api/roar/posts/${postId}/reactions?limit=100`);
+      const reactors: { reaction: string }[] = res.data?.reactors ?? [];
+      // Tally counts per reaction type
+      const counts: Record<string, number> = {};
+      reactors.forEach(r => { counts[r.reaction] = (counts[r.reaction] ?? 0) + 1; });
+      const top = Object.entries(counts)
+        .sort(([, a], [, b]) => b - a)
+        .slice(0, 3)
+        .map(([type]) => type);
+      topReactionsCache.current[postId] = top;
+      setTopReactionsMap(prev => ({ ...prev, [postId]: top }));
+    } catch {
+      topReactionsCache.current[postId] = [];
+    }
+  }, []);
+
   const renderCardActions = (item: any) => {
     const lo = localLikes[item.id];
     const currentReaction: Reaction | null = lo !== undefined ? lo.reaction : ((item.userReaction as Reaction) ?? null);
@@ -623,31 +647,27 @@ export default function HomeFeed({
           </motion.button>
         )} */}
 
+
         {likeCount > 0 && (() => {
           const REACTION_EMOJI: Record<string, string> = {
             heart: "❤️", fire: "🔥", mindblown: "🤯", goat: "🐐", clap: "👏", nochance: "🙅",
+            // likesection route uses these names:
+            laugh: "😂", sad: "😢", thumb: "👍",
           };
 
-          // Build top-3 reaction types by count, descending
-          const reactionCounts: Record<string, number> = {
-            heart: item.heartCount ?? 0,
-            fire: item.fireCount ?? 0,
-            mindblown: item.mindblownCount ?? 0,
-            goat: item.goatCount ?? 0,
-            clap: item.clapCount ?? 0,
-            nochance: item.nochanceCount ?? 0,
-          };
-
-          const topReactions = Object.entries(reactionCounts)
-            .filter(([, count]) => count > 0)
-            .sort(([, a], [, b]) => b - a)
-            .slice(0, 3)
-            .map(([type]) => type);
-
-          // Fallback: if no individual counts mapped yet, show current reaction
-          if (topReactions.length === 0 && currentReaction) {
-            topReactions.push(currentReaction);
+          // Use cached top reactions; trigger a fetch if not yet loaded
+          const topReactions = topReactionsMap[item.id] ?? [];
+          if (topReactions.length === 0 && !topReactionsCache.current[item.id]) {
+            fetchTopReactions(item.id); // fire-and-forget; re-render when done
           }
+
+          // While fetch is in-flight, fall back to current user's reaction so
+          // the button isn't empty
+          const displayReactions = topReactions.length > 0
+            ? topReactions
+            : currentReaction ? [currentReaction] : [];
+
+          if (displayReactions.length === 0) return null;
 
           return (
             <motion.button
@@ -660,9 +680,8 @@ export default function HomeFeed({
               }}
               title="See who reacted"
             >
-              {/* Stacked emoji circles */}
               <div style={{ display: "flex", alignItems: "center" }}>
-                {topReactions.map((type, idx) => (
+                {displayReactions.map((type, idx) => (
                   <div
                     key={type}
                     style={{
@@ -672,7 +691,7 @@ export default function HomeFeed({
                       display: "flex", alignItems: "center", justifyContent: "center",
                       fontSize: 11, lineHeight: 1,
                       marginLeft: idx === 0 ? 0 : -6,
-                      zIndex: topReactions.length - idx,
+                      zIndex: displayReactions.length - idx,
                       position: "relative",
                     }}
                   >
@@ -680,14 +699,9 @@ export default function HomeFeed({
                   </div>
                 ))}
               </div>
-              {/* Count */}
-              <span style={{
-                fontSize: 12, fontWeight: 700,
-                color: "rgba(255,255,255,0.55)",
-                marginLeft: 3,
-              }}>
+              {/* <span style={{ fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.55)", marginLeft: 3 }}>
                 {likeCount}
-              </span>
+              </span> */}
             </motion.button>
           );
         })()}

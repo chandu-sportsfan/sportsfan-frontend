@@ -2057,16 +2057,15 @@ export default function Profile({
   const isOtherProfile = !!(viewingProfile || isViewingOther);
   const handleBack = onBack ?? onClose;
 
-  // Only use activities from context — for own profile activity feed tabs
-  // Stats, points, badges all come from the API user object directly
   const { activities, loading: activityLoading, refreshActivities } = useActivity();
 
   const [profileMetadata, setProfileMetadata] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
-  // Other profile's activities fetched separately from /api/user-activity
-  const [otherActivities, setOtherActivities] = useState<any[]>([]);
-  const [otherActivitiesLoading, setOtherActivitiesLoading] = useState(false);
+  // Activities fetched from /api/user-activity for BOTH own and other profiles
+  // Key fix: own profile must use actualUserId (email), not userId (formatted string)
+  const [fetchedActivities, setFetchedActivities] = useState<any[]>([]);
+  const [fetchedActivitiesLoading, setFetchedActivitiesLoading] = useState(false);
 
   const [badgeModal, setBadgeModal] = useState<any>(null);
   const [editOpen, setEditOpen] = useState(false);
@@ -2082,12 +2081,32 @@ export default function Profile({
   const [selectedAvatar, setSelectedAvatar] = useState<string | null>(null);
   const [activeActivityTab, setActiveActivityTab] = useState<"posts" | "predictions" | "debates">("posts");
 
+  // ── Helper: fetch activities by actualUserId ───────────────────────────────
+  const fetchActivities = async (actualUserId: string) => {
+    if (!actualUserId) return;
+    setFetchedActivitiesLoading(true);
+    try {
+      const actRes = await axios.get(
+        `/api/user-activity?userId=${encodeURIComponent(actualUserId)}&limit=200`
+      );
+      if (actRes.data?.success) {
+        setFetchedActivities(actRes.data.activities || []);
+      }
+    } catch {
+      setFetchedActivities([]);
+    } finally {
+      setFetchedActivitiesLoading(false);
+    }
+  };
+
   // ── Data fetching ──────────────────────────────────────────────────────────
   useEffect(() => {
     const fetchProfileData = async () => {
       setLoading(true);
+      setFetchedActivities([]);
       try {
         if (!isOtherProfile) {
+          // ── Own profile ──
           const res = await axios.get("/api/roar/profile", { withCredentials: true });
           if (res.data?.success) {
             setProfileMetadata({
@@ -2103,11 +2122,20 @@ export default function Profile({
               setSelectedAvatar(res.data.user.avatarUrl);
               try { localStorage.setItem("roar_avatar_url", res.data.user.avatarUrl); } catch { }
             }
+
+            // CRITICAL: use actualUserId (email-based) not userId (formatted string)
+            // userId = "prince_princechandu357_gmail_com" → returns empty from /api/user-activity
+            // actualUserId = "princechandu357@gmail.com" → returns correct data
+            const actualUid = res.data.user?.actualUserId;
+            if (actualUid) {
+              await fetchActivities(actualUid);
+            }
           }
           setLoading(false);
           return;
         }
 
+        // ── fanData path (pre-fetched) ──
         if (fanData) {
           setProfileMetadata({
             user: fanData || {},
@@ -2116,24 +2144,18 @@ export default function Profile({
           if (fanData.badge) setUserBadge(fanData.badge);
           if (fanData.avatarUrl) setSelectedAvatar(fanData.avatarUrl);
 
-          // Fetch fanData user's activities
-          const uid = fanData.userId || fanData.actualUserId;
-          if (uid) {
-            setOtherActivitiesLoading(true);
-            try {
-              const actRes = await axios.get(`/api/user-activity?userId=${encodeURIComponent(uid)}`);
-              if (actRes.data?.success) setOtherActivities(actRes.data.activities || []);
-            } catch { } finally {
-              setOtherActivitiesLoading(false);
-            }
-          }
+          const uid = fanData.actualUserId || fanData.userId;
+          if (uid) await fetchActivities(uid);
 
           setLoading(false);
           return;
         }
 
+        // ── viewingProfile path ──
         if (viewingProfile) {
-          const res = await axios.get(`/api/roar/profile?userId=${encodeURIComponent(viewingProfile)}`);
+          const res = await axios.get(
+            `/api/roar/profile?userId=${encodeURIComponent(viewingProfile)}`
+          );
           if (res.data?.success) {
             setProfileMetadata({
               user: res.data.user || {},
@@ -2142,15 +2164,9 @@ export default function Profile({
             if (res.data.user?.badge) setUserBadge(res.data.user.badge);
             if (res.data.user?.avatarUrl) setSelectedAvatar(res.data.user.avatarUrl);
 
-            // Fetch viewed user's activities
+            // Use actualUserId from API response — this is always the email-based ID
             const uid = res.data.user?.actualUserId || res.data.user?.userId || viewingProfile;
-            setOtherActivitiesLoading(true);
-            try {
-              const actRes = await axios.get(`/api/user-activity?userId=${encodeURIComponent(uid)}`);
-              if (actRes.data?.success) setOtherActivities(actRes.data.activities || []);
-            } catch { } finally {
-              setOtherActivitiesLoading(false);
-            }
+            await fetchActivities(uid);
           }
         }
       } catch (err: any) {
@@ -2171,13 +2187,6 @@ export default function Profile({
     fetchProfileData();
   }, [viewingProfile, isViewingOther, fanData, isOtherProfile]);
 
-  // Refresh activity feed for own profile only
-  useEffect(() => {
-    if (!isOtherProfile && refreshActivities) {
-      refreshActivities();
-    }
-  }, [isOtherProfile]);
-
   if (loading || !profileMetadata) {
     return (
       <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100%", color: "var(--text-muted)" }}>
@@ -2195,10 +2204,10 @@ export default function Profile({
 
   // ── Stats — purely from API user.activityCounts & user.totalPoints ─────────
   const actCounts = user?.activityCounts ?? {};
-  const statPosts        = actCounts.total ?? 0;
-  const statDebates      = actCounts.ROAR_DEBATE_PARTICIPATE ?? 0;
-  const statPredictions  = actCounts.ROAR_PREDICTION_PARTICIPATE ?? 0;
-  const statAccuracy     = user?.accuracy != null ? `${user.accuracy}%` : "N/A";
+  const statPosts       = actCounts.total ?? 0;
+  const statDebates     = actCounts.ROAR_DEBATE_PARTICIPATE ?? 0;
+  const statPredictions = actCounts.ROAR_PREDICTION_PARTICIPATE ?? 0;
+  const statAccuracy    = user?.accuracy != null ? `${user.accuracy}%` : "N/A";
 
   // ── Roar Points — from API user.totalPoints ────────────────────────────────
   const repScore = user?.totalPoints ?? user?.reputationScore ?? 0;
@@ -2206,9 +2215,14 @@ export default function Profile({
   const repPct   = Math.round((repScore / repMax) * 100);
 
   // ── Activity feed ──────────────────────────────────────────────────────────
-  // Own profile: ActivityContext | Other profile: fetched from /api/user-activity
-  const sourceActivities = isOtherProfile ? otherActivities : activities;
-  const isLoadingActivities = isOtherProfile ? otherActivitiesLoading : activityLoading;
+  // Both own and other profiles now use fetchedActivities from /api/user-activity
+  // fetchedActivities is populated for ALL profiles using actualUserId (email)
+  // Falls back to ActivityContext only if fetch hasn't completed yet
+  const sourceActivities = fetchedActivities.length > 0
+    ? fetchedActivities
+    : (!isOtherProfile ? activities : []);
+  const isLoadingActivities = fetchedActivitiesLoading ||
+    (!isOtherProfile && fetchedActivities.length === 0 && activityLoading);
 
   const predictionActivities = sourceActivities.filter((a: any) =>
     a.type === "ROAR_PREDICTION_PARTICIPATE"
@@ -2227,7 +2241,9 @@ export default function Profile({
     .slice()
     .sort((a: any, b: any) => (b.createdAt || 0) - (a.createdAt || 0));
 
-  const debateActivities = sourceActivities.filter((a: any) => a.type === "ROAR_DEBATE_PARTICIPATE");
+  const debateActivities = sourceActivities.filter((a: any) =>
+    a.type === "ROAR_DEBATE_PARTICIPATE"
+  );
 
   // ── Avatar ─────────────────────────────────────────────────────────────────
   const handleAvatarSelect = async (src: string) => {
@@ -2351,7 +2367,7 @@ export default function Profile({
             style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "10px 4px", minHeight: 66, textAlign: "center", background: "rgba(18,18,26,0.7)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 14, position: "relative", overflow: "visible" }}>
             {(() => {
               const tooltipText =
-                label === "Posts"        ? "Total activity count including all types."
+                label === "Posts"         ? "Total activity count including all types."
                 : label === "Predictions" ? "Predictions you've participated in."
                 : label === "Debates"     ? "Debates you've participated in."
                 : "Your accuracy rate across resolved predictions and debates.";
@@ -2386,7 +2402,7 @@ export default function Profile({
         </div>
       </div>
 
-      {/* ── Your Badges ── */}
+      {/* ── Badges ── */}
       <div style={{ padding: "18px 0 0" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0 14px", marginBottom: 12 }}>
           <span style={{ fontSize: 14, fontWeight: 700, color: "#fff" }}>
@@ -2438,12 +2454,16 @@ export default function Profile({
                 .map((p: any) => (
                   <div key={p.id} style={{ background: "rgba(18,18,26,0.7)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 14, padding: "14px 16px" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
-                      <span style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.4)", letterSpacing: "0.06em" }}>{p.metadata?.sport?.toUpperCase() ?? "GENERAL"}</span>
+                      <span style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.4)", letterSpacing: "0.06em" }}>
+                        {p.metadata?.sport?.toUpperCase() ?? "GENERAL"}
+                      </span>
                       <span style={{ fontSize: 10, fontWeight: 800, color: "var(--pending-amber, #F59E0B)", background: "rgba(245,158,11,0.12)", padding: "2px 7px", borderRadius: 4 }}>
                         {p.type === "ROAR_PREDICTION" ? "PREDICTION" : p.type === "ROAR_DEBATE" ? "DEBATE" : "POST"}
                       </span>
                     </div>
-                    <p style={{ fontSize: 14, color: "#fff", lineHeight: 1.45, margin: "0 0 8px" }}>{p.metadata?.statement || p.label || "Post"}</p>
+                    <p style={{ fontSize: 14, color: "#fff", lineHeight: 1.45, margin: "0 0 8px" }}>
+                      {p.metadata?.statement || p.label || "Post"}
+                    </p>
                     <span style={{ fontSize: 11, color: "rgba(255,255,255,0.35)" }}>
                       {p.createdAt ? new Date(p.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "Today"}
                     </span>
@@ -2461,9 +2481,9 @@ export default function Profile({
             ) : filteredPreds.length === 0 ? (
               <p style={{ textAlign: "center", padding: "24px 0", color: "rgba(255,255,255,0.4)", fontSize: 13 }}>No predictions yet.</p>
             ) : filteredPreds.map((p: any) => {
-              const isCorrect = p.status === "CORRECT" || p.status === "settled_correct";
-              const isWrong   = p.status === "WRONG"   || p.status === "settled_wrong";
-              const status      = isCorrect ? "CORRECT" : isWrong ? "WRONG" : "PENDING";
+              const isCorrect  = p.status === "CORRECT" || p.status === "settled_correct";
+              const isWrong    = p.status === "WRONG"   || p.status === "settled_wrong";
+              const status     = isCorrect ? "CORRECT" : isWrong ? "WRONG" : "PENDING";
               const statusColor = isCorrect ? "#22C55E" : isWrong ? "#EF4444" : "#F59E0B";
               return (
                 <div key={p.id ?? p.postId} style={{ background: "rgba(18,18,26,0.7)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 14, padding: "14px 16px" }}>
@@ -2478,7 +2498,9 @@ export default function Profile({
                     </span>
                     {!isOtherProfile && (
                       <button onClick={() => onToast("Shared call!")}
-                        style={{ background: "none", border: "none", color: "rgba(255,255,255,0.35)", fontSize: 11, cursor: "pointer", textDecoration: "underline" }}>Share</button>
+                        style={{ background: "none", border: "none", color: "rgba(255,255,255,0.35)", fontSize: 11, cursor: "pointer", textDecoration: "underline" }}>
+                        Share
+                      </button>
                     )}
                   </div>
                 </div>
@@ -2673,9 +2695,9 @@ export default function Profile({
               <p style={{ fontSize: 11, color: "var(--text-secondary)", textAlign: "center", lineHeight: 1.4, marginBottom: 16 }}>We analysed your takes & predictions to find similar fans.</p>
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 {[
-                  { username: "Rahul_77",    badge: "BOLD_CALLER",  similarity: 72 },
-                  { username: "StatsKing_99", badge: "ORACLE",       similarity: 68 },
-                  { username: "MumbaiMagic",  badge: "RISING_FAN",   similarity: 61 },
+                  { username: "Rahul_77",     badge: "BOLD_CALLER", similarity: 72 },
+                  { username: "StatsKing_99", badge: "ORACLE",      similarity: 68 },
+                  { username: "MumbaiMagic",  badge: "RISING_FAN",  similarity: 61 },
                 ].map((fan) => (
                   <div key={fan.username} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 12px", borderRadius: 16, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.04)" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>

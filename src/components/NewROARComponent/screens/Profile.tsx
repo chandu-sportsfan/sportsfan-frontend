@@ -2057,12 +2057,16 @@ export default function Profile({
   const isOtherProfile = !!(viewingProfile || isViewingOther);
   const handleBack = onBack ?? onClose;
 
-  // Only use activities from context — for the activity feed tabs only
+  // Only use activities from context — for own profile activity feed tabs
   // Stats, points, badges all come from the API user object directly
   const { activities, loading: activityLoading, refreshActivities } = useActivity();
 
   const [profileMetadata, setProfileMetadata] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+
+  // Other profile's activities fetched separately from /api/user-activity
+  const [otherActivities, setOtherActivities] = useState<any[]>([]);
+  const [otherActivitiesLoading, setOtherActivitiesLoading] = useState(false);
 
   const [badgeModal, setBadgeModal] = useState<any>(null);
   const [editOpen, setEditOpen] = useState(false);
@@ -2111,6 +2115,19 @@ export default function Profile({
           });
           if (fanData.badge) setUserBadge(fanData.badge);
           if (fanData.avatarUrl) setSelectedAvatar(fanData.avatarUrl);
+
+          // Fetch fanData user's activities
+          const uid = fanData.userId || fanData.actualUserId;
+          if (uid) {
+            setOtherActivitiesLoading(true);
+            try {
+              const actRes = await axios.get(`/api/user-activity?userId=${encodeURIComponent(uid)}`);
+              if (actRes.data?.success) setOtherActivities(actRes.data.activities || []);
+            } catch { } finally {
+              setOtherActivitiesLoading(false);
+            }
+          }
+
           setLoading(false);
           return;
         }
@@ -2124,6 +2141,16 @@ export default function Profile({
             });
             if (res.data.user?.badge) setUserBadge(res.data.user.badge);
             if (res.data.user?.avatarUrl) setSelectedAvatar(res.data.user.avatarUrl);
+
+            // Fetch viewed user's activities
+            const uid = res.data.user?.actualUserId || res.data.user?.userId || viewingProfile;
+            setOtherActivitiesLoading(true);
+            try {
+              const actRes = await axios.get(`/api/user-activity?userId=${encodeURIComponent(uid)}`);
+              if (actRes.data?.success) setOtherActivities(actRes.data.activities || []);
+            } catch { } finally {
+              setOtherActivitiesLoading(false);
+            }
           }
         }
       } catch (err: any) {
@@ -2167,7 +2194,6 @@ export default function Profile({
   const ownedBadges = badgesToDisplay.filter((b: any) => b.unlocked);
 
   // ── Stats — purely from API user.activityCounts & user.totalPoints ─────────
-  // No ActivityContext involvement — eliminates flicker/race conditions
   const actCounts = user?.activityCounts ?? {};
   const statPosts        = actCounts.total ?? 0;
   const statDebates      = actCounts.ROAR_DEBATE_PARTICIPATE ?? 0;
@@ -2179,27 +2205,29 @@ export default function Profile({
   const repMax   = Math.max(repScore, 500);
   const repPct   = Math.round((repScore / repMax) * 100);
 
-  // ── Activity feed — from ActivityContext (own profile only) ────────────────
-  const predictionActivities = activities.filter((a: any) =>
+  // ── Activity feed ──────────────────────────────────────────────────────────
+  // Own profile: ActivityContext | Other profile: fetched from /api/user-activity
+  const sourceActivities = isOtherProfile ? otherActivities : activities;
+  const isLoadingActivities = isOtherProfile ? otherActivitiesLoading : activityLoading;
+
+  const predictionActivities = sourceActivities.filter((a: any) =>
     a.type === "ROAR_PREDICTION_PARTICIPATE"
   );
 
-  const displayPredictions = !isOtherProfile
-    ? predictionActivities.map((a: any) => ({
-        id: a.id,
-        postId: a.metadata?.postId,
-        label: a.label,
-        text: (a.metadata?.statement || a.label || "").trim() || `Prediction: ${a.label}`,
-        status: a.metadata?.status || "PENDING",
-        createdAt: a.createdAt,
-      }))
-    : [];
+  const displayPredictions = predictionActivities.map((a: any) => ({
+    id: a.id,
+    postId: a.metadata?.postId,
+    label: a.label,
+    text: (a.metadata?.statement || a.label || "").trim() || `Prediction: ${a.label}`,
+    status: a.metadata?.status || "PENDING",
+    createdAt: a.createdAt,
+  }));
 
   const filteredPreds = (displayPredictions || [])
     .slice()
     .sort((a: any, b: any) => (b.createdAt || 0) - (a.createdAt || 0));
 
-  const debateActivities = activities.filter((a: any) => a.type === "ROAR_DEBATE_PARTICIPATE");
+  const debateActivities = sourceActivities.filter((a: any) => a.type === "ROAR_DEBATE_PARTICIPATE");
 
   // ── Avatar ─────────────────────────────────────────────────────────────────
   const handleAvatarSelect = async (src: string) => {
@@ -2262,7 +2290,6 @@ export default function Profile({
 
       {/* ── Hero ── */}
       <div style={{ padding: "28px 20px 0", textAlign: "center" }}>
-        {/* Avatar */}
         <div style={{ position: "relative", width: 100, height: 100, margin: "0 auto 14px" }}>
           <div style={{ position: "absolute", inset: -4, borderRadius: "50%", background: "conic-gradient(#FFD700 0%, #FFA500 40%, #FFD700 70%, #FFA500 100%)", zIndex: 0 }} />
           <div style={{ position: "absolute", inset: -1, borderRadius: "50%", background: "rgba(10,10,16,0.97)", zIndex: 1 }} />
@@ -2312,7 +2339,7 @@ export default function Profile({
         </div>
       </div>
 
-      {/* ── Stats row (4 tiles) ── */}
+      {/* ── Stats row ── */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6, padding: "22px 14px 0" }}>
         {[
           { value: statPosts,       label: "Posts" },
@@ -2362,7 +2389,9 @@ export default function Profile({
       {/* ── Your Badges ── */}
       <div style={{ padding: "18px 0 0" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0 14px", marginBottom: 12 }}>
-          <span style={{ fontSize: 14, fontWeight: 700, color: "#fff" }}>Your Badges</span>
+          <span style={{ fontSize: 14, fontWeight: 700, color: "#fff" }}>
+            {isOtherProfile ? "Badges" : "Your Badges"}
+          </span>
         </div>
         <div style={{ display: "flex", gap: 14, overflowX: "auto", padding: "4px 14px 8px", scrollbarWidth: "none" }}>
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0, width: 72 }}>
@@ -2376,9 +2405,11 @@ export default function Profile({
         </div>
       </div>
 
-      {/* ── Your Activity (tabbed) ── */}
+      {/* ── Activity (tabbed) ── */}
       <div style={{ padding: "18px 14px 0" }}>
-        <span style={{ fontSize: 14, fontWeight: 700, color: "#fff" }}>Your Activity</span>
+        <span style={{ fontSize: 14, fontWeight: 700, color: "#fff" }}>
+          {isOtherProfile ? "Activity" : "Your Activity"}
+        </span>
 
         <div style={{ display: "flex", gap: 8, marginTop: 12, marginBottom: 14 }}>
           {(["posts", "predictions", "debates"] as const).map((tab) => (
@@ -2389,12 +2420,12 @@ export default function Profile({
           ))}
         </div>
 
-        {/* Posts tab */}
+        {/* ── Posts tab ── */}
         {activeActivityTab === "posts" && (() => {
-          const postActivities = !isOtherProfile
-            ? activities.filter((a: any) => ["ROAR_POST", "ROAR_MEMORY", "ROAR_RAW_REACTIONS", "ROAR_QUIZ", "ROAR_DEBATE", "ROAR_PREDICTION"].includes(a.type))
-            : [];
-          if (!isOtherProfile && activityLoading) {
+          const postActivities = sourceActivities.filter((a: any) =>
+            ["ROAR_POST", "ROAR_MEMORY", "ROAR_RAW_REACTIONS", "ROAR_QUIZ", "ROAR_DEBATE", "ROAR_PREDICTION"].includes(a.type)
+          );
+          if (isLoadingActivities) {
             return <p style={{ textAlign: "center", padding: "24px 0", color: "rgba(255,255,255,0.4)", fontSize: 13 }}>Loading...</p>;
           }
           if (postActivities.length === 0) {
@@ -2422,11 +2453,11 @@ export default function Profile({
           );
         })()}
 
-        {/* Predictions tab */}
+        {/* ── Predictions tab ── */}
         {activeActivityTab === "predictions" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {activityLoading ? (
-              <p style={{ textAlign: "center", padding: "24px 0", color: "rgba(255,255,255,0.4)", fontSize: 13 }}>Loading your calls...</p>
+            {isLoadingActivities ? (
+              <p style={{ textAlign: "center", padding: "24px 0", color: "rgba(255,255,255,0.4)", fontSize: 13 }}>Loading predictions...</p>
             ) : filteredPreds.length === 0 ? (
               <p style={{ textAlign: "center", padding: "24px 0", color: "rgba(255,255,255,0.4)", fontSize: 13 }}>No predictions yet.</p>
             ) : filteredPreds.map((p: any) => {
@@ -2445,8 +2476,10 @@ export default function Profile({
                     <span style={{ fontSize: 11, color: "rgba(255,255,255,0.35)" }}>
                       {p.createdAt ? new Date(p.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "Today"}
                     </span>
-                    <button onClick={() => onToast("Shared call!")}
-                      style={{ background: "none", border: "none", color: "rgba(255,255,255,0.35)", fontSize: 11, cursor: "pointer", textDecoration: "underline" }}>Share</button>
+                    {!isOtherProfile && (
+                      <button onClick={() => onToast("Shared call!")}
+                        style={{ background: "none", border: "none", color: "rgba(255,255,255,0.35)", fontSize: 11, cursor: "pointer", textDecoration: "underline" }}>Share</button>
+                    )}
                   </div>
                 </div>
               );
@@ -2454,13 +2487,13 @@ export default function Profile({
           </div>
         )}
 
-        {/* Debates tab */}
+        {/* ── Debates tab ── */}
         {activeActivityTab === "debates" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 10, paddingBottom: 80 }}>
-            {activityLoading ? (
-              <p style={{ textAlign: "center", padding: "24px 0", color: "rgba(255,255,255,0.4)", fontSize: 13 }}>Loading your takes...</p>
+            {isLoadingActivities ? (
+              <p style={{ textAlign: "center", padding: "24px 0", color: "rgba(255,255,255,0.4)", fontSize: 13 }}>Loading debates...</p>
             ) : debateActivities.length === 0 ? (
-              <p style={{ textAlign: "center", padding: "24px 0", color: "rgba(255,255,255,0.4)", fontSize: 13 }}>No debates started yet.</p>
+              <p style={{ textAlign: "center", padding: "24px 0", color: "rgba(255,255,255,0.4)", fontSize: 13 }}>No debates yet.</p>
             ) : debateActivities
                 .slice()
                 .sort((a: any, b: any) => (b.createdAt || 0) - (a.createdAt || 0))

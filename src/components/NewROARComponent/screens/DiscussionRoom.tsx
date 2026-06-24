@@ -1089,8 +1089,10 @@
 
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { usePostHog } from "posthog-js/react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useUserProfile } from "@/context/UserProfileContext";
 import axios from "axios";
 import AvatarWithBadge from "../components/AvatarWithBadge";
 import ReactionPicker, { type Reaction } from "../components/ReactionPicker";
@@ -1120,6 +1122,7 @@ interface Props {
   onRegisterRefresh?: (fn: () => void) => void;
   onRegisterReplyUpdate?: (fn: (postId: string, count: number) => void) => void;
   onFanProfile?: (fan: any) => void;
+  watchAlongRoomId?: string;
 }
 
 const MODE_COLOR: Record<string, string> = {
@@ -1171,48 +1174,64 @@ const postCardStyle = (type: string): React.CSSProperties => {
   return {};
 };
 
-// ── ActiveFansStack ───────────────────────────────────────────────────────────
-// Small stacked-avatar row used under the room header. Uses raw <img>/initial
-// circles rather than AvatarWithBadge to keep the row compact — the dialog
-// itself (ActiveFansDialog) uses the real AvatarWithBadge component.
+// ── ActiveFansStack 
 function ActiveFansStack({
-  fans, count, onClick,
-}: { fans: { uid: string; username: string; avatarUrl?: string | null }[]; count: number; onClick: () => void }) {
-  if (count === 0) return null;
+  fans, count, totalJoinCount, onClick,
+}: {
+  fans: { uid: string; username: string; avatarUrl?: string | null }[];
+  count: number;
+  totalJoinCount?: number;
+  onClick: () => void;
+}) {
+  if (count === 0 && !totalJoinCount) return null;
+
+  const formatCount = (n: number) =>
+    n >= 1000 ? `${(n / 1000).toFixed(1)}k` : `${n}`;
+
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      style={{
-        display: "flex", alignItems: "center", gap: 8,
-        background: "none", border: "none", cursor: "pointer", padding: 0,
-      }}
-    >
-      <div style={{ display: "flex" }}>
-        {fans.slice(0, 3).map((fan, i) => (
-          <div
-            key={fan.uid}
-            style={{
-              width: 22, height: 22, borderRadius: "50%",
-              border: "2px solid #0e0e14", overflow: "hidden",
-              marginLeft: i === 0 ? 0 : -8, zIndex: 3 - i,
-              background: "linear-gradient(135deg,#e91e8c,#ff6b35)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              flexShrink: 0,
-            }}
-          >
-            {fan.avatarUrl ? (
-              <img src={fan.avatarUrl} alt={fan.username} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-            ) : (
-              <span style={{ fontSize: 9, fontWeight: 800, color: "#fff" }}>{fan.username?.[0]?.toUpperCase() || "?"}</span>
-            )}
-          </div>
-        ))}
-      </div>
-      <span style={{ fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.5)" }}>
-        {count} active now
-      </span>
-    </button>
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+      {/* Left: stacked avatars + active count */}
+      <button
+        type="button"
+        onClick={onClick}
+        style={{
+          display: "flex", alignItems: "center", gap: 8,
+          background: "none", border: "none", cursor: "pointer", padding: 0,
+        }}
+      >
+        <div style={{ display: "flex" }}>
+          {fans.slice(0, 3).map((fan, i) => (
+            <div
+              key={fan.uid}
+              style={{
+                width: 22, height: 22, borderRadius: "50%",
+                border: "2px solid #0e0e14", overflow: "hidden",
+                marginLeft: i === 0 ? 0 : -8, zIndex: 3 - i,
+                background: "linear-gradient(135deg,#e91e8c,#ff6b35)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                flexShrink: 0,
+              }}
+            >
+              {fan.avatarUrl ? (
+                <img src={fan.avatarUrl} alt={fan.username} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              ) : (
+                <span style={{ fontSize: 9, fontWeight: 800, color: "#fff" }}>{fan.username?.[0]?.toUpperCase() || "?"}</span>
+              )}
+            </div>
+          ))}
+        </div>
+        <span style={{ fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.5)" }}>
+          <span style={{ color: "#fff", fontWeight: 700 }}>{formatCount(count)}</span> active now
+        </span>
+      </button>
+
+      {/* Right: total joined */}
+      {totalJoinCount !== undefined && totalJoinCount > 0 && (
+        <span style={{ fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.5)" }}>
+          Total Joined <span style={{ color: "#fff", fontWeight: 700 }}>{formatCount(totalJoinCount)}</span>
+        </span>
+      )}
+    </div>
   );
 }
 
@@ -1421,12 +1440,38 @@ function QuizCard({ post, onToast, onPostClick, roomId, onFanProfile }: QuizCard
 }
 
 // ── Main DiscussionRoom ───────────────────────────────────────────────────────
+// ── Visibility-aware interval hook ───────────────────────────────────────────
+function useVisibilityInterval(callback: () => void, delay: number) {
+  const savedCallback = useRef(callback);
+  useEffect(() => { savedCallback.current = callback; }, [callback]);
+
+  useEffect(() => {
+    let id: ReturnType<typeof setInterval>;
+    const start = () => {
+      id = setInterval(() => {
+        if (!document.hidden) savedCallback.current();
+      }, delay);
+    };
+    const handleVisibility = () => {
+      clearInterval(id);
+      if (!document.hidden) { savedCallback.current(); start(); }
+    };
+    start();
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
+  }, [delay]);
+}
 
 export default function DiscussionRoom({
   onBack, onToast, roomId, roomName, onPostClick, onCompose,
   fanCount = 312, score, scoreSubtitle, currentAvatarUrl, onRegisterRefresh, onRegisterReplyUpdate,
-  onFanProfile,
+  onFanProfile, watchAlongRoomId
 }: Props) {
+  const router = useRouter();
+  console.log("DiscussionRoom mount/render | watchAlongRoomId:", watchAlongRoomId);
   const [posts, setPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [input, setInput] = useState("");
@@ -1440,8 +1485,12 @@ export default function DiscussionRoom({
   const [selectedActionId, setSelectedActionId] = useState("post");
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [liveCount, setLiveCount] = useState<number>(fanCount ?? 0);
+  const [totalJoinCount, setTotalJoinCount] = useState<number>(0);
   const [sharePost, setSharePost] = useState<ShareableRoarPost | null>(null);
   const [copied, setCopied] = useState(false);
+  const { userProfile } = useUserProfile();
+  const currentUserId = userProfile?.actualUserId;
+  const latestCreatedAtRef = useRef<number | null>(null);
 
   const [inlineCommentPostId, setInlineCommentPostId] = useState<string | null>(null);
 
@@ -1456,6 +1505,8 @@ export default function DiscussionRoom({
   const localReactionsRef = useRef<Record<string, { reaction: Reaction | null; heartCount: number }>>({});
   const pendingReactRef = useRef<Record<string, boolean>>({});
   const [reactionsMsgId, setReactionsMsgId] = useState<string | null>(null);
+
+
 
   useEffect(() => { localReactionsRef.current = localReactions; }, [localReactions]);
 
@@ -1502,7 +1553,7 @@ export default function DiscussionRoom({
             .filter(m => !seenIds.has(m.msgId))
             .map((m: any) => ({
               id: m.msgId,
-              fan: { username: displayUsername(m.authorUsername),  authorUid: m.authorUid, badge: m.authorBadge, avatarUrl: m.authorAvatarUrl || m.avatarUrl || (m.authorUsername === userUsername ? userAvatarUrl : undefined) },
+              fan: { username: displayUsername(m.authorUsername), authorUid: m.authorUid, badge: m.authorBadge, avatarUrl: m.authorAvatarUrl || m.avatarUrl || (m.authorUsername === userUsername ? userAvatarUrl : undefined) },
               text: m.text,
               fireCount: m.fireCount || 0,
               nochanceCount: m.noChanceCount || 0,
@@ -1610,19 +1661,42 @@ export default function DiscussionRoom({
   useEffect(() => {
     if (!roomId) return;
 
+    // const join = async () => {
+    //   try {
+    //     const res = await axios.post(`/api/roar/rooms/${roomId}/presence`);
+    //     if (res.data?.success) setLiveCount(res.data.fanCount);
+    //   } catch (e) { console.error("Join failed:", e); }
+    // };
     const join = async () => {
       try {
         const res = await axios.post(`/api/roar/rooms/${roomId}/presence`);
-        if (res.data?.success) setLiveCount(res.data.fanCount);
+        if (res.data?.success) {
+          setLiveCount(res.data.fanCount);
+          if (res.data.totalJoinCount !== undefined) {
+            setTotalJoinCount(res.data.totalJoinCount); // ← new
+          }
+        }
       } catch (e) { console.error("Join failed:", e); }
     };
 
+    // const refreshActiveFans = async () => {
+    //   try {
+    //     const res = await axios.get(`/api/roar/rooms/${roomId}/presence`);
+    //     if (res.data?.success) {
+    //       setActiveFans(res.data.fans ?? []);
+    //       setLiveCount(res.data.fanCount ?? 0);
+    //     }
+    //   } catch (e) { console.error("Active fans fetch failed:", e); }
+    // };
     const refreshActiveFans = async () => {
       try {
         const res = await axios.get(`/api/roar/rooms/${roomId}/presence`);
         if (res.data?.success) {
           setActiveFans(res.data.fans ?? []);
           setLiveCount(res.data.fanCount ?? 0);
+          if (res.data.totalJoinCount !== undefined) {
+            setTotalJoinCount(res.data.totalJoinCount); // ← new
+          }
         }
       } catch (e) { console.error("Active fans fetch failed:", e); }
     };
@@ -1634,12 +1708,28 @@ export default function DiscussionRoom({
     // Heartbeat every 25s: well under the 60s server-side TTL, so a single
     // missed beat (e.g. a slow network tick) doesn't drop the user from
     // the active list.
-    const heartbeat = setInterval(() => { join(); refreshActiveFans(); }, 25_000);
+    // const heartbeat = setInterval(() => { join(); refreshActiveFans(); }, 25_000);
+    // const heartbeat = setInterval(() => {
+    //   if (!document.hidden) { join(); refreshActiveFans(); }
+    // }, 30_000);
+    const heartbeat = setInterval(() => {
+      if (!document.hidden) join();
+    }, 30_000);
+
+    const fanRefresh = setInterval(() => {
+      if (!document.hidden) refreshActiveFans();
+    }, 120_000);
 
     window.addEventListener("beforeunload", leaveBeacon);
+    // return () => {
+    //   leaveAxios();
+    //   clearInterval(heartbeat);
+    //   window.removeEventListener("beforeunload", leaveBeacon);
+    // };
     return () => {
       leaveAxios();
       clearInterval(heartbeat);
+      clearInterval(fanRefresh);
       window.removeEventListener("beforeunload", leaveBeacon);
     };
   }, [roomId]);
@@ -1651,39 +1741,141 @@ export default function DiscussionRoom({
     } catch { }
   }, [currentAvatarUrl]);
 
+  // const fetchMsgs = useCallback(async () => {
+  //   if (!roomId) return;
+  //   try {
+  //     const res = await axios.get(`/api/roar/rooms/${roomId}/messages?t=${Date.now()}`);
+  //     if (res.data?.success) {
+  //       setPosts(prev => {
+  //         const prevMap = Object.fromEntries(prev.map(p => [p.id, p]));
+  //         return [...res.data.messages]
+  //           .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+  //           .map((m: any) => {
+  //             const existing = prevMap[m.msgId];
+  //             // While a reaction call is in-flight for this message, keep
+  //             // showing the optimistic local state instead of letting the
+  //             // 3s poll stomp it with a possibly-stale server value.
+  //             const isPending = pendingReactRef.current[m.msgId];
+  //             return {
+  //               id: m.msgId,
+  //               fan: { username: displayUsername(m.authorUsername), authorUid: m.authorUid, badge: m.authorBadge, avatarUrl: m.authorAvatarUrl || m.avatarUrl || (m.authorUsername === userUsername ? userAvatarUrl : undefined) },
+  //               text: m.text,
+  //               fireCount: m.fireCount || 0,
+  //               nochanceCount: m.noChanceCount || 0,
+  //               // Aggregate reaction counter (any of the 5 types), not heart-specific despite the field name.
+  //               heartCount: isPending ? (existing?.heartCount ?? m.heartCount ?? 0) : (m.heartCount ?? 0),
+  //               // userReaction replaces the old boolean userLiked — the
+  //               // actual reaction type the current user picked, or null.
+  //               userReaction: isPending ? (existing?.userReaction ?? null) : (m.userReaction ?? null),
+  //               replyCount: Math.max(m.replyCount ?? 0, existing?.replyCount ?? 0),
+  //               agreeCount: m.agreeCount ?? 0,
+  //               disagreeCount: m.disagreeCount ?? 0,
+  //               userVote: m.userVote ?? null,
+  //               sideA: m.sideA ?? null,
+  //               sideB: m.sideB ?? null,
+  //               timeAgo: new Date(m.createdAt).toLocaleDateString([], { month: "short", day: "numeric" }) + " · " + new Date(m.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+  //               createdAt: m.createdAt,
+  //               type: m.type,
+  //               mediaUrls: m.mediaUrls,
+  //               quizQuestion: m.quizQuestion,
+  //               quizOptions: m.quizOptions,
+  //               quizCorrectOption: m.quizCorrectOption,
+  //               quizUserAnswer: m.quizUserAnswer ?? null,
+  //               quizTimer: m.quizTimer,
+  //               quizPoints: m.quizPoints,
+  //               quizParticipants: m.quizParticipants ?? 0,
+  //               memGifUrl: m.memGifUrl ?? null,
+  //               memTag: m.memTag ?? null,
+  //             };
+  //           });
+  //       });
+  //     }
+  //   } catch (e) { console.error(e); }
+  //   finally { setLoading(false); }
+  // }, [roomId, userAvatarUrl, userUsername]);
+
+
   const fetchMsgs = useCallback(async () => {
     if (!roomId) return;
     try {
-      const res = await axios.get(`/api/roar/rooms/${roomId}/messages?t=${Date.now()}`);
+      const url = latestCreatedAtRef.current
+        ? `/api/roar/rooms/${roomId}/messages?since=${latestCreatedAtRef.current}&t=${Date.now()}`
+        : `/api/roar/rooms/${roomId}/messages?t=${Date.now()}`;
+
+      const res = await axios.get(url);
       if (res.data?.success) {
-        setPosts(prev => {
-          const prevMap = Object.fromEntries(prev.map(p => [p.id, p]));
-          return [...res.data.messages]
-            .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-            .map((m: any) => {
-              const existing = prevMap[m.msgId];
-              // While a reaction call is in-flight for this message, keep
-              // showing the optimistic local state instead of letting the
-              // 3s poll stomp it with a possibly-stale server value.
-              const isPending = pendingReactRef.current[m.msgId];
-              return {
+        const incoming: any[] = res.data.messages ?? [];
+
+        if (latestCreatedAtRef.current === null) {
+          // Initial load — full replace, set cursor to newest message
+          setPosts(prev => {
+            const prevMap = Object.fromEntries(prev.map(p => [p.id, p]));
+            return [...res.data.messages]
+              .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+              .map((m: any) => {
+                // ... your existing message mapping
+                const existing = prevMap[m.msgId];
+                const isPending = pendingReactRef.current[m.msgId];
+                return {
+                  id: m.msgId,
+                  // fan: { username: displayUsername(m.authorUsername), authorUid: m.authorUid, badge: m.authorBadge, avatarUrl: m.authorAvatarUrl || m.avatarUrl },
+                  fan: { username: displayUsername(m.authorUsername), authorUid: m.authorUid, badge: m.authorBadge, avatarUrl: m.authorUid === currentUserId ? (userAvatarUrl || m.authorAvatarUrl || m.avatarUrl) : (m.authorAvatarUrl || m.avatarUrl) },
+                  text: m.text,
+                  fireCount: m.fireCount || 0,
+                  nochanceCount: m.noChanceCount || 0,
+                  heartCount: isPending ? (existing?.heartCount ?? m.heartCount ?? 0) : (m.heartCount ?? 0),
+                  userReaction: isPending ? (existing?.userReaction ?? null) : (m.userReaction ?? null),
+                  replyCount: Math.max(m.replyCount ?? 0, existing?.replyCount ?? 0),
+                  agreeCount: m.agreeCount ?? 0,
+                  disagreeCount: m.disagreeCount ?? 0,
+                  userVote: m.userVote ?? null,
+                  sideA: m.sideA ?? null,
+                  sideB: m.sideB ?? null,
+                  timeAgo: new Date(m.createdAt).toLocaleDateString([], { month: "short", day: "numeric" }) + " · " + new Date(m.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+                  createdAt: m.createdAt,
+                  type: m.type,
+                  mediaUrls: m.mediaUrls,
+                  quizQuestion: m.quizQuestion,
+                  quizOptions: m.quizOptions,
+                  quizCorrectOption: m.quizCorrectOption,
+                  quizUserAnswer: m.quizUserAnswer ?? null,
+                  quizTimer: m.quizTimer,
+                  quizPoints: m.quizPoints,
+                  quizParticipants: m.quizParticipants ?? 0,
+                  memGifUrl: m.memGifUrl ?? null,
+                  memTag: m.memTag ?? null,
+                };
+              });
+          });
+
+          if (incoming.length > 0) {
+            latestCreatedAtRef.current = Math.max(...incoming.map(m => m.createdAt));
+          }
+
+        } else if (incoming.length > 0) {
+          // Poll — only new messages came back, prepend them
+          latestCreatedAtRef.current = Math.max(...incoming.map((m: any) => m.createdAt));
+
+          setPosts(prev => {
+            const existingIds = new Set(prev.map(p => p.id));
+            const fresh = incoming
+              .filter((m: any) => !existingIds.has(m.msgId))
+              .map((m: any) => ({
                 id: m.msgId,
-                fan: { username: displayUsername(m.authorUsername),  authorUid: m.authorUid, badge: m.authorBadge, avatarUrl: m.authorAvatarUrl || m.avatarUrl || (m.authorUsername === userUsername ? userAvatarUrl : undefined) },
+                // fan: { username: displayUsername(m.authorUsername), authorUid: m.authorUid, badge: m.authorBadge, avatarUrl: m.authorAvatarUrl || m.avatarUrl },
+                fan: { username: displayUsername(m.authorUsername), authorUid: m.authorUid, badge: m.authorBadge, avatarUrl: m.authorUid === currentUserId ? (userAvatarUrl || m.authorAvatarUrl || m.avatarUrl) : (m.authorAvatarUrl || m.avatarUrl) },
                 text: m.text,
                 fireCount: m.fireCount || 0,
                 nochanceCount: m.noChanceCount || 0,
-                // Aggregate reaction counter (any of the 5 types), not heart-specific despite the field name.
-                heartCount: isPending ? (existing?.heartCount ?? m.heartCount ?? 0) : (m.heartCount ?? 0),
-                // userReaction replaces the old boolean userLiked — the
-                // actual reaction type the current user picked, or null.
-                userReaction: isPending ? (existing?.userReaction ?? null) : (m.userReaction ?? null),
-                replyCount: Math.max(m.replyCount ?? 0, existing?.replyCount ?? 0),
+                heartCount: m.heartCount ?? 0,
+                userReaction: m.userReaction ?? null,
+                replyCount: m.replyCount ?? 0,
                 agreeCount: m.agreeCount ?? 0,
                 disagreeCount: m.disagreeCount ?? 0,
                 userVote: m.userVote ?? null,
                 sideA: m.sideA ?? null,
                 sideB: m.sideB ?? null,
-                timeAgo: new Date(m.createdAt).toLocaleDateString([], { month: "short", day: "numeric" }) + " · " + new Date(m.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+                timeAgo: "now",
                 createdAt: m.createdAt,
                 type: m.type,
                 mediaUrls: m.mediaUrls,
@@ -1696,17 +1888,28 @@ export default function DiscussionRoom({
                 quizParticipants: m.quizParticipants ?? 0,
                 memGifUrl: m.memGifUrl ?? null,
                 memTag: m.memTag ?? null,
-              };
-            });
-        });
+              }));
+            return fresh.length > 0 ? [...fresh, ...prev] : prev;
+          });
+        }
+        // incoming.length === 0 on a poll → nothing to do, no state update
       }
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
-  }, [roomId, userAvatarUrl, userUsername]);
+  // }, [roomId, userAvatarUrl, userUsername]);
+  }, [roomId, userAvatarUrl, userUsername, currentUserId]);
 
   useEffect(() => { onRegisterRefresh?.(fetchMsgs); }, [fetchMsgs, onRegisterRefresh]);
   useEffect(() => { onRegisterReplyUpdate?.((postId, count) => { setPosts(p => p.map(x => x.id === postId ? { ...x, replyCount: count } : x)); }); }, [onRegisterReplyUpdate]);
-  useEffect(() => { if (!roomId) return; fetchMsgs(); const iv = setInterval(fetchMsgs, 3000); return () => clearInterval(iv); }, [fetchMsgs, roomId]);
+  // useEffect(() => { if (!roomId) return; fetchMsgs(); 
+  // const iv = setInterval(fetchMsgs, 15000); return () => clearInterval(iv); },
+  useEffect(() => {
+    if (!roomId) return;
+    fetchMsgs();
+  }, [fetchMsgs, roomId]);
+
+  useVisibilityInterval(fetchMsgs, 15000);
+
   useEffect(() => { if (!loading && listRef.current) setTimeout(() => listRef.current?.scrollTo({ top: 0 }), 50); }, [loading]);
 
   // ── Reaction handler (mirrors HomeFeed.tsx's handleReact) ───────────────────
@@ -1797,7 +2000,7 @@ export default function DiscussionRoom({
         const m = res.data.message;
         setPosts(p => [{
           id: m.msgId,
-          fan: { username: displayUsername(m.authorUsername),  authorUid: m.authorUid, badge: m.authorBadge, avatarUrl: m.authorAvatarUrl || m.avatarUrl || (m.authorUsername === userUsername ? userAvatarUrl : undefined) },
+          fan: { username: displayUsername(m.authorUsername), authorUid: m.authorUid, badge: m.authorBadge, avatarUrl: m.authorAvatarUrl || m.avatarUrl || (m.authorUsername === userUsername ? userAvatarUrl : undefined) },
           text: m.text, fireCount: 0, nochanceCount: 0, heartCount: 0, userReaction: null, replyCount: 0,
           agreeCount: 0, disagreeCount: 0, userVote: null, sideA: m.sideA ?? null, sideB: m.sideB ?? null,
           timeAgo: "now", createdAt: m.createdAt || Date.now(), type: m.type, mediaUrls: m.mediaUrls,
@@ -1917,7 +2120,7 @@ export default function DiscussionRoom({
       )}
 
       {/* ── HEADER ── */}
-      <div className="shrink-0 px-4 py-3 bg-[rgba(14,14,20,0.98)] backdrop-blur-[20px] border-b border-[var(--border)]" style={{ overflow: "visible", position: "relative", zIndex: 40 }}>
+      {/* <div className="shrink-0 px-4 py-3 bg-[rgba(14,14,20,0.98)] backdrop-blur-[20px] border-b border-[var(--border)]" style={{ overflow: "visible", position: "relative", zIndex: 40 }}>
         <div className="flex justify-between items-start">
           <div className="flex items-center gap-3 flex-1 min-w-0">
             <button type="button" onPointerDown={handleBack} onClick={handleBack} className="bg-transparent border-none cursor-pointer text-white flex items-center p-0 flex-shrink-0" style={{ touchAction: "manipulation", WebkitTapHighlightColor: "transparent" }}>
@@ -1928,11 +2131,21 @@ export default function DiscussionRoom({
               <div className="flex items-center gap-1.5 mt-1">
                 <span className="live-pulse w-1.5 h-1.5 rounded-full bg-[var(--live-green)] inline-block flex-shrink-0" />
                 <span className="text-[10px] font-bold text-[var(--live-green)] flex-shrink-0">LIVE</span>
-                <span className="text-[11px] text-white text-[var(--text-muted)] truncate">· {fmt(liveCount)} joined</span>
+                {/* <span className="text-[11px] text-white text-[var(--text-muted)] truncate">· {fmt(liveCount)} joined</span> //
               </div>
             </div>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+            {watchAlongRoomId && (
+              <button
+                type="button"
+                onClick={() => router.push(`/MainModules/WatchAlong/room/${watchAlongRoomId}`)}
+                className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500 text-white transition-all cursor-pointer shadow-[0_2px_10px_rgba(219,39,119,0.3)] hover:scale-105 active:scale-95"
+              >
+                <span>Watchalong</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse inline-block" />
+              </button>
+            )}
             <button type="button" onClick={shareRoomLink} className="flex-shrink-0 bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.12)] rounded-[10px] p-2 cursor-pointer text-[rgba(255,255,255,0.75)] flex items-center justify-center hover:bg-[rgba(255,255,255,0.1)] transition-colors" style={{ width: "36px", height: "36px" }}>
               <Share2 size={18} />
             </button>
@@ -1948,11 +2161,81 @@ export default function DiscussionRoom({
           <div className="flex justify-between text-[10px] text-[var(--text-muted)] mb-1"><span>Room Energy</span></div>
           <div className="room-energy-bar room-energy-fast rounded-full" />
         </div>
+      </div> */}
+
+      {/* ── HEADER ── */}
+      <div className="shrink-0 px-4 py-3 bg-[rgba(14,14,20,0.98)] backdrop-blur-[20px] border-b border-[var(--border)]" style={{ overflow: "visible", position: "relative", zIndex: 40 }}>
+        <div className="flex justify-between items-start gap-2">
+          {/* LEFT: back + room name + watchalong */}
+          <div className="flex items-center gap-3 min-w-0 flex-1">
+            <button
+              type="button"
+              onPointerDown={handleBack}
+              onClick={handleBack}
+              className="bg-transparent border-none cursor-pointer text-white flex items-center p-0 flex-shrink-0"
+              style={{ touchAction: "manipulation", WebkitTapHighlightColor: "transparent" }}
+            >
+              <ChevronLeft size={24} />
+            </button>
+            <div className="text-left pt-0.5 min-w-0 flex-1">
+              <p className="font-display text-2xl tracking-[0.04em] m-0 leading-tight text-white font-extrabold uppercase truncate">
+                {roomName || "WORLDCUP"}
+              </p>
+              <div className="flex items-center gap-2 mt-1 flex-wrap ml-auto">
+                <div className="flex items-center gap-1.5">
+                  <span className="live-pulse w-1.5 h-1.5 rounded-full bg-[var(--live-green)] inline-block flex-shrink-0" />
+                  <span className="text-[10px] font-bold text-[var(--live-green)] flex-shrink-0">LIVE</span>
+                </div>
+                {watchAlongRoomId && (
+                  <button
+                    type="button"
+                    onClick={() => router.push(`/MainModules/WatchAlong/room/${watchAlongRoomId}`)}
+                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500 text-white transition-all cursor-pointer shadow-[0_2px_10px_rgba(219,39,119,0.3)] active:scale-95 whitespace-nowrap"
+                  >
+                    <span>Watchalong</span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse inline-block flex-shrink-0" />
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* RIGHT: share + score only */}
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <button
+              type="button"
+              onClick={shareRoomLink}
+              className="flex-shrink-0 bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.12)] rounded-[10px] p-2 cursor-pointer text-[rgba(255,255,255,0.75)] flex items-center justify-center hover:bg-[rgba(255,255,255,0.1)] transition-colors"
+              style={{ width: "36px", height: "36px" }}
+            >
+              <Share2 size={18} />
+            </button>
+            {(score || scoreSubtitle) && (
+              <div className="text-right pr-1 flex-shrink-0">
+                {score && <div className="font-display text-[24px] text-[var(--accent-yellow)] leading-none">{score}</div>}
+                {scoreSubtitle && <div className="text-[11px] text-[var(--text-secondary)] mt-0.5">{scoreSubtitle}</div>}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="mt-3">
+          <div className="flex justify-between text-[10px] text-[var(--text-muted)] mb-1">
+            <span>Room Energy</span>
+          </div>
+          <div className="room-energy-bar room-energy-fast rounded-full" />
+        </div>
       </div>
 
       {/* ── ACTIVE FANS ── */}
       <div className="shrink-0 px-4 py-2 bg-[rgba(14,14,20,0.98)] border-b border-[var(--border)]">
-        <ActiveFansStack fans={activeFans} count={liveCount} onClick={() => setActiveFansOpen(true)} />
+        {/* <ActiveFansStack fans={activeFans} count={liveCount} onClick={() => setActiveFansOpen(true)} /> */}
+        <ActiveFansStack
+          fans={activeFans}
+          count={liveCount}
+          totalJoinCount={totalJoinCount}
+          onClick={() => setActiveFansOpen(true)}
+        />
       </div>
 
       {/* ── FEED ── */}
@@ -2076,6 +2359,23 @@ export default function DiscussionRoom({
                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" /></svg>
                         </button>
                         {renderReactionsTrigger(p)}
+                        {currentUserId && p.fan?.authorUid === currentUserId && (
+                          <button
+                            onClick={async e => {
+                              e.stopPropagation();
+                              if (!window.confirm("Delete this post?")) return;
+                              try {
+                                await axios.delete(`/api/roar/rooms/${roomId}/messages/${p.id}`);
+                                setPosts(prev => prev.filter(x => x.id !== p.id));
+                              } catch { onToast("Failed to delete post"); }
+                            }}
+                            style={{ display: "flex", alignItems: "center", justifyContent: "center", background: "none", border: "none", cursor: "pointer", color: "#f87171", marginLeft: "auto", padding: 4, borderRadius: "50%" }}
+                          >
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" /><path d="M10 11v6" /><path d="M14 11v6" /><path d="M9 6V4h6v2" />
+                            </svg>
+                          </button>
+                        )}
                       </div>
                     </div>
                   </motion.div>
@@ -2224,6 +2524,23 @@ export default function DiscussionRoom({
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" /></svg>
                       </button>
                       {renderReactionsTrigger(p)}
+                      {currentUserId && p.fan?.authorUid === currentUserId && (
+                        <button
+                          onClick={async e => {
+                            e.stopPropagation();
+                            if (!window.confirm("Delete this post?")) return;
+                            try {
+                              await axios.delete(`/api/roar/rooms/${roomId}/messages/${p.id}`);
+                              setPosts(prev => prev.filter(x => x.id !== p.id));
+                            } catch { onToast("Failed to delete post"); }
+                          }}
+                          style={{ display: "flex", alignItems: "center", justifyContent: "center", background: "none", border: "none", cursor: "pointer", color: "#f87171", marginLeft: "auto", padding: 4, borderRadius: "50%" }}
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" /><path d="M10 11v6" /><path d="M14 11v6" /><path d="M9 6V4h6v2" />
+                          </svg>
+                        </button>
+                      )}
                     </div>
                   </div>
                 </motion.div>

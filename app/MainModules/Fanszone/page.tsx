@@ -1221,6 +1221,129 @@ export default function FanZoneDashboard() {
   // ─────────────────────────────────────────────────────────────────────────
   // RENDER
   // ─────────────────────────────────────────────────────────────────────────
+  function InfoHelp() {
+    const [open, setOpen] = useState(false);
+    const [hover, setHover] = useState(false);
+    const tooltipRef = useRef<HTMLDivElement>(null);
+    const buttonRef = useRef<HTMLButtonElement>(null);
+    const [tooltipPos, setTooltipPos] = useState({ top: 0, left: 0 });
+
+    useEffect(() => {
+      const handleClickOutside = (e: MouseEvent) => {
+        if (tooltipRef.current && !tooltipRef.current.contains(e.target as Node)) {
+          setOpen(false);
+        }
+      };
+
+      const handleEscape = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') setOpen(false);
+      };
+
+      if (open) {
+        document.addEventListener('mousedown', handleClickOutside);
+        document.addEventListener('keydown', handleEscape);
+      }
+
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+        document.removeEventListener('keydown', handleEscape);
+      };
+    }, [open]);
+
+    useEffect(() => {
+      if (buttonRef.current && (open || hover)) {
+        const rect = buttonRef.current.getBoundingClientRect();
+        setTooltipPos({
+          top: rect.bottom + 12,
+          left: rect.left + rect.width / 2 - 140,
+        });
+      }
+    }, [open, hover]);
+
+    return (
+      <div
+        ref={tooltipRef}
+        style={{ position: 'relative', display: 'inline-block', overflow: 'visible', zIndex: 999 }}
+        onMouseEnter={() => setHover(true)}
+        onMouseLeave={() => setHover(false)}
+      >
+        <button
+          ref={buttonRef}
+          aria-label="Fan Zone info"
+          aria-expanded={open}
+          onClick={() => setOpen((v) => !v)}
+          style={{
+            width: 24,
+            height: 24,
+            borderRadius: 50,
+            border: '1.5px solid rgba(244, 63, 94, 0.6)',
+            background: 'transparent',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: '#f472b6', cursor: 'pointer', padding: 0,
+            transition: 'all 0.2s ease',
+            flexShrink: 0,
+          }}
+        >
+          <span style={{ 
+            fontWeight: 700, 
+            fontSize: 14,
+            color: '#f472b6',
+            transition: 'all 0.2s ease'
+          }}>i</span>
+        </button>
+
+        {(open || hover) && (
+          <div
+            ref={tooltipRef}
+            role="dialog"
+            aria-label="Fan Zone information"
+            style={{
+              position: 'fixed',
+              top: `${tooltipPos.top}px`,
+              left: `${Math.max(12, tooltipPos.left)}px`,
+              minWidth: '280px',
+              maxWidth: 'calc(100vw - 24px)',
+              background: 'rgba(15, 15, 20, 0.98)',
+              backdropFilter: 'blur(12px)',
+              border: '1px solid rgba(244, 63, 94, 0.4)',
+              borderRadius: 12,
+              padding: '16px 18px',
+              boxShadow: '0 20px 50px rgba(0, 0, 0, 0.8), 0 0 1px rgba(244, 63, 94, 0.5)',
+              zIndex: 999999,
+              animation: 'fadeInScale 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+              transformOrigin: 'top center',
+              pointerEvents: 'auto',
+              overflow: 'visible',
+            }}
+          >
+            <style>{`
+              @keyframes fadeInScale {
+                from {
+                  opacity: 0;
+                  transform: scale(0.95) translateY(-6px);
+                }
+                to {
+                  opacity: 1;
+                  transform: scale(1) translateY(0);
+                }
+              }
+            `}</style>
+            
+            <p style={{ margin: '0 0 10px 0', color: 'rgba(255,255,255,0.9)', lineHeight: 1.5, fontSize: '13px' }}>
+              <strong style={{ color: '#f472b6', fontWeight: 600 }}>SXP</strong> stands for <span style={{ color: '#f472b6', fontWeight: 600 }}>SportsFan360 XP</span>. Earn points by engaging with the community and climb the ranks.
+            </p>
+            <div style={{ height: 10 }} />
+            <div style={{ fontWeight: 600, color: '#f472b6', marginBottom: 8, fontSize: '12px', letterSpacing: '0.01em' }}>Benefits of earning SXP:</div>
+            <ul style={{ margin: 0, paddingLeft: 18, color: 'rgba(255,255,255,0.85)', fontSize: '12px', lineHeight: 1.5 }}>
+              <li style={{ marginBottom: 5 }}>Climb the global leaderboard</li>
+              <li style={{ marginBottom: 5 }}>Unlock exclusive rewards</li>
+              <li>Level up your fan experience</li>
+            </ul>
+          </div>
+        )}
+      </div>
+    );
+  }
   return (
     <div className="min-h-screen bg-[#050505] text-white font-sans selection:bg-rose-500/30 pb-20">
       <main className="max-w-[1400px] mx-auto px-3 py-3 sm:p-6 space-y-4 sm:space-y-6">
@@ -1256,9 +1379,11 @@ export default function FanZoneDashboard() {
             <Link href="/MainModules/ROAR" style={{
                 display: "flex",
                 alignItems: "center",
-                gap: 10,
+                gap: 12,
                 textDecoration: "none",
-                color: "white"
+                color: "white",
+                flex: 1,
+                maxWidth: '280px'
             }}>
                 <button
                     style={{
@@ -1268,21 +1393,24 @@ export default function FanZoneDashboard() {
                         color: "white",
                         padding: "4px 2px",
                         display: "flex",
-                        alignItems: "center"
+                        alignItems: "center",
+                        transition: 'opacity 0.2s ease'
                     }}
+                    onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.7')}
+                    onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
                 >
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M15 18l-6-6 6-6" />
       </svg>
                 </button>
                 <h3 style={{
-                    color: "white",
-                    margin: 0,
-                    fontSize: 17,
-                    fontWeight: 700,
-                    letterSpacing: "0.01em"
+                  color: "white",
+                  margin: 0,
+                  fontSize: '16px',
+                  fontWeight: 700,
+                  letterSpacing: "0.01em"
                 }}>
-                    Fans Zone
+                  FanZone
                 </h3>
             </Link>
         </div>
@@ -1291,18 +1419,21 @@ export default function FanZoneDashboard() {
 
 
         {/* ── HERO ── */}
-        <div className="relative rounded-xl overflow-hidden border border-white/10 bg-[#09090b] flex items-center min-h-[90px]">
+        <div className="relative rounded-xl overflow-visible border border-white/10 bg-[#09090b] flex items-center min-h-[90px]">
           <div
             className="absolute inset-0 bg-cover bg-center opacity-30 mix-blend-screen"
             style={{ backgroundImage: "url('https://images.unsplash.com/photo-1504450758481-7338eba7524a?q=80&w=1200&auto=format&fit=crop')" }}
           />
           <div className="absolute inset-0 bg-gradient-to-r from-black via-rose-950/70 to-transparent" />
           <div className="relative z-10 px-5 py-4 w-full flex flex-row items-center justify-between gap-3">
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-black tracking-tighter text-white drop-shadow-lg leading-none">
-                FAN ZONE
-              </h1>
-              <p className="text-xs sm:text-sm font-medium text-gray-300 mt-1">Earn SXP. Rule the Fan Zone.</p>
+            <div className="flex items-center gap-3">
+              <div>
+                <h1 className="text-2xl sm:text-3xl font-black tracking-tighter text-white drop-shadow-lg leading-none">
+                  FAN ZONE
+                </h1>
+                <p className="text-xs sm:text-sm font-medium text-gray-300 mt-1">Earn SXP. Rule the Fan Zone.</p>
+              </div>
+              <InfoHelp />
             </div>
           </div>
         </div>

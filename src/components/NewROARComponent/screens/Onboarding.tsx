@@ -355,6 +355,8 @@
 
 
 
+//components/NewROARComponent/screens/Onboarding
+
 
 
 
@@ -379,13 +381,13 @@ const SPORT_OPTIONS = [
     id: "cricket",
     label: "Cricket",
     tagline: "Lives for sixes and controversies.",
-    image: "/assets/onboarding/cricket-ball.png",
+    image: "/images/cricketball.png",
   },
   {
     id: "football",
     label: "Football",
     tagline: "Lives for goals and last-minute drama.",
-    image: "/assets/onboarding/football.png",
+    image: "/images/football.png",
   },
 ];
 

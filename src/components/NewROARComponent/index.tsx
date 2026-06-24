@@ -1,5 +1,6 @@
 
 
+
 // // Home tab now shows RoomsHome (rooms list).
 // // Entering a room shows DiscussionRoom with icon-pill composer.
 
@@ -26,10 +27,37 @@
 // import { useRoarNotifications } from "@/context/RoarNotificationsContext";
 // import { RoarProfileProvider, useRoarProfileContext } from "@/context/RoarProfileContext";
 // import RoomPostDetailsOverlay from "./components/RoomPostDetailsOverlay";
+// import { useRouter } from "next/navigation";
+
+
+// const useVisibilityInterval = (callback: () => void, delay: number) => {
+//   const savedCallback = useRef(callback);
+//   useEffect(() => { savedCallback.current = callback; }, [callback]);
+
+//   useEffect(() => {
+//     if (delay === null) return;
+//     let id: NodeJS.Timeout;
+
+//     const start = () => { id = setInterval(() => {
+//       if (!document.hidden) savedCallback.current();
+//     }, delay); };
+
+//     const handleVisibility = () => {
+//       clearInterval(id);
+//       if (!document.hidden) { savedCallback.current(); start(); }
+//     };
+
+//     start();
+//     document.addEventListener("visibilitychange", handleVisibility);
+//     return () => { clearInterval(id); document.removeEventListener("visibilitychange", handleVisibility); };
+//   }, [delay]);
+// };
+
 
 // export default function ROARApp() {
 //   const containerRef = useRef<HTMLDivElement>(null);
 //   const searchParams = useSearchParams();
+//   const router = useRouter();
 //   const [likingPosts, setLikingPosts] = useState<Set<string>>(new Set());
 //   const roomRefreshRef = useRef<(() => void) | null>(null);
 //   const roomReplyUpdateRef = useRef<((postId: string, count: number) => void) | null>(null);
@@ -41,7 +69,10 @@
 //   const [userBadge, setUserBadge]         = useState("RISING_FAN");
 //   const [userSports, setUserSports]       = useState<string[]>([]);
 //   const [currentUsername, setCurrentUsername] = useState("RoarUser");
+//   const [currentUserId, setCurrentUserId] = useState<string | undefined>();
 //   const [currentAvatarUrl, setCurrentAvatarUrl] = useState<string | undefined>();
+
+
 
 //   useEffect(() => {
 //     setMounted(true);
@@ -53,6 +84,7 @@
 //           setUserBadge(res.data.user.badge || "RISING_FAN");
 //           setUserSports(res.data.user.sports ?? []);
 //           setCurrentUsername(res.data.user.username || "RoarUser");
+//            setCurrentUserId(res.data.user.actualUserId);
 //           setCurrentAvatarUrl(res.data.user.avatarUrl || undefined);
 //           try {
 //             localStorage.setItem("roar_v2_complete", "1");
@@ -80,17 +112,34 @@
 //   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
 //   const [selectedPost, setSelectedPost] = useState<any | null>(null);
 
-//   const { viewingUsername, profileData, openProfile, closeProfile } = useRoarProfileContext();
+//   const { viewingUserId, profileData, openProfile, closeProfile } = useRoarProfileContext();
 
-//   const handleFanProfileClick = useCallback((fan: any) => {
-//     if (fan.username === currentUsername) {
-//       setActiveTab("profile");
-//       setOverlay(null);
-//       setSelectedPost(null);
-//     } else {
-//       openProfile(fan.username);
-//     }
-//   }, [currentUsername, openProfile]);
+
+
+// //  const handleFanProfileClick = useCallback((fan: any) => {
+// //   if (fan.authorUid && fan.authorUid === currentUserId) {
+// //     setActiveTab("profile"); setOverlay(null); setSelectedPost(null);
+// //   } else {
+// //     openProfile(fan.authorUid);
+// //   }
+// // }, [currentUserId, openProfile]);
+
+// // const handleFanProfileClick = useCallback((fan: any) => {
+// //   if (fan.authorUid && fan.authorUid === currentUserId) {
+// //     router.push("/MainModules/Profile");
+// //   } else {
+// //     setOverlay(null); setSelectedPost(null);
+// //     openProfile(fan.authorUid);
+// //   }
+// // }, [currentUserId, openProfile, router]);
+
+// const handleFanProfileClick = useCallback((fan: any) => {
+//   if (fan.authorUid && fan.authorUid === currentUserId) {
+//     router.push("/MainModules/Profile");
+//   } else {
+//     openProfile(fan.authorUid);
+//   }
+// }, [currentUserId, openProfile, router]);
 
 //   // ── Compose ────────────────────────────────────────────────────────────────
 //   const [composeOpen, setComposeOpen]   = useState(false);
@@ -121,12 +170,40 @@
 //   const [rooms, setRooms]     = useState<Room[]>([]);
 //   const [dbPosts, setDbPosts] = useState<any[]>([]);
 
+//   // const fetchPosts = useCallback(async () => {
+//   //   try {
+//   //     // const res = await axios.get(`/api/roar/posts?t=${Date.now()}`);
+//   //      const res = await axios.get(`/api/roar/posts?t=${Date.now()}&limit=15`);
+//   //     if (res.data?.success) setDbPosts(res.data.posts);
+//   //   } catch (err) { console.error("Failed to fetch posts:", err); }
+//   // }, []);
+
 //   const fetchPosts = useCallback(async () => {
 //     try {
-//       const res = await axios.get(`/api/roar/posts?t=${Date.now()}`);
+//       const res = await axios.get(`/api/roar/posts?t=${Date.now()}&limit=15`);
 //       if (res.data?.success) setDbPosts(res.data.posts);
 //     } catch (err) { console.error("Failed to fetch posts:", err); }
 //   }, []);
+
+//   const fetchRooms = useCallback(async () => {
+//     try {
+//       const res = await axios.get(`/api/roar/rooms?t=${Date.now()}`);
+//       if (res.data?.success) {
+//         setRooms(res.data.rooms);
+//         setSelectedRoom(prev => {
+//           if (prev) return prev;
+//           return res.data.rooms.length > 0 ? res.data.rooms[0] : null;
+//         });
+//       }
+//     } catch (err) { console.error("Failed to fetch rooms:", err); }
+//   }, []);
+
+//   const combinedFetch = useCallback(() => {
+//     fetchRooms(); fetchPosts();
+//   }, [fetchRooms, fetchPosts]);
+
+//    useVisibilityInterval(combinedFetch, 30000);
+
 
 //   useEffect(() => {
 //     const postId = searchParams.get("postId");
@@ -138,18 +215,18 @@
 //   useEffect(() => {
 //     if (!onboarded) return;
 
-//     const fetchRooms = async () => {
-//       try {
-//         const res = await axios.get(`/api/roar/rooms?t=${Date.now()}`);
-//         if (res.data?.success) {
-//           setRooms(res.data.rooms);
-//           setSelectedRoom(prev => {
-//             if (prev) return prev;
-//             return res.data.rooms.length > 0 ? res.data.rooms[0] : null;
-//           });
-//         }
-//       } catch (err) { console.error("Failed to fetch rooms:", err); }
-//     };
+//     // const fetchRooms = async () => {
+//     //   try {
+//     //     const res = await axios.get(`/api/roar/rooms?t=${Date.now()}`);
+//     //     if (res.data?.success) {
+//     //       setRooms(res.data.rooms);
+//     //       setSelectedRoom(prev => {
+//     //         if (prev) return prev;
+//     //         return res.data.rooms.length > 0 ? res.data.rooms[0] : null;
+//     //       });
+//     //     }
+//     //   } catch (err) { console.error("Failed to fetch rooms:", err); }
+//     // };
 
 //     const fetchUserSports = async () => {
 //       try {
@@ -166,8 +243,12 @@
 //     };
 
 //     fetchRooms(); fetchPosts(); fetchUserSports();
-//     const interval = setInterval(() => { fetchRooms(); fetchPosts(); }, 5000);
-//     return () => clearInterval(interval);
+//     // const interval = setInterval(() => { fetchRooms(); fetchPosts(); }, 5000);
+//     // const interval = setInterval(() => { fetchRooms(); fetchPosts(); }, 30000);
+//     // return () => clearInterval(interval);
+// //     const combinedFetch = useCallback(() => { fetchRooms(); fetchPosts(); }, [fetchRooms, fetchPosts]);
+// // useVisibilityInterval(combinedFetch, 30000);
+
 //   }, [onboarded, fetchPosts]); // eslint-disable-line react-hooks/exhaustive-deps
 
 //   useEffect(() => {
@@ -230,7 +311,8 @@
 //       }
 //       return post;
 //     }));
-//     try { await axios.post(`/api/roar/posts/${postId}/like`); fetchPosts(); }
+//     // try { await axios.post(`/api/roar/posts/${postId}/like`); fetchPosts(); }
+//     try { await axios.post(`/api/roar/posts/${postId}/like`); }
 //     catch {
 //       setDbPosts(prev => prev.map(post => {
 //         if (post.postId === postId || post._id === postId) {
@@ -312,12 +394,15 @@
 //   const isInfinity = overlay === "infinity";
 //   const isLB       = overlay === "leaderboard";
 //   const isFullScreenOverlay = isRoom || isInfinity;
+//   // Onboarding should also hide the global header / bottom nav, same as room/infinity overlays.
+//   // const hideChrome = isFullScreenOverlay || !onboarded;
+//   const hideChrome = isFullScreenOverlay || !onboarded || !!viewingUserId;
 
 //    useEffect(() => {
-//   if (isFullScreenOverlay) document.body.classList.add("roar-room-active");
+//   if (hideChrome) document.body.classList.add("roar-room-active");
 //   else document.body.classList.remove("roar-room-active");
 //   return () => document.body.classList.remove("roar-room-active");
-// }, [isFullScreenOverlay]);
+// }, [hideChrome]);
 
 //   // ── Loading spinner ────────────────────────────────────────────────────────
 //   if (!mounted || checkingProfile) {
@@ -335,7 +420,7 @@
 
 //   return (
 //     // <div className={`roar-root${isRoom ? " roar-room-active" : ""}`}>
-//     <div className={`roar-root${isFullScreenOverlay ? " roar-room-active" : ""}`}>
+//     <div className={`roar-root${hideChrome ? " roar-room-active" : ""}`}>
 //       <style dangerouslySetInnerHTML={{ __html: GLOBAL_CSS }} />
 
 //       <div className="roar-inner" ref={containerRef} style={{ height: "100%", display: "flex", flexDirection: "column", overflow: "hidden" }}>
@@ -352,12 +437,18 @@
 
 //         <Toast message={toast.message} visible={toast.visible} />
 
-//         {!onboarded && <Onboarding onComplete={completeOnboarding} />}
+//         {!onboarded && (
+//           <>
+//             {/* Hide global header (desktop/tablet/mobile) and its mobile spacer while onboarding runs */}
+//             <style dangerouslySetInnerHTML={{ __html: `#global-header-desktop,#global-header-tablet,#global-header-mobile,.roar-header-spacer{display:none!important}` }} />
+//             <Onboarding onComplete={completeOnboarding} />
+//           </>
+//         )}
 
 //         {onboarded && (
 //           <div style={{ position: "relative", zIndex: 1, flex: 1, minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}>
 //             <AnimatePresence mode="wait">
-//               {viewingUsername ? (
+//               {viewingUserId ? (
 //                 // ── Viewing another user's profile ──
 //                 <motion.div 
 //                   key="viewing-profile" 
@@ -374,7 +465,7 @@
 //                     onToast={showToast}
 //                     setOnboarded={setOnboarded}
 //                     onNavigateTab={handleTab}
-//                     viewingProfile={viewingUsername}
+//                     viewingProfile={viewingUserId}
 //                     onClose={closeProfile}
 //                   />
 //                 </motion.div>
@@ -399,7 +490,7 @@
 //                     dbPosts={dbPosts}
 //                     onPostClick={post => setSelectedPost(post)}
 //                     onVote={handleVote}
-//                     onLike={handleLike}
+//                     // onLike={handleLike}
 //                     onDeletePost={handleDeletePost}
 //                     userSports={userSports}
 //                     onQuickCompose={t => openCompose(t)}
@@ -521,6 +612,7 @@ import { RoarProfileProvider, useRoarProfileContext } from "@/context/RoarProfil
 import RoomPostDetailsOverlay from "./components/RoomPostDetailsOverlay";
 import { useRouter } from "next/navigation";
 
+
 export default function ROARApp() {
   const containerRef = useRef<HTMLDivElement>(null);
   const searchParams = useSearchParams();
@@ -528,88 +620,109 @@ export default function ROARApp() {
   const [likingPosts, setLikingPosts] = useState<Set<string>>(new Set());
   const roomRefreshRef = useRef<(() => void) | null>(null);
   const roomReplyUpdateRef = useRef<((postId: string, count: number) => void) | null>(null);
+  const infinityFetchedRef = useRef(false);
 
-  // ── Bootstrap ──────────────────────────────────────────────────────────────
-  const [mounted, setMounted]             = useState(false);
-  const [checkingProfile, setChecking]    = useState(true);
-  const [onboarded, setOnboarded]         = useState(false);
-  const [userBadge, setUserBadge]         = useState("RISING_FAN");
-  const [userSports, setUserSports]       = useState<string[]>([]);
+  // ── Bootstrap 
+  const [mounted, setMounted] = useState(false);
+  const [checkingProfile, setChecking] = useState(true);
+  const [onboarded, setOnboarded] = useState(false);
+  const [userBadge, setUserBadge] = useState("RISING_FAN");
+  const [userSports, setUserSports] = useState<string[]>([]);
   const [currentUsername, setCurrentUsername] = useState("RoarUser");
   const [currentUserId, setCurrentUserId] = useState<string | undefined>();
   const [currentAvatarUrl, setCurrentAvatarUrl] = useState<string | undefined>();
 
   useEffect(() => {
     setMounted(true);
+    // const checkProfile = async () => {
+    //   try {
+    //     const res = await axios.get("/api/roar/profile");
+    //     if (res.data?.success) {
+    //       setOnboarded(true);
+    //       setUserBadge(res.data.user.badge || "RISING_FAN");
+    //       setUserSports(res.data.user.sports ?? []);
+    //       setCurrentUsername(res.data.user.username || "RoarUser");
+    //       setCurrentUserId(res.data.user.actualUserId);
+    //       setCurrentAvatarUrl(res.data.user.avatarUrl || undefined);
+    //       try {
+    //         localStorage.setItem("roar_v2_complete", "1");
+    //         localStorage.setItem("roar_badge", res.data.user.badge || "RISING_FAN");
+    //         localStorage.setItem("roar_username", res.data.user.username || "RoarUser");
+    //         if (res.data.user.avatarUrl) localStorage.setItem("roar_avatar_url", res.data.user.avatarUrl);
+    //       } catch { }
+    //     } else { setOnboarded(false); }
+    //   } catch (err: any) {
+    //     const status = err.response?.status;
+    //     if (status === 404 || status === 401) { setOnboarded(false); }
+    //     else {
+    //       let hasLocal = false; let badge = "RISING_FAN";
+    //       try { hasLocal = !!localStorage.getItem("roar_v2_complete"); badge = localStorage.getItem("roar_badge") || "RISING_FAN"; } catch { }
+    //       setOnboarded(hasLocal); setUserBadge(badge);
+    //     }
+    //   } finally { setChecking(false); }
+    // };
     const checkProfile = async () => {
+  try {
+    const res = await axios.get("/api/roar/profile");
+    if (res.data?.success) {
+      const u = res.data.user;
+      setUserBadge(u.badge || "RISING_FAN");
+      setUserSports(u.sports ?? []);
+      setCurrentUsername(u.username || "RoarUser");
+      setCurrentUserId(u.actualUserId);
+      setCurrentAvatarUrl(u.avatarUrl || undefined);
       try {
-        const res = await axios.get("/api/roar/profile");
-        if (res.data?.success) {
-          setOnboarded(true);
-          setUserBadge(res.data.user.badge || "RISING_FAN");
-          setUserSports(res.data.user.sports ?? []);
-          setCurrentUsername(res.data.user.username || "RoarUser");
-           setCurrentUserId(res.data.user.actualUserId);
-          setCurrentAvatarUrl(res.data.user.avatarUrl || undefined);
-          try {
-            localStorage.setItem("roar_v2_complete", "1");
-            localStorage.setItem("roar_badge",    res.data.user.badge    || "RISING_FAN");
-            localStorage.setItem("roar_username", res.data.user.username || "RoarUser");
-            if (res.data.user.avatarUrl) localStorage.setItem("roar_avatar_url", res.data.user.avatarUrl);
-          } catch {}
-        } else { setOnboarded(false); }
-      } catch (err: any) {
-        const status = err.response?.status;
-        if (status === 404 || status === 401) { setOnboarded(false); }
-        else {
-          let hasLocal = false; let badge = "RISING_FAN";
-          try { hasLocal = !!localStorage.getItem("roar_v2_complete"); badge = localStorage.getItem("roar_badge") || "RISING_FAN"; } catch {}
-          setOnboarded(hasLocal); setUserBadge(badge);
-        }
-      } finally { setChecking(false); }
-    };
+        localStorage.setItem("roar_v2_complete", "1");
+        localStorage.setItem("roar_badge", u.badge || "RISING_FAN");
+        localStorage.setItem("roar_username", u.username || "RoarUser");
+        if (u.avatarUrl) localStorage.setItem("roar_avatar_url", u.avatarUrl);
+      } catch {}
+      setOnboarded(true);
+      setChecking(false);
+    } else {
+      setOnboarded(false);
+      setChecking(false);
+    }
+  } catch (err: any) {
+    const status = err.response?.status;
+    if (status === 404 || status === 401) {
+      setOnboarded(false);
+      setChecking(false);
+    } else {
+      let hasLocal = false; let badge = "RISING_FAN";
+      try {
+        hasLocal = !!localStorage.getItem("roar_v2_complete");
+        badge = localStorage.getItem("roar_badge") || "RISING_FAN";
+      } catch {}
+      setOnboarded(hasLocal);
+      setUserBadge(badge);
+      setChecking(false);
+    }
+  }
+};
     checkProfile();
   }, []);
 
   // ── Navigation ─────────────────────────────────────────────────────────────
-  const [activeTab, setActiveTab]       = useState("home");
-  const [overlay, setOverlay]           = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState("home");
+  const [overlay, setOverlay] = useState<string | null>(null);
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
   const [selectedPost, setSelectedPost] = useState<any | null>(null);
 
   const { viewingUserId, profileData, openProfile, closeProfile } = useRoarProfileContext();
 
- 
-
-//  const handleFanProfileClick = useCallback((fan: any) => {
-//   if (fan.authorUid && fan.authorUid === currentUserId) {
-//     setActiveTab("profile"); setOverlay(null); setSelectedPost(null);
-//   } else {
-//     openProfile(fan.authorUid);
-//   }
-// }, [currentUserId, openProfile]);
-
-// const handleFanProfileClick = useCallback((fan: any) => {
-//   if (fan.authorUid && fan.authorUid === currentUserId) {
-//     router.push("/MainModules/Profile");
-//   } else {
-//     setOverlay(null); setSelectedPost(null);
-//     openProfile(fan.authorUid);
-//   }
-// }, [currentUserId, openProfile, router]);
-
-const handleFanProfileClick = useCallback((fan: any) => {
-  if (fan.authorUid && fan.authorUid === currentUserId) {
-    router.push("/MainModules/Profile");
-  } else {
-    openProfile(fan.authorUid);
-  }
-}, [currentUserId, openProfile, router]);
+  const handleFanProfileClick = useCallback((fan: any) => {
+    if (fan.authorUid && fan.authorUid === currentUserId) {
+      router.push("/MainModules/Profile");
+    } else {
+      openProfile(fan.authorUid);
+    }
+  }, [currentUserId, openProfile, router]);
 
   // ── Compose ────────────────────────────────────────────────────────────────
-  const [composeOpen, setComposeOpen]   = useState(false);
-  const [composeType, setComposeType]   = useState<string | null>(null);
-  const [quizOpen, setQuizOpen]         = useState(false);
+  const [composeOpen, setComposeOpen] = useState(false);
+  const [composeType, setComposeType] = useState<string | null>(null);
+  const [quizOpen, setQuizOpen] = useState(false);
 
   const openCompose = (type: string | null = null) => {
     if (type === "quiz") { setQuizOpen(true); return; }
@@ -632,16 +745,77 @@ const handleFanProfileClick = useCallback((fan: any) => {
   }, [notifSeeded, setNotifications]);
 
   // ── Remote data ────────────────────────────────────────────────────────────
-  const [rooms, setRooms]     = useState<Room[]>([]);
+  const [rooms, setRooms] = useState<Room[]>([]);
   const [dbPosts, setDbPosts] = useState<any[]>([]);
 
   const fetchPosts = useCallback(async () => {
     try {
-      // const res = await axios.get(`/api/roar/posts?t=${Date.now()}`);
-       const res = await axios.get(`/api/roar/posts?t=${Date.now()}&limit=15`);
+      const res = await axios.get(`/api/roar/posts?t=${Date.now()}&limit=15`);
       if (res.data?.success) setDbPosts(res.data.posts);
     } catch (err) { console.error("Failed to fetch posts:", err); }
   }, []);
+
+  const fetchRooms = useCallback(async () => {
+    try {
+      const res = await axios.get(`/api/roar/rooms?t=${Date.now()}`);
+      if (res.data?.success) {
+        setRooms(res.data.rooms);
+        setSelectedRoom(prev => {
+          if (!prev) return res.data.rooms.length > 0 ? res.data.rooms[0] : null;
+          const updated = res.data.rooms.find((r: any) => r.roomId === prev.roomId);
+          return updated || prev;
+        });
+      }
+    } catch (err) { console.error("Failed to fetch rooms:", err); }
+  }, []);
+
+  // ── Initial load on boot ───────────────────────────────────────────────────
+  useEffect(() => {
+    if (!onboarded) return;
+
+    const fetchUserSports = async () => {
+      try {
+        // const res = await axios.get("/api/roar/profile");
+        const res = await axios.get("/api/roar/profile", { withCredentials: true });
+        if (res.data?.success) {
+          setUserSports(res.data.user.sports ?? []);
+          setUserBadge(res.data.user.badge || "RISING_FAN");
+          setCurrentAvatarUrl(res.data.user.avatarUrl || undefined);
+          try { if (res.data.user.avatarUrl) localStorage.setItem("roar_avatar_url", res.data.user.avatarUrl); } catch { }
+        }
+      } catch (err: any) {
+        if (err.response?.status === 404) { setOnboarded(false); try { localStorage.removeItem("roar_v2_complete"); } catch { } }
+      }
+    };
+
+    fetchRooms(); fetchPosts(); fetchUserSports();
+  }, [onboarded, fetchPosts]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Fetch fresh posts every time user opens the feed ──────────────────────
+  // No background polling — data is fetched on demand only.
+  // useEffect(() => {
+  //   if (overlay === "infinity" && onboarded) fetchPosts();
+  // }, [overlay]); // eslint-disable-line react-hooks/exhaustive-deps
+ // eslint-disable-line react-hooks/exhaustive-deps
+
+ useEffect(() => {
+  if (overlay === "infinity" && onboarded) {
+    // Don't re-fetch if we already have fresh posts from this session
+    if (infinityFetchedRef.current && dbPosts.length > 0) return;
+    infinityFetchedRef.current = true;
+    axios.get(`/api/roar/posts?t=${Date.now()}&limit=15`).then(res => {
+      if (res.data?.success) {
+        setDbPosts(prev => {
+          const incoming: any[] = res.data.posts;
+          const optimisticOnly = prev.filter((p: any) =>
+            !incoming.some((s: any) => (s.postId ?? s.id) === (p.postId ?? p.id))
+          );
+          return [...optimisticOnly, ...incoming];
+        });
+      }
+    }).catch(() => {});
+  }
+}, [overlay]);
 
   useEffect(() => {
     const postId = searchParams.get("postId");
@@ -651,39 +825,21 @@ const handleFanProfileClick = useCallback((fan: any) => {
   }, [searchParams, onboarded, dbPosts]);
 
   useEffect(() => {
-    if (!onboarded) return;
-
-    const fetchRooms = async () => {
-      try {
-        const res = await axios.get(`/api/roar/rooms?t=${Date.now()}`);
-        if (res.data?.success) {
-          setRooms(res.data.rooms);
-          setSelectedRoom(prev => {
-            if (prev) return prev;
-            return res.data.rooms.length > 0 ? res.data.rooms[0] : null;
-          });
+    if (!onboarded || rooms.length === 0) return;
+    try {
+      const autoJoinId = localStorage.getItem("roar_auto_join_room_id");
+      if (autoJoinId) {
+        const matched = rooms.find(r => r.roomId === autoJoinId);
+        if (matched) {
+          setSelectedRoom(matched);
+          setOverlay("room");
+          localStorage.removeItem("roar_auto_join_room_id");
         }
-      } catch (err) { console.error("Failed to fetch rooms:", err); }
-    };
-
-    const fetchUserSports = async () => {
-      try {
-        const res = await axios.get("/api/roar/profile");
-        if (res.data?.success) {
-          setUserSports(res.data.user.sports ?? []);
-          setUserBadge(res.data.user.badge || "RISING_FAN");
-          setCurrentAvatarUrl(res.data.user.avatarUrl || undefined);
-          try { if (res.data.user.avatarUrl) localStorage.setItem("roar_avatar_url", res.data.user.avatarUrl); } catch {}
-        }
-      } catch (err: any) {
-        if (err.response?.status === 404) { setOnboarded(false); try { localStorage.removeItem("roar_v2_complete"); } catch {} }
       }
-    };
-
-    fetchRooms(); fetchPosts(); fetchUserSports();
-    const interval = setInterval(() => { fetchRooms(); fetchPosts(); }, 5000);
-    return () => clearInterval(interval);
-  }, [onboarded, fetchPosts]); // eslint-disable-line react-hooks/exhaustive-deps
+    } catch (e) {
+      console.error("Failed to auto-join room from localStorage:", e);
+    }
+  }, [onboarded, rooms]);
 
   useEffect(() => {
     const syncAvatar = (event?: Event) => {
@@ -713,15 +869,34 @@ const handleFanProfileClick = useCallback((fan: any) => {
     });
   }, [rooms]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Auto-join room from localStorage if roar_auto_join_room_id is present
+  useEffect(() => {
+    if (!rooms.length) return;
+    try {
+      const autoJoinRoomId = localStorage.getItem("roar_auto_join_room_id");
+      if (autoJoinRoomId) {
+        const matchedRoom = rooms.find(r => r.roomId === autoJoinRoomId);
+        if (matchedRoom) {
+          setSelectedRoom(matchedRoom);
+          setOverlay("room");
+          localStorage.removeItem("roar_auto_join_room_id");
+        }
+      }
+    } catch (e) {
+      console.error("Failed to auto-join ROAR room", e);
+    }
+  }, [rooms]);
+
+
 
   // ── Actions ────────────────────────────────────────────────────────────────
   const handleVote = useCallback(async (postId: string, voteType: "agree" | "disagree" | null) => {
     setDbPosts(prev => prev.map(post => {
       if (post.id === postId || post._id === postId || post.postId === postId) {
         let ag = post.agreeCount ?? 0; let di = post.disagreeCount ?? 0;
-        if (post.userVote === "agree")    ag = Math.max(0, ag - 1);
+        if (post.userVote === "agree") ag = Math.max(0, ag - 1);
         if (post.userVote === "disagree") di = Math.max(0, di - 1);
-        if (voteType === "agree")    ag += 1;
+        if (voteType === "agree") ag += 1;
         if (voteType === "disagree") di += 1;
         return { ...post, userVote: voteType, agreeCount: ag, disagreeCount: di };
       }
@@ -745,7 +920,7 @@ const handleFanProfileClick = useCallback((fan: any) => {
       }
       return post;
     }));
-    try { await axios.post(`/api/roar/posts/${postId}/like`); fetchPosts(); }
+    try { await axios.post(`/api/roar/posts/${postId}/like`); }
     catch {
       setDbPosts(prev => prev.map(post => {
         if (post.postId === postId || post._id === postId) {
@@ -757,7 +932,7 @@ const handleFanProfileClick = useCallback((fan: any) => {
       showToast("Failed to like post");
     }
     finally { setLikingPosts(prev => { const s = new Set(prev); s.delete(postId); return s; }); }
-  }, [showToast, likingPosts, fetchPosts]);
+  }, [showToast, likingPosts]);
 
   const handleDeletePost = useCallback(async (postId: string, roomId?: string) => {
     try {
@@ -768,46 +943,158 @@ const handleFanProfileClick = useCallback((fan: any) => {
     } catch { showToast(roomId ? "Error deleting message" : "Error deleting post"); }
   }, [fetchPosts, showToast]);
 
-  const handlePost = useCallback(async (payload: any) => {
-    try {
-      const postType = ["hot_take", "prediction", "debate", "raw_reactions", "post", "quiz"].includes(payload.type) ? payload.type : "hot_take";
-      let mediaUrls: string[] = [];
-      if (payload.mediaFiles?.length > 0) {
-        showToast("Uploading media...");
-        mediaUrls = await Promise.all(payload.mediaFiles.map(async (file: File) => {
-          const fd = new FormData(); fd.append("file", file);
-          const r = await axios.post("/api/upload", fd, { headers: { "Content-Type": "multipart/form-data" } });
-          return r.data.url;
-        }));
-      }
-      const ROOM_NATIVE = ["post", "chat", "hot_take", "hottake", "prediction", "debate", "raw_reactions"];
-      const isRoomNative = overlay === "room" && selectedRoom?.roomId && ROOM_NATIVE.includes(postType) && !payload.quizQuestion;
+  // const handlePost = useCallback(async (payload: any) => {
+  //   try {
+  //     const postType = ["hot_take", "prediction", "debate", "raw_reactions", "post", "quiz"].includes(payload.type) ? payload.type : "hot_take";
+  //     let mediaUrls: string[] = [];
+  //     if (payload.mediaFiles?.length > 0) {
+  //       showToast("Uploading media...");
+  //       mediaUrls = await Promise.all(payload.mediaFiles.map(async (file: File) => {
+  //         const fd = new FormData(); fd.append("file", file);
+  //         const r = await axios.post("/api/upload", fd, { headers: { "Content-Type": "multipart/form-data" } });
+  //         return r.data.url;
+  //       }));
+  //     }
+  //     const ROOM_NATIVE = ["post", "chat", "hot_take", "hottake", "prediction", "debate", "raw_reactions"];
+  //     const isRoomNative = overlay === "room" && selectedRoom?.roomId && ROOM_NATIVE.includes(postType) && !payload.quizQuestion;
 
-      if (isRoomNative) {
-        const msgTypeMap: Record<string, string> = { prediction: "prediction", hot_take: "hottake", hottake: "hottake", debate: "debate", raw_reactions: "raw_reactions", post: "post", chat: "chat" };
-        const res = await axios.post(`/api/roar/rooms/${selectedRoom!.roomId}/messages`, {
-          text: payload.text, type: msgTypeMap[postType] || "post",
-          mediaUrls: payload.mediaUrls, sideA: payload.sideA, sideB: payload.sideB,
-          memGifUrl: payload.gifUrl ?? undefined, memTag: payload.sf360Tag ?? undefined,
-        });
-        if (res.data?.success) { showToast("Post is live in room!"); roomRefreshRef.current?.(); }
+  //     if (isRoomNative) {
+  //       const msgTypeMap: Record<string, string> = { prediction: "prediction", hot_take: "hottake", hottake: "hottake", debate: "debate", raw_reactions: "raw_reactions", post: "post", chat: "chat" };
+  //       const res = await axios.post(`/api/roar/rooms/${selectedRoom!.roomId}/messages`, {
+  //         text: payload.text, type: msgTypeMap[postType] || "post",
+  //         mediaUrls: payload.mediaUrls, sideA: payload.sideA, sideB: payload.sideB,
+  //         memGifUrl: payload.gifUrl ?? undefined, memTag: payload.sf360Tag ?? undefined,
+  //       });
+  //       if (res.data?.success) { showToast("Post is live in room!"); roomRefreshRef.current?.(); }
+  //     } else {
+  //       const res = await axios.post("/api/roar/posts", {
+  //         type: postType,
+  //         text: postType === "quiz" ? payload.quizQuestion : payload.text,
+  //         sport: payload.sport || "cricket", audience: payload.audience, mediaUrls,
+  //         ...(postType !== "quiz" && { sideA: payload.sideA, sideB: payload.sideB, memCtx: payload.memCtx, matchId: payload.match, confidence: payload.confidence }),
+  //         ...(postType === "quiz" && { quizQuestion: payload.quizQuestion, quizOptions: payload.quizOptions, quizCorrectOption: payload.quizCorrectOption, quizTimer: payload.quizTimer, quizPoints: payload.quizPoints }),
+  //         ...(postType === "raw_reactions" && { memGifUrl: payload.gifUrl, memTag: payload.sf360Tag }),
+  //       });
+  //       if (res.data?.success) {
+  //         const toastMap: Record<string, string> = { hot_take: "🔥 Hot Take is live", prediction: "📊 Prediction posted", debate: "⚡ Debate started", raw_reactions: "🎭 Raw Reaction shared", post: "✏️ Post is live", quiz: "🧠 Flash Quiz launched!" };
+  //         // showToast(toastMap[postType] || "🔥 Your take is live");
+  //         // fetchPosts();
+  //         showToast(toastMap[postType] || "🔥 Your take is live");
+  //         // Optimistically prepend the new post so it appears instantly
+  //         const optimisticPost = {
+  //           postId: res.data.postId,
+  //           ...res.data.post,
+  //           authorAvatarUrl: currentAvatarUrl ?? null,
+  //           userVote: null,
+  //           userLiked: false,
+  //           userReaction: null,
+  //         };
+  //         setDbPosts(prev => [optimisticPost, ...prev]);
+  //         // Background reconcile (replaces optimistic with server-confirmed)
+  //         // fetchPosts();
+  //       }
+  //     }
+  //   } catch { showToast("Failed to create post"); }
+  // }, [showToast, fetchPosts, overlay, selectedRoom]);
+
+  const handlePost = useCallback(async (payload: any) => {
+  try {
+    const postType = ["hot_take", "prediction", "debate", "raw_reactions", "post", "quiz"]
+      .includes(payload.type) ? payload.type : "hot_take";
+
+    let mediaUrls: string[] = [];
+    if (payload.mediaFiles?.length > 0) {
+      showToast("Uploading media...");
+      mediaUrls = await Promise.all(payload.mediaFiles.map(async (file: File) => {
+        const fd = new FormData(); fd.append("file", file);
+        const r = await axios.post("/api/upload", fd, { headers: { "Content-Type": "multipart/form-data" } });
+        return r.data.url;
+      }));
+    }
+
+    const ROOM_NATIVE = ["post", "chat", "hot_take", "hottake", "prediction", "debate", "raw_reactions"];
+    const isRoomNative = overlay === "room" && selectedRoom?.roomId
+      && ROOM_NATIVE.includes(postType) && !payload.quizQuestion;
+
+    if (isRoomNative) {
+      // Room path unchanged — DiscussionRoom handles its own optimistic UI
+      const msgTypeMap: Record<string, string> = {
+        prediction: "prediction", hot_take: "hottake", hottake: "hottake",
+        debate: "debate", raw_reactions: "raw_reactions", post: "post", chat: "chat",
+      };
+      const res = await axios.post(`/api/roar/rooms/${selectedRoom!.roomId}/messages`, {
+        text: payload.text, type: msgTypeMap[postType] || "post",
+        mediaUrls: payload.mediaUrls, sideA: payload.sideA, sideB: payload.sideB,
+        memGifUrl: payload.gifUrl ?? undefined, memTag: payload.sf360Tag ?? undefined,
+      });
+      if (res.data?.success) { showToast("Post is live in room!"); roomRefreshRef.current?.(); }
+      return;
+    }
+
+    // ── Optimistic prepend — fires before the network call ──────────────────
+    const tempId = `optimistic-${Date.now()}`;
+    const optimisticPost = {
+      postId: tempId,
+      type: postType,
+      text: postType === "quiz" ? payload.quizQuestion : payload.text,
+      sport: payload.sport || "cricket",
+      authorUid: currentUserId,
+      authorUsername: currentUsername,
+      authorAvatarUrl: currentAvatarUrl ?? null,
+      authorBadge: userBadge,
+      agreeCount: 0, disagreeCount: 0,
+      likeCount: 0, replyCount: 0,
+      userVote: null, userLiked: false, userReaction: null,
+      sideA: payload.sideA ?? null,
+      sideB: payload.sideB ?? null,
+      mediaUrls: mediaUrls ?? [],
+      memGifUrl: payload.gifUrl ?? null,
+      memTag: payload.sf360Tag ?? null,
+      createdAt: Date.now(),
+      status: "active",
+    };
+
+    const toastMap: Record<string, string> = {
+      hot_take: "🔥 Hot Take is live", prediction: "📊 Prediction posted",
+      debate: "⚡ Debate started", raw_reactions: "🎭 Raw Reaction shared",
+      post: "✏️ Post is live", quiz: "🧠 Flash Quiz launched!",
+    };
+    showToast(toastMap[postType] || "🔥 Your take is live");
+    setDbPosts(prev => [optimisticPost, ...prev]);
+
+    // ── Background API call — swaps tempId for real data on success ─────────
+    try {
+      const res = await axios.post("/api/roar/posts", {
+        type: postType,
+        text: postType === "quiz" ? payload.quizQuestion : payload.text,
+        sport: payload.sport || "cricket", audience: payload.audience, mediaUrls,
+        ...(postType !== "quiz" && { sideA: payload.sideA, sideB: payload.sideB, memCtx: payload.memCtx, matchId: payload.match, confidence: payload.confidence }),
+        ...(postType === "quiz" && { quizQuestion: payload.quizQuestion, quizOptions: payload.quizOptions, quizCorrectOption: payload.quizCorrectOption, quizTimer: payload.quizTimer, quizPoints: payload.quizPoints }),
+        ...(postType === "raw_reactions" && { memGifUrl: payload.gifUrl, memTag: payload.sf360Tag }),
+      });
+
+      if (res.data?.success) {
+        // Replace optimistic entry with server-confirmed data
+        setDbPosts(prev => prev.map(p =>
+          p.postId === tempId
+            ? { ...optimisticPost, ...res.data.post, postId: res.data.postId, authorAvatarUrl: currentAvatarUrl ?? null }
+            : p
+        ));
       } else {
-        const res = await axios.post("/api/roar/posts", {
-          type: postType,
-          text: postType === "quiz" ? payload.quizQuestion : payload.text,
-          sport: payload.sport || "cricket", audience: payload.audience, mediaUrls,
-          ...(postType !== "quiz" && { sideA: payload.sideA, sideB: payload.sideB, memCtx: payload.memCtx, matchId: payload.match, confidence: payload.confidence }),
-          ...(postType === "quiz" && { quizQuestion: payload.quizQuestion, quizOptions: payload.quizOptions, quizCorrectOption: payload.quizCorrectOption, quizTimer: payload.quizTimer, quizPoints: payload.quizPoints }),
-          ...(postType === "raw_reactions" && { memGifUrl: payload.gifUrl, memTag: payload.sf360Tag }),
-        });
-        if (res.data?.success) {
-          const toastMap: Record<string, string> = { hot_take: "🔥 Hot Take is live", prediction: "📊 Prediction posted", debate: "⚡ Debate started", raw_reactions: "🎭 Raw Reaction shared", post: "✏️ Post is live", quiz: "🧠 Flash Quiz launched!" };
-          showToast(toastMap[postType] || "🔥 Your take is live");
-          fetchPosts();
-        }
+        // Server rejected — remove optimistic entry
+        setDbPosts(prev => prev.filter(p => p.postId !== tempId));
+        showToast("Failed to create post");
       }
-    } catch { showToast("Failed to create post"); }
-  }, [showToast, fetchPosts, overlay, selectedRoom]);
+    } catch {
+      setDbPosts(prev => prev.filter(p => p.postId !== tempId));
+      showToast("Failed to create post");
+    }
+
+  } catch {
+    // Outer catch only for media upload failures
+    showToast("Failed to upload media");
+  }
+}, [showToast, overlay, selectedRoom, currentUserId, currentUsername, currentAvatarUrl, userBadge]);
 
   const handleTab = (tab: string) => {
     setOverlay(null);
@@ -817,25 +1104,23 @@ const handleFanProfileClick = useCallback((fan: any) => {
 
   const completeOnboarding = useCallback(async (prefs: any) => {
     const username = prefs.username || "RoarUser";
-    const badge    = prefs.badge    || "RISING_FAN";
+    const badge = prefs.badge || "RISING_FAN";
     setUserSports(prefs.sports ?? []); setUserBadge(badge); setCurrentUsername(username); setOnboarded(true);
-    try { localStorage.setItem("roar_v2_complete", "1"); localStorage.setItem("roar_badge", badge); localStorage.setItem("roar_username", username); } catch {}
+    try { localStorage.setItem("roar_v2_complete", "1"); localStorage.setItem("roar_badge", badge); localStorage.setItem("roar_username", username); } catch { }
   }, []);
 
   // ── Derived ────────────────────────────────────────────────────────────────
-  const isRoom     = overlay === "room";
+  const isRoom = overlay === "room";
   const isInfinity = overlay === "infinity";
-  const isLB       = overlay === "leaderboard";
+  const isLB = overlay === "leaderboard";
   const isFullScreenOverlay = isRoom || isInfinity;
-  // Onboarding should also hide the global header / bottom nav, same as room/infinity overlays.
-  // const hideChrome = isFullScreenOverlay || !onboarded;
   const hideChrome = isFullScreenOverlay || !onboarded || !!viewingUserId;
 
-   useEffect(() => {
-  if (hideChrome) document.body.classList.add("roar-room-active");
-  else document.body.classList.remove("roar-room-active");
-  return () => document.body.classList.remove("roar-room-active");
-}, [hideChrome]);
+  useEffect(() => {
+    if (hideChrome) document.body.classList.add("roar-room-active");
+    else document.body.classList.remove("roar-room-active");
+    return () => document.body.classList.remove("roar-room-active");
+  }, [hideChrome]);
 
   // ── Loading spinner ────────────────────────────────────────────────────────
   if (!mounted || checkingProfile) {
@@ -852,7 +1137,6 @@ const handleFanProfileClick = useCallback((fan: any) => {
   }
 
   return (
-    // <div className={`roar-root${isRoom ? " roar-room-active" : ""}`}>
     <div className={`roar-root${hideChrome ? " roar-room-active" : ""}`}>
       <style dangerouslySetInnerHTML={{ __html: GLOBAL_CSS }} />
 
@@ -872,7 +1156,6 @@ const handleFanProfileClick = useCallback((fan: any) => {
 
         {!onboarded && (
           <>
-            {/* Hide global header (desktop/tablet/mobile) and its mobile spacer while onboarding runs */}
             <style dangerouslySetInnerHTML={{ __html: `#global-header-desktop,#global-header-tablet,#global-header-mobile,.roar-header-spacer{display:none!important}` }} />
             <Onboarding onComplete={completeOnboarding} />
           </>
@@ -882,13 +1165,12 @@ const handleFanProfileClick = useCallback((fan: any) => {
           <div style={{ position: "relative", zIndex: 1, flex: 1, minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}>
             <AnimatePresence mode="wait">
               {viewingUserId ? (
-                // ── Viewing another user's profile ──
-                <motion.div 
-                  key="viewing-profile" 
-                  initial={{ opacity: 0 }} 
-                  animate={{ opacity: 1 }} 
-                  exit={{ opacity: 0 }} 
-                  transition={{ duration: 0.18 }} 
+                <motion.div
+                  key="viewing-profile"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.18 }}
                   style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}
                 >
                   <Profile
@@ -907,7 +1189,6 @@ const handleFanProfileClick = useCallback((fan: any) => {
                   <Leaderboard onBack={() => setOverlay(null)} onCompose={() => openCompose("prediction")} />
                 </motion.div>
               ) : isInfinity ? (
-                // SF360 Infinity Room → original HomeFeed (all posts)
                 <motion.div key="infinity" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }} style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
                   <style dangerouslySetInnerHTML={{ __html: `#global-header-desktop,#global-header-tablet,#global-header-mobile{display:none!important}` }} />
                   <HomeFeed
@@ -917,13 +1198,13 @@ const handleFanProfileClick = useCallback((fan: any) => {
                     onToast={showToast}
                     extraItems={[]}
                     showBanner={false}
-                    onDismissBanner={() => {}}
+                    onDismissBanner={() => { }}
                     userBadge={userBadge}
+                    onHandlePost={handlePost}
                     rooms={rooms}
                     dbPosts={dbPosts}
                     onPostClick={post => setSelectedPost(post)}
                     onVote={handleVote}
-                    // onLike={handleLike}
                     onDeletePost={handleDeletePost}
                     userSports={userSports}
                     onQuickCompose={t => openCompose(t)}
@@ -941,6 +1222,7 @@ const handleFanProfileClick = useCallback((fan: any) => {
                     fanCount={selectedRoom?.fanCount}
                     score={selectedRoom?.score}
                     scoreSubtitle={selectedRoom?.scoreSubtitle}
+                    watchAlongRoomId={selectedRoom?.watchAlongRoomId}
                     onBack={() => { setOverlay(null); setActiveTab("home"); }}
                     onToast={showToast}
                     onPostClick={post => setSelectedPost(post)}
@@ -953,13 +1235,11 @@ const handleFanProfileClick = useCallback((fan: any) => {
                 </motion.div>
               ) : (
                 <motion.div key={activeTab} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }} style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
-                  {/* HOME TAB → RoomsHome */}
                   {activeTab === "home" && (
                     <RoomsHome
                       rooms={rooms}
                       onJoinRoom={room => {
                         if (room?.roomId === "sf360-infinity") {
-                          // Infinity Room = the old HomeFeed (all posts)
                           setOverlay("infinity");
                         } else {
                           if (room) setSelectedRoom(room);

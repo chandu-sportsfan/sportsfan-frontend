@@ -1490,6 +1490,16 @@ export default function DiscussionRoom({
   const [copied, setCopied] = useState(false);
   const { userProfile } = useUserProfile();
   const currentUserId = userProfile?.actualUserId;
+  const currentUserIdCandidates = [
+    userProfile?.actualUserId,
+    (userProfile as { userId?: string })?.userId,
+    (userProfile as { uid?: string })?.uid,
+    (userProfile as { email?: string })?.email,
+  ].filter(Boolean).map(String);
+  const isCurrentUserAuthor = (post: { authorUid?: unknown; authorEmail?: unknown; fan?: { authorUid?: unknown } }) => {
+    const authorCandidates = [post.authorUid, post.fan?.authorUid, post.authorEmail].filter(Boolean).map(String);
+    return authorCandidates.some(id => currentUserIdCandidates.includes(id));
+  };
   const latestCreatedAtRef = useRef<number | null>(null);
   const sendingRef = useRef(false);
   const [isSending, setIsSending] = useState(false);
@@ -2585,7 +2595,7 @@ export default function DiscussionRoom({
                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" /></svg>
                         </button>
                         {renderReactionsTrigger(p)}
-                        {currentUserId && p.fan?.authorUid === currentUserId && (
+                        {isCurrentUserAuthor(p) && (
                           <button
                             onClick={async e => {
                               e.stopPropagation();
@@ -2640,7 +2650,7 @@ export default function DiscussionRoom({
                     const predDisAgrPct = predictionPct(p.disagreeCount ?? 0);
                     const hasPredictionVoted = hasVoted || (typeof userVote === "string" && userVote.startsWith("option_"));
                     const predictionClosed = Boolean(p.resolvedAt || p.closedAt || (p.closesAt && p.closesAt <= Date.now()));
-                    const isPredictionAuthor = currentUserId && p.fan?.authorUid === currentUserId;
+                    const isPredictionAuthor = isCurrentUserAuthor(p);
                     const correctVoteLabel = getPredictionOptionLabel(p.correctVote, predictionOptions);
                     return (
                       <>
@@ -2803,7 +2813,7 @@ export default function DiscussionRoom({
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" /></svg>
                       </button>
                       {renderReactionsTrigger(p)}
-                      {currentUserId && p.fan?.authorUid === currentUserId && (
+                      {isCurrentUserAuthor(p) && (
                         <button
                           onClick={async e => {
                             e.stopPropagation();

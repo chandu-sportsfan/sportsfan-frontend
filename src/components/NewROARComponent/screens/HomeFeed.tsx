@@ -398,6 +398,16 @@ export default function HomeFeed({
   const activeUsername = propUsername || userProfile?.username || userProfile?.name || "RoarUser";
   const resolvedAvatarUrl = currentAvatarUrl || userProfile?.avatarUrl || userProfile?.avatar || undefined;
   const currentUserId = userProfile?.actualUserId;
+  const currentUserIdCandidates = [
+    userProfile?.actualUserId,
+    (userProfile as { userId?: string })?.userId,
+    (userProfile as { uid?: string })?.uid,
+    (userProfile as { email?: string })?.email,
+  ].filter(Boolean).map(String);
+  const isCurrentUserAuthor = (item: { authorUid?: unknown; authorEmail?: unknown; fan?: { authorUid?: unknown } }) => {
+    const authorCandidates = [item.authorUid, item.fan?.authorUid, item.authorEmail].filter(Boolean).map(String);
+    return authorCandidates.some(id => currentUserIdCandidates.includes(id));
+  };
 
   const phog = usePostHog();
 
@@ -672,7 +682,7 @@ export default function HomeFeed({
     const lo = localLikes[item.id];
     const currentReaction: Reaction | null = lo !== undefined ? lo.reaction : ((item.userReaction as Reaction) ?? null);
     const likeCount = lo !== undefined ? lo.likeCount : (item.likeCount ?? 0);
-    const isAuthor = !!item.authorUid && item.authorUid === currentUserId;
+    const isAuthor = isCurrentUserAuthor(item);
 
     return (
       <div style={{ display: "flex", gap: 14, marginTop: 12, borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 12, alignItems: "center" }}>
@@ -917,7 +927,7 @@ export default function HomeFeed({
               const predDisAgrPct = predictionPct(item.disagreeCount ?? 0);
               const correctVote = item.correctVote ?? localResolution?.correctVote;
               const correctVoteLabel = getPredictionOptionLabel(correctVote, predictionOptions);
-              const isAuthor = !!item.authorUid && item.authorUid === currentUserId;
+              const isAuthor = isCurrentUserAuthor(item);
               return (
                 <motion.div key={item.id} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }} className="glass-card" style={{ padding: 16, cursor: "pointer" }} onClick={() => onPostClick?.(item)}>
                   <div style={{ display: "flex", gap: 6, marginBottom: 8, flexWrap: "wrap" }}>
@@ -1031,7 +1041,7 @@ export default function HomeFeed({
               const liveTotal = (item.agreeCount ?? 0) + (item.disagreeCount ?? 0);
               const agrPct = liveTotal > 0 ? Math.round(((item.agreeCount ?? 0) / liveTotal) * 100) : 50;
               const disAgrPct = 100 - agrPct;
-              const isAuthor = !!item.authorUid && item.authorUid === currentUserId;
+              const isAuthor = isCurrentUserAuthor(item);
 
               return (
                 <motion.div key={item.id} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }} className="glass-card" style={{ padding: 16, cursor: "pointer" }} onClick={() => onPostClick?.(item)}>

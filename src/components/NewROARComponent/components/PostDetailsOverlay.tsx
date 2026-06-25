@@ -992,7 +992,7 @@ export default function PostDetailsOverlay({
 }: Props) {
   const [comments, setComments] = useState<any[]>([]);
   const [commentText, setCommentText] = useState("");
-  const [replyTo, setReplyTo] = useState<string | null>(null);
+  const [replyTo, setReplyTo] = useState<{ commentId: string; authorUsername: string } | null>(null);
   const [loading, setLoading] = useState(false);
   // const [userUsername, setUserUsername] = useState("RoarUser");
   // const activeUsername = currentUsername || userUsername;
@@ -1100,17 +1100,92 @@ export default function PostDetailsOverlay({
   useEffect(() => { fetchComments(); }, [fetchComments]);
 
   const submitComment = async () => {
-    const fullText = replyTo ? `@${replyTo} ${commentText.trim()}` : commentText.trim();
+    const fullText = replyTo ? `@${replyTo.authorUsername} ${commentText.trim()}` : commentText.trim();
     if (!fullText) return;
     try {
       setLoading(true);
-      const res = await axios.post(`/api/roar/posts/${post.id}/comments`, { text: fullText, roomId: post.roomId });
+      const res = await axios.post(`/api/roar/posts/${post.id}/comments`, {
+        text: fullText,
+        roomId: post.roomId,
+        parentCommentId: replyTo?.commentId,
+      });
       if (res.data?.success) {
         setCommentText(""); setReplyTo(null); fetchComments(); onToast("Comment posted!");
         setTimeout(() => scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" }), 400);
       }
     } catch { onToast("Error posting comment"); }
     finally { setLoading(false); }
+  };
+
+  const buildCommentTree = (flatComments: any[]) => {
+    const nodes = flatComments.map((comment) => ({
+      ...comment,
+      commentId: comment.commentId || comment.id,
+      parentCommentId: comment.parentCommentId || comment.parentId || comment.replyToId || null,
+      replies: [],
+    }));
+
+    const map = new Map<string, any>();
+    nodes.forEach((c) => map.set(c.commentId, c));
+
+    // Try to infer parent from @mentions when explicit parent missing
+    nodes.forEach((comment) => {
+      if (comment.parentCommentId) return;
+      const mentionMatch = comment.text?.trim()?.match(/^@([\w\.\-_]+)/i);
+      if (!mentionMatch?.[1]) return;
+      const mentionName = mentionMatch[1].toLowerCase();
+      const parent = nodes.find((n) => n.authorUsername?.toLowerCase() === mentionName && n.commentId !== comment.commentId && n.createdAt <= comment.createdAt);
+      if (parent) comment.parentCommentId = parent.commentId;
+    });
+
+    const roots: any[] = [];
+    nodes.forEach((comment) => {
+      const parentId = comment.parentCommentId;
+      if (parentId && map.has(parentId)) map.get(parentId).replies.push(comment);
+      else roots.push(comment);
+    });
+
+    return roots;
+  };
+
+  const renderComment = (comment: any, depth = 0) => {
+    const id = comment.commentId || comment.id;
+    const hasReplies = comment.replies && comment.replies.length > 0;
+    const isReply = depth > 0;
+    return (
+      <div key={id} className={`${isReply ? "relative ml-6 pl-4 border-l border-white/[0.08]" : "relative rounded-[22px] bg-white/[0.03] border border-white/[0.06] p-4 hover:bg-white/[0.04]"}`}>
+        {isReply && <div className="absolute left-0 top-1 bottom-1 w-[1px] bg-white/[0.08] rounded-full" />}
+        <div className="flex justify-between items-start gap-3">
+          <div
+            className="flex gap-2 items-start"
+            style={{ cursor: onFanProfileClick ? "pointer" : "default" }}
+            onClick={(e) => {
+              if (onFanProfileClick) { e.stopPropagation(); onFanProfileClick({ username: comment.authorUsername, badge: comment.authorBadge, avatarUrl: comment.authorAvatarUrl || comment.avatarUrl }); }
+            }}
+          >
+            <AvatarWithBadge username={comment.authorUsername} badge={comment.authorBadge} size="sm" avatarUrl={comment.authorAvatarUrl || comment.avatarUrl || (comment.authorUsername === activeUsername ? userAvatarUrl : undefined)} />
+            <div>
+              <p className="font-semibold text-[12px] text-white m-0">{comment.authorUsername}</p>
+              <p className="text-[10px] text-[#7D7DA8] m-0">{formatTimeAgo(comment.createdAt)}</p>
+            </div>
+          </div>
+          {comment.authorUsername === activeUsername && (
+            <button onClick={async (e) => { e.stopPropagation(); if (window.confirm("Delete comment?")) { try { await axios.delete(`/api/roar/posts/${post.id}/comments/${id}`); onToast("Deleted"); fetchComments(); } catch { onToast("Failed"); } } }} className="bg-transparent border-none text-[#f87171] cursor-pointer flex items-center p-0.5"><Trash2 size={12} /></button>
+          )}
+        </div>
+        <p className={`text-[14px] ${isReply ? "text-[#EAEAF1]" : "text-[#F5F5FA]"} leading-[1.7] my-3`}>{comment.text}</p>
+        <div className="flex flex-wrap items-center gap-4 text-[12px] text-[#8A8AA9]">
+          <button onClick={() => reactToComment(id)} className="bg-transparent border-none cursor-pointer flex items-center gap-2 text-inherit p-0 hover:text-white transition-colors duration-150">
+            <span className="text-sm">🤍</span>
+            <span>{comment.heartCount ?? 0}</span>
+          </button>
+          <button onClick={() => { setReplyTo({ commentId: id, authorUsername: comment.authorUsername }); setCommentText(""); setTimeout(() => inputRef.current?.focus(), 50); }} className="bg-transparent border-none cursor-pointer text-[#C8705A] font-semibold p-0 hover:text-white transition-colors duration-150">Reply</button>
+        </div>
+        {hasReplies && (
+          <div className="mt-4 space-y-3">{comment.replies.map((r: any) => renderComment(r, depth + 1))}</div>
+        )}
+      </div>
+    );
   };
 
   const reactToComment = async (commentId: string) => {
@@ -1222,44 +1297,9 @@ export default function PostDetailsOverlay({
           <div className="flex flex-col gap-3 pb-2">
             {comments.length === 0 ? (
               <p className="text-[13px] text-[#4A4A62] text-center py-5">No comments yet. Be the first!</p>
-            ) : comments.map((comment) => {
-              const isReply = comment.text.trim().startsWith("@");
-              return (
-                <div key={comment.commentId} className={`relative p-3 px-[14px] rounded-2xl bg-white/[0.03] border border-white/[0.05] flex flex-col gap-1.5 ${isReply ? "ml-6" : "ml-0"}`}>
-                  {isReply && <div className="absolute -left-[14px] top-[-12px] bottom-1/2 w-3 border-l-[1.5px] border-b-[1.5px] border-white/[0.12] rounded-bl-lg pointer-events-none" />}
-                  <div className="flex justify-between items-center">
-                    <div
-                      className="flex gap-2 items-center"
-                      style={{ cursor: onFanProfileClick ? "pointer" : "default" }}
-                      onClick={(e) => {
-                        if (onFanProfileClick) {
-                          e.stopPropagation();
-                          onFanProfileClick({ username: comment.authorUsername, badge: comment.authorBadge, avatarUrl: comment.authorAvatarUrl || comment.avatarUrl });
-                        }
-                      }}
-                    >
-                      <AvatarWithBadge username={comment.authorUsername} badge={comment.authorBadge} size="sm" avatarUrl={comment.authorAvatarUrl || comment.avatarUrl || (comment.authorUsername === activeUsername ? userAvatarUrl : undefined)} />
-                      <p className="font-bold text-[12px] text-white m-0">{comment.authorUsername}</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[9px] text-[#4A4A62]">{formatTimeAgo(comment.createdAt)}</span>
-                      {comment.authorUsername === activeUsername && (
-                        <button onClick={async (e) => { e.stopPropagation(); if (window.confirm("Delete comment?")) { try { await axios.delete(`/api/roar/posts/${post.id}/comments/${comment.commentId}`); onToast("Deleted"); fetchComments(); } catch { onToast("Failed"); } } }}
-                          className="bg-transparent border-none text-[#f87171] cursor-pointer flex items-center p-0.5"><Trash2 size={12} /></button>
-                      )}
-                    </div>
-                  </div>
-                  <p className="text-[13px] text-[#F5F5FA] leading-[1.4] my-1">{comment.text}</p>
-                  <div className="flex gap-[14px] items-center mt-1">
-                    <button onClick={() => reactToComment(comment.commentId)} className={`bg-transparent border-none cursor-pointer flex items-center gap-1 text-[12px] p-0 ${comment.heartCount > 0 ? "text-white" : "text-[#4A4A62]"}`}>
-                      🤍 {comment.heartCount ?? 0}
-                    </button>
-                    <button onClick={() => { setReplyTo(comment.authorUsername); setCommentText(""); setTimeout(() => inputRef.current?.focus(), 50); }}
-                      className="bg-transparent border-none cursor-pointer text-[11px] text-[#4A4A62] font-semibold p-0">Reply</button>
-                  </div>
-                </div>
-              );
-            })}
+            ) : (
+              buildCommentTree(comments).map((comment) => renderComment(comment))
+            )}
           </div>
         </div>
 
@@ -1269,7 +1309,7 @@ export default function PostDetailsOverlay({
             <div className="flex items-center gap-1.5 px-4 pt-1.5">
               <span className="text-[11px] text-[#9494AD]">Replying to</span>
               <span className="inline-flex items-center gap-1 bg-[rgba(233,30,140,0.15)] border border-[rgba(233,30,140,0.35)] rounded-full py-0.5 pl-1.5 pr-2 text-[12px] font-bold text-[#E91E8C] max-w-[160px] overflow-hidden text-ellipsis whitespace-nowrap">
-                @{replyTo}
+                @{replyTo?.authorUsername}
                 <button onClick={() => { setReplyTo(null); setCommentText(""); }} className="bg-transparent border-none p-0 cursor-pointer text-[#E91E8C] flex items-center ml-0.5 shrink-0"><X size={11} /></button>
               </span>
             </div>
@@ -1298,7 +1338,7 @@ export default function PostDetailsOverlay({
             <div className="flex-1">
               <input ref={inputRef} type="text" placeholder={replyTo ? "Write your reply…" : "Share your opinion..."} value={commentText}
                 onChange={handleInputChange} onKeyDown={handleKeyDown}
-                className="w-full h-10 rounded-full bg-[#0E0E14] border border-[#252538] pl-4 pr-4 text-white text-[16px] outline-none" />
+                className="w-full h-11 rounded-full bg-white/[0.04] border border-white/[0.12] pl-4 pr-4 text-white text-[16px] outline-none placeholder:text-[#8A8AA9] transition-colors duration-150 focus:border-[#E91E8C]/60 focus:bg-white/[0.08]" />
             </div>
             <button onClick={submitComment} disabled={loading || !canSubmit}
               className={`w-[38px] h-[38px] rounded-full bg-[#E91E8C] border-none text-white flex items-center justify-center shrink-0 transition-opacity duration-200 ${canSubmit ? "cursor-pointer opacity-100" : "cursor-default opacity-50"}`}>

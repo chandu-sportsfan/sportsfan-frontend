@@ -1105,7 +1105,7 @@ import {
   Image, ChevronLeft, Flame, TrendingUp, Zap, History, PenTool,
   Brain, Users, CheckCircle2, XCircle,
   Share2, Send,
-  BarChart2,
+  BarChart2, Clock,
 } from "lucide-react";
 
 interface Props {
@@ -1491,8 +1491,10 @@ export default function DiscussionRoom({
   const { userProfile } = useUserProfile();
   const currentUserId = userProfile?.actualUserId;
   const latestCreatedAtRef = useRef<number | null>(null);
-
+  const sendingRef = useRef(false);
+  const [isSending, setIsSending] = useState(false);
   const [inlineCommentPostId, setInlineCommentPostId] = useState<string | null>(null);
+  const [resolvingRoomPredictionId, setResolvingRoomPredictionId] = useState<string | null>(null);
 
   // ── Active fans (presence) state ────────────────────────────────────────────
   const [activeFans, setActiveFans] = useState<
@@ -1527,6 +1529,29 @@ export default function DiscussionRoom({
   const loadingMoreMsgsRef = useRef(false);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
+  const topReactionsCache = useRef<Record<string, string[]>>({});
+  const [topReactionsMap, setTopReactionsMap] = useState<Record<string, string[]>>({});
+
+  const fetchTopReactions = useCallback(async (msgId: string) => {
+    if (topReactionsCache.current[msgId] !== undefined) return;
+    topReactionsCache.current[msgId] = [];
+    try {
+      const url = `/api/roar/posts/${msgId}/reactions${roomId ? `?roomId=${encodeURIComponent(roomId)}` : ""}`;
+      const res = await axios.get(url);
+      const reactors: { reaction: string }[] = res.data?.reactors ?? [];
+      const counts: Record<string, number> = {};
+      reactors.forEach(r => { counts[r.reaction] = (counts[r.reaction] ?? 0) + 1; });
+      const top = Object.entries(counts)
+        .sort(([, a], [, b]) => b - a)
+        .slice(0, 3)
+        .map(([type]) => type);
+      topReactionsCache.current[msgId] = top;
+      setTopReactionsMap(prev => ({ ...prev, [msgId]: top }));
+    } catch {
+      topReactionsCache.current[msgId] = [];
+    }
+  }, [roomId]);
+
   const loadMoreMsgs = useCallback(async () => {
     if (!roomId || loadingMoreMsgsRef.current || !hasMoreMsgs) return;
 
@@ -1555,9 +1580,15 @@ export default function DiscussionRoom({
               id: m.msgId,
               fan: { username: displayUsername(m.authorUsername), authorUid: m.authorUid, badge: m.authorBadge, avatarUrl: m.authorAvatarUrl || m.avatarUrl || (m.authorUsername === userUsername ? userAvatarUrl : undefined) },
               text: m.text,
-              fireCount: m.fireCount || 0,
-              nochanceCount: m.noChanceCount || 0,
+              // fireCount: m.fireCount || 0,
+              // nochanceCount: m.noChanceCount || 0,
+              // heartCount: m.heartCount ?? 0,
+              fireCount: m.fireCount ?? 0,
               heartCount: m.heartCount ?? 0,
+              mindblownCount: m.mindblownCount ?? 0,
+              goatCount: m.goatCount ?? 0,
+              clapCount: m.clapCount ?? 0,
+              nochanceCount: m.noChanceCount ?? 0,
               userReaction: m.userReaction ?? null,
               replyCount: m.replyCount ?? 0,
               agreeCount: m.agreeCount ?? 0,
@@ -1565,6 +1596,13 @@ export default function DiscussionRoom({
               userVote: m.userVote ?? null,
               sideA: m.sideA ?? null,
               sideB: m.sideB ?? null,
+              predictionOptions: Array.isArray(m.predictionOptions) ? m.predictionOptions : [m.sideA, m.sideB].filter(Boolean),
+              predictionOptionCounts: m.predictionOptionCounts ?? {},
+              closesAt: m.closesAt ?? null,
+              closedAt: m.closedAt ?? null,
+              resolvedAt: m.resolvedAt ?? null,
+              correctVote: m.correctVote ?? null,
+              accuracyAwarded: m.accuracyAwarded ?? false,
               timeAgo: new Date(m.createdAt).toLocaleDateString([], { month: "short", day: "numeric" }) + " · " + new Date(m.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
               createdAt: m.createdAt,
               type: m.type,
@@ -1653,13 +1691,13 @@ export default function DiscussionRoom({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // ── Presence: join + heartbeat + live active-fans list ──────────────────────
-  // Replaces the old fire-and-forget join-only effect. Now also GETs the
-  // active fan list (for the avatar row + dialog) and re-POSTs on an
-  // interval so the server-side TTL never expires a still-open tab, and so
-  // other users' avatars update live in this view without a page reload.
+
   useEffect(() => {
     if (!roomId) return;
+    // Reset stale data from previous room immediately
+    setActiveFans([]);
+    setLiveCount(0);
+    setTotalJoinCount(0);
 
     // const join = async () => {
     //   try {
@@ -1821,9 +1859,15 @@ export default function DiscussionRoom({
                   // fan: { username: displayUsername(m.authorUsername), authorUid: m.authorUid, badge: m.authorBadge, avatarUrl: m.authorAvatarUrl || m.avatarUrl },
                   fan: { username: displayUsername(m.authorUsername), authorUid: m.authorUid, badge: m.authorBadge, avatarUrl: m.authorUid === currentUserId ? (userAvatarUrl || m.authorAvatarUrl || m.avatarUrl) : (m.authorAvatarUrl || m.avatarUrl) },
                   text: m.text,
-                  fireCount: m.fireCount || 0,
-                  nochanceCount: m.noChanceCount || 0,
-                  heartCount: isPending ? (existing?.heartCount ?? m.heartCount ?? 0) : (m.heartCount ?? 0),
+                  // fireCount: m.fireCount || 0,
+                  // nochanceCount: m.noChanceCount || 0,
+                  // heartCount: isPending ? (existing?.heartCount ?? m.heartCount ?? 0) : (m.heartCount ?? 0),
+                  fireCount: m.fireCount ?? 0,
+                  heartCount: m.heartCount ?? 0,
+                  mindblownCount: m.mindblownCount ?? 0,
+                  goatCount: m.goatCount ?? 0,
+                  clapCount: m.clapCount ?? 0,
+                  nochanceCount: m.noChanceCount ?? 0,
                   userReaction: isPending ? (existing?.userReaction ?? null) : (m.userReaction ?? null),
                   replyCount: Math.max(m.replyCount ?? 0, existing?.replyCount ?? 0),
                   agreeCount: m.agreeCount ?? 0,
@@ -1831,6 +1875,13 @@ export default function DiscussionRoom({
                   userVote: m.userVote ?? null,
                   sideA: m.sideA ?? null,
                   sideB: m.sideB ?? null,
+                  predictionOptions: Array.isArray(m.predictionOptions) ? m.predictionOptions : [m.sideA, m.sideB].filter(Boolean),
+                  predictionOptionCounts: m.predictionOptionCounts ?? {},
+                  closesAt: m.closesAt ?? null,
+                  closedAt: m.closedAt ?? null,
+                  resolvedAt: m.resolvedAt ?? null,
+                  correctVote: m.correctVote ?? null,
+                  accuracyAwarded: m.accuracyAwarded ?? false,
                   timeAgo: new Date(m.createdAt).toLocaleDateString([], { month: "short", day: "numeric" }) + " · " + new Date(m.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
                   createdAt: m.createdAt,
                   type: m.type,
@@ -1865,9 +1916,15 @@ export default function DiscussionRoom({
                 // fan: { username: displayUsername(m.authorUsername), authorUid: m.authorUid, badge: m.authorBadge, avatarUrl: m.authorAvatarUrl || m.avatarUrl },
                 fan: { username: displayUsername(m.authorUsername), authorUid: m.authorUid, badge: m.authorBadge, avatarUrl: m.authorUid === currentUserId ? (userAvatarUrl || m.authorAvatarUrl || m.avatarUrl) : (m.authorAvatarUrl || m.avatarUrl) },
                 text: m.text,
-                fireCount: m.fireCount || 0,
-                nochanceCount: m.noChanceCount || 0,
+                // fireCount: m.fireCount || 0,
+                // nochanceCount: m.noChanceCount || 0,
+                // heartCount: m.heartCount ?? 0,
+                fireCount: m.fireCount ?? 0,
                 heartCount: m.heartCount ?? 0,
+                mindblownCount: m.mindblownCount ?? 0,
+                goatCount: m.goatCount ?? 0,
+                clapCount: m.clapCount ?? 0,
+                nochanceCount: m.noChanceCount ?? 0,
                 userReaction: m.userReaction ?? null,
                 replyCount: m.replyCount ?? 0,
                 agreeCount: m.agreeCount ?? 0,
@@ -1875,6 +1932,13 @@ export default function DiscussionRoom({
                 userVote: m.userVote ?? null,
                 sideA: m.sideA ?? null,
                 sideB: m.sideB ?? null,
+                predictionOptions: Array.isArray(m.predictionOptions) ? m.predictionOptions : [m.sideA, m.sideB].filter(Boolean),
+                predictionOptionCounts: m.predictionOptionCounts ?? {},
+                closesAt: m.closesAt ?? null,
+                closedAt: m.closedAt ?? null,
+                resolvedAt: m.resolvedAt ?? null,
+                correctVote: m.correctVote ?? null,
+                accuracyAwarded: m.accuracyAwarded ?? false,
                 timeAgo: "now",
                 createdAt: m.createdAt,
                 type: m.type,
@@ -1896,7 +1960,7 @@ export default function DiscussionRoom({
       }
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
-  // }, [roomId, userAvatarUrl, userUsername]);
+    // }, [roomId, userAvatarUrl, userUsername]);
   }, [roomId, userAvatarUrl, userUsername, currentUserId]);
 
   useEffect(() => { onRegisterRefresh?.(fetchMsgs); }, [fetchMsgs, onRegisterRefresh]);
@@ -1974,6 +2038,54 @@ export default function DiscussionRoom({
     setInlineCommentPostId(null);
   };
 
+  const getPredictionVoteValue = (optionIndex: number) => (
+    optionIndex === 0 ? "agree" : optionIndex === 1 ? "disagree" : `option_${optionIndex}`
+  );
+
+  const getPredictionOptionLabel = (voteValue: string | undefined, options: string[]) => {
+    if (!voteValue) return "";
+    if (voteValue === "agree") return options[0] || "Option 1";
+    if (voteValue === "disagree") return options[1] || "Option 2";
+    const optionIndex = Number(voteValue.replace("option_", ""));
+    return Number.isFinite(optionIndex) ? (options[optionIndex] || voteValue) : voteValue;
+  };
+
+  const formatPredictionCloseLabel = (p: { resolvedAt?: number; closesAt?: number; closedAt?: number }) => {
+    if (p.resolvedAt) return "Resolved";
+    if (!p.closesAt) return "Open";
+    const remaining = p.closesAt - Date.now();
+    if (remaining <= 0 || p.closedAt) return "Closed";
+    const mins = Math.ceil(remaining / 60000);
+    if (mins < 60) return `${mins}m left`;
+    return `${Math.ceil(mins / 60)}h left`;
+  };
+
+  const resolveRoomPrediction = async (msgId: string, correctVote: string) => {
+    if (!roomId) return;
+    try {
+      setResolvingRoomPredictionId(msgId);
+      const res = await axios.post(`/api/roar/rooms/${roomId}/messages/${msgId}/resolve`, { correctVote });
+      if (res.data?.success) {
+        const resolvedAt = res.data.message?.resolvedAt ?? Date.now();
+        setPosts(prev => prev.map(p => p.id !== msgId ? p : {
+          ...p,
+          resolvedAt,
+          closedAt: res.data.message?.closedAt ?? resolvedAt,
+          correctVote,
+          accuracyAwarded: true,
+        }));
+        onToast(`Prediction resolved. ${res.data.correctCount ?? 0} correct fans awarded.`);
+      } else {
+        onToast("Failed to resolve prediction");
+      }
+    } catch (err: unknown) {
+      const message = axios.isAxiosError(err) ? err.response?.data?.error : undefined;
+      onToast(message || "Failed to resolve prediction");
+    } finally {
+      setResolvingRoomPredictionId(null);
+    }
+  };
+
   const triggerUpload = (type: "image" | "video") => {
     setAttachedType(type);
     if (fileInputRef.current) { fileInputRef.current.accept = type === "image" ? "image/*" : "video/*"; fileInputRef.current.click(); }
@@ -1990,19 +2102,69 @@ export default function DiscussionRoom({
     finally { setUploading(false); if (e.target) e.target.value = ""; }
   };
 
+  // const send = async () => {
+  //   if (!roomId) return;
+  //   const text = input.trim();
+  //   if (!text && !attachedUrl) return;
+  //   if (sendingRef.current) return; // guard against double submit
+  //   sendingRef.current = true;
+  //   try {
+  //     const res = await axios.post(`/api/roar/rooms/${roomId}/messages`, { text: text || "Shared media", type: mode, mediaUrls: attachedUrl ? [attachedUrl] : undefined });
+      // if (res.data?.success) {
+      //   const m = res.data.message;
+      //   setPosts(p => [{
+      //     id: m.msgId,
+      //     fan: { username: displayUsername(m.authorUsername), authorUid: m.authorUid, badge: m.authorBadge, avatarUrl: m.authorAvatarUrl || m.avatarUrl || (m.authorUsername === userUsername ? userAvatarUrl : undefined) },
+      //     text: m.text,
+      //     // fireCount: 0, nochanceCount: 0, heartCount: 0,
+      //     fireCount: m.fireCount ?? 0,
+      //     heartCount: m.heartCount ?? 0,
+      //     mindblownCount: m.mindblownCount ?? 0,
+      //     goatCount: m.goatCount ?? 0,
+      //     clapCount: m.clapCount ?? 0,
+      //     nochanceCount: m.noChanceCount ?? 0,
+      //     userReaction: null, replyCount: 0,
+      //     agreeCount: 0, disagreeCount: 0, userVote: null, sideA: m.sideA ?? null, sideB: m.sideB ?? null,
+      //     timeAgo: "now", createdAt: m.createdAt || Date.now(), type: m.type, mediaUrls: m.mediaUrls,
+      //     quizQuestion: m.quizQuestion, quizOptions: m.quizOptions, quizCorrectOption: m.quizCorrectOption,
+      //     quizUserAnswer: m.quizUserAnswer ?? null, quizTimer: m.quizTimer, quizPoints: m.quizPoints,
+      //     quizParticipants: m.quizParticipants ?? 0, memGifUrl: m.memGifUrl ?? null, memTag: m.memTag ?? null,
+      //   }, ...p]);
+      //   setInput(""); setAttachedUrl(null); setAttachedType(null);
+      //   setTimeout(() => listRef.current?.scrollTo({ top: 0, behavior: "smooth" }), 50);
+      // }
+  //   } catch { onToast("Failed to send message"); }
+  //   finally { sendingRef.current = false; } 
+  // };
+
   const send = async () => {
-    if (!roomId) return;
-    const text = input.trim();
-    if (!text && !attachedUrl) return;
-    try {
-      const res = await axios.post(`/api/roar/rooms/${roomId}/messages`, { text: text || "Shared media", type: mode, mediaUrls: attachedUrl ? [attachedUrl] : undefined });
-      if (res.data?.success) {
+  if (!roomId) return;
+  const text = input.trim();
+  if (!text && !attachedUrl) return;
+  if (sendingRef.current) return;
+  sendingRef.current = true;
+  setIsSending(true);
+  try {
+    const res = await axios.post(`/api/roar/rooms/${roomId}/messages`, {
+      text: text || "Shared media",
+      type: mode,
+      mediaUrls: attachedUrl ? [attachedUrl] : undefined,
+    });
+       if (res.data?.success) {
         const m = res.data.message;
         setPosts(p => [{
           id: m.msgId,
           fan: { username: displayUsername(m.authorUsername), authorUid: m.authorUid, badge: m.authorBadge, avatarUrl: m.authorAvatarUrl || m.avatarUrl || (m.authorUsername === userUsername ? userAvatarUrl : undefined) },
-          text: m.text, fireCount: 0, nochanceCount: 0, heartCount: 0, userReaction: null, replyCount: 0,
-          agreeCount: 0, disagreeCount: 0, userVote: null, sideA: m.sideA ?? null, sideB: m.sideB ?? null,
+          text: m.text,
+          // fireCount: 0, nochanceCount: 0, heartCount: 0,
+          fireCount: m.fireCount ?? 0,
+          heartCount: m.heartCount ?? 0,
+          mindblownCount: m.mindblownCount ?? 0,
+          goatCount: m.goatCount ?? 0,
+          clapCount: m.clapCount ?? 0,
+          nochanceCount: m.noChanceCount ?? 0,
+          userReaction: null, replyCount: 0,
+          agreeCount: 0, disagreeCount: 0, userVote: null, sideA: m.sideA ?? null, sideB: m.sideB ?? null, predictionOptions: Array.isArray(m.predictionOptions) ? m.predictionOptions : [m.sideA, m.sideB].filter(Boolean), predictionOptionCounts: m.predictionOptionCounts ?? {}, closesAt: m.closesAt ?? null, closedAt: m.closedAt ?? null, resolvedAt: m.resolvedAt ?? null, correctVote: m.correctVote ?? null, accuracyAwarded: m.accuracyAwarded ?? false,
           timeAgo: "now", createdAt: m.createdAt || Date.now(), type: m.type, mediaUrls: m.mediaUrls,
           quizQuestion: m.quizQuestion, quizOptions: m.quizOptions, quizCorrectOption: m.quizCorrectOption,
           quizUserAnswer: m.quizUserAnswer ?? null, quizTimer: m.quizTimer, quizPoints: m.quizPoints,
@@ -2011,8 +2173,12 @@ export default function DiscussionRoom({
         setInput(""); setAttachedUrl(null); setAttachedType(null);
         setTimeout(() => listRef.current?.scrollTo({ top: 0, behavior: "smooth" }), 50);
       }
-    } catch { onToast("Failed to send message"); }
-  };
+  } catch { onToast("Failed to send message"); }
+  finally {
+    sendingRef.current = false;
+    setIsSending(false);
+  }
+};
 
   const copyToClipboard = async (text: string) => {
     try { await navigator.clipboard.writeText(text); return true; }
@@ -2058,10 +2224,50 @@ export default function DiscussionRoom({
     );
   };
 
+  // const renderReactionsTrigger = (p: any) => {
+  //   const lo = localReactions[p.id];
+  //   const heartCount = lo !== undefined ? lo.heartCount : (p.heartCount ?? 0);
+  //   if (heartCount === 0) return null;
+
+  //   return (
+  //     <motion.button
+  //       whileTap={{ scale: 0.93 }}
+  //       onClick={e => { e.stopPropagation(); setReactionsMsgId(p.id); }}
+  //       style={{
+  //         display: "flex", alignItems: "center", gap: 4,
+  //         background: "none", border: "none", cursor: "pointer",
+  //         color: "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: 700,
+  //         marginLeft: "auto",
+  //       }}
+  //       title="See who reacted"
+  //     >
+  //       <BarChart2 size={13} />
+  //       <span>Reactions</span>
+  //     </motion.button>
+  //   );
+  // };
+
+  const REACTION_EMOJI: Record<string, string> = {
+    fire: "🔥", heart: "❤️", mindblown: "🤯", goat: "🐐", clap: "👏", nochance: "🙅",
+    laugh: "😂", sad: "😢", thumb: "👍",
+  };
+
   const renderReactionsTrigger = (p: any) => {
     const lo = localReactions[p.id];
     const heartCount = lo !== undefined ? lo.heartCount : (p.heartCount ?? 0);
     if (heartCount === 0) return null;
+
+    const topReactions = topReactionsMap[p.id] ?? [];
+    if (topReactions.length === 0 && !topReactionsCache.current[p.id]) {
+      fetchTopReactions(p.id);
+    }
+
+    const currentReaction = lo?.reaction ?? p.userReaction ?? null;
+    const displayReactions = topReactions.length > 0
+      ? topReactions
+      : currentReaction ? [currentReaction] : [];
+
+    if (displayReactions.length === 0) return null;
 
     return (
       <motion.button
@@ -2070,16 +2276,36 @@ export default function DiscussionRoom({
         style={{
           display: "flex", alignItems: "center", gap: 4,
           background: "none", border: "none", cursor: "pointer",
-          color: "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: 700,
-          marginLeft: "auto",
+          marginLeft: "auto", padding: 0,
         }}
         title="See who reacted"
       >
-        <BarChart2 size={13} />
-        <span>Reactions</span>
+        <div style={{ display: "flex" }}>
+          {displayReactions.map((type, i) => (
+            <div
+              key={type}
+              style={{
+                width: 20, height: 20, borderRadius: "50%",
+                background: "#1e1e2a",
+                border: "1.5px solid rgba(255,255,255,0.1)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 11,
+                marginLeft: i === 0 ? 0 : -6,
+                zIndex: displayReactions.length - i,
+                position: "relative",
+              }}
+            >
+              {REACTION_EMOJI[type] ?? "❤️"}
+            </div>
+          ))}
+        </div>
+        {/* <span style={{ fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.5)", marginLeft: 3 }}>
+        {heartCount}
+      </span> */}
       </motion.button>
     );
   };
+
 
   return (
     <div className="flex flex-col w-full bg-[#0e0e14]" style={{ height: "100%", overflow: "hidden" }}>
@@ -2404,21 +2630,36 @@ export default function DiscussionRoom({
 
                   {p.type === "prediction" && (() => {
                     const liveTotal = (p.agreeCount ?? 0) + (p.disagreeCount ?? 0);
-                    const agrPct = liveTotal > 0 ? Math.round(((p.agreeCount ?? 0) / liveTotal) * 100) : 50;
-                    const disAgrPct = 100 - agrPct;
                     const userVote = p.userVote;
                     const hasVoted = userVote === "agree" || userVote === "disagree";
+                    const predictionOptions = Array.isArray(p.predictionOptions) && p.predictionOptions.length >= 2 ? p.predictionOptions : [p.sideA || "Option 1", p.sideB || "Option 2"];
+                    const optionCounts = p.predictionOptionCounts ?? {};
+                    const predictionTotal = liveTotal + Object.values(optionCounts).reduce((sum: number, count: unknown) => sum + (Number(count) || 0), 0);
+                    const predictionPct = (count: number) => predictionTotal > 0 ? Math.round((count / predictionTotal) * 100) : 0;
+                    const predAgrPct = predictionPct(p.agreeCount ?? 0);
+                    const predDisAgrPct = predictionPct(p.disagreeCount ?? 0);
+                    const hasPredictionVoted = hasVoted || (typeof userVote === "string" && userVote.startsWith("option_"));
+                    const predictionClosed = Boolean(p.resolvedAt || p.closedAt || (p.closesAt && p.closesAt <= Date.now()));
+                    const isPredictionAuthor = currentUserId && p.fan?.authorUid === currentUserId;
+                    const correctVoteLabel = getPredictionOptionLabel(p.correctVote, predictionOptions);
                     return (
                       <>
+                        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
+                          <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 10, fontWeight: 800, padding: "3px 8px", borderRadius: 4, background: predictionClosed ? "rgba(244,67,54,0.12)" : "rgba(34,197,94,0.1)", color: predictionClosed ? "#f87171" : "#22c55e", border: `1px solid ${predictionClosed ? "rgba(244,67,54,0.25)" : "rgba(34,197,94,0.22)"}` }}>
+                            <Clock size={11} /> {formatPredictionCloseLabel(p)}
+                          </span>
+                        </div>
                         <div style={{ display: "flex", gap: 8, marginTop: 10, marginBottom: 4 }}>
-                          {[
-                            { agree: true, label: "Support", pctVal: agrPct, active: userVote === "agree", color: "#22c55e" },
-                            { agree: false, label: "Counter", pctVal: disAgrPct, active: userVote === "disagree", color: "var(--accent-magenta)" },
-                          ].map(({ agree, label, pctVal, active, color }) => (
-                            <motion.button key={label} whileTap={!hasVoted ? { scale: 0.93 } : {}}
+                          {predictionOptions.slice(0, 2).map((label: string, optionIndex: number) => {
+                            const agree = optionIndex === 0;
+                            const pctVal = optionIndex === 0 ? predAgrPct : predDisAgrPct;
+                            const active = optionIndex === 0 ? userVote === "agree" : userVote === "disagree";
+                            const color = optionIndex === 0 ? "#22c55e" : "var(--accent-magenta)";
+                            return (
+                            <motion.button key={label} disabled={predictionClosed} whileTap={!hasPredictionVoted && !predictionClosed ? { scale: 0.93 } : {}}
                               onClick={async (e) => {
                                 e.stopPropagation();
-                                if (hasVoted) return;
+                                if (hasPredictionVoted || predictionClosed) return;
                                 try {
                                   await axios.post(`/api/roar/rooms/${roomId}/messages/${p.id}/vote`, { vote: agree ? "agree" : "disagree" });
                                   // if (phog) {
@@ -2432,13 +2673,51 @@ export default function DiscussionRoom({
                                   setInlineCommentPostId(p.id);
                                 } catch { onToast("You've already voted!!"); }
                               }}
-                              style={{ flex: 1, padding: "9px", borderRadius: 999, fontSize: 12, fontWeight: 700, cursor: hasVoted ? "default" : "pointer", border: `2px solid ${color}`, background: active ? color : "rgba(255,255,255,0.02)", color: active ? "white" : color, boxShadow: active ? `0 0 14px ${color}50` : "none", transition: "all 0.2s ease-in-out", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, opacity: hasVoted && !active ? 0.4 : 1 }}
+                              style={{ flex: 1, padding: "9px", borderRadius: 999, fontSize: 12, fontWeight: 700, cursor: hasPredictionVoted || predictionClosed ? "default" : "pointer", border: `2px solid ${color}`, background: active ? color : "rgba(255,255,255,0.02)", color: active ? "white" : color, boxShadow: active ? `0 0 14px ${color}50` : "none", transition: "all 0.2s ease-in-out", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, opacity: (hasPredictionVoted || predictionClosed) && !active ? 0.4 : 1 }}
                             >
                               {active ? `✓ ${agree ? "Supported" : "Countered"}` : label}
                               <span style={{ fontSize: 10, fontWeight: 800, background: active ? "rgba(255,255,255,0.2)" : `${color}22`, borderRadius: 999, padding: "1px 6px" }}>{pctVal}%</span>
                             </motion.button>
-                          ))}
+                            );
+                          })}
                         </div>
+                        {predictionOptions.length > 2 && (
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 4 }}>
+                            {predictionOptions.slice(2).map((label: string, idx: number) => {
+                              const voteValue = `option_${idx + 2}`;
+                              const active = userVote === voteValue;
+                              const pctVal = predictionPct(optionCounts[voteValue] ?? 0);
+                              return (
+                              <button key={`${label}-${idx}`} type="button" disabled={hasPredictionVoted || predictionClosed} onClick={async (e) => {
+                                e.stopPropagation();
+                                if (hasPredictionVoted || predictionClosed) return;
+                                try {
+                                  await axios.post(`/api/roar/rooms/${roomId}/messages/${p.id}/vote`, { vote: voteValue });
+                                  setPosts(prev => prev.map(x => x.id !== p.id ? x : { ...x, userVote: voteValue, predictionOptionCounts: { ...(x.predictionOptionCounts ?? {}), [voteValue]: ((x.predictionOptionCounts ?? {})[voteValue] ?? 0) + 1 } }));
+                                  setInlineCommentPostId(p.id);
+                                } catch { onToast("You've already voted!!"); }
+                              }} style={{ flex: "1 1 calc(50% - 4px)", minWidth: 0, padding: "9px", borderRadius: 999, fontSize: 12, fontWeight: 700, border: "2px solid #8b8b8b", background: active ? "#8b8b8b" : "rgba(255,255,255,0.02)", color: active ? "#fff" : "#d1d1d1", textAlign: "center", opacity: (hasPredictionVoted || predictionClosed) && !active ? 0.4 : 1, cursor: hasPredictionVoted || predictionClosed ? "default" : "pointer" }}>
+                                {label}
+                                <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 800, background: active ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.08)", borderRadius: 999, padding: "1px 6px" }}>{pctVal}%</span>
+                              </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                        {predictionClosed && !p.resolvedAt && isPredictionAuthor && (
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8, marginBottom: 4 }}>
+                            {predictionOptions.map((label: string, optionIndex: number) => (
+                              <button key={`room-resolve-${label}-${optionIndex}`} type="button" disabled={resolvingRoomPredictionId === p.id} onClick={(e) => { e.stopPropagation(); resolveRoomPrediction(p.id, getPredictionVoteValue(optionIndex)); }} style={{ flex: "1 1 calc(50% - 4px)", minWidth: 0, padding: "9px", borderRadius: 12, fontSize: 12, fontWeight: 800, border: "1px solid rgba(34,197,94,0.35)", background: "rgba(34,197,94,0.1)", color: "#22c55e", cursor: resolvingRoomPredictionId === p.id ? "wait" : "pointer" }}>
+                                Resolve: {label}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                        {p.resolvedAt && correctVoteLabel && (
+                          <p style={{ fontSize: 11, color: "#22c55e", fontWeight: 800, marginTop: 8, marginBottom: 4 }}>
+                            Correct answer: {correctVoteLabel}
+                          </p>
+                        )}
                         <AnimatePresence>
                           {inlineCommentPostId === p.id && (
                             <InlineCommentInput
@@ -2613,7 +2892,7 @@ export default function DiscussionRoom({
                 )}
                 <input type="text" disabled={uploading} value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === "Enter" && send()} className="w-full h-11 rounded-[22px] bg-[var(--bg-secondary)] border border-[var(--border)] pl-4 pr-4 text-white text-base outline-none" />
               </div>
-              <motion.button whileTap={{ scale: 0.96 }} onClick={send} disabled={uploading} className={["w-11 h-11 rounded-full border-none text-white text-lg font-bold flex items-center justify-center cursor-pointer shrink-0", "bg-[linear-gradient(135deg,#e91e8c,#ff6b35)]", uploading ? "opacity-50" : "opacity-100"].join(" ")}>↑</motion.button>
+              <motion.button whileTap={{ scale: 0.96 }} onClick={send} disabled={uploading || isSending} className={["w-11 h-11 rounded-full border-none text-white text-lg font-bold flex items-center justify-center cursor-pointer shrink-0", "bg-[linear-gradient(135deg,#e91e8c,#ff6b35)]", uploading ? "opacity-50" : "opacity-100"].join(" ")}>↑</motion.button>
             </div>
           </>
         )}

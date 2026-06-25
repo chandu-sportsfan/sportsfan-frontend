@@ -170,7 +170,14 @@ export default function ActiveFansDialog({ roomId, isOpen, onClose, onFanProfile
                                         <button
                                             key={fan.uid}
                                             type="button"
-                                            onClick={() => { onClose(); onFanProfile?.(fan); }}
+                                            // onClick={() => { onClose(); onFanProfile?.(fan); }}
+                                            onClick={() => {
+                                                onClose();
+                                                onFanProfile?.({
+                                                    ...fan,
+                                                    authorUid: fan.uid,
+                                                });
+                                            }}
                                             className="flex flex-col items-center gap-1.5 px-1 py-1 rounded-xl hover:bg-white/5 transition-colors text-center"
                                         >
                                             <AvatarWithBadge username={fan.username} badge={fan.badge ?? undefined} size="md" avatarUrl={fan.avatarUrl ?? undefined} />

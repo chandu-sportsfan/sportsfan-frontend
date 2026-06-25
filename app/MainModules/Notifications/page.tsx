@@ -931,11 +931,9 @@
 
 
 
-
-
 "use client";
 import { useRoarNotifications } from "@/context/RoarNotificationsContext";
-import React, { useEffect, useState, useCallback, useRef } from "react";
+import React, { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import axios from "axios";
@@ -978,13 +976,12 @@ type PostNotification = {
   createdAt: number;
 };
 
-// ── NEW: ROAR-specific notification types ─────────────────────────────────────
 type RoarLikeNotification = {
   id: string;
   type: "roar_post_like";
   postId: string;
   postPreview: string;
-  likerNames: string[];   // latest liker first, max 3
+  likerNames: string[];
   likerCount: number;
   message: string;
   isRead: boolean;
@@ -1123,7 +1120,7 @@ const SkeletonCard = () => (
 
 // ─── Audio mini-player ────────────────────────────────────────────────────────
 
-function AudioPlayer({
+const AudioPlayer = React.memo(function AudioPlayer({
   url,
   duration,
   isRead,
@@ -1192,11 +1189,11 @@ function AudioPlayer({
       </span>
     </div>
   );
-}
+});
 
-// ─── Shared action footer (reused by every card) ──────────────────────────────
+// ─── Shared action footer ─────────────────────────────────────────────────────
 
-function CardFooter({
+const CardFooter = React.memo(function CardFooter({
   isRead,
   onMarkRead,
   onClear,
@@ -1235,7 +1232,7 @@ function CardFooter({
       </button>
     </div>
   );
-}
+});
 
 // ─── Battle Notification Card ─────────────────────────────────────────────────
 
@@ -1248,7 +1245,7 @@ type BattleCardProps = {
   clearLoading: boolean;
 };
 
-function BattleNotificationCard({
+const BattleNotificationCard = React.memo(function BattleNotificationCard({
   notif,
   onMarkRead,
   onClear,
@@ -1318,7 +1315,7 @@ function BattleNotificationCard({
       </div>
     </div>
   );
-}
+});
 
 // ─── Audio Notification Card ──────────────────────────────────────────────────
 
@@ -1330,7 +1327,7 @@ type AudioCardProps = {
   clearLoading: boolean;
 };
 
-function AudioNotificationCard({
+const AudioNotificationCard = React.memo(function AudioNotificationCard({
   notif,
   onMarkRead,
   onClear,
@@ -1401,9 +1398,9 @@ function AudioNotificationCard({
       </div>
     </div>
   );
-}
+});
 
-// ─── Post Notification Card (existing fan-post reactions/comments) ─────────────
+// ─── Post Notification Card ───────────────────────────────────────────────────
 
 type PostCardProps = {
   notif: PostNotification;
@@ -1413,7 +1410,7 @@ type PostCardProps = {
   clearLoading: boolean;
 };
 
-function PostNotificationCard({
+const PostNotificationCard = React.memo(function PostNotificationCard({
   notif,
   onMarkRead,
   onClear,
@@ -1468,7 +1465,7 @@ function PostNotificationCard({
       </div>
     </div>
   );
-}
+});
 
 // ─── ROAR Like Notification Card ──────────────────────────────────────────────
 
@@ -1481,7 +1478,7 @@ type RoarLikeCardProps = {
   clearLoading: boolean;
 };
 
-function RoarLikeNotificationCard({
+const RoarLikeNotificationCard = React.memo(function RoarLikeNotificationCard({
   notif,
   onMarkRead,
   onClear,
@@ -1505,7 +1502,6 @@ function RoarLikeNotificationCard({
       )}
       <div className="p-4">
         <div className="flex gap-3">
-          {/* Icon */}
           <div
             className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${
               notif.isRead ? "bg-white/6 text-[#666]" : "bg-[#e91e8c]/20 text-[#e91e8c]"
@@ -1513,9 +1509,7 @@ function RoarLikeNotificationCard({
           >
             <HeartIcon size={20} />
           </div>
-
           <div className="flex-1 min-w-0 pr-4">
-            {/* ROAR badge */}
             <span
               className={`inline-block font-mono text-[9px] tracking-[0.1em] uppercase px-2 py-0.5 rounded-full border mb-1 ${
                 notif.isRead
@@ -1525,20 +1519,14 @@ function RoarLikeNotificationCard({
             >
               ROAR
             </span>
-
-            {/* Message: "X and 10 others liked your ROAR post" */}
             <p className={`text-sm leading-snug mb-1.5 ${notif.isRead ? "text-[#888]" : "text-white font-medium"}`}>
               {notif.message}
             </p>
-
-            {/* Post preview snippet */}
             {notif.postPreview && (
               <p className="text-[11px] text-[#555] italic mb-2 line-clamp-1">
                 "{notif.postPreview}"
               </p>
             )}
-
-            {/* View post CTA */}
             <button
               onClick={onPostClick}
               className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-medium transition-all ${
@@ -1549,7 +1537,6 @@ function RoarLikeNotificationCard({
             >
               View ROAR post <ArrowRightIcon />
             </button>
-
             <p className="mt-1.5 text-[11px] text-[#444]">
               {timeAgo(notif.updatedAt ?? notif.createdAt)}
             </p>
@@ -1566,7 +1553,7 @@ function RoarLikeNotificationCard({
       </div>
     </div>
   );
-}
+});
 
 // ─── ROAR Comment Notification Card ──────────────────────────────────────────
 
@@ -1579,7 +1566,7 @@ type RoarCommentCardProps = {
   clearLoading: boolean;
 };
 
-function RoarCommentNotificationCard({
+const RoarCommentNotificationCard = React.memo(function RoarCommentNotificationCard({
   notif,
   onMarkRead,
   onClear,
@@ -1603,7 +1590,6 @@ function RoarCommentNotificationCard({
       )}
       <div className="p-4">
         <div className="flex gap-3">
-          {/* Icon */}
           <div
             className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${
               notif.isRead ? "bg-white/6 text-[#666]" : "bg-[#9333ea]/20 text-[#9333ea]"
@@ -1611,9 +1597,7 @@ function RoarCommentNotificationCard({
           >
             <CommentIcon size={20} />
           </div>
-
           <div className="flex-1 min-w-0 pr-4">
-            {/* ROAR badge */}
             <span
               className={`inline-block font-mono text-[9px] tracking-[0.1em] uppercase px-2 py-0.5 rounded-full border mb-1 ${
                 notif.isRead
@@ -1623,20 +1607,14 @@ function RoarCommentNotificationCard({
             >
               ROAR
             </span>
-
-            {/* Message */}
             <p className={`text-sm leading-snug mb-1.5 ${notif.isRead ? "text-[#888]" : "text-white font-medium"}`}>
               {notif.message}
             </p>
-
-            {/* Post preview snippet */}
             {notif.postPreview && (
               <p className="text-[11px] text-[#555] italic mb-2 line-clamp-1">
                 "{notif.postPreview}"
               </p>
             )}
-
-            {/* View post CTA */}
             <button
               onClick={onPostClick}
               className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-medium transition-all ${
@@ -1647,7 +1625,6 @@ function RoarCommentNotificationCard({
             >
               View ROAR post <ArrowRightIcon />
             </button>
-
             <p className="mt-1.5 text-[11px] text-[#444]">
               {timeAgo(notif.createdAt)}
             </p>
@@ -1664,7 +1641,7 @@ function RoarCommentNotificationCard({
       </div>
     </div>
   );
-}
+});
 
 // ─── Unified dispatcher ───────────────────────────────────────────────────────
 
@@ -1678,7 +1655,7 @@ type CardProps = {
   clearLoading: boolean;
 };
 
-function NotificationCard(props: CardProps) {
+const NotificationCard = React.memo(function NotificationCard(props: CardProps) {
   const { notif, onMarkRead, onClear, markLoading, clearLoading } = props;
 
   if (notif.type === "NEW_AUDIO") {
@@ -1705,7 +1682,6 @@ function NotificationCard(props: CardProps) {
     );
   }
 
-  // ── NEW: ROAR like ─────────────────────────────────────────────────────────
   if (notif.type === "roar_post_like") {
     const n = notif as RoarLikeNotification;
     return (
@@ -1720,7 +1696,6 @@ function NotificationCard(props: CardProps) {
     );
   }
 
-  // ── NEW: ROAR comment ──────────────────────────────────────────────────────
   if (notif.type === "roar_post_comment") {
     const n = notif as RoarCommentNotification;
     return (
@@ -1735,7 +1710,6 @@ function NotificationCard(props: CardProps) {
     );
   }
 
-  // Default: battle card
   return (
     <BattleNotificationCard
       notif={notif as BattleNotification}
@@ -1746,7 +1720,77 @@ function NotificationCard(props: CardProps) {
       clearLoading={clearLoading}
     />
   );
-}
+});
+
+// ─── ROAR Alert Item ──────────────────────────────────────────────────────────
+
+const TYPE_COLORS: Record<string, string> = {
+  PREDICTION_OK: "#22c55e",
+  PREDICTION_FAIL: "#ef4444",
+  CHALLENGE: "#e91e8c",
+  BADGE: "#eab308",
+  RIVAL: "#e91e8c",
+  FAN_OF_WEEK: "#eab308",
+  WEEKLY: "#9333ea",
+};
+
+type RoarAlertItemProps = {
+  n: {
+    id: string;
+    type: string;
+    read: boolean;
+    title: string;
+    subtitle?: string | null;
+    cta?: string | null;
+    time: string;
+  };
+  onMarkRead: (id: string) => void;
+};
+
+const RoarAlertItem = React.memo(function RoarAlertItem({ n, onMarkRead }: RoarAlertItemProps) {
+  const color = TYPE_COLORS[n.type] || "#e91e8c";
+  return (
+    <div
+      onClick={() => onMarkRead(n.id)}
+      className="relative cursor-pointer rounded-2xl border transition-all duration-300"
+      style={{
+        borderColor: n.read ? "rgba(255,255,255,0.08)" : `${color}40`,
+        background: n.read
+          ? "#111116"
+          : `linear-gradient(135deg, ${color}0d 0%, #0a0a12 100%)`,
+        borderLeft: `3px solid ${n.read ? "rgba(255,255,255,0.08)" : color}`,
+        padding: "14px 16px",
+      }}
+    >
+      {!n.read && (
+        <span className="absolute right-3 top-3 flex h-2.5 w-2.5">
+          <span
+            className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-60"
+            style={{ background: color }}
+          />
+          <span
+            className="relative inline-flex rounded-full h-2.5 w-2.5"
+            style={{ background: color }}
+          />
+        </span>
+      )}
+      <span
+        className="text-[9px] font-bold tracking-widest uppercase px-2 py-0.5 rounded-full"
+        style={{ color, background: `${color}20` }}
+      >
+        {n.type.replace(/_/g, " ")}
+      </span>
+      <p className="mt-2 text-sm font-semibold text-white leading-snug">{n.title}</p>
+      <p className="mt-0.5 text-xs text-[#888] leading-snug">{n.subtitle}</p>
+      {n.cta && (
+        <p className="mt-1.5 text-xs font-bold" style={{ color }}>
+          {n.cta} →
+        </p>
+      )}
+      <p className="mt-1 text-[10px] text-[#444]">{n.time}</p>
+    </div>
+  );
+});
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
@@ -1755,35 +1799,45 @@ export default function NotificationsPage() {
   const router = useRouter();
   const { roarNotifications, markRoarRead, markAllRoarRead, roarUnreadCount } =
     useRoarNotifications();
+
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "unread" | "audio">("all");
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
-  // ── Fetch ──────────────────────────────────────────────────────────────────
+  // ── FIX 1: Stable primitives prevent unnecessary re-fetches ───────────────
+  const userEmail = user?.email ?? null;
+  const userUid = user?.uid ?? null;
+
+  // ── FIX 2: useCallback now depends on stable primitives ───────────────────
   const fetchNotifications = useCallback(async () => {
-    if (!user?.email) return;
+    if (!userEmail && !userUid) return;
     try {
       setLoading(true);
+      const params: Record<string, string> = {};
+      if (userEmail) params.email = userEmail;
+      if (userUid) params.uid = userUid;
+
       const res = await axios.get<{
         success: boolean;
         notifications: Notification[];
-      }>("/api/notifications", { params: { email: user.email } });
+      }>("/api/notifications", { params });
       setNotifications(res.data.notifications || []);
     } catch (err) {
       console.error("Failed to fetch notifications:", err);
     } finally {
       setLoading(false);
     }
-  }, [user?.email]);
+  }, [userEmail, userUid]);
 
+  // ── FIX 3: useEffect was missing — this was the main cause of never loading
   useEffect(() => {
     fetchNotifications();
   }, [fetchNotifications]);
 
   // ── Actions ────────────────────────────────────────────────────────────────
 
-  const markRead = async (id: string) => {
+  const markRead = useCallback(async (id: string) => {
     setActionLoading(id);
     try {
       await axios.patch("/api/notifications", { id, action: "markRead" });
@@ -1795,14 +1849,15 @@ export default function NotificationsPage() {
     } finally {
       setActionLoading(null);
     }
-  };
+  }, []);
 
-  const markAllRead = async () => {
-    if (!user?.email) return;
+  const markAllRead = useCallback(async () => {
+    if (!userEmail && !userUid) return;
     setActionLoading("__all__");
     try {
       await axios.patch("/api/notifications", {
-        email: user.email,
+        email: userEmail,
+        uid: userUid,
         action: "markAllRead",
       });
       setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
@@ -1811,9 +1866,9 @@ export default function NotificationsPage() {
     } finally {
       setActionLoading(null);
     }
-  };
+  }, [userEmail, userUid]);
 
-  const clearOne = async (id: string) => {
+  const clearOne = useCallback(async (id: string) => {
     setActionLoading(id + "__clear");
     try {
       await axios.delete("/api/notifications", { data: { id } });
@@ -1823,14 +1878,14 @@ export default function NotificationsPage() {
     } finally {
       setActionLoading(null);
     }
-  };
+  }, []);
 
-  const clearAll = async () => {
-    if (!user?.email) return;
+  const clearAll = useCallback(async () => {
+    if (!userEmail) return;
     setActionLoading("__clear_all__");
     try {
       await axios.delete("/api/notifications", {
-        data: { email: user.email, all: true },
+        data: { email: userEmail, all: true },
       });
       setNotifications([]);
     } catch (err) {
@@ -1838,28 +1893,34 @@ export default function NotificationsPage() {
     } finally {
       setActionLoading(null);
     }
-  };
+  }, [userEmail]);
 
-  // ── Navigate to a ROAR post ────────────────────────────────────────────────
-  // Redirects to your ROAR page and passes ?postId= so the feed can
-  // auto-open PostDetailsOverlay for that post.
-  const handleRoarPostClick = (postId: string) => {
+  const handleRoarPostClick = useCallback((postId: string) => {
     router.push(`/MainModules/ROAR?postId=${postId}`);
-  };
+  }, [router]);
 
-  // ── Derived state ──────────────────────────────────────────────────────────
-  const unreadCount = notifications.filter((n) => !n.isRead).length;
-  const audioCount = notifications.filter((n) => n.type === "NEW_AUDIO").length;
-  const unreadAudioCount = notifications.filter(
-    (n) => n.type === "NEW_AUDIO" && !n.isRead,
-  ).length;
+  // ── FIX 4: Memoized derived state — no recomputing on every render ─────────
+  const unreadCount = useMemo(
+    () => notifications.filter((n) => !n.isRead).length,
+    [notifications],
+  );
 
-  const displayed =
-    filter === "unread"
-      ? notifications.filter((n) => !n.isRead)
-      : filter === "audio"
-        ? notifications.filter((n) => n.type === "NEW_AUDIO")
-        : notifications;
+  const audioCount = useMemo(
+    () => notifications.filter((n) => n.type === "NEW_AUDIO").length,
+    [notifications],
+  );
+
+  const unreadAudioCount = useMemo(
+    () => notifications.filter((n) => n.type === "NEW_AUDIO" && !n.isRead).length,
+    [notifications],
+  );
+
+  // ── FIX 5: displayed list memoized ────────────────────────────────────────
+  const displayed = useMemo(() => {
+    if (filter === "unread") return notifications.filter((n) => !n.isRead);
+    if (filter === "audio") return notifications.filter((n) => n.type === "NEW_AUDIO");
+    return notifications;
+  }, [filter, notifications]);
 
   const isBulkLoading =
     actionLoading === "__all__" || actionLoading === "__clear_all__";
@@ -1969,7 +2030,7 @@ export default function NotificationsPage() {
 
       {/* ── Content ── */}
       <div className="mx-auto max-w-6xl px-4 pt-4 space-y-3">
-        {/* ROAR contextual alerts (from RoarNotificationsContext) */}
+        {/* ROAR contextual alerts */}
         {roarNotifications.length > 0 && (
           <div className="mb-2">
             <div className="flex items-center justify-between mb-3 px-1">
@@ -1993,71 +2054,11 @@ export default function NotificationsPage() {
               )}
             </div>
             <div className="space-y-2">
-              {roarNotifications.map((n) => {
-                const TYPE_COLORS: Record<string, string> = {
-                  PREDICTION_OK: "#22c55e",
-                  PREDICTION_FAIL: "#ef4444",
-                  CHALLENGE: "#e91e8c",
-                  HEATING_UP: "#f97316",
-                  MATCH_LIVE: "#22c55e",
-                  BADGE: "#eab308",
-                  RIVAL: "#e91e8c",
-                  FAN_OF_WEEK: "#eab308",
-                  WEEKLY: "#9333ea",
-                };
-                const color = TYPE_COLORS[n.type] || "#e91e8c";
-                return (
-                  <div
-                    key={n.id}
-                    onClick={() => markRoarRead(n.id)}
-                    className="relative cursor-pointer rounded-2xl border transition-all duration-300"
-                    style={{
-                      borderColor: n.read
-                        ? "rgba(255,255,255,0.08)"
-                        : `${color}40`,
-                      background: n.read
-                        ? "#111116"
-                        : `linear-gradient(135deg, ${color}0d 0%, #0a0a12 100%)`,
-                      borderLeft: `3px solid ${n.read ? "rgba(255,255,255,0.08)" : color}`,
-                      padding: "14px 16px",
-                    }}
-                  >
-                    {!n.read && (
-                      <span className="absolute right-3 top-3 flex h-2.5 w-2.5">
-                        <span
-                          className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-60"
-                          style={{ background: color }}
-                        />
-                        <span
-                          className="relative inline-flex rounded-full h-2.5 w-2.5"
-                          style={{ background: color }}
-                        />
-                      </span>
-                    )}
-                    <span
-                      className="text-[9px] font-bold tracking-widest uppercase px-2 py-0.5 rounded-full"
-                      style={{ color, background: `${color}20` }}
-                    >
-                      {n.type.replace(/_/g, " ")}
-                    </span>
-                    <p className="mt-2 text-sm font-semibold text-white leading-snug">
-                      {n.title}
-                    </p>
-                    <p className="mt-0.5 text-xs text-[#888] leading-snug">
-                      {n.subtitle}
-                    </p>
-                    {n.cta && (
-                      <p
-                        className="mt-1.5 text-xs font-bold"
-                        style={{ color }}
-                      >
-                        {n.cta} →
-                      </p>
-                    )}
-                    <p className="mt-1 text-[10px] text-[#444]">{n.time}</p>
-                  </div>
-                );
-              })}
+              {roarNotifications
+                .filter((n) => n.type !== "MATCH_LIVE" && n.type !== "HEATING_UP")
+                .map((n) => (
+                  <RoarAlertItem key={n.id} n={n} onMarkRead={markRoarRead} />
+                ))}
             </div>
             <div className="my-5 border-t border-white/8" />
           </div>

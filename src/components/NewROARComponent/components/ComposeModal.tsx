@@ -770,7 +770,8 @@ export default function ComposeModal({ open, onClose, onPost, initialType, onOpe
   const [domReady, setDomReady]         = useState(false);
   const [selectedGif, setSelectedGif]   = useState<string | null>(null);
   const [selectedTag, setSelectedTag]   = useState<string | null>(null);
-  const [predictionCloseMinutes, setPredictionCloseMinutes] = useState(60);
+  const [predictionCloseMinutes, setPredictionCloseMinutes] = useState(2);
+  const [predictionOptions, setPredictionOptions] = useState<string[]>(["", ""]);
 
   // Cursor tracking per field (needed to correctly splice mention text)
   const [textCursor, setTextCursor]     = useState(0);
@@ -891,23 +892,27 @@ export default function ComposeModal({ open, onClose, onPost, initialType, onOpe
     setMatch("None / General");
     setSelectedGif(null);
     setSelectedTag(null);
-    setPredictionCloseMinutes(60);
+    setPredictionCloseMinutes(2);
+    setPredictionOptions(["", ""]);
     mention.dismiss();
   };
 
+  const filledPredictionOptions = predictionOptions.map((option) => option.trim()).filter(Boolean);
   const canPost =
     (selected === "hot_take"      && text.trim()) ||
-    (selected === "prediction"    && text.trim()) ||
+    (selected === "prediction"    && text.trim() && filledPredictionOptions.length >= 2) ||
     (selected === "debate"        && text.trim() && sideA.trim() && sideB.trim()) ||
     (selected === "raw_reactions" && text.trim()) ||
     (selected === "post"          && (postText.trim() || mediaFiles.length > 0));
 
   const handlePost = () => {
+    const cleanPredictionOptions = predictionOptions.map((option) => option.trim()).filter(Boolean);
     onPost({
       type:       selected!,
       text:       selected === "post" ? postText : text,
-      sideA,
-      sideB,
+      sideA:      selected === "prediction" ? cleanPredictionOptions[0] ?? "" : sideA,
+      sideB:      selected === "prediction" ? cleanPredictionOptions[1] ?? "" : sideB,
+      predictionOptions: selected === "prediction" ? cleanPredictionOptions : undefined,
       match,
       confidence,
       audience,
@@ -1014,19 +1019,22 @@ export default function ComposeModal({ open, onClose, onPost, initialType, onOpe
               transition={{ type: "spring", damping: 28, stiffness: 300 }}
               style={{
                 position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 10070,
-                background: "var(--bg-glass)", backdropFilter: "blur(20px)",
-                borderRadius: "32px 32px 0 0",
-                border: "1px solid rgba(255,255,255,0.08)",
+                maxWidth: selected === "prediction" ? 390 : undefined,
+                margin: selected === "prediction" ? "0 auto" : undefined,
+                background: selected === "prediction" ? "#1f1f1f" : "var(--bg-glass)",
+                backdropFilter: "blur(20px)",
+                borderRadius: selected === "prediction" ? "8px 8px 0 0" : "32px 32px 0 0",
+                border: selected === "prediction" ? "none" : "1px solid rgba(255,255,255,0.08)",
               }}
             >
               {/* Drag handle */}
-              <div style={{ display: "flex", justifyContent: "center", padding: "12px 0 4px" }}>
+              <div style={{ display: selected === "prediction" ? "none" : "flex", justifyContent: "center", padding: "12px 0 4px" }}>
                 <div style={{ width: 40, height: 4, borderRadius: 2, background: "var(--border)" }} />
               </div>
 
-              <div className="mobile-padding-bottom" style={{ padding: "0 20px 40px", maxHeight: "75vh", overflowY: "auto" }}>
+              <div className="mobile-padding-bottom" style={{ padding: selected === "prediction" ? "26px 24px 32px" : "0 20px 40px", maxHeight: selected === "prediction" ? "none" : "75vh", overflowY: "auto" }}>
                 {/* Header */}
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+                <div style={{ display: selected === "prediction" ? "none" : "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
                   <h2 className="font-display" style={{ fontSize: 28, letterSpacing: "0.04em", textTransform: "uppercase", margin: 0 }}>
                     {selected === "hot_take"      && "Create Hot Take"}
                     {selected === "prediction"    && "Create Prediction"}
@@ -1198,6 +1206,81 @@ export default function ComposeModal({ open, onClose, onPost, initialType, onOpe
 
                     {/* ── PREDICTION ── */}
                     {selected === "prediction" && (
+                      <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                          <img src="/images/prediction-clock.png" alt="" style={{ width: 40, height: 48, objectFit: "contain", flexShrink: 0 }} />
+                          <div>
+                            <h2 style={{ margin: 0, color: "#fff", fontSize: 21, lineHeight: 1.05, fontWeight: 700 }}>Predict</h2>
+                            <p style={{ margin: "6px 0 0", color: "#9b9b9b", fontSize: 14, lineHeight: 1.2 }}>Let other fans enter their predictions</p>
+                          </div>
+                        </div>
+                        <div style={{ borderRadius: 16, background: "#2b2b2b", padding: "16px 12px 20px" }}>
+                          <input
+                            value={text}
+                            maxLength={80}
+                            onChange={(e) => setText(e.target.value)}
+                            placeholder="Who will win today"
+                            style={{ width: "100%", border: "none", outline: "none", background: "transparent", color: "#fff", fontSize: 16, fontWeight: 500, padding: 0, marginBottom: 14 }}
+                          />
+                          {predictionOptions.map((option, index) => (
+                            <div key={index} style={{ height: 48, borderRadius: 999, background: "#171717", display: "flex", alignItems: "center", padding: "0 12px 0 15px", marginBottom: 8 }}>
+                              <input
+                                value={option}
+                                maxLength={25}
+                                onChange={(e) => setPredictionOptions((prev) => prev.map((item, itemIndex) => itemIndex === index ? e.target.value : item))}
+                                placeholder={`Option ${index + 1}`}
+                                style={{ flex: 1, minWidth: 0, border: "none", outline: "none", background: "transparent", color: "#fff", fontSize: 16, fontWeight: 500 }}
+                              />
+                              <span style={{ color: "#6f6f6f", fontSize: 14 }}>{option.length}/25</span>
+                            </div>
+                          ))}
+                          <button
+                            type="button"
+                            aria-label="Add option"
+                            disabled={predictionOptions.length >= 6}
+                            onClick={() => setPredictionOptions((prev) => prev.length >= 6 ? prev : [...prev, ""])}
+                            style={{ display: "inline-flex", alignItems: "center", gap: 6, height: 35, padding: "0 11px", marginTop: 12, borderRadius: 999, border: "1px solid #9a9a9a", background: "transparent", color: "#fff", fontSize: 14, cursor: predictionOptions.length >= 6 ? "not-allowed" : "pointer", opacity: predictionOptions.length >= 6 ? 0.45 : 1 }}
+                          >
+                            Option
+                            <span style={{ width: 16, height: 16, borderRadius: "50%", border: "1px solid #fff", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 13, lineHeight: 1 }}>+</span>
+                          </button>
+                          <div style={{ height: 1, background: "#575757", margin: "20px 0 10px" }} />
+                          <label style={{ display: "block", color: "#777", fontSize: 15, fontWeight: 600, marginBottom: 10 }}>Set duration</label>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                            {[
+                              { label: "2min", value: 2 },
+                              { label: "1:30hr", value: 90 },
+                              { label: "Custom", value: 0 },
+                            ].map((duration) => {
+                              const active = duration.value === 0 ? predictionCloseMinutes !== 2 && predictionCloseMinutes !== 90 : predictionCloseMinutes === duration.value;
+                              return (
+                                <button
+                                  key={duration.label}
+                                  type="button"
+                                  onClick={() => setPredictionCloseMinutes(duration.value === 0 ? 60 : duration.value)}
+                                  style={{ height: 30, padding: "0 12px", borderRadius: 999, border: "none", background: active ? "#0f0f0f" : "#171717", color: active ? "#fff" : "#696969", fontSize: 14, fontWeight: 600, cursor: "pointer" }}
+                                >
+                                  {duration.label}
+                                </button>
+                              );
+                            })}
+                          </div>
+                          {predictionCloseMinutes !== 2 && predictionCloseMinutes !== 90 && (
+                            <input
+                              type="number"
+                              min={1}
+                              max={10080}
+                              value={predictionCloseMinutes}
+                              onChange={(e) => setPredictionCloseMinutes(Math.max(1, Math.min(10080, Number(e.target.value) || 1)))}
+                              aria-label="Custom close time in minutes"
+                              style={{ width: "100%", marginTop: 10, border: "none", outline: "none", borderRadius: 999, background: "#171717", color: "#fff", fontSize: 14, padding: "10px 14px" }}
+                            />
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {false && selected === "prediction" && (
                       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                       <div style={{ position: "relative" }}>
                         <textarea
@@ -1441,7 +1524,7 @@ export default function ComposeModal({ open, onClose, onPost, initialType, onOpe
                     )}
 
                     {/* ── Sport selector ── */}
-                    {(selected === "hot_take" || selected === "prediction" || selected === "debate" || selected === "memory" || selected === "post") && (
+                    {(selected === "hot_take" || selected === "debate" || selected === "memory" || selected === "post") && (
                       <>
                         <label style={{ fontSize: 11, color: "var(--text-muted)", display: "block", marginTop: 16, marginBottom: 4 }}>Sport</label>
                         <div style={{ display: "flex", gap: 8, marginTop: 4, marginBottom: 12 }}>
@@ -1476,9 +1559,9 @@ export default function ComposeModal({ open, onClose, onPost, initialType, onOpe
                       disabled={!canPost}
                       onClick={handlePost}
                       className="btn-gradient"
-                      style={{ width: "100%", padding: "14px", borderRadius: 999, fontSize: 16, border: "none", cursor: "pointer", opacity: canPost ? 1 : 0.4 }}
+                      style={{ width: "100%", padding: selected === "prediction" ? "18px" : "14px", borderRadius: 999, fontSize: 16, border: "none", cursor: "pointer", opacity: canPost ? 1 : 0.4, marginTop: selected === "prediction" ? 0 : undefined, textTransform: selected === "prediction" ? "none" : undefined }}
                     >
-                      POST TO ROAR
+                      {selected === "prediction" ? "Share" : "POST TO ROAR"}
                     </motion.button>
                   </motion.div>
                 )}

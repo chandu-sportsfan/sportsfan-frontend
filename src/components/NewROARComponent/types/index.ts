@@ -21,16 +21,18 @@ export interface FeedPost {
   samePredictionCount?: number;
   counterCount?: number;
   isDbPost?: boolean;
-  userVote?: "agree" | "disagree" | null;
+  userVote?: string | null;
   sideA?: string;
   sideB?: string;
+  predictionOptions?: string[];
+  predictionOptionCounts?: Record<string, number>;
   memCtx?: string;
    memGifUrl?: string;
   memTag?: string;
   closesAt?: number;
   closedAt?: number;
   resolvedAt?: number;
-  correctVote?: "agree" | "disagree";
+  correctVote?: string;
   accuracyAwarded?: boolean;
 }
 
@@ -126,6 +128,7 @@ export interface ComposePayload {
   text: string;
   sideA?: string;
   sideB?: string;
+  predictionOptions?: string[];
   match?: string;
   confidence?: number;
   audience?: string;

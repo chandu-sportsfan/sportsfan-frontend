@@ -1186,6 +1186,7 @@ export default function ROARApp() {
                     userSports={userSports}
                     onQuickCompose={t => openCompose(t)}
                     currentUsername={currentUsername}
+                    currentUserId={currentUserId}
                     currentAvatarUrl={currentAvatarUrl}
                     onBack={() => { setOverlay(null); setActiveTab("home"); }}
                   />
@@ -1204,6 +1205,7 @@ export default function ROARApp() {
                     onToast={showToast}
                     onPostClick={post => setSelectedPost(post)}
                     onCompose={type => openCompose(type)}
+                    currentUserId={currentUserId}
                     currentAvatarUrl={currentAvatarUrl}
                     onRegisterRefresh={fn => { roomRefreshRef.current = fn; }}
                     onRegisterReplyUpdate={fn => { roomReplyUpdateRef.current = fn; }}
@@ -1243,14 +1245,14 @@ export default function ROARApp() {
                   post={selectedPost}
                   onClose={(count?) => { if (selectedPost && count !== undefined) roomReplyUpdateRef.current?.(selectedPost.id, count); setSelectedPost(null); roomRefreshRef.current?.(); }}
                   onToast={showToast} onVote={handleVote} onDeletePost={handleDeletePost}
-                  currentUsername={currentUsername} currentAvatarUrl={currentAvatarUrl}
+                  currentUsername={currentUsername} currentUserId={currentUserId} currentAvatarUrl={currentAvatarUrl}
                 />
               ) : (
                 <PostDetailsOverlay
                   post={selectedPost}
                   onClose={() => setSelectedPost(null)}
                   onToast={showToast} onVote={handleVote} onDeletePost={handleDeletePost}
-                  currentUsername={currentUsername} currentAvatarUrl={currentAvatarUrl}
+                  currentUsername={currentUsername} currentUserId={currentUserId} currentAvatarUrl={currentAvatarUrl}
                 />
               )
             )}

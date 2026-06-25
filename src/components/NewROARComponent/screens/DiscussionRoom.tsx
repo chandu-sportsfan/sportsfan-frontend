@@ -922,10 +922,10 @@
 //                                   setInlineCommentPostId(p.id);
 //                                 } catch { onToast("You've already voted!!"); }
 //                               }}
-//                               style={{ flex: 1, padding: "9px", borderRadius: 999, fontSize: 12, fontWeight: 700, cursor: hasVoted ? "default" : "pointer", border: `2px solid ${color}`, background: active ? color : "rgba(255,255,255,0.02)", color: active ? "white" : color, boxShadow: active ? `0 0 14px ${color}50` : "none", transition: "all 0.2s ease-in-out", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, opacity: hasVoted && !active ? 0.4 : 1 }}
+//                               style={{ flex: 1, padding: "9px", borderRadius: 999, fontSize: 12, fontWeight: 700, cursor: hasVoted ? "default" : "pointer", border: `2px solid ${active ? "#ff6b35" : "#8b8b8b"}`, background: active ? "rgba(255,107,53,0.24)" : "rgba(255,255,255,0.02)", color: active ? "#fff" : "#d1d1d1", boxShadow: active ? "0 0 14px rgba(255,107,53,0.35)" : "none", transition: "all 0.2s ease-in-out", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, opacity: hasVoted && !active ? 0.4 : 1 }}
 //                             >
-//                               {active ? `✓ ${agree ? "Supported" : "Countered"}` : label}
-//                               <span style={{ fontSize: 10, fontWeight: 800, background: active ? "rgba(255,255,255,0.2)" : `${color}22`, borderRadius: 999, padding: "1px 6px" }}>{pctVal}%</span>
+//                               {label}
+//                               <span style={{ fontSize: 10, fontWeight: 800, background: active ? "rgba(255,255,255,0.18)" : "rgba(255,255,255,0.08)", borderRadius: 999, padding: "1px 6px" }}>{pctVal}%</span>
 //                             </motion.button>
 //                           ))}
 //                         </div>
@@ -988,7 +988,7 @@
 //                               style={{ flex: 1, padding: "10px", borderRadius: 999, fontSize: 12, fontWeight: 700, cursor: hasVoted ? "default" : "pointer", border: `2.5px solid ${color}`, background: active ? color : "rgba(255,255,255,0.02)", color: active ? "white" : color, boxShadow: active ? `0 0 16px ${color}60` : "none", transition: "all 0.2s ease-in-out", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, opacity: hasVoted && !active ? 0.4 : 1 }}
 //                             >
 //                               {active ? `✓ ${agree ? "Agreed" : "Disagreed"}` : label}
-//                               <span style={{ fontSize: 10, fontWeight: 800, background: active ? "rgba(255,255,255,0.2)" : `${color}22`, borderRadius: 999, padding: "1px 6px" }}>{pctVal}%</span>
+//                               <span style={{ fontSize: 10, fontWeight: 800, background: active ? "rgba(255,255,255,0.18)" : "rgba(255,255,255,0.08)", borderRadius: 999, padding: "1px 6px" }}>{pctVal}%</span>
 //                             </motion.button>
 //                           ))}
 //                         </div>
@@ -1118,6 +1118,7 @@ interface Props {
   fanCount?: number;
   score?: string;
   scoreSubtitle?: string;
+  currentUserId?: string;
   currentAvatarUrl?: string;
   onRegisterRefresh?: (fn: () => void) => void;
   onRegisterReplyUpdate?: (fn: (postId: string, count: number) => void) => void;
@@ -1467,7 +1468,7 @@ function useVisibilityInterval(callback: () => void, delay: number) {
 
 export default function DiscussionRoom({
   onBack, onToast, roomId, roomName, onPostClick, onCompose,
-  fanCount = 312, score, scoreSubtitle, currentAvatarUrl, onRegisterRefresh, onRegisterReplyUpdate,
+  fanCount = 312, score, scoreSubtitle, currentUserId: propCurrentUserId, currentAvatarUrl, onRegisterRefresh, onRegisterReplyUpdate,
   onFanProfile, watchAlongRoomId
 }: Props) {
   const router = useRouter();
@@ -1489,8 +1490,9 @@ export default function DiscussionRoom({
   const [sharePost, setSharePost] = useState<ShareableRoarPost | null>(null);
   const [copied, setCopied] = useState(false);
   const { userProfile } = useUserProfile();
-  const currentUserId = userProfile?.actualUserId;
+  const currentUserId = propCurrentUserId || userProfile?.actualUserId;
   const currentUserIdCandidates = [
+    currentUserId,
     userProfile?.actualUserId,
     (userProfile as { userId?: string })?.userId,
     (userProfile as { uid?: string })?.uid,
@@ -1588,6 +1590,8 @@ export default function DiscussionRoom({
             .filter(m => !seenIds.has(m.msgId))
             .map((m: any) => ({
               id: m.msgId,
+              authorUid: m.authorUid,
+              authorEmail: m.authorEmail,
               fan: { username: displayUsername(m.authorUsername), authorUid: m.authorUid, badge: m.authorBadge, avatarUrl: m.authorAvatarUrl || m.avatarUrl || (m.authorUsername === userUsername ? userAvatarUrl : undefined) },
               text: m.text,
               // fireCount: m.fireCount || 0,
@@ -1866,6 +1870,8 @@ export default function DiscussionRoom({
                 const isPending = pendingReactRef.current[m.msgId];
                 return {
                   id: m.msgId,
+                  authorUid: m.authorUid,
+                  authorEmail: m.authorEmail,
                   // fan: { username: displayUsername(m.authorUsername), authorUid: m.authorUid, badge: m.authorBadge, avatarUrl: m.authorAvatarUrl || m.avatarUrl },
                   fan: { username: displayUsername(m.authorUsername), authorUid: m.authorUid, badge: m.authorBadge, avatarUrl: m.authorUid === currentUserId ? (userAvatarUrl || m.authorAvatarUrl || m.avatarUrl) : (m.authorAvatarUrl || m.avatarUrl) },
                   text: m.text,
@@ -1923,6 +1929,8 @@ export default function DiscussionRoom({
               .filter((m: any) => !existingIds.has(m.msgId))
               .map((m: any) => ({
                 id: m.msgId,
+                authorUid: m.authorUid,
+                authorEmail: m.authorEmail,
                 // fan: { username: displayUsername(m.authorUsername), authorUid: m.authorUid, badge: m.authorBadge, avatarUrl: m.authorAvatarUrl || m.avatarUrl },
                 fan: { username: displayUsername(m.authorUsername), authorUid: m.authorUid, badge: m.authorBadge, avatarUrl: m.authorUid === currentUserId ? (userAvatarUrl || m.authorAvatarUrl || m.avatarUrl) : (m.authorAvatarUrl || m.avatarUrl) },
                 text: m.text,
@@ -2164,6 +2172,8 @@ export default function DiscussionRoom({
         const m = res.data.message;
         setPosts(p => [{
           id: m.msgId,
+          authorUid: m.authorUid,
+          authorEmail: m.authorEmail,
           fan: { username: displayUsername(m.authorUsername), authorUid: m.authorUid, badge: m.authorBadge, avatarUrl: m.authorAvatarUrl || m.avatarUrl || (m.authorUsername === userUsername ? userAvatarUrl : undefined) },
           text: m.text,
           // fireCount: 0, nochanceCount: 0, heartCount: 0,
@@ -2621,7 +2631,7 @@ export default function DiscussionRoom({
               /* ── DEFAULT (post / hottake / prediction / raw_reactions) ── */
               return (
                 <motion.div key={p.id} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22 }} className="glass-card p-3 cursor-pointer"
-                  onClick={() => onPostClick?.({ id: p.id, text: p.text, fan: p.fan, timeAgo: p.timeAgo, createdAt: p.createdAt, type: p.type || "post", isDbPost: true, roomId, mediaUrls: p.mediaUrls })}
+                  onClick={() => onPostClick?.({ ...p, type: p.type || "post", isDbPost: true, roomId })}
                 >
                   {p.type && (
                     <div className="flex gap-1.5 mb-2 flex-wrap">
@@ -2664,7 +2674,6 @@ export default function DiscussionRoom({
                             const agree = optionIndex === 0;
                             const pctVal = optionIndex === 0 ? predAgrPct : predDisAgrPct;
                             const active = optionIndex === 0 ? userVote === "agree" : userVote === "disagree";
-                            const color = optionIndex === 0 ? "#22c55e" : "var(--accent-magenta)";
                             return (
                             <motion.button key={label} disabled={predictionClosed} whileTap={!hasPredictionVoted && !predictionClosed ? { scale: 0.93 } : {}}
                               onClick={async (e) => {
@@ -2683,10 +2692,10 @@ export default function DiscussionRoom({
                                   setInlineCommentPostId(p.id);
                                 } catch { onToast("You've already voted!!"); }
                               }}
-                              style={{ flex: 1, padding: "9px", borderRadius: 999, fontSize: 12, fontWeight: 700, cursor: hasPredictionVoted || predictionClosed ? "default" : "pointer", border: `2px solid ${color}`, background: active ? color : "rgba(255,255,255,0.02)", color: active ? "white" : color, boxShadow: active ? `0 0 14px ${color}50` : "none", transition: "all 0.2s ease-in-out", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, opacity: (hasPredictionVoted || predictionClosed) && !active ? 0.4 : 1 }}
+                              style={{ flex: 1, padding: "9px", borderRadius: 999, fontSize: 12, fontWeight: 700, cursor: hasPredictionVoted || predictionClosed ? "default" : "pointer", border: `2px solid ${active ? "#ff6b35" : "#8b8b8b"}`, background: active ? "rgba(255,107,53,0.24)" : "rgba(255,255,255,0.02)", color: active ? "#fff" : "#d1d1d1", boxShadow: active ? "0 0 14px rgba(255,107,53,0.35)" : "none", transition: "all 0.2s ease-in-out", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, opacity: (hasPredictionVoted || predictionClosed) && !active ? 0.4 : 1 }}
                             >
-                              {active ? `✓ ${agree ? "Supported" : "Countered"}` : label}
-                              <span style={{ fontSize: 10, fontWeight: 800, background: active ? "rgba(255,255,255,0.2)" : `${color}22`, borderRadius: 999, padding: "1px 6px" }}>{pctVal}%</span>
+                              {label}
+                              <span style={{ fontSize: 10, fontWeight: 800, background: active ? "rgba(255,255,255,0.18)" : "rgba(255,255,255,0.08)", borderRadius: 999, padding: "1px 6px" }}>{pctVal}%</span>
                             </motion.button>
                             );
                           })}
@@ -2706,9 +2715,9 @@ export default function DiscussionRoom({
                                   setPosts(prev => prev.map(x => x.id !== p.id ? x : { ...x, userVote: voteValue, predictionOptionCounts: { ...(x.predictionOptionCounts ?? {}), [voteValue]: ((x.predictionOptionCounts ?? {})[voteValue] ?? 0) + 1 } }));
                                   setInlineCommentPostId(p.id);
                                 } catch { onToast("You've already voted!!"); }
-                              }} style={{ flex: "1 1 calc(50% - 4px)", minWidth: 0, padding: "9px", borderRadius: 999, fontSize: 12, fontWeight: 700, border: "2px solid #8b8b8b", background: active ? "#8b8b8b" : "rgba(255,255,255,0.02)", color: active ? "#fff" : "#d1d1d1", textAlign: "center", opacity: (hasPredictionVoted || predictionClosed) && !active ? 0.4 : 1, cursor: hasPredictionVoted || predictionClosed ? "default" : "pointer" }}>
+                              }} style={{ flex: "1 1 calc(50% - 4px)", minWidth: 0, padding: "9px", borderRadius: 999, fontSize: 12, fontWeight: 700, border: `2px solid ${active ? "#ff6b35" : "#8b8b8b"}`, background: active ? "rgba(255,107,53,0.24)" : "rgba(255,255,255,0.02)", color: active ? "#fff" : "#d1d1d1", boxShadow: active ? "0 0 14px rgba(255,107,53,0.35)" : "none", textAlign: "center", opacity: (hasPredictionVoted || predictionClosed) && !active ? 0.4 : 1, cursor: hasPredictionVoted || predictionClosed ? "default" : "pointer" }}>
                                 {label}
-                                <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 800, background: active ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.08)", borderRadius: 999, padding: "1px 6px" }}>{pctVal}%</span>
+                                <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 800, background: active ? "rgba(255,255,255,0.18)" : "rgba(255,255,255,0.08)", borderRadius: 999, padding: "1px 6px" }}>{pctVal}%</span>
                               </button>
                               );
                             })}
@@ -2737,7 +2746,7 @@ export default function DiscussionRoom({
                               onSubmit={handleInlineCommentSubmit}
                               onOpenFull={() => {
                                 setInlineCommentPostId(null);
-                                onPostClick?.({ id: p.id, text: p.text, fan: p.fan, timeAgo: p.timeAgo, createdAt: p.createdAt, type: p.type, isDbPost: true, roomId, mediaUrls: p.mediaUrls });
+                                onPostClick?.({ ...p, type: p.type || "post", isDbPost: true, roomId });
                               }}
                               accentColor="#22c55e"
                               placeholder="Share your thoughts on this..."
@@ -2794,7 +2803,7 @@ export default function DiscussionRoom({
                               style={{ flex: 1, padding: "10px", borderRadius: 999, fontSize: 12, fontWeight: 700, cursor: hasVoted ? "default" : "pointer", border: `2.5px solid ${color}`, background: active ? color : "rgba(255,255,255,0.02)", color: active ? "white" : color, boxShadow: active ? `0 0 16px ${color}60` : "none", transition: "all 0.2s ease-in-out", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, opacity: hasVoted && !active ? 0.4 : 1 }}
                             >
                               {active ? `✓ ${agree ? "Agreed" : "Disagreed"}` : label}
-                              <span style={{ fontSize: 10, fontWeight: 800, background: active ? "rgba(255,255,255,0.2)" : `${color}22`, borderRadius: 999, padding: "1px 6px" }}>{pctVal}%</span>
+                              <span style={{ fontSize: 10, fontWeight: 800, background: active ? "rgba(255,255,255,0.18)" : "rgba(255,255,255,0.08)", borderRadius: 999, padding: "1px 6px" }}>{pctVal}%</span>
                             </motion.button>
                           ))}
                         </div>
@@ -2805,7 +2814,7 @@ export default function DiscussionRoom({
                   <div style={{ marginTop: 10 }}>
                     <div style={{ display: "flex", gap: 16, borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 10, alignItems: "center" }}>
                       {renderReactionPicker(p)}
-                      <button onClick={e => { e.stopPropagation(); onPostClick?.({ id: p.id, text: p.text, fan: p.fan, timeAgo: p.timeAgo, createdAt: p.createdAt, type: p.type || "post", isDbPost: true, roomId, mediaUrls: p.mediaUrls, replyCount: p.replyCount }); }} style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", color: "#9494ad", fontSize: 13, fontWeight: 600 }}>
+                      <button onClick={e => { e.stopPropagation(); onPostClick?.({ ...p, type: p.type || "post", isDbPost: true, roomId }); }} style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", color: "#9494ad", fontSize: 13, fontWeight: 600 }}>
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
                         <span>{p.replyCount || 0}</span>
                       </button>
@@ -2929,3 +2938,4 @@ export default function DiscussionRoom({
     </div>
   );
 }
+

@@ -19,6 +19,7 @@ interface Props {
     onVote: (id: string, vote: "agree" | "disagree" | null) => void;
     onDeletePost?: (id: string, roomId?: string) => void;
     currentUsername?: string;
+    currentUserId?: string;
     currentAvatarUrl?: string;
     onFanProfileClick?: (fan: any) => void;
 }
@@ -40,6 +41,7 @@ export default function RoomPostDetailsOverlay({
     onVote,
     onDeletePost,
     currentUsername,
+    currentUserId,
     currentAvatarUrl,
     onFanProfileClick,
 }: Props) {
@@ -55,6 +57,8 @@ export default function RoomPostDetailsOverlay({
         post.userVote ? { [post.id]: post.userVote === "agree" } : {},
     );
     const [pct, setPct] = useState(post.agreePercent ?? 50);
+    const [resolvingPrediction, setResolvingPrediction] = useState(false);
+    const [localResolution, setLocalResolution] = useState<{ resolvedAt: number; closedAt: number; correctVote: string } | null>(null);
     const inputRef = useRef<HTMLInputElement>(null);
     const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -259,6 +263,43 @@ export default function RoomPostDetailsOverlay({
     };
 
     const userVote = votes[post.id];
+    const currentUserIdCandidates = [
+        currentUserId,
+        post.currentUserId,
+    ].filter(Boolean).map(String);
+    const isCurrentUserAuthor = () => {
+        const authorCandidates = [post.authorUid, post.fan?.authorUid, post.authorEmail].filter(Boolean).map(String);
+        return authorCandidates.some(id => currentUserIdCandidates.includes(id));
+    };
+    const getPredictionVoteValue = (optionIndex: number) => (
+        optionIndex === 0 ? "agree" : optionIndex === 1 ? "disagree" : `option_${optionIndex}`
+    );
+    const getPredictionOptionLabel = (voteValue: string | undefined, options: string[]) => {
+        if (!voteValue) return "";
+        if (voteValue === "agree") return options[0] || "Option 1";
+        if (voteValue === "disagree") return options[1] || "Option 2";
+        const optionIndex = Number(voteValue.replace("option_", ""));
+        return Number.isFinite(optionIndex) ? (options[optionIndex] || voteValue) : voteValue;
+    };
+    const resolvePrediction = async (correctVote: string) => {
+        if (!post.roomId) return;
+        try {
+            setResolvingPrediction(true);
+            const res = await axios.post(`/api/roar/rooms/${post.roomId}/messages/${post.id}/resolve`, { correctVote });
+            if (res.data?.success) {
+                const resolvedAt = res.data.message?.resolvedAt ?? Date.now();
+                setLocalResolution({ resolvedAt, closedAt: res.data.message?.closedAt ?? resolvedAt, correctVote });
+                onToast(`Prediction resolved. ${res.data.correctCount ?? 0} correct fans awarded.`);
+            } else {
+                onToast("Failed to resolve prediction");
+            }
+        } catch (err: unknown) {
+            const message = axios.isAxiosError(err) ? err.response?.data?.error : undefined;
+            onToast(message || "Failed to resolve prediction");
+        } finally {
+            setResolvingPrediction(false);
+        }
+    };
     const handleVoteClick = (agree: boolean) => {
         const prev = votes[post.id]; let nextVote: boolean | null = agree;
         if (prev === agree) nextVote = null;
@@ -395,6 +436,54 @@ export default function RoomPostDetailsOverlay({
                                 )}
                             </div>
                         )}
+                        {post.type === "prediction" && (() => {
+                            const predictionOptions = Array.isArray(post.predictionOptions) && post.predictionOptions.length >= 2
+                                ? post.predictionOptions
+                                : [post.sideA || "Option 1", post.sideB || "Option 2"];
+                            const resolvedAt = localResolution?.resolvedAt ?? post.resolvedAt;
+                            const closedAt = localResolution?.closedAt ?? post.closedAt;
+                            const correctVote = localResolution?.correctVote ?? post.correctVote;
+                            const predictionClosed = Boolean(resolvedAt || closedAt || (post.closesAt && post.closesAt <= Date.now()));
+                            const correctVoteLabel = getPredictionOptionLabel(correctVote, predictionOptions);
+                            return (
+                                <div className="mb-3">
+                                    {predictionClosed && !resolvedAt && isCurrentUserAuthor() && (
+                                        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10 }}>
+                                            {predictionOptions.map((label: string, optionIndex: number) => (
+                                                <button
+                                                    key={`resolve-${label}-${optionIndex}`}
+                                                    type="button"
+                                                    disabled={resolvingPrediction}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        resolvePrediction(getPredictionVoteValue(optionIndex));
+                                                    }}
+                                                    style={{
+                                                        flex: "1 1 calc(50% - 4px)",
+                                                        minWidth: 0,
+                                                        padding: "9px 10px",
+                                                        borderRadius: 12,
+                                                        border: "1px solid rgba(34,197,94,0.35)",
+                                                        background: "rgba(34,197,94,0.1)",
+                                                        color: "#22c55e",
+                                                        fontSize: 12,
+                                                        fontWeight: 800,
+                                                        cursor: resolvingPrediction ? "wait" : "pointer",
+                                                    }}
+                                                >
+                                                    Resolve: {label}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                    {resolvedAt && correctVoteLabel && (
+                                        <p style={{ fontSize: 11, color: "#22c55e", fontWeight: 800, marginBottom: 8 }}>
+                                            Correct answer: {correctVoteLabel}
+                                        </p>
+                                    )}
+                                </div>
+                            );
+                        })()}
                         {post.type === "hot_take" && (
                             <>
                                 <div className="mb-2.5"><SplitBar left={pct} /></div>

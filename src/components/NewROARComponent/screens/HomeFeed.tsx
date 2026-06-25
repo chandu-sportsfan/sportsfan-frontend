@@ -251,7 +251,7 @@ interface Props {
   onLike?: (id: string) => void; // kept for compat; prefer onReact
   onReact?: (id: string, reaction: Reaction | null) => void; // NEW
   onDeletePost?: (id: string) => void; userSports?: string[]; onQuickCompose?: (t: string) => void;
-  currentUsername?: string; currentAvatarUrl?: string; onBack?: () => void;
+  currentUsername?: string; currentUserId?: string; currentAvatarUrl?: string; onBack?: () => void;
   onQuickComment?: (postId: string, text: string) => Promise<void>;
   onHandlePost?: (payload: any) => Promise<void>;
 }
@@ -259,7 +259,7 @@ interface Props {
 export default function HomeFeed({
   onJoinRoom, onLeaderboard, onFanProfile, onToast, extraItems, showBanner, onDismissBanner,
   userBadge, rooms = [], dbPosts = [], onPostClick, onVote, onLike, onReact, onDeletePost,
-  userSports = [], onQuickCompose, currentUsername: propUsername, currentAvatarUrl, onBack,
+  userSports = [], onQuickCompose, currentUsername: propUsername, currentUserId: propCurrentUserId, currentAvatarUrl, onBack,
   onQuickComment, onHandlePost,
 }: Props) {
   const [votes, setVotes] = useState<Record<string, boolean | string | null>>({});
@@ -397,8 +397,9 @@ export default function HomeFeed({
   const { userProfile } = useUserProfile();
   const activeUsername = propUsername || userProfile?.username || userProfile?.name || "RoarUser";
   const resolvedAvatarUrl = currentAvatarUrl || userProfile?.avatarUrl || userProfile?.avatar || undefined;
-  const currentUserId = userProfile?.actualUserId;
+  const currentUserId = propCurrentUserId || userProfile?.actualUserId;
   const currentUserIdCandidates = [
+    currentUserId,
     userProfile?.actualUserId,
     (userProfile as { userId?: string })?.userId,
     (userProfile as { uid?: string })?.uid,
@@ -801,6 +802,7 @@ export default function HomeFeed({
     return {
       id: p.postId, type: p.type, sport: p.sport || "cricket",
       authorUid: p.authorUid,
+      authorEmail: p.authorEmail,
       fan: { username: displayUsername(p.authorUsername), authorUid: p.authorUid, badge: p.authorBadge || "RISING_FAN", team: p.sport === "cricket" ? "India" : "MCFC", avatarUrl: p.authorAvatarUrl || p.avatarUrl || (p.authorUid && p.authorUid === currentUserId ? resolvedAvatarUrl : undefined) },
       text: p.text, agreePercent: tot > 0 ? Math.round((ag / tot) * 100) : 50,
       agreeCount: ag, disagreeCount: di, fanCount: tot + (p.type === "hot_take" ? 47 : 1240),
@@ -973,12 +975,11 @@ export default function HomeFeed({
                           const agree = optionIndex === 0;
                           const voteValue = optionIndex === 0 ? "agree" : "disagree";
                           const active = optionIndex === 0 ? userVote === true : userVote === false;
-                          const color = optionIndex === 0 ? "#22c55e" : "var(--accent-magenta)";
                           const pctVal = optionIndex === 0 ? predAgrPct : predDisAgrPct;
                           return (
-                          <motion.button key={label} whileTap={predictionClosed ? {} : { scale: 0.93 }} disabled={predictionClosed} onClick={e => { e.stopPropagation(); vote(item.id, agree, item.agreePercent, item.userVote, item.isDbPost, predictionClosed, voteValue); }} style={{ flex: 1, padding: 10, borderRadius: 999, fontSize: 13, fontWeight: 700, cursor: predictionClosed ? "not-allowed" : "pointer", border: `2.5px solid ${color}`, background: active ? color : "rgba(255,255,255,0.02)", color: active ? "white" : color, boxShadow: active ? `0 0 16px ${color}60` : "none", transition: "all 0.2s", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, opacity: predictionClosed && !active ? 0.45 : 1 }}>
-                            {active ? `✓ ${label}` : label}
-                            <span style={{ fontSize: 11, fontWeight: 800, background: active ? "rgba(255,255,255,0.2)" : `${color}22`, borderRadius: 999, padding: "1px 7px" }}>{pctVal}%</span>
+                          <motion.button key={label} whileTap={predictionClosed ? {} : { scale: 0.93 }} disabled={predictionClosed} onClick={e => { e.stopPropagation(); vote(item.id, agree, item.agreePercent, item.userVote, item.isDbPost, predictionClosed, voteValue); }} style={{ flex: 1, padding: 10, borderRadius: 999, fontSize: 13, fontWeight: 700, cursor: predictionClosed ? "not-allowed" : "pointer", border: `2.5px solid ${active ? "#ff6b35" : "#8b8b8b"}`, background: active ? "rgba(255,107,53,0.24)" : "rgba(255,255,255,0.02)", color: active ? "#fff" : "#d1d1d1", boxShadow: active ? "0 0 16px rgba(255,107,53,0.35)" : "none", transition: "all 0.2s", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, opacity: predictionClosed && !active ? 0.45 : 1 }}>
+                            {label}
+                            <span style={{ fontSize: 11, fontWeight: 800, background: active ? "rgba(255,255,255,0.18)" : "rgba(255,255,255,0.08)", borderRadius: 999, padding: "1px 7px" }}>{pctVal}%</span>
                           </motion.button>
                           );
                         })}
@@ -990,9 +991,9 @@ export default function HomeFeed({
                             const active = userVote === voteValue;
                             const pctVal = predictionPct(optionCounts[voteValue] ?? 0);
                             return (
-                            <button key={`${label}-${idx}`} type="button" disabled={predictionClosed} onClick={(e) => { e.stopPropagation(); vote(item.id, false, item.agreePercent, item.userVote, item.isDbPost, predictionClosed, voteValue); }} style={{ flex: "1 1 calc(50% - 4px)", minWidth: 0, padding: "9px 10px", borderRadius: 999, border: "2px solid #8b8b8b", color: active ? "#fff" : "#d1d1d1", background: active ? "#8b8b8b" : "rgba(255,255,255,0.02)", fontSize: 13, fontWeight: 700, textAlign: "center", opacity: predictionClosed && !active ? 0.45 : 1, cursor: predictionClosed ? "not-allowed" : "pointer" }}>
+                            <button key={`${label}-${idx}`} type="button" disabled={predictionClosed} onClick={(e) => { e.stopPropagation(); vote(item.id, false, item.agreePercent, item.userVote, item.isDbPost, predictionClosed, voteValue); }} style={{ flex: "1 1 calc(50% - 4px)", minWidth: 0, padding: "9px 10px", borderRadius: 999, border: `2px solid ${active ? "#ff6b35" : "#8b8b8b"}`, color: active ? "#fff" : "#d1d1d1", background: active ? "rgba(255,107,53,0.24)" : "rgba(255,255,255,0.02)", boxShadow: active ? "0 0 16px rgba(255,107,53,0.35)" : "none", fontSize: 13, fontWeight: 700, textAlign: "center", opacity: predictionClosed && !active ? 0.45 : 1, cursor: predictionClosed ? "not-allowed" : "pointer" }}>
                               {label}
-                              <span style={{ marginLeft: 6, fontSize: 11, fontWeight: 800, background: active ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.08)", borderRadius: 999, padding: "1px 7px" }}>{pctVal}%</span>
+                              <span style={{ marginLeft: 6, fontSize: 11, fontWeight: 800, background: active ? "rgba(255,255,255,0.18)" : "rgba(255,255,255,0.08)", borderRadius: 999, padding: "1px 7px" }}>{pctVal}%</span>
                             </button>
                             );
                           })}
@@ -1220,3 +1221,4 @@ export default function HomeFeed({
     </div>
   );
 }
+

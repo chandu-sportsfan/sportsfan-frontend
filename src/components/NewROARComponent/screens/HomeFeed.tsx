@@ -18,7 +18,7 @@ import { useUserProfile } from "@/context/UserProfileContext";
 import {
   Heart, Share2, Flame, TrendingUp, Zap, History, PenTool,
   MessageSquare, Trash2, Brain, Users, CheckCircle2, XCircle,
-  ChevronLeft, ImageIcon, Send, BarChart2,
+  ChevronLeft, ImageIcon, Send, BarChart2, Clock,
 } from "lucide-react";
 import type { Room } from "../types";
 
@@ -278,6 +278,8 @@ export default function HomeFeed({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [inlineCommentPostId, setInlineCommentPostId] = useState<string | null>(null);
   const [votersPostId, setVotersPostId] = useState<string | null>(null);
+  const [resolvingPostId, setResolvingPostId] = useState<string | null>(null);
+  const [resolvedPredictions, setResolvedPredictions] = useState<Record<string, { resolvedAt: number; correctVote: "agree" | "disagree"; closedAt: number }>>({});
 
   const [reactionsPostId, setReactionsPostId] = useState<string | null>(null);
 
@@ -460,7 +462,11 @@ useEffect(() => { dbPostsRef.current = dbPosts; }, [dbPosts]);
     });
   }, [dbPosts, morePosts, lastActionAt]);
 
-  const vote = (id: string, agree: boolean, initialAgreePercent: number, initialUserVote: "agree" | "disagree" | null, isDbPost?: boolean) => {
+  const vote = (id: string, agree: boolean, initialAgreePercent: number, initialUserVote: "agree" | "disagree" | null, isDbPost?: boolean, closed?: boolean) => {
+    if (closed) {
+      onToast("This prediction is closed");
+      return;
+    }
     const cv = votes[id];
     if (cv === true || cv === false || initialUserVote === "agree" || initialUserVote === "disagree") return;
     setVotes(v => ({ ...v, [id]: agree }));
@@ -533,6 +539,36 @@ useEffect(() => { dbPostsRef.current = dbPosts; }, [dbPosts]);
       } else { onToast("Failed to post comment"); }
     } catch { onToast("Failed to post comment"); }
     setInlineCommentPostId(null);
+  };
+
+  const resolvePrediction = async (postId: string, correctVote: "agree" | "disagree") => {
+    try {
+      setResolvingPostId(postId);
+      const res = await axios.post(`/api/roar/posts/${postId}/resolve`, { correctVote });
+      if (res.data?.success) {
+        const resolvedAt = Date.now();
+        setResolvedPredictions(prev => ({ ...prev, [postId]: { resolvedAt, correctVote, closedAt: resolvedAt } }));
+        onToast(`Prediction resolved. ${res.data.correctCount ?? 0} correct fans awarded.`);
+      } else {
+        onToast("Failed to resolve prediction");
+      }
+    } catch (err: unknown) {
+      const message = axios.isAxiosError(err) ? err.response?.data?.error : undefined;
+      onToast(message || "Failed to resolve prediction");
+    } finally {
+      setResolvingPostId(null);
+    }
+  };
+
+  const formatPredictionCloseLabel = (item: { resolvedAt?: number; closesAt?: number; closedAt?: number }) => {
+    if (item.resolvedAt) return "Resolved";
+    if (!item.closesAt) return "Open";
+    const remaining = item.closesAt - Date.now();
+    if (remaining <= 0 || item.closedAt) return "Closed";
+    const mins = Math.ceil(remaining / 60000);
+    if (mins < 60) return `${mins}m left`;
+    const hours = Math.ceil(mins / 60);
+    return `${hours}h left`;
   };
 
   const triggerUpload = (type: "image" | "video") => {
@@ -654,6 +690,8 @@ useEffect(() => { dbPostsRef.current = dbPosts; }, [dbPosts]);
       mediaUrls: p.mediaUrls, memGifUrl: p.memGifUrl, memTag: p.memTag,
       likeCount: p.likeCount ?? 0, userLiked: p.userLiked ?? false,
       userReaction: p.userReaction ?? null,
+      closesAt: p.closesAt, closedAt: p.closedAt, resolvedAt: p.resolvedAt,
+      correctVote: p.correctVote, accuracyAwarded: p.accuracyAwarded,
       createdAt: p.createdAt,
       quizQuestion: p.quizQuestion, quizOptions: p.quizOptions, quizCorrectOption: p.quizCorrectOption,
       quizUserAnswer: p.quizUserAnswer, quizTimer: p.quizTimer, quizPoints: p.quizPoints, quizParticipants: p.quizParticipants ?? 0,
@@ -748,11 +786,22 @@ const allPosts = useMemo(
               const liveTotal = (item.agreeCount ?? 0) + (item.disagreeCount ?? 0);
               const agrPct = liveTotal > 0 ? Math.round(((item.agreeCount ?? 0) / liveTotal) * 100) : pct;
               const disAgrPct = liveTotal > 0 ? Math.round(((item.disagreeCount ?? 0) / liveTotal) * 100) : 100 - pct;
+              const isAuthor = !!item.authorUid && item.authorUid === currentUserId;
+              const localResolution = resolvedPredictions[item.id];
+              const resolvedAt = item.resolvedAt ?? localResolution?.resolvedAt;
+              const correctVote = item.correctVote ?? localResolution?.correctVote;
+              const closedAt = item.closedAt ?? localResolution?.closedAt;
+              const predictionClosed = item.type === "prediction" && Boolean(resolvedAt || closedAt || (item.closesAt && item.closesAt <= Date.now()));
               return (
                 <motion.div key={item.id} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }} className="glass-card" style={{ padding: 16, cursor: "pointer" }} onClick={() => onPostClick?.(item)}>
                   <div style={{ display: "flex", gap: 6, marginBottom: 8, flexWrap: "wrap" }}>
                     <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.06em", padding: "3px 8px", borderRadius: 4, textTransform: "uppercase", background: item.type === "hot_take" ? "rgba(239,68,68,0.12)" : item.type === "post" ? "rgba(233,30,140,0.12)" : "rgba(255,107,53,0.12)", color: item.type === "hot_take" ? "#f87171" : item.type === "post" ? "var(--accent-magenta)" : "var(--accent-orange)", border: `1px solid ${item.type === "hot_take" ? "rgba(239,68,68,0.2)" : item.type === "post" ? "rgba(233,30,140,0.2)" : "rgba(255,107,53,0.2)"}` }}>{item.type === "hot_take" ? "🔥 Hot Take" : item.type === "post" ? "✏️ Post" : "📊 Prediction"}</span>
                     {item.type !== "post" && <span style={{ fontSize: 10, fontWeight: 800, padding: "3px 8px", borderRadius: 4, background: item.sport === "cricket" ? "rgba(34,197,94,0.1)" : "rgba(59,130,246,0.1)", color: item.sport === "cricket" ? "#22c55e" : "#60a5fa", border: `1px solid ${item.sport === "cricket" ? "rgba(34,197,94,0.2)" : "rgba(59,130,246,0.2)"}`, textTransform: "uppercase" }}>{item.sport === "cricket" ? "🏏 Cricket" : "⚽ Football"}</span>}
+                    {item.type === "prediction" && (
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 10, fontWeight: 800, padding: "3px 8px", borderRadius: 4, background: predictionClosed ? "rgba(244,67,54,0.12)" : "rgba(34,197,94,0.1)", color: predictionClosed ? "#f87171" : "#22c55e", border: `1px solid ${predictionClosed ? "rgba(244,67,54,0.25)" : "rgba(34,197,94,0.22)"}` }}>
+                        <Clock size={11} /> {formatPredictionCloseLabel({ ...item, resolvedAt, closedAt, correctVote })}
+                      </span>
+                    )}
                   </div>
                   <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 12 }}
                     onClick={(e) => { e.stopPropagation(); onFanProfile?.(item.fan); }}>
@@ -772,7 +821,7 @@ const allPosts = useMemo(
                       <p style={{ fontSize: 12, color: "var(--text-primary)", fontWeight: 500, marginBottom: 12 }}>{fmt(item.fanCount ?? 0)} fans · {item.replies ?? 0} replies</p>
                       <div style={{ display: "flex", gap: 8 }}>
                         {[{ agree: true, label: "Agree", pctVal: agrPct, active: userVote === true, color: "var(--accent-magenta)" }, { agree: false, label: "Disagree", pctVal: disAgrPct, active: userVote === false, color: "var(--accent-orange)" }].map(({ agree, label, pctVal, active, color }) => (
-                          <motion.button key={label} whileTap={{ scale: 0.93 }} onClick={e => { e.stopPropagation(); vote(item.id, agree, item.agreePercent, item.userVote, item.isDbPost); }} style={{ flex: 1, padding: 10, borderRadius: 999, fontSize: 13, fontWeight: 700, cursor: "pointer", border: `2.5px solid ${color}`, background: active ? color : "rgba(255,255,255,0.02)", color: active ? "white" : color, boxShadow: active ? `0 0 16px ${color}60` : "none", transition: "all 0.2s", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                          <motion.button key={label} whileTap={predictionClosed ? {} : { scale: 0.93 }} disabled={predictionClosed} onClick={e => { e.stopPropagation(); vote(item.id, agree, item.agreePercent, item.userVote, item.isDbPost, predictionClosed); }} style={{ flex: 1, padding: 10, borderRadius: 999, fontSize: 13, fontWeight: 700, cursor: predictionClosed ? "not-allowed" : "pointer", border: `2.5px solid ${color}`, background: active ? color : "rgba(255,255,255,0.02)", color: active ? "white" : color, boxShadow: active ? `0 0 16px ${color}60` : "none", transition: "all 0.2s", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, opacity: predictionClosed && !active ? 0.45 : 1 }}>
                             {active ? `✓ ${agree ? "Agreed" : "Disagreed"}` : label}
                             <span style={{ fontSize: 11, fontWeight: 800, background: active ? "rgba(255,255,255,0.2)" : `${color}22`, borderRadius: 999, padding: "1px 7px" }}>{pctVal}%</span>
                           </motion.button>
@@ -785,12 +834,27 @@ const allPosts = useMemo(
                     <div>
                       <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
                         {[{ agree: true, label: "Support", pctVal: agrPct, active: userVote === true, color: "#22c55e" }, { agree: false, label: "Counter", pctVal: disAgrPct, active: userVote === false, color: "var(--accent-magenta)" }].map(({ agree, label, pctVal, active, color }) => (
-                          <motion.button key={label} whileTap={{ scale: 0.93 }} onClick={e => { e.stopPropagation(); vote(item.id, agree, item.agreePercent, item.userVote, item.isDbPost); }} style={{ flex: 1, padding: 10, borderRadius: 999, fontSize: 13, fontWeight: 700, cursor: "pointer", border: `2.5px solid ${color}`, background: active ? color : "rgba(255,255,255,0.02)", color: active ? "white" : color, boxShadow: active ? `0 0 16px ${color}60` : "none", transition: "all 0.2s", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                          <motion.button key={label} whileTap={predictionClosed ? {} : { scale: 0.93 }} disabled={predictionClosed} onClick={e => { e.stopPropagation(); vote(item.id, agree, item.agreePercent, item.userVote, item.isDbPost, predictionClosed); }} style={{ flex: 1, padding: 10, borderRadius: 999, fontSize: 13, fontWeight: 700, cursor: predictionClosed ? "not-allowed" : "pointer", border: `2.5px solid ${color}`, background: active ? color : "rgba(255,255,255,0.02)", color: active ? "white" : color, boxShadow: active ? `0 0 16px ${color}60` : "none", transition: "all 0.2s", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, opacity: predictionClosed && !active ? 0.45 : 1 }}>
                             {active ? `✓ ${agree ? "Supported" : "Countered"}` : label}
                             <span style={{ fontSize: 11, fontWeight: 800, background: active ? "rgba(255,255,255,0.2)" : `${color}22`, borderRadius: 999, padding: "1px 7px" }}>{pctVal}%</span>
                           </motion.button>
                         ))}
                       </div>
+                      {predictionClosed && !resolvedAt && isAuthor && (
+                        <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+                          <button type="button" disabled={resolvingPostId === item.id} onClick={(e) => { e.stopPropagation(); resolvePrediction(item.id, "agree"); }} style={{ flex: 1, padding: "9px 10px", borderRadius: 12, border: "1px solid rgba(34,197,94,0.35)", background: "rgba(34,197,94,0.1)", color: "#22c55e", fontSize: 12, fontWeight: 800, cursor: "pointer" }}>
+                            Resolve: Support
+                          </button>
+                          <button type="button" disabled={resolvingPostId === item.id} onClick={(e) => { e.stopPropagation(); resolvePrediction(item.id, "disagree"); }} style={{ flex: 1, padding: "9px 10px", borderRadius: 12, border: "1px solid rgba(233,30,140,0.35)", background: "rgba(233,30,140,0.1)", color: "var(--accent-magenta)", fontSize: 12, fontWeight: 800, cursor: "pointer" }}>
+                            Resolve: Counter
+                          </button>
+                        </div>
+                      )}
+                      {resolvedAt && (
+                        <p style={{ fontSize: 11, color: "#22c55e", fontWeight: 800, marginBottom: 8 }}>
+                          Correct answer: {correctVote === "agree" ? "Support" : "Counter"}
+                        </p>
+                      )}
                       <AnimatePresence>
                         {inlineCommentPostId === item.id && (
                           <InlineCommentInput

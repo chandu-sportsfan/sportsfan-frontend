@@ -770,6 +770,7 @@ export default function ComposeModal({ open, onClose, onPost, initialType, onOpe
   const [domReady, setDomReady]         = useState(false);
   const [selectedGif, setSelectedGif]   = useState<string | null>(null);
   const [selectedTag, setSelectedTag]   = useState<string | null>(null);
+  const [predictionCloseMinutes, setPredictionCloseMinutes] = useState(60);
 
   // Cursor tracking per field (needed to correctly splice mention text)
   const [textCursor, setTextCursor]     = useState(0);
@@ -890,6 +891,7 @@ export default function ComposeModal({ open, onClose, onPost, initialType, onOpe
     setMatch("None / General");
     setSelectedGif(null);
     setSelectedTag(null);
+    setPredictionCloseMinutes(60);
     mention.dismiss();
   };
 
@@ -914,6 +916,10 @@ export default function ComposeModal({ open, onClose, onPost, initialType, onOpe
       mediaFiles: selected === "post" ? mediaFiles : [],
       gifUrl:     selectedGif ? MEMORY_GIFS.find((g) => g.id === selectedGif)?.path : undefined,
       sf360Tag:   selectedTag ?? undefined,
+      ...(selected === "prediction" && {
+        closeAfterMinutes: predictionCloseMinutes,
+        closesAt: Date.now() + predictionCloseMinutes * 60 * 1000,
+      }),
     });
     onClose();
   };
@@ -1192,6 +1198,7 @@ export default function ComposeModal({ open, onClose, onPost, initialType, onOpe
 
                     {/* ── PREDICTION ── */}
                     {selected === "prediction" && (
+                      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                       <div style={{ position: "relative" }}>
                         <textarea
                           ref={textRef}
@@ -1218,6 +1225,45 @@ export default function ComposeModal({ open, onClose, onPost, initialType, onOpe
                             onHover={mention.setMentionIndex}
                           />
                         )}
+                      </div>
+                      <div>
+                        <label style={{ fontSize: 11, color: "var(--text-muted)", display: "block", marginBottom: 7, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                          Voting closes after
+                        </label>
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 8 }}>
+                          {[15, 30, 60, 1440].map((minutes) => {
+                            const active = predictionCloseMinutes === minutes;
+                            return (
+                              <button
+                                key={minutes}
+                                type="button"
+                                onClick={() => setPredictionCloseMinutes(minutes)}
+                                style={{
+                                  padding: "9px 8px",
+                                  borderRadius: 12,
+                                  border: `1px solid ${active ? "var(--accent-orange)" : "var(--border)"}`,
+                                  background: active ? "rgba(255,107,53,0.15)" : "rgba(255,255,255,0.03)",
+                                  color: active ? "var(--accent-orange)" : "var(--text-secondary)",
+                                  fontSize: 12,
+                                  fontWeight: 800,
+                                  cursor: "pointer",
+                                }}
+                              >
+                                {minutes === 1440 ? "24h" : `${minutes}m`}
+                              </button>
+                            );
+                          })}
+                        </div>
+                        <input
+                          type="number"
+                          min={1}
+                          max={10080}
+                          value={predictionCloseMinutes}
+                          onChange={(e) => setPredictionCloseMinutes(Math.max(1, Math.min(10080, Number(e.target.value) || 1)))}
+                          style={{ ...inputStyle, borderRadius: 12, marginTop: 8, padding: "10px 12px", fontSize: 13 }}
+                          aria-label="Custom close time in minutes"
+                        />
+                      </div>
                       </div>
                     )}
 

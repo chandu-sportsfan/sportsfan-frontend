@@ -740,9 +740,36 @@ export default function ROARApp() {
   // ── Notifications ──────────────────────────────────────────────────────────
   const { roarNotifications: notifications, setRoarNotifications: setNotifications, markRoarRead, markAllRoarRead } = useRoarNotifications();
   const [notifSeeded, setNotifSeeded] = useState(false);
+  const fetchRoarNotifications = useCallback(async () => {
+    try {
+      const res = await axios.get("/api/roar/notifications?limit=30");
+      if (!res.data?.success || !Array.isArray(res.data.notifications)) return false;
+      const mapped: Notification[] = res.data.notifications.map((n: any) => ({
+        id: n.notifId || n.id,
+        type: n.type || "ROAR_NOTIFICATION",
+        title: n.title || n.message || "ROAR update",
+        subtitle: n.subtitle || n.postPreview || "",
+        time: n.createdAt ? "Just now" : "",
+        read: Boolean(n.read),
+        fan: n.fan ?? null,
+        cta: n.cta ?? null,
+        postId: n.postId,
+      }));
+      setNotifications(mapped);
+      return true;
+    } catch (err) {
+      console.error("Failed to fetch ROAR notifications:", err);
+      return false;
+    }
+  }, [setNotifications]);
+
   useEffect(() => {
-    if (!notifSeeded) { setNotifications(NOTIFICATIONS_DATA.map(n => ({ ...n }))); setNotifSeeded(true); }
-  }, [notifSeeded, setNotifications]);
+    if (notifSeeded) return;
+    fetchRoarNotifications().then((ok) => {
+      if (!ok) setNotifications(NOTIFICATIONS_DATA.map(n => ({ ...n })));
+      setNotifSeeded(true);
+    });
+  }, [notifSeeded, setNotifications, fetchRoarNotifications]);
 
   // ── Remote data ────────────────────────────────────────────────────────────
   const [rooms, setRooms] = useState<Room[]>([]);
@@ -1026,6 +1053,7 @@ export default function ROARApp() {
         text: payload.text, type: msgTypeMap[postType] || "post",
         mediaUrls: payload.mediaUrls, sideA: payload.sideA, sideB: payload.sideB,
         memGifUrl: payload.gifUrl ?? undefined, memTag: payload.sf360Tag ?? undefined,
+        ...(postType === "prediction" && { closesAt: payload.closesAt, closeAfterMinutes: payload.closeAfterMinutes }),
       });
       if (res.data?.success) { showToast("Post is live in room!"); roomRefreshRef.current?.(); }
       return;
@@ -1050,6 +1078,7 @@ export default function ROARApp() {
       mediaUrls: mediaUrls ?? [],
       memGifUrl: payload.gifUrl ?? null,
       memTag: payload.sf360Tag ?? null,
+      closesAt: payload.closesAt ?? null,
       createdAt: Date.now(),
       status: "active",
     };
@@ -1069,6 +1098,7 @@ export default function ROARApp() {
         text: postType === "quiz" ? payload.quizQuestion : payload.text,
         sport: payload.sport || "cricket", audience: payload.audience, mediaUrls,
         ...(postType !== "quiz" && { sideA: payload.sideA, sideB: payload.sideB, memCtx: payload.memCtx, matchId: payload.match, confidence: payload.confidence }),
+        ...(postType === "prediction" && { closesAt: payload.closesAt, closeAfterMinutes: payload.closeAfterMinutes }),
         ...(postType === "quiz" && { quizQuestion: payload.quizQuestion, quizOptions: payload.quizOptions, quizCorrectOption: payload.quizCorrectOption, quizTimer: payload.quizTimer, quizPoints: payload.quizPoints }),
         ...(postType === "raw_reactions" && { memGifUrl: payload.gifUrl, memTag: payload.sf360Tag }),
       });

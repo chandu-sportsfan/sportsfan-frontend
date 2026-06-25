@@ -1198,9 +1198,7 @@ export default function Profile({
             accent: true,
           },
           {
-            value: isOtherProfile
-              ? "N/A"  // accuracy isn't tracked anywhere real yet — see note below
-              : (profileStats.predictions > 0 ? `${Math.round((profileStats.predictions / Math.max(profileStats.totalActivity, 1)) * 100)}%` : "N/A"),
+            value: user.accuracy !== undefined && user.accuracy !== null ? `${user.accuracy}%` : "N/A",
             label: "Accuracy",
             accent: true,
           },

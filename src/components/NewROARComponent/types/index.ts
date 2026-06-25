@@ -27,6 +27,11 @@ export interface FeedPost {
   memCtx?: string;
    memGifUrl?: string;
   memTag?: string;
+  closesAt?: number;
+  closedAt?: number;
+  resolvedAt?: number;
+  correctVote?: "agree" | "disagree";
+  accuracyAwarded?: boolean;
 }
 
 export interface RoomPost {
@@ -129,4 +134,6 @@ export interface ComposePayload {
   mediaFiles?: File[];
    gifUrl?: string;
   sf360Tag?: string;
+  closesAt?: number;
+  closeAfterMinutes?: number;
 }

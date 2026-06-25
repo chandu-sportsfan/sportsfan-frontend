@@ -183,12 +183,13 @@ export default function RoomPostDetailsOverlay({
     const renderComment = (comment: any, depth = 0) => {
         const hasReplies = comment.replies && comment.replies.length > 0;
         const commentId = comment.commentId || comment.id;
+        const isReply = depth > 0;
         return (
-            <div key={commentId} className={`relative p-3 px-[14px] rounded-2xl bg-white/[0.03] border border-white/[0.05] flex flex-col gap-1.5 ${depth > 0 ? "ml-6" : "ml-0"}`}>
-                {depth > 0 && <div className="absolute -left-[14px] top-[-12px] bottom-1/2 w-3 border-l-[1.5px] border-b-[1.5px] border-white/[0.12] rounded-bl-lg pointer-events-none" />}
-                <div className="flex justify-between items-center">
-                    <div 
-                        className="flex gap-2 items-center"
+            <div key={commentId} className={`${isReply ? "relative ml-6 pl-4 border-l border-white/[0.08]" : "relative rounded-[22px] bg-white/[0.03] border border-white/[0.06] p-4 hover:bg-white/[0.04]"}`}>
+                {isReply && <div className="absolute left-0 top-1 bottom-1 w-[1px] bg-white/[0.08] rounded-full" />}
+                <div className="flex justify-between items-start gap-3">
+                    <div
+                        className="flex gap-2 items-start"
                         style={{ cursor: onFanProfileClick ? "pointer" : "default" }}
                         onClick={(e) => {
                             if (onFanProfileClick) {
@@ -202,26 +203,27 @@ export default function RoomPostDetailsOverlay({
                         }}
                     >
                         <AvatarWithBadge username={comment.authorUsername} badge={comment.authorBadge} size="sm" avatarUrl={comment.authorAvatarUrl || comment.avatarUrl || (comment.authorUsername === activeUsername ? userAvatarUrl : undefined)} />
-                        <p className="font-bold text-[12px] text-white m-0">{comment.authorUsername}</p>
+                        <div>
+                            <p className="font-semibold text-[12px] text-white m-0">{comment.authorUsername}</p>
+                            <p className="text-[10px] text-[#7D7DA8] m-0">{formatTimeAgo(comment.createdAt)}</p>
+                        </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <span className="text-[9px] text-[#4A4A62]">{formatTimeAgo(comment.createdAt)}</span>
-                        {comment.authorUsername === activeUsername && (
-                            <button onClick={async (e) => { e.stopPropagation(); if (window.confirm("Delete comment?")) { try { await axios.delete(`/api/roar/posts/${post.id}/comments/${comment.commentId}`); onToast("Deleted"); fetchComments(); } catch { onToast("Failed"); } } }}
-                                className="bg-transparent border-none text-[#f87171] cursor-pointer flex items-center p-0.5"><Trash2 size={12} /></button>
-                        )}
-                    </div>
+                    {comment.authorUsername === activeUsername && (
+                        <button onClick={async (e) => { e.stopPropagation(); if (window.confirm("Delete comment?")) { try { await axios.delete(`/api/roar/posts/${post.id}/comments/${commentId}`); onToast("Deleted"); fetchComments(); } catch { onToast("Failed"); } } }}
+                            className="bg-transparent border-none text-[#f87171] cursor-pointer flex items-center p-0.5"><Trash2 size={12} /></button>
+                    )}
                 </div>
-                <p className="text-[13px] text-[#F5F5FA] leading-[1.4] my-1">{comment.text}</p>
-                <div className="flex gap-[14px] items-center mt-1">
-                        <button onClick={() => reactToComment(commentId)} className={`bg-transparent border-none cursor-pointer flex items-center gap-1 text-[12px] p-0 ${comment.heartCount > 0 ? "text-white" : "text-[#4A4A62]"}`}>
-                        🤍 {comment.heartCount ?? 0}
+                <p className={`text-[14px] ${isReply ? "text-[#EAEAF1]" : "text-[#F5F5FA]"} leading-[1.75] my-3`}>{comment.text}</p>
+                <div className="flex flex-wrap items-center gap-4 text-[12px] text-[#8A8AA9]">
+                    <button onClick={() => reactToComment(commentId)} className="bg-transparent border-none cursor-pointer flex items-center gap-2 text-inherit p-0 hover:text-white transition-colors duration-150">
+                        <span className="text-sm">🤍</span>
+                        <span>{comment.heartCount ?? 0}</span>
                     </button>
                     <button onClick={() => { setReplyTo({ commentId, authorUsername: comment.authorUsername }); setCommentText(""); setTimeout(() => inputRef.current?.focus(), 50); }}
-                        className="bg-transparent border-none cursor-pointer text-[11px] text-[#4A4A62] font-semibold p-0">Reply</button>
+                        className="bg-transparent border-none cursor-pointer text-[#C8705A] font-semibold p-0 hover:text-white transition-colors duration-150">Reply</button>
                 </div>
                 {hasReplies && (
-                    <div className="mt-3 space-y-3">
+                    <div className="mt-4 space-y-3">
                         {comment.replies.map((reply: any) => renderComment(reply, depth + 1))}
                     </div>
                 )}
@@ -465,7 +467,7 @@ export default function RoomPostDetailsOverlay({
                         <div className="flex-1">
                             <input ref={inputRef} type="text" placeholder={replyTo ? "Write your reply…" : "Share your opinion..."} value={commentText}
                                 onChange={handleInputChange} onKeyDown={handleKeyDown}
-                                className="w-full h-10 rounded-full bg-[#0E0E14] border border-[#252538] pl-4 pr-4 text-white text-[16px] outline-none" />
+                                className="w-full h-11 rounded-full bg-white/[0.04] border border-white/[0.12] pl-4 pr-4 text-white text-[16px] outline-none placeholder:text-[#8A8AA9] transition-colors duration-150 focus:border-[#E91E8C]/60 focus:bg-white/[0.08]" />
                         </div>
                         <button onClick={submitComment} disabled={loading || !canSubmit}
                             className={`w-[38px] h-[38px] rounded-full bg-[#E91E8C] border-none text-white flex items-center justify-center shrink-0 transition-opacity duration-200 ${canSubmit ? "cursor-pointer opacity-100" : "cursor-default opacity-50"}`}>

@@ -710,7 +710,7 @@ export const ActivityProvider: React.FC<{ children: React.ReactNode }> = ({
 
   // ── Fetch from API ──────────────────────────────────────────────────────────
   const fetchActivities = useCallback(async () => {
-    const userId = user?.userId;
+    const userId = user?.userId || user?.email;
     if (!userId) {
       setActivities([]);
       return;
@@ -752,7 +752,7 @@ export const ActivityProvider: React.FC<{ children: React.ReactNode }> = ({
       inFlight.current = false;
       setLoading(false);
     }
-  }, [user?.userId]);
+  }, [user?.userId, user?.email]);
 
   // ── Public API 
 
@@ -765,19 +765,20 @@ export const ActivityProvider: React.FC<{ children: React.ReactNode }> = ({
   
   const addLocalActivity = useCallback(
     (activity: ActivityItem) => {
+      const userId = user?.userId || user?.email;
       localActivitiesRef.current = mergeActivities(
         [activity],
         localActivitiesRef.current
       );
       setActivities((prev) => {
         const data = mergeActivities(prev, [activity]);
-        if (user?.userId) {
-          cache = { ts: Date.now(), userId: user.userId, data };
+        if (userId) {
+          cache = { ts: Date.now(), userId, data };
         }
         return data;
       });
     },
-    [user?.userId]
+    [user?.userId, user?.email]
   );
 
   // Trigger fetch once auth is confirmed ready

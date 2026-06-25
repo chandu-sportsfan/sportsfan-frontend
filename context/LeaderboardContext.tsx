@@ -180,7 +180,7 @@ export const LeaderboardProvider: React.FC<{ children: React.ReactNode }> = ({
   
   // ── Main orchestrator ───────────────────────────────────────────────────────
   const fetchGlobalLeaderboard = useCallback(async () => {
-    const userId = user?.userId;
+    const userId = user?.userId || user?.email;
 
     if (!userId) {
       setLeaderboard([]);
@@ -207,13 +207,14 @@ export const LeaderboardProvider: React.FC<{ children: React.ReactNode }> = ({
 const refreshLeaderboard = useCallback(async () => {
   // Clear both caches so the next fetch always hits the network
   leaderboardCache = null;
-  if (user?.userId) USER_CACHE.delete(user.userId);
+  const userId = user?.userId || user?.email;
+  if (userId) USER_CACHE.delete(userId);
   
   await fetchGlobalLeaderboard();
-}, [user?.userId, fetchGlobalLeaderboard]);
+}, [user?.userId, user?.email, fetchGlobalLeaderboard]);
 
 const addLocalPoints = useCallback((points: number) => {
-  const userId = user?.userId;
+  const userId = user?.userId || user?.email;
   if (!userId || !points) return;
   const delta = Number(points) || 0;
 
@@ -246,7 +247,7 @@ const addLocalPoints = useCallback((points: number) => {
       ),
     };
   }
-}, [currentUserRank, user?.userId]);
+}, [currentUserRank, user?.userId, user?.email]);
 
   // Only fires when auth is confirmed ready — avoids spurious calls with
   // undefined userId during the initial auth hydration.

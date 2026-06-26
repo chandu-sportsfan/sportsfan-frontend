@@ -1,8 +1,9 @@
 
-
-
 // import { useState, useEffect, useRef, useCallback } from "react";
+// import { useRouter } from "next/navigation";
+// import { usePostHog } from "posthog-js/react";
 // import { motion, AnimatePresence } from "framer-motion";
+// import { useUserProfile } from "@/context/UserProfileContext";
 // import axios from "axios";
 // import AvatarWithBadge from "../components/AvatarWithBadge";
 // import ReactionPicker, { type Reaction } from "../components/ReactionPicker";
@@ -32,6 +33,7 @@
 //   onRegisterRefresh?: (fn: () => void) => void;
 //   onRegisterReplyUpdate?: (fn: (postId: string, count: number) => void) => void;
 //   onFanProfile?: (fan: any) => void;
+//   watchAlongRoomId?: string;
 // }
 
 // const MODE_COLOR: Record<string, string> = {
@@ -41,6 +43,12 @@
 //   debate: "#e91e8c",
 //   raw_reactions: "#00e8c6",
 // };
+
+// // Page size for scroll-triggered "load more" pages only. The existing 3s
+// // poll (fetchMsgs) is untouched and keeps using the server default limit —
+// // this only applies to additional pages fetched once the user scrolls to
+// // the bottom of what fetchMsgs has loaded.
+// const LOAD_MORE_PAGE_SIZE = 15;
 
 // const MODES = [
 //   { key: "post" as const, label: "Post", icon: <PenTool size={13} />, color: "#ffffff", isAction: false },
@@ -77,48 +85,64 @@
 //   return {};
 // };
 
-// // ── ActiveFansStack ───────────────────────────────────────────────────────────
-// // Small stacked-avatar row used under the room header. Uses raw <img>/initial
-// // circles rather than AvatarWithBadge to keep the row compact — the dialog
-// // itself (ActiveFansDialog) uses the real AvatarWithBadge component.
+// // ── ActiveFansStack 
 // function ActiveFansStack({
-//   fans, count, onClick,
-// }: { fans: { uid: string; username: string; avatarUrl?: string | null }[]; count: number; onClick: () => void }) {
-//   if (count === 0) return null;
+//   fans, count, totalJoinCount, onClick,
+// }: {
+//   fans: { uid: string; username: string; avatarUrl?: string | null }[];
+//   count: number;
+//   totalJoinCount?: number;
+//   onClick: () => void;
+// }) {
+//   if (count === 0 && !totalJoinCount) return null;
+
+//   const formatCount = (n: number) =>
+//     n >= 1000 ? `${(n / 1000).toFixed(1)}k` : `${n}`;
+
 //   return (
-//     <button
-//       type="button"
-//       onClick={onClick}
-//       style={{
-//         display: "flex", alignItems: "center", gap: 8,
-//         background: "none", border: "none", cursor: "pointer", padding: 0,
-//       }}
-//     >
-//       <div style={{ display: "flex" }}>
-//         {fans.slice(0, 3).map((fan, i) => (
-//           <div
-//             key={fan.uid}
-//             style={{
-//               width: 22, height: 22, borderRadius: "50%",
-//               border: "2px solid #0e0e14", overflow: "hidden",
-//               marginLeft: i === 0 ? 0 : -8, zIndex: 3 - i,
-//               background: "linear-gradient(135deg,#e91e8c,#ff6b35)",
-//               display: "flex", alignItems: "center", justifyContent: "center",
-//               flexShrink: 0,
-//             }}
-//           >
-//             {fan.avatarUrl ? (
-//               <img src={fan.avatarUrl} alt={fan.username} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-//             ) : (
-//               <span style={{ fontSize: 9, fontWeight: 800, color: "#fff" }}>{fan.username?.[0]?.toUpperCase() || "?"}</span>
-//             )}
-//           </div>
-//         ))}
-//       </div>
-//       <span style={{ fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.5)" }}>
-//         {count} active now
-//       </span>
-//     </button>
+//     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+//       {/* Left: stacked avatars + active count */}
+//       <button
+//         type="button"
+//         onClick={onClick}
+//         style={{
+//           display: "flex", alignItems: "center", gap: 8,
+//           background: "none", border: "none", cursor: "pointer", padding: 0,
+//         }}
+//       >
+//         <div style={{ display: "flex" }}>
+//           {fans.slice(0, 3).map((fan, i) => (
+//             <div
+//               key={fan.uid}
+//               style={{
+//                 width: 22, height: 22, borderRadius: "50%",
+//                 border: "2px solid #0e0e14", overflow: "hidden",
+//                 marginLeft: i === 0 ? 0 : -8, zIndex: 3 - i,
+//                 background: "linear-gradient(135deg,#e91e8c,#ff6b35)",
+//                 display: "flex", alignItems: "center", justifyContent: "center",
+//                 flexShrink: 0,
+//               }}
+//             >
+//               {fan.avatarUrl ? (
+//                 <img src={fan.avatarUrl} alt={fan.username} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+//               ) : (
+//                 <span style={{ fontSize: 9, fontWeight: 800, color: "#fff" }}>{fan.username?.[0]?.toUpperCase() || "?"}</span>
+//               )}
+//             </div>
+//           ))}
+//         </div>
+//         <span style={{ fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.5)" }}>
+//           <span style={{ color: "#fff", fontWeight: 700 }}>{formatCount(count)}</span> active now
+//         </span>
+//       </button>
+
+//       {/* Right: total joined */}
+//       {totalJoinCount !== undefined && totalJoinCount > 0 && (
+//         <span style={{ fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.5)" }}>
+//           Total Joined <span style={{ color: "#fff", fontWeight: 700 }}>{formatCount(totalJoinCount)}</span>
+//         </span>
+//       )}
+//     </div>
 //   );
 // }
 
@@ -327,12 +351,38 @@
 // }
 
 // // ── Main DiscussionRoom ───────────────────────────────────────────────────────
+// // ── Visibility-aware interval hook ───────────────────────────────────────────
+// function useVisibilityInterval(callback: () => void, delay: number) {
+//   const savedCallback = useRef(callback);
+//   useEffect(() => { savedCallback.current = callback; }, [callback]);
+
+//   useEffect(() => {
+//     let id: ReturnType<typeof setInterval>;
+//     const start = () => {
+//       id = setInterval(() => {
+//         if (!document.hidden) savedCallback.current();
+//       }, delay);
+//     };
+//     const handleVisibility = () => {
+//       clearInterval(id);
+//       if (!document.hidden) { savedCallback.current(); start(); }
+//     };
+//     start();
+//     document.addEventListener("visibilitychange", handleVisibility);
+//     return () => {
+//       clearInterval(id);
+//       document.removeEventListener("visibilitychange", handleVisibility);
+//     };
+//   }, [delay]);
+// }
 
 // export default function DiscussionRoom({
 //   onBack, onToast, roomId, roomName, onPostClick, onCompose,
 //   fanCount = 312, score, scoreSubtitle, currentAvatarUrl, onRegisterRefresh, onRegisterReplyUpdate,
-//   onFanProfile,
+//   onFanProfile, watchAlongRoomId
 // }: Props) {
+//   const router = useRouter();
+//   console.log("DiscussionRoom mount/render | watchAlongRoomId:", watchAlongRoomId);
 //   const [posts, setPosts] = useState<any[]>([]);
 //   const [loading, setLoading] = useState(true);
 //   const [input, setInput] = useState("");
@@ -346,10 +396,22 @@
 //   const [selectedActionId, setSelectedActionId] = useState("post");
 //   const dropdownRef = useRef<HTMLDivElement>(null);
 //   const [liveCount, setLiveCount] = useState<number>(fanCount ?? 0);
+//   const [totalJoinCount, setTotalJoinCount] = useState<number>(0);
 //   const [sharePost, setSharePost] = useState<ShareableRoarPost | null>(null);
 //   const [copied, setCopied] = useState(false);
-
+//   const { userProfile } = useUserProfile();
+//   console.log("userProfile in DiscussionRoom:", userProfile);
+//   const currentUserId = userProfile?.actualUserId;
+//   const latestCreatedAtRef = useRef<number | null>(null);
+//   const sendingRef = useRef(false);
+//   const [isSending, setIsSending] = useState(false);
 //   const [inlineCommentPostId, setInlineCommentPostId] = useState<string | null>(null);
+//   // ── Real-time notification toast ─────────────────────────────────────────────
+// const [notifToast, setNotifToast] = useState<{
+//   message: string;
+//   type: "like" | "comment";
+// } | null>(null);
+// const notifToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
 //   // ── Active fans (presence) state ────────────────────────────────────────────
 //   const [activeFans, setActiveFans] = useState<
@@ -363,10 +425,143 @@
 //   const pendingReactRef = useRef<Record<string, boolean>>({});
 //   const [reactionsMsgId, setReactionsMsgId] = useState<string | null>(null);
 
+
+
 //   useEffect(() => { localReactionsRef.current = localReactions; }, [localReactions]);
 
 //   const listRef = useRef<HTMLDivElement>(null);
 //   const fileInputRef = useRef<HTMLInputElement>(null);
+
+//   // ── Pagination (scroll-triggered "load more", separate from the 3s poll) ───
+//   // fetchMsgs (below) keeps polling every 3s at the server default limit and
+//   // fully replacing `posts`, unchanged. `morePosts` holds everything fetched
+//   // beyond that via scroll — kept in a separate array so the 3s poll can
+//   // never wipe out pages the user has already scrolled into. The cursor
+//   // (oldest createdAt seen so far) is derived from whichever of `posts` /
+//   // `morePosts` currently holds the oldest message, since `posts` itself
+//   // can grow/shrink under the poll independent of scroll state.
+//   const [morePosts, setMorePosts] = useState<any[]>([]);
+//   const [hasMoreMsgs, setHasMoreMsgs] = useState(true);
+//   const [loadingMoreMsgs, setLoadingMoreMsgs] = useState(false);
+//   const loadingMoreMsgsRef = useRef(false);
+//   const sentinelRef = useRef<HTMLDivElement | null>(null);
+
+//   const topReactionsCache = useRef<Record<string, string[]>>({});
+//   const [topReactionsMap, setTopReactionsMap] = useState<Record<string, string[]>>({});
+
+//   const fetchTopReactions = useCallback(async (msgId: string) => {
+//     if (topReactionsCache.current[msgId] !== undefined) return;
+//     topReactionsCache.current[msgId] = [];
+//     try {
+//       const url = `/api/roar/posts/${msgId}/reactions${roomId ? `?roomId=${encodeURIComponent(roomId)}` : ""}`;
+//       const res = await axios.get(url);
+//       const reactors: { reaction: string }[] = res.data?.reactors ?? [];
+//       const counts: Record<string, number> = {};
+//       reactors.forEach(r => { counts[r.reaction] = (counts[r.reaction] ?? 0) + 1; });
+//       const top = Object.entries(counts)
+//         .sort(([, a], [, b]) => b - a)
+//         .slice(0, 3)
+//         .map(([type]) => type);
+//       topReactionsCache.current[msgId] = top;
+//       setTopReactionsMap(prev => ({ ...prev, [msgId]: top }));
+//     } catch {
+//       topReactionsCache.current[msgId] = [];
+//     }
+//   }, [roomId]);
+
+//   const loadMoreMsgs = useCallback(async () => {
+//     if (!roomId || loadingMoreMsgsRef.current || !hasMoreMsgs) return;
+
+//     const combined = [...posts, ...morePosts];
+//     if (combined.length === 0) return;
+//     // Oldest message currently rendered (lists are newest-first) becomes
+//     // the cursor for the next page.
+//     const oldestCreatedAt = combined.reduce(
+//       (min, p) => (p.createdAt < min ? p.createdAt : min),
+//       combined[0].createdAt,
+//     );
+
+//     loadingMoreMsgsRef.current = true;
+//     setLoadingMoreMsgs(true);
+//     try {
+//       const res = await axios.get(`/api/roar/rooms/${roomId}/messages`, {
+//         params: { limit: LOAD_MORE_PAGE_SIZE, lastCreatedAt: oldestCreatedAt },
+//       });
+//       if (res.data?.success) {
+//         const newMsgs: any[] = res.data.messages ?? [];
+//         setMorePosts(prev => {
+//           const seenIds = new Set([...posts, ...prev].map(p => p.id ?? p.msgId));
+//           const fresh = newMsgs
+//             .filter(m => !seenIds.has(m.msgId))
+//             .map((m: any) => ({
+//               id: m.msgId,
+//               fan: { username: displayUsername(m.authorUsername), authorUid: m.authorUid, badge: m.authorBadge, avatarUrl: m.authorAvatarUrl || m.avatarUrl || (m.authorUsername === userUsername ? userAvatarUrl : undefined) },
+//               text: m.text,
+//               // fireCount: m.fireCount || 0,
+//               // nochanceCount: m.noChanceCount || 0,
+//               // heartCount: m.heartCount ?? 0,
+//               fireCount: m.fireCount ?? 0,
+//               heartCount: m.heartCount ?? 0,
+//               mindblownCount: m.mindblownCount ?? 0,
+//               goatCount: m.goatCount ?? 0,
+//               clapCount: m.clapCount ?? 0,
+//               nochanceCount: m.noChanceCount ?? 0,
+//               userReaction: m.userReaction ?? null,
+//               replyCount: m.replyCount ?? 0,
+//               agreeCount: m.agreeCount ?? 0,
+//               disagreeCount: m.disagreeCount ?? 0,
+//               userVote: m.userVote ?? null,
+//               sideA: m.sideA ?? null,
+//               sideB: m.sideB ?? null,
+//               timeAgo: new Date(m.createdAt).toLocaleDateString([], { month: "short", day: "numeric" }) + " · " + new Date(m.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+//               createdAt: m.createdAt,
+//               type: m.type,
+//               mediaUrls: m.mediaUrls,
+//               quizQuestion: m.quizQuestion,
+//               quizOptions: m.quizOptions,
+//               quizCorrectOption: m.quizCorrectOption,
+//               quizUserAnswer: m.quizUserAnswer ?? null,
+//               quizTimer: m.quizTimer,
+//               quizPoints: m.quizPoints,
+//               quizParticipants: m.quizParticipants ?? 0,
+//               memGifUrl: m.memGifUrl ?? null,
+//               memTag: m.memTag ?? null,
+//             }));
+//           return [...prev, ...fresh];
+//         });
+//         setHasMoreMsgs(Boolean(res.data.pagination?.hasMore));
+//       } else {
+//         setHasMoreMsgs(false);
+//       }
+//     } catch (e) {
+//       console.error("Failed to load more messages:", e);
+//       // Leave hasMoreMsgs as-is so the observer can retry on next intersection.
+//     } finally {
+//       loadingMoreMsgsRef.current = false;
+//       setLoadingMoreMsgs(false);
+//     }
+//   }, [roomId, hasMoreMsgs, posts, morePosts, userUsername, userAvatarUrl]);
+
+//   // IntersectionObserver on a sentinel after the last rendered message.
+//   // No button, no end-of-feed text — only the spinner shown while
+//   // loadingMoreMsgs is true (see JSX in the feed render below).
+//   useEffect(() => {
+//     const sentinel = sentinelRef.current;
+//     if (!sentinel) return;
+
+//     const observer = new IntersectionObserver(
+//       (entries) => {
+//         if (entries[0]?.isIntersecting) loadMoreMsgs();
+//       },
+//       {
+//         root: listRef.current,
+//         rootMargin: "200px",
+//         threshold: 0,
+//       },
+//     );
+//     observer.observe(sentinel);
+//     return () => observer.disconnect();
+//   }, [loadMoreMsgs]);
 
 //   const openShareDialog = (post: ShareableRoarPost) => { setSharePost(post); setCopied(false); };
 //   const closeShareDialog = () => { setSharePost(null); setCopied(false); };
@@ -406,27 +601,50 @@
 //     return () => document.removeEventListener("mousedown", handleClickOutside);
 //   }, []);
 
-//   // ── Presence: join + heartbeat + live active-fans list ──────────────────────
-//   // Replaces the old fire-and-forget join-only effect. Now also GETs the
-//   // active fan list (for the avatar row + dialog) and re-POSTs on an
-//   // interval so the server-side TTL never expires a still-open tab, and so
-//   // other users' avatars update live in this view without a page reload.
+
 //   useEffect(() => {
 //     if (!roomId) return;
+//     // Reset stale data from previous room immediately
+//     setActiveFans([]);
+//     setLiveCount(0);
+//     setTotalJoinCount(0);
 
+//     // const join = async () => {
+//     //   try {
+//     //     const res = await axios.post(`/api/roar/rooms/${roomId}/presence`);
+//     //     if (res.data?.success) setLiveCount(res.data.fanCount);
+//     //   } catch (e) { console.error("Join failed:", e); }
+//     // };
 //     const join = async () => {
 //       try {
 //         const res = await axios.post(`/api/roar/rooms/${roomId}/presence`);
-//         if (res.data?.success) setLiveCount(res.data.fanCount);
+//         if (res.data?.success) {
+//           setLiveCount(res.data.fanCount);
+//           if (res.data.totalJoinCount !== undefined) {
+//             setTotalJoinCount(res.data.totalJoinCount); // ← new
+//           }
+//         }
 //       } catch (e) { console.error("Join failed:", e); }
 //     };
 
+//     // const refreshActiveFans = async () => {
+//     //   try {
+//     //     const res = await axios.get(`/api/roar/rooms/${roomId}/presence`);
+//     //     if (res.data?.success) {
+//     //       setActiveFans(res.data.fans ?? []);
+//     //       setLiveCount(res.data.fanCount ?? 0);
+//     //     }
+//     //   } catch (e) { console.error("Active fans fetch failed:", e); }
+//     // };
 //     const refreshActiveFans = async () => {
 //       try {
 //         const res = await axios.get(`/api/roar/rooms/${roomId}/presence`);
 //         if (res.data?.success) {
 //           setActiveFans(res.data.fans ?? []);
 //           setLiveCount(res.data.fanCount ?? 0);
+//           if (res.data.totalJoinCount !== undefined) {
+//             setTotalJoinCount(res.data.totalJoinCount); // ← new
+//           }
 //         }
 //       } catch (e) { console.error("Active fans fetch failed:", e); }
 //     };
@@ -438,56 +656,200 @@
 //     // Heartbeat every 25s: well under the 60s server-side TTL, so a single
 //     // missed beat (e.g. a slow network tick) doesn't drop the user from
 //     // the active list.
-//     const heartbeat = setInterval(() => { join(); refreshActiveFans(); }, 25_000);
+//     // const heartbeat = setInterval(() => { join(); refreshActiveFans(); }, 25_000);
+//     // const heartbeat = setInterval(() => {
+//     //   if (!document.hidden) { join(); refreshActiveFans(); }
+//     // }, 30_000);
+//     const heartbeat = setInterval(() => {
+//       if (!document.hidden) join();
+//     }, 30_000);
+
+//     const fanRefresh = setInterval(() => {
+//       if (!document.hidden) refreshActiveFans();
+//     }, 120_000);
 
 //     window.addEventListener("beforeunload", leaveBeacon);
+//     // return () => {
+//     //   leaveAxios();
+//     //   clearInterval(heartbeat);
+//     //   window.removeEventListener("beforeunload", leaveBeacon);
+//     // };
 //     return () => {
 //       leaveAxios();
 //       clearInterval(heartbeat);
+//       clearInterval(fanRefresh);
 //       window.removeEventListener("beforeunload", leaveBeacon);
 //     };
 //   }, [roomId]);
 
+//   // useEffect(() => {
+//   //   try {
+//   //     setUserUsername(localStorage.getItem("roar_username") || "RoarUser");
+//   //     setUserAvatarUrl(currentAvatarUrl || localStorage.getItem("roar_avatar_url") || undefined);
+//   //   } catch { }
+//   // }, [currentAvatarUrl]);
 //   useEffect(() => {
 //     try {
-//       setUserUsername(localStorage.getItem("roar_username") || "RoarUser");
-//       setUserAvatarUrl(currentAvatarUrl || localStorage.getItem("roar_avatar_url") || undefined);
+//       const profileName = userProfile?.username;
+//       const storedName = localStorage.getItem("roar_username");
+//       setUserUsername(profileName || storedName || "RoarUser");
+//       setUserAvatarUrl(
+//         currentAvatarUrl ||
+//         userProfile?.avatarUrl ||
+//         userProfile?.avatar ||
+//         localStorage.getItem("roar_avatar_url") ||
+//         undefined
+//       );
 //     } catch { }
-//   }, [currentAvatarUrl]);
+//   }, [currentAvatarUrl, userProfile]);
+
+//   // const fetchMsgs = useCallback(async () => {
+//   //   if (!roomId) return;
+//   //   try {
+//   //     const res = await axios.get(`/api/roar/rooms/${roomId}/messages?t=${Date.now()}`);
+//   //     if (res.data?.success) {
+//   //       setPosts(prev => {
+//   //         const prevMap = Object.fromEntries(prev.map(p => [p.id, p]));
+//   //         return [...res.data.messages]
+//   //           .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+//   //           .map((m: any) => {
+//   //             const existing = prevMap[m.msgId];
+//   //             // While a reaction call is in-flight for this message, keep
+//   //             // showing the optimistic local state instead of letting the
+//   //             // 3s poll stomp it with a possibly-stale server value.
+//   //             const isPending = pendingReactRef.current[m.msgId];
+//   //             return {
+//   //               id: m.msgId,
+//   //               fan: { username: displayUsername(m.authorUsername), authorUid: m.authorUid, badge: m.authorBadge, avatarUrl: m.authorAvatarUrl || m.avatarUrl || (m.authorUsername === userUsername ? userAvatarUrl : undefined) },
+//   //               text: m.text,
+//   //               fireCount: m.fireCount || 0,
+//   //               nochanceCount: m.noChanceCount || 0,
+//   //               // Aggregate reaction counter (any of the 5 types), not heart-specific despite the field name.
+//   //               heartCount: isPending ? (existing?.heartCount ?? m.heartCount ?? 0) : (m.heartCount ?? 0),
+//   //               // userReaction replaces the old boolean userLiked — the
+//   //               // actual reaction type the current user picked, or null.
+//   //               userReaction: isPending ? (existing?.userReaction ?? null) : (m.userReaction ?? null),
+//   //               replyCount: Math.max(m.replyCount ?? 0, existing?.replyCount ?? 0),
+//   //               agreeCount: m.agreeCount ?? 0,
+//   //               disagreeCount: m.disagreeCount ?? 0,
+//   //               userVote: m.userVote ?? null,
+//   //               sideA: m.sideA ?? null,
+//   //               sideB: m.sideB ?? null,
+//   //               timeAgo: new Date(m.createdAt).toLocaleDateString([], { month: "short", day: "numeric" }) + " · " + new Date(m.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+//   //               createdAt: m.createdAt,
+//   //               type: m.type,
+//   //               mediaUrls: m.mediaUrls,
+//   //               quizQuestion: m.quizQuestion,
+//   //               quizOptions: m.quizOptions,
+//   //               quizCorrectOption: m.quizCorrectOption,
+//   //               quizUserAnswer: m.quizUserAnswer ?? null,
+//   //               quizTimer: m.quizTimer,
+//   //               quizPoints: m.quizPoints,
+//   //               quizParticipants: m.quizParticipants ?? 0,
+//   //               memGifUrl: m.memGifUrl ?? null,
+//   //               memTag: m.memTag ?? null,
+//   //             };
+//   //           });
+//   //       });
+//   //     }
+//   //   } catch (e) { console.error(e); }
+//   //   finally { setLoading(false); }
+//   // }, [roomId, userAvatarUrl, userUsername]);
+
 
 //   const fetchMsgs = useCallback(async () => {
 //     if (!roomId) return;
 //     try {
-//       const res = await axios.get(`/api/roar/rooms/${roomId}/messages?t=${Date.now()}`);
+//       const url = latestCreatedAtRef.current
+//         ? `/api/roar/rooms/${roomId}/messages?since=${latestCreatedAtRef.current}&t=${Date.now()}`
+//         : `/api/roar/rooms/${roomId}/messages?t=${Date.now()}`;
+
+//       const res = await axios.get(url);
 //       if (res.data?.success) {
-//         setPosts(prev => {
-//           const prevMap = Object.fromEntries(prev.map(p => [p.id, p]));
-//           return [...res.data.messages]
-//             .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-//             .map((m: any) => {
-//               const existing = prevMap[m.msgId];
-//               // While a reaction call is in-flight for this message, keep
-//               // showing the optimistic local state instead of letting the
-//               // 3s poll stomp it with a possibly-stale server value.
-//               const isPending = pendingReactRef.current[m.msgId];
-//               return {
+//         const incoming: any[] = res.data.messages ?? [];
+
+//         if (latestCreatedAtRef.current === null) {
+//           // Initial load — full replace, set cursor to newest message
+//           setPosts(prev => {
+//             const prevMap = Object.fromEntries(prev.map(p => [p.id, p]));
+//             return [...res.data.messages]
+//               .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+//               .map((m: any) => {
+//                 // ... your existing message mapping
+//                 const existing = prevMap[m.msgId];
+//                 const isPending = pendingReactRef.current[m.msgId];
+//                 return {
+//                   id: m.msgId,
+//                   // fan: { username: displayUsername(m.authorUsername), authorUid: m.authorUid, badge: m.authorBadge, avatarUrl: m.authorAvatarUrl || m.avatarUrl },
+//                   fan: { username: displayUsername(m.authorUsername), authorUid: m.authorUid, badge: m.authorBadge, avatarUrl: m.authorUid === currentUserId ? (userAvatarUrl || m.authorAvatarUrl || m.avatarUrl) : (m.authorAvatarUrl || m.avatarUrl) },
+//                   text: m.text,
+//                   // fireCount: m.fireCount || 0,
+//                   // nochanceCount: m.noChanceCount || 0,
+//                   // heartCount: isPending ? (existing?.heartCount ?? m.heartCount ?? 0) : (m.heartCount ?? 0),
+//                   fireCount: m.fireCount ?? 0,
+//                   heartCount: m.heartCount ?? 0,
+//                   mindblownCount: m.mindblownCount ?? 0,
+//                   goatCount: m.goatCount ?? 0,
+//                   clapCount: m.clapCount ?? 0,
+//                   nochanceCount: m.noChanceCount ?? 0,
+//                   userReaction: isPending ? (existing?.userReaction ?? null) : (m.userReaction ?? null),
+//                   replyCount: Math.max(m.replyCount ?? 0, existing?.replyCount ?? 0),
+//                   agreeCount: m.agreeCount ?? 0,
+//                   disagreeCount: m.disagreeCount ?? 0,
+//                   userVote: m.userVote ?? null,
+//                   sideA: m.sideA ?? null,
+//                   sideB: m.sideB ?? null,
+//                   timeAgo: new Date(m.createdAt).toLocaleDateString([], { month: "short", day: "numeric" }) + " · " + new Date(m.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+//                   createdAt: m.createdAt,
+//                   type: m.type,
+//                   mediaUrls: m.mediaUrls,
+//                   quizQuestion: m.quizQuestion,
+//                   quizOptions: m.quizOptions,
+//                   quizCorrectOption: m.quizCorrectOption,
+//                   quizUserAnswer: m.quizUserAnswer ?? null,
+//                   quizTimer: m.quizTimer,
+//                   quizPoints: m.quizPoints,
+//                   quizParticipants: m.quizParticipants ?? 0,
+//                   memGifUrl: m.memGifUrl ?? null,
+//                   memTag: m.memTag ?? null,
+//                 };
+//               });
+//           });
+
+//           if (incoming.length > 0) {
+//             latestCreatedAtRef.current = Math.max(...incoming.map(m => m.createdAt));
+//           }
+
+//         } else if (incoming.length > 0) {
+//           // Poll — only new messages came back, prepend them
+//           latestCreatedAtRef.current = Math.max(...incoming.map((m: any) => m.createdAt));
+
+//           setPosts(prev => {
+//             const existingIds = new Set(prev.map(p => p.id));
+//             const fresh = incoming
+//               .filter((m: any) => !existingIds.has(m.msgId))
+//               .map((m: any) => ({
 //                 id: m.msgId,
-//                 fan: { username: displayUsername(m.authorUsername), badge: m.authorBadge, avatarUrl: m.authorAvatarUrl || m.avatarUrl || (m.authorUsername === userUsername ? userAvatarUrl : undefined) },
+//                 // fan: { username: displayUsername(m.authorUsername), authorUid: m.authorUid, badge: m.authorBadge, avatarUrl: m.authorAvatarUrl || m.avatarUrl },
+//                 fan: { username: displayUsername(m.authorUsername), authorUid: m.authorUid, badge: m.authorBadge, avatarUrl: m.authorUid === currentUserId ? (userAvatarUrl || m.authorAvatarUrl || m.avatarUrl) : (m.authorAvatarUrl || m.avatarUrl) },
 //                 text: m.text,
-//                 fireCount: m.fireCount || 0,
-//                 nochanceCount: m.noChanceCount || 0,
-//                 // Aggregate reaction counter (any of the 5 types), not heart-specific despite the field name.
-//                 heartCount: isPending ? (existing?.heartCount ?? m.heartCount ?? 0) : (m.heartCount ?? 0),
-//                 // userReaction replaces the old boolean userLiked — the
-//                 // actual reaction type the current user picked, or null.
-//                 userReaction: isPending ? (existing?.userReaction ?? null) : (m.userReaction ?? null),
-//                 replyCount: Math.max(m.replyCount ?? 0, existing?.replyCount ?? 0),
+//                 // fireCount: m.fireCount || 0,
+//                 // nochanceCount: m.noChanceCount || 0,
+//                 // heartCount: m.heartCount ?? 0,
+//                 fireCount: m.fireCount ?? 0,
+//                 heartCount: m.heartCount ?? 0,
+//                 mindblownCount: m.mindblownCount ?? 0,
+//                 goatCount: m.goatCount ?? 0,
+//                 clapCount: m.clapCount ?? 0,
+//                 nochanceCount: m.noChanceCount ?? 0,
+//                 userReaction: m.userReaction ?? null,
+//                 replyCount: m.replyCount ?? 0,
 //                 agreeCount: m.agreeCount ?? 0,
 //                 disagreeCount: m.disagreeCount ?? 0,
 //                 userVote: m.userVote ?? null,
 //                 sideA: m.sideA ?? null,
 //                 sideB: m.sideB ?? null,
-//                 timeAgo: new Date(m.createdAt).toLocaleDateString([], { month: "short", day: "numeric" }) + " · " + new Date(m.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+//                 timeAgo: "now",
 //                 createdAt: m.createdAt,
 //                 type: m.type,
 //                 mediaUrls: m.mediaUrls,
@@ -500,17 +862,148 @@
 //                 quizParticipants: m.quizParticipants ?? 0,
 //                 memGifUrl: m.memGifUrl ?? null,
 //                 memTag: m.memTag ?? null,
-//               };
-//             });
-//         });
+//               }));
+//             return fresh.length > 0 ? [...fresh, ...prev] : prev;
+//           });
+//         }
+//         // incoming.length === 0 on a poll → nothing to do, no state update
 //       }
 //     } catch (e) { console.error(e); }
 //     finally { setLoading(false); }
-//   }, [roomId, userAvatarUrl, userUsername]);
+//     // }, [roomId, userAvatarUrl, userUsername]);
+//   }, [roomId, userAvatarUrl, userUsername, currentUserId]);
 
 //   useEffect(() => { onRegisterRefresh?.(fetchMsgs); }, [fetchMsgs, onRegisterRefresh]);
 //   useEffect(() => { onRegisterReplyUpdate?.((postId, count) => { setPosts(p => p.map(x => x.id === postId ? { ...x, replyCount: count } : x)); }); }, [onRegisterReplyUpdate]);
-//   useEffect(() => { if (!roomId) return; fetchMsgs(); const iv = setInterval(fetchMsgs, 3000); return () => clearInterval(iv); }, [fetchMsgs, roomId]);
+//   // useEffect(() => { if (!roomId) return; fetchMsgs(); 
+//   // const iv = setInterval(fetchMsgs, 15000); return () => clearInterval(iv); },
+//   useEffect(() => {
+//     if (!roomId) return;
+//     fetchMsgs();
+//   }, [fetchMsgs, roomId]);
+
+//   useVisibilityInterval(fetchMsgs, 15000);
+
+//   // ── Poll for reaction/reply count updates (separate from message poll) ──────
+// // const fetchReactionUpdates = useCallback(async () => {
+// //   if (!roomId || posts.length === 0) return;
+// //   try {
+// //     const res = await axios.get(`/api/roar/rooms/${roomId}/messages?t=${Date.now()}`);
+// //     if (res.data?.success) {
+// //       const incoming: any[] = res.data.messages ?? [];
+// //       setPosts(prev => prev.map(p => {
+// //         const updated = incoming.find((m: any) => m.msgId === p.id);
+// //         if (!updated) return p;
+// //         const isPending = pendingReactRef.current[p.id];
+// //         return {
+// //           ...p,
+// //           heartCount: isPending ? p.heartCount : (updated.heartCount ?? p.heartCount),
+// //           userReaction: isPending ? p.userReaction : (updated.userReaction ?? p.userReaction),
+// //           replyCount: Math.max(p.replyCount ?? 0, updated.replyCount ?? 0),
+// //           agreeCount: updated.agreeCount ?? p.agreeCount,
+// //           disagreeCount: updated.disagreeCount ?? p.disagreeCount,
+// //         };
+// //       }));
+// //     }
+// //   } catch { }
+// // }, [roomId, posts]);
+
+// const fetchReactionUpdates = useCallback(async () => {
+//   if (!roomId || posts.length === 0) return;
+//   try {
+//     const res = await axios.get(`/api/roar/rooms/${roomId}/messages?t=${Date.now()}`);
+//     if (res.data?.success) {
+//       const incoming: any[] = res.data.messages ?? [];
+//       setPosts(prev => prev.map(p => {
+//         const updated = incoming.find((m: any) => m.msgId === p.id);
+//         if (!updated) return p;
+//         const isPending = pendingReactRef.current[p.id];
+//         return {
+//           ...p,
+//           heartCount: isPending ? p.heartCount : (updated.heartCount ?? p.heartCount),
+//           userReaction: isPending ? p.userReaction : (updated.userReaction ?? null),
+//           replyCount: Math.max(p.replyCount ?? 0, updated.replyCount ?? 0),
+//           agreeCount: updated.agreeCount ?? p.agreeCount,
+//           disagreeCount: updated.disagreeCount ?? p.disagreeCount,
+//         };
+//       }));
+
+//       // Sync localReactions from server for non-pending posts
+//       setLocalReactions(prev => {
+//         const next = { ...prev };
+//         incoming.forEach((m: any) => {
+//           if (!pendingReactRef.current[m.msgId]) {
+//             next[m.msgId] = {
+//               reaction: m.userReaction ?? null,
+//               heartCount: m.heartCount ?? 0,
+//             };
+//           }
+//         });
+//         return next;
+//       });
+//     }
+//   } catch { }
+// }, [roomId, posts]);
+
+// useVisibilityInterval(fetchReactionUpdates, 5000);
+
+//   // ── Poll for new room notifications and show floating toast ──────────────────
+// const lastNotifCheckRef = useRef<number>(Date.now());
+// const seenNotifIdsRef = useRef<Set<string>>(new Set());
+
+// useEffect(() => {
+//   if (!roomId) return;
+
+//   const checkNotifs = async () => {
+//     try {
+//       const res = await axios.get("/api/notifications", {
+//         params: {
+//           uid: userProfile?.actualUserId,
+//           email: userProfile?.email,
+//         },
+//       });
+//       const notifs: any[] = res.data?.notifications ?? [];
+
+//       // Find unseen notifications for this room that arrived after we entered
+//       const fresh = notifs.filter(n =>
+//         n.roomId === roomId &&
+//         !n.isRead &&
+//         !seenNotifIdsRef.current.has(n.id) &&
+//         (n.createdAt ?? 0) > lastNotifCheckRef.current
+//       );
+
+//       if (fresh.length > 0) {
+//         // Mark all as seen locally so we don't re-toast
+//         fresh.forEach(n => seenNotifIdsRef.current.add(n.id));
+
+//         // Show the most recent one as a toast
+//         const latest = fresh[fresh.length - 1];
+//         const type = latest.type === "roar_post_comment" ? "comment" : "like";
+//         const message = latest.message ?? (type === "comment"
+//           ? "Someone commented on your post"
+//           : "Someone reacted to your post");
+
+//         setNotifToast({ message, type });
+
+//         // Auto-dismiss after 4 seconds
+//         if (notifToastTimerRef.current) clearTimeout(notifToastTimerRef.current);
+//         notifToastTimerRef.current = setTimeout(() => setNotifToast(null), 4000);
+//       }
+//     } catch {
+//       // silent — this is a non-critical enhancement
+//     }
+//   };
+
+//   // Set the entry timestamp so we only show notifs that arrive while in room
+//   lastNotifCheckRef.current = Date.now();
+
+//   const interval = setInterval(checkNotifs, 5000);
+//   return () => {
+//     clearInterval(interval);
+//     if (notifToastTimerRef.current) clearTimeout(notifToastTimerRef.current);
+//   };
+// }, [roomId, userProfile?.actualUserId, userProfile?.email]);
+
 //   useEffect(() => { if (!loading && listRef.current) setTimeout(() => listRef.current?.scrollTo({ top: 0 }), 50); }, [loading]);
 
 //   // ── Reaction handler (mirrors HomeFeed.tsx's handleReact) ───────────────────
@@ -591,18 +1084,68 @@
 //     finally { setUploading(false); if (e.target) e.target.value = ""; }
 //   };
 
+//   // const send = async () => {
+//   //   if (!roomId) return;
+//   //   const text = input.trim();
+//   //   if (!text && !attachedUrl) return;
+//   //   if (sendingRef.current) return; // guard against double submit
+//   //   sendingRef.current = true;
+//   //   try {
+//   //     const res = await axios.post(`/api/roar/rooms/${roomId}/messages`, { text: text || "Shared media", type: mode, mediaUrls: attachedUrl ? [attachedUrl] : undefined });
+//       // if (res.data?.success) {
+//       //   const m = res.data.message;
+//       //   setPosts(p => [{
+//       //     id: m.msgId,
+//       //     fan: { username: displayUsername(m.authorUsername), authorUid: m.authorUid, badge: m.authorBadge, avatarUrl: m.authorAvatarUrl || m.avatarUrl || (m.authorUsername === userUsername ? userAvatarUrl : undefined) },
+//       //     text: m.text,
+//       //     // fireCount: 0, nochanceCount: 0, heartCount: 0,
+//       //     fireCount: m.fireCount ?? 0,
+//       //     heartCount: m.heartCount ?? 0,
+//       //     mindblownCount: m.mindblownCount ?? 0,
+//       //     goatCount: m.goatCount ?? 0,
+//       //     clapCount: m.clapCount ?? 0,
+//       //     nochanceCount: m.noChanceCount ?? 0,
+//       //     userReaction: null, replyCount: 0,
+//       //     agreeCount: 0, disagreeCount: 0, userVote: null, sideA: m.sideA ?? null, sideB: m.sideB ?? null,
+//       //     timeAgo: "now", createdAt: m.createdAt || Date.now(), type: m.type, mediaUrls: m.mediaUrls,
+//       //     quizQuestion: m.quizQuestion, quizOptions: m.quizOptions, quizCorrectOption: m.quizCorrectOption,
+//       //     quizUserAnswer: m.quizUserAnswer ?? null, quizTimer: m.quizTimer, quizPoints: m.quizPoints,
+//       //     quizParticipants: m.quizParticipants ?? 0, memGifUrl: m.memGifUrl ?? null, memTag: m.memTag ?? null,
+//       //   }, ...p]);
+//       //   setInput(""); setAttachedUrl(null); setAttachedType(null);
+//       //   setTimeout(() => listRef.current?.scrollTo({ top: 0, behavior: "smooth" }), 50);
+//       // }
+//   //   } catch { onToast("Failed to send message"); }
+//   //   finally { sendingRef.current = false; } 
+//   // };
+
 //   const send = async () => {
-//     if (!roomId) return;
-//     const text = input.trim();
-//     if (!text && !attachedUrl) return;
-//     try {
-//       const res = await axios.post(`/api/roar/rooms/${roomId}/messages`, { text: text || "Shared media", type: mode, mediaUrls: attachedUrl ? [attachedUrl] : undefined });
-//       if (res.data?.success) {
+//   if (!roomId) return;
+//   const text = input.trim();
+//   if (!text && !attachedUrl) return;
+//   if (sendingRef.current) return;
+//   sendingRef.current = true;
+//   setIsSending(true);
+//   try {
+//     const res = await axios.post(`/api/roar/rooms/${roomId}/messages`, {
+//       text: text || "Shared media",
+//       type: mode,
+//       mediaUrls: attachedUrl ? [attachedUrl] : undefined,
+//     });
+//        if (res.data?.success) {
 //         const m = res.data.message;
 //         setPosts(p => [{
 //           id: m.msgId,
-//           fan: { username: displayUsername(m.authorUsername), badge: m.authorBadge, avatarUrl: m.authorAvatarUrl || m.avatarUrl || (m.authorUsername === userUsername ? userAvatarUrl : undefined) },
-//           text: m.text, fireCount: 0, nochanceCount: 0, heartCount: 0, userReaction: null, replyCount: 0,
+//           fan: { username: displayUsername(m.authorUsername), authorUid: m.authorUid, badge: m.authorBadge, avatarUrl: m.authorAvatarUrl || m.avatarUrl || (m.authorUsername === userUsername ? userAvatarUrl : undefined) },
+//           text: m.text,
+//           // fireCount: 0, nochanceCount: 0, heartCount: 0,
+//           fireCount: m.fireCount ?? 0,
+//           heartCount: m.heartCount ?? 0,
+//           mindblownCount: m.mindblownCount ?? 0,
+//           goatCount: m.goatCount ?? 0,
+//           clapCount: m.clapCount ?? 0,
+//           nochanceCount: m.noChanceCount ?? 0,
+//           userReaction: null, replyCount: 0,
 //           agreeCount: 0, disagreeCount: 0, userVote: null, sideA: m.sideA ?? null, sideB: m.sideB ?? null,
 //           timeAgo: "now", createdAt: m.createdAt || Date.now(), type: m.type, mediaUrls: m.mediaUrls,
 //           quizQuestion: m.quizQuestion, quizOptions: m.quizOptions, quizCorrectOption: m.quizCorrectOption,
@@ -612,8 +1155,12 @@
 //         setInput(""); setAttachedUrl(null); setAttachedType(null);
 //         setTimeout(() => listRef.current?.scrollTo({ top: 0, behavior: "smooth" }), 50);
 //       }
-//     } catch { onToast("Failed to send message"); }
-//   };
+//   } catch { onToast("Failed to send message"); }
+//   finally {
+//     sendingRef.current = false;
+//     setIsSending(false);
+//   }
+// };
 
 //   const copyToClipboard = async (text: string) => {
 //     try { await navigator.clipboard.writeText(text); return true; }
@@ -659,10 +1206,50 @@
 //     );
 //   };
 
+//   // const renderReactionsTrigger = (p: any) => {
+//   //   const lo = localReactions[p.id];
+//   //   const heartCount = lo !== undefined ? lo.heartCount : (p.heartCount ?? 0);
+//   //   if (heartCount === 0) return null;
+
+//   //   return (
+//   //     <motion.button
+//   //       whileTap={{ scale: 0.93 }}
+//   //       onClick={e => { e.stopPropagation(); setReactionsMsgId(p.id); }}
+//   //       style={{
+//   //         display: "flex", alignItems: "center", gap: 4,
+//   //         background: "none", border: "none", cursor: "pointer",
+//   //         color: "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: 700,
+//   //         marginLeft: "auto",
+//   //       }}
+//   //       title="See who reacted"
+//   //     >
+//   //       <BarChart2 size={13} />
+//   //       <span>Reactions</span>
+//   //     </motion.button>
+//   //   );
+//   // };
+
+//   const REACTION_EMOJI: Record<string, string> = {
+//     fire: "🔥", heart: "❤️", mindblown: "🤯", goat: "🐐", clap: "👏", nochance: "🙅",
+//     laugh: "😂", sad: "😢", thumb: "👍",
+//   };
+
 //   const renderReactionsTrigger = (p: any) => {
 //     const lo = localReactions[p.id];
 //     const heartCount = lo !== undefined ? lo.heartCount : (p.heartCount ?? 0);
 //     if (heartCount === 0) return null;
+
+//     const topReactions = topReactionsMap[p.id] ?? [];
+//     if (topReactions.length === 0 && !topReactionsCache.current[p.id]) {
+//       fetchTopReactions(p.id);
+//     }
+
+//     const currentReaction = lo?.reaction ?? p.userReaction ?? null;
+//     const displayReactions = topReactions.length > 0
+//       ? topReactions
+//       : currentReaction ? [currentReaction] : [];
+
+//     if (displayReactions.length === 0) return null;
 
 //     return (
 //       <motion.button
@@ -671,16 +1258,36 @@
 //         style={{
 //           display: "flex", alignItems: "center", gap: 4,
 //           background: "none", border: "none", cursor: "pointer",
-//           color: "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: 700,
-//           marginLeft: "auto",
+//           marginLeft: "auto", padding: 0,
 //         }}
 //         title="See who reacted"
 //       >
-//         <BarChart2 size={13} />
-//         <span>Reactions</span>
+//         <div style={{ display: "flex" }}>
+//           {displayReactions.map((type, i) => (
+//             <div
+//               key={type}
+//               style={{
+//                 width: 20, height: 20, borderRadius: "50%",
+//                 background: "#1e1e2a",
+//                 border: "1.5px solid rgba(255,255,255,0.1)",
+//                 display: "flex", alignItems: "center", justifyContent: "center",
+//                 fontSize: 11,
+//                 marginLeft: i === 0 ? 0 : -6,
+//                 zIndex: displayReactions.length - i,
+//                 position: "relative",
+//               }}
+//             >
+//               {REACTION_EMOJI[type] ?? "❤️"}
+//             </div>
+//           ))}
+//         </div>
+//         {/* <span style={{ fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.5)", marginLeft: 3 }}>
+//         {heartCount}
+//       </span> */}
 //       </motion.button>
 //     );
 //   };
+
 
 //   return (
 //     <div className="flex flex-col w-full bg-[#0e0e14]" style={{ height: "100%", overflow: "hidden" }}>
@@ -721,7 +1328,7 @@
 //       )}
 
 //       {/* ── HEADER ── */}
-//       <div className="shrink-0 px-4 py-3 bg-[rgba(14,14,20,0.98)] backdrop-blur-[20px] border-b border-[var(--border)]" style={{ overflow: "visible", position: "relative", zIndex: 40 }}>
+//       {/* <div className="shrink-0 px-4 py-3 bg-[rgba(14,14,20,0.98)] backdrop-blur-[20px] border-b border-[var(--border)]" style={{ overflow: "visible", position: "relative", zIndex: 40 }}>
 //         <div className="flex justify-between items-start">
 //           <div className="flex items-center gap-3 flex-1 min-w-0">
 //             <button type="button" onPointerDown={handleBack} onClick={handleBack} className="bg-transparent border-none cursor-pointer text-white flex items-center p-0 flex-shrink-0" style={{ touchAction: "manipulation", WebkitTapHighlightColor: "transparent" }}>
@@ -732,11 +1339,21 @@
 //               <div className="flex items-center gap-1.5 mt-1">
 //                 <span className="live-pulse w-1.5 h-1.5 rounded-full bg-[var(--live-green)] inline-block flex-shrink-0" />
 //                 <span className="text-[10px] font-bold text-[var(--live-green)] flex-shrink-0">LIVE</span>
-//                 <span className="text-[11px] text-white text-[var(--text-muted)] truncate">· {fmt(liveCount)} joined</span>
+//                 {/* <span className="text-[11px] text-white text-[var(--text-muted)] truncate">· {fmt(liveCount)} joined</span> //
 //               </div>
 //             </div>
 //           </div>
 //           <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+//             {watchAlongRoomId && (
+//               <button
+//                 type="button"
+//                 onClick={() => router.push(`/MainModules/WatchAlong/room/${watchAlongRoomId}`)}
+//                 className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500 text-white transition-all cursor-pointer shadow-[0_2px_10px_rgba(219,39,119,0.3)] hover:scale-105 active:scale-95"
+//               >
+//                 <span>Watchalong</span>
+//                 <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse inline-block" />
+//               </button>
+//             )}
 //             <button type="button" onClick={shareRoomLink} className="flex-shrink-0 bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.12)] rounded-[10px] p-2 cursor-pointer text-[rgba(255,255,255,0.75)] flex items-center justify-center hover:bg-[rgba(255,255,255,0.1)] transition-colors" style={{ width: "36px", height: "36px" }}>
 //               <Share2 size={18} />
 //             </button>
@@ -752,11 +1369,81 @@
 //           <div className="flex justify-between text-[10px] text-[var(--text-muted)] mb-1"><span>Room Energy</span></div>
 //           <div className="room-energy-bar room-energy-fast rounded-full" />
 //         </div>
+//       </div> */}
+
+//       {/* ── HEADER ── */}
+//       <div className="shrink-0 px-4 py-3 bg-[rgba(14,14,20,0.98)] backdrop-blur-[20px] border-b border-[var(--border)]" style={{ overflow: "visible", position: "relative", zIndex: 40 }}>
+//         <div className="flex justify-between items-start gap-2">
+//           {/* LEFT: back + room name + watchalong */}
+//           <div className="flex items-center gap-3 min-w-0 flex-1">
+//             <button
+//               type="button"
+//               onPointerDown={handleBack}
+//               onClick={handleBack}
+//               className="bg-transparent border-none cursor-pointer text-white flex items-center p-0 flex-shrink-0"
+//               style={{ touchAction: "manipulation", WebkitTapHighlightColor: "transparent" }}
+//             >
+//               <ChevronLeft size={24} />
+//             </button>
+//             <div className="text-left pt-0.5 min-w-0 flex-1">
+//               <p className="font-display text-2xl tracking-[0.04em] m-0 leading-tight text-white font-extrabold uppercase truncate">
+//                 {roomName || "WORLDCUP"}
+//               </p>
+//               <div className="flex items-center gap-2 mt-1 flex-wrap ml-auto">
+//                 <div className="flex items-center gap-1.5">
+//                   <span className="live-pulse w-1.5 h-1.5 rounded-full bg-[var(--live-green)] inline-block flex-shrink-0" />
+//                   <span className="text-[10px] font-bold text-[var(--live-green)] flex-shrink-0">LIVE</span>
+//                 </div>
+//                 {watchAlongRoomId && (
+//                   <button
+//                     type="button"
+//                     onClick={() => router.push(`/MainModules/WatchAlong/room/${watchAlongRoomId}`)}
+//                     className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500 text-white transition-all cursor-pointer shadow-[0_2px_10px_rgba(219,39,119,0.3)] active:scale-95 whitespace-nowrap"
+//                   >
+//                     <span>Watchalong</span>
+//                     <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse inline-block flex-shrink-0" />
+//                   </button>
+//                 )}
+//               </div>
+//             </div>
+//           </div>
+
+//           {/* RIGHT: share + score only */}
+//           <div className="flex items-center gap-2 flex-shrink-0">
+//             <button
+//               type="button"
+//               onClick={shareRoomLink}
+//               className="flex-shrink-0 bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.12)] rounded-[10px] p-2 cursor-pointer text-[rgba(255,255,255,0.75)] flex items-center justify-center hover:bg-[rgba(255,255,255,0.1)] transition-colors"
+//               style={{ width: "36px", height: "36px" }}
+//             >
+//               <Share2 size={18} />
+//             </button>
+//             {(score || scoreSubtitle) && (
+//               <div className="text-right pr-1 flex-shrink-0">
+//                 {score && <div className="font-display text-[24px] text-[var(--accent-yellow)] leading-none">{score}</div>}
+//                 {scoreSubtitle && <div className="text-[11px] text-[var(--text-secondary)] mt-0.5">{scoreSubtitle}</div>}
+//               </div>
+//             )}
+//           </div>
+//         </div>
+
+//         <div className="mt-3">
+//           <div className="flex justify-between text-[10px] text-[var(--text-muted)] mb-1">
+//             <span>Room Energy</span>
+//           </div>
+//           <div className="room-energy-bar room-energy-fast rounded-full" />
+//         </div>
 //       </div>
 
 //       {/* ── ACTIVE FANS ── */}
 //       <div className="shrink-0 px-4 py-2 bg-[rgba(14,14,20,0.98)] border-b border-[var(--border)]">
-//         <ActiveFansStack fans={activeFans} count={liveCount} onClick={() => setActiveFansOpen(true)} />
+//         {/* <ActiveFansStack fans={activeFans} count={liveCount} onClick={() => setActiveFansOpen(true)} /> */}
+//         <ActiveFansStack
+//           fans={activeFans}
+//           count={liveCount}
+//           totalJoinCount={totalJoinCount}
+//           onClick={() => setActiveFansOpen(true)}
+//         />
 //       </div>
 
 //       {/* ── FEED ── */}
@@ -764,10 +1451,10 @@
 //         <AnimatePresence initial={false}>
 //           {loading ? (
 //             <div className="text-center text-[var(--text-muted)] py-8">Loading messages...</div>
-//           ) : posts.length === 0 ? (
+//           ) : posts.length === 0 && morePosts.length === 0 ? (
 //             <div className="text-center text-[var(--text-muted)] py-8">No posts yet. Be the first!</div>
 //           ) : (
-//             posts.map((p) => {
+//             [...posts, ...morePosts].map((p) => {
 
 //               /* ── QUIZ ── */
 //               if (p.type === "quiz") {
@@ -820,6 +1507,13 @@
 //                               if (hasVoted) return;
 //                               try {
 //                                 await axios.post(`/api/roar/rooms/${roomId}/messages/${p.id}/vote`, { vote: voteVal });
+//                                 // if (phog) {
+//                                 //   phog.capture("poll_voted", {
+//                                 //     poll_id: p.id,
+//                                 //     poll_type: "debate_vs",
+//                                 //     option_id: voteVal
+//                                 //   });
+//                                 // }
 //                                 setPosts(prev => prev.map(x => x.id !== p.id ? x : { ...x, userVote: voteVal, agreeCount: (x.agreeCount ?? 0) + (voteVal === "agree" ? 1 : 0), disagreeCount: (x.disagreeCount ?? 0) + (voteVal === "disagree" ? 1 : 0) }));
 //                                 setInlineCommentPostId(p.id);
 //                               } catch { onToast("You've already voted!!"); }
@@ -873,6 +1567,23 @@
 //                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" /></svg>
 //                         </button>
 //                         {renderReactionsTrigger(p)}
+//                         {currentUserId && p.fan?.authorUid === currentUserId && (
+//                           <button
+//                             onClick={async e => {
+//                               e.stopPropagation();
+//                               if (!window.confirm("Delete this post?")) return;
+//                               try {
+//                                 await axios.delete(`/api/roar/rooms/${roomId}/messages/${p.id}`);
+//                                 setPosts(prev => prev.filter(x => x.id !== p.id));
+//                               } catch { onToast("Failed to delete post"); }
+//                             }}
+//                             style={{ display: "flex", alignItems: "center", justifyContent: "center", background: "none", border: "none", cursor: "pointer", color: "#f87171", marginLeft: "auto", padding: 4, borderRadius: "50%" }}
+//                           >
+//                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+//                               <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" /><path d="M10 11v6" /><path d="M14 11v6" /><path d="M9 6V4h6v2" />
+//                             </svg>
+//                           </button>
+//                         )}
 //                       </div>
 //                     </div>
 //                   </motion.div>
@@ -882,12 +1593,12 @@
 //               /* ── DEFAULT (post / hottake / prediction / raw_reactions) ── */
 //               return (
 //                 <motion.div key={p.id} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22 }} className="glass-card p-3 cursor-pointer"
-//                   onClick={() => onPostClick?.({ id: p.id, text: p.text, fan: p.fan, timeAgo: p.timeAgo, createdAt: p.createdAt, type: p.type || "post", isDbPost: true, roomId, mediaUrls: p.mediaUrls })}
+//                   onClick={() => onPostClick?.({ id: p.id, text: p.text, fan: p.fan,timeAgo: p.timeAgo, createdAt: p.createdAt, type: p.type || "post", isDbPost: true, roomId, mediaUrls: p.mediaUrls })}
 //                 >
 //                   {p.type && (
 //                     <div className="flex gap-1.5 mb-2 flex-wrap">
 //                       <span className={typeBadgeClass(p.type)}>
-//                         {p.type === "post" ? "✏️ POST" : p.type === "hottake" ? "🔥 HOT TAKE" : p.type === "prediction" ? "📊 PREDICT" : p.type === "debate" ? "⚡ DEBATE" : p.type === "raw_reactions" ? "🕰 Raw REACTIONS" : p.type.toUpperCase()}
+//                         {p.type === "post" ? "POST" : p.type === "hottake" ? "HOT TAKE" : p.type === "prediction" ? "PREDICTION" : p.type === "debate" ? "DEBATE" : p.type === "raw_reactions" ? "Raw REACTIONS" : p.type.toUpperCase()}
 //                       </span>
 //                     </div>
 //                   )}
@@ -918,6 +1629,13 @@
 //                                 if (hasVoted) return;
 //                                 try {
 //                                   await axios.post(`/api/roar/rooms/${roomId}/messages/${p.id}/vote`, { vote: agree ? "agree" : "disagree" });
+//                                   // if (phog) {
+//                                   //   phog.capture("poll_voted", {
+//                                   //     poll_id: p.id,
+//                                   //     poll_type: p.type || "prediction",
+//                                   //     option_id: agree ? "agree" : "disagree"
+//                                   //   });
+//                                   // }
 //                                   setPosts(prev => prev.map(x => x.id !== p.id ? x : { ...x, userVote: agree ? "agree" : "disagree", agreeCount: (x.agreeCount ?? 0) + (agree ? 1 : 0), disagreeCount: (x.disagreeCount ?? 0) + (!agree ? 1 : 0) }));
 //                                   setInlineCommentPostId(p.id);
 //                                 } catch { onToast("You've already voted!!"); }
@@ -982,6 +1700,13 @@
 //                                 if (hasVoted) return;
 //                                 try {
 //                                   await axios.post(`/api/roar/rooms/${roomId}/messages/${p.id}/vote`, { vote: agree ? "agree" : "disagree" });
+//                                   // if (phog) {
+//                                   //   phog.capture("poll_voted", {
+//                                   //     poll_id: p.id,
+//                                   //     poll_type: p.type || "hot_take",
+//                                   //     option_id: agree ? "agree" : "disagree"
+//                                   //   });
+//                                   // }
 //                                   setPosts(prev => prev.map(x => x.id !== p.id ? x : { ...x, userVote: agree ? "agree" : "disagree", agreeCount: (x.agreeCount ?? 0) + (agree ? 1 : 0), disagreeCount: (x.disagreeCount ?? 0) + (!agree ? 1 : 0) }));
 //                                 } catch { onToast("Failed to submit vote"); }
 //                               }}
@@ -1007,6 +1732,23 @@
 //                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" /></svg>
 //                       </button>
 //                       {renderReactionsTrigger(p)}
+//                       {currentUserId && p.fan?.authorUid === currentUserId && (
+//                         <button
+//                           onClick={async e => {
+//                             e.stopPropagation();
+//                             if (!window.confirm("Delete this post?")) return;
+//                             try {
+//                               await axios.delete(`/api/roar/rooms/${roomId}/messages/${p.id}`);
+//                               setPosts(prev => prev.filter(x => x.id !== p.id));
+//                             } catch { onToast("Failed to delete post"); }
+//                           }}
+//                           style={{ display: "flex", alignItems: "center", justifyContent: "center", background: "none", border: "none", cursor: "pointer", color: "#f87171", marginLeft: "auto", padding: 4, borderRadius: "50%" }}
+//                         >
+//                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+//                             <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" /><path d="M10 11v6" /><path d="M14 11v6" /><path d="M9 6V4h6v2" />
+//                           </svg>
+//                         </button>
+//                       )}
 //                     </div>
 //                   </div>
 //                 </motion.div>
@@ -1014,7 +1756,29 @@
 //             })
 //           )}
 //         </AnimatePresence>
+
+//         {/* ── Infinite-scroll sentinel + spinner ──────────────────────────────
+//             No "load more" button, no end-of-feed text. The sentinel sits
+//             right after the last message; once it's near the viewport the
+//             IntersectionObserver above fires loadMoreMsgs(). The spinner only
+//             shows while a fetch is actually in flight. */}
+//         {hasMoreMsgs && !loading && (
+//           <div ref={sentinelRef} style={{ display: "flex", justifyContent: "center", padding: "16px 0" }}>
+//             {loadingMoreMsgs && (
+//               <div
+//                 style={{
+//                   width: 28, height: 28, borderRadius: "50%",
+//                   border: "3px solid rgba(255,255,255,0.1)",
+//                   borderTop: "3px solid #E91E8C",
+//                   animation: "dr-spin 0.8s linear infinite",
+//                 }}
+//               />
+//             )}
+//           </div>
+//         )}
 //       </div>
+
+//       <style dangerouslySetInnerHTML={{ __html: `@keyframes dr-spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}` }} />
 
 //       {/* ── CATEGORY PILLS ── */}
 //       <div className="flex justify-start gap-1.5 py-1 px-2.5 overflow-x-auto" style={{ scrollbarWidth: "none" }}>
@@ -1057,7 +1821,7 @@
 //                 )}
 //                 <input type="text" disabled={uploading} value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === "Enter" && send()} className="w-full h-11 rounded-[22px] bg-[var(--bg-secondary)] border border-[var(--border)] pl-4 pr-4 text-white text-base outline-none" />
 //               </div>
-//               <motion.button whileTap={{ scale: 0.96 }} onClick={send} disabled={uploading} className={["w-11 h-11 rounded-full border-none text-white text-lg font-bold flex items-center justify-center cursor-pointer shrink-0", "bg-[linear-gradient(135deg,#e91e8c,#ff6b35)]", uploading ? "opacity-50" : "opacity-100"].join(" ")}>↑</motion.button>
+//               <motion.button whileTap={{ scale: 0.96 }} onClick={send} disabled={uploading || isSending} className={["w-11 h-11 rounded-full border-none text-white text-lg font-bold flex items-center justify-center cursor-pointer shrink-0", "bg-[linear-gradient(135deg,#e91e8c,#ff6b35)]", uploading ? "opacity-50" : "opacity-100"].join(" ")}>↑</motion.button>
 //             </div>
 //           </>
 //         )}
@@ -1081,6 +1845,64 @@
 //         onClose={() => setActiveFansOpen(false)}
 //         onFanProfile={onFanProfile}
 //       />
+
+//       {/* ── Floating notification toast ── */}
+// <AnimatePresence>
+//   {notifToast && (
+//     <motion.div
+//     initial={{ opacity: 0, y: -60, scale: 0.95 }}
+//       animate={{ opacity: 1, y: 0, scale: 1 }}
+//       exit={{ opacity: 0, y: -40, scale: 0.95 }}
+//       transition={{ duration: 0.22, ease: "easeOut" }}
+//       onClick={() => setNotifToast(null)}
+//   style={{
+//         position: "fixed",
+//        top: 16,
+//         left: 16,
+//         right: 16,
+//         transform: "none",
+//         zIndex: 100,
+//         display: "flex",
+//         alignItems: "center",
+//         gap: 10,
+//         padding: "10px 16px",
+//         borderRadius: 20,
+//         background: notifToast.type === "comment"
+//           ? "rgba(147,51,234,0.92)"
+//           : "rgba(233,30,140,0.92)",
+//         backdropFilter: "blur(12px)",
+//         border: `1px solid ${notifToast.type === "comment" ? "rgba(147,51,234,0.5)" : "rgba(233,30,140,0.5)"}`,
+//         boxShadow: `0 8px 32px ${notifToast.type === "comment" ? "rgba(147,51,234,0.35)" : "rgba(233,30,140,0.35)"}`,
+//         cursor: "pointer",
+//         maxWidth: "100%",
+//        wordBreak: "break-word",
+//       }}
+//     >
+//       <span style={{ fontSize: 16, flexShrink: 0 }}>
+//         {notifToast.type === "comment" ? "💬" : "❤️"}
+//       </span>
+//       <span style={{
+//         fontSize: 13,
+//         fontWeight: 600,
+//         color: "#fff",
+//         // overflow: "hidden",
+//         // textOverflow: "ellipsis",
+//         // whiteSpace: "nowrap",
+//         wordBreak: "break-word",
+//       }}>
+//         {notifToast.message}
+//       </span>
+//       <span style={{
+//         fontSize: 11,
+//         color: "rgba(255,255,255,0.6)",
+//         flexShrink: 0,
+//         marginLeft: 4,
+//       }}>
+//         tap to dismiss
+//       </span>
+//     </motion.div>
+//   )}
+// </AnimatePresence>
 //     </div>
 //   );
 // }
@@ -1090,7 +1912,6 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { usePostHog } from "posthog-js/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useUserProfile } from "@/context/UserProfileContext";
 import axios from "axios";
@@ -1099,13 +1920,11 @@ import ReactionPicker, { type Reaction } from "../components/ReactionPicker";
 import ReactionsDialog from "../components/ReactionsDialog";
 import ActiveFansDialog from "../components/ActiveFansDialog";
 import { roarApi } from "@/lib/roarApi";
-import { fmt } from "../utils";
 import { RADIAL_OPTS } from "../constants";
 import {
   Image, ChevronLeft, Flame, TrendingUp, Zap, History, PenTool,
   Brain, Users, CheckCircle2, XCircle,
-  Share2, Send,
-  BarChart2,
+  Share2, Send, ChevronDown, ChevronUp, Clock,
 } from "lucide-react";
 
 interface Props {
@@ -1119,6 +1938,7 @@ interface Props {
   score?: string;
   scoreSubtitle?: string;
   currentAvatarUrl?: string;
+  currentUserId?: string;
   onRegisterRefresh?: (fn: () => void) => void;
   onRegisterReplyUpdate?: (fn: (postId: string, count: number) => void) => void;
   onFanProfile?: (fan: any) => void;
@@ -1133,20 +1953,7 @@ const MODE_COLOR: Record<string, string> = {
   raw_reactions: "#00e8c6",
 };
 
-// Page size for scroll-triggered "load more" pages only. The existing 3s
-// poll (fetchMsgs) is untouched and keeps using the server default limit —
-// this only applies to additional pages fetched once the user scrolls to
-// the bottom of what fetchMsgs has loaded.
 const LOAD_MORE_PAGE_SIZE = 15;
-
-const MODES = [
-  { key: "post" as const, label: "Post", icon: <PenTool size={13} />, color: "#ffffff", isAction: false },
-  { key: "debate" as const, label: "Debate", icon: <Zap size={13} />, color: "#e91e8c", isAction: false },
-  { key: "prediction" as const, label: "Predict", icon: <TrendingUp size={13} />, color: "#fbbf24", isAction: false },
-  { key: "hottake" as const, label: "Hot Take", icon: <Flame size={13} />, color: "#f87171", isAction: false },
-  { key: "raw_reactions" as const, label: "Raw Reactions", icon: <History size={13} />, color: "#00e8c6", isAction: false },
-  { key: "quiz" as const, label: "Flash Quiz", icon: <Brain size={13} />, color: "#00e8c6", isAction: true },
-];
 
 const PLACEHOLDER: Record<string, string> = {
   post: "Drop your take...",
@@ -1166,15 +1973,7 @@ const typeBadgeClass = (type: string) => {
   return `${base} bg-[rgba(255,255,255,0.08)] text-[rgba(255,255,255,0.5)] border border-[rgba(255,255,255,0.1)]`;
 };
 
-const postCardStyle = (type: string): React.CSSProperties => {
-  if (type === "prediction") return { background: "linear-gradient(135deg,rgba(255,215,0,0.08),rgba(255,215,0,0.02))", border: "1px solid rgba(255,215,0,0.18)" };
-  if (type === "hottake") return { background: "linear-gradient(135deg,rgba(239,68,68,0.08),rgba(239,68,68,0.02))", border: "1px solid rgba(239,68,68,0.18)" };
-  if (type === "debate") return { background: "linear-gradient(135deg,rgba(233,30,140,0.08),rgba(233,30,140,0.02))", border: "1px solid rgba(233,30,140,0.18)" };
-  if (type === "raw_reactions") return { background: "linear-gradient(135deg,rgba(0,232,198,0.08),rgba(0,232,198,0.02))", border: "1px solid rgba(0,232,198,0.18)" };
-  return {};
-};
-
-// ── ActiveFansStack 
+// ── ActiveFansStack ──────────────────────────────────────────────────────────
 function ActiveFansStack({
   fans, count, totalJoinCount, onClick,
 }: {
@@ -1184,39 +1983,14 @@ function ActiveFansStack({
   onClick: () => void;
 }) {
   if (count === 0 && !totalJoinCount) return null;
-
-  const formatCount = (n: number) =>
-    n >= 1000 ? `${(n / 1000).toFixed(1)}k` : `${n}`;
-
+  const formatCount = (n: number) => n >= 1000 ? `${(n / 1000).toFixed(1)}k` : `${n}`;
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-      {/* Left: stacked avatars + active count */}
-      <button
-        type="button"
-        onClick={onClick}
-        style={{
-          display: "flex", alignItems: "center", gap: 8,
-          background: "none", border: "none", cursor: "pointer", padding: 0,
-        }}
-      >
+      <button type="button" onClick={onClick} style={{ display: "flex", alignItems: "center", gap: 8, background: "none", border: "none", cursor: "pointer", padding: 0 }}>
         <div style={{ display: "flex" }}>
           {fans.slice(0, 3).map((fan, i) => (
-            <div
-              key={fan.uid}
-              style={{
-                width: 22, height: 22, borderRadius: "50%",
-                border: "2px solid #0e0e14", overflow: "hidden",
-                marginLeft: i === 0 ? 0 : -8, zIndex: 3 - i,
-                background: "linear-gradient(135deg,#e91e8c,#ff6b35)",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                flexShrink: 0,
-              }}
-            >
-              {fan.avatarUrl ? (
-                <img src={fan.avatarUrl} alt={fan.username} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-              ) : (
-                <span style={{ fontSize: 9, fontWeight: 800, color: "#fff" }}>{fan.username?.[0]?.toUpperCase() || "?"}</span>
-              )}
+            <div key={fan.uid} style={{ width: 22, height: 22, borderRadius: "50%", border: "2px solid #0e0e14", overflow: "hidden", marginLeft: i === 0 ? 0 : -8, zIndex: 3 - i, background: "linear-gradient(135deg,#e91e8c,#ff6b35)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              {fan.avatarUrl ? <img src={fan.avatarUrl} alt={fan.username} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <span style={{ fontSize: 9, fontWeight: 800, color: "#fff" }}>{fan.username?.[0]?.toUpperCase() || "?"}</span>}
             </div>
           ))}
         </div>
@@ -1224,8 +1998,6 @@ function ActiveFansStack({
           <span style={{ color: "#fff", fontWeight: 700 }}>{formatCount(count)}</span> active now
         </span>
       </button>
-
-      {/* Right: total joined */}
       {totalJoinCount !== undefined && totalJoinCount > 0 && (
         <span style={{ fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.5)" }}>
           Total Joined <span style={{ color: "#fff", fontWeight: 700 }}>{formatCount(totalJoinCount)}</span>
@@ -1235,82 +2007,29 @@ function ActiveFansStack({
   );
 }
 
-// ── InlineCommentInput ────────────────────────────────────────────────────────
-interface InlineCommentInputProps {
-  postId: string;
-  roomId: string;
+// ── InlineCommentInput ───────────────────────────────────────────────────────
+function InlineCommentInput({ postId, roomId, onSubmit, onOpenFull, accentColor = "#e91e8c", placeholder = "Add your take..." }: {
+  postId: string; roomId: string;
   onSubmit: (postId: string, text: string) => Promise<void>;
-  onOpenFull: () => void;
-  accentColor?: string;
-  placeholder?: string;
-}
-
-function InlineCommentInput({
-  postId, roomId, onSubmit, onOpenFull,
-  accentColor = "#e91e8c",
-  placeholder = "Add your take...",
-}: InlineCommentInputProps) {
+  onOpenFull: () => void; accentColor?: string; placeholder?: string;
+}) {
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    setTimeout(() => inputRef.current?.focus(), 120);
-  }, []);
-
+  useEffect(() => { setTimeout(() => inputRef.current?.focus(), 120); }, []);
   const handleSend = async (e: React.MouseEvent) => {
     e.stopPropagation();
     const trimmed = text.trim();
     if (!trimmed || sending) return;
     setSending(true);
-    try { await onSubmit(postId, trimmed); setText(""); }
-    finally { setSending(false); }
+    try { await onSubmit(postId, trimmed); setText(""); } finally { setSending(false); }
   };
-
   return (
-    <motion.div
-      initial={{ opacity: 0, height: 0, marginTop: 0 }}
-      animate={{ opacity: 1, height: "auto", marginTop: 10 }}
-      exit={{ opacity: 0, height: 0, marginTop: 0 }}
-      transition={{ duration: 0.22, ease: "easeOut" }}
-      style={{ overflow: "hidden" }}
-      onClick={e => e.stopPropagation()}
-    >
-      <div style={{
-        display: "flex", alignItems: "center", gap: 8,
-        padding: "8px 10px", borderRadius: 16,
-        background: "rgba(255,255,255,0.04)",
-        border: `1px solid ${accentColor}40`,
-      }}>
-        <input
-          ref={inputRef}
-          type="text"
-          value={text}
-          onChange={e => setText(e.target.value)}
-          onKeyDown={e => { if (e.key === "Enter") handleSend(e as any); }}
-          placeholder={placeholder}
-          style={{ flex: 1, background: "none", border: "none", outline: "none", color: "#fff", fontSize: 13, fontWeight: 500 }}
-        />
-        <button
-          type="button"
-          onClick={e => { e.stopPropagation(); onOpenFull(); }}
-          style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.35)", fontSize: 11, fontWeight: 600, whiteSpace: "nowrap", padding: "0 2px" }}
-        >
-          All
-        </button>
-        <motion.button
-          whileTap={{ scale: 0.9 }}
-          type="button"
-          onClick={handleSend}
-          disabled={!text.trim() || sending}
-          style={{
-            background: text.trim() ? `linear-gradient(135deg,${accentColor},#ff6b35)` : "rgba(255,255,255,0.08)",
-            border: "none", borderRadius: "50%", width: 32, height: 32,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            cursor: text.trim() ? "pointer" : "default",
-            transition: "background 0.2s", flexShrink: 0,
-          }}
-        >
+    <motion.div initial={{ opacity: 0, height: 0, marginTop: 0 }} animate={{ opacity: 1, height: "auto", marginTop: 10 }} exit={{ opacity: 0, height: 0, marginTop: 0 }} transition={{ duration: 0.22, ease: "easeOut" }} style={{ overflow: "hidden" }} onClick={e => e.stopPropagation()}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", borderRadius: 16, background: "rgba(255,255,255,0.04)", border: `1px solid ${accentColor}40` }}>
+        <input ref={inputRef} type="text" value={text} onChange={e => setText(e.target.value)} onKeyDown={e => { if (e.key === "Enter") handleSend(e as any); }} placeholder={placeholder} style={{ flex: 1, background: "none", border: "none", outline: "none", color: "#fff", fontSize: 13, fontWeight: 500 }} />
+        <button type="button" onClick={e => { e.stopPropagation(); onOpenFull(); }} style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.35)", fontSize: 11, fontWeight: 600, whiteSpace: "nowrap", padding: "0 2px" }}>All</button>
+        <motion.button whileTap={{ scale: 0.9 }} type="button" onClick={handleSend} disabled={!text.trim() || sending} style={{ background: text.trim() ? `linear-gradient(135deg,${accentColor},#ff6b35)` : "rgba(255,255,255,0.08)", border: "none", borderRadius: "50%", width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", cursor: text.trim() ? "pointer" : "default", transition: "background 0.2s", flexShrink: 0 }}>
           <Send size={14} color={text.trim() ? "#fff" : "rgba(255,255,255,0.3)"} />
         </motion.button>
       </div>
@@ -1318,51 +2037,62 @@ function InlineCommentInput({
   );
 }
 
-// ── QuizCard
-interface QuizCardProps {
-  post: any;
-  onToast: (m: string) => void;
-  onPostClick?: (post: any) => void;
-  roomId?: string;
-  onFanProfile?: (fan: any) => void;
+// ── InlineRepliesPreview ─────────────────────────────────────────────────────
+function InlineRepliesPreview({ postId, roomId, onOpenFull }: { postId: string; roomId: string; onOpenFull: () => void; }) {
+  const [replies, setReplies] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchReplies = async () => {
+      try {
+        const res = await axios.get(`/api/roar/posts/${postId}/comments`, {
+          params: { roomId, limit: 2, sort: "recent" },
+        });
+        const list: any[] = res.data?.comments ?? res.data?.replies ?? [];
+        setReplies(list.slice(0, 2));
+      } catch { setReplies([]); }
+      finally { setLoading(false); }
+    };
+    fetchReplies();
+  }, [postId, roomId]);
+
+  return (
+    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.2, ease: "easeOut" }} style={{ overflow: "hidden" }} onClick={e => e.stopPropagation()}>
+      <div style={{ marginTop: 8, borderLeft: "2px solid rgba(233,30,140,0.25)", paddingLeft: 12, display: "flex", flexDirection: "column", gap: 8 }}>
+        {loading ? (
+          <p style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", fontStyle: "italic" }}>Loading replies…</p>
+        ) : replies.length === 0 ? (
+          <p style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", fontStyle: "italic" }}>No replies yet.</p>
+        ) : (
+          replies.map((r: any, i: number) => (
+            <div key={r.id ?? r.commentId ?? i} style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
+              <div style={{ width: 20, height: 20, borderRadius: "50%", flexShrink: 0, background: "linear-gradient(135deg,#e91e8c,#ff6b35)", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
+                {r.authorAvatarUrl || r.avatarUrl
+                  ? <img src={r.authorAvatarUrl ?? r.avatarUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  : <span style={{ fontSize: 8, fontWeight: 800, color: "#fff" }}>{(r.authorUsername ?? r.username ?? "?")[0].toUpperCase()}</span>
+                }
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <span style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.75)", marginRight: 6 }}>
+                  {r.authorUsername ?? r.username ?? "Fan"}
+                </span>
+                <span style={{ fontSize: 12, color: "rgba(255,255,255,0.6)", lineHeight: 1.4 }}>
+                  {r.text ?? r.content ?? ""}
+                </span>
+              </div>
+            </div>
+          ))
+        )}
+        <button type="button" onClick={e => { e.stopPropagation(); onOpenFull(); }} style={{ alignSelf: "flex-start", background: "none", border: "none", cursor: "pointer", fontSize: 11, fontWeight: 700, color: "#e91e8c", padding: 0, marginTop: 2 }}>
+          View all replies →
+        </button>
+      </div>
+    </motion.div>
+  );
 }
 
-type ShareableRoarPost = {
-  id?: string | number;
-  text?: string;
-  authorUsername?: string;
-  fan?: { username?: string };
-};
-
-function displayUsername(raw: string | undefined | null): string {
-  if (!raw) return "RoarUser";
-  const trimmed = raw.trim();
-  if (!trimmed) return "RoarUser";
-  if (!trimmed.includes("_")) return trimmed;
-
-  const spaced = trimmed.replace(/_+/g, " ").replace(/\s+/g, " ").trim();
-  if (!spaced) return "RoarUser";
-
-  return spaced
-    .split(" ")
-    .map((word) => (/[A-Z]/.test(word) ? word : word.charAt(0).toUpperCase() + word.slice(1)))
-    .join(" ");
-}
-
-const buildRoarPostShareUrl = (post: ShareableRoarPost) => {
-  if (typeof window === "undefined") return "";
-  const targetUrl = new URL(`${window.location.origin}/MainModules/ROAR`);
-  if (post?.id) targetUrl.searchParams.set("post", String(post.id));
-  return targetUrl.toString();
-};
-
-const buildRoarPostShareText = (post: ShareableRoarPost) => {
-  const shareUrl = buildRoarPostShareUrl(post);
-  const author = displayUsername(post?.fan?.username || post?.authorUsername || "a Sportsfan");
-  return [`Check out this ROAR post by ${author}`, post?.text || "Join the conversation on Sportsfan ROAR.", `View post: ${shareUrl}`].filter(Boolean).join("\n");
-};
-
-function QuizCard({ post, onToast, onPostClick, roomId, onFanProfile }: QuizCardProps) {
+// ── QuizCard ─────────────────────────────────────────────────────────────────
+function QuizCard({ post, onToast, onPostClick, roomId, onFanProfile }: { post: any; onToast: (m: string) => void; onPostClick?: (post: any) => void; roomId?: string; onFanProfile?: (fan: any) => void; }) {
   const [selectedOption, setSelectedOption] = useState<string | null>(post.quizUserAnswer ?? null);
   const [revealedCorrect, setRevealedCorrect] = useState<string | null>(post.quizCorrectOption ?? null);
   const [submitting, setSubmitting] = useState(false);
@@ -1439,39 +2169,52 @@ function QuizCard({ post, onToast, onPostClick, roomId, onFanProfile }: QuizCard
   );
 }
 
-// ── Main DiscussionRoom ───────────────────────────────────────────────────────
-// ── Visibility-aware interval hook ───────────────────────────────────────────
+// ── Visibility-aware interval ─────────────────────────────────────────────────
 function useVisibilityInterval(callback: () => void, delay: number) {
   const savedCallback = useRef(callback);
   useEffect(() => { savedCallback.current = callback; }, [callback]);
-
   useEffect(() => {
     let id: ReturnType<typeof setInterval>;
-    const start = () => {
-      id = setInterval(() => {
-        if (!document.hidden) savedCallback.current();
-      }, delay);
-    };
-    const handleVisibility = () => {
-      clearInterval(id);
-      if (!document.hidden) { savedCallback.current(); start(); }
-    };
+    const start = () => { id = setInterval(() => { if (!document.hidden) savedCallback.current(); }, delay); };
+    const handleVisibility = () => { clearInterval(id); if (!document.hidden) { savedCallback.current(); start(); } };
     start();
     document.addEventListener("visibilitychange", handleVisibility);
-    return () => {
-      clearInterval(id);
-      document.removeEventListener("visibilitychange", handleVisibility);
-    };
+    return () => { clearInterval(id); document.removeEventListener("visibilitychange", handleVisibility); };
   }, [delay]);
 }
 
+type ShareableRoarPost = { id?: string | number; text?: string; authorUsername?: string; fan?: { username?: string }; };
+
+function displayUsername(raw: string | undefined | null): string {
+  if (!raw) return "RoarUser";
+  const trimmed = raw.trim();
+  if (!trimmed) return "RoarUser";
+  if (!trimmed.includes("_")) return trimmed;
+  const spaced = trimmed.replace(/_+/g, " ").replace(/\s+/g, " ").trim();
+  if (!spaced) return "RoarUser";
+  return spaced.split(" ").map((word) => (/[A-Z]/.test(word) ? word : word.charAt(0).toUpperCase() + word.slice(1))).join(" ");
+}
+
+const buildRoarPostShareUrl = (post: ShareableRoarPost) => {
+  if (typeof window === "undefined") return "";
+  const targetUrl = new URL(`${window.location.origin}/MainModules/ROAR`);
+  if (post?.id) targetUrl.searchParams.set("post", String(post.id));
+  return targetUrl.toString();
+};
+
+const buildRoarPostShareText = (post: ShareableRoarPost) => {
+  const shareUrl = buildRoarPostShareUrl(post);
+  const author = displayUsername(post?.fan?.username || post?.authorUsername || "a Sportsfan");
+  return [`Check out this ROAR post by ${author}`, post?.text || "Join the conversation on Sportsfan ROAR.", `View post: ${shareUrl}`].filter(Boolean).join("\n");
+};
+
+// ── Main DiscussionRoom ───────────────────────────────────────────────────────
 export default function DiscussionRoom({
   onBack, onToast, roomId, roomName, onPostClick, onCompose,
-  fanCount = 312, score, scoreSubtitle, currentAvatarUrl, onRegisterRefresh, onRegisterReplyUpdate,
+  fanCount = 312, score, scoreSubtitle, currentAvatarUrl, currentUserId: propCurrentUserId, onRegisterRefresh, onRegisterReplyUpdate,
   onFanProfile, watchAlongRoomId
 }: Props) {
   const router = useRouter();
-  console.log("DiscussionRoom mount/render | watchAlongRoomId:", watchAlongRoomId);
   const [posts, setPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [input, setInput] = useState("");
@@ -1481,7 +2224,6 @@ export default function DiscussionRoom({
   const [attachedType, setAttachedType] = useState<"image" | "video" | null>(null);
   const [userUsername, setUserUsername] = useState("RoarUser");
   const [userAvatarUrl, setUserAvatarUrl] = useState<string | undefined>(currentAvatarUrl);
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [selectedActionId, setSelectedActionId] = useState("post");
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [liveCount, setLiveCount] = useState<number>(fanCount ?? 0);
@@ -1489,46 +2231,46 @@ export default function DiscussionRoom({
   const [sharePost, setSharePost] = useState<ShareableRoarPost | null>(null);
   const [copied, setCopied] = useState(false);
   const { userProfile } = useUserProfile();
-  console.log("userProfile in DiscussionRoom:", userProfile);
-  const currentUserId = userProfile?.actualUserId;
+  const currentUserId = propCurrentUserId || userProfile?.actualUserId;
+  const currentUserIdCandidates = [
+    currentUserId,
+    userProfile?.actualUserId,
+    (userProfile as { userId?: string })?.userId,
+    (userProfile as { uid?: string })?.uid,
+    (userProfile as { email?: string })?.email,
+  ].filter(Boolean).map(String);
+  const isCurrentUserAuthor = (post: { authorUid?: unknown; authorEmail?: unknown; fan?: { authorUid?: unknown } }) => {
+    const authorCandidates = [post.authorUid, post.fan?.authorUid, post.authorEmail].filter(Boolean).map(String);
+    return authorCandidates.some(id => currentUserIdCandidates.includes(id));
+  };
   const latestCreatedAtRef = useRef<number | null>(null);
   const sendingRef = useRef(false);
   const [isSending, setIsSending] = useState(false);
   const [inlineCommentPostId, setInlineCommentPostId] = useState<string | null>(null);
-  // ── Real-time notification toast ─────────────────────────────────────────────
-const [notifToast, setNotifToast] = useState<{
-  message: string;
-  type: "like" | "comment";
-} | null>(null);
-const notifToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [resolvingRoomPredictionId, setResolvingRoomPredictionId] = useState<string | null>(null);
 
-  // ── Active fans (presence) state ────────────────────────────────────────────
-  const [activeFans, setActiveFans] = useState<
-    { uid: string; username: string; avatarUrl?: string | null; badge?: string | null }[]
-  >([]);
+  // ── Inline replies preview ──────────────────────────────────────────────────
+  const [expandedRepliesPostId, setExpandedRepliesPostId] = useState<string | null>(null);
+
+  // ── Notification toast ──────────────────────────────────────────────────────
+  const [notifToast, setNotifToast] = useState<{ message: string; type: "like" | "comment"; } | null>(null);
+  const notifToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // ── Active fans ─────────────────────────────────────────────────────────────
+  const [activeFans, setActiveFans] = useState<{ uid: string; username: string; avatarUrl?: string | null; badge?: string | null }[]>([]);
   const [activeFansOpen, setActiveFansOpen] = useState(false);
 
-  // ── Reaction state (mirrors HomeFeed.tsx's localLikes/handleReact) ─────────
+  // ── Reactions ───────────────────────────────────────────────────────────────
   const [localReactions, setLocalReactions] = useState<Record<string, { reaction: Reaction | null; heartCount: number }>>({});
   const localReactionsRef = useRef<Record<string, { reaction: Reaction | null; heartCount: number }>>({});
   const pendingReactRef = useRef<Record<string, boolean>>({});
   const [reactionsMsgId, setReactionsMsgId] = useState<string | null>(null);
-
-
-
   useEffect(() => { localReactionsRef.current = localReactions; }, [localReactions]);
 
   const listRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // ── Pagination (scroll-triggered "load more", separate from the 3s poll) ───
-  // fetchMsgs (below) keeps polling every 3s at the server default limit and
-  // fully replacing `posts`, unchanged. `morePosts` holds everything fetched
-  // beyond that via scroll — kept in a separate array so the 3s poll can
-  // never wipe out pages the user has already scrolled into. The cursor
-  // (oldest createdAt seen so far) is derived from whichever of `posts` /
-  // `morePosts` currently holds the oldest message, since `posts` itself
-  // can grow/shrink under the poll independent of scroll state.
+  // ── Pagination ──────────────────────────────────────────────────────────────
   const [morePosts, setMorePosts] = useState<any[]>([]);
   const [hasMoreMsgs, setHasMoreMsgs] = useState(true);
   const [loadingMoreMsgs, setLoadingMoreMsgs] = useState(false);
@@ -1547,113 +2289,83 @@ const notifToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
       const reactors: { reaction: string }[] = res.data?.reactors ?? [];
       const counts: Record<string, number> = {};
       reactors.forEach(r => { counts[r.reaction] = (counts[r.reaction] ?? 0) + 1; });
-      const top = Object.entries(counts)
-        .sort(([, a], [, b]) => b - a)
-        .slice(0, 3)
-        .map(([type]) => type);
+      const top = Object.entries(counts).sort(([, a], [, b]) => b - a).slice(0, 3).map(([type]) => type);
       topReactionsCache.current[msgId] = top;
       setTopReactionsMap(prev => ({ ...prev, [msgId]: top }));
-    } catch {
-      topReactionsCache.current[msgId] = [];
-    }
+    } catch { topReactionsCache.current[msgId] = []; }
   }, [roomId]);
+
+  const mapMessage = useCallback((m: any, existing?: any) => {
+    const isPending = pendingReactRef.current[m.msgId];
+    return {
+      id: m.msgId,
+      authorUid: m.authorUid,
+      authorEmail: m.authorEmail,
+      fan: { username: displayUsername(m.authorUsername), authorUid: m.authorUid, badge: m.authorBadge, avatarUrl: m.authorUid === currentUserId ? (userAvatarUrl || m.authorAvatarUrl || m.avatarUrl) : (m.authorAvatarUrl || m.avatarUrl) },
+      text: m.text,
+      fireCount: m.fireCount ?? 0, heartCount: m.heartCount ?? 0, mindblownCount: m.mindblownCount ?? 0,
+      goatCount: m.goatCount ?? 0, clapCount: m.clapCount ?? 0, nochanceCount: m.noChanceCount ?? 0,
+      userReaction: isPending ? (existing?.userReaction ?? null) : (m.userReaction ?? null),
+      replyCount: Math.max(m.replyCount ?? 0, existing?.replyCount ?? 0),
+      agreeCount: m.agreeCount ?? 0, disagreeCount: m.disagreeCount ?? 0,
+      userVote: m.userVote ?? null, sideA: m.sideA ?? null, sideB: m.sideB ?? null,
+      predictionOptions: Array.isArray(m.predictionOptions) ? m.predictionOptions : [m.sideA, m.sideB].filter(Boolean),
+      predictionOptionCounts: m.predictionOptionCounts ?? {},
+      closesAt: m.closesAt ?? null,
+      closedAt: m.closedAt ?? null,
+      resolvedAt: m.resolvedAt ?? null,
+      correctVote: m.correctVote ?? null,
+      accuracyAwarded: m.accuracyAwarded ?? false,
+      timeAgo: new Date(m.createdAt).toLocaleDateString([], { month: "short", day: "numeric" }) + " · " + new Date(m.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      createdAt: m.createdAt, type: m.type, mediaUrls: m.mediaUrls,
+      quizQuestion: m.quizQuestion, quizOptions: m.quizOptions, quizCorrectOption: m.quizCorrectOption,
+      quizUserAnswer: m.quizUserAnswer ?? null, quizTimer: m.quizTimer, quizPoints: m.quizPoints,
+      quizParticipants: m.quizParticipants ?? 0, memGifUrl: m.memGifUrl ?? null, memTag: m.memTag ?? null,
+    };
+  }, [currentUserId, userAvatarUrl]);
 
   const loadMoreMsgs = useCallback(async () => {
     if (!roomId || loadingMoreMsgsRef.current || !hasMoreMsgs) return;
-
     const combined = [...posts, ...morePosts];
     if (combined.length === 0) return;
-    // Oldest message currently rendered (lists are newest-first) becomes
-    // the cursor for the next page.
-    const oldestCreatedAt = combined.reduce(
-      (min, p) => (p.createdAt < min ? p.createdAt : min),
-      combined[0].createdAt,
-    );
-
+    const oldestCreatedAt = combined.reduce((min, p) => (p.createdAt < min ? p.createdAt : min), combined[0].createdAt);
     loadingMoreMsgsRef.current = true;
     setLoadingMoreMsgs(true);
     try {
-      const res = await axios.get(`/api/roar/rooms/${roomId}/messages`, {
-        params: { limit: LOAD_MORE_PAGE_SIZE, lastCreatedAt: oldestCreatedAt },
-      });
+      const res = await axios.get(`/api/roar/rooms/${roomId}/messages`, { params: { limit: LOAD_MORE_PAGE_SIZE, lastCreatedAt: oldestCreatedAt } });
       if (res.data?.success) {
         const newMsgs: any[] = res.data.messages ?? [];
         setMorePosts(prev => {
           const seenIds = new Set([...posts, ...prev].map(p => p.id ?? p.msgId));
-          const fresh = newMsgs
-            .filter(m => !seenIds.has(m.msgId))
-            .map((m: any) => ({
-              id: m.msgId,
-              fan: { username: displayUsername(m.authorUsername), authorUid: m.authorUid, badge: m.authorBadge, avatarUrl: m.authorAvatarUrl || m.avatarUrl || (m.authorUsername === userUsername ? userAvatarUrl : undefined) },
-              text: m.text,
-              // fireCount: m.fireCount || 0,
-              // nochanceCount: m.noChanceCount || 0,
-              // heartCount: m.heartCount ?? 0,
-              fireCount: m.fireCount ?? 0,
-              heartCount: m.heartCount ?? 0,
-              mindblownCount: m.mindblownCount ?? 0,
-              goatCount: m.goatCount ?? 0,
-              clapCount: m.clapCount ?? 0,
-              nochanceCount: m.noChanceCount ?? 0,
-              userReaction: m.userReaction ?? null,
-              replyCount: m.replyCount ?? 0,
-              agreeCount: m.agreeCount ?? 0,
-              disagreeCount: m.disagreeCount ?? 0,
-              userVote: m.userVote ?? null,
-              sideA: m.sideA ?? null,
-              sideB: m.sideB ?? null,
-              timeAgo: new Date(m.createdAt).toLocaleDateString([], { month: "short", day: "numeric" }) + " · " + new Date(m.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-              createdAt: m.createdAt,
-              type: m.type,
-              mediaUrls: m.mediaUrls,
-              quizQuestion: m.quizQuestion,
-              quizOptions: m.quizOptions,
-              quizCorrectOption: m.quizCorrectOption,
-              quizUserAnswer: m.quizUserAnswer ?? null,
-              quizTimer: m.quizTimer,
-              quizPoints: m.quizPoints,
-              quizParticipants: m.quizParticipants ?? 0,
-              memGifUrl: m.memGifUrl ?? null,
-              memTag: m.memTag ?? null,
-            }));
+          const fresh = newMsgs.filter(m => !seenIds.has(m.msgId)).map(m => mapMessage(m));
           return [...prev, ...fresh];
         });
         setHasMoreMsgs(Boolean(res.data.pagination?.hasMore));
-      } else {
-        setHasMoreMsgs(false);
-      }
-    } catch (e) {
-      console.error("Failed to load more messages:", e);
-      // Leave hasMoreMsgs as-is so the observer can retry on next intersection.
-    } finally {
-      loadingMoreMsgsRef.current = false;
-      setLoadingMoreMsgs(false);
-    }
-  }, [roomId, hasMoreMsgs, posts, morePosts, userUsername, userAvatarUrl]);
+      } else { setHasMoreMsgs(false); }
+    } catch (e) { console.error("Failed to load more messages:", e); }
+    finally { loadingMoreMsgsRef.current = false; setLoadingMoreMsgs(false); }
+  }, [roomId, hasMoreMsgs, posts, morePosts, mapMessage]);
 
-  // IntersectionObserver on a sentinel after the last rendered message.
-  // No button, no end-of-feed text — only the spinner shown while
-  // loadingMoreMsgs is true (see JSX in the feed render below).
   useEffect(() => {
     const sentinel = sentinelRef.current;
     if (!sentinel) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0]?.isIntersecting) loadMoreMsgs();
-      },
-      {
-        root: listRef.current,
-        rootMargin: "200px",
-        threshold: 0,
-      },
-    );
+    const observer = new IntersectionObserver((entries) => { if (entries[0]?.isIntersecting) loadMoreMsgs(); }, { root: listRef.current, rootMargin: "200px", threshold: 0 });
     observer.observe(sentinel);
     return () => observer.disconnect();
   }, [loadMoreMsgs]);
 
   const openShareDialog = (post: ShareableRoarPost) => { setSharePost(post); setCopied(false); };
   const closeShareDialog = () => { setSharePost(null); setCopied(false); };
+  const copyToClipboard = async (text: string) => {
+    try { await navigator.clipboard.writeText(text); return true; }
+    catch {
+      try {
+        const el = document.createElement("textarea"); el.value = text; el.style.position = "fixed"; el.style.opacity = "0";
+        document.body.appendChild(el); el.focus(); el.select();
+        const ok = document.execCommand("copy"); document.body.removeChild(el); return ok;
+      } catch { return false; }
+    }
+  };
   const handleShareToWhatsApp = () => { if (!sharePost) return; window.open(`https://wa.me/?text=${encodeURIComponent(buildRoarPostShareText(sharePost))}`, "_blank"); };
   const handleShareToThreads = () => { if (!sharePost) return; window.open(`https://www.threads.net/intent/post?text=${encodeURIComponent(buildRoarPostShareText(sharePost))}`, "_blank"); };
   const handleShareToInstagram = async () => { if (!sharePost) return; await copyToClipboard(buildRoarPostShareText(sharePost)); setCopied(true); setTimeout(() => setCopied(false), 1600); window.open("https://www.instagram.com/", "_blank"); };
@@ -1684,167 +2396,42 @@ const notifToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) setIsDropdownOpen(false);
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) return;
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-
   useEffect(() => {
     if (!roomId) return;
-    // Reset stale data from previous room immediately
-    setActiveFans([]);
-    setLiveCount(0);
-    setTotalJoinCount(0);
-
-    // const join = async () => {
-    //   try {
-    //     const res = await axios.post(`/api/roar/rooms/${roomId}/presence`);
-    //     if (res.data?.success) setLiveCount(res.data.fanCount);
-    //   } catch (e) { console.error("Join failed:", e); }
-    // };
+    setActiveFans([]); setLiveCount(0); setTotalJoinCount(0);
     const join = async () => {
       try {
         const res = await axios.post(`/api/roar/rooms/${roomId}/presence`);
-        if (res.data?.success) {
-          setLiveCount(res.data.fanCount);
-          if (res.data.totalJoinCount !== undefined) {
-            setTotalJoinCount(res.data.totalJoinCount); // ← new
-          }
-        }
+        if (res.data?.success) { setLiveCount(res.data.fanCount); if (res.data.totalJoinCount !== undefined) setTotalJoinCount(res.data.totalJoinCount); }
       } catch (e) { console.error("Join failed:", e); }
     };
-
-    // const refreshActiveFans = async () => {
-    //   try {
-    //     const res = await axios.get(`/api/roar/rooms/${roomId}/presence`);
-    //     if (res.data?.success) {
-    //       setActiveFans(res.data.fans ?? []);
-    //       setLiveCount(res.data.fanCount ?? 0);
-    //     }
-    //   } catch (e) { console.error("Active fans fetch failed:", e); }
-    // };
     const refreshActiveFans = async () => {
       try {
         const res = await axios.get(`/api/roar/rooms/${roomId}/presence`);
-        if (res.data?.success) {
-          setActiveFans(res.data.fans ?? []);
-          setLiveCount(res.data.fanCount ?? 0);
-          if (res.data.totalJoinCount !== undefined) {
-            setTotalJoinCount(res.data.totalJoinCount); // ← new
-          }
-        }
+        if (res.data?.success) { setActiveFans(res.data.fans ?? []); setLiveCount(res.data.fanCount ?? 0); if (res.data.totalJoinCount !== undefined) setTotalJoinCount(res.data.totalJoinCount); }
       } catch (e) { console.error("Active fans fetch failed:", e); }
     };
-
     const leaveBeacon = () => { navigator.sendBeacon(`/api/roar/rooms/${roomId}/presence/leave`); };
-    const leaveAxios = () => { axios.delete(`/api/roar/rooms/${roomId}/presence`).catch(() => { }); };
-
+    const leaveAxios = () => { axios.delete(`/api/roar/rooms/${roomId}/presence`).catch(() => {}); };
     join().then(refreshActiveFans);
-    // Heartbeat every 25s: well under the 60s server-side TTL, so a single
-    // missed beat (e.g. a slow network tick) doesn't drop the user from
-    // the active list.
-    // const heartbeat = setInterval(() => { join(); refreshActiveFans(); }, 25_000);
-    // const heartbeat = setInterval(() => {
-    //   if (!document.hidden) { join(); refreshActiveFans(); }
-    // }, 30_000);
-    const heartbeat = setInterval(() => {
-      if (!document.hidden) join();
-    }, 30_000);
-
-    const fanRefresh = setInterval(() => {
-      if (!document.hidden) refreshActiveFans();
-    }, 120_000);
-
+    const heartbeat = setInterval(() => { if (!document.hidden) join(); }, 30_000);
+    const fanRefresh = setInterval(() => { if (!document.hidden) refreshActiveFans(); }, 120_000);
     window.addEventListener("beforeunload", leaveBeacon);
-    // return () => {
-    //   leaveAxios();
-    //   clearInterval(heartbeat);
-    //   window.removeEventListener("beforeunload", leaveBeacon);
-    // };
-    return () => {
-      leaveAxios();
-      clearInterval(heartbeat);
-      clearInterval(fanRefresh);
-      window.removeEventListener("beforeunload", leaveBeacon);
-    };
+    return () => { leaveAxios(); clearInterval(heartbeat); clearInterval(fanRefresh); window.removeEventListener("beforeunload", leaveBeacon); };
   }, [roomId]);
 
-  // useEffect(() => {
-  //   try {
-  //     setUserUsername(localStorage.getItem("roar_username") || "RoarUser");
-  //     setUserAvatarUrl(currentAvatarUrl || localStorage.getItem("roar_avatar_url") || undefined);
-  //   } catch { }
-  // }, [currentAvatarUrl]);
   useEffect(() => {
     try {
-      const profileName = userProfile?.username;
-      const storedName = localStorage.getItem("roar_username");
-      setUserUsername(profileName || storedName || "RoarUser");
-      setUserAvatarUrl(
-        currentAvatarUrl ||
-        userProfile?.avatarUrl ||
-        userProfile?.avatar ||
-        localStorage.getItem("roar_avatar_url") ||
-        undefined
-      );
-    } catch { }
+      setUserUsername(userProfile?.username || localStorage.getItem("roar_username") || "RoarUser");
+      setUserAvatarUrl(currentAvatarUrl || userProfile?.avatarUrl || userProfile?.avatar || localStorage.getItem("roar_avatar_url") || undefined);
+    } catch {}
   }, [currentAvatarUrl, userProfile]);
-
-  // const fetchMsgs = useCallback(async () => {
-  //   if (!roomId) return;
-  //   try {
-  //     const res = await axios.get(`/api/roar/rooms/${roomId}/messages?t=${Date.now()}`);
-  //     if (res.data?.success) {
-  //       setPosts(prev => {
-  //         const prevMap = Object.fromEntries(prev.map(p => [p.id, p]));
-  //         return [...res.data.messages]
-  //           .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-  //           .map((m: any) => {
-  //             const existing = prevMap[m.msgId];
-  //             // While a reaction call is in-flight for this message, keep
-  //             // showing the optimistic local state instead of letting the
-  //             // 3s poll stomp it with a possibly-stale server value.
-  //             const isPending = pendingReactRef.current[m.msgId];
-  //             return {
-  //               id: m.msgId,
-  //               fan: { username: displayUsername(m.authorUsername), authorUid: m.authorUid, badge: m.authorBadge, avatarUrl: m.authorAvatarUrl || m.avatarUrl || (m.authorUsername === userUsername ? userAvatarUrl : undefined) },
-  //               text: m.text,
-  //               fireCount: m.fireCount || 0,
-  //               nochanceCount: m.noChanceCount || 0,
-  //               // Aggregate reaction counter (any of the 5 types), not heart-specific despite the field name.
-  //               heartCount: isPending ? (existing?.heartCount ?? m.heartCount ?? 0) : (m.heartCount ?? 0),
-  //               // userReaction replaces the old boolean userLiked — the
-  //               // actual reaction type the current user picked, or null.
-  //               userReaction: isPending ? (existing?.userReaction ?? null) : (m.userReaction ?? null),
-  //               replyCount: Math.max(m.replyCount ?? 0, existing?.replyCount ?? 0),
-  //               agreeCount: m.agreeCount ?? 0,
-  //               disagreeCount: m.disagreeCount ?? 0,
-  //               userVote: m.userVote ?? null,
-  //               sideA: m.sideA ?? null,
-  //               sideB: m.sideB ?? null,
-  //               timeAgo: new Date(m.createdAt).toLocaleDateString([], { month: "short", day: "numeric" }) + " · " + new Date(m.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-  //               createdAt: m.createdAt,
-  //               type: m.type,
-  //               mediaUrls: m.mediaUrls,
-  //               quizQuestion: m.quizQuestion,
-  //               quizOptions: m.quizOptions,
-  //               quizCorrectOption: m.quizCorrectOption,
-  //               quizUserAnswer: m.quizUserAnswer ?? null,
-  //               quizTimer: m.quizTimer,
-  //               quizPoints: m.quizPoints,
-  //               quizParticipants: m.quizParticipants ?? 0,
-  //               memGifUrl: m.memGifUrl ?? null,
-  //               memTag: m.memTag ?? null,
-  //             };
-  //           });
-  //       });
-  //     }
-  //   } catch (e) { console.error(e); }
-  //   finally { setLoading(false); }
-  // }, [roomId, userAvatarUrl, userUsername]);
-
 
   const fetchMsgs = useCallback(async () => {
     if (!roomId) return;
@@ -1852,309 +2439,147 @@ const notifToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
       const url = latestCreatedAtRef.current
         ? `/api/roar/rooms/${roomId}/messages?since=${latestCreatedAtRef.current}&t=${Date.now()}`
         : `/api/roar/rooms/${roomId}/messages?t=${Date.now()}`;
-
       const res = await axios.get(url);
       if (res.data?.success) {
         const incoming: any[] = res.data.messages ?? [];
-
         if (latestCreatedAtRef.current === null) {
-          // Initial load — full replace, set cursor to newest message
           setPosts(prev => {
             const prevMap = Object.fromEntries(prev.map(p => [p.id, p]));
-            return [...res.data.messages]
-              .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-              .map((m: any) => {
-                // ... your existing message mapping
-                const existing = prevMap[m.msgId];
-                const isPending = pendingReactRef.current[m.msgId];
-                return {
-                  id: m.msgId,
-                  // fan: { username: displayUsername(m.authorUsername), authorUid: m.authorUid, badge: m.authorBadge, avatarUrl: m.authorAvatarUrl || m.avatarUrl },
-                  fan: { username: displayUsername(m.authorUsername), authorUid: m.authorUid, badge: m.authorBadge, avatarUrl: m.authorUid === currentUserId ? (userAvatarUrl || m.authorAvatarUrl || m.avatarUrl) : (m.authorAvatarUrl || m.avatarUrl) },
-                  text: m.text,
-                  // fireCount: m.fireCount || 0,
-                  // nochanceCount: m.noChanceCount || 0,
-                  // heartCount: isPending ? (existing?.heartCount ?? m.heartCount ?? 0) : (m.heartCount ?? 0),
-                  fireCount: m.fireCount ?? 0,
-                  heartCount: m.heartCount ?? 0,
-                  mindblownCount: m.mindblownCount ?? 0,
-                  goatCount: m.goatCount ?? 0,
-                  clapCount: m.clapCount ?? 0,
-                  nochanceCount: m.noChanceCount ?? 0,
-                  userReaction: isPending ? (existing?.userReaction ?? null) : (m.userReaction ?? null),
-                  replyCount: Math.max(m.replyCount ?? 0, existing?.replyCount ?? 0),
-                  agreeCount: m.agreeCount ?? 0,
-                  disagreeCount: m.disagreeCount ?? 0,
-                  userVote: m.userVote ?? null,
-                  sideA: m.sideA ?? null,
-                  sideB: m.sideB ?? null,
-                  timeAgo: new Date(m.createdAt).toLocaleDateString([], { month: "short", day: "numeric" }) + " · " + new Date(m.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-                  createdAt: m.createdAt,
-                  type: m.type,
-                  mediaUrls: m.mediaUrls,
-                  quizQuestion: m.quizQuestion,
-                  quizOptions: m.quizOptions,
-                  quizCorrectOption: m.quizCorrectOption,
-                  quizUserAnswer: m.quizUserAnswer ?? null,
-                  quizTimer: m.quizTimer,
-                  quizPoints: m.quizPoints,
-                  quizParticipants: m.quizParticipants ?? 0,
-                  memGifUrl: m.memGifUrl ?? null,
-                  memTag: m.memTag ?? null,
-                };
-              });
+            return [...res.data.messages].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map((m: any) => mapMessage(m, prevMap[m.msgId]));
           });
-
-          if (incoming.length > 0) {
-            latestCreatedAtRef.current = Math.max(...incoming.map(m => m.createdAt));
-          }
-
+          if (incoming.length > 0) latestCreatedAtRef.current = Math.max(...incoming.map(m => m.createdAt));
         } else if (incoming.length > 0) {
-          // Poll — only new messages came back, prepend them
           latestCreatedAtRef.current = Math.max(...incoming.map((m: any) => m.createdAt));
-
           setPosts(prev => {
             const existingIds = new Set(prev.map(p => p.id));
-            const fresh = incoming
-              .filter((m: any) => !existingIds.has(m.msgId))
-              .map((m: any) => ({
-                id: m.msgId,
-                // fan: { username: displayUsername(m.authorUsername), authorUid: m.authorUid, badge: m.authorBadge, avatarUrl: m.authorAvatarUrl || m.avatarUrl },
-                fan: { username: displayUsername(m.authorUsername), authorUid: m.authorUid, badge: m.authorBadge, avatarUrl: m.authorUid === currentUserId ? (userAvatarUrl || m.authorAvatarUrl || m.avatarUrl) : (m.authorAvatarUrl || m.avatarUrl) },
-                text: m.text,
-                // fireCount: m.fireCount || 0,
-                // nochanceCount: m.noChanceCount || 0,
-                // heartCount: m.heartCount ?? 0,
-                fireCount: m.fireCount ?? 0,
-                heartCount: m.heartCount ?? 0,
-                mindblownCount: m.mindblownCount ?? 0,
-                goatCount: m.goatCount ?? 0,
-                clapCount: m.clapCount ?? 0,
-                nochanceCount: m.noChanceCount ?? 0,
-                userReaction: m.userReaction ?? null,
-                replyCount: m.replyCount ?? 0,
-                agreeCount: m.agreeCount ?? 0,
-                disagreeCount: m.disagreeCount ?? 0,
-                userVote: m.userVote ?? null,
-                sideA: m.sideA ?? null,
-                sideB: m.sideB ?? null,
-                timeAgo: "now",
-                createdAt: m.createdAt,
-                type: m.type,
-                mediaUrls: m.mediaUrls,
-                quizQuestion: m.quizQuestion,
-                quizOptions: m.quizOptions,
-                quizCorrectOption: m.quizCorrectOption,
-                quizUserAnswer: m.quizUserAnswer ?? null,
-                quizTimer: m.quizTimer,
-                quizPoints: m.quizPoints,
-                quizParticipants: m.quizParticipants ?? 0,
-                memGifUrl: m.memGifUrl ?? null,
-                memTag: m.memTag ?? null,
-              }));
+            const fresh = incoming.filter((m: any) => !existingIds.has(m.msgId)).map((m: any) => ({ ...mapMessage(m), timeAgo: "now" }));
             return fresh.length > 0 ? [...fresh, ...prev] : prev;
           });
         }
-        // incoming.length === 0 on a poll → nothing to do, no state update
       }
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
-    // }, [roomId, userAvatarUrl, userUsername]);
-  }, [roomId, userAvatarUrl, userUsername, currentUserId]);
+  }, [roomId, mapMessage]);
 
   useEffect(() => { onRegisterRefresh?.(fetchMsgs); }, [fetchMsgs, onRegisterRefresh]);
   useEffect(() => { onRegisterReplyUpdate?.((postId, count) => { setPosts(p => p.map(x => x.id === postId ? { ...x, replyCount: count } : x)); }); }, [onRegisterReplyUpdate]);
-  // useEffect(() => { if (!roomId) return; fetchMsgs(); 
-  // const iv = setInterval(fetchMsgs, 15000); return () => clearInterval(iv); },
-  useEffect(() => {
-    if (!roomId) return;
-    fetchMsgs();
-  }, [fetchMsgs, roomId]);
-
+  useEffect(() => { if (!roomId) return; fetchMsgs(); }, [fetchMsgs, roomId]);
   useVisibilityInterval(fetchMsgs, 15000);
 
-  // ── Poll for reaction/reply count updates (separate from message poll) ──────
-// const fetchReactionUpdates = useCallback(async () => {
-//   if (!roomId || posts.length === 0) return;
-//   try {
-//     const res = await axios.get(`/api/roar/rooms/${roomId}/messages?t=${Date.now()}`);
-//     if (res.data?.success) {
-//       const incoming: any[] = res.data.messages ?? [];
-//       setPosts(prev => prev.map(p => {
-//         const updated = incoming.find((m: any) => m.msgId === p.id);
-//         if (!updated) return p;
-//         const isPending = pendingReactRef.current[p.id];
-//         return {
-//           ...p,
-//           heartCount: isPending ? p.heartCount : (updated.heartCount ?? p.heartCount),
-//           userReaction: isPending ? p.userReaction : (updated.userReaction ?? p.userReaction),
-//           replyCount: Math.max(p.replyCount ?? 0, updated.replyCount ?? 0),
-//           agreeCount: updated.agreeCount ?? p.agreeCount,
-//           disagreeCount: updated.disagreeCount ?? p.disagreeCount,
-//         };
-//       }));
-//     }
-//   } catch { }
-// }, [roomId, posts]);
-
-const fetchReactionUpdates = useCallback(async () => {
-  if (!roomId || posts.length === 0) return;
-  try {
-    const res = await axios.get(`/api/roar/rooms/${roomId}/messages?t=${Date.now()}`);
-    if (res.data?.success) {
-      const incoming: any[] = res.data.messages ?? [];
-      setPosts(prev => prev.map(p => {
-        const updated = incoming.find((m: any) => m.msgId === p.id);
-        if (!updated) return p;
-        const isPending = pendingReactRef.current[p.id];
-        return {
-          ...p,
-          heartCount: isPending ? p.heartCount : (updated.heartCount ?? p.heartCount),
-          userReaction: isPending ? p.userReaction : (updated.userReaction ?? null),
-          replyCount: Math.max(p.replyCount ?? 0, updated.replyCount ?? 0),
-          agreeCount: updated.agreeCount ?? p.agreeCount,
-          disagreeCount: updated.disagreeCount ?? p.disagreeCount,
-        };
-      }));
-
-      // Sync localReactions from server for non-pending posts
-      setLocalReactions(prev => {
-        const next = { ...prev };
-        incoming.forEach((m: any) => {
-          if (!pendingReactRef.current[m.msgId]) {
-            next[m.msgId] = {
-              reaction: m.userReaction ?? null,
-              heartCount: m.heartCount ?? 0,
-            };
-          }
-        });
-        return next;
-      });
-    }
-  } catch { }
-}, [roomId, posts]);
-
-useVisibilityInterval(fetchReactionUpdates, 5000);
-
-  // ── Poll for new room notifications and show floating toast ──────────────────
-const lastNotifCheckRef = useRef<number>(Date.now());
-const seenNotifIdsRef = useRef<Set<string>>(new Set());
-
-useEffect(() => {
-  if (!roomId) return;
-
-  const checkNotifs = async () => {
+  const fetchReactionUpdates = useCallback(async () => {
+    if (!roomId || posts.length === 0) return;
     try {
-      const res = await axios.get("/api/notifications", {
-        params: {
-          uid: userProfile?.actualUserId,
-          email: userProfile?.email,
-        },
-      });
-      const notifs: any[] = res.data?.notifications ?? [];
-
-      // Find unseen notifications for this room that arrived after we entered
-      const fresh = notifs.filter(n =>
-        n.roomId === roomId &&
-        !n.isRead &&
-        !seenNotifIdsRef.current.has(n.id) &&
-        (n.createdAt ?? 0) > lastNotifCheckRef.current
-      );
-
-      if (fresh.length > 0) {
-        // Mark all as seen locally so we don't re-toast
-        fresh.forEach(n => seenNotifIdsRef.current.add(n.id));
-
-        // Show the most recent one as a toast
-        const latest = fresh[fresh.length - 1];
-        const type = latest.type === "roar_post_comment" ? "comment" : "like";
-        const message = latest.message ?? (type === "comment"
-          ? "Someone commented on your post"
-          : "Someone reacted to your post");
-
-        setNotifToast({ message, type });
-
-        // Auto-dismiss after 4 seconds
-        if (notifToastTimerRef.current) clearTimeout(notifToastTimerRef.current);
-        notifToastTimerRef.current = setTimeout(() => setNotifToast(null), 4000);
+      const res = await axios.get(`/api/roar/rooms/${roomId}/messages?t=${Date.now()}`);
+      if (res.data?.success) {
+        const incoming: any[] = res.data.messages ?? [];
+        setPosts(prev => prev.map(p => {
+          const updated = incoming.find((m: any) => m.msgId === p.id);
+          if (!updated) return p;
+          const isPending = pendingReactRef.current[p.id];
+          return { ...p, heartCount: isPending ? p.heartCount : (updated.heartCount ?? p.heartCount), userReaction: isPending ? p.userReaction : (updated.userReaction ?? null), replyCount: Math.max(p.replyCount ?? 0, updated.replyCount ?? 0), agreeCount: updated.agreeCount ?? p.agreeCount, disagreeCount: updated.disagreeCount ?? p.disagreeCount };
+        }));
+        setLocalReactions(prev => {
+          const next = { ...prev };
+          incoming.forEach((m: any) => { if (!pendingReactRef.current[m.msgId]) next[m.msgId] = { reaction: m.userReaction ?? null, heartCount: m.heartCount ?? 0 }; });
+          return next;
+        });
       }
-    } catch {
-      // silent — this is a non-critical enhancement
-    }
-  };
+    } catch {}
+  }, [roomId, posts]);
+  useVisibilityInterval(fetchReactionUpdates, 5000);
 
-  // Set the entry timestamp so we only show notifs that arrive while in room
-  lastNotifCheckRef.current = Date.now();
-
-  const interval = setInterval(checkNotifs, 5000);
-  return () => {
-    clearInterval(interval);
-    if (notifToastTimerRef.current) clearTimeout(notifToastTimerRef.current);
-  };
-}, [roomId, userProfile?.actualUserId, userProfile?.email]);
+  const lastNotifCheckRef = useRef<number>(Date.now());
+  const seenNotifIdsRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    if (!roomId) return;
+    const checkNotifs = async () => {
+      try {
+        const res = await axios.get("/api/notifications", { params: { uid: userProfile?.actualUserId, email: userProfile?.email } });
+        const notifs: any[] = res.data?.notifications ?? [];
+        const fresh = notifs.filter(n => n.roomId === roomId && !n.isRead && !seenNotifIdsRef.current.has(n.id) && (n.createdAt ?? 0) > lastNotifCheckRef.current);
+        if (fresh.length > 0) {
+          fresh.forEach(n => seenNotifIdsRef.current.add(n.id));
+          const latest = fresh[fresh.length - 1];
+          const type = latest.type === "roar_post_comment" ? "comment" : "like";
+          setNotifToast({ message: latest.message ?? (type === "comment" ? "Someone commented on your post" : "Someone reacted to your post"), type });
+          if (notifToastTimerRef.current) clearTimeout(notifToastTimerRef.current);
+          notifToastTimerRef.current = setTimeout(() => setNotifToast(null), 4000);
+        }
+      } catch {}
+    };
+    lastNotifCheckRef.current = Date.now();
+    const interval = setInterval(checkNotifs, 5000);
+    return () => { clearInterval(interval); if (notifToastTimerRef.current) clearTimeout(notifToastTimerRef.current); };
+  }, [roomId, userProfile?.actualUserId, userProfile?.email]);
 
   useEffect(() => { if (!loading && listRef.current) setTimeout(() => listRef.current?.scrollTo({ top: 0 }), 50); }, [loading]);
 
-  // ── Reaction handler (mirrors HomeFeed.tsx's handleReact) ───────────────────
   const handleReact = useCallback(async (msgId: string, reaction: Reaction | null) => {
-    if (!roomId) return;
-    if (pendingReactRef.current[msgId]) return;
-
+    if (!roomId || pendingReactRef.current[msgId]) return;
     const post = posts.find(p => p.id === msgId);
-    const prev = localReactionsRef.current[msgId] ?? {
-      reaction: post?.userReaction ?? null,
-      heartCount: post?.heartCount ?? 0,
-    };
+    const prev = localReactionsRef.current[msgId] ?? { reaction: post?.userReaction ?? null, heartCount: post?.heartCount ?? 0 };
     const sameReaction = prev.reaction === reaction;
     const newReaction = sameReaction ? null : reaction;
     const wasActive = prev.reaction !== null;
     const newActive = newReaction !== null;
     const countDelta = newActive && !wasActive ? 1 : (!newActive && wasActive ? -1 : 0);
-
-    const optimisticState = {
-      reaction: newReaction,
-      heartCount: Math.max(0, prev.heartCount + countDelta),
-    };
-
+    const optimisticState = { reaction: newReaction, heartCount: Math.max(0, prev.heartCount + countDelta) };
     setLocalReactions(p => ({ ...p, [msgId]: optimisticState }));
     pendingReactRef.current[msgId] = true;
-
     try {
-      const res: any = newReaction === null
-        ? await roarApi.unreactPost(msgId, roomId)
-        : await roarApi.reactPost(msgId, newReaction, roomId);
-
-      if (res && typeof res.likeCount === "number") {
-        setLocalReactions(p => ({
-          ...p,
-          [msgId]: { ...optimisticState, heartCount: res.likeCount },
-        }));
-      }
-    } catch {
-      setLocalReactions(p => ({ ...p, [msgId]: prev }));
-      onToast("Failed to save reaction");
-    } finally {
-      pendingReactRef.current[msgId] = false;
-    }
+      const res: any = newReaction === null ? await roarApi.unreactPost(msgId, roomId) : await roarApi.reactPost(msgId, newReaction, roomId);
+      if (res && typeof res.likeCount === "number") setLocalReactions(p => ({ ...p, [msgId]: { ...optimisticState, heartCount: res.likeCount } }));
+    } catch { setLocalReactions(p => ({ ...p, [msgId]: prev })); onToast("Failed to save reaction"); }
+    finally { pendingReactRef.current[msgId] = false; }
   }, [roomId, posts, onToast]);
 
-  // ── Inline comment submit (same API as RoomPostDetailsOverlay) ──────────────
   const handleInlineCommentSubmit = async (postId: string, text: string) => {
     try {
-      const res = await axios.post(`/api/roar/posts/${postId}/comments`, {
-        text,
-        roomId,
-      });
-      if (res.data?.success) {
-        onToast("💬 Comment posted!");
-        setPosts(p => p.map(x => x.id === postId ? { ...x, replyCount: (x.replyCount || 0) + 1 } : x));
-      } else {
-        onToast("Failed to post comment");
-      }
-    } catch {
-      onToast("Failed to post comment");
-    }
+      const res = await axios.post(`/api/roar/posts/${postId}/comments`, { text, roomId });
+      if (res.data?.success) { onToast("💬 Comment posted!"); setPosts(p => p.map(x => x.id === postId ? { ...x, replyCount: (x.replyCount || 0) + 1 } : x)); }
+      else onToast("Failed to post comment");
+    } catch { onToast("Failed to post comment"); }
     setInlineCommentPostId(null);
+  };
+
+  const getPredictionVoteValue = (optionIndex: number) => (
+    optionIndex === 0 ? "agree" : optionIndex === 1 ? "disagree" : `option_${optionIndex}`
+  );
+
+  const getPredictionOptionLabel = (voteValue: string | undefined, options: string[]) => {
+    if (!voteValue) return "";
+    if (voteValue === "agree") return options[0] || "Option 1";
+    if (voteValue === "disagree") return options[1] || "Option 2";
+    const optionIndex = Number(voteValue.replace("option_", ""));
+    return Number.isFinite(optionIndex) ? (options[optionIndex] || voteValue) : voteValue;
+  };
+
+  const formatPredictionCloseLabel = (p: { resolvedAt?: number; closesAt?: number; closedAt?: number }) => {
+    if (p.resolvedAt) return "Resolved";
+    if (!p.closesAt) return "Open";
+    const remaining = p.closesAt - Date.now();
+    if (remaining <= 0 || p.closedAt) return "Closed";
+    const mins = Math.ceil(remaining / 60000);
+    if (mins < 60) return `${mins}m left`;
+    return `${Math.ceil(mins / 60)}h left`;
+  };
+
+  const resolveRoomPrediction = async (msgId: string, correctVote: string) => {
+    if (!roomId) return;
+    try {
+      setResolvingRoomPredictionId(msgId);
+      const res = await axios.post(`/api/roar/rooms/${roomId}/messages/${msgId}/resolve`, { correctVote });
+      if (res.data?.success) {
+        const resolvedAt = res.data.message?.resolvedAt ?? Date.now();
+        setPosts(prev => prev.map(p => p.id !== msgId ? p : {
+          ...p, resolvedAt, closedAt: res.data.message?.closedAt ?? resolvedAt, correctVote, accuracyAwarded: true,
+        }));
+        onToast(`Prediction resolved. ${res.data.correctCount ?? 0} correct fans awarded.`);
+      } else { onToast("Failed to resolve prediction"); }
+    } catch (err: unknown) {
+      const message = axios.isAxiosError(err) ? err.response?.data?.error : undefined;
+      onToast(message || "Failed to resolve prediction");
+    } finally { setResolvingRoomPredictionId(null); }
   };
 
   const triggerUpload = (type: "image" | "video") => {
@@ -2164,103 +2589,27 @@ useEffect(() => {
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]; if (!file) return;
-    try {
-      setUploading(true); onToast("Uploading media...");
-      const fd = new FormData(); fd.append("file", file);
-      const res = await axios.post("/api/upload", fd, { headers: { "Content-Type": "multipart/form-data" } });
-      if (res.data?.url) { setAttachedUrl(res.data.url); onToast("Media uploaded!"); }
-    } catch { onToast("Upload failed"); setAttachedType(null); }
+    try { setUploading(true); onToast("Uploading media..."); const fd = new FormData(); fd.append("file", file); const res = await axios.post("/api/upload", fd, { headers: { "Content-Type": "multipart/form-data" } }); if (res.data?.url) { setAttachedUrl(res.data.url); onToast("Media uploaded!"); } }
+    catch { onToast("Upload failed"); setAttachedType(null); }
     finally { setUploading(false); if (e.target) e.target.value = ""; }
   };
 
-  // const send = async () => {
-  //   if (!roomId) return;
-  //   const text = input.trim();
-  //   if (!text && !attachedUrl) return;
-  //   if (sendingRef.current) return; // guard against double submit
-  //   sendingRef.current = true;
-  //   try {
-  //     const res = await axios.post(`/api/roar/rooms/${roomId}/messages`, { text: text || "Shared media", type: mode, mediaUrls: attachedUrl ? [attachedUrl] : undefined });
-      // if (res.data?.success) {
-      //   const m = res.data.message;
-      //   setPosts(p => [{
-      //     id: m.msgId,
-      //     fan: { username: displayUsername(m.authorUsername), authorUid: m.authorUid, badge: m.authorBadge, avatarUrl: m.authorAvatarUrl || m.avatarUrl || (m.authorUsername === userUsername ? userAvatarUrl : undefined) },
-      //     text: m.text,
-      //     // fireCount: 0, nochanceCount: 0, heartCount: 0,
-      //     fireCount: m.fireCount ?? 0,
-      //     heartCount: m.heartCount ?? 0,
-      //     mindblownCount: m.mindblownCount ?? 0,
-      //     goatCount: m.goatCount ?? 0,
-      //     clapCount: m.clapCount ?? 0,
-      //     nochanceCount: m.noChanceCount ?? 0,
-      //     userReaction: null, replyCount: 0,
-      //     agreeCount: 0, disagreeCount: 0, userVote: null, sideA: m.sideA ?? null, sideB: m.sideB ?? null,
-      //     timeAgo: "now", createdAt: m.createdAt || Date.now(), type: m.type, mediaUrls: m.mediaUrls,
-      //     quizQuestion: m.quizQuestion, quizOptions: m.quizOptions, quizCorrectOption: m.quizCorrectOption,
-      //     quizUserAnswer: m.quizUserAnswer ?? null, quizTimer: m.quizTimer, quizPoints: m.quizPoints,
-      //     quizParticipants: m.quizParticipants ?? 0, memGifUrl: m.memGifUrl ?? null, memTag: m.memTag ?? null,
-      //   }, ...p]);
-      //   setInput(""); setAttachedUrl(null); setAttachedType(null);
-      //   setTimeout(() => listRef.current?.scrollTo({ top: 0, behavior: "smooth" }), 50);
-      // }
-  //   } catch { onToast("Failed to send message"); }
-  //   finally { sendingRef.current = false; } 
-  // };
-
   const send = async () => {
-  if (!roomId) return;
-  const text = input.trim();
-  if (!text && !attachedUrl) return;
-  if (sendingRef.current) return;
-  sendingRef.current = true;
-  setIsSending(true);
-  try {
-    const res = await axios.post(`/api/roar/rooms/${roomId}/messages`, {
-      text: text || "Shared media",
-      type: mode,
-      mediaUrls: attachedUrl ? [attachedUrl] : undefined,
-    });
-       if (res.data?.success) {
+    if (!roomId) return;
+    const text = input.trim();
+    if (!text && !attachedUrl) return;
+    if (sendingRef.current) return;
+    sendingRef.current = true; setIsSending(true);
+    try {
+      const res = await axios.post(`/api/roar/rooms/${roomId}/messages`, { text: text || "Shared media", type: mode, mediaUrls: attachedUrl ? [attachedUrl] : undefined });
+      if (res.data?.success) {
         const m = res.data.message;
-        setPosts(p => [{
-          id: m.msgId,
-          fan: { username: displayUsername(m.authorUsername), authorUid: m.authorUid, badge: m.authorBadge, avatarUrl: m.authorAvatarUrl || m.avatarUrl || (m.authorUsername === userUsername ? userAvatarUrl : undefined) },
-          text: m.text,
-          // fireCount: 0, nochanceCount: 0, heartCount: 0,
-          fireCount: m.fireCount ?? 0,
-          heartCount: m.heartCount ?? 0,
-          mindblownCount: m.mindblownCount ?? 0,
-          goatCount: m.goatCount ?? 0,
-          clapCount: m.clapCount ?? 0,
-          nochanceCount: m.noChanceCount ?? 0,
-          userReaction: null, replyCount: 0,
-          agreeCount: 0, disagreeCount: 0, userVote: null, sideA: m.sideA ?? null, sideB: m.sideB ?? null,
-          timeAgo: "now", createdAt: m.createdAt || Date.now(), type: m.type, mediaUrls: m.mediaUrls,
-          quizQuestion: m.quizQuestion, quizOptions: m.quizOptions, quizCorrectOption: m.quizCorrectOption,
-          quizUserAnswer: m.quizUserAnswer ?? null, quizTimer: m.quizTimer, quizPoints: m.quizPoints,
-          quizParticipants: m.quizParticipants ?? 0, memGifUrl: m.memGifUrl ?? null, memTag: m.memTag ?? null,
-        }, ...p]);
+        setPosts(p => [{ id: m.msgId, fan: { username: displayUsername(m.authorUsername), authorUid: m.authorUid, badge: m.authorBadge, avatarUrl: m.authorAvatarUrl || m.avatarUrl || (m.authorUsername === userUsername ? userAvatarUrl : undefined) }, text: m.text, fireCount: m.fireCount ?? 0, heartCount: m.heartCount ?? 0, mindblownCount: m.mindblownCount ?? 0, goatCount: m.goatCount ?? 0, clapCount: m.clapCount ?? 0, nochanceCount: m.noChanceCount ?? 0, userReaction: null, replyCount: 0, agreeCount: 0, disagreeCount: 0, userVote: null, sideA: m.sideA ?? null, sideB: m.sideB ?? null, timeAgo: "now", createdAt: m.createdAt || Date.now(), type: m.type, mediaUrls: m.mediaUrls, quizQuestion: m.quizQuestion, quizOptions: m.quizOptions, quizCorrectOption: m.quizCorrectOption, quizUserAnswer: m.quizUserAnswer ?? null, quizTimer: m.quizTimer, quizPoints: m.quizPoints, quizParticipants: m.quizParticipants ?? 0, memGifUrl: m.memGifUrl ?? null, memTag: m.memTag ?? null }, ...p]);
         setInput(""); setAttachedUrl(null); setAttachedType(null);
         setTimeout(() => listRef.current?.scrollTo({ top: 0, behavior: "smooth" }), 50);
       }
-  } catch { onToast("Failed to send message"); }
-  finally {
-    sendingRef.current = false;
-    setIsSending(false);
-  }
-};
-
-  const copyToClipboard = async (text: string) => {
-    try { await navigator.clipboard.writeText(text); return true; }
-    catch {
-      try {
-        const input = document.createElement("textarea");
-        input.value = text; input.style.position = "fixed"; input.style.opacity = "0";
-        document.body.appendChild(input); input.focus(); input.select();
-        const ok = document.execCommand("copy"); document.body.removeChild(input); return ok;
-      } catch { return false; }
-    }
+    } catch { onToast("Failed to send message"); }
+    finally { sendingRef.current = false; setIsSending(false); }
   };
 
   const handleBack = (e: React.PointerEvent | React.MouseEvent) => { e.preventDefault(); e.stopPropagation(); onBack(); };
@@ -2278,112 +2627,140 @@ useEffect(() => {
     quiz: <Brain size={13} stroke="url(#dr-pink-orange-grad)" />,
   };
 
-  // ── Render helpers for the reaction row ─────────────────────────────────────
   const renderReactionPicker = (p: any) => {
     const lo = localReactions[p.id];
     const currentReaction: Reaction | null = lo !== undefined ? lo.reaction : (p.userReaction ?? null);
     const heartCount = lo !== undefined ? lo.heartCount : (p.heartCount ?? 0);
-
     return (
       <div onClick={e => e.stopPropagation()}>
-        <ReactionPicker
-          currentReaction={currentReaction}
-          count={heartCount}
-          onReact={(r) => handleReact(p.id, r)}
-        />
+        <ReactionPicker currentReaction={currentReaction} count={heartCount} onReact={(r) => handleReact(p.id, r)} />
       </div>
     );
   };
 
-  // const renderReactionsTrigger = (p: any) => {
-  //   const lo = localReactions[p.id];
-  //   const heartCount = lo !== undefined ? lo.heartCount : (p.heartCount ?? 0);
-  //   if (heartCount === 0) return null;
-
-  //   return (
-  //     <motion.button
-  //       whileTap={{ scale: 0.93 }}
-  //       onClick={e => { e.stopPropagation(); setReactionsMsgId(p.id); }}
-  //       style={{
-  //         display: "flex", alignItems: "center", gap: 4,
-  //         background: "none", border: "none", cursor: "pointer",
-  //         color: "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: 700,
-  //         marginLeft: "auto",
-  //       }}
-  //       title="See who reacted"
-  //     >
-  //       <BarChart2 size={13} />
-  //       <span>Reactions</span>
-  //     </motion.button>
-  //   );
-  // };
-
-  const REACTION_EMOJI: Record<string, string> = {
-    fire: "🔥", heart: "❤️", mindblown: "🤯", goat: "🐐", clap: "👏", nochance: "🙅",
-    laugh: "😂", sad: "😢", thumb: "👍",
-  };
+  const REACTION_EMOJI: Record<string, string> = { fire: "🔥", heart: "❤️", mindblown: "🤯", goat: "🐐", clap: "👏", nochance: "🙅", laugh: "😂", sad: "😢", thumb: "👍" };
 
   const renderReactionsTrigger = (p: any) => {
     const lo = localReactions[p.id];
     const heartCount = lo !== undefined ? lo.heartCount : (p.heartCount ?? 0);
     if (heartCount === 0) return null;
-
     const topReactions = topReactionsMap[p.id] ?? [];
-    if (topReactions.length === 0 && !topReactionsCache.current[p.id]) {
-      fetchTopReactions(p.id);
-    }
-
+    if (topReactions.length === 0 && !topReactionsCache.current[p.id]) fetchTopReactions(p.id);
     const currentReaction = lo?.reaction ?? p.userReaction ?? null;
-    const displayReactions = topReactions.length > 0
-      ? topReactions
-      : currentReaction ? [currentReaction] : [];
-
+    const displayReactions = topReactions.length > 0 ? topReactions : currentReaction ? [currentReaction] : [];
     if (displayReactions.length === 0) return null;
-
     return (
-      <motion.button
-        whileTap={{ scale: 0.93 }}
-        onClick={e => { e.stopPropagation(); setReactionsMsgId(p.id); }}
-        style={{
-          display: "flex", alignItems: "center", gap: 4,
-          background: "none", border: "none", cursor: "pointer",
-          marginLeft: "auto", padding: 0,
-        }}
-        title="See who reacted"
-      >
+      <motion.button whileTap={{ scale: 0.93 }} onClick={e => { e.stopPropagation(); setReactionsMsgId(p.id); }} style={{ display: "flex", alignItems: "center", gap: 4, background: "none", border: "none", cursor: "pointer", marginLeft: "auto", padding: 0 }} title="See who reacted">
         <div style={{ display: "flex" }}>
           {displayReactions.map((type, i) => (
-            <div
-              key={type}
-              style={{
-                width: 20, height: 20, borderRadius: "50%",
-                background: "#1e1e2a",
-                border: "1.5px solid rgba(255,255,255,0.1)",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: 11,
-                marginLeft: i === 0 ? 0 : -6,
-                zIndex: displayReactions.length - i,
-                position: "relative",
-              }}
-            >
+            <div key={type} style={{ width: 20, height: 20, borderRadius: "50%", background: "#1e1e2a", border: "1.5px solid rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, marginLeft: i === 0 ? 0 : -6, zIndex: displayReactions.length - i, position: "relative" }}>
               {REACTION_EMOJI[type] ?? "❤️"}
             </div>
           ))}
         </div>
-        {/* <span style={{ fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.5)", marginLeft: 3 }}>
-        {heartCount}
-      </span> */}
       </motion.button>
     );
   };
 
+  // ── ONE-LINE post header: avatar + name + timestamp + badge ─────────────────
+  // const renderPostHeader = (p: any, onAvatarClick?: () => void) => (
+  //   <div
+  //     style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, minWidth: 0 }}
+  //     onClick={e => { e.stopPropagation(); onAvatarClick?.(); }}
+  //   >
+  //     <div style={{ flexShrink: 0, cursor: onAvatarClick ? "pointer" : "default" }}>
+  //       <AvatarWithBadge username={p.fan.username} badge={p.fan.badge} size="sm" avatarUrl={p.fan.avatarUrl} />
+  //     </div>
+  //     <div style={{ display: "flex", alignItems: "center", gap: 6, flex: 1, minWidth: 0, flexWrap: "wrap" }}>
+  //       <span style={{ fontWeight: 700, fontSize: 13, color: "#fff", whiteSpace: "nowrap" }}>{p.fan.username}</span>
+  //       <span style={{ fontSize: 10, color: "rgba(255,255,255,0.38)", whiteSpace: "nowrap" }}>{p.timeAgo}</span>
+  //       {p.type && (
+  //         <span className={typeBadgeClass(p.type)}>
+  //           {p.type === "post" ? "POST" : p.type === "hottake" ? "HOT TAKE" : p.type === "prediction" ? "PREDICTION" : p.type === "debate" ? "DEBATE" : p.type === "raw_reactions" ? "RAW REACTIONS" : p.type.toUpperCase()}
+  //         </span>
+  //       )}
+  //     </div>
+  //   </div>
+  // );
+
+
+  const renderPostHeader = (p: any, onAvatarClick?: () => void) => (
+  <div
+    style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, minWidth: 0 }}
+    onClick={e => e.stopPropagation()}  // prevents post open, but NO profile nav here
+  >
+    <div
+      style={{ flexShrink: 0, cursor: onAvatarClick ? "pointer" : "default" }}
+      onClick={e => { e.stopPropagation(); onAvatarClick?.(); }}
+    >
+      <AvatarWithBadge username={p.fan.username} badge={p.fan.badge} size="sm" avatarUrl={p.fan.avatarUrl} />
+    </div>
+    <div style={{ display: "flex", alignItems: "center", gap: 6, flex: 1, minWidth: 0, flexWrap: "wrap" }}>
+      <span
+        style={{ fontWeight: 700, fontSize: 13, color: "#fff", whiteSpace: "nowrap", cursor: onAvatarClick ? "pointer" : "default" }}
+        onClick={e => { e.stopPropagation(); onAvatarClick?.(); }}
+      >
+        {p.fan.username}
+      </span>
+      <span style={{ fontSize: 10, color: "rgba(255,255,255,0.38)", whiteSpace: "nowrap" }}>
+        {p.timeAgo}
+      </span>
+      {p.type && (
+        <span className={typeBadgeClass(p.type)}>
+          {p.type === "post" ? "POST" : p.type === "hottake" ? "HOT TAKE" : p.type === "prediction" ? "PREDICTION" : p.type === "debate" ? "DEBATE" : p.type === "raw_reactions" ? "RAW REACTIONS" : p.type.toUpperCase()}
+        </span>
+      )}
+    </div>
+  </div>
+);
+
+  // ── Reply button with inline top-2 preview toggle ────────────────────────────
+  const renderReplyButton = (p: any, postPayload: any) => {
+    const isExpanded = expandedRepliesPostId === p.id;
+    const hasReplies = (p.replyCount || 0) > 0;
+    return (
+      <div style={{ display: "flex", flexDirection: "column" }}>
+        <button
+          onClick={e => {
+            e.stopPropagation();
+            if (hasReplies) {
+              if (isExpanded) {
+                setExpandedRepliesPostId(null);
+                onPostClick?.(postPayload);
+              } else {
+                setExpandedRepliesPostId(p.id);
+              }
+            } else {
+              onPostClick?.(postPayload);
+            }
+          }}
+          style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", color: isExpanded ? "#e91e8c" : "#9494ad", fontSize: 13, fontWeight: 600, transition: "color 0.15s", padding: 0 }}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+          </svg>
+          <span>{p.replyCount || 0}</span>
+          {hasReplies && (isExpanded ? <ChevronUp size={12} style={{ opacity: 0.6 }} /> : <ChevronDown size={12} style={{ opacity: 0.6 }} />)}
+        </button>
+        <AnimatePresence>
+          {isExpanded && roomId && (
+            <InlineRepliesPreview
+              key={`replies-${p.id}`}
+              postId={p.id}
+              roomId={roomId}
+              onOpenFull={() => { setExpandedRepliesPostId(null); onPostClick?.(postPayload); }}
+            />
+          )}
+        </AnimatePresence>
+      </div>
+    );
+  };
 
   return (
     <div className="flex flex-col w-full bg-[#0e0e14]" style={{ height: "100%", overflow: "hidden" }}>
       <svg width="0" height="0" style={{ position: "absolute" }}>
         <linearGradient id="dr-pink-orange-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#e91e8c" />
-          <stop offset="100%" stopColor="#ff6b35" />
+          <stop offset="0%" stopColor="#e91e8c" /><stop offset="100%" stopColor="#ff6b35" />
         </linearGradient>
       </svg>
 
@@ -2417,78 +2794,21 @@ useEffect(() => {
       )}
 
       {/* ── HEADER ── */}
-      {/* <div className="shrink-0 px-4 py-3 bg-[rgba(14,14,20,0.98)] backdrop-blur-[20px] border-b border-[var(--border)]" style={{ overflow: "visible", position: "relative", zIndex: 40 }}>
-        <div className="flex justify-between items-start">
-          <div className="flex items-center gap-3 flex-1 min-w-0">
+      <div className="shrink-0 px-4 py-3 bg-[rgba(14,14,20,0.98)] backdrop-blur-[20px] border-b border-[var(--border)]" style={{ overflow: "visible", position: "relative", zIndex: 40 }}>
+        <div className="flex justify-between items-start gap-2">
+          <div className="flex items-center gap-3 min-w-0 flex-1">
             <button type="button" onPointerDown={handleBack} onClick={handleBack} className="bg-transparent border-none cursor-pointer text-white flex items-center p-0 flex-shrink-0" style={{ touchAction: "manipulation", WebkitTapHighlightColor: "transparent" }}>
               <ChevronLeft size={24} />
             </button>
-            <div className="text-left pt-0.5 flex-1 min-w-0">
-              <p className="font-display text-2xl tracking-[0.04em] m-0 leading-tight text-white font-extrabold uppercase truncate">{roomName || "WORLDCUP"}</p>
-              <div className="flex items-center gap-1.5 mt-1">
-                <span className="live-pulse w-1.5 h-1.5 rounded-full bg-[var(--live-green)] inline-block flex-shrink-0" />
-                <span className="text-[10px] font-bold text-[var(--live-green)] flex-shrink-0">LIVE</span>
-                {/* <span className="text-[11px] text-white text-[var(--text-muted)] truncate">· {fmt(liveCount)} joined</span> //
-              </div>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 flex-shrink-0 ml-2">
-            {watchAlongRoomId && (
-              <button
-                type="button"
-                onClick={() => router.push(`/MainModules/WatchAlong/room/${watchAlongRoomId}`)}
-                className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500 text-white transition-all cursor-pointer shadow-[0_2px_10px_rgba(219,39,119,0.3)] hover:scale-105 active:scale-95"
-              >
-                <span>Watchalong</span>
-                <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse inline-block" />
-              </button>
-            )}
-            <button type="button" onClick={shareRoomLink} className="flex-shrink-0 bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.12)] rounded-[10px] p-2 cursor-pointer text-[rgba(255,255,255,0.75)] flex items-center justify-center hover:bg-[rgba(255,255,255,0.1)] transition-colors" style={{ width: "36px", height: "36px" }}>
-              <Share2 size={18} />
-            </button>
-            {(score || scoreSubtitle) && (
-              <div className="text-right pr-1 flex-shrink-0">
-                {score && <div className="font-display text-[24px] text-[var(--accent-yellow)] leading-none">{score}</div>}
-                {scoreSubtitle && <div className="text-[11px] text-[var(--text-secondary)] mt-0.5">{scoreSubtitle}</div>}
-              </div>
-            )}
-          </div>
-        </div>
-        <div className="mt-3">
-          <div className="flex justify-between text-[10px] text-[var(--text-muted)] mb-1"><span>Room Energy</span></div>
-          <div className="room-energy-bar room-energy-fast rounded-full" />
-        </div>
-      </div> */}
-
-      {/* ── HEADER ── */}
-      <div className="shrink-0 px-4 py-3 bg-[rgba(14,14,20,0.98)] backdrop-blur-[20px] border-b border-[var(--border)]" style={{ overflow: "visible", position: "relative", zIndex: 40 }}>
-        <div className="flex justify-between items-start gap-2">
-          {/* LEFT: back + room name + watchalong */}
-          <div className="flex items-center gap-3 min-w-0 flex-1">
-            <button
-              type="button"
-              onPointerDown={handleBack}
-              onClick={handleBack}
-              className="bg-transparent border-none cursor-pointer text-white flex items-center p-0 flex-shrink-0"
-              style={{ touchAction: "manipulation", WebkitTapHighlightColor: "transparent" }}
-            >
-              <ChevronLeft size={24} />
-            </button>
             <div className="text-left pt-0.5 min-w-0 flex-1">
-              <p className="font-display text-2xl tracking-[0.04em] m-0 leading-tight text-white font-extrabold uppercase truncate">
-                {roomName || "WORLDCUP"}
-              </p>
-              <div className="flex items-center gap-2 mt-1 flex-wrap ml-auto">
+              <p className="font-display text-2xl tracking-[0.04em] m-0 leading-tight text-white font-extrabold uppercase truncate">{roomName || "WORLDCUP"}</p>
+              <div className="flex items-center gap-2 mt-1 flex-wrap">
                 <div className="flex items-center gap-1.5">
                   <span className="live-pulse w-1.5 h-1.5 rounded-full bg-[var(--live-green)] inline-block flex-shrink-0" />
                   <span className="text-[10px] font-bold text-[var(--live-green)] flex-shrink-0">LIVE</span>
                 </div>
                 {watchAlongRoomId && (
-                  <button
-                    type="button"
-                    onClick={() => router.push(`/MainModules/WatchAlong/room/${watchAlongRoomId}`)}
-                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500 text-white transition-all cursor-pointer shadow-[0_2px_10px_rgba(219,39,119,0.3)] active:scale-95 whitespace-nowrap"
-                  >
+                  <button type="button" onClick={() => router.push(`/MainModules/WatchAlong/room/${watchAlongRoomId}`)} className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-gradient-to-r from-pink-600 to-rose-600 text-white cursor-pointer shadow-[0_2px_10px_rgba(219,39,119,0.3)] active:scale-95 whitespace-nowrap">
                     <span>Watchalong</span>
                     <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse inline-block flex-shrink-0" />
                   </button>
@@ -2496,15 +2816,8 @@ useEffect(() => {
               </div>
             </div>
           </div>
-
-          {/* RIGHT: share + score only */}
           <div className="flex items-center gap-2 flex-shrink-0">
-            <button
-              type="button"
-              onClick={shareRoomLink}
-              className="flex-shrink-0 bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.12)] rounded-[10px] p-2 cursor-pointer text-[rgba(255,255,255,0.75)] flex items-center justify-center hover:bg-[rgba(255,255,255,0.1)] transition-colors"
-              style={{ width: "36px", height: "36px" }}
-            >
+            <button type="button" onClick={shareRoomLink} className="flex-shrink-0 bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.12)] rounded-[10px] p-2 cursor-pointer text-[rgba(255,255,255,0.75)] flex items-center justify-center" style={{ width: "36px", height: "36px" }}>
               <Share2 size={18} />
             </button>
             {(score || scoreSubtitle) && (
@@ -2515,24 +2828,15 @@ useEffect(() => {
             )}
           </div>
         </div>
-
-        <div className="mt-3">
-          <div className="flex justify-between text-[10px] text-[var(--text-muted)] mb-1">
-            <span>Room Energy</span>
-          </div>
+        {/* <div className="mt-3">
+          <div className="flex justify-between text-[10px] text-[var(--text-muted)] mb-1"><span>Room Energy</span></div>
           <div className="room-energy-bar room-energy-fast rounded-full" />
-        </div>
+        </div> */}
       </div>
 
       {/* ── ACTIVE FANS ── */}
       <div className="shrink-0 px-4 py-2 bg-[rgba(14,14,20,0.98)] border-b border-[var(--border)]">
-        {/* <ActiveFansStack fans={activeFans} count={liveCount} onClick={() => setActiveFansOpen(true)} /> */}
-        <ActiveFansStack
-          fans={activeFans}
-          count={liveCount}
-          totalJoinCount={totalJoinCount}
-          onClick={() => setActiveFansOpen(true)}
-        />
+        <ActiveFansStack fans={activeFans} count={liveCount} totalJoinCount={totalJoinCount} onClick={() => setActiveFansOpen(true)} />
       </div>
 
       {/* ── FEED ── */}
@@ -2569,19 +2873,15 @@ useEffect(() => {
                 const sideA = p.sideA || vsParts[0] || "Side A";
                 const sideB = p.sideB || vsParts[1] || "Side B";
                 const questionText = hasSides ? rawText : null;
+                const debatePayload = { id: p.id, text: p.text, fan: p.fan, timeAgo: p.timeAgo, createdAt: p.createdAt, type: "debate", isDbPost: true, roomId, mediaUrls: p.mediaUrls, sideA, sideB };
 
                 return (
-                  <motion.div key={p.id} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22 }} className="glass-card p-4 cursor-pointer"
-                    onClick={() => onPostClick?.({ id: p.id, text: p.text, fan: p.fan, timeAgo: p.timeAgo, createdAt: p.createdAt, type: "debate", isDbPost: true, roomId, mediaUrls: p.mediaUrls, sideA, sideB })}
+                  <motion.div key={p.id} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22 }}
+                    className="cursor-pointer" style={{ padding: "8px 0", borderBottom: "1px solid rgba(255,255,255,0.07)" }} onClick={() => onPostClick?.(debatePayload)}
                   >
-                    <div style={{ display: "flex", gap: 6, marginBottom: 8, alignItems: "center" }}>
-                      <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.06em", padding: "3px 8px", borderRadius: 4, textTransform: "uppercase", background: "rgba(233,30,140,0.12)", color: "#e91e8c", border: "1px solid rgba(233,30,140,0.25)" }}>⚡ Debate</span>
-                      {hasVoted && <span style={{ fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 4, background: "rgba(233,30,140,0.08)", color: "#e91e8c", border: "1px solid rgba(233,30,140,0.2)" }}>🗳️ Voted</span>}
-                    </div>
-                    <div className="flex gap-2 items-center mb-2.5 cursor-pointer" onClick={(e) => { e.stopPropagation(); onFanProfile?.(p.fan); }}>
-                      <AvatarWithBadge username={p.fan.username} badge={p.fan.badge} size="sm" avatarUrl={p.fan.avatarUrl} />
-                      <div><p className="font-bold text-[13px]">{p.fan.username}</p><p className="text-[10px] text-[var(--text-muted)]">{p.timeAgo}</p></div>
-                    </div>
+                    {/* ONE-LINE HEADER */}
+                    {renderPostHeader(p, () => onFanProfile?.(p.fan))}
+
                     {questionText && <p style={{ fontWeight: 600, fontSize: 14, lineHeight: 1.4, marginBottom: 12, color: "var(--text-primary)" }}>{questionText}</p>}
                     <div style={{ display: "flex", gap: 8, alignItems: "stretch", marginBottom: 10 }}>
                       {[
@@ -2592,17 +2892,9 @@ useEffect(() => {
                           {idx === 1 && <div key="vs" style={{ display: "flex", alignItems: "center", padding: "0 4px" }}><span className="font-display" style={{ fontSize: 16, color: "var(--text-muted)" }}>VS</span></div>}
                           <motion.button key={voteVal} whileTap={!hasVoted ? { scale: 0.96 } : {}}
                             onClick={async (e) => {
-                              e.stopPropagation();
-                              if (hasVoted) return;
+                              e.stopPropagation(); if (hasVoted) return;
                               try {
                                 await axios.post(`/api/roar/rooms/${roomId}/messages/${p.id}/vote`, { vote: voteVal });
-                                // if (phog) {
-                                //   phog.capture("poll_voted", {
-                                //     poll_id: p.id,
-                                //     poll_type: "debate_vs",
-                                //     option_id: voteVal
-                                //   });
-                                // }
                                 setPosts(prev => prev.map(x => x.id !== p.id ? x : { ...x, userVote: voteVal, agreeCount: (x.agreeCount ?? 0) + (voteVal === "agree" ? 1 : 0), disagreeCount: (x.disagreeCount ?? 0) + (voteVal === "disagree" ? 1 : 0) }));
                                 setInlineCommentPostId(p.id);
                               } catch { onToast("You've already voted!!"); }
@@ -2627,50 +2919,24 @@ useEffect(() => {
                       </div>
                     </div>
                     <p style={{ fontSize: 11, fontWeight: hasVoted ? 600 : 400, color: hasVoted ? "var(--accent-magenta)" : "var(--text-muted)", marginBottom: 8, fontStyle: hasVoted ? "normal" : "italic" }}>
-                      {hasVoted ? "🗳️ You've already voted · thanks for joining the debate!" : "Tap a side to vote · results reveal after voting"}
+                      {hasVoted ? "You've already voted · thanks for joining the debate!" : "Tap a side to vote · results reveal after voting"}
                     </p>
                     <AnimatePresence>
                       {inlineCommentPostId === p.id && (
-                        <InlineCommentInput
-                          key={`ic-${p.id}`}
-                          postId={p.id}
-                          roomId={roomId!}
-                          onSubmit={handleInlineCommentSubmit}
-                          onOpenFull={() => {
-                            setInlineCommentPostId(null);
-                            onPostClick?.({ id: p.id, text: p.text, fan: p.fan, timeAgo: p.timeAgo, createdAt: p.createdAt, type: "debate", isDbPost: true, roomId, mediaUrls: p.mediaUrls, sideA, sideB });
-                          }}
-                          accentColor="#e91e8c"
-                          placeholder="Share your thoughts on this debate..."
-                        />
+                        <InlineCommentInput key={`ic-${p.id}`} postId={p.id} roomId={roomId!} onSubmit={handleInlineCommentSubmit} onOpenFull={() => { setInlineCommentPostId(null); onPostClick?.(debatePayload); }} accentColor="#e91e8c" placeholder="Share your thoughts on this debate..." />
                       )}
                     </AnimatePresence>
                     <div style={{ marginTop: 2 }}>
-                      <div style={{ display: "flex", gap: 16, borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 10, alignItems: "center" }}>
+                      <div style={{ display: "flex", gap: 16, borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 10, alignItems: "flex-start" }}>
                         {renderReactionPicker(p)}
-                        <button onClick={e => { e.stopPropagation(); onPostClick?.({ id: p.id, text: p.text, fan: p.fan, timeAgo: p.timeAgo, createdAt: p.createdAt, type: "debate", isDbPost: true, roomId, mediaUrls: p.mediaUrls, sideA, sideB }); }} style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", color: "#9494ad", fontSize: 13, fontWeight: 600 }}>
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
-                          <span>{p.replyCount || 0}</span>
-                        </button>
+                        {renderReplyButton(p, debatePayload)}
                         <button onClick={e => { e.stopPropagation(); openShareDialog(p); }} style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", color: "#9494ad", fontSize: 13, fontWeight: 600 }}>
                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" /></svg>
                         </button>
                         {renderReactionsTrigger(p)}
-                        {currentUserId && p.fan?.authorUid === currentUserId && (
-                          <button
-                            onClick={async e => {
-                              e.stopPropagation();
-                              if (!window.confirm("Delete this post?")) return;
-                              try {
-                                await axios.delete(`/api/roar/rooms/${roomId}/messages/${p.id}`);
-                                setPosts(prev => prev.filter(x => x.id !== p.id));
-                              } catch { onToast("Failed to delete post"); }
-                            }}
-                            style={{ display: "flex", alignItems: "center", justifyContent: "center", background: "none", border: "none", cursor: "pointer", color: "#f87171", marginLeft: "auto", padding: 4, borderRadius: "50%" }}
-                          >
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" /><path d="M10 11v6" /><path d="M14 11v6" /><path d="M9 6V4h6v2" />
-                            </svg>
+                        {isCurrentUserAuthor(p) && (
+                          <button onClick={async e => { e.stopPropagation(); if (!window.confirm("Delete this post?")) return; try { await axios.delete(`/api/roar/rooms/${roomId}/messages/${p.id}`); setPosts(prev => prev.filter(x => x.id !== p.id)); } catch { onToast("Failed to delete post"); } }} style={{ display: "flex", alignItems: "center", justifyContent: "center", background: "none", border: "none", cursor: "pointer", color: "#9ca3af", marginLeft: "auto", padding: 4, borderRadius: "50%" }}>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" /><path d="M10 11v6" /><path d="M14 11v6" /><path d="M9 6V4h6v2" /></svg>
                           </button>
                         )}
                       </div>
@@ -2680,76 +2946,110 @@ useEffect(() => {
               }
 
               /* ── DEFAULT (post / hottake / prediction / raw_reactions) ── */
+              const defaultPayload = { id: p.id, text: p.text, fan: p.fan, timeAgo: p.timeAgo, createdAt: p.createdAt, type: p.type || "post", isDbPost: true, roomId, mediaUrls: p.mediaUrls };
+
               return (
-                <motion.div key={p.id} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22 }} className="glass-card p-3 cursor-pointer"
-                  onClick={() => onPostClick?.({ id: p.id, text: p.text, fan: p.fan,timeAgo: p.timeAgo, createdAt: p.createdAt, type: p.type || "post", isDbPost: true, roomId, mediaUrls: p.mediaUrls })}
+                <motion.div key={p.id} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22 }}
+                  className="cursor-pointer" style={{ padding: "8px 0", borderBottom: "1px solid rgba(255,255,255,0.07)" }} onClick={() => onPostClick?.(defaultPayload)}
                 >
-                  {p.type && (
-                    <div className="flex gap-1.5 mb-2 flex-wrap">
-                      <span className={typeBadgeClass(p.type)}>
-                        {p.type === "post" ? "✏️ POST" : p.type === "hottake" ? "🔥 HOT TAKE" : p.type === "prediction" ? "📊 PREDICT" : p.type === "debate" ? "⚡ DEBATE" : p.type === "raw_reactions" ? "🕰 Raw REACTIONS" : p.type.toUpperCase()}
-                      </span>
-                    </div>
-                  )}
-                  <div className="flex gap-2 items-center cursor-pointer" onClick={(e) => { e.stopPropagation(); onFanProfile?.(p.fan); }}>
-                    <AvatarWithBadge username={p.fan.username} badge={p.fan.badge} size="sm" avatarUrl={p.fan.avatarUrl} />
-                    <div><p className="font-bold text-[13px]">{p.fan.username}</p><p className="text-[10px] text-[var(--text-muted)]">{p.timeAgo}</p></div>
-                  </div>
-                  <p className="text-sm leading-snug mt-2 text-white">{p.text}</p>
+                  {/* ONE-LINE HEADER */}
+                  {renderPostHeader(p, () => onFanProfile?.(p.fan))}
+
+                  <p className="text-sm leading-snug text-white">{p.text}</p>
                   {p.type === "raw_reactions" && p.memGifUrl && <img src={p.memGifUrl} alt="reaction gif" style={{ width: "100%", maxHeight: 180, objectFit: "cover", borderRadius: 12, marginTop: 8 }} />}
                   {p.type === "raw_reactions" && p.memTag && <span style={{ display: "inline-block", marginTop: 8, fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 999, background: "rgba(0,232,198,0.12)", color: "#00e8c6", border: "1px solid rgba(0,232,198,0.3)", letterSpacing: "0.04em" }}>#{p.memTag}</span>}
 
                   {p.type === "prediction" && (() => {
                     const liveTotal = (p.agreeCount ?? 0) + (p.disagreeCount ?? 0);
-                    const agrPct = liveTotal > 0 ? Math.round(((p.agreeCount ?? 0) / liveTotal) * 100) : 50;
-                    const disAgrPct = 100 - agrPct;
                     const userVote = p.userVote;
                     const hasVoted = userVote === "agree" || userVote === "disagree";
+                    const predictionOptions = Array.isArray(p.predictionOptions) && p.predictionOptions.length >= 2 ? p.predictionOptions : [p.sideA || "Option 1", p.sideB || "Option 2"];
+                    const optionCounts = p.predictionOptionCounts ?? {};
+                    const predictionTotal = liveTotal + Object.values(optionCounts).reduce((sum: number, count: unknown) => sum + (Number(count) || 0), 0);
+                    const predictionPct = (count: number) => predictionTotal > 0 ? Math.round((count / predictionTotal) * 100) : 0;
+                    const predAgrPct = predictionPct(p.agreeCount ?? 0);
+                    const predDisAgrPct = predictionPct(p.disagreeCount ?? 0);
+                    const hasPredictionVoted = hasVoted || (typeof userVote === "string" && userVote.startsWith("option_"));
+                    const predictionClosed = Boolean(p.resolvedAt || p.closedAt || (p.closesAt && p.closesAt <= Date.now()));
+                    const isPredictionAuthor = isCurrentUserAuthor(p);
+                    const correctVoteLabel = getPredictionOptionLabel(p.correctVote, predictionOptions);
                     return (
                       <>
-                        <div style={{ display: "flex", gap: 8, marginTop: 10, marginBottom: 4 }}>
-                          {[
-                            { agree: true, label: "Support", pctVal: agrPct, active: userVote === "agree", color: "#22c55e" },
-                            { agree: false, label: "Counter", pctVal: disAgrPct, active: userVote === "disagree", color: "var(--accent-magenta)" },
-                          ].map(({ agree, label, pctVal, active, color }) => (
-                            <motion.button key={label} whileTap={!hasVoted ? { scale: 0.93 } : {}}
-                              onClick={async (e) => {
-                                e.stopPropagation();
-                                if (hasVoted) return;
-                                try {
-                                  await axios.post(`/api/roar/rooms/${roomId}/messages/${p.id}/vote`, { vote: agree ? "agree" : "disagree" });
-                                  // if (phog) {
-                                  //   phog.capture("poll_voted", {
-                                  //     poll_id: p.id,
-                                  //     poll_type: p.type || "prediction",
-                                  //     option_id: agree ? "agree" : "disagree"
-                                  //   });
-                                  // }
-                                  setPosts(prev => prev.map(x => x.id !== p.id ? x : { ...x, userVote: agree ? "agree" : "disagree", agreeCount: (x.agreeCount ?? 0) + (agree ? 1 : 0), disagreeCount: (x.disagreeCount ?? 0) + (!agree ? 1 : 0) }));
-                                  setInlineCommentPostId(p.id);
-                                } catch { onToast("You've already voted!!"); }
-                              }}
-                              style={{ flex: 1, padding: "9px", borderRadius: 999, fontSize: 12, fontWeight: 700, cursor: hasVoted ? "default" : "pointer", border: `2px solid ${color}`, background: active ? color : "rgba(255,255,255,0.02)", color: active ? "white" : color, boxShadow: active ? `0 0 14px ${color}50` : "none", transition: "all 0.2s ease-in-out", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, opacity: hasVoted && !active ? 0.4 : 1 }}
-                            >
-                              {active ? `✓ ${agree ? "Supported" : "Countered"}` : label}
-                              <span style={{ fontSize: 10, fontWeight: 800, background: active ? "rgba(255,255,255,0.2)" : `${color}22`, borderRadius: 999, padding: "1px 6px" }}>{pctVal}%</span>
-                            </motion.button>
-                          ))}
+                        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
+                          <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 10, fontWeight: 800, padding: "3px 8px", borderRadius: 4, background: predictionClosed ? "rgba(244,67,54,0.12)" : "rgba(34,197,94,0.1)", color: predictionClosed ? "#f87171" : "#22c55e", border: `1px solid ${predictionClosed ? "rgba(244,67,54,0.25)" : "rgba(34,197,94,0.22)"}` }}>
+                            <Clock size={11} /> {formatPredictionCloseLabel(p)}
+                          </span>
                         </div>
+                        <div style={{ display: "flex", gap: 8, marginTop: 10, marginBottom: 4 }}>
+                          {predictionOptions.slice(0, 2).map((label: string, optionIndex: number) => {
+                            const agree = optionIndex === 0;
+                            const pctVal = optionIndex === 0 ? predAgrPct : predDisAgrPct;
+                            const active = optionIndex === 0 ? userVote === "agree" : userVote === "disagree";
+                            return (
+                              <motion.button key={label} disabled={predictionClosed} whileTap={!hasPredictionVoted && !predictionClosed ? { scale: 0.93 } : {}}
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  if (hasPredictionVoted || predictionClosed) return;
+                                  try {
+                                    await axios.post(`/api/roar/rooms/${roomId}/messages/${p.id}/vote`, { vote: agree ? "agree" : "disagree" });
+                                    setPosts(prev => prev.map(x => x.id !== p.id ? x : { ...x, userVote: agree ? "agree" : "disagree", agreeCount: (x.agreeCount ?? 0) + (agree ? 1 : 0), disagreeCount: (x.disagreeCount ?? 0) + (!agree ? 1 : 0) }));
+                                    setInlineCommentPostId(p.id);
+                                  } catch { onToast("You've already voted!!"); }
+                                }}
+                                style={{ flex: 1, padding: "9px", borderRadius: 999, fontSize: 12, fontWeight: 700, cursor: hasPredictionVoted || predictionClosed ? "default" : "pointer", border: `2px solid ${active ? "#ff6b35" : "#8b8b8b"}`, background: active ? "rgba(255,107,53,0.24)" : "rgba(255,255,255,0.02)", color: active ? "#fff" : "#d1d1d1", boxShadow: active ? "0 0 14px rgba(255,107,53,0.35)" : "none", transition: "all 0.2s ease-in-out", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, opacity: (hasPredictionVoted || predictionClosed) && !active ? 0.4 : 1 }}
+                              >
+                                {label}
+                                <span style={{ fontSize: 10, fontWeight: 800, background: active ? "rgba(255,255,255,0.18)" : "rgba(255,255,255,0.08)", borderRadius: 999, padding: "1px 6px" }}>{pctVal}%</span>
+                              </motion.button>
+                            );
+                          })}
+                        </div>
+                        {predictionOptions.length > 2 && (
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 4 }}>
+                            {predictionOptions.slice(2).map((label: string, idx: number) => {
+                              const voteValue = `option_${idx + 2}`;
+                              const active = userVote === voteValue;
+                              const pctVal = predictionPct(optionCounts[voteValue] ?? 0);
+                              return (
+                                <button key={`${label}-${idx}`} type="button" disabled={hasPredictionVoted || predictionClosed}
+                                  onClick={async (e) => {
+                                    e.stopPropagation();
+                                    if (hasPredictionVoted || predictionClosed) return;
+                                    try {
+                                      await axios.post(`/api/roar/rooms/${roomId}/messages/${p.id}/vote`, { vote: voteValue });
+                                      setPosts(prev => prev.map(x => x.id !== p.id ? x : { ...x, userVote: voteValue, predictionOptionCounts: { ...(x.predictionOptionCounts ?? {}), [voteValue]: ((x.predictionOptionCounts ?? {})[voteValue] ?? 0) + 1 } }));
+                                      setInlineCommentPostId(p.id);
+                                    } catch { onToast("You've already voted!!"); }
+                                  }}
+                                  style={{ flex: "1 1 calc(50% - 4px)", minWidth: 0, padding: "9px", borderRadius: 999, fontSize: 12, fontWeight: 700, border: `2px solid ${active ? "#ff6b35" : "#8b8b8b"}`, background: active ? "rgba(255,107,53,0.24)" : "rgba(255,255,255,0.02)", color: active ? "#fff" : "#d1d1d1", boxShadow: active ? "0 0 14px rgba(255,107,53,0.35)" : "none", textAlign: "center", opacity: (hasPredictionVoted || predictionClosed) && !active ? 0.4 : 1, cursor: hasPredictionVoted || predictionClosed ? "default" : "pointer" }}
+                                >
+                                  {label}
+                                  <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 800, background: active ? "rgba(255,255,255,0.18)" : "rgba(255,255,255,0.08)", borderRadius: 999, padding: "1px 6px" }}>{pctVal}%</span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                        {predictionClosed && !p.resolvedAt && isPredictionAuthor && (
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8, marginBottom: 4 }}>
+                            {predictionOptions.map((label: string, optionIndex: number) => (
+                              <button key={`room-resolve-${label}-${optionIndex}`} type="button" disabled={resolvingRoomPredictionId === p.id}
+                                onClick={(e) => { e.stopPropagation(); resolveRoomPrediction(p.id, getPredictionVoteValue(optionIndex)); }}
+                                style={{ flex: "1 1 calc(50% - 4px)", minWidth: 0, padding: "9px", borderRadius: 12, fontSize: 12, fontWeight: 800, border: "1px solid rgba(34,197,94,0.35)", background: "rgba(34,197,94,0.1)", color: "#22c55e", cursor: resolvingRoomPredictionId === p.id ? "wait" : "pointer" }}
+                              >
+                                Resolve: {label}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                        {p.resolvedAt && correctVoteLabel && (
+                          <p style={{ fontSize: 11, color: "#22c55e", fontWeight: 800, marginTop: 8, marginBottom: 4 }}>
+                            Correct answer: {correctVoteLabel}
+                          </p>
+                        )}
                         <AnimatePresence>
                           {inlineCommentPostId === p.id && (
-                            <InlineCommentInput
-                              key={`ic-${p.id}`}
-                              postId={p.id}
-                              roomId={roomId!}
-                              onSubmit={handleInlineCommentSubmit}
-                              onOpenFull={() => {
-                                setInlineCommentPostId(null);
-                                onPostClick?.({ id: p.id, text: p.text, fan: p.fan, timeAgo: p.timeAgo, createdAt: p.createdAt, type: p.type, isDbPost: true, roomId, mediaUrls: p.mediaUrls });
-                              }}
-                              accentColor="#22c55e"
-                              placeholder="Share your thoughts on this..."
-                            />
+                            <InlineCommentInput key={`ic-${p.id}`} postId={p.id} roomId={roomId!} onSubmit={handleInlineCommentSubmit} onOpenFull={() => { setInlineCommentPostId(null); onPostClick?.(defaultPayload); }} accentColor="#22c55e" placeholder="Share your thoughts on this..." />
                           )}
                         </AnimatePresence>
                       </>
@@ -2784,21 +3084,7 @@ useEffect(() => {
                             { agree: false, label: "Disagree", pctVal: disAgrPct, active: userVote === "disagree", color: "var(--accent-orange)" },
                           ].map(({ agree, label, pctVal, active, color }) => (
                             <motion.button key={label} whileTap={!hasVoted ? { scale: 0.93 } : {}}
-                              onClick={async (e) => {
-                                e.stopPropagation();
-                                if (hasVoted) return;
-                                try {
-                                  await axios.post(`/api/roar/rooms/${roomId}/messages/${p.id}/vote`, { vote: agree ? "agree" : "disagree" });
-                                  // if (phog) {
-                                  //   phog.capture("poll_voted", {
-                                  //     poll_id: p.id,
-                                  //     poll_type: p.type || "hot_take",
-                                  //     option_id: agree ? "agree" : "disagree"
-                                  //   });
-                                  // }
-                                  setPosts(prev => prev.map(x => x.id !== p.id ? x : { ...x, userVote: agree ? "agree" : "disagree", agreeCount: (x.agreeCount ?? 0) + (agree ? 1 : 0), disagreeCount: (x.disagreeCount ?? 0) + (!agree ? 1 : 0) }));
-                                } catch { onToast("Failed to submit vote"); }
-                              }}
+                              onClick={async (e) => { e.stopPropagation(); if (hasVoted) return; try { await axios.post(`/api/roar/rooms/${roomId}/messages/${p.id}/vote`, { vote: agree ? "agree" : "disagree" }); setPosts(prev => prev.map(x => x.id !== p.id ? x : { ...x, userVote: agree ? "agree" : "disagree", agreeCount: (x.agreeCount ?? 0) + (agree ? 1 : 0), disagreeCount: (x.disagreeCount ?? 0) + (!agree ? 1 : 0) })); } catch { onToast("Failed to submit vote"); } }}
                               style={{ flex: 1, padding: "10px", borderRadius: 999, fontSize: 12, fontWeight: 700, cursor: hasVoted ? "default" : "pointer", border: `2.5px solid ${color}`, background: active ? color : "rgba(255,255,255,0.02)", color: active ? "white" : color, boxShadow: active ? `0 0 16px ${color}60` : "none", transition: "all 0.2s ease-in-out", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, opacity: hasVoted && !active ? 0.4 : 1 }}
                             >
                               {active ? `✓ ${agree ? "Agreed" : "Disagreed"}` : label}
@@ -2811,31 +3097,16 @@ useEffect(() => {
                   })()}
 
                   <div style={{ marginTop: 10 }}>
-                    <div style={{ display: "flex", gap: 16, borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 10, alignItems: "center" }}>
+                    <div style={{ display: "flex", gap: 16, borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 10, alignItems: "flex-start" }}>
                       {renderReactionPicker(p)}
-                      <button onClick={e => { e.stopPropagation(); onPostClick?.({ id: p.id, text: p.text, fan: p.fan, timeAgo: p.timeAgo, createdAt: p.createdAt, type: p.type || "post", isDbPost: true, roomId, mediaUrls: p.mediaUrls, replyCount: p.replyCount }); }} style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", color: "#9494ad", fontSize: 13, fontWeight: 600 }}>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
-                        <span>{p.replyCount || 0}</span>
-                      </button>
+                      {renderReplyButton(p, { ...defaultPayload, replyCount: p.replyCount })}
                       <button onClick={e => { e.stopPropagation(); openShareDialog(p); }} style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", color: "#9494ad", fontSize: 13, fontWeight: 600 }}>
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" /></svg>
                       </button>
                       {renderReactionsTrigger(p)}
-                      {currentUserId && p.fan?.authorUid === currentUserId && (
-                        <button
-                          onClick={async e => {
-                            e.stopPropagation();
-                            if (!window.confirm("Delete this post?")) return;
-                            try {
-                              await axios.delete(`/api/roar/rooms/${roomId}/messages/${p.id}`);
-                              setPosts(prev => prev.filter(x => x.id !== p.id));
-                            } catch { onToast("Failed to delete post"); }
-                          }}
-                          style={{ display: "flex", alignItems: "center", justifyContent: "center", background: "none", border: "none", cursor: "pointer", color: "#f87171", marginLeft: "auto", padding: 4, borderRadius: "50%" }}
-                        >
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" /><path d="M10 11v6" /><path d="M14 11v6" /><path d="M9 6V4h6v2" />
-                          </svg>
+                      {isCurrentUserAuthor(p) && (
+                        <button onClick={async e => { e.stopPropagation(); if (!window.confirm("Delete this post?")) return; try { await axios.delete(`/api/roar/rooms/${roomId}/messages/${p.id}`); setPosts(prev => prev.filter(x => x.id !== p.id)); } catch { onToast("Failed to delete post"); } }} style={{ display: "flex", alignItems: "center", justifyContent: "center", background: "none", border: "none", cursor: "pointer", color: "#9ca3af", marginLeft: "auto", padding: 4, borderRadius: "50%" }}>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" /><path d="M10 11v6" /><path d="M14 11v6" /><path d="M9 6V4h6v2" /></svg>
                         </button>
                       )}
                     </div>
@@ -2846,23 +3117,9 @@ useEffect(() => {
           )}
         </AnimatePresence>
 
-        {/* ── Infinite-scroll sentinel + spinner ──────────────────────────────
-            No "load more" button, no end-of-feed text. The sentinel sits
-            right after the last message; once it's near the viewport the
-            IntersectionObserver above fires loadMoreMsgs(). The spinner only
-            shows while a fetch is actually in flight. */}
         {hasMoreMsgs && !loading && (
           <div ref={sentinelRef} style={{ display: "flex", justifyContent: "center", padding: "16px 0" }}>
-            {loadingMoreMsgs && (
-              <div
-                style={{
-                  width: 28, height: 28, borderRadius: "50%",
-                  border: "3px solid rgba(255,255,255,0.1)",
-                  borderTop: "3px solid #E91E8C",
-                  animation: "dr-spin 0.8s linear infinite",
-                }}
-              />
-            )}
+            {loadingMoreMsgs && <div style={{ width: 28, height: 28, borderRadius: "50%", border: "3px solid rgba(255,255,255,0.1)", borderTop: "3px solid #E91E8C", animation: "dr-spin 0.8s linear infinite" }} />}
           </div>
         )}
       </div>
@@ -2875,7 +3132,7 @@ useEffect(() => {
           const isActive = q.id === selectedActionId;
           return (
             <button key={q.id} type="button"
-              onClick={() => { if (q.id === "post") { onCompose?.(q.id); setSelectedActionId("post"); return; } setSelectedActionId(q.id); onCompose?.(q.id); setSelectedActionId("post"); }}
+              onClick={() => { setSelectedActionId(q.id); onCompose?.(q.id); if (q.id !== "post") setSelectedActionId("post"); }}
               className={["flex items-center justify-start gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold whitespace-nowrap border transition-all duration-150 cursor-pointer shrink-0", isActive ? "border-[rgba(233,30,140,0.35)] bg-[rgba(233,30,140,0.12)]" : "border-transparent bg-[rgba(255,255,255,0.04)] text-[rgba(255,255,255,0.6)]"].join(" ")}
             >
               {composeIconMap[q.id] || <span>{q.emoji}</span>}
@@ -2910,7 +3167,7 @@ useEffect(() => {
                 )}
                 <input type="text" disabled={uploading} value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === "Enter" && send()} className="w-full h-11 rounded-[22px] bg-[var(--bg-secondary)] border border-[var(--border)] pl-4 pr-4 text-white text-base outline-none" />
               </div>
-              <motion.button whileTap={{ scale: 0.96 }} onClick={send} disabled={uploading || isSending} className={["w-11 h-11 rounded-full border-none text-white text-lg font-bold flex items-center justify-center cursor-pointer shrink-0", "bg-[linear-gradient(135deg,#e91e8c,#ff6b35)]", uploading ? "opacity-50" : "opacity-100"].join(" ")}>↑</motion.button>
+              <motion.button whileTap={{ scale: 0.96 }} onClick={send} disabled={uploading || isSending} className={["w-11 h-11 rounded-full border-none text-white text-lg font-bold flex items-center justify-center cursor-pointer shrink-0 bg-[linear-gradient(135deg,#e91e8c,#ff6b35)]", uploading ? "opacity-50" : "opacity-100"].join(" ")}>↑</motion.button>
             </div>
           </>
         )}
@@ -2918,80 +3175,21 @@ useEffect(() => {
 
       <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" />
 
-      {/* ── REACTIONS DIALOG (who reacted, room-aware) ── */}
-      <ReactionsDialog
-        postId={reactionsMsgId ?? ""}
-        isOpen={reactionsMsgId !== null}
-        onClose={() => setReactionsMsgId(null)}
-        onFanProfile={onFanProfile}
-        roomId={roomId}
-      />
+      <ReactionsDialog postId={reactionsMsgId ?? ""} isOpen={reactionsMsgId !== null} onClose={() => setReactionsMsgId(null)} onFanProfile={onFanProfile} roomId={roomId} />
+      <ActiveFansDialog roomId={roomId} isOpen={activeFansOpen} onClose={() => setActiveFansOpen(false)} onFanProfile={onFanProfile} />
 
-      {/* ── ACTIVE FANS DIALOG (who's in the room) ── */}
-      <ActiveFansDialog
-        roomId={roomId}
-        isOpen={activeFansOpen}
-        onClose={() => setActiveFansOpen(false)}
-        onFanProfile={onFanProfile}
-      />
-
-      {/* ── Floating notification toast ── */}
-<AnimatePresence>
-  {notifToast && (
-    <motion.div
-    initial={{ opacity: 0, y: -60, scale: 0.95 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: -40, scale: 0.95 }}
-      transition={{ duration: 0.22, ease: "easeOut" }}
-      onClick={() => setNotifToast(null)}
-  style={{
-        position: "fixed",
-       top: 16,
-        left: 16,
-        right: 16,
-        transform: "none",
-        zIndex: 100,
-        display: "flex",
-        alignItems: "center",
-        gap: 10,
-        padding: "10px 16px",
-        borderRadius: 20,
-        background: notifToast.type === "comment"
-          ? "rgba(147,51,234,0.92)"
-          : "rgba(233,30,140,0.92)",
-        backdropFilter: "blur(12px)",
-        border: `1px solid ${notifToast.type === "comment" ? "rgba(147,51,234,0.5)" : "rgba(233,30,140,0.5)"}`,
-        boxShadow: `0 8px 32px ${notifToast.type === "comment" ? "rgba(147,51,234,0.35)" : "rgba(233,30,140,0.35)"}`,
-        cursor: "pointer",
-        maxWidth: "100%",
-       wordBreak: "break-word",
-      }}
-    >
-      <span style={{ fontSize: 16, flexShrink: 0 }}>
-        {notifToast.type === "comment" ? "💬" : "❤️"}
-      </span>
-      <span style={{
-        fontSize: 13,
-        fontWeight: 600,
-        color: "#fff",
-        // overflow: "hidden",
-        // textOverflow: "ellipsis",
-        // whiteSpace: "nowrap",
-        wordBreak: "break-word",
-      }}>
-        {notifToast.message}
-      </span>
-      <span style={{
-        fontSize: 11,
-        color: "rgba(255,255,255,0.6)",
-        flexShrink: 0,
-        marginLeft: 4,
-      }}>
-        tap to dismiss
-      </span>
-    </motion.div>
-  )}
-</AnimatePresence>
+      {/* ── Notification toast ── */}
+      <AnimatePresence>
+        {notifToast && (
+          <motion.div initial={{ opacity: 0, y: -60, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -40, scale: 0.95 }} transition={{ duration: 0.22, ease: "easeOut" }} onClick={() => setNotifToast(null)}
+            style={{ position: "fixed", top: 16, left: 16, right: 16, zIndex: 100, display: "flex", alignItems: "center", gap: 10, padding: "10px 16px", borderRadius: 20, background: notifToast.type === "comment" ? "rgba(147,51,234,0.92)" : "rgba(233,30,140,0.92)", backdropFilter: "blur(12px)", border: `1px solid ${notifToast.type === "comment" ? "rgba(147,51,234,0.5)" : "rgba(233,30,140,0.5)"}`, boxShadow: `0 8px 32px ${notifToast.type === "comment" ? "rgba(147,51,234,0.35)" : "rgba(233,30,140,0.35)"}`, cursor: "pointer", wordBreak: "break-word" }}
+          >
+            <span style={{ fontSize: 16, flexShrink: 0 }}>{notifToast.type === "comment" ? "💬" : "❤️"}</span>
+            <span style={{ fontSize: 13, fontWeight: 600, color: "#fff", wordBreak: "break-word" }}>{notifToast.message}</span>
+            <span style={{ fontSize: 11, color: "rgba(255,255,255,0.6)", flexShrink: 0, marginLeft: 4 }}>tap to dismiss</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

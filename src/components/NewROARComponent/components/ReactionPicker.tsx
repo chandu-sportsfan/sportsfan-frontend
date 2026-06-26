@@ -4,6 +4,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Heart } from "lucide-react";
 
 export type Reaction = "heart" | "fire" | "laugh" | "sad" | "thumb";
 
@@ -220,7 +221,7 @@ export default function ReactionPicker({ currentReaction, count, onReact, disabl
           transition={{ type: "spring", stiffness: 400, damping: 18 }}
           style={{ fontSize: 16, lineHeight: 1, display: "inline-block" }}
         >
-          {active ? displayEmoji : "♡"}
+          {active ? displayEmoji : <Heart size={18} strokeWidth={2} />}
         </motion.span>
         <span>{count > 0 ? count : ""}</span>
       </motion.button>

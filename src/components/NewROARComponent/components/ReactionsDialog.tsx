@@ -209,6 +209,7 @@ import { REACTIONS, type Reaction } from "./ReactionPicker";
 import { X } from "lucide-react";
 
 interface Reactor {
+  userId: string;
   username: string;
   avatarUrl?: string;
   badge?: string;
@@ -355,7 +356,17 @@ export default function ReactionsDialog({ postId, isOpen, onClose, onFanProfile,
                       initial={{ opacity: 0, x: -8 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: i * 0.025 }}
-                      onClick={() => { onFanProfile?.({ username: reactor.username, avatarUrl: reactor.avatarUrl, badge: reactor.badge }); onClose(); }}
+                      // onClick={() => { onFanProfile?.({ username: reactor.username, avatarUrl: reactor.avatarUrl, badge: reactor.badge }); onClose(); }}
+                      onClick={() => {
+                        onFanProfile?.({
+                          username: reactor.username,
+                          avatarUrl: reactor.avatarUrl,
+                          badge: reactor.badge,
+                          uid: reactor.userId,
+                          authorUid: reactor.userId,
+                        });
+                        onClose();
+                      }}
                       style={{
                         display: "flex", alignItems: "center", gap: 12,
                         padding: "10px 18px", cursor: "pointer",

@@ -541,17 +541,17 @@ interface MentionUser {
 }
 
 const MEMORY_GIFS = [
-  { id: "phew",        label: "Phew!",        path: "/gifs/memory/sweatingflowers.gif" },
-  { id: "angry",       label: "Angry",        path: "/gifs/memory/angryoffice.gif" },
-  { id: "wow",         label: "WOW!",         path: "/gifs/memory/formula1.gif" },
-  { id: "frustrated",  label: "Frustrated",   path: "/gifs/memory/frustratedhead.gif" },
-  { id: "happy",       label: "Happy",        path: "/gifs/memory/happychrispratt.gif" },
-  { id: "called-it",   label: "I Told You!",  path: "/gifs/memory/jimmyfallon.gif" },
-  { id: "hype",        label: "Hype",         path: "/gifs/memory/joerogan.gif" },
-  { id: "loser",       label: "L",            path: "/gifs/memory/lloser.gif" },
-  { id: "no-way",      label: "No Way",       path: "/gifs/memory/nowaywow.gif" },
-  { id: "pray",        label: "Pray",         path: "/gifs/memory/praygameshow.gif" },
-  { id: "sad",         label: "Heartbreak",   path: "/gifs/memory/sadinlove.gif" },
+  { id: "phew", label: "Phew!", path: "/gifs/memory/sweatingflowers.gif" },
+  { id: "angry", label: "Angry", path: "/gifs/memory/angryoffice.gif" },
+  { id: "wow", label: "WOW!", path: "/gifs/memory/formula1.gif" },
+  { id: "frustrated", label: "Frustrated", path: "/gifs/memory/frustratedhead.gif" },
+  { id: "happy", label: "Happy", path: "/gifs/memory/happychrispratt.gif" },
+  { id: "called-it", label: "I Told You!", path: "/gifs/memory/jimmyfallon.gif" },
+  { id: "hype", label: "Hype", path: "/gifs/memory/joerogan.gif" },
+  { id: "loser", label: "L", path: "/gifs/memory/lloser.gif" },
+  { id: "no-way", label: "No Way", path: "/gifs/memory/nowaywow.gif" },
+  { id: "pray", label: "Pray", path: "/gifs/memory/praygameshow.gif" },
+  { id: "sad", label: "Heartbreak", path: "/gifs/memory/sadinlove.gif" },
 ];
 
 const SF360_TAGS = [
@@ -561,16 +561,16 @@ const SF360_TAGS = [
 
 // ── Mention hook — reusable across any text field ─────────────────────────────
 function useMention(allUsers: MentionUser[]) {
-  const [mentionUsers, setMentionUsers]       = useState<MentionUser[]>([]);
-  const [showMentionPopup, setShowMention]    = useState(false);
-  const [mentionIndex, setMentionIndex]       = useState(0);
+  const [mentionUsers, setMentionUsers] = useState<MentionUser[]>([]);
+  const [showMentionPopup, setShowMention] = useState(false);
+  const [mentionIndex, setMentionIndex] = useState(0);
   // Track which field is active so only one popup shows at a time
-  const [activeField, setActiveField]         = useState<string | null>(null);
+  const [activeField, setActiveField] = useState<string | null>(null);
 
   const handleChange = useCallback(
     (value: string, cursorPos: number, fieldId: string) => {
       const before = value.slice(0, cursorPos);
-      const atIdx  = before.lastIndexOf("@");
+      const atIdx = before.lastIndexOf("@");
       if (atIdx !== -1) {
         const afterAt = before.slice(atIdx + 1);
         if (!afterAt.includes(" ")) {
@@ -578,12 +578,12 @@ function useMention(allUsers: MentionUser[]) {
             afterAt.trim() === ""
               ? allUsers.slice(0, 8)
               : allUsers
-                  .filter((u) =>
-                    `${u.username || ""} ${u.firstName || ""} ${u.lastName || ""} ${u.email || ""}`
-                      .toLowerCase()
-                      .includes(afterAt.toLowerCase()),
-                  )
-                  .slice(0, 8);
+                .filter((u) =>
+                  `${u.username || ""} ${u.firstName || ""} ${u.lastName || ""} ${u.email || ""}`
+                    .toLowerCase()
+                    .includes(afterAt.toLowerCase()),
+                )
+                .slice(0, 8);
           setMentionUsers(filtered);
           setShowMention(filtered.length > 0);
           setMentionIndex(0);
@@ -615,9 +615,9 @@ function useMention(allUsers: MentionUser[]) {
         user.email?.split("@")[0] ||
         "user";
       const mention = `@${dn} `;
-      const before  = value.slice(0, cursorPos);
-      const atIdx   = before.lastIndexOf("@");
-      const next    = `${value.slice(0, atIdx)}${mention}${value.slice(cursorPos)}`;
+      const before = value.slice(0, cursorPos);
+      const atIdx = before.lastIndexOf("@");
+      const next = `${value.slice(0, atIdx)}${mention}${value.slice(cursorPos)}`;
       setValue(next);
       setShowMention(false);
       setMentionUsers([]);
@@ -641,8 +641,8 @@ function useMention(allUsers: MentionUser[]) {
       insertFn: (u: MentionUser) => void,
     ) => {
       if (showMentionPopup && mentionUsers.length > 0) {
-        if (e.key === "ArrowDown")  { e.preventDefault(); setMentionIndex((p) => (p + 1) % mentionUsers.length); }
-        else if (e.key === "ArrowUp")   { e.preventDefault(); setMentionIndex((p) => (p - 1 + mentionUsers.length) % mentionUsers.length); }
+        if (e.key === "ArrowDown") { e.preventDefault(); setMentionIndex((p) => (p + 1) % mentionUsers.length); }
+        else if (e.key === "ArrowUp") { e.preventDefault(); setMentionIndex((p) => (p - 1 + mentionUsers.length) % mentionUsers.length); }
         else if (e.key === "Enter" || e.key === "Tab") { e.preventDefault(); if (user) insertFn(user); }
         else if (e.key === "Escape") { setShowMention(false); setMentionUsers([]); }
         return;
@@ -755,31 +755,33 @@ function MentionPopup({ users, activeIndex, onSelect, onHover }: MentionPopupPro
 // ── Main ComposeModal ─────────────────────────────────────────────────────────
 
 export default function ComposeModal({ open, onClose, onPost, initialType, onOpenQuiz }: Props) {
-  const [selected, setSelected]         = useState<string | null>(null);
-  const [text, setText]                 = useState("");
-  const [sideA, setSideA]               = useState("");
-  const [sideB, setSideB]               = useState("");
-  const [memCtx, setMemCtx]             = useState("");
-  const [dbMatches, setDbMatches]       = useState<string[]>([]);
-  const [match, setMatch]               = useState("None / General");
-  const [confidence, setConf]           = useState(7);
-  const [audience, setAud]              = useState("Everyone");
-  const [sport, setSport]               = useState<string>("");
-  const [postText, setPostText]         = useState("");
-  const [mediaFiles, setMediaFiles]     = useState<File[]>([]);
-  const [domReady, setDomReady]         = useState(false);
-  const [selectedGif, setSelectedGif]   = useState<string | null>(null);
-  const [selectedTag, setSelectedTag]   = useState<string | null>(null);
+  const [selected, setSelected] = useState<string | null>(null);
+  const [text, setText] = useState("");
+  const [sideA, setSideA] = useState("");
+  const [sideB, setSideB] = useState("");
+  const [memCtx, setMemCtx] = useState("");
+  const [dbMatches, setDbMatches] = useState<string[]>([]);
+  const [match, setMatch] = useState("None / General");
+  const [confidence, setConf] = useState(7);
+  const [audience, setAud] = useState("Everyone");
+  const [sport, setSport] = useState<string>("");
+  const [postText, setPostText] = useState("");
+  const [mediaFiles, setMediaFiles] = useState<File[]>([]);
+  const [domReady, setDomReady] = useState(false);
+  const [selectedGif, setSelectedGif] = useState<string | null>(null);
+  const [selectedTag, setSelectedTag] = useState<string | null>(null);
+  const [predictionCloseMinutes, setPredictionCloseMinutes] = useState(2);
+  const [predictionOptions, setPredictionOptions] = useState<string[]>(["", ""]);
 
   // Cursor tracking per field (needed to correctly splice mention text)
-  const [textCursor, setTextCursor]     = useState(0);
+  const [textCursor, setTextCursor] = useState(0);
   const [postTextCursor, setPostCursor] = useState(0);
   const [memCtxCursor, setMemCtxCursor] = useState(0);
 
   // Refs for each focusable text field
-  const textRef    = useRef<HTMLTextAreaElement>(null);
-  const postRef    = useRef<HTMLTextAreaElement>(null);
-  const memCtxRef  = useRef<HTMLTextAreaElement>(null);
+  const textRef = useRef<HTMLTextAreaElement>(null);
+  const postRef = useRef<HTMLTextAreaElement>(null);
+  const memCtxRef = useRef<HTMLTextAreaElement>(null);
 
   // All users for mention lookup
   const [allUsers, setAllUsers] = useState<MentionUser[]>([]);
@@ -802,13 +804,13 @@ export default function ComposeModal({ open, onClose, onPost, initialType, onOpe
             return !n.includes("_") && !(u.email || "").split("@")[0].includes("_");
           })
           .map((u: any) => ({
-            userId:    u.userId || u.id,
-            username:  u.username,
+            userId: u.userId || u.id,
+            username: u.username,
             firstName: u.firstName,
-            lastName:  u.lastName,
-            name:      u.name,
+            lastName: u.lastName,
+            name: u.name,
             avatarUrl: u.avatarUrl || u.avatar,
-            email:     u.email,
+            email: u.email,
           }))
           .filter((u: MentionUser) => {
             const key = u.userId || u.username;
@@ -823,7 +825,7 @@ export default function ComposeModal({ open, onClose, onPost, initialType, onOpe
           });
         setAllUsers(cleaned);
       })
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   // ── Fetch matches ─────────────────────────────────────────────────────────
@@ -833,8 +835,8 @@ export default function ComposeModal({ open, onClose, onPost, initialType, onOpe
         const res = await axios.get("/api/watch-along/matches");
         if (res.data?.success && Array.isArray(res.data.matches)) {
           const formatted = res.data.matches.map((m: any) => {
-            const t1     = m.team1?.name || "Team 1";
-            const t2     = m.team2?.name || "Team 2";
+            const t1 = m.team1?.name || "Team 1";
+            const t2 = m.team2?.name || "Team 2";
             const tourney = m.tournament || "";
             return tourney ? `${t1} vs ${t2} · ${tourney}` : `${t1} vs ${t2}`;
           });
@@ -890,30 +892,39 @@ export default function ComposeModal({ open, onClose, onPost, initialType, onOpe
     setMatch("None / General");
     setSelectedGif(null);
     setSelectedTag(null);
+    setPredictionCloseMinutes(2);
+    setPredictionOptions(["", ""]);
     mention.dismiss();
   };
 
+  const filledPredictionOptions = predictionOptions.map((option) => option.trim()).filter(Boolean);
   const canPost =
-    (selected === "hot_take"      && text.trim()) ||
-    (selected === "prediction"    && text.trim()) ||
-    (selected === "debate"        && text.trim() && sideA.trim() && sideB.trim()) ||
+    (selected === "hot_take" && text.trim()) ||
+    (selected === "prediction" && text.trim() && filledPredictionOptions.length >= 2) ||
+    (selected === "debate" && text.trim() && sideA.trim() && sideB.trim()) ||
     (selected === "raw_reactions" && text.trim()) ||
-    (selected === "post"          && (postText.trim() || mediaFiles.length > 0));
+    (selected === "post" && (postText.trim() || mediaFiles.length > 0));
 
   const handlePost = () => {
+    const cleanPredictionOptions = predictionOptions.map((option) => option.trim()).filter(Boolean);
     onPost({
-      type:       selected!,
-      text:       selected === "post" ? postText : text,
-      sideA,
-      sideB,
+      type: selected!,
+      text: selected === "post" ? postText : text,
+      sideA: selected === "prediction" ? cleanPredictionOptions[0] ?? "" : sideA,
+      sideB: selected === "prediction" ? cleanPredictionOptions[1] ?? "" : sideB,
+      predictionOptions: selected === "prediction" ? cleanPredictionOptions : undefined,
       match,
       confidence,
       audience,
       memCtx,
       sport,
       mediaFiles: selected === "post" ? mediaFiles : [],
-      gifUrl:     selectedGif ? MEMORY_GIFS.find((g) => g.id === selectedGif)?.path : undefined,
-      sf360Tag:   selectedTag ?? undefined,
+      gifUrl: selectedGif ? MEMORY_GIFS.find((g) => g.id === selectedGif)?.path : undefined,
+      sf360Tag: selectedTag ?? undefined,
+      ...(selected === "prediction" && {
+        closeAfterMinutes: predictionCloseMinutes,
+        closesAt: Date.now() + predictionCloseMinutes * 60 * 1000,
+      }),
     });
     onClose();
   };
@@ -955,29 +966,29 @@ export default function ComposeModal({ open, onClose, onPost, initialType, onOpe
 
   // Dispatcher: route popup selection to the correct field
   const handleMentionSelect = (user: MentionUser) => {
-    if (mention.activeField === "text")     insertIntoText(user);
+    if (mention.activeField === "text") insertIntoText(user);
     else if (mention.activeField === "postText") insertIntoPostText(user);
-    else if (mention.activeField === "memCtx")   insertIntoMemCtx(user);
+    else if (mention.activeField === "memCtx") insertIntoMemCtx(user);
   };
 
   // ── Styles ────────────────────────────────────────────────────────────────
   const inputStyle: React.CSSProperties = {
-    width:        "100%",
-    padding:      "14px",
+    width: "100%",
+    padding: "14px",
     borderRadius: 16,
-    background:   "rgba(0,0,0,0.4)",
-    border:       "1px solid var(--border)",
-    resize:       "none" as const,
-    outline:      "none",
-    color:        "var(--text-primary)",
-    fontSize:     16,
-    boxSizing:    "border-box",
+    background: "rgba(0,0,0,0.4)",
+    border: "1px solid var(--border)",
+    resize: "none" as const,
+    outline: "none",
+    color: "var(--text-primary)",
+    fontSize: 16,
+    boxSizing: "border-box",
   };
 
   const mentionHintStyle: React.CSSProperties = {
-    fontSize:     10,
-    color:        "rgba(233,30,140,0.6)",
-    marginTop:    6,
+    fontSize: 10,
+    color: "rgba(233,30,140,0.6)",
+    marginTop: 6,
     marginBottom: 0,
     letterSpacing: "0.03em",
   };
@@ -1008,26 +1019,33 @@ export default function ComposeModal({ open, onClose, onPost, initialType, onOpe
               transition={{ type: "spring", damping: 28, stiffness: 300 }}
               style={{
                 position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 10070,
-                background: "var(--bg-glass)", backdropFilter: "blur(20px)",
+                background: "var(--bg-glass)",
+                backdropFilter: "blur(20px)",
                 borderRadius: "32px 32px 0 0",
                 border: "1px solid rgba(255,255,255,0.08)",
+                maxHeight: "85vh",
+                display: "flex",
+                flexDirection: "column",
               }}
             >
               {/* Drag handle */}
-              <div style={{ display: "flex", justifyContent: "center", padding: "12px 0 4px" }}>
+              {/* <div style={{ display: "flex", justifyContent: "center", padding: "12px 0 4px" }}> */}
+              <div style={{ flexShrink: 0, display: "flex", justifyContent: "center", padding: "12px 0 4px" }}>
                 <div style={{ width: 40, height: 4, borderRadius: 2, background: "var(--border)" }} />
               </div>
 
-              <div className="mobile-padding-bottom" style={{ padding: "0 20px 40px", maxHeight: "75vh", overflowY: "auto" }}>
+              {/* <div className="mobile-padding-bottom" style={{ padding: "0 20px 40px", maxHeight: selected === "prediction" ? "none" : "75vh", overflowY: "auto" }}> */}
+              {/* <div className="mobile-padding-bottom" style={{ padding: "0 20px 40px", maxHeight: "75vh", overflowY: "auto" }} > */}
+              <div className="mobile-padding-bottom" style={{ flex: 1, overflowY: "auto", padding: "0 20px 40px", minHeight: 0 }}>
                 {/* Header */}
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
                   <h2 className="font-display" style={{ fontSize: 28, letterSpacing: "0.04em", textTransform: "uppercase", margin: 0 }}>
-                    {selected === "hot_take"      && "Create Hot Take"}
-                    {selected === "prediction"    && "Create Prediction"}
-                    {selected === "debate"        && "Create Debate"}
+                    {selected === "hot_take" && "Create Hot Take"}
+                    {selected === "prediction" && "Create Prediction"}
+                    {selected === "debate" && "Create Debate"}
                     {selected === "raw_reactions" && "Create Raw Reactions"}
-                    {selected === "post"          && "Create Post"}
-                    {!selected                    && "Create"}
+                    {selected === "post" && "Create Post"}
+                    {!selected && "Create"}
                   </h2>
                   <button
                     onClick={onClose}
@@ -1083,7 +1101,7 @@ export default function ComposeModal({ open, onClose, onPost, initialType, onOpe
                           onKeyDown={(e) =>
                             mention.handleKeyDown(
                               e,
-                              () => {}, // textarea — allow natural newline
+                              () => { }, // textarea — allow natural newline
                               mention.mentionUsers[mention.mentionIndex],
                               insertIntoText,
                             )
@@ -1115,7 +1133,7 @@ export default function ComposeModal({ open, onClose, onPost, initialType, onOpe
                             onKeyDown={(e) =>
                               mention.handleKeyDown(
                                 e,
-                                () => {},
+                                () => { },
                                 mention.mentionUsers[mention.mentionIndex],
                                 insertIntoText,
                               )
@@ -1192,32 +1210,157 @@ export default function ComposeModal({ open, onClose, onPost, initialType, onOpe
 
                     {/* ── PREDICTION ── */}
                     {selected === "prediction" && (
-                      <div style={{ position: "relative" }}>
-                        <textarea
-                          ref={textRef}
-                          value={text}
-                          onChange={handleTextChange}
-                          onKeyDown={(e) =>
-                            mention.handleKeyDown(
-                              e,
-                              () => {},
-                              mention.mentionUsers[mention.mentionIndex],
-                              insertIntoText,
-                            )
-                          }
-                          rows={3}
-                          placeholder="Your prediction…"
-                          style={{ ...inputStyle, fontStyle: "italic" }}
-                        />
-                        <p style={mentionHintStyle}>Type @ to mention a fan</p>
-                        {mention.showMentionPopup && mention.activeField === "text" && (
-                          <MentionPopup
-                            users={mention.mentionUsers}
-                            activeIndex={mention.mentionIndex}
-                            onSelect={handleMentionSelect}
-                            onHover={mention.setMentionIndex}
+                      <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+                        {/* <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                          <img src="/images/prediction-clock.png" alt="" style={{ width: 40, height: 48, objectFit: "contain", flexShrink: 0 }} />
+                          <div>
+                            <h2 style={{ margin: 0, color: "#fff", fontSize: 21, lineHeight: 1.05, fontWeight: 700 }}>Predict</h2>
+                            <p style={{ margin: "6px 0 0", color: "#9b9b9b", fontSize: 14, lineHeight: 1.2 }}>Let other fans enter their predictions</p>
+                          </div>
+                        </div> */}
+                        <div style={{ borderRadius: 16, background: "#2b2b2b", padding: "16px 12px 20px" }}>
+                          <input
+                            value={text}
+                            maxLength={80}
+                            onChange={(e) => setText(e.target.value)}
+                            placeholder="Who will win today"
+                            style={{ width: "100%", border: "none", outline: "none", background: "transparent", color: "#fff", fontSize: 16, fontWeight: 500, padding: 0, marginBottom: 14 }}
                           />
-                        )}
+                          {predictionOptions.map((option, index) => (
+                            <div key={index} style={{ height: 48, borderRadius: 999, background: "#171717", display: "flex", alignItems: "center", padding: "0 12px 0 15px", marginBottom: 8 }}>
+                              <input
+                                value={option}
+                                maxLength={25}
+                                onChange={(e) => setPredictionOptions((prev) => prev.map((item, itemIndex) => itemIndex === index ? e.target.value : item))}
+                                placeholder={`Option ${index + 1}`}
+                                style={{ flex: 1, minWidth: 0, border: "none", outline: "none", background: "transparent", color: "#fff", fontSize: 16, fontWeight: 500 }}
+                              />
+                              <span style={{ color: "#6f6f6f", fontSize: 14 }}>{option.length}/25</span>
+                              {predictionOptions.length > 2 && (
+                                <button
+                                  type="button"
+                                  aria-label="Remove option"
+                                  onClick={() => setPredictionOptions(prev => prev.filter((_, i) => i !== index))}
+                                  style={{ background: "none", border: "none", cursor: "pointer", color: "#6f6f6f", fontSize: 16, padding: "0 0 0 8px", flexShrink: 0, lineHeight: 1 }}
+                                >
+                                  ✕
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                          <button
+                            type="button"
+                            aria-label="Add option"
+                            disabled={predictionOptions.length >= 6}
+                            onClick={() => setPredictionOptions((prev) => prev.length >= 6 ? prev : [...prev, ""])}
+                            style={{ display: "inline-flex", alignItems: "center", gap: 6, height: 35, padding: "0 11px", marginTop: 12, borderRadius: 999, border: "1px solid #9a9a9a", background: "transparent", color: "#fff", fontSize: 14, cursor: predictionOptions.length >= 6 ? "not-allowed" : "pointer", opacity: predictionOptions.length >= 6 ? 0.45 : 1 }}
+                          >
+                            Option
+                            <span style={{ width: 16, height: 16, borderRadius: "50%", border: "1px solid #fff", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 13, lineHeight: 1 }}>+</span>
+                          </button>
+                          <div style={{ height: 1, background: "#575757", margin: "20px 0 10px" }} />
+                          <label style={{ display: "block", color: "#777", fontSize: 15, fontWeight: 600, marginBottom: 10 }}>Set duration</label>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                            {[
+                              { label: "2min", value: 2 },
+                              { label: "1:30hr", value: 90 },
+                              { label: "Custom", value: 0 },
+                            ].map((duration) => {
+                              const active = duration.value === 0 ? predictionCloseMinutes !== 2 && predictionCloseMinutes !== 90 : predictionCloseMinutes === duration.value;
+                              return (
+                                <button
+                                  key={duration.label}
+                                  type="button"
+                                  onClick={() => setPredictionCloseMinutes(duration.value === 0 ? 60 : duration.value)}
+                                  style={{ height: 30, padding: "0 12px", borderRadius: 999, border: "none", background: active ? "#0f0f0f" : "#171717", color: active ? "#fff" : "#696969", fontSize: 14, fontWeight: 600, cursor: "pointer" }}
+                                >
+                                  {duration.label}
+                                </button>
+                              );
+                            })}
+                          </div>
+                          {predictionCloseMinutes !== 2 && predictionCloseMinutes !== 90 && (
+                            <input
+                              type="number"
+                              min={1}
+                              max={10080}
+                              value={predictionCloseMinutes}
+                              onChange={(e) => setPredictionCloseMinutes(Math.max(1, Math.min(10080, Number(e.target.value) || 1)))}
+                              aria-label="Custom close time in minutes"
+                              style={{ width: "100%", marginTop: 10, border: "none", outline: "none", borderRadius: 999, background: "#171717", color: "#fff", fontSize: 14, padding: "10px 14px" }}
+                            />
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {false && selected === "prediction" && (
+                      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                        <div style={{ position: "relative" }}>
+                          <textarea
+                            ref={textRef}
+                            value={text}
+                            onChange={handleTextChange}
+                            onKeyDown={(e) =>
+                              mention.handleKeyDown(
+                                e,
+                                () => { },
+                                mention.mentionUsers[mention.mentionIndex],
+                                insertIntoText,
+                              )
+                            }
+                            rows={3}
+                            placeholder="Your prediction…"
+                            style={{ ...inputStyle, fontStyle: "italic" }}
+                          />
+                          <p style={mentionHintStyle}>Type @ to mention a fan</p>
+                          {mention.showMentionPopup && mention.activeField === "text" && (
+                            <MentionPopup
+                              users={mention.mentionUsers}
+                              activeIndex={mention.mentionIndex}
+                              onSelect={handleMentionSelect}
+                              onHover={mention.setMentionIndex}
+                            />
+                          )}
+                        </div>
+                        <div>
+                          <label style={{ fontSize: 11, color: "var(--text-muted)", display: "block", marginBottom: 7, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                            Voting closes after
+                          </label>
+                          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 8 }}>
+                            {[15, 30, 60, 1440].map((minutes) => {
+                              const active = predictionCloseMinutes === minutes;
+                              return (
+                                <button
+                                  key={minutes}
+                                  type="button"
+                                  onClick={() => setPredictionCloseMinutes(minutes)}
+                                  style={{
+                                    padding: "9px 8px",
+                                    borderRadius: 12,
+                                    border: `1px solid ${active ? "var(--accent-orange)" : "var(--border)"}`,
+                                    background: active ? "rgba(255,107,53,0.15)" : "rgba(255,255,255,0.03)",
+                                    color: active ? "var(--accent-orange)" : "var(--text-secondary)",
+                                    fontSize: 12,
+                                    fontWeight: 800,
+                                    cursor: "pointer",
+                                  }}
+                                >
+                                  {minutes === 1440 ? "24h" : `${minutes}m`}
+                                </button>
+                              );
+                            })}
+                          </div>
+                          <input
+                            type="number"
+                            min={1}
+                            max={10080}
+                            value={predictionCloseMinutes}
+                            onChange={(e) => setPredictionCloseMinutes(Math.max(1, Math.min(10080, Number(e.target.value) || 1)))}
+                            style={{ ...inputStyle, borderRadius: 12, marginTop: 8, padding: "10px 12px", fontSize: 13 }}
+                            aria-label="Custom close time in minutes"
+                          />
+                        </div>
                       </div>
                     )}
 
@@ -1239,7 +1382,7 @@ export default function ComposeModal({ open, onClose, onPost, initialType, onOpe
                             onKeyDown={(e) =>
                               mention.handleKeyDown(
                                 e,
-                                () => {},
+                                () => { },
                                 mention.mentionUsers[mention.mentionIndex],
                                 insertIntoText,
                               )
@@ -1289,7 +1432,7 @@ export default function ComposeModal({ open, onClose, onPost, initialType, onOpe
                             onKeyDown={(e) =>
                               mention.handleKeyDown(
                                 e,
-                                () => {},
+                                () => { },
                                 mention.mentionUsers[mention.mentionIndex],
                                 insertIntoMemCtx,
                               )
@@ -1322,7 +1465,7 @@ export default function ComposeModal({ open, onClose, onPost, initialType, onOpe
                             onKeyDown={(e) =>
                               mention.handleKeyDown(
                                 e,
-                                () => {},
+                                () => { },
                                 mention.mentionUsers[mention.mentionIndex],
                                 insertIntoPostText,
                               )
@@ -1395,13 +1538,13 @@ export default function ComposeModal({ open, onClose, onPost, initialType, onOpe
                     )}
 
                     {/* ── Sport selector ── */}
-                    {(selected === "hot_take" || selected === "prediction" || selected === "debate" || selected === "memory" || selected === "post") && (
+                    {(selected === "hot_take" || selected === "debate" || selected === "memory" || selected === "post") && (
                       <>
                         <label style={{ fontSize: 11, color: "var(--text-muted)", display: "block", marginTop: 16, marginBottom: 4 }}>Sport</label>
                         <div style={{ display: "flex", gap: 8, marginTop: 4, marginBottom: 12 }}>
                           {[
-                            { id: "cricket",  label: "🏏 Cricket",  activeColor: "var(--accent-magenta)", activeBg: "rgba(233,30,140,0.15)", activeBorder: "var(--accent-magenta)" },
-                            { id: "football", label: "⚽ Football", activeColor: "#3b82f6",              activeBg: "rgba(59,130,246,0.15)",  activeBorder: "#3b82f6" },
+                            { id: "cricket", label: "🏏 Cricket", activeColor: "var(--accent-magenta)", activeBg: "rgba(233,30,140,0.15)", activeBorder: "var(--accent-magenta)" },
+                            { id: "football", label: "⚽ Football", activeColor: "#3b82f6", activeBg: "rgba(59,130,246,0.15)", activeBorder: "#3b82f6" },
                           ].map((sp) => {
                             const isActive = sport === sp.id;
                             return (
@@ -1411,9 +1554,9 @@ export default function ComposeModal({ open, onClose, onPost, initialType, onOpe
                                 onClick={() => setSport(sp.id)}
                                 style={{
                                   flex: 1, padding: "8px", borderRadius: 10, fontSize: 12, fontWeight: 700, cursor: "pointer",
-                                  border:      `1px solid ${isActive ? sp.activeBorder : "var(--border)"}`,
-                                  background:  isActive ? sp.activeBg : "transparent",
-                                  color:       isActive ? sp.activeColor : "var(--text-secondary)",
+                                  border: `1px solid ${isActive ? sp.activeBorder : "var(--border)"}`,
+                                  background: isActive ? sp.activeBg : "transparent",
+                                  color: isActive ? sp.activeColor : "var(--text-secondary)",
                                 }}
                               >
                                 {sp.label}
@@ -1430,7 +1573,8 @@ export default function ComposeModal({ open, onClose, onPost, initialType, onOpe
                       disabled={!canPost}
                       onClick={handlePost}
                       className="btn-gradient"
-                      style={{ width: "100%", padding: "14px", borderRadius: 999, fontSize: 16, border: "none", cursor: "pointer", opacity: canPost ? 1 : 0.4 }}
+                      // style={{ width: "100%", padding: selected === "prediction" ? "18px" : "14px", borderRadius: 999, fontSize: 16, border: "none", cursor: "pointer", opacity: canPost ? 1 : 0.4, marginTop: selected === "prediction" ? 0 : undefined, textTransform: selected === "prediction" ? "none" : undefined }}
+                      style={{ width: "100%", padding: "14px", borderRadius: 999, fontSize: 16, border: "none", cursor: "pointer", opacity: canPost ? 1 : 0.4, marginTop: 16, marginBottom: 16 }}
                     >
                       POST TO ROAR
                     </motion.button>

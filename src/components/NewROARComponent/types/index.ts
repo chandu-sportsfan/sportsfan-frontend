@@ -21,12 +21,19 @@ export interface FeedPost {
   samePredictionCount?: number;
   counterCount?: number;
   isDbPost?: boolean;
-  userVote?: "agree" | "disagree" | null;
+  userVote?: string | null;
   sideA?: string;
   sideB?: string;
+  predictionOptions?: string[];
+  predictionOptionCounts?: Record<string, number>;
   memCtx?: string;
    memGifUrl?: string;
   memTag?: string;
+  closesAt?: number;
+  closedAt?: number;
+  resolvedAt?: number;
+  correctVote?: string;
+  accuracyAwarded?: boolean;
 }
 
 export interface RoomPost {
@@ -121,6 +128,7 @@ export interface ComposePayload {
   text: string;
   sideA?: string;
   sideB?: string;
+  predictionOptions?: string[];
   match?: string;
   confidence?: number;
   audience?: string;
@@ -129,4 +137,6 @@ export interface ComposePayload {
   mediaFiles?: File[];
    gifUrl?: string;
   sf360Tag?: string;
+  closesAt?: number;
+  closeAfterMinutes?: number;
 }

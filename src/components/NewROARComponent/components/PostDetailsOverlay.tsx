@@ -966,6 +966,7 @@ interface Props {
   onVote: (id: string, vote: "agree" | "disagree" | null) => void;
   onDeletePost?: (id: string, roomId?: string) => void;
   currentUsername?: string;
+  currentUserId?: string;
   currentAvatarUrl?: string;
   onFanProfileClick?: (fan: any) => void;
 }
@@ -987,12 +988,13 @@ export default function PostDetailsOverlay({
   onVote,
   onDeletePost,
   currentUsername,
+  currentUserId: propCurrentUserId,
   currentAvatarUrl,
   onFanProfileClick,
 }: Props) {
   const [comments, setComments] = useState<any[]>([]);
   const [commentText, setCommentText] = useState("");
-  const [replyTo, setReplyTo] = useState<string | null>(null);
+  const [replyTo, setReplyTo] = useState<{ commentId: string; authorUsername: string } | null>(null);
   const [loading, setLoading] = useState(false);
   // const [userUsername, setUserUsername] = useState("RoarUser");
   // const activeUsername = currentUsername || userUsername;
@@ -1000,12 +1002,15 @@ export default function PostDetailsOverlay({
   // const [userAvatarUrl, setUserAvatarUrl] = useState<string | undefined>(currentAvatarUrl);
   const { userProfile } = useUserProfile();
   const activeUsername = currentUsername || userProfile?.username || userProfile?.name || "RoarUser";
+  const currentUserId = propCurrentUserId || userProfile?.actualUserId;
   const userBadge = userProfile?.badge || "RISING_FAN";
   const userAvatarUrl = currentAvatarUrl || userProfile?.avatarUrl || userProfile?.avatar || undefined;
   const [votes, setVotes] = useState<Record<string, boolean | null>>(() =>
     post.userVote ? { [post.id]: post.userVote === "agree" } : {},
   );
   const [pct, setPct] = useState(post.agreePercent ?? 50);
+  const [resolvingPrediction, setResolvingPrediction] = useState(false);
+  const [localResolution, setLocalResolution] = useState<{ resolvedAt: number; closedAt: number; correctVote: string } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -1100,17 +1105,92 @@ export default function PostDetailsOverlay({
   useEffect(() => { fetchComments(); }, [fetchComments]);
 
   const submitComment = async () => {
-    const fullText = replyTo ? `@${replyTo} ${commentText.trim()}` : commentText.trim();
+    const fullText = replyTo ? `@${replyTo.authorUsername} ${commentText.trim()}` : commentText.trim();
     if (!fullText) return;
     try {
       setLoading(true);
-      const res = await axios.post(`/api/roar/posts/${post.id}/comments`, { text: fullText, roomId: post.roomId });
+      const res = await axios.post(`/api/roar/posts/${post.id}/comments`, {
+        text: fullText,
+        roomId: post.roomId,
+        parentCommentId: replyTo?.commentId,
+      });
       if (res.data?.success) {
         setCommentText(""); setReplyTo(null); fetchComments(); onToast("Comment posted!");
         setTimeout(() => scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" }), 400);
       }
     } catch { onToast("Error posting comment"); }
     finally { setLoading(false); }
+  };
+
+  const buildCommentTree = (flatComments: any[]) => {
+    const nodes = flatComments.map((comment) => ({
+      ...comment,
+      commentId: comment.commentId || comment.id,
+      parentCommentId: comment.parentCommentId || comment.parentId || comment.replyToId || null,
+      replies: [],
+    }));
+
+    const map = new Map<string, any>();
+    nodes.forEach((c) => map.set(c.commentId, c));
+
+    // Try to infer parent from @mentions when explicit parent missing
+    nodes.forEach((comment) => {
+      if (comment.parentCommentId) return;
+      const mentionMatch = comment.text?.trim()?.match(/^@([\w\.\-_]+)/i);
+      if (!mentionMatch?.[1]) return;
+      const mentionName = mentionMatch[1].toLowerCase();
+      const parent = nodes.find((n) => n.authorUsername?.toLowerCase() === mentionName && n.commentId !== comment.commentId && n.createdAt <= comment.createdAt);
+      if (parent) comment.parentCommentId = parent.commentId;
+    });
+
+    const roots: any[] = [];
+    nodes.forEach((comment) => {
+      const parentId = comment.parentCommentId;
+      if (parentId && map.has(parentId)) map.get(parentId).replies.push(comment);
+      else roots.push(comment);
+    });
+
+    return roots;
+  };
+
+  const renderComment = (comment: any, depth = 0) => {
+    const id = comment.commentId || comment.id;
+    const hasReplies = comment.replies && comment.replies.length > 0;
+    const isReply = depth > 0;
+    return (
+      <div key={id} className={`${isReply ? "relative ml-6 pl-4 border-l border-white/[0.08]" : "relative rounded-[22px] bg-white/[0.03] border border-white/[0.06] p-4 hover:bg-white/[0.04]"}`}>
+        {isReply && <div className="absolute left-0 top-1 bottom-1 w-[1px] bg-white/[0.08] rounded-full" />}
+        <div className="flex justify-between items-start gap-3">
+          <div
+            className="flex gap-2 items-start"
+            style={{ cursor: onFanProfileClick ? "pointer" : "default" }}
+            onClick={(e) => {
+              if (onFanProfileClick) { e.stopPropagation(); onFanProfileClick({ username: comment.authorUsername, badge: comment.authorBadge, avatarUrl: comment.authorAvatarUrl || comment.avatarUrl }); }
+            }}
+          >
+            <AvatarWithBadge username={comment.authorUsername} badge={comment.authorBadge} size="sm" avatarUrl={comment.authorAvatarUrl || comment.avatarUrl || (comment.authorUsername === activeUsername ? userAvatarUrl : undefined)} />
+            <div>
+              <p className="font-semibold text-[12px] text-white m-0">{comment.authorUsername}</p>
+              <p className="text-[10px] text-[#7D7DA8] m-0">{formatTimeAgo(comment.createdAt)}</p>
+            </div>
+          </div>
+          {comment.authorUsername === activeUsername && (
+            <button onClick={async (e) => { e.stopPropagation(); if (window.confirm("Delete comment?")) { try { await axios.delete(`/api/roar/posts/${post.id}/comments/${id}`); onToast("Deleted"); fetchComments(); } catch { onToast("Failed"); } } }} className="bg-transparent border-none text-[#f87171] cursor-pointer flex items-center p-0.5"><Trash2 size={12} /></button>
+          )}
+        </div>
+        <p className={`text-[14px] ${isReply ? "text-[#EAEAF1]" : "text-[#F5F5FA]"} leading-[1.7] my-3`}>{comment.text}</p>
+        <div className="flex flex-wrap items-center gap-4 text-[12px] text-[#8A8AA9]">
+          <button onClick={() => reactToComment(id)} className="bg-transparent border-none cursor-pointer flex items-center gap-2 text-inherit p-0 hover:text-white transition-colors duration-150">
+            <span className="text-sm">🤍</span>
+            <span>{comment.heartCount ?? 0}</span>
+          </button>
+          <button onClick={() => { setReplyTo({ commentId: id, authorUsername: comment.authorUsername }); setCommentText(""); setTimeout(() => inputRef.current?.focus(), 50); }} className="bg-transparent border-none cursor-pointer text-[#C8705A] font-semibold p-0 hover:text-white transition-colors duration-150">Reply</button>
+        </div>
+        {hasReplies && (
+          <div className="mt-4 space-y-3">{comment.replies.map((r: any) => renderComment(r, depth + 1))}</div>
+        )}
+      </div>
+    );
   };
 
   const reactToComment = async (commentId: string) => {
@@ -1121,6 +1201,44 @@ export default function PostDetailsOverlay({
   };
 
   const userVote = votes[post.id];
+  const currentUserIdCandidates = [
+    currentUserId,
+    (userProfile as { userId?: string })?.userId,
+    (userProfile as { uid?: string })?.uid,
+    (userProfile as { email?: string })?.email,
+  ].filter(Boolean).map(String);
+  const isCurrentUserAuthor = () => {
+    const authorCandidates = [post.authorUid, post.fan?.authorUid, post.authorEmail].filter(Boolean).map(String);
+    return authorCandidates.some(id => currentUserIdCandidates.includes(id));
+  };
+  const getPredictionVoteValue = (optionIndex: number) => (
+    optionIndex === 0 ? "agree" : optionIndex === 1 ? "disagree" : `option_${optionIndex}`
+  );
+  const getPredictionOptionLabel = (voteValue: string | undefined, options: string[]) => {
+    if (!voteValue) return "";
+    if (voteValue === "agree") return options[0] || "Option 1";
+    if (voteValue === "disagree") return options[1] || "Option 2";
+    const optionIndex = Number(voteValue.replace("option_", ""));
+    return Number.isFinite(optionIndex) ? (options[optionIndex] || voteValue) : voteValue;
+  };
+  const resolvePrediction = async (correctVote: string) => {
+    try {
+      setResolvingPrediction(true);
+      const res = await axios.post(`/api/roar/posts/${post.id}/resolve`, { correctVote });
+      if (res.data?.success) {
+        const resolvedAt = res.data.post?.resolvedAt ?? Date.now();
+        setLocalResolution({ resolvedAt, closedAt: res.data.post?.closedAt ?? resolvedAt, correctVote });
+        onToast(`Prediction resolved. ${res.data.correctCount ?? 0} correct fans awarded.`);
+      } else {
+        onToast("Failed to resolve prediction");
+      }
+    } catch (err: unknown) {
+      const message = axios.isAxiosError(err) ? err.response?.data?.error : undefined;
+      onToast(message || "Failed to resolve prediction");
+    } finally {
+      setResolvingPrediction(false);
+    }
+  };
   const handleVoteClick = (agree: boolean) => {
     const prev = votes[post.id]; let nextVote: boolean | null = agree;
     if (prev === agree) nextVote = null;
@@ -1191,6 +1309,34 @@ export default function PostDetailsOverlay({
                 )}
               </div>
             )}
+            {post.type === "prediction" && (() => {
+              const predictionOptions = Array.isArray(post.predictionOptions) && post.predictionOptions.length >= 2
+                ? post.predictionOptions
+                : [post.sideA || "Option 1", post.sideB || "Option 2"];
+              const resolvedAt = localResolution?.resolvedAt ?? post.resolvedAt;
+              const closedAt = localResolution?.closedAt ?? post.closedAt;
+              const correctVote = localResolution?.correctVote ?? post.correctVote;
+              const predictionClosed = Boolean(resolvedAt || closedAt || (post.closesAt && post.closesAt <= Date.now()));
+              const correctVoteLabel = getPredictionOptionLabel(correctVote, predictionOptions);
+              return (
+                <div className="mb-3">
+                  {predictionClosed && !resolvedAt && isCurrentUserAuthor() && (
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10 }}>
+                      {predictionOptions.map((label: string, optionIndex: number) => (
+                        <button key={`resolve-${label}-${optionIndex}`} type="button" disabled={resolvingPrediction} onClick={(e) => { e.stopPropagation(); resolvePrediction(getPredictionVoteValue(optionIndex)); }} style={{ flex: "1 1 calc(50% - 4px)", minWidth: 0, padding: "9px 10px", borderRadius: 12, border: "1px solid rgba(34,197,94,0.35)", background: "rgba(34,197,94,0.1)", color: "#22c55e", fontSize: 12, fontWeight: 800, cursor: resolvingPrediction ? "wait" : "pointer" }}>
+                          Resolve: {label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {resolvedAt && correctVoteLabel && (
+                    <p style={{ fontSize: 11, color: "#22c55e", fontWeight: 800, marginBottom: 8 }}>
+                      Correct answer: {correctVoteLabel}
+                    </p>
+                  )}
+                </div>
+              );
+            })()}
             {post.type === "hot_take" && (
               <>
                 <div className="mb-2.5"><SplitBar left={pct} /></div>
@@ -1222,44 +1368,9 @@ export default function PostDetailsOverlay({
           <div className="flex flex-col gap-3 pb-2">
             {comments.length === 0 ? (
               <p className="text-[13px] text-[#4A4A62] text-center py-5">No comments yet. Be the first!</p>
-            ) : comments.map((comment) => {
-              const isReply = comment.text.trim().startsWith("@");
-              return (
-                <div key={comment.commentId} className={`relative p-3 px-[14px] rounded-2xl bg-white/[0.03] border border-white/[0.05] flex flex-col gap-1.5 ${isReply ? "ml-6" : "ml-0"}`}>
-                  {isReply && <div className="absolute -left-[14px] top-[-12px] bottom-1/2 w-3 border-l-[1.5px] border-b-[1.5px] border-white/[0.12] rounded-bl-lg pointer-events-none" />}
-                  <div className="flex justify-between items-center">
-                    <div
-                      className="flex gap-2 items-center"
-                      style={{ cursor: onFanProfileClick ? "pointer" : "default" }}
-                      onClick={(e) => {
-                        if (onFanProfileClick) {
-                          e.stopPropagation();
-                          onFanProfileClick({ username: comment.authorUsername, badge: comment.authorBadge, avatarUrl: comment.authorAvatarUrl || comment.avatarUrl });
-                        }
-                      }}
-                    >
-                      <AvatarWithBadge username={comment.authorUsername} badge={comment.authorBadge} size="sm" avatarUrl={comment.authorAvatarUrl || comment.avatarUrl || (comment.authorUsername === activeUsername ? userAvatarUrl : undefined)} />
-                      <p className="font-bold text-[12px] text-white m-0">{comment.authorUsername}</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[9px] text-[#4A4A62]">{formatTimeAgo(comment.createdAt)}</span>
-                      {comment.authorUsername === activeUsername && (
-                        <button onClick={async (e) => { e.stopPropagation(); if (window.confirm("Delete comment?")) { try { await axios.delete(`/api/roar/posts/${post.id}/comments/${comment.commentId}`); onToast("Deleted"); fetchComments(); } catch { onToast("Failed"); } } }}
-                          className="bg-transparent border-none text-[#f87171] cursor-pointer flex items-center p-0.5"><Trash2 size={12} /></button>
-                      )}
-                    </div>
-                  </div>
-                  <p className="text-[13px] text-[#F5F5FA] leading-[1.4] my-1">{comment.text}</p>
-                  <div className="flex gap-[14px] items-center mt-1">
-                    <button onClick={() => reactToComment(comment.commentId)} className={`bg-transparent border-none cursor-pointer flex items-center gap-1 text-[12px] p-0 ${comment.heartCount > 0 ? "text-white" : "text-[#4A4A62]"}`}>
-                      🤍 {comment.heartCount ?? 0}
-                    </button>
-                    <button onClick={() => { setReplyTo(comment.authorUsername); setCommentText(""); setTimeout(() => inputRef.current?.focus(), 50); }}
-                      className="bg-transparent border-none cursor-pointer text-[11px] text-[#4A4A62] font-semibold p-0">Reply</button>
-                  </div>
-                </div>
-              );
-            })}
+            ) : (
+              buildCommentTree(comments).map((comment) => renderComment(comment))
+            )}
           </div>
         </div>
 
@@ -1269,7 +1380,7 @@ export default function PostDetailsOverlay({
             <div className="flex items-center gap-1.5 px-4 pt-1.5">
               <span className="text-[11px] text-[#9494AD]">Replying to</span>
               <span className="inline-flex items-center gap-1 bg-[rgba(233,30,140,0.15)] border border-[rgba(233,30,140,0.35)] rounded-full py-0.5 pl-1.5 pr-2 text-[12px] font-bold text-[#E91E8C] max-w-[160px] overflow-hidden text-ellipsis whitespace-nowrap">
-                @{replyTo}
+                @{replyTo?.authorUsername}
                 <button onClick={() => { setReplyTo(null); setCommentText(""); }} className="bg-transparent border-none p-0 cursor-pointer text-[#E91E8C] flex items-center ml-0.5 shrink-0"><X size={11} /></button>
               </span>
             </div>
@@ -1298,7 +1409,7 @@ export default function PostDetailsOverlay({
             <div className="flex-1">
               <input ref={inputRef} type="text" placeholder={replyTo ? "Write your reply…" : "Share your opinion..."} value={commentText}
                 onChange={handleInputChange} onKeyDown={handleKeyDown}
-                className="w-full h-10 rounded-full bg-[#0E0E14] border border-[#252538] pl-4 pr-4 text-white text-[16px] outline-none" />
+                className="w-full h-11 rounded-full bg-white/[0.04] border border-white/[0.12] pl-4 pr-4 text-white text-[16px] outline-none placeholder:text-[#8A8AA9] transition-colors duration-150 focus:border-[#E91E8C]/60 focus:bg-white/[0.08]" />
             </div>
             <button onClick={submitComment} disabled={loading || !canSubmit}
               className={`w-[38px] h-[38px] rounded-full bg-[#E91E8C] border-none text-white flex items-center justify-center shrink-0 transition-opacity duration-200 ${canSubmit ? "cursor-pointer opacity-100" : "cursor-default opacity-50"}`}>

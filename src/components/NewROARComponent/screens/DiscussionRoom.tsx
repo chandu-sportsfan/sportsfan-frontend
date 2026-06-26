@@ -1489,11 +1489,18 @@ export default function DiscussionRoom({
   const [sharePost, setSharePost] = useState<ShareableRoarPost | null>(null);
   const [copied, setCopied] = useState(false);
   const { userProfile } = useUserProfile();
+  console.log("userProfile in DiscussionRoom:", userProfile);
   const currentUserId = userProfile?.actualUserId;
   const latestCreatedAtRef = useRef<number | null>(null);
   const sendingRef = useRef(false);
   const [isSending, setIsSending] = useState(false);
   const [inlineCommentPostId, setInlineCommentPostId] = useState<string | null>(null);
+  // ── Real-time notification toast ─────────────────────────────────────────────
+const [notifToast, setNotifToast] = useState<{
+  message: string;
+  type: "like" | "comment";
+} | null>(null);
+const notifToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // ── Active fans (presence) state ────────────────────────────────────────────
   const [activeFans, setActiveFans] = useState<
@@ -1764,12 +1771,26 @@ export default function DiscussionRoom({
     };
   }, [roomId]);
 
+  // useEffect(() => {
+  //   try {
+  //     setUserUsername(localStorage.getItem("roar_username") || "RoarUser");
+  //     setUserAvatarUrl(currentAvatarUrl || localStorage.getItem("roar_avatar_url") || undefined);
+  //   } catch { }
+  // }, [currentAvatarUrl]);
   useEffect(() => {
     try {
-      setUserUsername(localStorage.getItem("roar_username") || "RoarUser");
-      setUserAvatarUrl(currentAvatarUrl || localStorage.getItem("roar_avatar_url") || undefined);
+      const profileName = userProfile?.username;
+      const storedName = localStorage.getItem("roar_username");
+      setUserUsername(profileName || storedName || "RoarUser");
+      setUserAvatarUrl(
+        currentAvatarUrl ||
+        userProfile?.avatarUrl ||
+        userProfile?.avatar ||
+        localStorage.getItem("roar_avatar_url") ||
+        undefined
+      );
     } catch { }
-  }, [currentAvatarUrl]);
+  }, [currentAvatarUrl, userProfile]);
 
   // const fetchMsgs = useCallback(async () => {
   //   if (!roomId) return;
@@ -1951,6 +1972,126 @@ export default function DiscussionRoom({
   }, [fetchMsgs, roomId]);
 
   useVisibilityInterval(fetchMsgs, 15000);
+
+  // ── Poll for reaction/reply count updates (separate from message poll) ──────
+// const fetchReactionUpdates = useCallback(async () => {
+//   if (!roomId || posts.length === 0) return;
+//   try {
+//     const res = await axios.get(`/api/roar/rooms/${roomId}/messages?t=${Date.now()}`);
+//     if (res.data?.success) {
+//       const incoming: any[] = res.data.messages ?? [];
+//       setPosts(prev => prev.map(p => {
+//         const updated = incoming.find((m: any) => m.msgId === p.id);
+//         if (!updated) return p;
+//         const isPending = pendingReactRef.current[p.id];
+//         return {
+//           ...p,
+//           heartCount: isPending ? p.heartCount : (updated.heartCount ?? p.heartCount),
+//           userReaction: isPending ? p.userReaction : (updated.userReaction ?? p.userReaction),
+//           replyCount: Math.max(p.replyCount ?? 0, updated.replyCount ?? 0),
+//           agreeCount: updated.agreeCount ?? p.agreeCount,
+//           disagreeCount: updated.disagreeCount ?? p.disagreeCount,
+//         };
+//       }));
+//     }
+//   } catch { }
+// }, [roomId, posts]);
+
+const fetchReactionUpdates = useCallback(async () => {
+  if (!roomId || posts.length === 0) return;
+  try {
+    const res = await axios.get(`/api/roar/rooms/${roomId}/messages?t=${Date.now()}`);
+    if (res.data?.success) {
+      const incoming: any[] = res.data.messages ?? [];
+      setPosts(prev => prev.map(p => {
+        const updated = incoming.find((m: any) => m.msgId === p.id);
+        if (!updated) return p;
+        const isPending = pendingReactRef.current[p.id];
+        return {
+          ...p,
+          heartCount: isPending ? p.heartCount : (updated.heartCount ?? p.heartCount),
+          userReaction: isPending ? p.userReaction : (updated.userReaction ?? null),
+          replyCount: Math.max(p.replyCount ?? 0, updated.replyCount ?? 0),
+          agreeCount: updated.agreeCount ?? p.agreeCount,
+          disagreeCount: updated.disagreeCount ?? p.disagreeCount,
+        };
+      }));
+
+      // Sync localReactions from server for non-pending posts
+      setLocalReactions(prev => {
+        const next = { ...prev };
+        incoming.forEach((m: any) => {
+          if (!pendingReactRef.current[m.msgId]) {
+            next[m.msgId] = {
+              reaction: m.userReaction ?? null,
+              heartCount: m.heartCount ?? 0,
+            };
+          }
+        });
+        return next;
+      });
+    }
+  } catch { }
+}, [roomId, posts]);
+
+useVisibilityInterval(fetchReactionUpdates, 5000);
+
+  // ── Poll for new room notifications and show floating toast ──────────────────
+const lastNotifCheckRef = useRef<number>(Date.now());
+const seenNotifIdsRef = useRef<Set<string>>(new Set());
+
+useEffect(() => {
+  if (!roomId) return;
+
+  const checkNotifs = async () => {
+    try {
+      const res = await axios.get("/api/notifications", {
+        params: {
+          uid: userProfile?.actualUserId,
+          email: userProfile?.email,
+        },
+      });
+      const notifs: any[] = res.data?.notifications ?? [];
+
+      // Find unseen notifications for this room that arrived after we entered
+      const fresh = notifs.filter(n =>
+        n.roomId === roomId &&
+        !n.isRead &&
+        !seenNotifIdsRef.current.has(n.id) &&
+        (n.createdAt ?? 0) > lastNotifCheckRef.current
+      );
+
+      if (fresh.length > 0) {
+        // Mark all as seen locally so we don't re-toast
+        fresh.forEach(n => seenNotifIdsRef.current.add(n.id));
+
+        // Show the most recent one as a toast
+        const latest = fresh[fresh.length - 1];
+        const type = latest.type === "roar_post_comment" ? "comment" : "like";
+        const message = latest.message ?? (type === "comment"
+          ? "Someone commented on your post"
+          : "Someone reacted to your post");
+
+        setNotifToast({ message, type });
+
+        // Auto-dismiss after 4 seconds
+        if (notifToastTimerRef.current) clearTimeout(notifToastTimerRef.current);
+        notifToastTimerRef.current = setTimeout(() => setNotifToast(null), 4000);
+      }
+    } catch {
+      // silent — this is a non-critical enhancement
+    }
+  };
+
+  // Set the entry timestamp so we only show notifs that arrive while in room
+  lastNotifCheckRef.current = Date.now();
+
+  const interval = setInterval(checkNotifs, 5000);
+  return () => {
+    clearInterval(interval);
+    if (notifToastTimerRef.current) clearTimeout(notifToastTimerRef.current);
+  };
+}, [roomId, userProfile?.actualUserId, userProfile?.email]);
 
   useEffect(() => { if (!loading && listRef.current) setTimeout(() => listRef.current?.scrollTo({ top: 0 }), 50); }, [loading]);
 
@@ -2541,7 +2682,7 @@ export default function DiscussionRoom({
               /* ── DEFAULT (post / hottake / prediction / raw_reactions) ── */
               return (
                 <motion.div key={p.id} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22 }} className="glass-card p-3 cursor-pointer"
-                  onClick={() => onPostClick?.({ id: p.id, text: p.text, fan: p.fan, timeAgo: p.timeAgo, createdAt: p.createdAt, type: p.type || "post", isDbPost: true, roomId, mediaUrls: p.mediaUrls })}
+                  onClick={() => onPostClick?.({ id: p.id, text: p.text, fan: p.fan,timeAgo: p.timeAgo, createdAt: p.createdAt, type: p.type || "post", isDbPost: true, roomId, mediaUrls: p.mediaUrls })}
                 >
                   {p.type && (
                     <div className="flex gap-1.5 mb-2 flex-wrap">
@@ -2793,6 +2934,64 @@ export default function DiscussionRoom({
         onClose={() => setActiveFansOpen(false)}
         onFanProfile={onFanProfile}
       />
+
+      {/* ── Floating notification toast ── */}
+<AnimatePresence>
+  {notifToast && (
+    <motion.div
+    initial={{ opacity: 0, y: -60, scale: 0.95 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: -40, scale: 0.95 }}
+      transition={{ duration: 0.22, ease: "easeOut" }}
+      onClick={() => setNotifToast(null)}
+  style={{
+        position: "fixed",
+       top: 16,
+        left: 16,
+        right: 16,
+        transform: "none",
+        zIndex: 100,
+        display: "flex",
+        alignItems: "center",
+        gap: 10,
+        padding: "10px 16px",
+        borderRadius: 20,
+        background: notifToast.type === "comment"
+          ? "rgba(147,51,234,0.92)"
+          : "rgba(233,30,140,0.92)",
+        backdropFilter: "blur(12px)",
+        border: `1px solid ${notifToast.type === "comment" ? "rgba(147,51,234,0.5)" : "rgba(233,30,140,0.5)"}`,
+        boxShadow: `0 8px 32px ${notifToast.type === "comment" ? "rgba(147,51,234,0.35)" : "rgba(233,30,140,0.35)"}`,
+        cursor: "pointer",
+        maxWidth: "100%",
+       wordBreak: "break-word",
+      }}
+    >
+      <span style={{ fontSize: 16, flexShrink: 0 }}>
+        {notifToast.type === "comment" ? "💬" : "❤️"}
+      </span>
+      <span style={{
+        fontSize: 13,
+        fontWeight: 600,
+        color: "#fff",
+        // overflow: "hidden",
+        // textOverflow: "ellipsis",
+        // whiteSpace: "nowrap",
+        wordBreak: "break-word",
+      }}>
+        {notifToast.message}
+      </span>
+      <span style={{
+        fontSize: 11,
+        color: "rgba(255,255,255,0.6)",
+        flexShrink: 0,
+        marginLeft: 4,
+      }}>
+        tap to dismiss
+      </span>
+    </motion.div>
+  )}
+</AnimatePresence>
     </div>
   );
 }

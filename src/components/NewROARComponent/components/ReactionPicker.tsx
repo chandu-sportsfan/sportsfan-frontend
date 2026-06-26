@@ -33,6 +33,8 @@ export default function ReactionPicker({ currentReaction, count, onReact, disabl
   const hoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const isTouchDevice = () => window.matchMedia("(hover: none)").matches;
+
 
   const scheduleOpen = useCallback(() => {
     if (closeTimer.current) { clearTimeout(closeTimer.current); closeTimer.current = null; }
@@ -53,12 +55,39 @@ export default function ReactionPicker({ currentReaction, count, onReact, disabl
     if (closeTimer.current) clearTimeout(closeTimer.current);
   }, []);
 
+  // const handleMainClick = (e: React.MouseEvent) => {
+  //   e.stopPropagation();
+  //   if (open) { setOpen(false); return; }
+  //   if (disabled) return;
+  //   if (currentReaction) { onReact(null); } // toggle off
+  //   else { onReact("heart"); } // default quick-tap = heart
+  // };
+
   const handleMainClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (open) { setOpen(false); return; }
     if (disabled) return;
-    if (currentReaction) { onReact(null); } // toggle off
-    else { onReact("heart"); } // default quick-tap = heart
+
+    if (isTouchDevice()) {
+      // Mobile: first tap opens picker, picker selection reacts,
+      // tapping active reaction undoes it
+      if (open) {
+        setOpen(false);
+        return;
+      }
+      if (currentReaction) {
+        // Already reacted — undo on tap
+        onReact(null);
+        return;
+      }
+      // No reaction yet — open picker
+      setOpen(true);
+      return;
+    }
+
+    // Desktop fallback (shouldn't normally reach here since hover handles it)
+    if (open) { setOpen(false); return; }
+    if (currentReaction) { onReact(null); }
+    else { onReact("heart"); }
   };
 
   const handleReactSelect = (e: React.MouseEvent, r: Reaction) => {

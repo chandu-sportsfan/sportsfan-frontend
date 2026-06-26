@@ -133,11 +133,13 @@ export default function RoomPostDetailsOverlay({
             else if (e.key === "Escape") { setShowMentionPopup(false); setMentionUsers([]); }
         } else if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submitComment(); }
     };
+    console.log("post.roomId:", post.roomId);
 
     const fetchComments = useCallback(async () => {
         if (!post?.id) return;
         try {
-            const res = await axios.get(`/api/roar/posts/${post.id}/comments`, { params: { roomId: post.roomId } });
+            // const res = await axios.get(`/api/roar/posts/${post.id}/comments`, { params: { roomId: post.roomId } });
+            const res = await axios.get(`/api/roar/rooms/${post.roomId}/messages/${post.id}/comments`);
             if (res.data?.success) setComments(res.data.comments);
         } catch { }
     }, [post]);
@@ -149,7 +151,8 @@ export default function RoomPostDetailsOverlay({
         if (!fullText) return;
         try {
             setLoading(true);
-            const res = await axios.post(`/api/roar/posts/${post.id}/comments`, { text: fullText, roomId: post.roomId });
+            // const res = await axios.post(`/api/roar/posts/${post.id}/comments`, { text: fullText, roomId: post.roomId });
+            const res = await axios.post(`/api/roar/rooms/${post.roomId}/messages/${post.id}/comments`, { text: fullText });
             if (res.data?.success) {
                 setCommentText(""); setReplyTo(null); fetchComments(); onToast("Comment posted!");
                 setTimeout(() => scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" }), 400);

@@ -10,6 +10,7 @@ interface UserProfile {
   avatar?: string;   // Google photo URL fallback
   name?: string;
   badge?: string;
+  email?:string;
 }
 
 interface UserProfileContextType {

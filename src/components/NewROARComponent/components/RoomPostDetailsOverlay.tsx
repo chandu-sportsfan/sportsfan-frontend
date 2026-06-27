@@ -1,8 +1,8 @@
+
+
 // /**
 //  * RoomPostDetailsOverlay — DiscussionRoom variant.
 //  * Uses position:absolute; inset:0 to fill the roar-inner container exactly.
-//  * roar-inner is already sized to the visible room area, so no header
-//  * measurement is needed. Do NOT use this from HomeFeed.
 //  */
 // import { useState, useEffect, useCallback, useRef } from "react";
 // import { AnimatePresence } from "framer-motion";
@@ -10,7 +10,7 @@
 // import AvatarWithBadge from "./AvatarWithBadge";
 // import { SplitBar } from "./shared";
 // import { clamp, formatTimeAgo } from "../utils";
-// import { ChevronLeft, Trash2, X, User, Loader2 } from "lucide-react";
+// import { ChevronLeft, Trash2, X, User, Loader2, Heart } from "lucide-react";
 
 // interface Props {
 //     post: any;
@@ -82,7 +82,15 @@
 //                     const n = u.username || u.name || `${u.firstName || ""} ${u.lastName || ""}`.trim();
 //                     return n !== activeUsername && !hasUnderscore(u);
 //                 })
-//                 .map((u: any) => ({ userId: u.userId || u.id, username: u.username, firstName: u.firstName, lastName: u.lastName, name: u.name, avatarUrl: u.avatarUrl || u.avatar, email: u.email }))
+//                 .map((u: any) => ({
+//                     userId: u.userId || u.id,
+//                     username: u.username,
+//                     firstName: u.firstName,
+//                     lastName: u.lastName,
+//                     name: u.name,
+//                     avatarUrl: u.avatarUrl || u.avatar,
+//                     email: u.email,
+//                 }))
 //                 .filter((u: MentionUser) => {
 //                     const key = u.userId || u.username;
 //                     if (!key || seen.has(key)) return false;
@@ -90,7 +98,7 @@
 //                     if (dn.includes("_")) return false;
 //                     seen.add(key); return true;
 //                 }));
-//         }).catch(() => { });
+//         }).catch(() => {});
 //     }, [activeUsername]);
 
 //     useEffect(() => {
@@ -98,13 +106,14 @@
 //             setUserUsername(localStorage.getItem("roar_username") || "RoarUser");
 //             setUserBadge(localStorage.getItem("roar_badge") || "RISING_FAN");
 //             setUserAvatarUrl(currentAvatarUrl || localStorage.getItem("roar_avatar_url") || undefined);
-//         } catch { }
+//         } catch {}
 //     }, [currentAvatarUrl]);
 
 //     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 //         const value = e.target.value;
 //         const cur = e.target.selectionStart || 0;
-//         setCommentText(value); setCursorPosition(cur);
+//         setCommentText(value);
+//         setCursorPosition(cur);
 //         const before = value.slice(0, cur);
 //         const at = before.lastIndexOf("@");
 //         if (at !== -1) {
@@ -112,11 +121,18 @@
 //             if (!afterAt.includes(" ")) {
 //                 const filtered = afterAt.trim() === ""
 //                     ? allUsers.slice(0, 8)
-//                     : allUsers.filter(u => `${u.username || ""} ${u.firstName || ""} ${u.lastName || ""} ${u.email || ""}`.toLowerCase().includes(afterAt.toLowerCase())).slice(0, 8);
-//                 setMentionUsers(filtered); setShowMentionPopup(filtered.length > 0); setMentionIndex(0); return;
+//                     : allUsers.filter(u =>
+//                         `${u.username || ""} ${u.firstName || ""} ${u.lastName || ""} ${u.email || ""}`
+//                             .toLowerCase().includes(afterAt.toLowerCase())
+//                     ).slice(0, 8);
+//                 setMentionUsers(filtered);
+//                 setShowMentionPopup(filtered.length > 0);
+//                 setMentionIndex(0);
+//                 return;
 //             }
 //         }
-//         setShowMentionPopup(false); setMentionUsers([]);
+//         setShowMentionPopup(false);
+//         setMentionUsers([]);
 //     };
 
 //     const insertMention = (user: MentionUser) => {
@@ -125,8 +141,15 @@
 //         const before = commentText.slice(0, cursorPosition);
 //         const at = before.lastIndexOf("@");
 //         setCommentText(`${commentText.slice(0, at)}${mt}${commentText.slice(cursorPosition)}`);
-//         setShowMentionPopup(false); setMentionUsers([]);
-//         setTimeout(() => { if (inputRef.current) { const p = at + mt.length; inputRef.current.focus(); inputRef.current.setSelectionRange(p, p); } }, 10);
+//         setShowMentionPopup(false);
+//         setMentionUsers([]);
+//         setTimeout(() => {
+//             if (inputRef.current) {
+//                 const p = at + mt.length;
+//                 inputRef.current.focus();
+//                 inputRef.current.setSelectionRange(p, p);
+//             }
+//         }, 10);
 //     };
 
 //     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -135,17 +158,18 @@
 //             else if (e.key === "ArrowUp") { e.preventDefault(); setMentionIndex(p => (p - 1 + mentionUsers.length) % mentionUsers.length); }
 //             else if (e.key === "Enter" || e.key === "Tab") { e.preventDefault(); if (mentionUsers[mentionIndex]) insertMention(mentionUsers[mentionIndex]); }
 //             else if (e.key === "Escape") { setShowMentionPopup(false); setMentionUsers([]); }
-//         } else if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submitComment(); }
+//         } else if (e.key === "Enter" && !e.shiftKey) {
+//             e.preventDefault();
+//             submitComment();
+//         }
 //     };
-//     console.log("post.roomId:", post.roomId);
 
 //     const fetchComments = useCallback(async () => {
 //         if (!post?.id) return;
 //         try {
-//             // const res = await axios.get(`/api/roar/posts/${post.id}/comments`, { params: { roomId: post.roomId } });
 //             const res = await axios.get(`/api/roar/rooms/${post.roomId}/messages/${post.id}/comments`);
 //             if (res.data?.success) setComments(res.data.comments);
-//         } catch { }
+//         } catch {}
 //     }, [post]);
 
 //     const buildCommentTree = (flatComments: any[]) => {
@@ -190,49 +214,117 @@
 //         const hasReplies = comment.replies && comment.replies.length > 0;
 //         const commentId = comment.commentId || comment.id;
 //         const isReply = depth > 0;
+//         const heartCount = comment.heartCount ?? 0;
+
 //         return (
-//             <div key={commentId} className={`${isReply ? "relative ml-6 pl-4 border-l border-white/[0.08]" : "relative rounded-[22px] bg-white/[0.03] border border-white/[0.06] p-4 hover:bg-white/[0.04]"}`}>
-//                 {isReply && <div className="absolute left-0 top-1 bottom-1 w-[1px] bg-white/[0.08] rounded-full" />}
-//                 <div className="flex justify-between items-start gap-3">
-//                     <div
-//                         className="flex gap-2 items-start"
-//                         style={{ cursor: onFanProfileClick ? "pointer" : "default" }}
-//                         onClick={(e) => {
-//                             if (onFanProfileClick) {
-//                                 e.stopPropagation();
-//                                 onFanProfileClick({
-//                                     username: comment.authorUsername,
-//                                     badge: comment.authorBadge,
-//                                     avatarUrl: comment.authorAvatarUrl || comment.avatarUrl,
-//                                 });
-//                             }
-//                         }}
-//                     >
-//                         <AvatarWithBadge username={comment.authorUsername} badge={comment.authorBadge} size="sm" avatarUrl={comment.authorAvatarUrl || comment.avatarUrl || (comment.authorUsername === activeUsername ? userAvatarUrl : undefined)} />
-//                         <div>
-//                             <p className="font-semibold text-[12px] text-white m-0">{comment.authorUsername}</p>
-//                             <p className="text-[10px] text-[#7D7DA8] m-0">{formatTimeAgo(comment.createdAt)}</p>
+//             <div key={commentId}>
+//                 {/* indent replies with a faint left line */}
+//                 <div className={isReply ? "ml-10 pl-3 border-l border-white/[0.07]" : ""}>
+//                     <div className="flex gap-3 items-start">
+//                         {/* Avatar */}
+//                         <div
+//                             className="shrink-0"
+//                             style={{ cursor: onFanProfileClick ? "pointer" : "default" }}
+//                             onClick={(e) => {
+//                                 if (onFanProfileClick) {
+//                                     e.stopPropagation();
+//                                     onFanProfileClick({
+//                                         username: comment.authorUsername,
+//                                         badge: comment.authorBadge,
+//                                         avatarUrl: comment.authorAvatarUrl || comment.avatarUrl,
+//                                     });
+//                                 }
+//                             }}
+//                         >
+//                             <AvatarWithBadge
+//                                 username={comment.authorUsername}
+//                                 badge={comment.authorBadge}
+//                                 size="sm"
+//                                 avatarUrl={
+//                                     comment.authorAvatarUrl ||
+//                                     comment.avatarUrl ||
+//                                     (comment.authorUsername === activeUsername ? userAvatarUrl : undefined)
+//                                 }
+//                             />
 //                         </div>
+
+//                         {/* Body */}
+//                         <div className="flex-1 min-w-0">
+//                             {/* Name inline with comment text */}
+//                             <p className="text-[13.5px] leading-[1.55] text-[#E8E8F0] m-0">
+//                                 <span
+//                                     className="font-bold text-white mr-1.5"
+//                                     style={{ cursor: onFanProfileClick ? "pointer" : "default" }}
+//                                     onClick={(e) => {
+//                                         if (onFanProfileClick) {
+//                                             e.stopPropagation();
+//                                             onFanProfileClick({
+//                                                 username: comment.authorUsername,
+//                                                 badge: comment.authorBadge,
+//                                                 avatarUrl: comment.authorAvatarUrl || comment.avatarUrl,
+//                                             });
+//                                         }
+//                                     }}
+//                                 >
+//                                     {comment.authorUsername}
+//                                 </span>
+//                                 {comment.text}
+//                             </p>
+
+//                             {/* Meta row: time · likes · Reply · delete */}
+//                             <div className="flex items-center gap-3 mt-1.5 text-[11px] text-[#6B6B8A]">
+//                                 <span>{formatTimeAgo(comment.createdAt)}</span>
+//                                 {heartCount > 0 && (
+//                                     <span>{heartCount} {heartCount === 1 ? "like" : "likes"}</span>
+//                                 )}
+//                                 <button
+//                                     onClick={() => {
+//                                         setReplyTo({ commentId, authorUsername: comment.authorUsername });
+//                                         setCommentText("");
+//                                         setTimeout(() => inputRef.current?.focus(), 50);
+//                                     }}
+//                                     className="bg-transparent border-none cursor-pointer text-[#6B6B8A] font-semibold p-0 hover:text-white transition-colors duration-150 text-[11px]"
+//                                 >
+//                                     Reply
+//                                 </button>
+//                                 {comment.authorUsername === activeUsername && (
+//                                     <button
+//                                         onClick={async (e) => {
+//                                             e.stopPropagation();
+//                                             if (window.confirm("Delete comment?")) {
+//                                                 try {
+//                                                     await axios.delete(`/api/roar/posts/${post.id}/comments/${commentId}`);
+//                                                     onToast("Deleted");
+//                                                     fetchComments();
+//                                                 } catch {
+//                                                     onToast("Failed");
+//                                                 }
+//                                             }
+//                                         }}
+//                                         className="bg-transparent border-none text-[#f87171] cursor-pointer flex items-center p-0"
+//                                     >
+//                                         <Trash2 size={11} />
+//                                     </button>
+//                                 )}
+//                             </div>
+//                         </div>
+
+//                         {/* Heart button — right aligned */}
+//                         <button
+//                             onClick={() => reactToComment(commentId)}
+//                             className="bg-transparent border-none cursor-pointer flex flex-col items-center gap-0.5 shrink-0 pt-0.5 p-0 text-[#6B6B8A] hover:text-[#f87171] transition-colors duration-150"
+//                         >
+//                             <Heart size={13} strokeWidth={1.5} />
+//                         </button>
 //                     </div>
-//                     {comment.authorUsername === activeUsername && (
-//                         <button onClick={async (e) => { e.stopPropagation(); if (window.confirm("Delete comment?")) { try { await axios.delete(`/api/roar/posts/${post.id}/comments/${commentId}`); onToast("Deleted"); fetchComments(); } catch { onToast("Failed"); } } }}
-//                             className="bg-transparent border-none text-[#f87171] cursor-pointer flex items-center p-0.5"><Trash2 size={12} /></button>
+
+//                     {/* Nested replies */}
+//                     {hasReplies && (
+//                         <div className="mt-3 space-y-3">
+//                             {comment.replies.map((reply: any) => renderComment(reply, depth + 1))}
+//                         </div>
 //                     )}
 //                 </div>
-//                 <p className={`text-[14px] ${isReply ? "text-[#EAEAF1]" : "text-[#F5F5FA]"} leading-[1.75] my-3`}>{comment.text}</p>
-//                 <div className="flex flex-wrap items-center gap-4 text-[12px] text-[#8A8AA9]">
-//                     <button onClick={() => reactToComment(commentId)} className="bg-transparent border-none cursor-pointer flex items-center gap-2 text-inherit p-0 hover:text-white transition-colors duration-150">
-//                         <span className="text-sm">🤍</span>
-//                         <span>{comment.heartCount ?? 0}</span>
-//                     </button>
-//                     <button onClick={() => { setReplyTo({ commentId, authorUsername: comment.authorUsername }); setCommentText(""); setTimeout(() => inputRef.current?.focus(), 50); }}
-//                         className="bg-transparent border-none cursor-pointer text-[#C8705A] font-semibold p-0 hover:text-white transition-colors duration-150">Reply</button>
-//                 </div>
-//                 {hasReplies && (
-//                     <div className="mt-4 space-y-3">
-//                         {comment.replies.map((reply: any) => renderComment(reply, depth + 1))}
-//                     </div>
-//                 )}
 //             </div>
 //         );
 //     };
@@ -240,39 +332,46 @@
 //     useEffect(() => { fetchComments(); }, [fetchComments]);
 
 //     const submitComment = async () => {
-//         const fullText = replyTo ? `@${replyTo.authorUsername} ${commentText.trim()}` : commentText.trim();
+//         const fullText = replyTo
+//             ? `@${replyTo.authorUsername} ${commentText.trim()}`
+//             : commentText.trim();
 //         if (!fullText) return;
 //         try {
 //             setLoading(true);
-//             // const res = await axios.post(`/api/roar/posts/${post.id}/comments`, { text: fullText, roomId: post.roomId });
-//             const res = await axios.post(`/api/roar/rooms/${post.roomId}/messages/${post.id}/comments`, { text: fullText });
+//             const res = await axios.post(
+//                 `/api/roar/rooms/${post.roomId}/messages/${post.id}/comments`,
+//                 { text: fullText }
+//             );
 //             if (res.data?.success) {
-//                 setCommentText(""); setReplyTo(null); fetchComments(); onToast("Comment posted!");
+//                 setCommentText("");
+//                 setReplyTo(null);
+//                 fetchComments();
+//                 onToast("Comment posted!");
 //                 setTimeout(() => scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" }), 400);
 //             }
-//         } catch { onToast("Error posting comment"); }
-//         finally { setLoading(false); }
+//         } catch {
+//             onToast("Error posting comment");
+//         } finally {
+//             setLoading(false);
+//         }
 //     };
 
 //     const reactToComment = async (commentId: string) => {
 //         try {
 //             const res = await axios.post(`/api/roar/posts/${post.id}/comments/${commentId}/react`);
-//             if (res.data?.success) setComments(p => p.map(c => c.commentId === commentId ? { ...c, heartCount: res.data.heartCount } : c));
-//         } catch { }
+//             if (res.data?.success)
+//                 setComments(p => p.map(c => c.commentId === commentId ? { ...c, heartCount: res.data.heartCount } : c));
+//         } catch {}
 //     };
 
 //     const userVote = votes[post.id];
-//     const currentUserIdCandidates = [
-//         currentUserId,
-//         post.currentUserId,
-//     ].filter(Boolean).map(String);
+//     const currentUserIdCandidates = [currentUserId, post.currentUserId].filter(Boolean).map(String);
 //     const isCurrentUserAuthor = () => {
 //         const authorCandidates = [post.authorUid, post.fan?.authorUid, post.authorEmail].filter(Boolean).map(String);
 //         return authorCandidates.some(id => currentUserIdCandidates.includes(id));
 //     };
-//     const getPredictionVoteValue = (optionIndex: number) => (
-//         optionIndex === 0 ? "agree" : optionIndex === 1 ? "disagree" : `option_${optionIndex}`
-//     );
+//     const getPredictionVoteValue = (optionIndex: number) =>
+//         optionIndex === 0 ? "agree" : optionIndex === 1 ? "disagree" : `option_${optionIndex}`;
 //     const getPredictionOptionLabel = (voteValue: string | undefined, options: string[]) => {
 //         if (!voteValue) return "";
 //         if (voteValue === "agree") return options[0] || "Option 1";
@@ -300,7 +399,8 @@
 //         }
 //     };
 //     const handleVoteClick = (agree: boolean) => {
-//         const prev = votes[post.id]; let nextVote: boolean | null = agree;
+//         const prev = votes[post.id];
+//         let nextVote: boolean | null = agree;
 //         if (prev === agree) nextVote = null;
 //         setVotes(v => ({ ...v, [post.id]: nextVote }));
 //         let delta = 0;
@@ -315,15 +415,13 @@
 
 //     return (
 //         <AnimatePresence>
-//             {/*
-//         Room variant: position:absolute fills the roar-inner container which
-//         is already the correct size (header hidden, full height for the room).
-//         No header/nav measurement needed at all.
-//       */}
 //             <div className="absolute inset-0 z-[1000] flex flex-col overflow-hidden pointer-events-auto bg-[#050508]">
 //                 {/* Header */}
 //                 <div className="flex items-center gap-[14px] px-5 py-4 border-b border-[#252538] bg-[rgba(5,5,8,0.97)] backdrop-blur-[10px] shrink-0">
-//                     <button onClick={() => onClose(comments.length)} className="bg-transparent border-none text-white cursor-pointer p-1 flex items-center min-w-9 min-h-9">
+//                     <button
+//                         onClick={() => onClose(comments.length)}
+//                         className="bg-transparent border-none text-white cursor-pointer p-1 flex items-center min-w-9 min-h-9"
+//                     >
 //                         <ChevronLeft size={22} />
 //                     </button>
 //                     <div className="flex flex-col flex-1 min-w-0">
@@ -335,9 +433,13 @@
 //                 </div>
 
 //                 {/* Scrollable content */}
-//                 <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden [-webkit-overflow-scrolling:touch] px-5 pt-4 pb-4 bg-gradient-to-b from-[#050508] to-[#0b0b12]">
+//                 <div
+//                     ref={scrollRef}
+//                     className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden [-webkit-overflow-scrolling:touch] px-5 pt-4 pb-4 bg-gradient-to-b from-[#050508] to-[#0b0b12]"
+//                 >
+//                     {/* Post card */}
 //                     <div className="p-4 mb-5 bg-white/[0.03] border border-white/[0.06] rounded-[20px]">
-//                         <div 
+//                         <div
 //                             className="flex gap-2.5 items-center mb-3"
 //                             style={{ cursor: onFanProfileClick ? "pointer" : "default" }}
 //                             onClick={(e) => {
@@ -353,7 +455,10 @@
 //                                 username={post.fan?.username || post.authorUsername}
 //                                 badge={post.fan?.badge || post.authorBadge}
 //                                 size="sm"
-//                                 avatarUrl={post.fan?.avatarUrl || post.authorAvatarUrl || post.avatarUrl || ((post.fan?.username || post.authorUsername) === activeUsername ? userAvatarUrl : undefined)}
+//                                 avatarUrl={
+//                                     post.fan?.avatarUrl || post.authorAvatarUrl || post.avatarUrl ||
+//                                     ((post.fan?.username || post.authorUsername) === activeUsername ? userAvatarUrl : undefined)
+//                                 }
 //                             />
 //                             <div>
 //                                 <p className="font-bold text-[13px] text-white m-0 flex items-center gap-1">
@@ -363,14 +468,15 @@
 //                                 <p className="text-[10px] text-[#9494AD] m-0">{formatTimeAgo(post.createdAt)}</p>
 //                             </div>
 //                         </div>
+
 //                         <p className="font-semibold text-[15px] leading-[1.5] mb-3 text-white">{post.text}</p>
+
 //                         {post.type === "debate" && (post.sideA || post.sideB) && (() => {
 //                             const sideA = post.sideA || "Side A";
 //                             const sideB = post.sideB || "Side B";
 //                             const hasVoted = post.userVote === "agree" || post.userVote === "disagree";
 //                             const votedA = post.userVote === "agree";
 //                             const votedB = post.userVote === "disagree";
-
 //                             return (
 //                                 <div className="mb-3">
 //                                     <div style={{ display: "flex", gap: 8, alignItems: "stretch", marginBottom: 10 }}>
@@ -391,10 +497,7 @@
 //                                                         e.stopPropagation();
 //                                                         if (hasVoted) return;
 //                                                         try {
-//                                                             await axios.post(
-//                                                                 `/api/roar/rooms/${post.roomId}/messages/${post.id}/vote`,
-//                                                                 { vote },
-//                                                             );
+//                                                             await axios.post(`/api/roar/rooms/${post.roomId}/messages/${post.id}/vote`, { vote });
 //                                                             onVote(post.id, vote);
 //                                                         } catch { onToast("Failed to submit vote"); }
 //                                                     }}
@@ -426,6 +529,7 @@
 //                                 </div>
 //                             );
 //                         })()}
+
 //                         {post.mediaUrls?.length > 0 && (
 //                             <div className="flex flex-col gap-2 mb-3">
 //                                 {post.mediaUrls.map((url: string, idx: number) =>
@@ -435,6 +539,7 @@
 //                                 )}
 //                             </div>
 //                         )}
+
 //                         {post.type === "prediction" && (() => {
 //                             const predictionOptions = Array.isArray(post.predictionOptions) && post.predictionOptions.length >= 2
 //                                 ? post.predictionOptions
@@ -453,20 +558,13 @@
 //                                                     key={`resolve-${label}-${optionIndex}`}
 //                                                     type="button"
 //                                                     disabled={resolvingPrediction}
-//                                                     onClick={(e) => {
-//                                                         e.stopPropagation();
-//                                                         resolvePrediction(getPredictionVoteValue(optionIndex));
-//                                                     }}
+//                                                     onClick={(e) => { e.stopPropagation(); resolvePrediction(getPredictionVoteValue(optionIndex)); }}
 //                                                     style={{
-//                                                         flex: "1 1 calc(50% - 4px)",
-//                                                         minWidth: 0,
-//                                                         padding: "9px 10px",
-//                                                         borderRadius: 12,
+//                                                         flex: "1 1 calc(50% - 4px)", minWidth: 0,
+//                                                         padding: "9px 10px", borderRadius: 12,
 //                                                         border: "1px solid rgba(34,197,94,0.35)",
-//                                                         background: "rgba(34,197,94,0.1)",
-//                                                         color: "#22c55e",
-//                                                         fontSize: 12,
-//                                                         fontWeight: 800,
+//                                                         background: "rgba(34,197,94,0.1)", color: "#22c55e",
+//                                                         fontSize: 12, fontWeight: 800,
 //                                                         cursor: resolvingPrediction ? "wait" : "pointer",
 //                                                     }}
 //                                                 >
@@ -483,35 +581,54 @@
 //                                 </div>
 //                             );
 //                         })()}
+
 //                         {post.type === "hot_take" && (
 //                             <>
 //                                 <div className="mb-2.5"><SplitBar left={pct} /></div>
 //                                 <div className="flex gap-2 mt-3">
-//                                     {[{ agree: true, label: "Agree", active: userVote === true, color: "#E91E8C" }, { agree: false, label: "Disagree", active: userVote === false, color: "#FF6B35" }].map(({ agree, label, active, color }) => (
-//                                         <button key={label} onClick={() => handleVoteClick(agree)} className="flex-1 py-3 rounded-full text-[13px] font-bold cursor-pointer transition-all duration-[220ms] border-[2.5px]"
-//                                             style={{ borderColor: color, background: active ? color : "rgba(255,255,255,0.02)", color: active ? "white" : color }}>
+//                                     {[
+//                                         { agree: true, label: "Agree", active: userVote === true, color: "#E91E8C" },
+//                                         { agree: false, label: "Disagree", active: userVote === false, color: "#FF6B35" },
+//                                     ].map(({ agree, label, active, color }) => (
+//                                         <button
+//                                             key={label}
+//                                             onClick={() => handleVoteClick(agree)}
+//                                             className="flex-1 py-3 rounded-full text-[13px] font-bold cursor-pointer transition-all duration-[220ms] border-[2.5px]"
+//                                             style={{ borderColor: color, background: active ? color : "rgba(255,255,255,0.02)", color: active ? "white" : color }}
+//                                         >
 //                                             {active ? `✓ ${label}d` : label}
 //                                         </button>
 //                                     ))}
 //                                 </div>
 //                             </>
 //                         )}
+
 //                         <div className="flex items-center mt-4 border-t border-white/[0.06] pt-3">
 //                             {(post.fan?.username === activeUsername || post.authorUsername === activeUsername) && (
-//                                 <button onClick={(e) => { e.stopPropagation(); if (window.confirm("Delete this post?")) { onDeletePost?.(post.id, post.roomId); onClose(); } }}
-//                                     className="flex items-center justify-center bg-transparent border-none cursor-pointer text-[#f87171] ml-auto p-1 rounded-full">
+//                                 <button
+//                                     onClick={(e) => {
+//                                         e.stopPropagation();
+//                                         if (window.confirm("Delete this post?")) {
+//                                             onDeletePost?.(post.id, post.roomId);
+//                                             onClose();
+//                                         }
+//                                     }}
+//                                     className="flex items-center justify-center bg-transparent border-none cursor-pointer text-[#f87171] ml-auto p-1 rounded-full"
+//                                 >
 //                                     <Trash2 size={16} />
 //                                 </button>
 //                             )}
 //                         </div>
 //                     </div>
 
-//                     <div className="flex justify-between items-center mb-3">
+//                     {/* Comments header */}
+//                     <div className="flex justify-between items-center mb-4">
 //                         <span className="text-[11px] font-extrabold text-white tracking-[0.06em] uppercase">Comments</span>
 //                         <span className="text-[10px] text-[#9494AD]">{comments.length} total</span>
 //                     </div>
 
-//                     <div className="flex flex-col gap-3 pb-2">
+//                     {/* Comments list — Instagram-style threading */}
+//                     <div className="flex flex-col gap-5 pb-2">
 //                         {comments.length === 0 ? (
 //                             <p className="text-[13px] text-[#4A4A62] text-center py-5">No comments yet. Be the first!</p>
 //                         ) : (
@@ -527,17 +644,27 @@
 //                             <span className="text-[11px] text-[#9494AD]">Replying to</span>
 //                             <span className="inline-flex items-center gap-1 bg-[rgba(233,30,140,0.15)] border border-[rgba(233,30,140,0.35)] rounded-full py-0.5 pl-1.5 pr-2 text-[12px] font-bold text-[#E91E8C] max-w-[160px] overflow-hidden text-ellipsis whitespace-nowrap">
 //                                 @{replyTo.authorUsername}
-//                                 <button onClick={() => { setReplyTo(null); setCommentText(""); }} className="bg-transparent border-none p-0 cursor-pointer text-[#E91E8C] flex items-center ml-0.5 shrink-0"><X size={11} /></button>
+//                                 <button
+//                                     onClick={() => { setReplyTo(null); setCommentText(""); }}
+//                                     className="bg-transparent border-none p-0 cursor-pointer text-[#E91E8C] flex items-center ml-0.5 shrink-0"
+//                                 >
+//                                     <X size={11} />
+//                                 </button>
 //                             </span>
 //                         </div>
 //                     )}
+
 //                     {showMentionPopup && mentionUsers.length > 0 && (
 //                         <div className="absolute bottom-full left-4 right-4 mb-2 bg-[#181c24] rounded-2xl border border-[rgba(200,112,90,0.2)] overflow-hidden z-20 shadow-[0_8px_32px_rgba(0,0,0,0.4)] max-h-[300px] overflow-y-auto">
 //                             {mentionUsers.map((user, idx) => {
 //                                 const dn = user.username || user.name || `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.email?.split("@")[0] || "user";
 //                                 return (
-//                                     <button key={user.userId} onClick={() => insertMention(user)} onMouseEnter={() => setMentionIndex(idx)}
-//                                         className={`flex items-center gap-3 px-4 py-2.5 w-full border-none cursor-pointer transition-colors duration-150 ${idx === mentionIndex ? "bg-[rgba(200,112,90,0.15)]" : "bg-transparent"}`}>
+//                                     <button
+//                                         key={user.userId}
+//                                         onClick={() => insertMention(user)}
+//                                         onMouseEnter={() => setMentionIndex(idx)}
+//                                         className={`flex items-center gap-3 px-4 py-2.5 w-full border-none cursor-pointer transition-colors duration-150 ${idx === mentionIndex ? "bg-[rgba(200,112,90,0.15)]" : "bg-transparent"}`}
+//                                     >
 //                                         <AvatarWithBadge username={dn} badge="RISING_FAN" size="sm" avatarUrl={user.avatarUrl} />
 //                                         <div className="flex-1 text-left">
 //                                             <p className="font-semibold text-[13px] text-white m-0">{dn}</p>
@@ -549,16 +676,26 @@
 //                             })}
 //                         </div>
 //                     )}
+
 //                     <p className="px-5 pt-2 pb-0 m-0 text-[10px] text-[#7a6a65]">Type @ to mention someone</p>
 //                     <div className="flex gap-2 items-center px-4 pt-1.5 pb-1">
 //                         <AvatarWithBadge username={userUsername} badge={userBadge} size="sm" avatarUrl={userAvatarUrl} />
 //                         <div className="flex-1">
-//                             <input ref={inputRef} type="text" placeholder={replyTo ? "Write your reply…" : "Share your opinion..."} value={commentText}
-//                                 onChange={handleInputChange} onKeyDown={handleKeyDown}
-//                                 className="w-full h-11 rounded-full bg-white/[0.04] border border-white/[0.12] pl-4 pr-4 text-white text-[16px] outline-none placeholder:text-[#8A8AA9] transition-colors duration-150 focus:border-[#E91E8C]/60 focus:bg-white/[0.08]" />
+//                             <input
+//                                 ref={inputRef}
+//                                 type="text"
+//                                 placeholder={replyTo ? "Write your reply…" : "Share your opinion..."}
+//                                 value={commentText}
+//                                 onChange={handleInputChange}
+//                                 onKeyDown={handleKeyDown}
+//                                 className="w-full h-11 rounded-full bg-white/[0.04] border border-white/[0.12] pl-4 pr-4 text-white text-[16px] outline-none placeholder:text-[#8A8AA9] transition-colors duration-150 focus:border-[#E91E8C]/60 focus:bg-white/[0.08]"
+//                             />
 //                         </div>
-//                         <button onClick={submitComment} disabled={loading || !canSubmit}
-//                             className={`w-[38px] h-[38px] rounded-full bg-[#E91E8C] border-none text-white flex items-center justify-center shrink-0 transition-opacity duration-200 ${canSubmit ? "cursor-pointer opacity-100" : "cursor-default opacity-50"}`}>
+//                         <button
+//                             onClick={submitComment}
+//                             disabled={loading || !canSubmit}
+//                             className={`w-[38px] h-[38px] rounded-full bg-[#E91E8C] border-none text-white flex items-center justify-center shrink-0 transition-opacity duration-200 ${canSubmit ? "cursor-pointer opacity-100" : "cursor-default opacity-50"}`}
+//                         >
 //                             {loading ? <Loader2 size={16} className="animate-spin" /> : "↑"}
 //                         </button>
 //                     </div>
@@ -567,7 +704,6 @@
 //         </AnimatePresence>
 //     );
 // }
-
 
 
 
@@ -604,6 +740,68 @@ interface MentionUser {
     name?: string;
     avatarUrl?: string;
     email?: string;
+}
+
+// ---------------------------------------------------------------------------
+// Threading helpers (mirrors DiscussionRoom.tsx logic)
+// ---------------------------------------------------------------------------
+
+/**
+ * Returns true if a @mention token plausibly refers to the given authorUsername.
+ * Handles:
+ *   @Prince    → "Prince Chandu"   (first word of display name)
+ *   @Chandu    → "chandu_srikakulam" (first segment before underscore)
+ *   @username  → exact username match (case-insensitive)
+ */
+function mentionMatchesAuthor(mentionToken: string, authorUsername: string): boolean {
+    const m = mentionToken.toLowerCase();
+    const u = (authorUsername || "").toLowerCase();
+
+    // exact username
+    if (m === u) return true;
+
+    // first word of a space-separated display name  (e.g. "Prince Chandu" → "prince")
+    const firstWord = u.split(" ")[0];
+    if (m === firstWord) return true;
+
+    // first segment before underscore (e.g. "chandu_srikakulam" → "chandu")
+    const firstSegment = u.split("_")[0];
+    if (firstSegment && m === firstSegment) return true;
+
+    return false;
+}
+
+/**
+ * Takes a flat array of comments (oldest → newest) and returns a new array
+ * where each @mention reply is inserted directly below the last comment by
+ * the mentioned author, creating a threaded appearance without true nesting.
+ */
+function threadSort(flat: any[]): any[] {
+    // Work oldest→newest so insertion positions stay stable
+    const sorted = [...flat].sort((a, b) => a.createdAt - b.createdAt);
+    const result: any[] = [];
+
+    for (const comment of sorted) {
+        const mentionMatch = comment.text?.trim().match(/^@([\w.\-]+)/i);
+        if (mentionMatch) {
+            const token = mentionMatch[1];
+            // Find the last index in `result` whose author matches the mention
+            let insertAfter = -1;
+            for (let i = result.length - 1; i >= 0; i--) {
+                if (mentionMatchesAuthor(token, result[i].authorUsername)) {
+                    insertAfter = i;
+                    break;
+                }
+            }
+            if (insertAfter !== -1) {
+                result.splice(insertAfter + 1, 0, comment);
+                continue;
+            }
+        }
+        result.push(comment);
+    }
+
+    return result;
 }
 
 export default function RoomPostDetailsOverlay({
@@ -744,58 +942,51 @@ export default function RoomPostDetailsOverlay({
         } catch {}
     }, [post]);
 
-    const buildCommentTree = (flatComments: any[]) => {
-        const nodes = flatComments.map((comment) => ({
-            ...comment,
-            commentId: comment.commentId || comment.id,
-            parentCommentId: comment.parentCommentId || comment.parentId || comment.replyToId || null,
-            replies: [],
-        }));
-
-        const map = new Map<string, any>();
-        nodes.forEach((comment) => map.set(comment.commentId, comment));
-
-        const roots: any[] = [];
-        nodes.forEach((comment) => {
-            if (!comment.parentCommentId) {
-                const mentionMatch = comment.text?.trim()?.match(/^@([\w\.\-_]+)/i);
-                if (mentionMatch?.[1]) {
-                    const mentionUsername = mentionMatch[1].toLowerCase();
-                    const parentCandidate = nodes.find((candidate) =>
-                        candidate.commentId !== comment.commentId &&
-                        candidate.authorUsername?.toLowerCase() === mentionUsername &&
-                        candidate.createdAt <= comment.createdAt
-                    );
-                    if (parentCandidate) {
-                        comment.parentCommentId = parentCandidate.commentId;
-                    }
-                }
-            }
-            const parentId = comment.parentCommentId;
-            if (parentId && map.has(parentId)) {
-                map.get(parentId).replies.push(comment);
-            } else {
-                roots.push(comment);
-            }
-        });
-
-        return roots;
-    };
-
-    const renderComment = (comment: any, depth = 0) => {
-        const hasReplies = comment.replies && comment.replies.length > 0;
+    // ---------------------------------------------------------------------------
+    // Render a single comment row (flat list — threading is done by threadSort)
+    // ---------------------------------------------------------------------------
+    const renderComment = (comment: any) => {
         const commentId = comment.commentId || comment.id;
-        const isReply = depth > 0;
         const heartCount = comment.heartCount ?? 0;
 
+        // Detect if this comment is a reply (@mention at the start) to give
+        // it a subtle left-indent, matching the DiscussionRoom inline style.
+        const isReply = Boolean(comment.text?.trim().match(/^@[\w.\-]+/i));
+
         return (
-            <div key={commentId}>
-                {/* indent replies with a faint left line */}
-                <div className={isReply ? "ml-10 pl-3 border-l border-white/[0.07]" : ""}>
-                    <div className="flex gap-3 items-start">
-                        {/* Avatar */}
-                        <div
-                            className="shrink-0"
+            <div key={commentId} className={isReply ? "ml-10 pl-3 border-l border-white/[0.07]" : ""}>
+                <div className="flex gap-3 items-start">
+                    {/* Avatar */}
+                    <div
+                        className="shrink-0"
+                        style={{ cursor: onFanProfileClick ? "pointer" : "default" }}
+                        onClick={(e) => {
+                            if (onFanProfileClick) {
+                                e.stopPropagation();
+                                onFanProfileClick({
+                                    username: comment.authorUsername,
+                                    badge: comment.authorBadge,
+                                    avatarUrl: comment.authorAvatarUrl || comment.avatarUrl,
+                                });
+                            }
+                        }}
+                    >
+                        <AvatarWithBadge
+                            username={comment.authorUsername}
+                            badge={comment.authorBadge}
+                            size="sm"
+                            avatarUrl={
+                                comment.authorAvatarUrl ||
+                                comment.avatarUrl ||
+                                (comment.authorUsername === activeUsername ? userAvatarUrl : undefined)
+                            }
+                        />
+                    </div>
+
+                    {/* Body */}
+                    <div className="flex-1 min-w-0 overflow-hidden">
+                        <span
+                            className="font-bold text-white text-[13px] block truncate"
                             style={{ cursor: onFanProfileClick ? "pointer" : "default" }}
                             onClick={(e) => {
                                 if (onFanProfileClick) {
@@ -808,94 +999,57 @@ export default function RoomPostDetailsOverlay({
                                 }
                             }}
                         >
-                            <AvatarWithBadge
-                                username={comment.authorUsername}
-                                badge={comment.authorBadge}
-                                size="sm"
-                                avatarUrl={
-                                    comment.authorAvatarUrl ||
-                                    comment.avatarUrl ||
-                                    (comment.authorUsername === activeUsername ? userAvatarUrl : undefined)
-                                }
-                            />
-                        </div>
+                            {comment.authorUsername}
+                        </span>
+                        <p className="text-[13.5px] leading-[1.55] text-[#E8E8F0] m-0" style={{ wordBreak: "break-word", overflowWrap: "anywhere" }}>
+                            {comment.text}
+                        </p>
 
-                        {/* Body */}
-                        <div className="flex-1 min-w-0">
-                            {/* Name inline with comment text */}
-                            <p className="text-[13.5px] leading-[1.55] text-[#E8E8F0] m-0">
-                                <span
-                                    className="font-bold text-white mr-1.5"
-                                    style={{ cursor: onFanProfileClick ? "pointer" : "default" }}
-                                    onClick={(e) => {
-                                        if (onFanProfileClick) {
-                                            e.stopPropagation();
-                                            onFanProfileClick({
-                                                username: comment.authorUsername,
-                                                badge: comment.authorBadge,
-                                                avatarUrl: comment.authorAvatarUrl || comment.avatarUrl,
-                                            });
+                        {/* Meta row */}
+                        <div className="flex items-center gap-3 mt-1.5 text-[11px] text-[#6B6B8A]">
+                            <span>{formatTimeAgo(comment.createdAt)}</span>
+                            {heartCount > 0 && (
+                                <span>{heartCount} {heartCount === 1 ? "like" : "likes"}</span>
+                            )}
+                            <button
+                                onClick={() => {
+                                    setReplyTo({ commentId, authorUsername: comment.authorUsername });
+                                    setCommentText("");
+                                    setTimeout(() => inputRef.current?.focus(), 50);
+                                }}
+                                className="bg-transparent border-none cursor-pointer text-[#6B6B8A] font-semibold p-0 hover:text-white transition-colors duration-150 text-[11px]"
+                            >
+                                Reply
+                            </button>
+                            {comment.authorUsername === activeUsername && (
+                                <button
+                                    onClick={async (e) => {
+                                        e.stopPropagation();
+                                        if (window.confirm("Delete comment?")) {
+                                            try {
+                                                await axios.delete(`/api/roar/posts/${post.id}/comments/${commentId}`);
+                                                onToast("Deleted");
+                                                fetchComments();
+                                            } catch {
+                                                onToast("Failed");
+                                            }
                                         }
                                     }}
+                                    className="bg-transparent border-none text-[#f87171] cursor-pointer flex items-center p-0"
                                 >
-                                    {comment.authorUsername}
-                                </span>
-                                {comment.text}
-                            </p>
-
-                            {/* Meta row: time · likes · Reply · delete */}
-                            <div className="flex items-center gap-3 mt-1.5 text-[11px] text-[#6B6B8A]">
-                                <span>{formatTimeAgo(comment.createdAt)}</span>
-                                {heartCount > 0 && (
-                                    <span>{heartCount} {heartCount === 1 ? "like" : "likes"}</span>
-                                )}
-                                <button
-                                    onClick={() => {
-                                        setReplyTo({ commentId, authorUsername: comment.authorUsername });
-                                        setCommentText("");
-                                        setTimeout(() => inputRef.current?.focus(), 50);
-                                    }}
-                                    className="bg-transparent border-none cursor-pointer text-[#6B6B8A] font-semibold p-0 hover:text-white transition-colors duration-150 text-[11px]"
-                                >
-                                    Reply
+                                    <Trash2 size={11} />
                                 </button>
-                                {comment.authorUsername === activeUsername && (
-                                    <button
-                                        onClick={async (e) => {
-                                            e.stopPropagation();
-                                            if (window.confirm("Delete comment?")) {
-                                                try {
-                                                    await axios.delete(`/api/roar/posts/${post.id}/comments/${commentId}`);
-                                                    onToast("Deleted");
-                                                    fetchComments();
-                                                } catch {
-                                                    onToast("Failed");
-                                                }
-                                            }
-                                        }}
-                                        className="bg-transparent border-none text-[#f87171] cursor-pointer flex items-center p-0"
-                                    >
-                                        <Trash2 size={11} />
-                                    </button>
-                                )}
-                            </div>
+                            )}
                         </div>
-
-                        {/* Heart button — right aligned */}
-                        <button
-                            onClick={() => reactToComment(commentId)}
-                            className="bg-transparent border-none cursor-pointer flex flex-col items-center gap-0.5 shrink-0 pt-0.5 p-0 text-[#6B6B8A] hover:text-[#f87171] transition-colors duration-150"
-                        >
-                            <Heart size={13} strokeWidth={1.5} />
-                        </button>
                     </div>
 
-                    {/* Nested replies */}
-                    {hasReplies && (
-                        <div className="mt-3 space-y-3">
-                            {comment.replies.map((reply: any) => renderComment(reply, depth + 1))}
-                        </div>
-                    )}
+                    {/* Heart button */}
+                    <button
+                        onClick={() => reactToComment(commentId)}
+                        className="bg-transparent border-none cursor-pointer flex flex-col items-center gap-0.5 shrink-0 pt-0.5 p-0 text-[#6B6B8A] hover:text-[#f87171] transition-colors duration-150"
+                    >
+                        <Heart size={13} strokeWidth={1.5} />
+                    </button>
                 </div>
             </div>
         );
@@ -1199,12 +1353,12 @@ export default function RoomPostDetailsOverlay({
                         <span className="text-[10px] text-[#9494AD]">{comments.length} total</span>
                     </div>
 
-                    {/* Comments list — Instagram-style threading */}
+                    {/* Comments list — threaded via threadSort */}
                     <div className="flex flex-col gap-5 pb-2">
                         {comments.length === 0 ? (
                             <p className="text-[13px] text-[#4A4A62] text-center py-5">No comments yet. Be the first!</p>
                         ) : (
-                            buildCommentTree(comments).map((comment) => renderComment(comment))
+                            threadSort(comments).map((comment) => renderComment(comment))
                         )}
                     </div>
                 </div>

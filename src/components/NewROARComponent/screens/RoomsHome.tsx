@@ -1,6 +1,5 @@
 
 
-
 // import { useEffect, useRef, useState } from "react";
 // import { motion } from "framer-motion";
 // import axios from "axios";
@@ -38,47 +37,86 @@
 //   badge?: string | null;
 // }
 
-// function StackedAvatars({ fans, count, loaded }: { fans: ActiveFan[]; count: number; loaded: boolean }) {
-//   // Falls back to placeholder dots (no number) only while presence hasn't
-//   // loaded yet for this room. Once `loaded` is true we always show the
-//   // real count — never the stale room.fanCount — so the number can't
-//   // flash from a wrong value to the right one a moment later.
+// function StackedAvatars({
+//   fans,
+//   count,
+//   loaded,
+//   totalJoinCount,
+// }: {
+//   fans: ActiveFan[];
+//   count: number;
+//   loaded: boolean;
+//   totalJoinCount?: number;
+// }) {
 //   const DOT_COLORS = ["#e91e8c", "#ff6b35", "#00e8c6"];
 //   const hasFans = fans.length > 0;
 
+//   const formatCount = (n: number) =>
+//     n >= 1000 ? `${(n / 1000).toFixed(1)}k` : `${n}`;
+
 //   return (
-//     <div className="flex items-center gap-1.5">
-//       <div className="flex">
-//         {hasFans
-//           ? fans.slice(0, 3).map((fan, i) => (
-//             <div
-//               key={fan.uid}
-//               className="w-6 h-6 rounded-full border-2 border-[#0e0e14] relative overflow-hidden flex items-center justify-center"
-//               style={{
-//                 marginLeft: i === 0 ? 0 : -8,
-//                 zIndex: 3 - i,
-//                 background: fan.avatarUrl ? undefined : "linear-gradient(135deg,#e91e8c,#ff6b35)",
-//               }}
-//             >
-//               {fan.avatarUrl ? (
-//                 <img src={fan.avatarUrl} alt={fan.username} className="w-full h-full object-cover" />
-//               ) : (
-//                 <span className="text-[9px] font-extrabold text-white">{fan.username?.[0]?.toUpperCase() || "?"}</span>
-//               )}
-//             </div>
-//           ))
-//           : DOT_COLORS.map((c, i) => (
-//             <div
-//               key={i}
-//               className="w-6 h-6 rounded-full border-2 border-[#0e0e14] relative"
-//               style={{ background: c, marginLeft: i === 0 ? 0 : -8, zIndex: DOT_COLORS.length - i, opacity: loaded ? 1 : 0.35 }}
-//             />
-//           ))}
+//     <div className="flex flex-col gap-0.5">
+//       {/* Row 1: Avatars + Active count */}
+//       <div className="flex items-center gap-1.5">
+//         <div className="flex">
+//           {hasFans
+//             ? fans.slice(0, 3).map((fan, i) => (
+//                 <div
+//                   key={fan.uid}
+//                   className="w-6 h-6 rounded-full border-2 border-[#0e0e14] relative overflow-hidden flex items-center justify-center"
+//                   style={{
+//                     marginLeft: i === 0 ? 0 : -8,
+//                     zIndex: 3 - i,
+//                     background: fan.avatarUrl
+//                       ? undefined
+//                       : "linear-gradient(135deg,#e91e8c,#ff6b35)",
+//                   }}
+//                 >
+//                   {fan.avatarUrl ? (
+//                     <img
+//                       src={fan.avatarUrl}
+//                       alt={fan.username}
+//                       className="w-full h-full object-cover"
+//                     />
+//                   ) : (
+//                     <span className="text-[9px] font-extrabold text-white">
+//                       {fan.username?.[0]?.toUpperCase() || "?"}
+//                     </span>
+//                   )}
+//                 </div>
+//               ))
+//             : DOT_COLORS.map((c, i) => (
+//                 <div
+//                   key={i}
+//                   className="w-6 h-6 rounded-full border-2 border-[#0e0e14] relative"
+//                   style={{
+//                     background: c,
+//                     marginLeft: i === 0 ? 0 : -8,
+//                     zIndex: DOT_COLORS.length - i,
+//                     opacity: loaded ? 1 : 0.35,
+//                   }}
+//                 />
+//               ))}
+//         </div>
+//         {loaded ? (
+//           <span className="text-xs font-semibold text-white/45">
+//              <span className="text-xs font-bold text-white/90">+{count} </span>Active
+//           </span>
+//         ) : (
+//           <span className="text-xs font-semibold text-white/25">···</span>
+//         )}
 //       </div>
-//       {loaded ? (
-//         <span className="text-xs font-semibold text-white/45">+{count} fans</span>
-//       ) : (
-//         <span className="text-xs font-semibold text-white/25">···</span>
+
+//       {/* Row 2: Total members joined (only when loaded and > 0) */}
+//       {loaded && totalJoinCount !== undefined && totalJoinCount > 0 && (
+//         <div className="flex items-center gap-1.5">
+//           <span className="text-xs font-semibold text-white/40">
+//             Total members joined -
+//           </span>
+//           <span className="text-xs font-bold text-white/90">
+//             {formatCount(totalJoinCount)}
+//           </span>
+//         </div>
 //       )}
 //     </div>
 //   );
@@ -140,26 +178,24 @@
 //   index: number;
 //   onJoin: (r: Room) => void;
 //   onToast: (m: string) => void;
-//   presence?: { fanCount: number; fans: ActiveFan[] };
+//   presence?: { fanCount: number; fans: ActiveFan[]; totalJoinCount?: number };
 // }) {
 //   const isFuture =
 //     room.scheduledStartTime !== undefined &&
 //     room.scheduledStartTime > Date.now();
 
 //   const sport = (room.sport ?? "default").toLowerCase();
-//   // `presence` is undefined until the batched presence-preview call resolves
-//   // for this room. Don't fall back to room.fanCount (a stale snapshot from
-//   // the initial /api/roar/rooms list) — that's exactly what caused the
-//   // count to show one number then visibly jump to the real one a moment
-//   // later. Show the loading state instead until live data exists.
 //   const presenceLoaded = presence !== undefined;
 //   const liveFanCount = presence?.fanCount ?? 0;
 //   const liveFans = presence?.fans ?? [];
+//   const totalJoinCount = presence?.totalJoinCount;
+
+//   const isInfinityRoom = room.roomId === INFINITY_ROOM.roomId; // ← new
 
 //   const handleCardClick = () => {
-//     if (isFuture) { 
-//       onToast("This room hasn't started yet."); 
-//       return; 
+//     if (isFuture) {
+//       onToast("This room hasn't started yet.");
+//       return;
 //     }
 //     onJoin(room);
 //   };
@@ -175,7 +211,6 @@
 //       <Thumbnail room={room} />
 
 //       <div className="flex-1 min-w-0">
-//         {/* Name + sport badge on same row */}
 //         {sport !== "default" && <SportBadge sport={sport} />}
 //         <div className="flex items-center gap-2 mb-1 min-w-0">
 //           <p className="text-[15px] font-extrabold text-white whitespace-nowrap">
@@ -187,14 +222,22 @@
 //           {room.description ?? "Roar conversations"}
 //         </p>
 
-//         <div className="mb-2.5">
-//           <StackedAvatars fans={liveFans} count={liveFanCount} loaded={presenceLoaded} />
-//         </div>
+//         {/* Hide avatars + active count for infinity room */}
+//         {!isInfinityRoom && (
+//           <div className="mb-2.5">
+//             <StackedAvatars
+//               fans={liveFans}
+//               count={liveFanCount}
+//               loaded={presenceLoaded}
+//               totalJoinCount={totalJoinCount}
+//             />
+//           </div>
+//         )}
 
 //         <motion.button
 //           whileTap={{ scale: 0.96 }}
 //           onClick={(e) => {
-//             e.stopPropagation(); // Prevent triggering the card click twice
+//             e.stopPropagation();
 //             if (isFuture) { onToast("This room hasn't started yet."); return; }
 //             onJoin(room);
 //           }}
@@ -220,20 +263,20 @@
 
 // export default function RoomsHome({ rooms, onJoinRoom, onToast }: Props) {
 //   const scrollRef = useRef<HTMLDivElement>(null);
-//   const [presenceByRoom, setPresenceByRoom] = useState<
-//     Record<string, { fanCount: number; fans: ActiveFan[] }>
-//   >({});
+//  type PresenceByRoom = {
+//     [roomId: string]: { fanCount: number; fans: ActiveFan[]; totalJoinCount?: number };
+//   };
+//   const [presenceByRoom, setPresenceByRoom] = useState<PresenceByRoom>({});
 
 //   const apiRooms = rooms.filter(
-//     (r) => r.roomId !== "mock-cricket" && r.roomId !== "mock-football" && r.roomId !== INFINITY_ROOM.roomId,
+//     (r) =>
+//       r.roomId !== "mock-cricket" &&
+//       r.roomId !== "mock-football" &&
+//       r.roomId !== INFINITY_ROOM.roomId,
 //   );
 
 //   const allRooms = [INFINITY_ROOM, ...apiRooms];
 
-//   // Single batched call for all visible rooms' active-fan previews,
-//   // instead of one request per RoomCard — avoids a request waterfall as
-//   // the room list grows. Re-polled so avatar stacks stay live while this
-//   // screen is open.
 //   useEffect(() => {
 //     const roomIds = allRooms.map((r) => r.roomId);
 //     if (roomIds.length === 0) return;
@@ -243,16 +286,16 @@
 //       try {
 //         const res = await axios.post("/api/roar/rooms/presence-preview", { roomIds });
 //         if (!cancelled && res.data?.success) setPresenceByRoom(res.data.rooms);
-//       } catch (e) { console.error("Presence preview failed:", e); }
+//       } catch (e) {
+//         console.error("Presence preview failed:", e);
+//       }
 //     };
 
 //     fetchPreview();
-//     // const iv = setInterval(fetchPreview, 20_000);
-//     // return () => { cancelled = true; clearInterval(iv); };
 //     const iv = setInterval(() => {
-//   if (!document.hidden) fetchPreview();
-// }, 30_000);
-// return () => { cancelled = true; clearInterval(iv); };
+//       if (!document.hidden) fetchPreview();
+//     }, 30_000);
+//     return () => { cancelled = true; clearInterval(iv); };
 //     // eslint-disable-next-line react-hooks/exhaustive-deps
 //   }, [rooms.length]);
 
@@ -266,7 +309,14 @@
 //       className="lg:!bottom-0"
 //     >
 //       {/* Header */}
-//       <div style={{ flexShrink: 0, padding: "16px 16px 10px", borderBottom: "1px solid rgba(255,255,255,0.06)", background: "var(--bg-primary, #0e0e14)" }}>
+//       <div
+//         style={{
+//           flexShrink: 0,
+//           padding: "16px 16px 10px",
+//           borderBottom: "1px solid rgba(255,255,255,0.06)",
+//           background: "var(--bg-primary, #0e0e14)",
+//         }}
+//       >
 //         <p className="text-[15px] font-bold text-white">Roar Rooms</p>
 //       </div>
 
@@ -301,6 +351,7 @@
 
 
 
+
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import axios from "axios";
@@ -313,23 +364,12 @@ const SPORT_GRADIENT: Record<string, string> = {
 };
 
 const SPORT_IMAGE: Record<string, string> = {
-  cricket:  "/images/wt20.png",
+  cricket:  "/images/room_DP.png",
   football: "/images/fifa.png",
   default:  "/images/fifa.png",
 };
 
-const ROOM_IMAGE: Record<string, string> = {
-  "sf360-infinity": "/images/infinityroom.png",
-};
-
-const INFINITY_ROOM: Room = {
-  roomId:      "sf360-infinity",
-  name:        "SF360 Infinity Room",
-  description: "Infinite roaring conversations",
-  sport:       "default",
-  isActive:    true,
-  fanCount:    27,
-};
+const INFINITY_ROOM_ID = "vZFu6xEApNRd1aUbDuHW";
 
 interface ActiveFan {
   uid: string;
@@ -401,7 +441,7 @@ function StackedAvatars({
         </div>
         {loaded ? (
           <span className="text-xs font-semibold text-white/45">
-             <span className="text-xs font-bold text-white/90">+{count} </span>Active
+            <span className="text-xs font-bold text-white/90">+{count} </span>Active
           </span>
         ) : (
           <span className="text-xs font-semibold text-white/25">···</span>
@@ -423,13 +463,12 @@ function StackedAvatars({
   );
 }
 
-function Thumbnail({ room }: { room: Room }) {
+function Thumbnail({ room, isInfinityRoom }: { room: Room; isInfinityRoom?: boolean }) {
   const sport    = (room.sport ?? "default").toLowerCase();
   const gradient = SPORT_GRADIENT[sport] ?? SPORT_GRADIENT.default;
-  const imgSrc   =
-    ROOM_IMAGE[room.roomId] ??
-    SPORT_IMAGE[sport] ??
-    SPORT_IMAGE.default;
+  const imgSrc   = isInfinityRoom
+    ? "/images/infinityroom.png"
+    : SPORT_IMAGE[sport] ?? SPORT_IMAGE.default;
 
   return (
     <div
@@ -439,7 +478,7 @@ function Thumbnail({ room }: { room: Room }) {
       <img
         src={imgSrc}
         alt={room.name}
-        className="absolute inset-0 w-full h-full object-cover rounded-2xl"
+        className="absolute inset-0 w-full h-full object-fit rounded-2xl"
         onError={(e) => {
           (e.currentTarget as HTMLImageElement).style.display = "none";
         }}
@@ -491,7 +530,7 @@ function RoomCard({
   const liveFans = presence?.fans ?? [];
   const totalJoinCount = presence?.totalJoinCount;
 
-  const isInfinityRoom = room.roomId === INFINITY_ROOM.roomId; // ← new
+  const isInfinityRoom = room.roomId === INFINITY_ROOM_ID;
 
   const handleCardClick = () => {
     if (isFuture) {
@@ -509,10 +548,10 @@ function RoomCard({
       className="flex gap-4 items-center py-3.5 border-b border-white/[0.06] cursor-pointer hover:bg-white/[0.02] transition-colors duration-150"
       onClick={handleCardClick}
     >
-      <Thumbnail room={room} />
+      <Thumbnail room={room} isInfinityRoom={isInfinityRoom} />
 
       <div className="flex-1 min-w-0">
-        {sport !== "default" && <SportBadge sport={sport} />}
+        {sport !== "default" && !isInfinityRoom && <SportBadge sport={sport} />}
         <div className="flex items-center gap-2 mb-1 min-w-0">
           <p className="text-[15px] font-extrabold text-white whitespace-nowrap">
             {room.name}
@@ -524,7 +563,7 @@ function RoomCard({
         </p>
 
         {/* Hide avatars + active count for infinity room */}
-        {!isInfinityRoom && (
+        {/* {!isInfinityRoom && ( */}
           <div className="mb-2.5">
             <StackedAvatars
               fans={liveFans}
@@ -533,7 +572,7 @@ function RoomCard({
               totalJoinCount={totalJoinCount}
             />
           </div>
-        )}
+        {/* )} */}
 
         <motion.button
           whileTap={{ scale: 0.96 }}
@@ -564,19 +603,16 @@ interface Props {
 
 export default function RoomsHome({ rooms, onJoinRoom, onToast }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
- type PresenceByRoom = {
+  type PresenceByRoom = {
     [roomId: string]: { fanCount: number; fans: ActiveFan[]; totalJoinCount?: number };
   };
   const [presenceByRoom, setPresenceByRoom] = useState<PresenceByRoom>({});
 
-  const apiRooms = rooms.filter(
+  const allRooms = rooms.filter(
     (r) =>
       r.roomId !== "mock-cricket" &&
-      r.roomId !== "mock-football" &&
-      r.roomId !== INFINITY_ROOM.roomId,
+      r.roomId !== "mock-football",
   );
-
-  const allRooms = [INFINITY_ROOM, ...apiRooms];
 
   useEffect(() => {
     const roomIds = allRooms.map((r) => r.roomId);

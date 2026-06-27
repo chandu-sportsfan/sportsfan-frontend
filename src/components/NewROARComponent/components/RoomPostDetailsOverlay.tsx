@@ -868,7 +868,7 @@ export default function RoomPostDetailsOverlay({
                     if (dn.includes("_")) return false;
                     seen.add(key); return true;
                 }));
-        }).catch(() => {});
+        }).catch(() => { });
     }, [activeUsername]);
 
     useEffect(() => {
@@ -876,7 +876,7 @@ export default function RoomPostDetailsOverlay({
             setUserUsername(localStorage.getItem("roar_username") || "RoarUser");
             setUserBadge(localStorage.getItem("roar_badge") || "RISING_FAN");
             setUserAvatarUrl(currentAvatarUrl || localStorage.getItem("roar_avatar_url") || undefined);
-        } catch {}
+        } catch { }
     }, [currentAvatarUrl]);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -939,7 +939,7 @@ export default function RoomPostDetailsOverlay({
         try {
             const res = await axios.get(`/api/roar/rooms/${post.roomId}/messages/${post.id}/comments`);
             if (res.data?.success) setComments(res.data.comments);
-        } catch {}
+        } catch { }
     }, [post]);
 
     // ---------------------------------------------------------------------------
@@ -1087,7 +1087,7 @@ export default function RoomPostDetailsOverlay({
             const res = await axios.post(`/api/roar/posts/${post.id}/comments/${commentId}/react`);
             if (res.data?.success)
                 setComments(p => p.map(c => c.commentId === commentId ? { ...c, heartCount: res.data.heartCount } : c));
-        } catch {}
+        } catch { }
     };
 
     const userVote = votes[post.id];
@@ -1151,7 +1151,15 @@ export default function RoomPostDetailsOverlay({
                         <ChevronLeft size={22} />
                     </button>
                     <div className="flex flex-col flex-1 min-w-0">
-                        <h2 className="text-[12px] font-bold text-white m-0 uppercase tracking-[0.03em]">Post</h2>
+                        {/* <h2 className="text-[12px] font-bold text-white m-0 uppercase tracking-[0.03em]">Post</h2> */}
+                        <h2 className="text-[12px] font-bold text-white m-0 uppercase tracking-[0.03em]">
+                            {post.type === "hottake" ? "Hot Take"
+                                : post.type === "debate" ? "Debate"
+                                    : post.type === "prediction" ? "Prediction"
+                                        : post.type === "raw_reactions" ? "Raw Reactions"
+                                            : post.type === "quiz" ? "Quiz"
+                                                : "Post"}
+                        </h2>
                         <p className="text-[9px] text-[#9494AD] mt-0.5 mb-0">
                             Posted by {post.fan?.username || post.authorUsername} • {formatTimeAgo(post.createdAt)} • {comments.length} comments
                         </p>

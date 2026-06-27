@@ -2013,7 +2013,8 @@ export default function DiscussionRoom({
     };
     const leaveBeacon = () => { navigator.sendBeacon(`/api/roar/rooms/${roomId}/presence/leave`); };
     const leaveAxios = () => { axios.delete(`/api/roar/rooms/${roomId}/presence`).catch(() => {}); };
-    join().then(refreshActiveFans);
+    // join().then(refreshActiveFans);
+    join().then(() => setTimeout(refreshActiveFans, 2000));
     const heartbeat = setInterval(() => { if (!document.hidden) join(); }, 30_000);
     const fanRefresh = setInterval(() => { if (!document.hidden) refreshActiveFans(); }, 120_000);
     window.addEventListener("beforeunload", leaveBeacon);
@@ -2065,7 +2066,8 @@ export default function DiscussionRoom({
   useVisibilityInterval(fetchMsgs, 15000);
 
   const fetchReactionUpdates = useCallback(async () => {
-    if (!roomId || posts.length === 0) return;
+    // if (!roomId || posts.length === 0) return;
+    if (!roomId) return;
     try {
       const res = await axios.get(`/api/roar/rooms/${roomId}/messages?t=${Date.now()}`);
       if (res.data?.success) {
@@ -2083,7 +2085,8 @@ export default function DiscussionRoom({
         });
       }
     } catch {}
-  }, [roomId, posts]);
+  // }, [roomId, posts]);
+  }, [roomId]);
   useVisibilityInterval(fetchReactionUpdates, 5000);
 
   const lastNotifCheckRef = useRef<number>(Date.now());
@@ -2106,7 +2109,7 @@ export default function DiscussionRoom({
       } catch {}
     };
     lastNotifCheckRef.current = Date.now();
-    const interval = setInterval(checkNotifs, 5000);
+    const interval = setInterval(checkNotifs, 60000);
     return () => { clearInterval(interval); if (notifToastTimerRef.current) clearTimeout(notifToastTimerRef.current); };
   }, [roomId, userProfile?.actualUserId, userProfile?.email]);
 

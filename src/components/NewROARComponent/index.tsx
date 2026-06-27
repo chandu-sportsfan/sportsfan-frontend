@@ -601,7 +601,7 @@ import CreateFlashQuizModal from "./components/CreateFlashQuizModal";
 import PostDetailsOverlay from "./components/PostDetailsOverlay";
 import Onboarding from "./screens/Onboarding";
 import RoomsHome from "./screens/RoomsHome";
-import HomeFeed from "./screens/HomeFeed";             // SF360 Infinity Room = posts feed
+// import HomeFeed from "./screens/HomeFeed";             // SF360 Infinity Room = posts feed
 import DiscussionRoom from "./screens/DiscussionRoom";
 import Notifications from "./screens/Notifications";
 import Leaderboard from "./screens/Leaderboard";
@@ -791,19 +791,19 @@ export default function ROARApp() {
   }, [onboarded, fetchPosts]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Fetch fresh posts every time user opens the feed ──────────────────────
-  useEffect(() => {
-    if (overlay !== "infinity" || !onboarded) return;
-    fetchPosts(); // always fetch immediately on open
-    const interval = setInterval(() => {
-      if (!document.hidden) fetchPosts(); // skip if tab is hidden
-    }, 15000);
-    const onVisible = () => { if (!document.hidden) fetchPosts(); }; // fetch instantly on tab return
-    document.addEventListener("visibilitychange", onVisible);
-    return () => {
-      clearInterval(interval);
-      document.removeEventListener("visibilitychange", onVisible);
-    };
-  }, [overlay, onboarded]); 
+  // useEffect(() => {
+  //   if (overlay !== "infinity" || !onboarded) return;
+  //   fetchPosts(); // always fetch immediately on open
+  //   const interval = setInterval(() => {
+  //     if (!document.hidden) fetchPosts(); // skip if tab is hidden
+  //   }, 15000);
+  //   const onVisible = () => { if (!document.hidden) fetchPosts(); }; // fetch instantly on tab return
+  //   document.addEventListener("visibilitychange", onVisible);
+  //   return () => {
+  //     clearInterval(interval);
+  //     document.removeEventListener("visibilitychange", onVisible);
+  //   };
+  // }, [overlay, onboarded]); 
 
   useEffect(() => {
     const postId = searchParams.get("postId");
@@ -996,17 +996,17 @@ export default function ROARApp() {
         closesAt: payload.closesAt ?? null,
         createdAt: Date.now(),
         status: "active",
-        ...(postType === "quiz" && { 
-          quizQuestion: payload.quizQuestion, 
-          quizOptions: payload.quizOptions, 
-          quizCorrectOption: payload.quizCorrectOption, 
-          quizTimer: payload.quizTimer, 
-          quizPoints: payload.quizPoints 
+        ...(postType === "quiz" && {
+          quizQuestion: payload.quizQuestion,
+          quizOptions: payload.quizOptions,
+          quizCorrectOption: payload.quizCorrectOption,
+          quizTimer: payload.quizTimer,
+          quizPoints: payload.quizPoints
         }),
-        ...(postType !== "quiz" && { 
-          memCtx: payload.memCtx, 
-          matchId: payload.match, 
-          confidence: payload.confidence 
+        ...(postType !== "quiz" && {
+          memCtx: payload.memCtx,
+          matchId: payload.match,
+          confidence: payload.confidence
         }),
       };
 
@@ -1023,31 +1023,31 @@ export default function ROARApp() {
         const res = await axios.post("/api/roar/posts", {
           type: postType,
           text: postType === "quiz" ? payload.quizQuestion : payload.text,
-          sport: payload.sport || "cricket", 
-          audience: payload.audience, 
+          sport: payload.sport || "cricket",
+          audience: payload.audience,
           mediaUrls,
-          ...(postType !== "quiz" && { 
-            sideA: payload.sideA, 
-            sideB: payload.sideB, 
+          ...(postType !== "quiz" && {
+            sideA: payload.sideA,
+            sideB: payload.sideB,
             predictionOptions: payload.predictionOptions,
-            memCtx: payload.memCtx, 
-            matchId: payload.match, 
-            confidence: payload.confidence 
+            memCtx: payload.memCtx,
+            matchId: payload.match,
+            confidence: payload.confidence
           }),
-          ...(postType === "quiz" && { 
-            quizQuestion: payload.quizQuestion, 
-            quizOptions: payload.quizOptions, 
-            quizCorrectOption: payload.quizCorrectOption, 
-            quizTimer: payload.quizTimer, 
-            quizPoints: payload.quizPoints 
+          ...(postType === "quiz" && {
+            quizQuestion: payload.quizQuestion,
+            quizOptions: payload.quizOptions,
+            quizCorrectOption: payload.quizCorrectOption,
+            quizTimer: payload.quizTimer,
+            quizPoints: payload.quizPoints
           }),
-          ...(postType === "raw_reactions" && { 
-            memGifUrl: payload.gifUrl, 
-            memTag: payload.sf360Tag 
+          ...(postType === "raw_reactions" && {
+            memGifUrl: payload.gifUrl,
+            memTag: payload.sf360Tag
           }),
-          ...(postType === "prediction" && { 
-            closesAt: payload.closesAt, 
-            closeAfterMinutes: payload.closeAfterMinutes 
+          ...(postType === "prediction" && {
+            closesAt: payload.closesAt,
+            closeAfterMinutes: payload.closeAfterMinutes
           }),
         });
 
@@ -1087,10 +1087,13 @@ export default function ROARApp() {
   }, []);
 
   // ── Derived ────────────────────────────────────────────────────────────────
+  // const isRoom = overlay === "room";
+  // const isInfinity = overlay === "infinity";
+  // const isLB = overlay === "leaderboard";
+  // const isFullScreenOverlay = isRoom || isInfinity;
   const isRoom = overlay === "room";
-  const isInfinity = overlay === "infinity";
   const isLB = overlay === "leaderboard";
-  const isFullScreenOverlay = isRoom || isInfinity;
+  const isFullScreenOverlay = isRoom;
   const hideChrome = isFullScreenOverlay || !onboarded || !!viewingUserId;
 
   useEffect(() => {
@@ -1165,32 +1168,32 @@ export default function ROARApp() {
                 <motion.div key="lb" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }} style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
                   <Leaderboard onBack={() => setOverlay(null)} onCompose={() => openCompose("prediction")} />
                 </motion.div>
-              ) : isInfinity ? (
-                <motion.div key="infinity" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }} style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
-                  <style dangerouslySetInnerHTML={{ __html: `#global-header-desktop,#global-header-tablet,#global-header-mobile{display:none!important}` }} />
-                  <HomeFeed
-                    onJoinRoom={room => { if (room) setSelectedRoom(room); else if (rooms.length) setSelectedRoom(rooms[0]); setOverlay("room"); }}
-                    onLeaderboard={() => setOverlay("leaderboard")}
-                    onFanProfile={handleFanProfileClick}
-                    onToast={showToast}
-                    extraItems={[]}
-                    showBanner={false}
-                    onDismissBanner={() => { }}
-                    userBadge={userBadge}
-                    onHandlePost={handlePost}
-                    rooms={rooms}
-                    dbPosts={dbPosts}
-                    onPostClick={post => setSelectedPost(post)}
-                    onVote={handleVote}
-                    onDeletePost={handleDeletePost}
-                    userSports={userSports}
-                    onQuickCompose={t => openCompose(t)}
-                    currentUsername={currentUsername}
-                    currentUserId={currentUserId}
-                    currentAvatarUrl={currentAvatarUrl}
-                    onBack={() => { setOverlay(null); setActiveTab("home"); }}
-                  />
-                </motion.div>
+                // ) : isInfinity ? (
+                //   <motion.div key="infinity" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }} style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
+                //     <style dangerouslySetInnerHTML={{ __html: `#global-header-desktop,#global-header-tablet,#global-header-mobile{display:none!important}` }} />
+                //     <HomeFeed
+                //       onJoinRoom={room => { if (room) setSelectedRoom(room); else if (rooms.length) setSelectedRoom(rooms[0]); setOverlay("room"); }}
+                //       onLeaderboard={() => setOverlay("leaderboard")}
+                //       onFanProfile={handleFanProfileClick}
+                //       onToast={showToast}
+                //       extraItems={[]}
+                //       showBanner={false}
+                //       onDismissBanner={() => { }}
+                //       userBadge={userBadge}
+                //       onHandlePost={handlePost}
+                //       rooms={rooms}
+                //       dbPosts={dbPosts}
+                //       onPostClick={post => setSelectedPost(post)}
+                //       onVote={handleVote}
+                //       onDeletePost={handleDeletePost}
+                //       userSports={userSports}
+                //       onQuickCompose={t => openCompose(t)}
+                //       currentUsername={currentUsername}
+                //       currentUserId={currentUserId}
+                //       currentAvatarUrl={currentAvatarUrl}
+                //       onBack={() => { setOverlay(null); setActiveTab("home"); }}
+                //     />
+                //   </motion.div>
               ) : isRoom ? (
                 <motion.div key="room" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }} style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
                   <style dangerouslySetInnerHTML={{ __html: `#global-header-desktop,#global-header-tablet,#global-header-mobile{display:none!important}` }} />
@@ -1217,14 +1220,19 @@ export default function ROARApp() {
                   {activeTab === "home" && (
                     <RoomsHome
                       rooms={rooms}
+                      // onJoinRoom={room => {
+                      //   if (room?.roomId === "sf360-infinity") {
+                      //     setOverlay("infinity");
+                      //   } else {
+                      //     if (room) setSelectedRoom(room);
+                      //     else if (rooms.length) setSelectedRoom(rooms[0]);
+                      //     setOverlay("room");
+                      //   }
+                      // }}
                       onJoinRoom={room => {
-                        if (room?.roomId === "sf360-infinity") {
-                          setOverlay("infinity");
-                        } else {
-                          if (room) setSelectedRoom(room);
-                          else if (rooms.length) setSelectedRoom(rooms[0]);
-                          setOverlay("room");
-                        }
+                        if (room) setSelectedRoom(room);
+                        else if (rooms.length) setSelectedRoom(rooms[0]);
+                        setOverlay("room");
                       }}
                       onToast={showToast}
                     />

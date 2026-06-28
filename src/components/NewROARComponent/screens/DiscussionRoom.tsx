@@ -2417,12 +2417,12 @@ export default function DiscussionRoom({
                   <span className="live-pulse w-1.5 h-1.5 rounded-full bg-[var(--live-green)] inline-block flex-shrink-0" />
                   <span className="text-[10px] font-bold text-[var(--live-green)] flex-shrink-0">LIVE</span>
                 </div>
-                {watchAlongRoomId && (
+                {/* {watchAlongRoomId && (
                   <button type="button" onClick={() => router.push(`/MainModules/WatchAlong/room/${watchAlongRoomId}`)} className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-gradient-to-r from-pink-600 to-rose-600 text-white cursor-pointer shadow-[0_2px_10px_rgba(219,39,119,0.3)] active:scale-95 whitespace-nowrap">
                     <span>Watchalong</span>
                     <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse inline-block flex-shrink-0" />
                   </button>
-                )}
+                )} */}
               </div>
             </div>
           </div>

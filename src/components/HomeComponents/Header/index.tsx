@@ -1,5 +1,4 @@
 
-
 // "use client";
 
 // import {
@@ -32,6 +31,7 @@
 // import LogoutButton from "../LogoutButton";
 // import axios from "axios";
 // import { useRoarNotifications } from "@/context/RoarNotificationsContext";
+// import { useUserProfile } from "@/context/UserProfileContext";
 
 // // ── Tournament badge config
 
@@ -158,6 +158,51 @@
 //   );
 // });
 
+// // ── Ask AI button ─────────────────────────────────────────────────────────────
+// // Only active (clickable) when search shows "no results found".
+// // Otherwise rendered as a disabled, greyed-out button.
+// const AskAIButton = memo(function AskAIButton({
+//   active,
+//   href,
+//   onClick,
+//   size = "md",
+// }: {
+//   active: boolean;
+//   href: string;
+//   onClick: () => void;
+//   size?: "sm" | "md";
+// }) {
+//   const sizeClasses =
+//     size === "sm"
+//       ? "text-xs px-3 py-1.5 gap-1"
+//       : "text-sm px-4 py-2 gap-1.5";
+//   const iconSize = size === "sm" ? 11 : 14;
+
+//   if (!active) {
+//     return (
+//       <button
+//         disabled
+//         className={`flex items-center bg-[#1a1a1a] border border-white/5 text-gray-600 font-medium rounded-full whitespace-nowrap cursor-not-allowed opacity-50 shrink-0 ${sizeClasses}`}
+//       >
+//         <Sparkles size={iconSize} />
+//         Ask AI
+//       </button>
+//     );
+//   }
+
+//   return (
+//     <Link href={href}>
+//       <button
+//         onClick={onClick}
+//         className={`flex items-center bg-[#1a1a1a] hover:bg-[#222] border border-pink-500/40 text-pink-400 font-medium rounded-full transition-colors whitespace-nowrap shrink-0 ${sizeClasses}`}
+//       >
+//         <Sparkles size={iconSize} className="text-pink-400" />
+//         Ask AI
+//       </button>
+//     </Link>
+//   );
+// });
+
 // // ── Points pill 
 // // Isolated so only it re-renders when points change, not the whole header.
 // const PointsPill = memo(function PointsPill({
@@ -224,6 +269,8 @@
 //     clearSearch,
 //     navigateToResult,
 //   } = useGlobalSearch();
+//   const { userProfile } = useUserProfile();
+
 
 //   const { currentUserPoints, loading: pointsLoading } = useLeaderboard();
 //   const { user, getUserDisplayName, loading: authLoading } = useAuth();
@@ -261,6 +308,11 @@
 //   const [showDropdown, setShowDropdown] = useState(false);
 //   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
 
+//   // Tracks whether a search has actually completed for the current query.
+//   // Prevents the Ask AI button activating during the debounce window
+//   // (when searchResults is still empty from before).
+//   const [searchCompleted, setSearchCompleted] = useState(false);
+
 //   const dropdownRef = useRef<HTMLDivElement>(null);
 //   const mobileDropdownRef = useRef<HTMLDivElement>(null);
 //   const inputRef = useRef<HTMLInputElement>(null);
@@ -272,6 +324,9 @@
 //   // Debounced search — 400 ms, performSearch excluded from deps (stable useCallback)
 //   useEffect(() => {
 //     if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+
+//     // Any new query invalidates the previous completed state
+//     setSearchCompleted(false);
 
 //     if (!searchQuery.trim()) {
 //       setShowDropdown(false);
@@ -287,10 +342,23 @@
 //     };
 //   }, [searchQuery]); // ← searchQuery only; performSearch is stable
 
-//   // Show dropdown when results arrive
+//   // Show dropdown when results arrive + mark search as completed
 //   useEffect(() => {
-//     if (searchQuery.trim() && !isSearching) setShowDropdown(true);
+//     if (searchQuery.trim() && !isSearching) {
+//       setShowDropdown(true);
+//       setSearchCompleted(true);
+//     }
 //   }, [searchQuery, searchResults, isSearching]);
+
+//   // Ask AI is active ONLY when a completed search found nothing
+//   const noResultsFound = useMemo(
+//     () =>
+//       searchQuery.trim().length > 0 &&
+//       !isSearching &&
+//       searchCompleted &&
+//       searchResults.length === 0,
+//     [searchQuery, isSearching, searchCompleted, searchResults]
+//   );
 
 //   // Close on outside click
 //   useEffect(() => {
@@ -319,6 +387,7 @@
 //   const handleClear = useCallback(() => {
 //     clearSearch();
 //     setShowDropdown(false);
+//     setSearchCompleted(false);
 //     if (inputRef.current) inputRef.current.value = "";
 //     if (mobileInputRef.current) mobileInputRef.current.value = "";
 //   }, [clearSearch]);
@@ -336,6 +405,16 @@
 //   const userRole = useMemo(
 //     () => (authLoading ? "..." : user?.role || "user"),
 //     [authLoading, user?.role]
+//   );
+
+//   const askAIHref = useMemo(
+//     () =>
+//       searchQuery.trim()
+//         ? `/MainModules/AskAI?q=${encodeURIComponent(
+//           searchQuery.trim().slice(0, 100)
+//         )}`
+//         : "/MainModules/AskAI",
+//     [searchQuery]
 //   );
 
 //   // ── Search results list 
@@ -457,17 +536,26 @@
 //         ) : searchQuery.trim() ? (
 //           <div className="p-4 text-center text-gray-400">
 //             <p className="text-sm">
-//               The results are not found for &apos;{searchQuery}&apos;
-//               <div className="flex flex-row items-center justify-center whitespace-nowrap gap-4">
-//       Try explore in <p className="text-pink-500">Ask AI</p>
-//               </div>
-
+//               No results found for &apos;{searchQuery}&apos;
 //             </p>
+//             <Link href={askAIHref} onClick={handleAskAIClick}>
+//               <span className="inline-flex items-center gap-1 mt-2 text-pink-500 text-sm font-medium hover:underline cursor-pointer">
+//                 <Sparkles size={13} />
+//                 Try exploring in Ask AI
+//               </span>
+//             </Link>
 //           </div>
 //         ) : null}
 //       </>
 //     ),
-//     [isSearching, searchResults, searchQuery, navigateToResult]
+//     [
+//       isSearching,
+//       searchResults,
+//       searchQuery,
+//       navigateToResult,
+//       askAIHref,
+//       handleAskAIClick,
+//     ]
 //   );
 
 //   // ── Profile menu ──────────────────────────────────────────────────────────
@@ -481,9 +569,9 @@
 //         >
 //           <User
 //             size={16}
-//             className="text-gray-400 group-hover:text-white transition-colors"
+//             className="text-gray-400 group-hover:text-pink-400 transition-colors"
 //           />
-//           <span className="text-white text-sm font-medium">Profile</span>
+//           <span className="text-white group-hover:text-pink-400 text-sm font-medium">Profile</span>
 //         </Link>
 //         <div className="h-px bg-white/5 mx-4" />
 //         <Link
@@ -491,31 +579,21 @@
 //           onClick={onClose}
 //           className="flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors group"
 //         >
-//           <SlidersHorizontal size={16} className="text-pink-400" />
+//           <div className="relative">
+//             <SlidersHorizontal size={16} className="text-pink-400" />
+//             <span className="absolute -top-2 -right-3 text-[8px] font-bold bg-pink-500 text-white px-1 rounded-full">
+//               REC
+//             </span>
+//           </div>
 //           <span className="text-pink-400 text-sm font-medium">Preferences</span>
-//           <span className="ml-auto text-[8px] font-semibold bg-pink-500/20 text-pink-400 px-2 py-0.5 rounded-full border border-pink-500/30">
-//             Recommended
-//           </span>
 //         </Link>
 //         <div className="h-px bg-white/5 mx-4" />
-//         {/* <Link
-//           href="/MainModules/Settings"
-//           onClick={onClose}
-//           className="flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors group"
-//         >
-//           <Settings
-//             size={16}
-//             className="text-gray-400 group-hover:text-white transition-colors"
-//           />
-//           <span className="text-white text-sm font-medium">Settings</span>
-//         </Link> */}
-//         <div className="h-px bg-white/5 mx-4" />
-//         <LogoutButton className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors group">
+//         <LogoutButton className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 hover:cursor-pointer transition-colors group">
 //           <LogOut
 //             size={16}
-//             className="text-gray-400 group-hover:text-red-400 transition-colors"
+//             className="text-gray-400 group-hover:text-pink-400 transition-colors"
 //           />
-//           <span className="text-white group-hover:text-red-400 text-sm font-medium transition-colors">
+//           <span className="text-white group-hover:text-pink-400 text-sm font-medium transition-colors">
 //             Logout
 //           </span>
 //         </LogoutButton>
@@ -524,20 +602,10 @@
 //     []
 //   );
 
-//   const askAIHref = useMemo(
-//     () =>
-//       searchQuery.trim()
-//         ? `/MainModules/AskAI?q=${encodeURIComponent(
-//           searchQuery.trim().slice(0, 100)
-//         )}`
-//         : "/MainModules/AskAI",
-//     [searchQuery]
-//   );
-
 //   return (
 //     <>
 //       {/* ── DESKTOP (1280px+) ─────────────────────────────────────────────── */}
-//       <header className="hidden xl:flex w-full items-center gap-4 px-6 py-3 bg-[#0a0a0a] border-b border-white/5 sticky top-0 z-50">
+//       <header id="global-header-desktop" className="hidden xl:flex w-full items-center gap-4 px-6 py-3 bg-[#0a0a0a] border-b border-white/5 sticky top-0 z-[100]">
 //         <div className="relative flex-1 max-w-2xl" ref={dropdownRef}>
 //           <div className="flex items-center bg-[#111] border border-white/10 rounded-full overflow-hidden pr-1">
 //             <Search size={16} className="text-gray-500 ml-4 shrink-0" />
@@ -562,22 +630,26 @@
 //                 />
 //               </button>
 //             )}
-//             <Link href={askAIHref}>
-//               <button
-//                 onClick={handleAskAIClick}
-//                 className="flex items-center gap-1.5 bg-[#1a1a1a] hover:bg-[#222] border border-white/10 text-pink-400 text-sm font-medium px-4 py-2 rounded-full transition-colors whitespace-nowrap"
-//               >
-//                 <Sparkles size={14} className="text-pink-400" />
-//                 Ask AI
-//               </button>
-//             </Link>
+//             <AskAIButton
+//               active={noResultsFound}
+//               href={askAIHref}
+//               onClick={handleAskAIClick}
+//             />
 //           </div>
 //           {showDropdown && (
-//             <div className="absolute top-full left-0 right-0 mt-2 bg-[#111] border border-pink-500/20 rounded-2xl shadow-2xl z-50 max-h-[400px] overflow-y-auto">
+//             <div className="absolute top-full left-0 right-0 mt-2 bg-[#111] border border-pink-500/20 rounded-2xl shadow-2xl z-[9999] max-h-[400px] overflow-y-auto">
 //               <ResultsList />
 //             </div>
 //           )}
+
 //         </div>
+//         {showDropdown && (
+//           <div className="absolute top-full left-0 right-0 mt-2 bg-[#111] border border-pink-500/20 rounded-2xl shadow-2xl z-50 max-h-[400px] overflow-y-auto">
+//             <ResultsList />
+//           </div>
+//         )}
+
+
 
 //         <div className="flex items-center gap-3 ml-auto">
 //           {/* <button className="flex items-center gap-2 bg-transparent hover:bg-pink-500/10 border border-pink-500 text-pink-400 text-sm font-medium px-5 py-2.5 rounded-full transition-colors">
@@ -591,9 +663,15 @@
 //           <div className="relative" ref={profileDropdownRef}>
 //             <button
 //               onClick={() => setShowProfileDropdown((v) => !v)}
-//               className="flex items-center gap-2 bg-[#111] border border-white/10 rounded-full pl-1 pr-3 py-1 hover:bg-white/5 transition-colors"
+//               className="flex items-center gap-2 bg-[#111] border border-white/10 rounded-full pl-1 pr-3 py-1 hover:bg-white/5 transition-colors hover:cursor-pointer"
 //             >
-//               <Avatar src="" name={displayName} size={34} ring />
+//               {/* <Avatar src="" name={displayName} size={34} ring /> */}
+//               <Avatar
+//                 src={userProfile?.avatarUrl || userProfile?.avatar || ""}
+//                 name={displayName}
+//                 size={34}
+//                 ring
+//               />
 //               <div className="flex flex-col items-start leading-tight">
 //                 <span className="text-white font-medium text-sm">
 //                   {authLoading ? "Loading..." : displayName}
@@ -607,7 +685,7 @@
 //               />
 //             </button>
 //             {showProfileDropdown && (
-//               <div className="absolute right-0 top-full mt-3 w-56 bg-[#111] border border-white/10 rounded-2xl shadow-2xl shadow-black/60 overflow-hidden z-50">
+//               <div className="absolute right-0 top-full mt-3 w-56 bg-[#111] border border-white/10 rounded-2xl shadow-2xl shadow-black/60 overflow-hidden z-[9999]">
 //                 <ProfileMenu onClose={() => setShowProfileDropdown(false)} />
 //               </div>
 //             )}
@@ -616,7 +694,7 @@
 //       </header>
 
 //       {/* ── TABLET (768px – 1279px) ───────────────────────────────────────── */}
-//       <header className="hidden md:flex xl:hidden w-full items-center gap-3 px-4 py-2 bg-[#0a0a0a] border-b border-white/5 sticky top-0 z-50">
+//       <header id="global-header-tablet" className="hidden md:flex xl:hidden w-full items-center gap-3 px-4 py-2 bg-[#0a0a0a] border-b border-white/5 sticky top-0 z-100">
 //         <Link href="/MainModules/ROAR" className="flex-shrink-0">
 //           <Image
 //             src="/images/Logo.png"
@@ -651,18 +729,15 @@
 //                 />
 //               </button>
 //             )}
-//             <Link href={askAIHref}>
-//               <button
-//                 onClick={handleAskAIClick}
-//                 className="flex items-center gap-1.5 bg-[#1a1a1a] hover:bg-[#222] border border-white/10 text-pink-400 text-xs font-medium px-3 py-1.5 rounded-full transition-colors whitespace-nowrap"
-//               >
-//                 <Sparkles size={12} />
-//                 Ask AI
-//               </button>
-//             </Link>
+//             <AskAIButton
+//               active={noResultsFound}
+//               href={askAIHref}
+//               onClick={handleAskAIClick}
+//               size="sm"
+//             />
 //           </div>
 //           {showDropdown && (
-//             <div className="absolute top-full left-0 right-0 mt-2 bg-[#111] border border-pink-500/20 rounded-2xl shadow-2xl z-50 max-h-[400px] overflow-y-auto">
+//             <div className="absolute top-full left-0 right-0 mt-2 bg-[#111] border border-pink-500/20 rounded-2xl shadow-2xl z-[9999] max-h-[400px] overflow-y-auto">
 //               <ResultsList />
 //             </div>
 //           )}
@@ -673,32 +748,25 @@
 //           Preferences
 //         </button> */}
 //         <ChatButton unreadCount={totalUnreadChats} />
-//         {/* Tablet pill is slightly smaller */}
-//         <div className="flex items-center gap-2 bg-[#111] border border-white/10 rounded-full px-3 py-2">
-//           <Star size={14} className="text-pink-500 fill-pink-500" />
-//           {pointsLoading ? (
-//             <div className="w-6 h-3 bg-white/10 rounded-full animate-pulse" />
-//           ) : (
-//             <span className="text-white font-semibold text-xs">
-//               <PointsPill
-//                 points={currentUserPoints}
-//                 loading={pointsLoading}
-//                 small
-//               />
-//             </span>
-//           )}
-//         </div>
+//         {/* Tablet compact points pill */}
+//         <PointsPill points={currentUserPoints} loading={pointsLoading} small />
 //         <BellButton unreadCount={totalUnreadNotifications} />
 //         <div className="relative" ref={profileDropdownRef}>
 //           <button
 //             onClick={() => setShowProfileDropdown((v) => !v)}
 //             className="flex items-center gap-1.5 bg-[#111] border border-white/10 rounded-full pl-1 pr-2 py-1 hover:bg-white/5 transition-colors"
 //           >
-//             <Avatar src="" name={displayName} size={30} ring />
+//             {/* <Avatar src="" name={displayName} size={30} ring /> */}
+//             <Avatar
+//               src={userProfile?.avatarUrl || userProfile?.avatar || ""}
+//               name={displayName}
+//               size={34}
+//               ring
+//             />
 //             <ChevronDown size={12} className="text-gray-400" />
 //           </button>
 //           {showProfileDropdown && (
-//             <div className="absolute right-0 top-full mt-3 w-52 bg-[#111] border border-white/10 rounded-2xl shadow-2xl shadow-black/60 overflow-hidden z-50">
+//             <div className="absolute right-0 top-full mt-3 w-52 bg-[#111] border border-white/10 rounded-2xl shadow-2xl shadow-black/60 overflow-hidden z-[9999]">
 //               <ProfileMenu onClose={() => setShowProfileDropdown(false)} />
 //             </div>
 //           )}
@@ -707,8 +775,9 @@
 
 //       {/* ── MOBILE (< 768px) ──────────────────────────────────────────────── */}
 //       <header
+//         id="global-header-mobile"
 //         className="flex md:hidden flex-col bg-[#0a0a0a] border-b border-white/5"
-//         style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 50 }}
+//         style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 100 }}
 //       >
 //         <div className="flex items-center gap-2 px-3 pt-2.5 pb-2 w-full">
 //           <Link href="/MainModules/ROAR" className="flex-shrink-0">
@@ -744,29 +813,26 @@
 //                   />
 //                 </button>
 //               )}
-//               <Link href={askAIHref}>
-//                 <button
-//                   onClick={handleAskAIClick}
-//                   className="flex items-center gap-1 bg-[#1a1a1a] hover:bg-[#222] border border-white/10 text-pink-400 text-xs font-medium px-3 py-1.5 rounded-full transition-colors whitespace-nowrap shrink-0"
-//                 >
-//                   <Sparkles size={11} />
-//                   Ask AI
-//                 </button>
-//               </Link>
+//               <AskAIButton
+//                 active={noResultsFound}
+//                 href={askAIHref}
+//                 onClick={handleAskAIClick}
+//                 size="sm"
+//               />
 //             </div>
 //             {showDropdown && (
-//               <div className="absolute top-full left-0 right-0 mt-2 bg-[#111] border border-pink-500/20 rounded-2xl shadow-2xl z-50 max-h-[60vh] overflow-y-auto">
+//               <div className="absolute top-full left-0 right-0 mt-2 bg-[#111] border border-pink-500/20 rounded-2xl shadow-2xl z-[9999] max-h-[60vh] overflow-y-auto">
 //                 <ResultsList />
 //               </div>
 //             )}
 //           </div>
 //         </div>
 
-//         <div className="flex items-center justify-around pb-2.5 px-2 w-full">
+//         <div className="flex items-center justify-between pb-2.5 px-2 w-full">
 //           <button className="flex flex-col items-center group">
-//             <div className="w-9 h-9 flex items-center justify-center border border-pink-500 bg-pink-500/10 rounded-full group-hover:bg-pink-500/20 transition-colors">
+//             {/* <div className="w-9 h-9 flex items-center justify-center border border-pink-500 bg-pink-500/10 rounded-full group-hover:bg-pink-500/20 transition-colors">
 //               <SlidersHorizontal size={15} className="text-pink-400" />
-//             </div>
+//             </div> */}
 //           </button>
 //           <ChatButton unreadCount={totalUnreadChats} />
 //           {/* Mobile compact points pill */}
@@ -774,10 +840,16 @@
 //           <BellButton unreadCount={totalUnreadNotifications} />
 //           <div className="relative" ref={mobileProfileDropdownRef}>
 //             <button onClick={() => setShowProfileDropdown((v) => !v)}>
-//               <Avatar src="" name={displayName} size={36} ring />
+//               {/* <Avatar src="" name={displayName} size={36} ring /> */}
+//               <Avatar
+//                 src={userProfile?.avatarUrl || userProfile?.avatar || ""}
+//                 name={displayName}
+//                 size={34}
+//                 ring
+//               />
 //             </button>
 //             {showProfileDropdown && (
-//               <div className="absolute right-0 top-full mt-2 w-48 bg-[#111] border border-white/10 rounded-2xl shadow-2xl shadow-black/60 overflow-hidden z-[100]">
+//               <div className="absolute right-0 top-full mt-2 w-48 bg-[#111] border border-white/10 rounded-2xl shadow-2xl shadow-black/60 overflow-hidden z-[9999]">
 //                 <ProfileMenu onClose={() => setShowProfileDropdown(false)} />
 //               </div>
 //             )}
@@ -785,7 +857,7 @@
 //         </div>
 //       </header>
 
-//       <div className="h-[104px] md:hidden" aria-hidden="true" />
+//       <div className="h-[104px] md:hidden roar-header-spacer" aria-hidden="true" />
 //     </>
 //   );
 // }
@@ -871,8 +943,6 @@ function getWomenMeta(tournament: string): TournamentMeta | null {
 }
 
 // ── Memoized sub-components ───────────────────────────────────────────────────
-// Wrapping these in memo means they only re-render when their own props change,
-// not every time the parent Header re-renders (e.g. on searchQuery changes).
 
 const BellButton = memo(function BellButton({
   unreadCount,
@@ -886,10 +956,11 @@ const BellButton = memo(function BellButton({
         <Bell size={15} className="text-pink-400" />
         {capped > 0 && (
           <span
-            className={`absolute -top-1 -right-1 flex items-center justify-center rounded-full bg-[#e91e8c] text-white font-bold leading-none border border-[#07070f] ${capped > 9
-              ? "min-w-[18px] px-[3px] text-[9px] h-[18px]"
-              : "w-4 h-4 text-[9px]"
-              }`}
+            className={`absolute -top-1 -right-1 flex items-center justify-center rounded-full bg-[#e91e8c] text-white font-bold leading-none border border-[#07070f] ${
+              capped > 9
+                ? "min-w-[18px] px-[3px] text-[9px] h-[18px]"
+                : "w-4 h-4 text-[9px]"
+            }`}
           >
             {capped}
           </span>
@@ -911,10 +982,11 @@ const ChatButton = memo(function ChatButton({
         <MessageCircle size={15} className="text-pink-400" />
         {capped > 0 && (
           <span
-            className={`absolute -top-1 -right-1 flex items-center justify-center rounded-full bg-[#e91e8c] text-white font-bold leading-none border border-[#07070f] ${capped > 9
-              ? "min-w-[18px] px-[3px] text-[9px] h-[18px]"
-              : "w-4 h-4 text-[9px]"
-              }`}
+            className={`absolute -top-1 -right-1 flex items-center justify-center rounded-full bg-[#e91e8c] text-white font-bold leading-none border border-[#07070f] ${
+              capped > 9
+                ? "min-w-[18px] px-[3px] text-[9px] h-[18px]"
+                : "w-4 h-4 text-[9px]"
+            }`}
           >
             {capped}
           </span>
@@ -924,22 +996,38 @@ const ChatButton = memo(function ChatButton({
   );
 });
 
+// ── Avatar with loading skeleton ──────────────────────────────────────────────
 const Avatar = memo(function Avatar({
   src,
   name,
   size = 36,
   ring = false,
+  loading = false,
 }: {
   src?: string;
   name: string;
   size?: number;
   ring?: boolean;
+  loading?: boolean;
 }) {
+  // Show skeleton while auth/profile is loading
+  if (loading) {
+    return (
+      <div
+        style={{ width: size, height: size }}
+        className={`rounded-full flex-shrink-0 bg-white/10 animate-pulse ${
+          ring ? "ring-2 ring-pink-500/40" : ""
+        }`}
+      />
+    );
+  }
+
   return (
     <div
       style={{ width: size, height: size }}
-      className={`rounded-full overflow-hidden flex-shrink-0 bg-gradient-to-br from-pink-500 to-orange-500 ${ring ? "ring-2 ring-pink-500/40" : ""
-        }`}
+      className={`rounded-full overflow-hidden flex-shrink-0 bg-gradient-to-br from-pink-500 to-orange-500 ${
+        ring ? "ring-2 ring-pink-500/40" : ""
+      }`}
     >
       {src ? (
         <img src={src} alt={name} className="w-full h-full object-cover" />
@@ -956,8 +1044,6 @@ const Avatar = memo(function Avatar({
 });
 
 // ── Ask AI button ─────────────────────────────────────────────────────────────
-// Only active (clickable) when search shows "no results found".
-// Otherwise rendered as a disabled, greyed-out button.
 const AskAIButton = memo(function AskAIButton({
   active,
   href,
@@ -1000,8 +1086,7 @@ const AskAIButton = memo(function AskAIButton({
   );
 });
 
-// ── Points pill 
-// Isolated so only it re-renders when points change, not the whole header.
+// ── Points pill ───────────────────────────────────────────────────────────────
 const PointsPill = memo(function PointsPill({
   points,
   loading,
@@ -1011,7 +1096,6 @@ const PointsPill = memo(function PointsPill({
   loading: boolean;
   small?: boolean;
 }) {
-  // Memoized formatting — only recalculates when `points` changes
   const formatted = useMemo(() => {
     if (points == null) return "0";
     if (points >= 1000) return (points / 1000).toFixed(1) + "k";
@@ -1019,7 +1103,6 @@ const PointsPill = memo(function PointsPill({
   }, [points]);
 
   if (small) {
-    // Mobile compact version
     return (
       <button className="flex flex-col items-center group">
         <div className="w-9 h-9 flex flex-col items-center justify-center bg-[#111] border border-white/10 rounded-full group-hover:bg-white/5 transition-colors gap-0.5">
@@ -1043,7 +1126,6 @@ const PointsPill = memo(function PointsPill({
         className="text-pink-500 fill-pink-500 shrink-0"
       />
       {loading ? (
-        // Skeleton shimmer while loading — avoids layout shift
         <div className="w-8 h-3.5 bg-white/10 rounded-full animate-pulse" />
       ) : (
         <span
@@ -1066,18 +1148,32 @@ export default function Header() {
     clearSearch,
     navigateToResult,
   } = useGlobalSearch();
-  const { userProfile } = useUserProfile();
 
-
+  const { userProfile, loading: profileLoading } = useUserProfile();
   const { currentUserPoints, loading: pointsLoading } = useLeaderboard();
   const { user, getUserDisplayName, loading: authLoading } = useAuth();
   const { chats } = useChats();
 
-  // Memoized so it doesn't recalculate on every render
+  // ── Combined loading state ─────────────────────────────────────────────────
+  // Points and avatar should show skeleton until BOTH auth AND their own
+  // context have resolved. This prevents the "0 points / no avatar on first
+  // load" flash that happens when auth resolves before leaderboard/profile.
+  const isPointsReady = !pointsLoading && !authLoading;
+  const isProfileReady = !profileLoading && !authLoading;
+
+  // ── Avatar source ─────────────────────────────────────────────────────────
+  // Only read avatarUrl after profile has loaded to avoid showing initials
+  // briefly while the real image is still being fetched.
+  const avatarSrc = useMemo(() => {
+    if (!isProfileReady) return "";
+    return userProfile?.avatarUrl || userProfile?.avatar || "";
+  }, [isProfileReady, userProfile?.avatarUrl, userProfile?.avatar]);
+
   const totalUnreadChats = useMemo(
     () => chats.reduce((sum, chat) => sum + (chat.unreadCount || 0), 0),
     [chats]
   );
+
   const { roarUnreadCount } = useRoarNotifications();
   const [mainUnreadCount, setMainUnreadCount] = useState(0);
 
@@ -1085,9 +1181,10 @@ export default function Header() {
     if (!user?.email) return;
     const fetchMainUnread = async () => {
       try {
-        const res = await axios.get<{ success: boolean; unreadCount: number }>("/api/notifications", {
-          params: { email: user.email, countOnly: true },
-        });
+        const res = await axios.get<{ success: boolean; unreadCount: number }>(
+          "/api/notifications",
+          { params: { email: user.email, countOnly: true } }
+        );
         if (res.data?.success) {
           setMainUnreadCount(res.data.unreadCount || 0);
         }
@@ -1104,10 +1201,6 @@ export default function Header() {
 
   const [showDropdown, setShowDropdown] = useState(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
-
-  // Tracks whether a search has actually completed for the current query.
-  // Prevents the Ask AI button activating during the debounce window
-  // (when searchResults is still empty from before).
   const [searchCompleted, setSearchCompleted] = useState(false);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -1118,28 +1211,22 @@ export default function Header() {
   const profileDropdownRef = useRef<HTMLDivElement>(null);
   const mobileProfileDropdownRef = useRef<HTMLDivElement>(null);
 
-  // Debounced search — 400 ms, performSearch excluded from deps (stable useCallback)
+  // Debounced search
   useEffect(() => {
     if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
-
-    // Any new query invalidates the previous completed state
     setSearchCompleted(false);
-
     if (!searchQuery.trim()) {
       setShowDropdown(false);
       return;
     }
-
     searchTimeoutRef.current = setTimeout(() => {
       performSearch(searchQuery);
     }, 400);
-
     return () => {
       if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
     };
-  }, [searchQuery]); // ← searchQuery only; performSearch is stable
+  }, [searchQuery]);
 
-  // Show dropdown when results arrive + mark search as completed
   useEffect(() => {
     if (searchQuery.trim() && !isSearching) {
       setShowDropdown(true);
@@ -1147,7 +1234,6 @@ export default function Header() {
     }
   }, [searchQuery, searchResults, isSearching]);
 
-  // Ask AI is active ONLY when a completed search found nothing
   const noResultsFound = useMemo(
     () =>
       searchQuery.trim().length > 0 &&
@@ -1157,7 +1243,6 @@ export default function Header() {
     [searchQuery, isSearching, searchCompleted, searchResults]
   );
 
-  // Close on outside click
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       const target = e.target as Node;
@@ -1193,7 +1278,6 @@ export default function Header() {
     setTimeout(() => handleClear(), 50);
   }, [handleClear]);
 
-  // Stable display name — avoids recomputing on unrelated re-renders
   const displayName = useMemo(
     () => (authLoading ? "" : getUserDisplayName()),
     [authLoading, getUserDisplayName]
@@ -1208,13 +1292,13 @@ export default function Header() {
     () =>
       searchQuery.trim()
         ? `/MainModules/AskAI?q=${encodeURIComponent(
-          searchQuery.trim().slice(0, 100)
-        )}`
+            searchQuery.trim().slice(0, 100)
+          )}`
         : "/MainModules/AskAI",
     [searchQuery]
   );
 
-  // ── Search results list 
+  // ── Search results list ────────────────────────────────────────────────────
   const ResultsList = useCallback(
     () => (
       <>
@@ -1241,7 +1325,6 @@ export default function Header() {
                   }}
                   className="w-full text-left p-3 hover:bg-white/5 transition-colors flex items-center gap-3 border-b border-white/5 last:border-0 cursor-pointer"
                 >
-                  {/* Avatar */}
                   <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-800 flex-shrink-0">
                     {result.type === "player" || result.type === "user" ? (
                       result.image ? (
@@ -1252,10 +1335,11 @@ export default function Header() {
                         />
                       ) : (
                         <div
-                          className={`w-full h-full flex items-center justify-center text-white font-bold bg-gradient-to-br ${womenMeta
-                            ? `${womenMeta.avatarFrom} ${womenMeta.avatarTo}`
-                            : "from-pink-500 to-orange-500"
-                            }`}
+                          className={`w-full h-full flex items-center justify-center text-white font-bold bg-gradient-to-br ${
+                            womenMeta
+                              ? `${womenMeta.avatarFrom} ${womenMeta.avatarTo}`
+                              : "from-pink-500 to-orange-500"
+                          }`}
                         >
                           {result.name.charAt(0)}
                         </div>
@@ -1273,7 +1357,6 @@ export default function Header() {
                     )}
                   </div>
 
-                  {/* Name + badges */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <p className="text-white font-medium text-sm truncate">
@@ -1282,10 +1365,11 @@ export default function Header() {
 
                       {result.type === "player" && result.jerseyNumber && (
                         <span
-                          className={`text-xs px-1.5 py-0.5 rounded-full flex-shrink-0 ${womenMeta
-                            ? `${womenMeta.jerseyBg} ${womenMeta.jerseyText}`
-                            : "bg-pink-500/20 text-pink-400"
-                            }`}
+                          className={`text-xs px-1.5 py-0.5 rounded-full flex-shrink-0 ${
+                            womenMeta
+                              ? `${womenMeta.jerseyBg} ${womenMeta.jerseyText}`
+                              : "bg-pink-500/20 text-pink-400"
+                          }`}
                         >
                           #{result.jerseyNumber}
                         </span>
@@ -1300,20 +1384,21 @@ export default function Header() {
                       )}
 
                       <span
-                        className={`text-xs font-semibold uppercase px-1.5 py-0.5 rounded-full flex-shrink-0 ${result.type === "user"
-                          ? "bg-blue-500/20 text-blue-400"
-                          : result.type === "player"
+                        className={`text-xs font-semibold uppercase px-1.5 py-0.5 rounded-full flex-shrink-0 ${
+                          result.type === "user"
+                            ? "bg-blue-500/20 text-blue-400"
+                            : result.type === "player"
                             ? womenMeta
                               ? `${womenMeta.jerseyBg} ${womenMeta.jerseyText}`
                               : "bg-pink-500/10 text-gray-400"
                             : "bg-purple-500/10 text-gray-400"
-                          }`}
+                        }`}
                       >
                         {result.type === "user"
                           ? "User"
                           : result.type === "player"
-                            ? "Player"
-                            : "Team"}
+                          ? "Player"
+                          : "Team"}
                       </span>
                     </div>
 
@@ -1355,7 +1440,7 @@ export default function Header() {
     ]
   );
 
-  // ── Profile menu ──────────────────────────────────────────────────────────
+  // ── Profile menu ───────────────────────────────────────────────────────────
   const ProfileMenu = useCallback(
     ({ onClose }: { onClose: () => void }) => (
       <div className="py-1.5">
@@ -1368,7 +1453,9 @@ export default function Header() {
             size={16}
             className="text-gray-400 group-hover:text-pink-400 transition-colors"
           />
-          <span className="text-white group-hover:text-pink-400 text-sm font-medium">Profile</span>
+          <span className="text-white group-hover:text-pink-400 text-sm font-medium">
+            Profile
+          </span>
         </Link>
         <div className="h-px bg-white/5 mx-4" />
         <Link
@@ -1402,7 +1489,10 @@ export default function Header() {
   return (
     <>
       {/* ── DESKTOP (1280px+) ─────────────────────────────────────────────── */}
-      <header id="global-header-desktop" className="hidden xl:flex w-full items-center gap-4 px-6 py-3 bg-[#0a0a0a] border-b border-white/5 sticky top-0 z-[100]">
+      <header
+        id="global-header-desktop"
+        className="hidden xl:flex w-full items-center gap-4 px-6 py-3 bg-[#0a0a0a] border-b border-white/5 sticky top-0 z-[100]"
+      >
         <div className="relative flex-1 max-w-2xl" ref={dropdownRef}>
           <div className="flex items-center bg-[#111] border border-white/10 rounded-full overflow-hidden pr-1">
             <Search size={16} className="text-gray-500 ml-4 shrink-0" />
@@ -1438,47 +1528,44 @@ export default function Header() {
               <ResultsList />
             </div>
           )}
-
         </div>
-        {showDropdown && (
-          <div className="absolute top-full left-0 right-0 mt-2 bg-[#111] border border-pink-500/20 rounded-2xl shadow-2xl z-50 max-h-[400px] overflow-y-auto">
-            <ResultsList />
-          </div>
-        )}
-
-
 
         <div className="flex items-center gap-3 ml-auto">
-          {/* <button className="flex items-center gap-2 bg-transparent hover:bg-pink-500/10 border border-pink-500 text-pink-400 text-sm font-medium px-5 py-2.5 rounded-full transition-colors">
-            <SlidersHorizontal size={15} />
-            Preferences
-          </button> */}
           <ChatButton unreadCount={totalUnreadChats} />
-          {/* PointsPill only re-renders when points/loading changes */}
-          <PointsPill points={currentUserPoints} loading={pointsLoading} />
+          {/* Only shows real points after both auth + leaderboard have resolved */}
+          <PointsPill
+            points={currentUserPoints}
+            loading={!isPointsReady}
+          />
           <BellButton unreadCount={totalUnreadNotifications} />
           <div className="relative" ref={profileDropdownRef}>
             <button
               onClick={() => setShowProfileDropdown((v) => !v)}
               className="flex items-center gap-2 bg-[#111] border border-white/10 rounded-full pl-1 pr-3 py-1 hover:bg-white/5 transition-colors hover:cursor-pointer"
             >
-              {/* <Avatar src="" name={displayName} size={34} ring /> */}
+              {/* Shows skeleton while auth/profile loads, then real avatar */}
               <Avatar
-                src={userProfile?.avatarUrl || userProfile?.avatar || ""}
-                name={displayName}
+                src={avatarSrc}
+                name={displayName || "U"}
                 size={34}
                 ring
+                loading={!isProfileReady}
               />
               <div className="flex flex-col items-start leading-tight">
-                <span className="text-white font-medium text-sm">
-                  {authLoading ? "Loading..." : displayName}
-                </span>
+                {authLoading ? (
+                  <div className="w-20 h-3 bg-white/10 rounded-full animate-pulse" />
+                ) : (
+                  <span className="text-white font-medium text-sm">
+                    {displayName}
+                  </span>
+                )}
                 <span className="text-pink-400 text-xs">{userRole}</span>
               </div>
               <ChevronDown
                 size={14}
-                className={`text-gray-400 ml-1 transition-transform duration-200 ${showProfileDropdown ? "rotate-180" : ""
-                  }`}
+                className={`text-gray-400 ml-1 transition-transform duration-200 ${
+                  showProfileDropdown ? "rotate-180" : ""
+                }`}
               />
             </button>
             {showProfileDropdown && (
@@ -1491,7 +1578,10 @@ export default function Header() {
       </header>
 
       {/* ── TABLET (768px – 1279px) ───────────────────────────────────────── */}
-      <header id="global-header-tablet" className="hidden md:flex xl:hidden w-full items-center gap-3 px-4 py-2 bg-[#0a0a0a] border-b border-white/5 sticky top-0 z-100">
+      <header
+        id="global-header-tablet"
+        className="hidden md:flex xl:hidden w-full items-center gap-3 px-4 py-2 bg-[#0a0a0a] border-b border-white/5 sticky top-0 z-100"
+      >
         <Link href="/MainModules/ROAR" className="flex-shrink-0">
           <Image
             src="/images/Logo.png"
@@ -1540,25 +1630,25 @@ export default function Header() {
           )}
         </div>
 
-        {/* <button className="flex items-center gap-2 border border-pink-500 text-pink-400 text-xs font-medium px-4 py-2 rounded-full hover:bg-pink-500/10 transition-colors whitespace-nowrap">
-          <SlidersHorizontal size={13} />
-          Preferences
-        </button> */}
         <ChatButton unreadCount={totalUnreadChats} />
         {/* Tablet compact points pill */}
-        <PointsPill points={currentUserPoints} loading={pointsLoading} small />
+        <PointsPill
+          points={currentUserPoints}
+          loading={!isPointsReady}
+          small
+        />
         <BellButton unreadCount={totalUnreadNotifications} />
         <div className="relative" ref={profileDropdownRef}>
           <button
             onClick={() => setShowProfileDropdown((v) => !v)}
             className="flex items-center gap-1.5 bg-[#111] border border-white/10 rounded-full pl-1 pr-2 py-1 hover:bg-white/5 transition-colors"
           >
-            {/* <Avatar src="" name={displayName} size={30} ring /> */}
             <Avatar
-              src={userProfile?.avatarUrl || userProfile?.avatar || ""}
-              name={displayName}
+              src={avatarSrc}
+              name={displayName || "U"}
               size={34}
               ring
+              loading={!isProfileReady}
             />
             <ChevronDown size={12} className="text-gray-400" />
           </button>
@@ -1626,23 +1716,23 @@ export default function Header() {
         </div>
 
         <div className="flex items-center justify-between pb-2.5 px-2 w-full">
-          <button className="flex flex-col items-center group">
-            {/* <div className="w-9 h-9 flex items-center justify-center border border-pink-500 bg-pink-500/10 rounded-full group-hover:bg-pink-500/20 transition-colors">
-              <SlidersHorizontal size={15} className="text-pink-400" />
-            </div> */}
-          </button>
+          <button className="flex flex-col items-center group" />
           <ChatButton unreadCount={totalUnreadChats} />
           {/* Mobile compact points pill */}
-          <PointsPill points={currentUserPoints} loading={pointsLoading} small />
+          <PointsPill
+            points={currentUserPoints}
+            loading={!isPointsReady}
+            small
+          />
           <BellButton unreadCount={totalUnreadNotifications} />
           <div className="relative" ref={mobileProfileDropdownRef}>
             <button onClick={() => setShowProfileDropdown((v) => !v)}>
-              {/* <Avatar src="" name={displayName} size={36} ring /> */}
               <Avatar
-                src={userProfile?.avatarUrl || userProfile?.avatar || ""}
-                name={displayName}
+                src={avatarSrc}
+                name={displayName || "U"}
                 size={34}
                 ring
+                loading={!isProfileReady}
               />
             </button>
             {showProfileDropdown && (
@@ -1654,7 +1744,10 @@ export default function Header() {
         </div>
       </header>
 
-      <div className="h-[104px] md:hidden roar-header-spacer" aria-hidden="true" />
+      <div
+        className="h-[104px] md:hidden roar-header-spacer"
+        aria-hidden="true"
+      />
     </>
   );
 }

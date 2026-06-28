@@ -165,6 +165,7 @@ interface User {
     avatar?: string;
     photoURL?: string;
     firstName?: string;
+    actualUserId?: string;
 }
 
 interface AuthContextType {

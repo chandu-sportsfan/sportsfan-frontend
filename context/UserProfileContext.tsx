@@ -17,6 +17,7 @@ interface UserProfileContextType {
   userProfile: UserProfile | null;
   profileLoading: boolean;
   refreshProfile: () => void;
+   loading: boolean;    
 }
 
 const UserProfileContext = createContext<UserProfileContextType | undefined>(undefined);
@@ -58,7 +59,7 @@ export const UserProfileProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   return (
-    <UserProfileContext.Provider value={{ userProfile, profileLoading, refreshProfile: fetchProfile }}>
+    <UserProfileContext.Provider value={{ userProfile, profileLoading, loading: profileLoading, refreshProfile: fetchProfile }}>
       {children}
     </UserProfileContext.Provider>
   );

@@ -1219,12 +1219,22 @@ export default function ComposeModal({ open, onClose, onPost, initialType, onOpe
                           </div>
                         </div> */}
                         <div style={{ borderRadius: 16, background: "#2b2b2b", padding: "16px 12px 20px" }}>
-                          <input
+                          {/* <input
                             value={text}
                             maxLength={80}
                             onChange={(e) => setText(e.target.value)}
                             placeholder="Who will win today"
                             style={{ width: "100%", border: "none", outline: "none", background: "transparent", color: "#fff", fontSize: 16, fontWeight: 500, padding: 0, marginBottom: 14 }}
+                          /> */}
+                          <label className="block text-[11px] font-bold text-[#9a9a9a] uppercase tracking-widest mb-2">
+                            Your prediction *
+                          </label>
+                          <input
+                            value={text}
+                            maxLength={80}
+                            onChange={(e) => setText(e.target.value)}
+                            placeholder="e.g. Who will win today?"
+                            className="w-full bg-transparent border-0 border-b border-[#575757] outline-none text-white text-base font-medium pb-2.5 mb-[18px] caret-[#e91e8c] placeholder:text-[#555]"
                           />
                           {predictionOptions.map((option, index) => (
                             <div key={index} style={{ height: 48, borderRadius: 999, background: "#171717", display: "flex", alignItems: "center", padding: "0 12px 0 15px", marginBottom: 8 }}>
@@ -1261,7 +1271,7 @@ export default function ComposeModal({ open, onClose, onPost, initialType, onOpe
                           <div style={{ height: 1, background: "#575757", margin: "20px 0 10px" }} />
                           <label style={{ display: "block", color: "#777", fontSize: 15, fontWeight: 600, marginBottom: 10 }}>Set duration</label>
                           <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                            {[
+                            {/* {[
                               { label: "2min", value: 2 },
                               { label: "1:30hr", value: 90 },
                               { label: "Custom", value: 0 },
@@ -1289,11 +1299,33 @@ export default function ComposeModal({ open, onClose, onPost, initialType, onOpe
                               aria-label="Custom close time in minutes"
                               style={{ width: "100%", marginTop: 10, border: "none", outline: "none", borderRadius: 999, background: "#171717", color: "#fff", fontSize: 14, padding: "10px 14px" }}
                             />
-                          )}
+                          )} */}
+
+
+                            {[
+                              { label: "20 mins", value: 20 },
+                              { label: "30 mins", value: 30 },
+                              { label: "1 hr", value: 60 },
+                              { label: "1:30 hr", value: 90 },
+                              { label: "2 hr", value: 120 },
+                            ].map((duration) => {
+                              const active = predictionCloseMinutes === duration.value;
+                              return (
+                                <button
+                                  key={duration.label}
+                                  type="button"
+                                  onClick={() => setPredictionCloseMinutes(duration.value)}
+                                  style={{ height: 30, padding: "0 12px", borderRadius: 999, border: "none", background: active ? "#0f0f0f" : "#171717", color: active ? "#fff" : "#696969", fontSize: 14, fontWeight: 600, cursor: "pointer" }}
+                                >
+                                  {duration.label}
+                                </button>
+                              );
+                            })}
+                          </div>
                         </div>
                       </div>
-                    )}
 
+                    )}
                     {false && selected === "prediction" && (
                       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                         <div style={{ position: "relative" }}>

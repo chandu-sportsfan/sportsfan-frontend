@@ -104,17 +104,43 @@ interface ActiveFan {
     badge?: string | null;
 }
 
+// interface Props {
+//     roomId?: string;
+//     isOpen: boolean;
+//     onClose: () => void;
+//     onFanProfile?: (fan: any) => void;
+// }
+
 interface Props {
     roomId?: string;
     isOpen: boolean;
     onClose: () => void;
     onFanProfile?: (fan: any) => void;
+    prefetchedFans?: ActiveFan[];
+    prefetchedCount?: number;
 }
 
-export default function ActiveFansDialog({ roomId, isOpen, onClose, onFanProfile }: Props) {
+// export default function ActiveFansDialog({ roomId, isOpen, onClose, onFanProfile }: Props) {
+export default function ActiveFansDialog({ roomId, isOpen, onClose, onFanProfile, prefetchedFans, prefetchedCount }: Props) {
     const [fans, setFans] = useState<ActiveFan[]>([]);
     const [loading, setLoading] = useState(false);
 
+    // useEffect(() => {
+    //     if (!isOpen || !roomId) return;
+    //     let cancelled = false;
+    //     setLoading(true);
+    //     axios
+    //         .get(`/api/roar/rooms/${roomId}/presence`)
+    //         .then((res) => {
+    //             if (cancelled) return;
+    //             if (res.data?.success) setFans(res.data.fans ?? []);
+    //         })
+    //         .catch(() => { })
+    //         .finally(() => { if (!cancelled) setLoading(false); });
+    //     return () => { cancelled = true; };
+    // }, [isOpen, roomId]);
+
+    // BEFORE
     useEffect(() => {
         if (!isOpen || !roomId) return;
         let cancelled = false;
@@ -129,6 +155,26 @@ export default function ActiveFansDialog({ roomId, isOpen, onClose, onFanProfile
             .finally(() => { if (!cancelled) setLoading(false); });
         return () => { cancelled = true; };
     }, [isOpen, roomId]);
+
+    // AFTER
+    useEffect(() => {
+        if (prefetchedFans !== undefined) {
+            setFans(prefetchedFans);
+            return;
+        }
+        if (!isOpen || !roomId) return;
+        let cancelled = false;
+        setLoading(true);
+        axios
+            .get(`/api/roar/rooms/${roomId}/presence`)
+            .then((res) => {
+                if (cancelled) return;
+                if (res.data?.success) setFans(res.data.fans ?? []);
+            })
+            .catch(() => { })
+            .finally(() => { if (!cancelled) setLoading(false); });
+        return () => { cancelled = true; };
+    }, [isOpen, roomId, prefetchedFans]);
 
     return (
         <AnimatePresence>
@@ -151,7 +197,10 @@ export default function ActiveFansDialog({ roomId, isOpen, onClose, onFanProfile
                         onClick={(e) => e.stopPropagation()}
                     >
                         <div className="flex items-center justify-between mb-3">
-                            <p className="text-white text-sm font-semibold">In this room</p>
+                            {/* <p className="text-white text-sm font-semibold">In this room</p> */}
+                            <p className="text-white text-sm font-semibold">
+                                In this room · <span className="text-white/50 font-normal">{prefetchedCount ?? fans.length} active</span>
+                            </p>
                             <button type="button" onClick={onClose} className="text-gray-400 hover:text-white">
                                 <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
                                     <path d="M15 5L5 15M5 5L15 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />

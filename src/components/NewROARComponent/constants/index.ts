@@ -1010,6 +1010,13 @@ export const RADIAL_OPTS = [
   // { id: "quiz", label: "Flash Quiz", emoji: "🧠" },
 ];
 
+const QUICK_REACT_OPTS = [
+  { id: "qr_wicket",   label: "Wicket!",   emoji: "🎯" },
+  { id: "qr_six",      label: "Six!!",     emoji: "💪" },
+  { id: "qr_four",     label: "Four!",     emoji: "🏏" },
+  { id: "qr_boundary", label: "Boundary!", emoji: "💥" },
+];
+
 export const FEED_FILTERS = ["For You", "Cricket", "Football", "Live", "Predictions"];
 
 export const NAV_TABS = [

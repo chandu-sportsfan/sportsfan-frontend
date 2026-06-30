@@ -152,7 +152,7 @@ const nextConfig = {
         },
 
 
-          //Profile Settings
+        //Profile Settings
         { source: "/api/profile", destination: `${apiTarget}/api/profile` },
         {
           source: "/api/profile/:path*",
@@ -170,27 +170,27 @@ const nextConfig = {
         },
 
         // Follow Requests
-{
-  source: "/api/follow-request",
-  destination: `${apiTarget}/api/follow-request`,
-},
-{
-  source: "/api/follow-request/:path*",
-  destination: `${apiTarget}/api/follow-request/:path*`,
-},
-{
-  source: "/api/follow-request/status",
-  destination: `${apiTarget}/api/follow-request/status`,
-},
-{
-  source: "/api/follow-request/accept",
-  destination: `${apiTarget}/api/follow-request/accept`,
-},
-{
-  source: "/api/follow-request/reject",
-  destination: `${apiTarget}/api/follow-request/reject`,
-},
-          //User-Activity
+        {
+          source: "/api/follow-request",
+          destination: `${apiTarget}/api/follow-request`,
+        },
+        {
+          source: "/api/follow-request/:path*",
+          destination: `${apiTarget}/api/follow-request/:path*`,
+        },
+        {
+          source: "/api/follow-request/status",
+          destination: `${apiTarget}/api/follow-request/status`,
+        },
+        {
+          source: "/api/follow-request/accept",
+          destination: `${apiTarget}/api/follow-request/accept`,
+        },
+        {
+          source: "/api/follow-request/reject",
+          destination: `${apiTarget}/api/follow-request/reject`,
+        },
+        //User-Activity
         {
           source: "/api/user-activity",
           destination: `${apiTarget}/api/user-activity`,
@@ -595,7 +595,7 @@ const nextConfig = {
           source: "/api/fifa-player-stats/:path*",
           destination: `${apiTarget}/api/fifa-player-stats/:path*`,
         },
-         // Fifa Clus
+        // Fifa Clus
         {
           source: "/api/fifa-clubs",
           destination: `${apiTarget}/api/fifa-clubs`,
@@ -604,7 +604,7 @@ const nextConfig = {
           source: "/api/fifa-clubs/:path*",
           destination: `${apiTarget}/api/fifa-clubs/:path*`,
         },
-          // WT2O WC Clus
+        // WT2O WC Clus
         {
           source: "/api/wt20-clubs",
           destination: `${apiTarget}/api/wt20-clubs`,
@@ -614,11 +614,22 @@ const nextConfig = {
           destination: `${apiTarget}/api/wt20-clubs/:path*`,
         },
         // roar apis
+
         {
-          source: "/api/roar/:path*",
+          source: "/api/roar/:path((?!rooms/[^/]+/dolly).*)",
           destination: `${apiTarget}/api/roar/:path*`,
-          // destination: `http://localhost:3001/api/roar/:path*`,
         },
+
+        // {
+        //   source: "/api/roar/:path*",
+        //   destination: `${apiTarget}/api/roar/:path*`,
+        //   // destination: `http://localhost:3001/api/roar/:path*`,
+        // },
+        //  {
+        //   source: "/api/roar/rooms/[roomId]/dolly/:path*",
+        //   destination: `${apiTarget}/api/roar/rooms/[roomId]/dolly/:path*`,
+        //   // destination: `http://localhost:3001/api/roar/:path*`,
+        // },
         // {
         //   source: "/api/roar/posts/:path*",
         //   destination: `${apiTarget}/api/roar/posts/:path*`,

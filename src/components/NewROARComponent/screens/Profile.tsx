@@ -1861,40 +1861,111 @@ export default function Profile({
       </AnimatePresence>
 
       {/* Share */}
+      {/* ── Share Modal — fully inline styles, no Tailwind dependency ── */}
       <AnimatePresence>
         {shareOpen && (
           <>
-            <motion.button type="button" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShareOpen(false)} className="fixed inset-0 z-40 bg-black/70 lg:hidden" />
-            <motion.div initial={{ y: 24, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 24, opacity: 0 }} onClick={(e) => e.stopPropagation()}
-              className="fixed bottom-16 inset-x-4 z-50 mx-auto w-full max-w-[280px] rounded-2xl border border-white/10 bg-[#1a1a1e] p-3 shadow-2xl lg:hidden">
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-white text-sm font-semibold">Share</p>
-                <button type="button" onClick={() => setShareOpen(false)} className="text-gray-400 hover:text-white">
-                  <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M15 5L5 15M5 5L15 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShareOpen(false)}
+              style={{
+                position: "fixed", inset: 0, zIndex: 40,
+                background: "rgba(0,0,0,0.7)",
+              }}
+            />
+
+            {/* Modal panel */}
+            <motion.div
+              initial={{ opacity: 0, y: 20, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 20, scale: 0.95 }}
+              transition={{ type: "spring", damping: 28, stiffness: 320 }}
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                position: "fixed",
+                bottom: 80,
+                left: "50%",
+                transform: "translateX(-50%)",
+                zIndex: 50,
+                width: "calc(100% - 32px)",
+                maxWidth: 320,
+                background: "#1a1a1e",
+                borderRadius: 20,
+                border: "1px solid rgba(255,255,255,0.1)",
+                padding: "16px",
+                boxShadow: "0 8px 40px rgba(0,0,0,0.6)",
+              }}
+            >
+              {/* Header */}
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                <p style={{ color: "#fff", fontSize: 14, fontWeight: 600, margin: 0 }}>
+                  Share ROAR Profile
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setShareOpen(false)}
+                  style={{ background: "none", border: "none", color: "rgba(255,255,255,0.5)", cursor: "pointer", padding: 4, display: "flex", alignItems: "center", justifyContent: "center" }}
+                >
+                  <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
+                    <path d="M15 5L5 15M5 5L15 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                  </svg>
                 </button>
               </div>
-              <div className="flex flex-row flex-nowrap items-center gap-1.5 mb-2 overflow-x-auto"><ShareButtons size="w-8 h-8" /></div>
-              {sharingImage && <p className="text-xs text-white/50">Preparing image…</p>}
-              {copied && <p className="text-xs text-emerald-400">Copied to clipboard</p>}
-            </motion.div>
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShareOpen(false)}
-              className="hidden lg:flex fixed inset-0 z-50 items-center justify-center bg-black/60">
-              <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }} onClick={(e) => e.stopPropagation()}
-                className="bg-[#1a1a1e] rounded-2xl border border-white/10 p-4 w-[300px] shadow-2xl">
-                <div className="flex items-center justify-between mb-3">
-                  <p className="text-white text-sm font-semibold">Share ROAR Profile</p>
-                  <button type="button" onClick={() => setShareOpen(false)} className="text-gray-400 hover:text-white">
-                    <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M15 5L5 15M5 5L15 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>
+
+              {/* Profile preview */}
+              <div style={{ borderRadius: 12, border: "1px solid rgba(255,255,255,0.1)", background: "#111114", padding: "10px 12px", marginBottom: 14 }}>
+                <p style={{ color: "#fff", fontSize: 13, fontWeight: 600, margin: "0 0 4px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {user.username ?? "ROAR Profile"}
+                </p>
+                <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {buildShareUrl(user)}
+                </p>
+              </div>
+
+              {/* Share icons */}
+              <div style={{ display: "flex", flexDirection: "row", flexWrap: "nowrap", alignItems: "center", gap: 10, overflowX: "auto", paddingBottom: 4 }}>
+                {shareActions.map(({ alt, src, handler }) => (
+                  <button
+                    key={alt}
+                    type="button"
+                    onClick={handler}
+                    disabled={alt === "WhatsApp" && sharingImage}
+                    style={{
+                      flexShrink: 0,
+                      width: 48, height: 48,
+                      borderRadius: "50%",
+                      overflow: "hidden",
+                      background: "rgba(255,255,255,0.05)",
+                      border: "1px solid rgba(255,255,255,0.1)",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      cursor: alt === "WhatsApp" && sharingImage ? "not-allowed" : "pointer",
+                      opacity: alt === "WhatsApp" && sharingImage ? 0.5 : 1,
+                      padding: 0,
+                    }}
+                  >
+                    <img
+                      src={src}
+                      alt={alt}
+                      style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "50%" }}
+                    />
                   </button>
-                </div>
-                <div className="rounded-xl border border-white/10 bg-[#111114] p-3 mb-3">
-                  <p className="text-white text-sm font-semibold line-clamp-2">{user.username ?? "ROAR Profile"}</p>
-                  <p className="text-white/45 text-[11px] mt-2 line-clamp-2 break-all">{buildShareUrl(user)}</p>
-                </div>
-                <div className="flex flex-row flex-nowrap items-center gap-2 mb-2"><ShareButtons size="w-9 h-9" /></div>
-                {sharingImage && <p className="text-xs text-white/50">Preparing image…</p>}
-                {copied && <p className="text-xs text-emerald-400">Copied to clipboard</p>}
-              </motion.div>
+                ))}
+              </div>
+
+              {/* Status messages */}
+              {sharingImage && (
+                <p style={{ fontSize: 11, color: "rgba(255,255,255,0.45)", margin: "8px 0 0" }}>
+                  Preparing image…
+                </p>
+              )}
+              {copied && (
+                <p style={{ fontSize: 11, color: "#34D399", margin: "8px 0 0" }}>
+                  Copied to clipboard!
+                </p>
+              )}
             </motion.div>
           </>
         )}

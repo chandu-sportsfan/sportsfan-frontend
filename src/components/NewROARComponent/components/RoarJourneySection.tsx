@@ -145,7 +145,11 @@ export function RoarJourneySection({
 
                 if (typeof navigator !== "undefined" && navigator.canShare?.({ files: [file] })) {
                     try {
-                        await navigator.share({ files: [file], title: "My Roar Journey" });
+                        await navigator.share({
+                            files: [file],
+                            title: "My Roar Journey",
+                            text: "Hey! Join me on Sportsfan360 👉 https://sportsfan-frontend.vercel.app/MainModules/ROAR",
+                        });
                         setSharing(false);
                         return;
                     } catch (shareErr: any) {

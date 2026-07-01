@@ -1116,6 +1116,12 @@ export default function PostDetailsOverlay({
       });
       if (res.data?.success) {
         setCommentText(""); setReplyTo(null); fetchComments(); onToast("Comment posted!");
+        if (phog) {
+          phog.capture("post_comment", {
+            post_id: post.id,
+            room_id: post.roomId,
+          });
+        }
         setTimeout(() => scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" }), 400);
       }
     } catch { onToast("Error posting comment"); }

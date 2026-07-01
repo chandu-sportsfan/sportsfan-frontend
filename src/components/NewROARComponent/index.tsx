@@ -590,6 +590,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSearchParams } from "next/navigation";
+import { usePostHog } from "posthog-js/react";
 import axios from "axios";
 import { emitSxpActivityRefresh } from "@/lib/sxpEvents";
 
@@ -614,6 +615,7 @@ import { useRouter } from "next/navigation";
 
 
 export default function ROARApp() {
+  const phog = usePostHog();
   const containerRef = useRef<HTMLDivElement>(null);
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -676,11 +678,32 @@ export default function ROARApp() {
     checkProfile();
   }, []);
 
+  useEffect(() => {
+    if (phog) {
+      phog.capture("second_screen_session_start");
+    }
+    return () => {
+      if (phog) {
+        phog.capture("second_screen_session_end");
+      }
+    };
+  }, [phog]);
+
   // ── Navigation ─────────────────────────────────────────────────────────────
   const [activeTab, setActiveTab] = useState("home");
   const [overlay, setOverlay] = useState<string | null>(null);
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
   const [selectedPost, setSelectedPost] = useState<any | null>(null);
+
+  useEffect(() => {
+    if (selectedPost && phog) {
+      if (selectedPost.type === "debate") {
+        phog.capture("open_debate", { post_id: selectedPost.id, room_id: selectedPost.roomId || selectedRoom?.roomId });
+      } else if (selectedPost.type === "prediction") {
+        phog.capture("open_prediction", { post_id: selectedPost.id, room_id: selectedPost.roomId || selectedRoom?.roomId });
+      }
+    }
+  }, [selectedPost, phog, selectedRoom]);
 
   const { viewingUserId, profileData, openProfile, closeProfile } = useRoarProfileContext();
 

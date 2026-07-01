@@ -343,6 +343,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
+import { usePostHog } from "posthog-js/react";
 
 type Message =
   | { role: "user"; content: string }
@@ -356,6 +357,7 @@ const SUGGESTED_QUESTIONS = [
 ];
 
 export default function AskAI() {
+  const phog = usePostHog();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -372,6 +374,10 @@ export default function AskAI() {
   const sendMessage = useCallback(async (text: string) => {
     const trimmed = text.trim();
     if (!trimmed || loading) return;
+
+    if (phog) {
+      phog.capture("ask_dolly_query", { query: trimmed });
+    }
 
     const userMsg: Message = { role: "user", content: trimmed };
     setMessages((prev) => [...prev, userMsg]);

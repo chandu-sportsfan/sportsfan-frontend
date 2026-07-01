@@ -2616,7 +2616,13 @@ export default function DiscussionRoom({
     const heartCount = lo !== undefined ? lo.heartCount : (p.heartCount ?? 0);
     return (
       <div onClick={e => e.stopPropagation()}>
-        <ReactionPicker currentReaction={currentReaction} count={heartCount} onReact={(r) => handleReact(p.id, r)} />
+        <ReactionPicker
+          currentReaction={currentReaction}
+          count={heartCount}
+          onReact={(r) => handleReact(p.id, r)}
+          postId={p.id}
+          roomId={roomId}
+        />
       </div>
     );
   };
@@ -2890,6 +2896,14 @@ export default function DiscussionRoom({
                               setOpenInlinePostId(p.id);
                               try {
                                 await axios.post(`/api/roar/rooms/${roomId}/messages/${p.id}/vote`, { vote: voteVal });
+                                if (phog) {
+                                  phog.capture("poll_voted", {
+                                    poll_id: p.id,
+                                    poll_type: "debate_vs",
+                                    option_id: voteVal,
+                                    room_id: roomId
+                                  });
+                                }
                               } catch (err: any) {
                                 const status = err?.response?.status;
                                 if (status !== 409 && status !== 400) {
@@ -2998,6 +3012,19 @@ export default function DiscussionRoom({
                                   setPosts(prev => prev.map(x => x.id !== p.id ? x : { ...x, userVote: agree ? "agree" : "disagree", agreeCount: (x.agreeCount ?? 0) + (agree ? 1 : 0), disagreeCount: (x.disagreeCount ?? 0) + (!agree ? 1 : 0) }));
                                   try {
                                     await axios.post(`/api/roar/rooms/${roomId}/messages/${p.id}/vote`, { vote: agree ? "agree" : "disagree" });
+                                    if (phog) {
+                                      phog.capture("poll_voted", {
+                                        poll_id: p.id,
+                                        poll_type: p.type || "prediction",
+                                        option_id: agree ? "agree" : "disagree",
+                                        room_id: roomId
+                                      });
+                                      phog.capture("submit_prediction", {
+                                        post_id: p.id,
+                                        room_id: roomId,
+                                        option_id: agree ? "agree" : "disagree"
+                                      });
+                                    }
                                   } catch { onToast("You've already voted!!"); }
                                 }}
                                 style={{ flex: 1, padding: "9px", borderRadius: 999, fontSize: 12, fontWeight: 700, cursor: hasPredictionVoted || predictionClosed ? "default" : "pointer", border: `2px solid ${active ? "#ff6b35" : "#8b8b8b"}`, background: active ? "rgba(255,107,53,0.24)" : "rgba(255,255,255,0.02)", color: active ? "#fff" : "#d1d1d1", boxShadow: active ? "0 0 14px rgba(255,107,53,0.35)" : "none", transition: "all 0.2s ease-in-out", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, opacity: (hasPredictionVoted || predictionClosed) && !active ? 0.4 : 1 }}
@@ -3022,6 +3049,19 @@ export default function DiscussionRoom({
                                     setPosts(prev => prev.map(x => x.id !== p.id ? x : { ...x, userVote: voteValue, predictionOptionCounts: { ...(x.predictionOptionCounts ?? {}), [voteValue]: ((x.predictionOptionCounts ?? {})[voteValue] ?? 0) + 1 } }));
                                     try {
                                       await axios.post(`/api/roar/rooms/${roomId}/messages/${p.id}/vote`, { vote: voteValue });
+                                      if (phog) {
+                                        phog.capture("poll_voted", {
+                                          poll_id: p.id,
+                                          poll_type: p.type || "prediction",
+                                          option_id: voteValue,
+                                          room_id: roomId
+                                        });
+                                        phog.capture("submit_prediction", {
+                                          post_id: p.id,
+                                          room_id: roomId,
+                                          option_id: voteValue
+                                        });
+                                      }
                                     } catch { onToast("You've already voted!!"); }
                                   }}
                                   style={{ flex: "1 1 calc(50% - 4px)", minWidth: 0, padding: "9px", borderRadius: 999, fontSize: 12, fontWeight: 700, border: `2px solid ${active ? "#ff6b35" : "#8b8b8b"}`, background: active ? "rgba(255,107,53,0.24)" : "rgba(255,255,255,0.02)", color: active ? "#fff" : "#d1d1d1", boxShadow: active ? "0 0 14px rgba(255,107,53,0.35)" : "none", textAlign: "center", opacity: (hasPredictionVoted || predictionClosed) && !active ? 0.4 : 1, cursor: hasPredictionVoted || predictionClosed ? "default" : "pointer" }}
@@ -3082,7 +3122,23 @@ export default function DiscussionRoom({
                             { agree: false, label: "Disagree", pctVal: disAgrPct, active: userVote === "disagree", color: "var(--accent-orange)" },
                           ].map(({ agree, label, pctVal, active, color }) => (
                             <motion.button key={label} whileTap={!hasVoted ? { scale: 0.93 } : {}}
-                              onClick={async (e) => { e.stopPropagation(); if (hasVoted) return; setPosts(prev => prev.map(x => x.id !== p.id ? x : { ...x, userVote: agree ? "agree" : "disagree", agreeCount: (x.agreeCount ?? 0) + (agree ? 1 : 0), disagreeCount: (x.disagreeCount ?? 0) + (!agree ? 1 : 0) })); setOpenInlinePostId(p.id); try { await axios.post(`/api/roar/rooms/${roomId}/messages/${p.id}/vote`, { vote: agree ? "agree" : "disagree" }); } catch { onToast("Failed to submit vote"); } }}
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                if (hasVoted) return;
+                                setPosts(prev => prev.map(x => x.id !== p.id ? x : { ...x, userVote: agree ? "agree" : "disagree", agreeCount: (x.agreeCount ?? 0) + (agree ? 1 : 0), disagreeCount: (x.disagreeCount ?? 0) + (!agree ? 1 : 0) }));
+                                setOpenInlinePostId(p.id);
+                                try {
+                                  await axios.post(`/api/roar/rooms/${roomId}/messages/${p.id}/vote`, { vote: agree ? "agree" : "disagree" });
+                                  if (phog) {
+                                    phog.capture("poll_voted", {
+                                      poll_id: p.id,
+                                      poll_type: p.type || "hot_take",
+                                      option_id: agree ? "agree" : "disagree",
+                                      room_id: roomId
+                                    });
+                                  }
+                                } catch { onToast("Failed to submit vote"); }
+                              }}
                               style={{ flex: 1, padding: "10px", borderRadius: 999, fontSize: 12, fontWeight: 700, cursor: hasVoted ? "default" : "pointer", border: `2.5px solid ${color}`, background: active ? color : "rgba(255,255,255,0.02)", color: active ? "white" : color, boxShadow: active ? `0 0 16px ${color}60` : "none", transition: "all 0.2s ease-in-out", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, opacity: hasVoted && !active ? 0.4 : 1 }}
                             >
                               {active ? `✓ ${agree ? "Agreed" : "Disagreed"}` : label}

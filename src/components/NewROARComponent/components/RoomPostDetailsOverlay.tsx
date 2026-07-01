@@ -714,6 +714,7 @@
  */
 import { useState, useEffect, useCallback, useRef } from "react";
 import { AnimatePresence } from "framer-motion";
+import { usePostHog } from "posthog-js/react";
 import axios from "axios";
 import AvatarWithBadge from "./AvatarWithBadge";
 import { SplitBar } from "./shared";
@@ -815,6 +816,7 @@ export default function RoomPostDetailsOverlay({
     currentAvatarUrl,
     onFanProfileClick,
 }: Props) {
+    const phog = usePostHog();
     const [comments, setComments] = useState<any[]>([]);
     const [commentText, setCommentText] = useState("");
     const [replyTo, setReplyTo] = useState<{ commentId: string; authorUsername: string } | null>(null);
@@ -1073,6 +1075,12 @@ export default function RoomPostDetailsOverlay({
                 setReplyTo(null);
                 fetchComments();
                 onToast("Comment posted!");
+                if (phog) {
+                    phog.capture("post_comment", {
+                        post_id: post.id,
+                        room_id: post.roomId,
+                    });
+                }
                 setTimeout(() => scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" }), 400);
             }
         } catch {

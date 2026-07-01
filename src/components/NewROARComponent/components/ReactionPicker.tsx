@@ -5,6 +5,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Heart } from "lucide-react";
+import { usePostHog } from "posthog-js/react";
 
 export type Reaction = "heart" | "fire" | "laugh" | "sad" | "thumb";
 
@@ -26,9 +27,12 @@ interface Props {
   count: number;
   onReact: (r: Reaction | null) => void;
   disabled?: boolean;
+  postId?: string;
+  roomId?: string;
 }
 
-export default function ReactionPicker({ currentReaction, count, onReact, disabled }: Props) {
+export default function ReactionPicker({ currentReaction, count, onReact, disabled, postId, roomId }: Props) {
+  const phog = usePostHog();
   const [open, setOpen] = useState(false);
   const [hovered, setHovered] = useState<Reaction | null>(null);
   const hoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -39,8 +43,13 @@ export default function ReactionPicker({ currentReaction, count, onReact, disabl
 
   const scheduleOpen = useCallback(() => {
     if (closeTimer.current) { clearTimeout(closeTimer.current); closeTimer.current = null; }
-    hoverTimer.current = setTimeout(() => setOpen(true), 280);
-  }, []);
+    hoverTimer.current = setTimeout(() => {
+      setOpen(true);
+      if (phog) {
+        phog.capture("open_reaction", { post_id: postId, room_id: roomId });
+      }
+    }, 280);
+  }, [phog, postId, roomId]);
 
   const scheduleClose = useCallback(() => {
     if (hoverTimer.current) { clearTimeout(hoverTimer.current); hoverTimer.current = null; }

@@ -693,6 +693,7 @@ export default function HomeFeed({
             currentReaction={currentReaction}
             count={likeCount}
             onReact={(r) => handleReact(item.id, r, item.isDbPost)}
+            postId={item.id}
           />
         </div>
 

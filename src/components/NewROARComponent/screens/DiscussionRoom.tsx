@@ -1693,6 +1693,7 @@ import {
   Brain, Users, CheckCircle2, XCircle,
   Share2, Send, ChevronDown, ChevronUp, Clock, MoreVertical,
 } from "lucide-react";
+import PredictionsLivePanel from "../components/PredictionsLivePanel";
 
 interface Props {
   onBack: () => void;
@@ -2175,6 +2176,15 @@ export default function DiscussionRoom({
       quizQuestion: m.quizQuestion, quizOptions: m.quizOptions, quizCorrectOption: m.quizCorrectOption,
       quizUserAnswer: m.quizUserAnswer ?? null, quizTimer: m.quizTimer, quizPoints: m.quizPoints,
       quizParticipants: m.quizParticipants ?? 0, memGifUrl: m.memGifUrl ?? null, memTag: m.memTag ?? null,
+      questions: (() => {
+        const q = m.questions;
+        if (Array.isArray(q)) return q;
+        if (typeof q === "string") {
+          try { return JSON.parse(q); } catch { return []; }
+        }
+        return [];
+      })(),
+      matchTitle: m.matchTitle ?? null,
     };
   }, [currentUserId, userAvatarUrl]);
 
@@ -2404,6 +2414,7 @@ export default function DiscussionRoom({
             userVote: (p.userVote && !updated.userVote) ? p.userVote : (updated.userVote ?? p.userVote ?? null),
           };
         }));
+
         setLocalReactions(prev => {
           const next = { ...prev };
           incoming.forEach((m: any) => { if (!pendingReactRef.current[m.msgId]) next[m.msgId] = { reaction: m.userReaction ?? null, heartCount: m.heartCount ?? 0 }; });
@@ -2798,18 +2809,26 @@ export default function DiscussionRoom({
   const debateCount = posts.filter(p => p.type === "debate").length;
   const predictionCount = posts.filter(p => p.type === "prediction").length;
 
-  // const filteredPosts = activeFilter === "all"
-  //   ? [...morePosts, ...posts]
+
+  // const filteredPosts = activeFilter === "all" || activeFilter === "dolly"
+  //   ? (activeFilter === "dolly" ? [] : [...morePosts, ...posts])
   //   : [...morePosts, ...posts].filter(p => {
   //     if (activeFilter === "post") return p.type === "post" || !p.type;
   //     return p.type === activeFilter;
   //   });
+
   const filteredPosts = activeFilter === "all" || activeFilter === "dolly"
-    ? (activeFilter === "dolly" ? [] : [...morePosts, ...posts])
+    ? (activeFilter === "dolly" ? [] : [...morePosts, ...posts].filter(p => p.type !== "predictions_live"))
     : [...morePosts, ...posts].filter(p => {
+      if (p.type === "predictions_live") return false;
       if (activeFilter === "post") return p.type === "post" || !p.type;
       return p.type === activeFilter;
     });
+
+  const predictionsLivePosts =
+    [...morePosts, ...posts]
+      .filter((p) => p.type === "predictions_live")
+      .sort((a, b) => b.createdAt - a.createdAt);
 
   type FeedItem =
     | { kind: "post"; data: any; sortKey: number }
@@ -2961,6 +2980,26 @@ export default function DiscussionRoom({
         })}
       </div>
 
+
+  {predictionsLivePosts.length > 0 && (
+  <PredictionsLivePanel
+    posts={predictionsLivePosts}
+    roomId={roomId ?? ""}
+    onToast={onToast}
+    openInlinePostId={openInlinePostId}
+    setOpenInlinePostId={setOpenInlinePostId}
+    currentAvatarUrl={userAvatarUrl}
+    handleReact={handleReact}
+    localReactions={localReactions}
+    pendingReactRef={pendingReactRef}
+    onPostClick={onPostClick}
+    onFanProfile={onFanProfile}
+    setReactionsMsgId={setReactionsMsgId}
+    topReactionsMap={topReactionsMap}
+    topReactionsCache={topReactionsCache}
+    fetchTopReactions={fetchTopReactions}
+  />
+)}
       {/* ── FEED ── */}
       <div ref={listRef} className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-3 flex flex-col gap-3 min-h-0">
         {/* <AnimatePresence initial={false}>

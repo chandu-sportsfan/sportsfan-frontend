@@ -2199,6 +2199,15 @@ export default function DiscussionRoom({
   const [copied, setCopied] = useState(false);
   const { userProfile } = useUserProfile();
   const [activeFilter, setActiveFilter] = useState<"all" | "post" | "debate" | "prediction" | "dolly">("all");
+
+  useEffect(() => {
+    if (phog && roomId) {
+      phog.capture("enter_room", {
+        room_id: roomId,
+        room_name: roomName || ""
+      });
+    }
+  }, [phog, roomId, roomName]);
   const votingInProgressRef = useRef<Set<string>>(new Set());
   const [pinnedPost, setPinnedPost] = useState<{
     msgId: string; text: string; authorUsername: string; type: string; pinnedAt: number;

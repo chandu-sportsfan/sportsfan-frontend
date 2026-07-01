@@ -1316,8 +1316,8 @@ export default function Profile({
   const statPosts = derivedCreatedPosts > 0
     ? derivedCreatedPosts
     : fetchedActivities.filter((a: any) =>
-        ["ROAR_POST", "ROAR_DEBATE", "ROAR_PREDICTION"].includes(a.type)
-      ).length;
+      ["ROAR_POST", "ROAR_DEBATE", "ROAR_PREDICTION"].includes(a.type)
+    ).length;
 
   const statDebates = (actCounts.ROAR_DEBATE_PARTICIPATE && actCounts.ROAR_DEBATE_PARTICIPATE > 0) ? actCounts.ROAR_DEBATE_PARTICIPATE : derivedDebates;
   const statPredictions = (actCounts.ROAR_PREDICTION_PARTICIPATE && actCounts.ROAR_PREDICTION_PARTICIPATE > 0) ? actCounts.ROAR_PREDICTION_PARTICIPATE : derivedPredictions;
@@ -1644,7 +1644,12 @@ export default function Profile({
       <RoarJourneySection
         predictions={actCounts.ROAR_PREDICTION_PARTICIPATE ?? 0}
         debates={actCounts.ROAR_DEBATE_PARTICIPATE ?? 0}
-        posts={actCounts.total ?? 0}
+        // posts={actCounts.total ?? 0}
+        posts={
+          (actCounts.total ?? 0) -
+          (actCounts.ROAR_PREDICTION_PARTICIPATE ?? 0) -
+          (actCounts.ROAR_DEBATE_PARTICIPATE ?? 0) - (actCounts.ROAR_PREDICTION_CORRECT ?? 0)
+        }
         badgeSrcs={[
           "/images/Frame 1984081839.png",
           ...(user.badges ?? [])

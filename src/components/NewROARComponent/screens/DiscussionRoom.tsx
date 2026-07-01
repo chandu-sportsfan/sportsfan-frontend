@@ -1843,6 +1843,7 @@ function InlineSection({
   postId: string; roomId: string; isOpen: boolean; onOpenFull: () => void;
   accentColor: string; currentAvatarUrl?: string; onCommentPosted: () => void;
 }) {
+  const phog = usePostHog();
   const [replies, setReplies] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [commentText, setCommentText] = useState("");
@@ -1872,6 +1873,12 @@ function InlineSection({
     setSending(true);
     try {
       await axios.post(`/api/roar/rooms/${roomId}/messages/${postId}/comments`, { text: fullText });
+      if (phog) {
+        phog.capture("post_comment", {
+          post_id: postId,
+          room_id: roomId,
+        });
+      }
       setCommentText(""); setReplyTo(null); onCommentPosted(); fetchReplies();
     } catch { }
     finally { setSending(false); }

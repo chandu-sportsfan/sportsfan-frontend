@@ -969,6 +969,7 @@ interface Props {
   currentUserId?: string;
   currentAvatarUrl?: string;
   onFanProfileClick?: (fan: any) => void;
+  roomName?: string;
 }
 
 interface MentionUser {
@@ -991,6 +992,7 @@ export default function PostDetailsOverlay({
   currentUserId: propCurrentUserId,
   currentAvatarUrl,
   onFanProfileClick,
+  roomName,
 }: Props) {
   const [comments, setComments] = useState<any[]>([]);
   const [commentText, setCommentText] = useState("");
@@ -1120,6 +1122,7 @@ export default function PostDetailsOverlay({
           phog.capture("post_comment", {
             post_id: post.id,
             room_id: post.roomId,
+            room_name: roomName || ""
           });
         }
         setTimeout(() => scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" }), 400);

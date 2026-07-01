@@ -29,9 +29,10 @@ interface Props {
   disabled?: boolean;
   postId?: string;
   roomId?: string;
+  roomName?: string;
 }
 
-export default function ReactionPicker({ currentReaction, count, onReact, disabled, postId, roomId }: Props) {
+export default function ReactionPicker({ currentReaction, count, onReact, disabled, postId, roomId, roomName }: Props) {
   const phog = usePostHog();
   const [open, setOpen] = useState(false);
   const [hovered, setHovered] = useState<Reaction | null>(null);
@@ -46,10 +47,10 @@ export default function ReactionPicker({ currentReaction, count, onReact, disabl
     hoverTimer.current = setTimeout(() => {
       setOpen(true);
       if (phog) {
-        phog.capture("open_reaction", { post_id: postId, room_id: roomId });
+        phog.capture("open_reaction", { post_id: postId, room_id: roomId, room_name: roomName || "" });
       }
     }, 280);
-  }, [phog, postId, roomId]);
+  }, [phog, postId, roomId, roomName]);
 
   const scheduleClose = useCallback(() => {
     if (hoverTimer.current) { clearTimeout(hoverTimer.current); hoverTimer.current = null; }

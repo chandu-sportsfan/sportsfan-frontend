@@ -694,6 +694,8 @@ export default function HomeFeed({
             count={likeCount}
             onReact={(r) => handleReact(item.id, r, item.isDbPost)}
             postId={item.id}
+            roomId={item.roomId}
+            roomName={rooms.find(r => r.roomId === item.roomId)?.name || ""}
           />
         </div>
 

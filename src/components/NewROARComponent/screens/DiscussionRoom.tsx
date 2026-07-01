@@ -1838,9 +1838,9 @@ function threadSort(flat: any[]): any[] {
 }
 
 function InlineSection({
-  postId, roomId, isOpen, onOpenFull, accentColor, currentAvatarUrl, onCommentPosted,
+  postId, roomId, roomName, isOpen, onOpenFull, accentColor, currentAvatarUrl, onCommentPosted,
 }: {
-  postId: string; roomId: string; isOpen: boolean; onOpenFull: () => void;
+  postId: string; roomId: string; roomName?: string; isOpen: boolean; onOpenFull: () => void;
   accentColor: string; currentAvatarUrl?: string; onCommentPosted: () => void;
 }) {
   const phog = usePostHog();
@@ -1877,6 +1877,7 @@ function InlineSection({
         phog.capture("post_comment", {
           post_id: postId,
           room_id: roomId,
+          room_name: roomName || ""
         });
       }
       setCommentText(""); setReplyTo(null); onCommentPosted(); fetchReplies();
@@ -2686,6 +2687,7 @@ export default function DiscussionRoom({
           onReact={(r) => handleReact(p.id, r)}
           postId={p.id}
           roomId={roomId}
+          roomName={roomName}
         />
       </div>
     );
@@ -2806,7 +2808,7 @@ export default function DiscussionRoom({
           {isOpen && roomId && (
             <InlineSection
               key={`inline-${p.id}`}
-              postId={p.id} roomId={roomId} isOpen={isOpen}
+              postId={p.id} roomId={roomId} roomName={roomName} isOpen={isOpen}
               onOpenFull={() => { setOpenInlinePostId(null); onPostClick?.(postPayload); }}
               accentColor={accent} currentAvatarUrl={userAvatarUrl}
               onCommentPosted={() => {
@@ -3117,7 +3119,8 @@ export default function DiscussionRoom({
                                     poll_id: p.id,
                                     poll_type: "debate_vs",
                                     option_id: voteVal,
-                                    room_id: roomId
+                                    room_id: roomId,
+                                    room_name: roomName || ""
                                   });
                                 }
                               } catch (err: any) {
@@ -3230,12 +3233,14 @@ export default function DiscussionRoom({
                                         poll_id: p.id,
                                         poll_type: p.type || "prediction",
                                         option_id: agree ? "agree" : "disagree",
-                                        room_id: roomId
+                                        room_id: roomId,
+                                        room_name: roomName || ""
                                       });
                                       phog.capture("submit_prediction", {
                                         post_id: p.id,
                                         room_id: roomId,
-                                        option_id: agree ? "agree" : "disagree"
+                                        option_id: agree ? "agree" : "disagree",
+                                        room_name: roomName || ""
                                       });
                                     }
                                   } catch { onToast("You've already voted!!"); }
@@ -3267,12 +3272,14 @@ export default function DiscussionRoom({
                                           poll_id: p.id,
                                           poll_type: p.type || "prediction",
                                           option_id: voteValue,
-                                          room_id: roomId
+                                          room_id: roomId,
+                                          room_name: roomName || ""
                                         });
                                         phog.capture("submit_prediction", {
                                           post_id: p.id,
                                           room_id: roomId,
-                                          option_id: voteValue
+                                          option_id: voteValue,
+                                          room_name: roomName || ""
                                         });
                                       }
                                     } catch { onToast("You've already voted!!"); }
@@ -3345,7 +3352,8 @@ export default function DiscussionRoom({
                                       poll_id: p.id,
                                       poll_type: p.type || "hot_take",
                                       option_id: agree ? "agree" : "disagree",
-                                      room_id: roomId
+                                      room_id: roomId,
+                                      room_name: roomName || ""
                                     });
                                   }
                                 } catch { onToast("Failed to submit vote"); }

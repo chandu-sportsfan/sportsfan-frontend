@@ -698,9 +698,17 @@ export default function ROARApp() {
   useEffect(() => {
     if (selectedPost && phog) {
       if (selectedPost.type === "debate") {
-        phog.capture("open_debate", { post_id: selectedPost.id, room_id: selectedPost.roomId || selectedRoom?.roomId });
+        phog.capture("open_debate", {
+          post_id: selectedPost.id,
+          room_id: selectedPost.roomId || selectedRoom?.roomId,
+          room_name: selectedRoom?.name || ""
+        });
       } else if (selectedPost.type === "prediction") {
-        phog.capture("open_prediction", { post_id: selectedPost.id, room_id: selectedPost.roomId || selectedRoom?.roomId });
+        phog.capture("open_prediction", {
+          post_id: selectedPost.id,
+          room_id: selectedPost.roomId || selectedRoom?.roomId,
+          room_name: selectedRoom?.name || ""
+        });
       }
     }
   }, [selectedPost, phog, selectedRoom]);
@@ -1277,6 +1285,7 @@ export default function ROARApp() {
                   onClose={(count?) => { if (selectedPost && count !== undefined) roomReplyUpdateRef.current?.(selectedPost.id, count); setSelectedPost(null); roomRefreshRef.current?.(); }}
                   onToast={showToast} onVote={handleVote} onDeletePost={handleDeletePost}
                   currentUsername={currentUsername} currentUserId={currentUserId} currentAvatarUrl={currentAvatarUrl}
+                  roomName={selectedRoom?.name}
                 />
               ) : (
                 <PostDetailsOverlay
@@ -1284,6 +1293,7 @@ export default function ROARApp() {
                   onClose={() => setSelectedPost(null)}
                   onToast={showToast} onVote={handleVote} onDeletePost={handleDeletePost}
                   currentUsername={currentUsername} currentUserId={currentUserId} currentAvatarUrl={currentAvatarUrl}
+                  roomName={rooms.find(r => r.roomId === selectedPost.roomId)?.name || ""}
                 />
               )
             )}

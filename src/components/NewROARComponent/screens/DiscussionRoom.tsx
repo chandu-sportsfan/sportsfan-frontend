@@ -1674,7 +1674,7 @@
 
 
 
-
+import React from "react";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { usePostHog } from "posthog-js/react";
@@ -1718,14 +1718,37 @@ const QUICK_REACT_OPTS = [
   { id: "qr_wicket", label: "Wicket!", emoji: "🎯" },
   { id: "qr_six", label: "Six!!", emoji: "💪" },
   { id: "qr_four", label: "Four!", emoji: "🏏" },
-  { id: "qr_boundary", label: "Boundary!", emoji: "💥" },
+  { id: "qr_frango", label: "Frango!", emoji: "🐔" },
+  { id: "qr_redcard", label: "Red Card!", emoji: "🟥" },
+  { id: "qr_goal", label: "Goal!!", emoji: "⚽" },
+
+
 ];
 
 const QUICK_REACT_GRADIENTS: Record<string, string> = {
   qr_wicket: "linear-gradient(135deg,#e91e8c,#c2185b)",
   qr_six: "linear-gradient(135deg,#f59e0b,#d97706)",
   qr_four: "linear-gradient(135deg,#f97316,#ea580c)",
-  qr_boundary: "linear-gradient(135deg,#10b981,#059669)",
+  qr_frango: "linear-gradient(135deg,#f97316,#ea580c)",
+  qr_redcard: "linear-gradient(135deg,#f97316,#ea580c)",
+  qr_goal: "linear-gradient(135deg,#f97316,#ea580c)",
+};
+
+const QUICK_REACT_VIDEO_MAP: Record<string, string> = {
+  wicket: "/QUICK_REACT_VIDEO/wicket.mp4",
+  six: "/QUICK_REACT_VIDEO/six.mp4",
+  four: "/QUICK_REACT_VIDEO/four.mp4",
+  frango: "/QUICK_REACT_VIDEO/Frango.mp4",
+  redcard: "/QUICK_REACT_VIDEO/RedCard.mp4",
+  goal: "/QUICK_REACT_VIDEO/Goal.mp4",
+};
+const QUICK_REACT_IMAGES_MAP: Record<string, string> = {
+  wicket: "/QUICK_REACT_IMAGES/Wicket.png",
+  six: "/QUICK_REACT_IMAGES/Six.png",
+  four: "/QUICK_REACT_IMAGES/Four.png",
+  frango: "/QUICK_REACT_IMAGES/Frango.png",
+  redcard: "/QUICK_REACT_IMAGES/Redcard.png",
+  goal: "/QUICK_REACT_IMAGES/Goal.png",
 };
 
 const MODE_COLOR: Record<string, string> = {
@@ -2066,6 +2089,89 @@ const buildRoarPostShareText = (post: ShareableRoarPost) => {
   return [`Check out this ROAR post by ${author}`, post?.text || "Join the conversation on Sportsfan ROAR.", `View post: ${shareUrl}`].filter(Boolean).join("\n");
 };
 
+// ── Celebration emoji burst (floating bottom → top) ───────────────────────────
+const CELEBRATION_EMOJIS_MAP: Record<string, string[]> = {
+  six: ["💪", "6️⃣", "🔥", "⚡", "🏏", "🎉", "💪", "6️⃣", "🔥", "✨", "🎊", "⚡"],
+  wicket: ["🎯", "💥", "🏏", "⚡", "🎊", "🔥", "🎯", "💥", "🏏", "✨", "🎉", "⚡"],
+  four: ["🏏", "⚡", "💫", "🔥", "4️⃣", "⚡", "🏏", "💫", "🔥", "✨"],
+  boundary: ["💥", "🏏", "⚡", "🔥", "💥", "🏏", "✨"],
+};
+
+function CelebrationBurst({ memTag, onDone }: { memTag: string; onDone: () => void }) {
+  const particles = React.useMemo(() => {
+    const emojis = CELEBRATION_EMOJIS_MAP[memTag] ?? ["🎉", "🔥", "⚡"];
+
+    return Array.from({ length: 80 }).map(() => ({
+      emoji: emojis[Math.floor(Math.random() * emojis.length)],
+
+      // Much wider spread
+      x: (Math.random() - 0.5) * window.innerWidth * 1.3,
+
+      // Different heights
+      y: -(window.innerHeight * (0.5 + Math.random() * 0.5)),
+
+      rotate: Math.random() * 1080 - 540,
+      size: 20 + Math.random() * 26,
+      duration: 2.8 + Math.random() * 1.2,
+      delay: Math.random() * 0.8,
+
+    }));
+  }, [memTag]);
+
+  useEffect(() => {
+    const t = setTimeout(onDone, 1500);
+    return () => clearTimeout(t);
+  }, [onDone]);
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        pointerEvents: "none",
+        zIndex: 9999,
+        overflow: "hidden",
+      }}
+    >
+      {particles.map((pt, i) => (
+        <motion.div
+          key={i}
+          initial={{
+            x: 0,
+            y: 0,
+            scale: 0,
+            opacity: 1,
+            rotate: 0,
+          }}
+          animate={{
+            x: [0, pt.x * 0.3, pt.x],
+            y: [0, pt.y * 0.4, pt.y],
+            scale: [0, 1.2, 1],
+            opacity: [1, 1, 0],
+            rotate: [0, pt.rotate],
+          }}
+          transition={{
+            duration: pt.duration,
+            delay: pt.delay,
+            ease: "easeOut",
+            times: [0, 0.35, 1],
+          }}
+          style={{
+            position: "absolute",
+            left: "50%",
+            bottom: 30,
+            marginLeft: -12,
+            fontSize: pt.size,
+            lineHeight: 1,
+          }}
+        >
+          {pt.emoji}
+        </motion.div>
+      ))}
+    </div>
+  );
+}
+
 export default function DiscussionRoom({
   onBack, onToast, roomId, roomName, onPostClick, onCompose,
   fanCount = 312, score, scoreSubtitle, currentAvatarUrl, currentUserId: propCurrentUserId, onRegisterRefresh, onRegisterReplyUpdate,
@@ -2127,6 +2233,12 @@ export default function DiscussionRoom({
   const pendingReactRef = useRef<Record<string, boolean>>({});
   const [reactionsMsgId, setReactionsMsgId] = useState<string | null>(null);
   useEffect(() => { localReactionsRef.current = localReactions; }, [localReactions]);
+
+  // ── Quick-react: track newly posted IDs (play with sound) & celebration burst
+  const [newlyPostedIds, setNewlyPostedIds] = useState<Set<string>>(new Set());
+  // ── Track posts whose video has finished — show static image instead
+  const [videoEndedIds, setVideoEndedIds] = useState<Set<string>>(new Set());
+  const [celebration, setCelebration] = useState<{ memTag: string } | null>(null);
 
   // ── Dolly (private AI Q&A) ──
   const [dollyOpen, setDollyOpen] = useState(false);
@@ -2654,6 +2766,11 @@ export default function DiscussionRoom({
           memGifUrl: null,
           mediaUrls: [],
         }]);
+        // Play with sound + trigger emoji burst for the freshly posted moment
+        setNewlyPostedIds(prev => new Set([...prev, m.msgId]));
+        if (["wicket", "six", "four", "boundary"].includes(memTag)) {
+          setCelebration({ memTag });
+        }
         setTimeout(() => listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" }), 50);
         onToast(`${opt.emoji} ${opt.label} posted!`);
       }
@@ -2872,6 +2989,17 @@ export default function DiscussionRoom({
           <stop offset="0%" stopColor="#e91e8c" /><stop offset="100%" stopColor="#ff6b35" />
         </linearGradient>
       </svg>
+
+      {/* ── Emoji celebration burst ── */}
+      <AnimatePresence>
+        {celebration && (
+          <CelebrationBurst
+            key={celebration.memTag + Date.now()}
+            memTag={celebration.memTag}
+            onDone={() => setCelebration(null)}
+          />
+        )}
+      </AnimatePresence>
 
       {sharePost && (
         <>
@@ -3167,22 +3295,71 @@ export default function DiscussionRoom({
                 >
                   {renderPostHeader(p, p.type || "post", () => onFanProfile?.(p.fan))}
 
-                  {p.memTag && ["wicket", "six", "four", "boundary"].includes(p.memTag) ? (
-                    <div style={{
-                      background: QUICK_REACT_GRADIENTS[`qr_${p.memTag}`] || "linear-gradient(135deg,#e91e8c,#ff6b35)",
-                      borderRadius: 16, padding: "28px 16px", textAlign: "center", marginTop: 4, marginBottom: 4,
-                      display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6,
-                      position: "relative", overflow: "hidden",
-                    }}>
-                      <div style={{ fontSize: 32, lineHeight: 1 }}>
-                        {p.memTag === "wicket" && "🎯 🏏"}
-                        {p.memTag === "six" && "💪 6️⃣"}
-                        {p.memTag === "four" && "🏏 ⚡"}
-                        {p.memTag === "boundary" && "🏏 💥"}
-                      </div>
-                      <p style={{ margin: 0, fontWeight: 900, fontSize: 20, color: "#fff", letterSpacing: "0.06em", textTransform: "uppercase", textShadow: "0 2px 8px rgba(0,0,0,0.3)" }}>
-                        {p.text}
-                      </p>
+                  {p.memTag && ["wicket", "six", "four", "boundary", "frango", "redcard", "goal"].includes(p.memTag) ? (
+                    <div style={{ marginTop: 4, marginBottom: 4 }}>
+                      {QUICK_REACT_VIDEO_MAP[p.memTag] || QUICK_REACT_IMAGES_MAP[p.memTag] ? (
+                        <div style={{ maxWidth: 480, width: "100%", margin: "0 auto" }}>
+                          {/* Show video with sound ONLY when freshly posted (newlyPostedIds).
+                              On refresh / revisit the set is empty → show static image directly */}
+                          {newlyPostedIds.has(p.id) && !videoEndedIds.has(p.id) ? (
+                            <video
+                              src={QUICK_REACT_VIDEO_MAP[p.memTag]}
+                              autoPlay
+                              playsInline
+                              muted={false}
+                              loop={false}
+                              preload="auto"
+                              controls={false}
+                              onEnded={() => {
+                                // Video played once with sound — switch to static image
+                                setNewlyPostedIds(prev => {
+                                  const next = new Set(prev);
+                                  next.delete(p.id);
+                                  return next;
+                                });
+                                setVideoEndedIds(prev => new Set([...prev, p.id]));
+                              }}
+                              onClick={(e) => e.stopPropagation()}
+                              style={{
+                                width: "100%",
+                                aspectRatio: "16 / 9",
+                                borderRadius: 16,
+                                objectFit: "cover",
+                                display: "block",
+                                background: "#000",
+                              }}
+                            />
+                          ) : QUICK_REACT_IMAGES_MAP[p.memTag] ? (
+                            // Not newly posted OR video ended → static image, no sound
+                            <img
+                              src={QUICK_REACT_IMAGES_MAP[p.memTag]}
+                              alt={p.memTag}
+                              onClick={(e) => e.stopPropagation()}
+                              style={{
+                                width: "30%",
+                                aspectRatio: "16 / 9",
+                                borderRadius: 16,
+                                objectFit: "contain",
+                                display: "block",
+                              }}
+                            />
+                          ) : null}
+                        </div>
+                      ) : (
+                          <div style={{
+                            background: QUICK_REACT_GRADIENTS[`qr_${p.memTag}`] || "linear-gradient(135deg,#e91e8c,#ff6b35)",
+                            borderRadius: 16, padding: "28px 16px", textAlign: "center",
+                            display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6,
+                            position: "relative", overflow: "hidden",
+                          }}>
+                            <div style={{ fontSize: 32, lineHeight: 1 }}>
+                              {p.memTag === "boundary" && "🏏 💥"}
+                            </div>
+                            <p style={{ margin: 0, fontWeight: 900, fontSize: 20, color: "#fff", letterSpacing: "0.06em", textTransform: "uppercase", textShadow: "0 2px 8px rgba(0,0,0,0.3)" }}>
+                              {p.text}
+                            </p>
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <>

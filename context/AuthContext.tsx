@@ -155,6 +155,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import axios from "axios";
 import { useSession } from "next-auth/react";
+import posthog from "posthog-js";
 
 interface User {
     email: string;
@@ -304,6 +305,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (sessionStatus === "loading") return;
         fetchUser();
     }, [sessionStatus, session?.user?.email]);
+
+    useEffect(() => {
+        if (user) {
+            posthog.identify(user.userId || user.email, {
+                email: user.email,
+                name: user.name,
+                is_focus_group: user.email?.endsWith("@sportsfan360.com") || false,
+                user_group: user.email?.endsWith("@sportsfan360.com") ? "focus_group" : "general_beta",
+            });
+        } else {
+            posthog.reset();
+        }
+    }, [user]);
 
     const refreshUser = async () => {
         await fetchUser();

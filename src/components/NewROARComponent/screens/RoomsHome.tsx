@@ -364,9 +364,9 @@ const SPORT_GRADIENT: Record<string, string> = {
 };
 
 const SPORT_IMAGE: Record<string, string> = {
-  cricket:  "/images/room_DP.png",
-  football: "/images/fifa.png",
-  default:  "/images/fifa.png",
+  cricket:  "/images/cricket1.png",
+  football: "/images/fifa1.png",
+  default:  "/images/fifa1.png",
 };
 
 const INFINITY_ROOM_ID = "vZFu6xEApNRd1aUbDuHW";

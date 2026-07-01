@@ -536,6 +536,53 @@ const REACTION_EMOJI: Record<string, string> = {
 
 const ACCENT = "#e91e8c";
 
+// Backend stores votes as "agree" (option 0), "disagree" (option 1), or
+// "option_N" (N >= 2). Convert that back to a flat option index so the UI
+// can highlight/disable the right button after a refresh.
+function voteValueToOptionIndex(v: string): number {
+  if (v === "agree") return 0;
+  if (v === "disagree") return 1;
+  const match = /^option_(\d+)$/.exec(v);
+  return match ? Number(match[1]) : -1;
+}
+
+// ── Client-side safety net ──────────────────────────────────────────────────
+// The server is the source of truth (via userPredictionVotes coming back from
+// GET /messages), but that requires the backend + DiscussionRoom wiring to be
+// deployed. Until then — or on top of it — cache each vote in localStorage the
+// moment it's cast, keyed by post+question, so a refresh can never re-enable
+// a button the user already voted on, even if the server round-trip for that
+// vote hasn't propagated back through props yet.
+const VOTE_STORAGE_PREFIX = "plive_vote_";
+
+function getStoredVote(postId: string, qIdx: number): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    return window.localStorage.getItem(`${VOTE_STORAGE_PREFIX}${postId}_${qIdx}`);
+  } catch {
+    return null;
+  }
+}
+
+function setStoredVote(postId: string, qIdx: number, vote: string) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(`${VOTE_STORAGE_PREFIX}${postId}_${qIdx}`, vote);
+  } catch {
+    // localStorage unavailable (private mode, quota, etc) — safe to ignore,
+    // the server-side check in the vote route still prevents a double count.
+  }
+}
+
+function clearStoredVote(postId: string, qIdx: number) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.removeItem(`${VOTE_STORAGE_PREFIX}${postId}_${qIdx}`);
+  } catch {
+    // ignore
+  }
+}
+
 interface FlatQuestion {
   question: string;
   options: { text: string; emoji?: string }[];
@@ -605,14 +652,11 @@ export default function PredictionsLivePanel({
     const saved: Record<number, number> = {};
     flatQuestions.forEach((fq) => {
       const srcPost = posts.find(p => p.id === fq.postId);
-      if (srcPost?.userPredictionVotes?.[fq.qIdx] !== undefined) {
-        const v = srcPost.userPredictionVotes[fq.qIdx];
-        const oIdx = typeof v === "number" ? v : parseInt(String(v).replace(/[^0-9]/g, ""));
-        if (!isNaN(oIdx)) saved[fq.globalIdx] = oIdx;
-      } else if (srcPost?.userVote && fq.qIdx === 0) {
-        const v = srcPost.userVote as string;
-        const optIdx = v === "agree" ? 0 : v === "disagree" ? 1 :
-          v.startsWith("option_") ? parseInt(v.replace("option_", "")) : -1;
+      const serverVote = srcPost?.userPredictionVotes?.[fq.qIdx];
+      const localVote = getStoredVote(fq.postId, fq.qIdx);
+      const savedVote = serverVote ?? localVote ?? undefined;
+      if (savedVote !== undefined) {
+        const optIdx = voteValueToOptionIndex(savedVote);
         if (optIdx >= 0) saved[fq.globalIdx] = optIdx;
       }
     });
@@ -623,9 +667,9 @@ export default function PredictionsLivePanel({
     const saved: Record<number, boolean> = {};
     flatQuestions.forEach((fq) => {
       const srcPost = posts.find(p => p.id === fq.postId);
-      if (srcPost?.userPredictionVotes?.[fq.qIdx] !== undefined) {
-        saved[fq.globalIdx] = true;
-      } else if (srcPost?.userVote && fq.qIdx === 0) {
+      const serverVote = srcPost?.userPredictionVotes?.[fq.qIdx];
+      const localVote = getStoredVote(fq.postId, fq.qIdx);
+      if (serverVote !== undefined || localVote !== null) {
         saved[fq.globalIdx] = true;
       }
     });
@@ -676,6 +720,45 @@ export default function PredictionsLivePanel({
 
   const stopAutoSlide = () => { if (autoSlideRef.current) clearInterval(autoSlideRef.current); };
 
+  // If server-side userPredictionVotes arrives/updates after the initial
+  // render (e.g. the backend fix propagates via a later poll), fold it in —
+  // without overwriting anything we already know locally.
+  useEffect(() => {
+    setHasVotedMap(prev => {
+      let changed = false;
+      const next = { ...prev };
+      flatQuestions.forEach((fq) => {
+        if (next[fq.globalIdx]) return;
+        const srcPost = posts.find(p => p.id === fq.postId);
+        const serverVote = srcPost?.userPredictionVotes?.[fq.qIdx];
+        const localVote = getStoredVote(fq.postId, fq.qIdx);
+        if (serverVote !== undefined || localVote !== null) {
+          next[fq.globalIdx] = true;
+          changed = true;
+        }
+      });
+      return changed ? next : prev;
+    });
+    setUserVotes(prev => {
+      let changed = false;
+      const next = { ...prev };
+      flatQuestions.forEach((fq) => {
+        if (next[fq.globalIdx] !== undefined) return;
+        const srcPost = posts.find(p => p.id === fq.postId);
+        const serverVote = srcPost?.userPredictionVotes?.[fq.qIdx];
+        const localVote = getStoredVote(fq.postId, fq.qIdx);
+        const savedVote = serverVote ?? localVote ?? undefined;
+        if (savedVote !== undefined) {
+          const optIdx = voteValueToOptionIndex(savedVote);
+          if (optIdx >= 0) { next[fq.globalIdx] = optIdx; changed = true; }
+        }
+      });
+      return changed ? next : prev;
+    });
+    // Re-sync whenever the underlying posts (and therefore flatQuestions) change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [posts]);
+
   const handleVote = async (globalIdx: number, fq: FlatQuestion, optIdx: number) => {
     if (hasVotedMap[globalIdx] || isQuestionExpired(fq) || votingInProgress[globalIdx]) {
       return;
@@ -686,6 +769,9 @@ export default function PredictionsLivePanel({
     setVotingInProgress(prev => ({ ...prev, [globalIdx]: true }));
 
     const voteValue = optIdx === 0 ? "agree" : optIdx === 1 ? "disagree" : `option_${optIdx}`;
+    // Cache immediately — don't wait on the network round-trip — so a refresh
+    // right after clicking still sees this question as answered.
+    setStoredVote(fq.postId, fq.qIdx, voteValue);
     try {
       await axios.post(`/api/roar/rooms/${roomId}/messages/${fq.postId}/vote`, {
         vote: voteValue,
@@ -697,6 +783,7 @@ export default function PredictionsLivePanel({
       if (status !== 409 && status !== 400) {
         setHasVotedMap(prev => { const n = { ...prev }; delete n[globalIdx]; return n; });
         setUserVotes(prev => { const n = { ...prev }; delete n[globalIdx]; return n; });
+        clearStoredVote(fq.postId, fq.qIdx);
         onToast("Failed to submit vote");
       } else {
         onToast("You've already voted on this question");
@@ -707,9 +794,8 @@ export default function PredictionsLivePanel({
   };
 
   const getCount = (fq: FlatQuestion, optIdx: number): number => {
-    if (optIdx === 0) return fq.agreeCount ?? 0;
-    if (optIdx === 1) return fq.disagreeCount ?? 0;
-    return fq.predictionOptionCounts?.[`option_${optIdx}`] ?? 0;
+    const voteValue = optIdx === 0 ? "agree" : optIdx === 1 ? "disagree" : `option_${optIdx}`;
+    return fq.predictionOptionCounts?.[`q${fq.qIdx}_${voteValue}`] ?? 0;
   };
 
   const getTotal = (fq: FlatQuestion): number =>

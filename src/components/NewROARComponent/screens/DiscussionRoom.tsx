@@ -1746,6 +1746,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { usePostHog } from "posthog-js/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useUserProfile } from "@/context/UserProfileContext";
 import axios from "axios";
@@ -2140,6 +2141,7 @@ export default function DiscussionRoom({
   onFanProfile, watchAlongRoomId
 }: Props) {
   const router = useRouter();
+  const phog = usePostHog();
   const [posts, setPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [input, setInput] = useState("");

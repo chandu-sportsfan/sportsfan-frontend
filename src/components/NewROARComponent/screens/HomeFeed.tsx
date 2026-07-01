@@ -21,9 +21,15 @@ import {
   ChevronLeft, ImageIcon, Send, BarChart2, Clock,
 } from "lucide-react";
 import type { Room } from "../types";
+import { url } from "inspector";
 
 const PAGE_SIZE = 15;
-
+const QUICK_REACT_VIDEO_MAP: Record<string, string> = {
+  six: "/QUICK_REACT_VIDEO/six.mp4",
+  four: "/QUICK_REACT_VIDEO/four.mp4",
+  wicket: "/QUICK_REACT_VIDEO/wicket.mp4",
+  // boundary intentionally omitted — falls back to mediaUrls
+};
 const COMPOSE_ACTIONS = [
   { id: "post", label: "Post", Icon: PenTool },
   { id: "prediction", label: "Predict", Icon: TrendingUp },
@@ -911,6 +917,9 @@ export default function HomeFeed({
             }
 
             if (item.type === "hot_take" || item.type === "prediction" || item.type === "post") {
+              const mediaUrls = QUICK_REACT_VIDEO_MAP[item.memTag]
+                ? [QUICK_REACT_VIDEO_MAP[item.memTag]]
+                : item.mediaUrls ?? [];
               const pct = pcts[item.id] ?? item.agreePercent ?? 50;
               const userVote = votes[item.id];
               const liveTotal = (item.agreeCount ?? 0) + (item.disagreeCount ?? 0);
@@ -948,9 +957,9 @@ export default function HomeFeed({
                     <div><p style={{ fontWeight: 700, fontSize: 13 }}>{item.fan.username}</p><p style={{ fontSize: 10, color: "var(--text-secondary)" }}>{BADGE_LABELS[item.fan.badge]} · {item.fan.team} • {formatTimeAgo(item.createdAt)}</p></div>
                   </div>
                   <p style={{ fontWeight: 600, fontSize: 15, lineHeight: 1.5, marginBottom: 12 }}>{item.text}</p>
-                  {item.mediaUrls?.length > 0 && (
+                  {mediaUrls.length > 0 && (
                     <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
-                      {item.mediaUrls.map((url: string, idx: number) => url.endsWith(".mp4") || url.includes("/video/upload/") ? <video key={idx} src={url} controls style={{ width: "100%", maxHeight: 300, borderRadius: 12, objectFit: "cover" }} onClick={e => e.stopPropagation()} /> : <img key={idx} src={url} alt="" style={{ width: "100%", maxHeight: 300, borderRadius: 12, objectFit: "cover" }} />)}
+                      {mediaUrls.map(url: string, idx: number) => url.endsWith(".mp4") || url.includes("/video/upload/") ? <video key={idx} src={url} controls style={{ width: "100%", maxHeight: 300, borderRadius: 12, objectFit: "cover" }} onClick={e => e.stopPropagation()} /> : <img key={idx} src={url} alt="" style={{ width: "100%", maxHeight: 300, borderRadius: 12, objectFit: "cover" }} />)}
                     </div>
                   )}
                   {item.match && <p style={{ fontSize: 11, color: "var(--accent-magenta)", marginBottom: 8, fontWeight: 600 }}>{item.match}</p>}

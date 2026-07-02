@@ -1713,6 +1713,7 @@ interface Props {
   onRegisterReplyUpdate?: (fn: (postId: string, count: number) => void) => void;
   onFanProfile?: (fan: any) => void;
   watchAlongRoomId?: string;
+  roomSports?:string;
 }
 
 const QUICK_REACT_OPTS = [

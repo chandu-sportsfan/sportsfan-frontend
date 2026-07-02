@@ -1695,6 +1695,7 @@ import {
   Share2, Send, ChevronDown, ChevronUp, Clock, MoreVertical,
 } from "lucide-react";
 import PredictionsLivePanel from "../components/PredictionsLivePanel";
+import DollyPanel, { type DollyHistorySession } from "../components/DollyPanel";
 
 interface Props {
   onBack: () => void;
@@ -2198,7 +2199,13 @@ export default function DiscussionRoom({
   const [sharePost, setSharePost] = useState<ShareableRoarPost | null>(null);
   const [copied, setCopied] = useState(false);
   const { userProfile } = useUserProfile();
-  const [activeFilter, setActiveFilter] = useState<"all" | "post" | "debate" | "prediction" | "dolly">("all");
+  const [roomCounts, setRoomCounts] = useState({ post: 0, debate: 0, prediction: 0 });
+  const [activeFilter, setActiveFilter] = useState<"all" | "post" | "debate" | "prediction">("all");
+  const [dollyHistory, setDollyHistory] = useState<DollyHistorySession[]>([]);
+  const [dollyHistoryLoading, setDollyHistoryLoading] = useState(false);
+  const [dollyActiveRoomId, setDollyActiveRoomId] = useState<string | undefined>(roomId);
+  const [dollyActiveRoomName, setDollyActiveRoomName] = useState<string | undefined>(roomName);
+  const [dollyRepliesLoading, setDollyRepliesLoading] = useState(false);
 
   useEffect(() => {
     if (phog && roomId) {
@@ -2407,6 +2414,59 @@ export default function DiscussionRoom({
     </>
   );
 
+  const loadDollyHistory = useCallback(async () => {
+    setDollyHistoryLoading(true);
+    try {
+      const res = await axios.get("/api/roar/dolly/rooms");
+      const rooms: any[] = res.data?.rooms ?? [];
+      const mapped: DollyHistorySession[] = rooms
+        .filter(r => r.roomId !== roomId) // live room injected separately below
+        .map(r => ({
+          roomId: r.roomId,
+          title: r.title,
+          subtitle: r.lastQuestion || "No questions yet",
+          dateLabel: new Date(r.lastAskedAt).toLocaleDateString([], { month: "short", day: "numeric" }),
+        }));
+      setDollyHistory([
+        { roomId: roomId!, title: roomName || "This match", subtitle: "", dateLabel: "Today", isLive: true },
+        ...mapped,
+      ]);
+    } catch {
+      setDollyHistory(roomId ? [{ roomId, title: roomName || "This match", subtitle: "", dateLabel: "Today", isLive: true }] : []);
+    } finally {
+      setDollyHistoryLoading(false);
+    }
+  }, [roomId, roomName]);
+
+  const handleSelectDollySession = useCallback(async (session: DollyHistorySession) => {
+    if (session.roomId === dollyActiveRoomId) return;
+    setDollyActiveRoomId(session.roomId);
+    setDollyActiveRoomName(session.title);
+    setDollyRepliesLoading(true);
+    try {
+      const res = await axios.get(`/api/roar/rooms/${session.roomId}/dolly`);
+      setDollyReplies(res.data?.success ? (res.data.replies ?? []) : []);
+    } catch {
+      setDollyReplies([]);
+    } finally {
+      setDollyRepliesLoading(false);
+    }
+  }, [dollyActiveRoomId]);
+
+  const handleNewDollyChat = useCallback(() => {
+    // jump back to the live room's thread
+    setDollyActiveRoomId(roomId);
+    setDollyActiveRoomName(roomName);
+    setDollyQuestion("");
+    if (roomId) {
+      setDollyRepliesLoading(true);
+      axios.get(`/api/roar/rooms/${roomId}/dolly`)
+        .then(res => setDollyReplies(res.data?.success ? (res.data.replies ?? []) : []))
+        .catch(() => setDollyReplies([]))
+        .finally(() => setDollyRepliesLoading(false));
+    }
+  }, [roomId, roomName]);
+
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (emojiPickerRef.current && !emojiPickerRef.current.contains(e.target as Node)) setShowEmojiPicker(false);
@@ -2423,6 +2483,19 @@ export default function DiscussionRoom({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const refreshActiveFans = useCallback(async () => {
+    if (!roomId) return;
+    try {
+      const res = await axios.get(`/api/roar/rooms/${roomId}/presence`);
+      if (res.data?.success) {
+        setActiveFans(res.data.fans ?? []);
+        setLiveCount(res.data.fanCount ?? 0);
+        if (res.data.totalJoinCount !== undefined) setTotalJoinCount(res.data.totalJoinCount);
+        setPinnedPost(res.data.pinnedPost ?? null);
+      }
+    } catch (e) { console.error("Active fans fetch failed:", e); }
+  }, [roomId]);
+
   useEffect(() => {
     if (!roomId) return;
     setActiveFans([]); setLiveCount(0); setTotalJoinCount(0);
@@ -2432,9 +2505,6 @@ export default function DiscussionRoom({
         if (res.data?.success) {
           setLiveCount(res.data.fanCount);
           if (res.data.totalJoinCount !== undefined) setTotalJoinCount(res.data.totalJoinCount);
-          // Backend now resolves + returns the caller's pin doc on join too
-          // (previously only GET returned it, so this was always undefined
-          // and reset the pin to null on every page load).
           setPinnedPost(res.data.pinnedPost ?? null);
         }
       } catch (e) { console.error("Join failed:", e); }
@@ -2483,8 +2553,13 @@ export default function DiscussionRoom({
       const url = latestCreatedAtRef.current
         ? `/api/roar/rooms/${roomId}/messages?since=${latestCreatedAtRef.current}&t=${Date.now()}`
         : `/api/roar/rooms/${roomId}/messages?t=${Date.now()}`;
+      // const res = await axios.get(url);
+      // if (res.data?.success) {
+      //   const incoming: any[] = res.data.messages ?? [];
       const res = await axios.get(url);
       if (res.data?.success) {
+        console.log("DEBUG res.data", res.data);
+        if (res.data.counts) setRoomCounts(res.data.counts);
         const incoming: any[] = res.data.messages ?? [];
         if (latestCreatedAtRef.current === null) {
           setPosts(prev => {
@@ -2948,25 +3023,54 @@ export default function DiscussionRoom({
     );
   };
 
-  const postCount = posts.filter(p => p.type === "post" || !p.type).length;
-  const debateCount = posts.filter(p => p.type === "debate").length;
-  const predictionCount = posts.filter(p => p.type === "prediction").length;
-
+  // const postCount = posts.filter(p => p.type === "post" || !p.type).length;
+  // const debateCount = posts.filter(p => p.type === "debate").length;
+  // const predictionCount = posts.filter(p => p.type === "prediction").length;
 
   // const filteredPosts = activeFilter === "all" || activeFilter === "dolly"
-  //   ? (activeFilter === "dolly" ? [] : [...morePosts, ...posts])
+  //   ? (activeFilter === "dolly" ? [] : [...morePosts, ...posts].filter(p => p.type !== "predictions_live"))
   //   : [...morePosts, ...posts].filter(p => {
+  //     if (p.type === "predictions_live") return false;
   //     if (activeFilter === "post") return p.type === "post" || !p.type;
   //     return p.type === activeFilter;
   //   });
 
-  const filteredPosts = activeFilter === "all" || activeFilter === "dolly"
-    ? (activeFilter === "dolly" ? [] : [...morePosts, ...posts].filter(p => p.type !== "predictions_live"))
-    : [...morePosts, ...posts].filter(p => {
+  // const predictionsLivePosts =
+  //   [...morePosts, ...posts]
+  //     .filter((p) => p.type === "predictions_live")
+  //     .sort((a, b) => b.createdAt - a.createdAt);
+
+  const allVisiblePosts = React.useMemo(() => {
+    const seen = new Set<string>();
+    return [...morePosts, ...posts].filter(p => {
       if (p.type === "predictions_live") return false;
-      if (activeFilter === "post") return p.type === "post" || !p.type;
-      return p.type === activeFilter;
+      if (seen.has(p.id)) return false;
+      seen.add(p.id);
+      return true;
     });
+  }, [morePosts, posts]);
+
+  // const postCount = allVisiblePosts.filter(p => p.type === "post" || !p.type).length;
+  // const debateCount = allVisiblePosts.filter(p => p.type === "debate").length;
+  // const predictionCount = allVisiblePosts.filter(p => p.type === "prediction").length;
+  const postCount = roomCounts.post;
+  const debateCount = roomCounts.debate;
+  const predictionCount = roomCounts.prediction;
+  console.log("DEBUG roomCounts", roomCounts);
+
+  // const filteredPosts = activeFilter === "all" || activeFilter === "dolly"
+  //   ? (activeFilter === "dolly" ? [] : allVisiblePosts)
+  //   : allVisiblePosts.filter(p => {
+  //     if (activeFilter === "post") return p.type === "post" || !p.type;
+  //     return p.type === activeFilter;
+  //   });
+
+  const filteredPosts = activeFilter === "all"
+  ? allVisiblePosts
+  : allVisiblePosts.filter(p => {
+    if (activeFilter === "post") return p.type === "post" || !p.type;
+    return p.type === activeFilter;
+  });
 
   const predictionsLivePosts =
     [...morePosts, ...posts]
@@ -2977,19 +3081,17 @@ export default function DiscussionRoom({
     | { kind: "post"; data: any; sortKey: number }
     | { kind: "dolly"; data: typeof dollyReplies[0]; sortKey: number };
 
+ 
   // const feedItems: FeedItem[] = [
   //   ...filteredPosts.map(p => ({ kind: "post" as const, data: p, sortKey: p.createdAt })),
-  //   ...(activeFilter === "all"
+  //   ...(activeFilter === "all" || activeFilter === "dolly"
   //     ? dollyReplies.map(d => ({ kind: "dolly" as const, data: d, sortKey: d.createdAt }))
   //     : []),
   // ].sort((a, b) => a.sortKey - b.sortKey);
 
-  const feedItems: FeedItem[] = [
-    ...filteredPosts.map(p => ({ kind: "post" as const, data: p, sortKey: p.createdAt })),
-    ...(activeFilter === "all" || activeFilter === "dolly"
-      ? dollyReplies.map(d => ({ kind: "dolly" as const, data: d, sortKey: d.createdAt }))
-      : []),
-  ].sort((a, b) => a.sortKey - b.sortKey);
+  const feedItems: FeedItem[] = filteredPosts
+  .map(p => ({ kind: "post" as const, data: p, sortKey: p.createdAt }))
+  .sort((a, b) => a.sortKey - b.sortKey);
 
   return (
     <div className="flex flex-col w-full bg-[#0e0e14]" style={{ height: "100%", overflow: "hidden" }}>
@@ -3071,7 +3173,13 @@ export default function DiscussionRoom({
 
       {/* ── ACTIVE FANS ── */}
       <div className="shrink-0 px-4 py-0.5 bg-[rgba(14,14,20,0.98)] border-b border-[var(--border)]">
-        <ActiveFansStack fans={activeFans} count={liveCount} totalJoinCount={totalJoinCount} onClick={() => setActiveFansOpen(true)} />
+        {/* <ActiveFansStack fans={activeFans} count={liveCount} totalJoinCount={totalJoinCount} onClick={() => setActiveFansOpen(true)} /> */}
+        <ActiveFansStack
+          fans={activeFans}
+          count={liveCount}
+          totalJoinCount={totalJoinCount}
+          onClick={() => { refreshActiveFans(); setActiveFansOpen(true); }}
+        />
       </div>
 
       {/* Pin Message */}
@@ -3114,7 +3222,7 @@ export default function DiscussionRoom({
             </button>
           );
         })} */}
-        {(["all", "post", "debate", "prediction", "dolly"] as const).map((f) => {
+        {/* {(["all", "post", "debate", "prediction", "dolly"] as const).map((f) => {
           const isActive = activeFilter === f;
           const count = f === "post" ? postCount : f === "debate" ? debateCount : f === "prediction" ? predictionCount : f === "dolly" ? dollyReplies.length : 0;
           const color = f === "post" ? "#e91e8c" : f === "debate" ? "#60a5fa" : f === "prediction" ? "#fbbf24" : f === "dolly" ? "#60a5fa" : "#fff";
@@ -3131,29 +3239,47 @@ export default function DiscussionRoom({
               )}
             </button>
           );
-        })}
+        })} */}
+        {(["all", "post", "debate", "prediction"] as const).map((f) => {
+  const isActive = activeFilter === f;
+  const count = f === "post" ? postCount : f === "debate" ? debateCount : f === "prediction" ? predictionCount : 0;
+  const color = f === "post" ? "#e91e8c" : f === "debate" ? "#60a5fa" : f === "prediction" ? "#fbbf24" : "#fff";
+  const label = f === "all" ? "All" : f === "post" ? "Posts" : f === "debate" ? "Debates" : "Predictions";
+  return (
+    <button key={f} type="button" onClick={() => setActiveFilter(f)}
+      className="flex items-center gap-1 px-2.5 rounded-full text-[11px] font-bold whitespace-nowrap shrink-0 transition-all duration-150"
+      style={{ background: isActive ? `${color}22` : "rgba(255,255,255,0.05)", border: `1.5px solid ${isActive ? `${color}70` : "rgba(255,255,255,0.1)"}`, color: isActive ? color : "rgba(255,255,255,0.5)" }}
+    >
+      {f !== "all" && <span className="w-1 h-1 rounded-full shrink-0" style={{ background: color }} />}
+      {label}
+      {f !== "all" && !isActive && count > 0 && (
+        <span className="text-[9px] font-extrabold px-1 rounded-full" style={{ background: `${color}28`, color }}>{count}</span>
+      )}
+    </button>
+  );
+})}
       </div>
 
 
-  {predictionsLivePosts.length > 0 && (
-  <PredictionsLivePanel
-    posts={predictionsLivePosts}
-    roomId={roomId ?? ""}
-    onToast={onToast}
-    openInlinePostId={openInlinePostId}
-    setOpenInlinePostId={setOpenInlinePostId}
-    currentAvatarUrl={userAvatarUrl}
-    handleReact={handleReact}
-    localReactions={localReactions}
-    pendingReactRef={pendingReactRef}
-    onPostClick={onPostClick}
-    onFanProfile={onFanProfile}
-    setReactionsMsgId={setReactionsMsgId}
-    topReactionsMap={topReactionsMap}
-    topReactionsCache={topReactionsCache}
-    fetchTopReactions={fetchTopReactions}
-  />
-)}
+      {predictionsLivePosts.length > 0 && (
+        <PredictionsLivePanel
+          posts={predictionsLivePosts}
+          roomId={roomId ?? ""}
+          onToast={onToast}
+          openInlinePostId={openInlinePostId}
+          setOpenInlinePostId={setOpenInlinePostId}
+          currentAvatarUrl={userAvatarUrl}
+          handleReact={handleReact}
+          localReactions={localReactions}
+          pendingReactRef={pendingReactRef}
+          onPostClick={onPostClick}
+          onFanProfile={onFanProfile}
+          setReactionsMsgId={setReactionsMsgId}
+          topReactionsMap={topReactionsMap}
+          topReactionsCache={topReactionsCache}
+          fetchTopReactions={fetchTopReactions}
+        />
+      )}
       {/* ── FEED ── */}
       <div ref={listRef} className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-3 flex flex-col gap-3 min-h-0">
         {/* <AnimatePresence initial={false}>
@@ -3171,37 +3297,39 @@ export default function DiscussionRoom({
         <AnimatePresence initial={false}>
           {loading || !dollyLoaded ? (
             <div className="text-center text-[var(--text-muted)] py-8">Loading messages...</div>
-          ) : feedItems.length === 0 ? (
-            <div className="text-center text-[var(--text-muted)] py-8">
-              {/* {activeFilter === "all" ? "No posts yet. Be the first!" : `No ${activeFilter}s in this room yet.`} */}
-              {activeFilter === "all" ? "No posts yet. Be the first!" : activeFilter === "dolly" ? "No Dolly questions yet — ask anything about the match!" : `No ${activeFilter}s in this room yet.`}
-            </div>
-          ) : (
+          )
+          // : feedItems.length === 0 ? (
+          //   <div className="text-center text-[var(--text-muted)] py-8">
+          //     {/* {activeFilter === "all" ? "No posts yet. Be the first!" : `No ${activeFilter}s in this room yet.`} */}
+          //     {activeFilter === "all" ? "No posts yet. Be the first!" : activeFilter === "dolly" ? "No Dolly questions yet — ask anything about the match!" : `No ${activeFilter}s in this room yet.`}
+          //   </div>
+          // )
+           : (
             feedItems.map((item) => {
 
-              if (item.kind === "dolly") {
-                const d = item.data;
-                return (
-                  <motion.div key={d.id} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22 }}
-                    style={{ borderRadius: 16, padding: 12, margin: "4px 0", background: "rgba(30,58,138,0.12)", border: "1px solid rgba(59,130,246,0.3)" }}
-                  >
-                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
-                      <span style={{ fontSize: 11 }}>🔒</span>
-                      <span style={{ fontSize: 10, fontWeight: 800, color: "#60a5fa", letterSpacing: "0.04em" }}>
-                        ONLY YOU CAN SEE THIS · Ask Dolly reply
-                      </span>
-                    </div>
-                    <p style={{ margin: "0 0 6px", fontSize: 11, color: "rgba(255,255,255,0.45)" }}>You asked</p>
-                    <p style={{ margin: "0 0 10px", fontSize: 13, color: "#fff" }}>{d.question}</p>
-                    <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
-                      <span style={{ fontSize: 11, fontWeight: 800, color: "#60a5fa", flexShrink: 0 }}>Dolly AI</span>
-                      {d.answer
-                        ? <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.85)" }}>{d.answer}</p>
-                        : <span style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", fontStyle: "italic" }}>thinking…</span>}
-                    </div>
-                  </motion.div>
-                );
-              }
+            //   if (item.kind === "dolly") {
+            //     const d = item.data;
+            //     return (
+            //       <motion.div key={d.id} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22 }}
+            //         style={{ borderRadius: 16, padding: 12, margin: "4px 0", background: "rgba(30,58,138,0.12)", border: "1px solid rgba(59,130,246,0.3)" }}
+            //       >
+            //         <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+            //           <span style={{ fontSize: 11 }}>🔒</span>
+            //           <span style={{ fontSize: 10, fontWeight: 800, color: "#60a5fa", letterSpacing: "0.04em" }}>
+            //             ONLY YOU CAN SEE THIS · Ask Dolly reply
+            //           </span>
+            //         </div>
+            //         <p style={{ margin: "0 0 6px", fontSize: 11, color: "rgba(255,255,255,0.45)" }}>You asked</p>
+            //         <p style={{ margin: "0 0 10px", fontSize: 13, color: "#fff" }}>{d.question}</p>
+            //         <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
+            //           <span style={{ fontSize: 11, fontWeight: 800, color: "#60a5fa", flexShrink: 0 }}>Dolly AI</span>
+            //           {d.answer
+            //             ? <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.85)" }}>{d.answer}</p>
+            //             : <span style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", fontStyle: "italic" }}>thinking…</span>}
+            //         </div>
+            //       </motion.div>
+            //     );
+            //   }
 
               const p = item.data;
 
@@ -3355,18 +3483,18 @@ export default function DiscussionRoom({
                           ) : null}
                         </div>
                       ) : (
-                          <div style={{
-                            background: QUICK_REACT_GRADIENTS[`qr_${p.memTag}`] || "linear-gradient(135deg,#e91e8c,#ff6b35)",
-                            borderRadius: 16, padding: "28px 16px", textAlign: "center",
-                            display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6,
-                            position: "relative", overflow: "hidden",
-                          }}>
-                            <div style={{ fontSize: 32, lineHeight: 1 }}>
-                              {p.memTag === "boundary" && "🏏 💥"}
-                            </div>
-                            <p style={{ margin: 0, fontWeight: 900, fontSize: 20, color: "#fff", letterSpacing: "0.06em", textTransform: "uppercase", textShadow: "0 2px 8px rgba(0,0,0,0.3)" }}>
-                              {p.text}
-                            </p>
+                        <div style={{
+                          background: QUICK_REACT_GRADIENTS[`qr_${p.memTag}`] || "linear-gradient(135deg,#e91e8c,#ff6b35)",
+                          borderRadius: 16, padding: "28px 16px", textAlign: "center",
+                          display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6,
+                          position: "relative", overflow: "hidden",
+                        }}>
+                          <div style={{ fontSize: 32, lineHeight: 1 }}>
+                            {p.memTag === "boundary" && "🏏 💥"}
+                          </div>
+                          <p style={{ margin: 0, fontWeight: 900, fontSize: 20, color: "#fff", letterSpacing: "0.06em", textTransform: "uppercase", textShadow: "0 2px 8px rgba(0,0,0,0.3)" }}>
+                            {p.text}
+                          </p>
                         </div>
                       )}
                     </div>
@@ -3574,7 +3702,7 @@ export default function DiscussionRoom({
       {/* {!showQuickCompose && (
         <div className="flex justify-start gap-1.5 py-1 px-2.5 overflow-x-auto" style={{ scrollbarWidth: "none" }}> */}
 
-      {!dollyOpen ? (
+      {/* {!dollyOpen ? (
         <button
           type="button"
           onClick={() => setDollyOpen(true)}
@@ -3597,12 +3725,12 @@ export default function DiscussionRoom({
         </button>
       ) : (
         <div className="p-3 mx-3 mb-1.5 rounded-2xl bg-blue-900/20 border border-blue-400/40">
-          {/* Heading text */}
+         
           <p className="text-[11px] font-semibold text-white/80 mb-2 tracking-wide">
             Ask Dolly — AI replies are private to you only
           </p>
 
-          {/* Input row with avatar */}
+          { Input row with avatar }
           <div className="flex items-center gap-2.5 flex-wrap">
             <img
               src="/images/dollyavatar.png"
@@ -3636,7 +3764,7 @@ export default function DiscussionRoom({
             </button>
           </div>
         </div>
-      )}
+      )} */}
 
       {/* {!showQuickCompose && !dollyOpen && (
         <div className="flex justify-start gap-1.5 py-1 px-2.5 overflow-x-auto" style={{ scrollbarWidth: "none" }}>
@@ -3853,6 +3981,24 @@ export default function DiscussionRoom({
         onFanProfile={onFanProfile}
         prefetchedFans={activeFans}
         prefetchedCount={liveCount}
+      />
+
+      <DollyPanel
+        isOpen={dollyOpen}
+        onOpen={() => { setDollyOpen(true); loadDollyHistory(); }}
+        onClose={() => setDollyOpen(false)}
+        activeRoomId={dollyActiveRoomId}
+        activeRoomName={dollyActiveRoomName}
+        question={dollyQuestion}
+        setQuestion={setDollyQuestion}
+        asking={dollyAsking}
+        onAsk={askDolly}
+        replies={dollyReplies}
+        loadingReplies={dollyRepliesLoading}
+        history={dollyHistory}
+        loadingHistory={dollyHistoryLoading}
+        onSelectHistorySession={handleSelectDollySession}
+        onNewChat={handleNewDollyChat}
       />
 
       <AnimatePresence>

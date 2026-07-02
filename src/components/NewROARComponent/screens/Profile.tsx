@@ -1516,10 +1516,10 @@ export default function Profile({
               Edit Profile
             </button>
           )}
-          <button onClick={() => { setShareOpen(true); setCopied(false); }} className="btn-gradient"
+          {/* <button onClick={() => { setShareOpen(true); setCopied(false); }} className="btn-gradient"
             style={{ padding: "9px 22px", border: "none", borderRadius: 22, color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer", letterSpacing: "0.01em" }}>
             Share Profile
-          </button>
+          </button> */}
         </div>
       </div>
 

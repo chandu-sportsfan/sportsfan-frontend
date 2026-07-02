@@ -224,24 +224,39 @@ interface Props {
   // NEW — when set, fetches reactions for a room message
   // (roarRooms/{roomId}/messages/{postId}) instead of a feed post.
   roomId?: string;
+   msgId?: string;     
+  commentId?: string;
 }
 
-export default function ReactionsDialog({ postId, isOpen, onClose, onFanProfile, roomId }: Props) {
+export default function ReactionsDialog({ postId, isOpen, onClose, onFanProfile, roomId, msgId, commentId }: Props) {
   const [reactors, setReactors] = useState<Reactor[]>([]);
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState<Reaction | "all">("all");
+
+  // useEffect(() => {
+  //   if (!isOpen || !postId) return;
+  //   setLoading(true);
+  //   setFilter("all");
+  //   const url = `/api/roar/posts/${postId}/reactions${roomId ? `?roomId=${encodeURIComponent(roomId)}` : ""}`;
+  //   axios.get(url)
+  //     .then(r => setReactors(r.data?.reactors ?? []))
+  //     .catch(() => setReactors([]))
+  //     .finally(() => setLoading(false));
+  // }, [isOpen, postId, roomId]);
 
   useEffect(() => {
     if (!isOpen || !postId) return;
     setLoading(true);
     setFilter("all");
-    const url = `/api/roar/posts/${postId}/reactions${roomId ? `?roomId=${encodeURIComponent(roomId)}` : ""}`;
+    const url = commentId && roomId && msgId
+      ? `/api/roar/rooms/${roomId}/messages/${msgId}/comments/${commentId}/reactions`
+      : `/api/roar/posts/${postId}/reactions${roomId ? `?roomId=${encodeURIComponent(roomId)}` : ""}`;
     axios.get(url)
       .then(r => setReactors(r.data?.reactors ?? []))
       .catch(() => setReactors([]))
       .finally(() => setLoading(false));
-  }, [isOpen, postId, roomId]);
-
+  }, [isOpen, postId, roomId, msgId, commentId]);
+  
   const filtered = filter === "all" ? reactors : reactors.filter(r => r.reaction === filter);
 
   // Counts per reaction

@@ -1184,7 +1184,7 @@ export default function PostDetailsOverlay({
             </div>
           </div>
           {comment.authorUsername === activeUsername && (
-            <button onClick={async (e) => { e.stopPropagation(); if (window.confirm("Delete comment?")) { try { await axios.delete(`/api/roar/posts/${post.id}/comments/${id}`); onToast("Deleted"); fetchComments(); } catch { onToast("Failed"); } } }} className="bg-transparent border-none text-[#f87171] cursor-pointer flex items-center p-0.5"><Trash2 size={12} /></button>
+            <button onClick={async (e) => { e.stopPropagation(); if (window.confirm("Delete comment?")) { try { await  onToast("Deleted"); fetchComments(); } catch { onToast("Failed"); } } }} className="bg-transparent border-none text-[#f87171] cursor-pointer flex items-center p-0.5"><Trash2 size={12} /></button>
           )}
         </div>
         <p className={`text-[14px] ${isReply ? "text-[#EAEAF1]" : "text-[#F5F5FA]"} leading-[1.7] my-3`}>{comment.text}</p>

@@ -720,6 +720,24 @@ export default function PredictionsLivePanel({
 
   const stopAutoSlide = () => { if (autoSlideRef.current) clearInterval(autoSlideRef.current); };
 
+  const autoCollapsedRef = useRef(false);
+
+  const allVoted = flatQuestions.length > 0 && flatQuestions.every(fq => hasVotedMap[fq.globalIdx] || userVotes[fq.globalIdx] !== undefined);
+
+  useEffect(() => {
+    if (allVoted) {
+      if (!autoCollapsedRef.current) {
+        const timer = setTimeout(() => {
+          setExpanded(false);
+          autoCollapsedRef.current = true;
+        }, 1200);
+        return () => clearTimeout(timer);
+      }
+    } else {
+      autoCollapsedRef.current = false;
+    }
+  }, [allVoted]);
+
   // If server-side userPredictionVotes arrives/updates after the initial
   // render (e.g. the backend fix propagates via a later poll), fold it in —
   // without overwriting anything we already know locally.
@@ -1035,8 +1053,8 @@ export default function PredictionsLivePanel({
             const inProgress = votingInProgress[fq.globalIdx];
 
             return (
-              <div key={`${fq.postId}-${fq.qIdx}`} style={{
-                display: "flex", alignItems: "center", gap: 8, padding: "9px 14px",
+              <div key={`${fq.postId}-${fq.qIdx}`} className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3" style={{
+                padding: "9px 14px",
                 borderBottom: fq.globalIdx < flatQuestions.length - 1 ? "1px solid rgba(255,255,255,0.04)" : "none",
                 opacity: expired ? 0.4 : 1,
               }}>
@@ -1046,7 +1064,7 @@ export default function PredictionsLivePanel({
                     <span style={{ marginLeft: 4, fontSize: 8, color: "#22c55e", fontWeight: 700 }}>✓</span>
                   )}
                 </p>
-                <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
+                <div className="flex items-center flex-wrap gap-1 shrink-0 self-start sm:self-auto" style={{ gap: 4 }}>
                   {fq.options.slice(0, 2).map((opt, optIdx) => {
                     const isActive = userVotes[fq.globalIdx] === optIdx;
                     const isDisabled = voted || inProgress || expired;

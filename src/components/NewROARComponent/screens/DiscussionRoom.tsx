@@ -1716,14 +1716,13 @@ interface Props {
 }
 
 const QUICK_REACT_OPTS = [
-  { id: "qr_wicket", label: "Wicket!", emoji: "🎯" },
-  { id: "qr_six", label: "Six!!", emoji: "💪" },
-  { id: "qr_four", label: "Four!", emoji: "🏏" },
-  { id: "qr_frango", label: "Frango!", emoji: "🐔" },
-  { id: "qr_redcard", label: "Red Card!", emoji: "🟥" },
-  { id: "qr_goal", label: "Goal!!", emoji: "⚽" },
+  { id: "qr_wicket", label: "Wicket!", emoji: "🎯", sport: "cricket" },
+  { id: "qr_six", label: "Six!!", emoji: "💪", sport: "cricket" },
+  { id: "qr_four", label: "Four!", emoji: "🏏", sport: "cricket" },
 
-
+  { id: "qr_goal", label: "Goal!!", emoji: "⚽", sport: "football" },
+  { id: "qr_redcard", label: "Red Card!", emoji: "🟥", sport: "football" },
+  { id: "qr_frango", label: "Frango!", emoji: "🐔", sport: "football" },
 ];
 
 const QUICK_REACT_GRADIENTS: Record<string, string> = {
@@ -1874,6 +1873,7 @@ function InlineSection({
   const [sending, setSending] = useState(false);
   const [replyTo, setReplyTo] = useState<{ commentId: string; authorUsername: string } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  console.log("Roomid", roomId);
 
   const fetchReplies = useCallback(async () => {
     setLoading(true);
@@ -2174,10 +2174,14 @@ function CelebrationBurst({ memTag, onDone }: { memTag: string; onDone: () => vo
 }
 
 export default function DiscussionRoom({
+  roomSports,
   onBack, onToast, roomId, roomName, onPostClick, onCompose,
   fanCount = 312, score, scoreSubtitle, currentAvatarUrl, currentUserId: propCurrentUserId, onRegisterRefresh, onRegisterReplyUpdate,
   onFanProfile, watchAlongRoomId
 }: Props) {
+  console.log("Roomid", roomId);
+  console.log("RoomSports", roomSports);
+
   const router = useRouter();
   const phog = usePostHog();
   const [posts, setPosts] = useState<any[]>([]);
@@ -3461,7 +3465,7 @@ export default function DiscussionRoom({
                                 width: "100%",
                                 aspectRatio: "16 / 9",
                                 borderRadius: 16,
-                                objectFit: "cover",
+                                objectFit: "contain",
                                 display: "block",
                                 background: "#000",
                               }}
@@ -3832,7 +3836,9 @@ export default function DiscussionRoom({
                       Quick Post
                     </p>
                     <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4, scrollbarWidth: "none" }}>
-                      {QUICK_REACT_OPTS.map((q) => (
+                      {QUICK_REACT_OPTS
+                        .filter((q) => q.sport === roomSports?.toLowerCase())
+                        .map((q) => (
                         <motion.button
                           key={q.id}
                           type="button"
@@ -3916,7 +3922,7 @@ export default function DiscussionRoom({
                   transition: "all 0.15s",
                 }}
               >
-                {showQuickCompose ? "✕" : "+"}
+                {showQuickCompose ? "✕" : "🎭"}
               </button>
 
               <button

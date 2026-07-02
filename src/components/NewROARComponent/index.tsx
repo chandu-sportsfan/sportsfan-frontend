@@ -1230,6 +1230,7 @@ export default function ROARApp() {
                   <style dangerouslySetInnerHTML={{ __html: `#global-header-desktop,#global-header-tablet,#global-header-mobile{display:none!important}` }} />
                   <DiscussionRoom
                     roomId={selectedRoom?.roomId}
+                        roomSports={selectedRoom?.sport}
                     roomName={selectedRoom?.name}
                     fanCount={selectedRoom?.fanCount}
                     score={selectedRoom?.score}

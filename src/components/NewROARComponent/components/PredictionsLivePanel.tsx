@@ -850,10 +850,10 @@ export default function PredictionsLivePanel({
       }}>
         <span style={{ width: 7, height: 7, borderRadius: "50%", flexShrink: 0, background: isAllExpired ? "#f97316" : "#22c55e", boxShadow: isAllExpired ? "none" : "0 0 6px #22c55e" }} />
         <span style={{ fontSize: 10, fontWeight: 900, letterSpacing: "0.07em", color: isAllExpired ? "#f97316" : "#22c55e" }}>
-          {isAllExpired ? "⚡ RESULTS" : "PREDICTIONS LIVE"}
+          {isAllExpired ? "RESULTS" : "PREDICTIONS LIVE"}
         </span>
         <span style={{ fontSize: 10, color: "rgba(255,255,255,0.45)", fontWeight: 600 }}>
-          🏏 {matchTitle} · {totalPolls} poll{totalPolls !== 1 ? "s" : ""}
+           {totalPolls} poll{totalPolls !== 1 ? "s" : ""}
         </span>
         {hasValidTimer && (
           <span style={{
@@ -901,10 +901,10 @@ export default function PredictionsLivePanel({
       <div style={{ padding: "8px 14px", display: "flex", alignItems: "center", gap: 8, borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
         <span style={{ width: 6, height: 6, borderRadius: "50%", flexShrink: 0, background: isAllExpired ? "#f97316" : "#22c55e", boxShadow: isAllExpired ? "none" : "0 0 6px #22c55e" }} />
         <span style={{ fontSize: 10, fontWeight: 900, letterSpacing: "0.05em", color: isAllExpired ? "#f97316" : "#22c55e" }}>
-          {isAllExpired ? "⚡ RESULTS" : "PREDICTIONS LIVE"}
+          {isAllExpired ? "RESULTS" : "PREDICTIONS LIVE"}
         </span>
         <span style={{ fontSize: 10, color: "rgba(255,255,255,0.4)", fontWeight: 600 }}>
-          🏏 {matchTitle} · {totalPolls}
+          {totalPolls} polls
         </span>
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6 }}>
           {hasValidTimer && !isAllExpired && msLeft > 0 && (

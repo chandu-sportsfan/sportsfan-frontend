@@ -629,37 +629,37 @@ export default function HomeFeed({
   // };
 
 
- const sendQuickPost = async () => {
-  const text = input.trim();
-  if (!text && !attachedUrl) return;
-  if (sendingRef.current) return;
-  sendingRef.current = true;
+  const sendQuickPost = async () => {
+    const text = input.trim();
+    if (!text && !attachedUrl) return;
+    if (sendingRef.current) return;
+    sendingRef.current = true;
 
-  setInput(""); setAttachedUrl(null); setAttachedType(null);
+    setInput(""); setAttachedUrl(null); setAttachedType(null);
 
-  try {
-    if (onHandlePost) {
-      await onHandlePost({
-        type: selectedActionId === "post" ? "post" : selectedActionId,
-        text: text || "Shared media",
-        sport: "cricket",
-        mediaUrls: attachedUrl ? [attachedUrl] : undefined,
-      });
-    } else {
-      await axios.post("/api/roar/posts", {
-        type: "post",
-        text: text || "Shared media",
-        sport: "cricket",
-        mediaUrls: attachedUrl ? [attachedUrl] : undefined,
-      });
-      onToast("Post is live!");
+    try {
+      if (onHandlePost) {
+        await onHandlePost({
+          type: selectedActionId === "post" ? "post" : selectedActionId,
+          text: text || "Shared media",
+          sport: "cricket",
+          mediaUrls: attachedUrl ? [attachedUrl] : undefined,
+        });
+      } else {
+        await axios.post("/api/roar/posts", {
+          type: "post",
+          text: text || "Shared media",
+          sport: "cricket",
+          mediaUrls: attachedUrl ? [attachedUrl] : undefined,
+        });
+        onToast("Post is live!");
+      }
+    } catch {
+      onToast("Failed to post");
+    } finally {
+      sendingRef.current = false;
     }
-  } catch {
-    onToast("Failed to post");
-  } finally {
-    sendingRef.current = false;
-  }
-};
+  };
 
   // Cache: postId → top reaction types (up to 3), fetched once per session
   const topReactionsCache = useRef<Record<string, string[]>>({});
@@ -961,7 +961,11 @@ export default function HomeFeed({
                   <p style={{ fontWeight: 600, fontSize: 15, lineHeight: 1.5, marginBottom: 12 }}>{item.text}</p>
                   {mediaUrls.length > 0 && (
                     <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
-                      {mediaUrls.map(url: string, idx: number) => url.endsWith(".mp4") || url.includes("/video/upload/") ? <video key={idx} src={url} controls style={{ width: "100%", maxHeight: 300, borderRadius: 12, objectFit: "cover" }} onClick={e => e.stopPropagation()} /> : <img key={idx} src={url} alt="" style={{ width: "100%", maxHeight: 300, borderRadius: 12, objectFit: "cover" }} />)}
+                      {/* {mediaUrls.map(url: string, idx: number) => url.endsWith(".mp4") || url.includes("/video/upload/") ? <video key={idx} src={url} controls style={{ width: "100%", maxHeight: 300, borderRadius: 12, objectFit: "cover" }} onClick={e => e.stopPropagation()} /> : <img key={idx} src={url} alt="" style={{ width: "100%", maxHeight: 300, borderRadius: 12, objectFit: "cover" }} />)} */}
+                      {mediaUrls.map((url: string, idx: number) => url.endsWith(".mp4") || url.includes("/video/upload/")
+                        ? <video key={idx} src={url} controls style={{ width: "100%", maxHeight: 300, borderRadius: 12, objectFit: "cover" }} onClick={e => e.stopPropagation()} />
+                        : <img key={idx} src={url} alt="" style={{ width: "100%", maxHeight: 300, borderRadius: 12, objectFit: "cover" }} />
+                      )}
                     </div>
                   )}
                   {item.match && <p style={{ fontSize: 11, color: "var(--accent-magenta)", marginBottom: 8, fontWeight: 600 }}>{item.match}</p>}
@@ -989,10 +993,10 @@ export default function HomeFeed({
                           const active = optionIndex === 0 ? userVote === true : userVote === false;
                           const pctVal = optionIndex === 0 ? predAgrPct : predDisAgrPct;
                           return (
-                          <motion.button key={label} whileTap={predictionClosed ? {} : { scale: 0.93 }} disabled={predictionClosed} onClick={e => { e.stopPropagation(); vote(item.id, agree, item.agreePercent, item.userVote, item.isDbPost, predictionClosed, voteValue); }} style={{ flex: 1, padding: 10, borderRadius: 999, fontSize: 13, fontWeight: 700, cursor: predictionClosed ? "not-allowed" : "pointer", border: `2.5px solid ${active ? "#ff6b35" : "#8b8b8b"}`, background: active ? "rgba(255,107,53,0.24)" : "rgba(255,255,255,0.02)", color: active ? "#fff" : "#d1d1d1", boxShadow: active ? "0 0 16px rgba(255,107,53,0.35)" : "none", transition: "all 0.2s", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, opacity: predictionClosed && !active ? 0.45 : 1 }}>
-                            {label}
-                            <span style={{ fontSize: 11, fontWeight: 800, background: active ? "rgba(255,255,255,0.18)" : "rgba(255,255,255,0.08)", borderRadius: 999, padding: "1px 7px" }}>{pctVal}%</span>
-                          </motion.button>
+                            <motion.button key={label} whileTap={predictionClosed ? {} : { scale: 0.93 }} disabled={predictionClosed} onClick={e => { e.stopPropagation(); vote(item.id, agree, item.agreePercent, item.userVote, item.isDbPost, predictionClosed, voteValue); }} style={{ flex: 1, padding: 10, borderRadius: 999, fontSize: 13, fontWeight: 700, cursor: predictionClosed ? "not-allowed" : "pointer", border: `2.5px solid ${active ? "#ff6b35" : "#8b8b8b"}`, background: active ? "rgba(255,107,53,0.24)" : "rgba(255,255,255,0.02)", color: active ? "#fff" : "#d1d1d1", boxShadow: active ? "0 0 16px rgba(255,107,53,0.35)" : "none", transition: "all 0.2s", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, opacity: predictionClosed && !active ? 0.45 : 1 }}>
+                              {label}
+                              <span style={{ fontSize: 11, fontWeight: 800, background: active ? "rgba(255,255,255,0.18)" : "rgba(255,255,255,0.08)", borderRadius: 999, padding: "1px 7px" }}>{pctVal}%</span>
+                            </motion.button>
                           );
                         })}
                       </div>
@@ -1003,10 +1007,10 @@ export default function HomeFeed({
                             const active = userVote === voteValue;
                             const pctVal = predictionPct(optionCounts[voteValue] ?? 0);
                             return (
-                            <button key={`${label}-${idx}`} type="button" disabled={predictionClosed} onClick={(e) => { e.stopPropagation(); vote(item.id, false, item.agreePercent, item.userVote, item.isDbPost, predictionClosed, voteValue); }} style={{ flex: "1 1 calc(50% - 4px)", minWidth: 0, padding: "9px 10px", borderRadius: 999, border: `2px solid ${active ? "#ff6b35" : "#8b8b8b"}`, color: active ? "#fff" : "#d1d1d1", background: active ? "rgba(255,107,53,0.24)" : "rgba(255,255,255,0.02)", boxShadow: active ? "0 0 16px rgba(255,107,53,0.35)" : "none", fontSize: 13, fontWeight: 700, textAlign: "center", opacity: predictionClosed && !active ? 0.45 : 1, cursor: predictionClosed ? "not-allowed" : "pointer" }}>
-                              {label}
-                              <span style={{ marginLeft: 6, fontSize: 11, fontWeight: 800, background: active ? "rgba(255,255,255,0.18)" : "rgba(255,255,255,0.08)", borderRadius: 999, padding: "1px 7px" }}>{pctVal}%</span>
-                            </button>
+                              <button key={`${label}-${idx}`} type="button" disabled={predictionClosed} onClick={(e) => { e.stopPropagation(); vote(item.id, false, item.agreePercent, item.userVote, item.isDbPost, predictionClosed, voteValue); }} style={{ flex: "1 1 calc(50% - 4px)", minWidth: 0, padding: "9px 10px", borderRadius: 999, border: `2px solid ${active ? "#ff6b35" : "#8b8b8b"}`, color: active ? "#fff" : "#d1d1d1", background: active ? "rgba(255,107,53,0.24)" : "rgba(255,255,255,0.02)", boxShadow: active ? "0 0 16px rgba(255,107,53,0.35)" : "none", fontSize: 13, fontWeight: 700, textAlign: "center", opacity: predictionClosed && !active ? 0.45 : 1, cursor: predictionClosed ? "not-allowed" : "pointer" }}>
+                                {label}
+                                <span style={{ marginLeft: 6, fontSize: 11, fontWeight: 800, background: active ? "rgba(255,255,255,0.18)" : "rgba(255,255,255,0.08)", borderRadius: 999, padding: "1px 7px" }}>{pctVal}%</span>
+                              </button>
                             );
                           })}
                         </div>

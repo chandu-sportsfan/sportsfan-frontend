@@ -1720,35 +1720,43 @@ const QUICK_REACT_OPTS = [
   { id: "qr_wicket", label: "Wicket!", emoji: "🎯", sport: "cricket" },
   { id: "qr_six", label: "Six!!", emoji: "💪", sport: "cricket" },
   { id: "qr_four", label: "Four!", emoji: "🏏", sport: "cricket" },
+  { id: "qr_catch", label: "Catch!", emoji: "🧤", sport: "cricket" },
 
   { id: "qr_goal", label: "Goal!!", emoji: "⚽", sport: "football" },
   { id: "qr_redcard", label: "Red Card!", emoji: "🟥", sport: "football" },
   { id: "qr_frango", label: "Frango!", emoji: "🐔", sport: "football" },
+  { id: "qr_yellowcard", label: "Yellow Card!", emoji: "🟨", sport: "football" },
 ];
 
 const QUICK_REACT_GRADIENTS: Record<string, string> = {
   qr_wicket: "linear-gradient(135deg,#e91e8c,#c2185b)",
   qr_six: "linear-gradient(135deg,#f59e0b,#d97706)",
   qr_four: "linear-gradient(135deg,#f97316,#ea580c)",
+  qr_catch: "linear-gradient(135deg,#3b82f6,#2563eb)",
   qr_frango: "linear-gradient(135deg,#f97316,#ea580c)",
-  qr_redcard: "linear-gradient(135deg,#f97316,#ea580c)",
-  qr_goal: "linear-gradient(135deg,#f97316,#ea580c)",
+  qr_redcard: "linear-gradient(135deg,#ef4444,#dc2626)",
+  qr_yellowcard: "linear-gradient(135deg,#eab308,#ca8a04)",
+  qr_goal: "linear-gradient(135deg,#10b981,#059669)",
 };
 
 const QUICK_REACT_VIDEO_MAP: Record<string, string> = {
   wicket: "/QUICK_REACT_VIDEO/wicket.mp4",
   six: "/QUICK_REACT_VIDEO/six.mp4",
   four: "/QUICK_REACT_VIDEO/four.mp4",
+  catch: "/QUICK_REACT_VIDEO/catch.mp4",
   frango: "/QUICK_REACT_VIDEO/Frango.mp4",
   redcard: "/QUICK_REACT_VIDEO/RedCard.mp4",
+  yellowcard: "/QUICK_REACT_VIDEO/Yellowcard.mp4",
   goal: "/QUICK_REACT_VIDEO/Goal.mp4",
 };
 const QUICK_REACT_IMAGES_MAP: Record<string, string> = {
   wicket: "/QUICK_REACT_IMAGES/Wicket.png",
   six: "/QUICK_REACT_IMAGES/Six.png",
   four: "/QUICK_REACT_IMAGES/Four.png",
+  catch: "/QUICK_REACT_IMAGES/Catch.png",
   frango: "/QUICK_REACT_IMAGES/Frango.png",
   redcard: "/QUICK_REACT_IMAGES/Redcard.png",
+  yellowcard: "/QUICK_REACT_IMAGES/Yellowcard.png",
   goal: "/QUICK_REACT_IMAGES/Goal.png",
 };
 
@@ -1867,8 +1875,10 @@ function InlineSection({
   postId: string; roomId: string; roomName?: string; isOpen: boolean; onOpenFull: () => void;
   accentColor: string; currentAvatarUrl?: string; onCommentPosted: () => void;
 }) {
+  console.log("isopen", isOpen);
   const phog = usePostHog();
   const [replies, setReplies] = useState<any[]>([]);
+  const [showAllReplies, setShowAllReplies] = useState(false);
   const [loading, setLoading] = useState(false);
   const [commentText, setCommentText] = useState("");
   const [sending, setSending] = useState(false);
@@ -1881,9 +1891,9 @@ function InlineSection({
     try {
       const res = await axios.get(`/api/roar/rooms/${roomId}/messages/${postId}/comments`, { params: { limit: 50 } });
       const list: any[] = res.data?.comments ?? [];
-      const oldestFirst = [...list].reverse();
+      const oldestFirst = [...list];
       const threaded = threadSort(oldestFirst);
-      setReplies(threaded.slice(0, 4));
+      setReplies(threaded);
     } catch { setReplies([]); }
     finally { setLoading(false); }
   }, [postId, roomId]);
@@ -1925,7 +1935,7 @@ function InlineSection({
           <p style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", fontStyle: "italic", marginBottom: 8, paddingLeft: 4 }}>No replies yet — be the first!</p>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 10 }}>
-            {replies.map((r, i) => {
+                {(showAllReplies ? replies : replies.slice(0, 2)).map((r, i) => {
               const isReply = /^@\S+/.test((r.text ?? "").trimStart());
               return (
                 <div key={r.id ?? r.commentId ?? i} style={{ display: "flex", gap: 8, alignItems: "flex-start", paddingLeft: isReply ? 28 : 0, minWidth: 0, width: "100%" }}>
@@ -1947,7 +1957,9 @@ function InlineSection({
                 </div>
               );
             })}
-            <button type="button" onClick={e => { e.stopPropagation(); onOpenFull(); }} style={{ alignSelf: "flex-start", background: "none", border: "none", cursor: "pointer", fontSize: 11, fontWeight: 700, color: accentColor, padding: 0, marginTop: 2 }}>View all replies →</button>
+                {replies.length > 2 && !showAllReplies && (
+                  <button type="button" onClick={e => { e.stopPropagation(); setShowAllReplies(true); }} style={{ alignSelf: "flex-start", background: "none", border: "none", cursor: "pointer", fontSize: 11, fontWeight: 700, color: accentColor, padding: 0, marginTop: 2 }}>View all replies →</button>
+                )}
           </div>
         )}
 
@@ -2245,6 +2257,7 @@ export default function DiscussionRoom({
   const [isSending, setIsSending] = useState(false);
   const [resolvingRoomPredictionId, setResolvingRoomPredictionId] = useState<string | null>(null);
   const [openInlinePostId, setOpenInlinePostId] = useState<string | null>(null);
+  const [explicitlyClosedPostIds, setExplicitlyClosedPostIds] = useState<Set<string>>(new Set());
   const [notifToast, setNotifToast] = useState<{ message: string; type: "like" | "comment"; } | null>(null);
   const notifToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [activeFans, setActiveFans] = useState<{ uid: string; username: string; avatarUrl?: string | null; badge?: string | null }[]>([]);
@@ -2985,15 +2998,33 @@ export default function DiscussionRoom({
   );
 
   const renderActionBar = (p: any, postPayload: any, postType: string) => {
-    const isOpen = openInlinePostId === p.id;
     const replyCount = p.replyCount || 0;
+    const defaultOpen = replyCount > 0;
+    const isOpen = openInlinePostId === p.id || (defaultOpen && !explicitlyClosedPostIds.has(p.id));
     const accent = commentAccentColor(postType);
     return (
       <div style={{ marginTop: 2 }}>
         <div style={{ display: "flex", gap: 14, borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 10, alignItems: "center" }}>
           {renderReactionPicker(p)}
           <button
-            onClick={e => { e.stopPropagation(); setOpenInlinePostId(isOpen ? null : p.id); }}
+            onClick={e => {
+              e.stopPropagation();
+              if (isOpen) {
+                if (openInlinePostId === p.id) setOpenInlinePostId(null);
+                setExplicitlyClosedPostIds(prev => {
+                  const next = new Set(prev);
+                  next.add(p.id);
+                  return next;
+                });
+              } else {
+                setOpenInlinePostId(p.id);
+                setExplicitlyClosedPostIds(prev => {
+                  const next = new Set(prev);
+                  next.delete(p.id);
+                  return next;
+                });
+              }
+            }}
             style={{ display: "flex", alignItems: "center", gap: 5, background: "none", border: "none", cursor: "pointer", color: isOpen ? accent : "#9494ad", fontSize: 13, fontWeight: 600, transition: "color 0.15s", padding: 0 }}
           >
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -3437,7 +3468,7 @@ export default function DiscussionRoom({
                 >
                   {renderPostHeader(p, p.type || "post", () => onFanProfile?.(p.fan))}
 
-                  {p.memTag && ["wicket", "six", "four", "boundary", "frango", "redcard", "goal"].includes(p.memTag) ? (
+                  {p.memTag && ["wicket", "six", "four", "catch", "boundary", "frango", "redcard", "yellowcard", "goal"].includes(p.memTag) ? (
                     <div style={{ marginTop: 4, marginBottom: 4 }}>
                       {QUICK_REACT_VIDEO_MAP[p.memTag] || QUICK_REACT_IMAGES_MAP[p.memTag] ? (
                         <div style={{ maxWidth: 480, width: "100%", margin: "0 auto" }}>

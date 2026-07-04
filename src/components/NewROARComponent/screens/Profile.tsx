@@ -1168,6 +1168,7 @@ export default function Profile({
   viewingProfile, onClose,
   isViewingOther, fanData, onBack,
 }: Props) {
+
   const isOtherProfile = !!(viewingProfile || isViewingOther);
   const handleBack = onBack ?? onClose;
 
@@ -1661,7 +1662,8 @@ export default function Profile({
       />
 
       {/* ── Activity (tabbed) ── */}
-      <div style={{ padding: "18px 14px 0" }}>
+      {!isOtherProfile && (
+        <div style={{ padding: "18px 14px 0" }}>
         <span style={{ fontSize: 14, fontWeight: 700, color: "#fff" }}>
           {isOtherProfile ? "Activity" : "Your Activity"}
         </span>
@@ -1785,6 +1787,7 @@ export default function Profile({
           </div>
         )}
       </div>
+      )}
 
       {/* ── Modals ── */}
 

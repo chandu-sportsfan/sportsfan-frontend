@@ -1279,7 +1279,7 @@ export default function ROARApp() {
               )}
             </AnimatePresence>
 
-            {onboarded && selectedPost && (
+            {/* {onboarded && selectedPost && (
               overlay === "room" ? (
                 <RoomPostDetailsOverlay
                   post={selectedPost}
@@ -1297,7 +1297,7 @@ export default function ROARApp() {
                   roomName={rooms.find(r => r.roomId === selectedPost.roomId)?.name || ""}
                 />
               )
-            )}
+            )} */}
           </div>
         )}
       </div>

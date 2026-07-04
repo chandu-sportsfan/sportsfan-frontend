@@ -143,7 +143,8 @@ export default function DollyPanel({
                             animate={{ x: 0 }}
                             exit={{ x: "100%" }}
                             transition={{ duration: 0.32, ease: [0.32, 0.72, 0, 1] }}
-                            className="fixed inset-y-0 right-0 left-8 sm:left-16 z-[71] flex flex-col bg-[#0b0e17] border-l border-blue-500/25 rounded-l-2xl overflow-hidden shadow-[-12px_0_40px_rgba(0,0,0,0.5)]"
+                            className="fixed inset-y-0 right-0 left-8 sm:left-16 z-[71] flex flex-col bg-[#0b0e17] min-h-0 border-l border-blue-500/25 rounded-l-2xl overflow-hidden shadow-[-12px_0_40px_rgba(0,0,0,0.5)]"
+                            style={{ height: "100dvh" }}
                             onClick={e => e.stopPropagation()}
                         >
                             {view === "chat" ? (
@@ -186,7 +187,7 @@ export default function DollyPanel({
                                     </div>
 
                                     {/* Body */}
-                                    <div ref={bodyRef} className="flex-1 overflow-y-auto p-3.5 flex flex-col gap-3">
+                                    <div ref={bodyRef} className="flex-1 overflow-y-auto p-3.5 min-h-0 flex flex-col gap-3">
                                         {loadingReplies ? (
                                             <div className="flex-1 flex items-center justify-center py-10">
                                                 <Loader2 size={22} className="text-blue-400 animate-spin" />
@@ -278,7 +279,7 @@ export default function DollyPanel({
                                         </button>
                                     </div>
 
-                                    <div className="flex-1 overflow-y-auto px-3 py-2.5">
+                                    <div className="flex-1 overflow-y-auto min-h-0 px-3 py-2.5">
                                         <button
                                             type="button"
                                             onClick={() => { onNewChat?.(); setView("chat"); }}

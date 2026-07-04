@@ -556,7 +556,7 @@ function RoomCard({
       <div className="flex-1 min-w-0">
         {sport !== "default" && !isInfinityRoom && <SportBadge sport={sport} />}
         <div className="flex items-center gap-2 mb-1 min-w-0">
-          <p className="text-[15px] font-extrabold text-white whitespace-nowrap">
+          <p className="text-[15px] font-extrabold text-white whitespace-normal">
             {room.name}
           </p>
         </div>

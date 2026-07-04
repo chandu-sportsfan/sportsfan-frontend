@@ -372,7 +372,7 @@ const INFINITY_ROOM_ID = "vZFu6xEApNRd1aUbDuHW";
 
 // Temporary: only this room is shown, everything else is hidden.
 // Revert by restoring the old mock-room exclusion filter in `allRooms` below.
-const ONLY_VISIBLE_ROOM_ID = "6YU6nDkZgq3mRXMy5ETL";
+const ONLY_VISIBLE_ROOM_ID = "pqFybpZYbhMidzwfoyVy";
 
 interface ActiveFan {
   uid: string;

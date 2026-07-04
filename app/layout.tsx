@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { PostHogProvider } from "@/context/PostHogContext";
 import "./globals.css";
@@ -40,6 +40,13 @@ export const metadata: Metadata = {
     icon: "/images/logo.png",
   },
 };
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  interactiveWidget: "resizes-content",
+};
+
 
 export default function RootLayout({
   children,

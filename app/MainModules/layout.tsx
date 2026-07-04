@@ -14,6 +14,7 @@ import { useAuth } from "@/context/AuthContext";
 import GlobalActionBar from "@/src/components/GlobalActionBar";
 import { Sparkles } from "lucide-react";
 
+
 // ─── Types 
 interface UserProfile {
   email: string;

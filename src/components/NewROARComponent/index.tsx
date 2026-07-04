@@ -716,12 +716,18 @@ export default function ROARApp() {
   const { viewingUserId, profileData, openProfile, closeProfile } = useRoarProfileContext();
 
   const handleFanProfileClick = useCallback((fan: any) => {
+    if (phog) {
+      phog.capture("view_profile", {
+        viewed_user: fan.authorUid || fan.username || "",
+        room_name: selectedRoom?.name || ""
+      });
+    }
     if (fan.authorUid && fan.authorUid === currentUserId) {
       router.push("/MainModules/Profile");
     } else {
       openProfile(fan.authorUid);
     }
-  }, [currentUserId, openProfile, router]);
+  }, [currentUserId, openProfile, router, phog, selectedRoom]);
 
   // ── Compose ────────────────────────────────────────────────────────────────
   const [composeOpen, setComposeOpen] = useState(false);

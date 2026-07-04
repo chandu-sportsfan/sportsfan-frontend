@@ -1168,6 +1168,7 @@ export default function Profile({
   viewingProfile, onClose,
   isViewingOther, fanData, onBack,
 }: Props) {
+
   const isOtherProfile = !!(viewingProfile || isViewingOther);
   const handleBack = onBack ?? onClose;
 
@@ -1632,11 +1633,11 @@ export default function Profile({
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0, width: 72 }}>
             <img src="/images/Frame 1984081839.png" alt="First Roar" style={{ width: 64, height: 64, objectFit: "contain" }} />
           </div>
-          {[...Array(4)].map((_, i) => (
+          {/* {[...Array(4)].map((_, i) => (
             <div key={`gray-roar-${i}`} style={{ display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0, width: 72 }}>
               <img src="/images/image 189.png" alt="First Roar Gray" style={{ width: 64, height: 64, objectFit: "contain" }} />
             </div>
-          ))}
+          ))} */}
         </div>
       </div>
 
@@ -1661,7 +1662,8 @@ export default function Profile({
       />
 
       {/* ── Activity (tabbed) ── */}
-      <div style={{ padding: "18px 14px 0" }}>
+      {!isOtherProfile && (
+        <div style={{ padding: "18px 14px 0" }}>
         <span style={{ fontSize: 14, fontWeight: 700, color: "#fff" }}>
           {isOtherProfile ? "Activity" : "Your Activity"}
         </span>
@@ -1785,6 +1787,7 @@ export default function Profile({
           </div>
         )}
       </div>
+      )}
 
       {/* ── Modals ── */}
 

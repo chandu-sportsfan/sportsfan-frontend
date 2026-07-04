@@ -351,7 +351,6 @@
 
 
 
-
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import axios from "axios";
@@ -364,12 +363,16 @@ const SPORT_GRADIENT: Record<string, string> = {
 };
 
 const SPORT_IMAGE: Record<string, string> = {
-  cricket:  "/images/cricket1.png",
+  cricket:  "/images/cricket2.png",
   football: "/images/fifa1.png",
   default:  "/images/fifa1.png",
 };
 
 const INFINITY_ROOM_ID = "vZFu6xEApNRd1aUbDuHW";
+
+// Temporary: only this room is shown, everything else is hidden.
+// Revert by restoring the old mock-room exclusion filter in `allRooms` below.
+const ONLY_VISIBLE_ROOM_ID = "6YU6nDkZgq3mRXMy5ETL";
 
 interface ActiveFan {
   uid: string;
@@ -608,10 +611,9 @@ export default function RoomsHome({ rooms, onJoinRoom, onToast }: Props) {
   };
   const [presenceByRoom, setPresenceByRoom] = useState<PresenceByRoom>({});
 
+  // Temporary: only ONLY_VISIBLE_ROOM_ID is shown, everything else is hidden.
   const allRooms = rooms.filter(
-    (r) =>
-      r.roomId !== "mock-cricket" &&
-      r.roomId !== "mock-football",
+    (r) => r.roomId === ONLY_VISIBLE_ROOM_ID
   );
 
   useEffect(() => {

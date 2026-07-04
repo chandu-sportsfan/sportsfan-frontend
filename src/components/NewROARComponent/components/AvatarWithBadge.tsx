@@ -9,9 +9,9 @@ interface Props {
 }
 
 const SIZES: Record<string, any> = {
-  sm: { outer: 38, avatar: 28, ring: 34, icon: 16, stroke: 3 },
-  md: { outer: 52, avatar: 40, ring: 48, icon: 20, stroke: 3.5 },
-  lg: { outer: 80, avatar: 64, ring: 76, icon: 24, stroke: 4 },
+  sm: { outer: 25, avatar: 20, ring: 25, icon: 10, stroke: 3 },
+  md: { outer: 30, avatar: 35, ring: 35, icon: 15, stroke: 3 },
+  lg: { outer: 50, avatar: 40, ring: 50, icon: 18, stroke: 3 },
 };
 
 export default function AvatarWithBadge({ username, badge = "RISING_FAN", size = "md", onClick, avatarUrl: customAvatarUrl }: Props) {

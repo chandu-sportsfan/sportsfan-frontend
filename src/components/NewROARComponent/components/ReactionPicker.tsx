@@ -571,7 +571,7 @@ export default function ReactionPicker({ currentReaction, count, onReact, disabl
           display: "flex", alignItems: "center", gap: 6,
           background: "none", border: "none", cursor: disabled ? "default" : "pointer",
           color: active ? "#ff4a7d" : "#9494ad",
-          fontSize: 13, fontWeight: 600,
+          fontSize: 10, fontWeight: 600,
           padding: "2px 0",
           userSelect: "none",
         }}
@@ -581,9 +581,9 @@ export default function ReactionPicker({ currentReaction, count, onReact, disabl
           initial={{ scale: 1.5, rotate: -10 }}
           animate={{ scale: 1, rotate: 0 }}
           transition={{ type: "spring", stiffness: 400, damping: 18 }}
-          style={{ fontSize: 16, lineHeight: 1, display: "inline-block" }}
+          style={{ fontSize: 12, lineHeight: 1, display: "inline-block" }}
         >
-          {active ? displayEmoji : <Heart size={18} strokeWidth={2} />}
+          {active ? displayEmoji : <Heart size={12} strokeWidth={2} />}
         </motion.span>
         <span>{count > 0 ? count : ""}</span>
       </motion.button>

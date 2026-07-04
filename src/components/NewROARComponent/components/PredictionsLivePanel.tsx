@@ -730,7 +730,7 @@ export default function PredictionsLivePanel({
         const timer = setTimeout(() => {
           setExpanded(false);
           autoCollapsedRef.current = true;
-        }, 1200);
+        }, 2200);
         return () => clearTimeout(timer);
       }
     } else {
@@ -988,7 +988,7 @@ export default function PredictionsLivePanel({
                 </div>
 
                 {/* Minimal progress bar */}
-                <div className="relative h-1.5 rounded-full bg-white/10 overflow-hidden flex">
+                <div className="relative h-0.5 rounded-full bg-white/10 overflow-hidden flex">
                   <motion.div
                     initial={{ width: 0 }}
                     animate={{ width: `${pctA}%` }}
@@ -1009,11 +1009,11 @@ export default function PredictionsLivePanel({
                 </p>
 
                 {/* Percentages row */}
-                <div className="flex items-center justify-between -mt-0.5">
-                  <span className={`text-[13px] font-extrabold ${isWinnerA ? "text-green-500" : "text-white/40"}`}>
+                <div className="flex items-center justify-between -mt-2">
+                  <span className={`text-[10px] font-extrabold ${isWinnerA ? "text-green-500" : "text-white/40"}`}>
                     {pctA}%
                   </span>
-                  <span className={`text-[13px] font-extrabold ${isWinnerB ? "text-green-500" : "text-white/40"}`}>
+                  <span className={`text-[10px] font-extrabold ${isWinnerB ? "text-green-500" : "text-white/40"}`}>
                     {pctB}%
                   </span>
                 </div>

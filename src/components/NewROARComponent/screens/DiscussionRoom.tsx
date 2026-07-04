@@ -1678,7 +1678,7 @@ import React from "react";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { usePostHog } from "posthog-js/react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useAnimationControls } from "framer-motion";
 import { useUserProfile } from "@/context/UserProfileContext";
 import axios from "axios";
 import AvatarWithBadge from "../components/AvatarWithBadge";
@@ -1696,6 +1696,7 @@ import {
 } from "lucide-react";
 import PredictionsLivePanel from "../components/PredictionsLivePanel";
 import DollyPanel, { type DollyHistorySession } from "../components/DollyPanel";
+import VotersDialog from "../components/VotersDialog";
 
 interface Props {
   onBack: () => void;
@@ -1713,7 +1714,7 @@ interface Props {
   onRegisterReplyUpdate?: (fn: (postId: string, count: number) => void) => void;
   onFanProfile?: (fan: any) => void;
   watchAlongRoomId?: string;
-  roomSports?:string;
+  roomSports?: string;
 }
 
 const QUICK_REACT_OPTS = [
@@ -1771,7 +1772,7 @@ const PLACEHOLDER: Record<string, string> = {
 };
 
 const typeBadgeClass = (type: string) => {
-  const base = "text-[9px] font-extrabold px-1.5 py-0.5 rounded";
+  const base = "text-[8px] font-extrabold px-1.5 py-0.5 rounded";
   if (type === "prediction") return `${base} bg-[rgba(255,215,0,0.15)] text-[#fbbf24] border border-[rgba(255,215,0,0.25)]`;
   if (type === "post") return `${base} bg-[rgba(233,30,140,0.12)] text-[#E91E8C] border border-[rgba(233,30,140,0.2)]`;
   if (type === "hottake") return `${base} bg-[rgba(239,68,68,0.15)] text-[#f87171] border border-[rgba(239,68,68,0.25)]`;
@@ -1918,7 +1919,7 @@ function InlineSection({
       exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.22, ease: "easeOut" }}
       style={{ overflow: "hidden" }} onClick={e => e.stopPropagation()}
     >
-      <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 0 }}>
+      <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 0 }}>
         {loading ? (
           <p style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", fontStyle: "italic", marginBottom: 8, paddingLeft: 4 }}>Loading replies…</p>
         ) : replies.length === 0 ? (
@@ -1929,12 +1930,12 @@ function InlineSection({
               const isReply = /^@\S+/.test((r.text ?? "").trimStart());
               return (
                 <div key={r.id ?? r.commentId ?? i} style={{ display: "flex", gap: 8, alignItems: "flex-start", paddingLeft: isReply ? 28 : 0, minWidth: 0, width: "100%" }}>
-                  <div style={{ width: 22, height: 22, borderRadius: "50%", flexShrink: 0, background: "linear-gradient(135deg,#e91e8c,#ff6b35)", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
+                  <div style={{ width: 15, height: 15, borderRadius: "50%", flexShrink: 0, background: "linear-gradient(135deg,#e91e8c,#ff6b35)", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
                     {r.authorAvatarUrl ? <img src={r.authorAvatarUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <span style={{ fontSize: 8, fontWeight: 800, color: "#fff" }}>{(r.authorUsername ?? "?")[0].toUpperCase()}</span>}
                   </div>
                   <div style={{ flex: 1, minWidth: 0, overflow: "hidden" }}>
-                    <span style={{ fontWeight: 700, color: "#fff", fontSize: 13, display: "block", wordBreak: "break-word" }}>{r.authorUsername ?? "Fan"}</span>
-                    <p style={{ margin: 0, fontSize: 13, lineHeight: 1.5, color: "rgba(255,255,255,0.75)", wordBreak: "break-word", overflowWrap: "anywhere" }}>
+                    <span style={{ fontWeight: 700, color: "#fff", fontSize: 11, display: "block", wordBreak: "break-word" }}>{r.authorUsername ?? "Fan"}</span>
+                    <p style={{ margin: 0, fontSize: 11, lineHeight: 1.5, color: "rgba(255,255,255,0.75)", wordBreak: "break-word", overflowWrap: "anywhere" }}>
                       {isReply ? (() => {
                         const spaceIdx = (r.text ?? "").indexOf(" ");
                         const mention = spaceIdx > -1 ? (r.text ?? "").slice(0, spaceIdx) : (r.text ?? "");
@@ -1942,7 +1943,7 @@ function InlineSection({
                         return (<><span style={{ color: accentColor, fontWeight: 600 }}>{mention}</span>{rest}</>);
                       })() : (r.text ?? "")}
                     </p>
-                    <button type="button" onClick={e => { e.stopPropagation(); setReplyTo({ commentId: r.id ?? r.commentId, authorUsername: r.authorUsername ?? "Fan" }); setTimeout(() => inputRef.current?.focus(), 80); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.35)", padding: 0, marginTop: 3 }}>Reply</button>
+                    <button type="button" onClick={e => { e.stopPropagation(); setReplyTo({ commentId: r.id ?? r.commentId, authorUsername: r.authorUsername ?? "Fan" }); setTimeout(() => inputRef.current?.focus(), 80); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.35)", padding: 0, marginTop: 0 }}>Reply</button>
                   </div>
                 </div>
               );
@@ -1955,17 +1956,17 @@ function InlineSection({
           {replyTo && (
             <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} style={{ overflow: "hidden", marginBottom: 4 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 6, paddingLeft: 2 }}>
-                <span style={{ fontSize: 11, color: "rgba(255,255,255,0.4)" }}>Replying to</span>
-                <span style={{ fontSize: 11, fontWeight: 700, color: accentColor, background: `${accentColor}18`, border: `1px solid ${accentColor}40`, borderRadius: 999, padding: "1px 8px" }}>@{replyTo.authorUsername}</span>
+                <span style={{ fontSize: 10, color: "rgba(255,255,255,0.4)" }}>Replying to</span>
+                <span style={{ fontSize: 10, fontWeight: 700, color: accentColor, background: `${accentColor}18`, border: `1px solid ${accentColor}40`, borderRadius: 999, padding: "1px 8px" }}>@{replyTo.authorUsername}</span>
                 <button type="button" onClick={e => { e.stopPropagation(); setReplyTo(null); }} style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.3)", fontSize: 14, lineHeight: 1, padding: 0 }}>×</button>
               </div>
             </motion.div>
           )}
         </AnimatePresence>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", borderRadius: 16, background: "rgba(255,255,255,0.04)", border: `1px solid ${accentColor}40` }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 6px", borderRadius: 16, background: "rgba(255,255,255,0.04)", border: `1px solid ${accentColor}40` }}>
           {currentAvatarUrl ? <img src={currentAvatarUrl} alt="" style={{ width: 24, height: 24, borderRadius: "50%", flexShrink: 0, objectFit: "cover" }} /> : <div style={{ width: 24, height: 24, borderRadius: "50%", flexShrink: 0, background: "linear-gradient(135deg,#e91e8c,#ff6b35)" }} />}
-          <input ref={inputRef} type="text" value={commentText} onChange={e => setCommentText(e.target.value)} onKeyDown={e => { if (e.key === "Enter") handleSend(); }} placeholder={replyTo ? `Reply to @${replyTo.authorUsername}…` : "Add a comment…"} style={{ flex: 1, background: "none", border: "none", outline: "none", color: "#fff", fontSize: 13, fontWeight: 500 }} />
+          <input ref={inputRef} type="text" value={commentText} onChange={e => setCommentText(e.target.value)} onKeyDown={e => { if (e.key === "Enter") handleSend(); }} placeholder={replyTo ? `…` : "Add a comment…"} style={{ flex: 1, background: "none", border: "none", outline: "none", color: "#fff", fontSize: 13, fontWeight: 500 }} />
           <button type="button" onClick={e => { e.stopPropagation(); onOpenFull(); }} style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.3)", fontSize: 11, fontWeight: 600, whiteSpace: "nowrap", padding: "0 2px" }}>All</button>
           <motion.button whileTap={{ scale: 0.9 }} type="button" onClick={e => { e.stopPropagation(); handleSend(); }} disabled={!commentText.trim() || sending} style={{ background: commentText.trim() ? `linear-gradient(135deg,${accentColor},#ff6b35)` : "rgba(255,255,255,0.08)", border: "none", borderRadius: "50%", width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", cursor: commentText.trim() ? "pointer" : "default", transition: "background 0.2s", flexShrink: 0 }}>
             <Send size={14} color={commentText.trim() ? "#fff" : "rgba(255,255,255,0.3)"} />
@@ -2052,6 +2053,310 @@ function QuizCard({ post, onToast, onPostClick, roomId, onFanProfile }: { post: 
     </div>
   );
 }
+
+// ── Shared: Dolly-branded card header. Trivia/Battle are always posted as
+// "Dolly" in the feed — regardless of which admin account actually created
+// the message — so this ignores post.fan entirely (unlike renderPostHeader).
+function DollyCardHeader({ post, typeLabel, typeColor, typeIcon }: {
+  post: any; typeLabel: string; typeColor: string; typeIcon: React.ReactNode;
+}) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+      <img src="/images/dollyavatar.png" alt="" style={{ width: 22, height: 22, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
+      <span style={{ fontWeight: 700, fontSize: 11, color: "#fff" }}>Dolly</span>
+      <span style={{ fontSize: 8, color: "rgba(255,255,255,0.48)" }}>{post.timeAgo}</span>
+      <span className={`text-[8px] font-extrabold px-1.5 py-0.5 rounded uppercase inline-flex items-center gap-1`} style={{ background: `${typeColor}22`, color: typeColor, border: `1px solid ${typeColor}40` }}>
+        {typeIcon} {typeLabel}
+      </span>
+    </div>
+  );
+}
+
+// ── TriviaCard ──────────────────────────────────────────────────────────────
+// Multi-question, answer-based. Hits the dedicated /trivia-answer endpoint
+// (NOT /quiz-answer). Per-question answered state is tracked via
+// post.userTriviaAnswers, keyed by question index.
+function TriviaCard({ post, onToast, onPostClick, roomId, onFanProfile }: {
+  post: any; onToast: (m: string) => void; onPostClick?: (post: any) => void; roomId?: string; onFanProfile?: (fan: any) => void;
+}) {
+  const questions: { question: string; options: { label: string; text?: string; isCorrect?: boolean }[] }[] = post.triviaQuestions ?? [];
+  const [answers, setAnswers] = useState<Record<number, { selected: string; correctOption?: string; isCorrect?: boolean }>>(() => {
+    const initial: Record<number, { selected: string; correctOption?: string; isCorrect?: boolean }> = {};
+    Object.entries(post.userTriviaAnswers ?? {}).forEach(([idx, val]: [string, any]) => {
+      initial[Number(idx)] = { selected: val.selectedOption ?? val.selected, correctOption: val.correctOption, isCorrect: val.isCorrect };
+    });
+    return initial;
+  });
+  const [submittingIdx, setSubmittingIdx] = useState<number | null>(null);
+  const isExpired = Boolean(post.closesAt && post.closesAt <= Date.now());
+
+  const handleAnswer = useCallback(async (qIndex: number, label: string) => {
+    if (answers[qIndex] || submittingIdx !== null || isExpired) return;
+    setSubmittingIdx(qIndex);
+    setAnswers(prev => ({ ...prev, [qIndex]: { selected: label } }));
+    try {
+      const res = await axios.post(`/api/roar/rooms/${roomId}/messages/${post.id}/trivia-answer`, {
+        questionIndex: qIndex, selectedOption: label,
+      });
+      const correctOption = res.data?.correctOption;
+      const isCorrect = res.data?.isCorrect;
+      setAnswers(prev => ({ ...prev, [qIndex]: { selected: label, correctOption, isCorrect } }));
+      onToast(isCorrect ? "Correct! Points awarded" : `Wrong! Correct answer was ${correctOption ?? "revealed"}`);
+    } catch (err: any) {
+      if (err?.response?.status !== 409) {
+        setAnswers(prev => { const next = { ...prev }; delete next[qIndex]; return next; });
+        onToast("Failed to submit answer");
+      }
+    } finally {
+      setSubmittingIdx(null);
+    }
+  }, [answers, submittingIdx, isExpired, roomId, post.id, onToast]);
+
+  return (
+    <div style={{ padding: "8px 0", borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
+      <DollyCardHeader post={post} typeLabel="Trivia" typeColor="#E91E8C" typeIcon={<Brain size={9} />} />
+
+      {questions.map((q, qIndex) => {
+        const answered = answers[qIndex];
+        const hasAnswered = Boolean(answered);
+        return (
+          <div key={qIndex} style={{ marginBottom: qIndex < questions.length - 1 ? 16 : 4 }}>
+            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8, marginBottom: 8 }}>
+              <p style={{ fontWeight: 700, fontSize: 12, lineHeight: 1.4, margin: 0, color: "#fff", cursor: "pointer" }} onClick={() => onPostClick && onPostClick(post)}>
+                {questions.length > 1 ? `${qIndex + 1}. ` : ""}{q.question}
+              </p>
+              {isExpired && !hasAnswered && (
+                <span style={{ flexShrink: 0, fontSize: 9, fontWeight: 800, color: "#c084fc", background: "rgba(147,51,234,0.18)", border: "1px solid rgba(147,51,234,0.35)", borderRadius: 999, padding: "3px 8px", whiteSpace: "nowrap" }}>
+                  Time up!
+                </span>
+              )}
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+              {/* {q.options.map((opt) => {
+                const label = opt.label;
+                const isSelected = answered?.selected === label;
+                const isCorrect = hasAnswered && answered?.correctOption === label;
+                const isWrong = hasAnswered && isSelected && answered?.correctOption && answered.correctOption !== label; */}
+              {(() => {
+                const revealedCorrectLabel = q.options.find(o => o.isCorrect)?.label;
+                const correctLabel = answered?.correctOption ?? revealedCorrectLabel;
+                return q.options.map((opt) => {
+                  const label = opt.label;
+                  const isSelected = answered?.selected === label;
+                  const isCorrect = hasAnswered && correctLabel === label;
+                  const isWrong = hasAnswered && isSelected && !!correctLabel && correctLabel !== label;
+                  const style: React.CSSProperties = isCorrect
+                    ? { background: "rgba(34,197,94,0.14)", border: "1.5px solid rgba(34,197,94,0.5)" }
+                    : isWrong
+                      ? { background: "rgba(244,67,54,0.1)", border: "1.5px solid rgba(244,67,54,0.4)" }
+                      : hasAnswered
+                        ? { background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", opacity: 0.5 }
+                        : { background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)" };
+                  const badgeStyle: React.CSSProperties = isCorrect
+                    ? { background: "#22c55e", color: "#0a0a10" }
+                    : { background: "rgba(147,51,234,0.25)", color: "#c084fc" };
+                  return (
+                    <motion.div key={label} whileTap={!hasAnswered && submittingIdx === null ? { scale: 0.96 } : {}}
+                      onClick={(e) => { e.stopPropagation(); handleAnswer(qIndex, label); }}
+                      style={{ ...style, borderRadius: 999, padding: "8px 10px", display: "flex", alignItems: "center", gap: 8, cursor: (hasAnswered || isExpired) ? "default" : "pointer", transition: "all 0.2s" }}
+                    >
+                      <span style={{ width: 18, height: 18, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 800, flexShrink: 0, ...badgeStyle }}>
+                        {isCorrect ? <CheckCircle2 size={11} /> : label}
+                      </span>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: isCorrect ? "#4ade80" : isWrong ? "#f87171" : "#e5e5f0" }}>
+                        {opt.text || label}
+                      </span>
+                    </motion.div>
+                  );
+                });
+              })()}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ── BattleCard ─────────────────────────────────────────────────────────────
+// Multi-question, vote-based playerA vs playerB. Reuses the existing /vote
+// endpoint with vote values "playerA"/"playerB" and a per-question vote-doc
+// pattern, same shape as predictions_live. One player is shown at a time
+// (Tinder-style): swipe/drag right (or tap the ✓) casts a vote for the
+// shown player with a green flash; swipe/drag left (or tap the ✕) rejects
+// them and cycles to the other player, with a red flash — no vote is cast
+// on reject. Already-voted questions render a static result row instead of
+// the swipe deck, and persist across refresh via post.userPredictionVotes
+// (server-side /vote also 409s a second vote for the same question).
+const abbrevOf = (name?: string) => (name || "").trim().slice(0, 2).toUpperCase() || "??";
+
+function BattleSwipeCard({
+  post, roomId, qIndex, playerA, playerB, initialVote, onToast,
+}: {
+  post: any; roomId?: string; qIndex: number;
+  playerA: { name: string; team?: string; image?: string };
+  playerB: { name: string; team?: string; image?: string };
+  initialVote?: "playerA" | "playerB";
+  onToast: (m: string) => void;
+}) {
+  const [votedSide, setVotedSide] = useState<"playerA" | "playerB" | undefined>(initialVote);
+  const [candidateIdx, setCandidateIdx] = useState(0); // 0 = playerA shown, 1 = playerB shown
+  const [dragX, setDragX] = useState(0);
+  const [flash, setFlash] = useState<"green" | "red" | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  const candidate = candidateIdx === 0 ? playerA : playerB;
+  const candidateSide: "playerA" | "playerB" = candidateIdx === 0 ? "playerA" : "playerB";
+
+  // Short haptic pulse on vote/reject — no-ops silently on browsers/devices
+  // without the Vibration API (desktop, iOS Safari, etc).
+  const vibrate = (pattern: number | number[]) => {
+    try {
+      if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+        navigator.vibrate(pattern);
+      }
+    } catch { /* ignore */ }
+  };
+
+  const castVote = useCallback(async (side: "playerA" | "playerB") => {
+    if (submitting || votedSide) return;
+    setSubmitting(true);
+    setFlash("green");
+    setVotedSide(side);
+    vibrate(30);
+    try {
+      await axios.post(`/api/roar/rooms/${roomId}/messages/${post.id}/vote`, { vote: side, questionIndex: qIndex });
+    } catch (err: any) {
+      if (err?.response?.status !== 409) {
+        setVotedSide(undefined);
+        onToast("Failed to submit vote");
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  }, [submitting, votedSide, roomId, post.id, qIndex, onToast]);
+
+  const reject = useCallback(() => {
+    setFlash("red");
+    vibrate(20);
+    setTimeout(() => {
+      setFlash(null);
+      setDragX(0);
+      setCandidateIdx(i => (i === 0 ? 1 : 0));
+    }, 180);
+  }, []);
+
+  const handleDragEnd = (_e: any, info: { offset: { x: number } }) => {
+    if (info.offset.x > 90) {
+      castVote(candidateSide);
+    } else if (info.offset.x < -90) {
+      reject();
+    } else {
+      setDragX(0);
+    }
+  };
+
+  if (votedSide) {
+    const winner = votedSide === "playerA" ? playerA : playerB;
+    const loser = votedSide === "playerA" ? playerB : playerA;
+    return (
+      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", borderRadius: 12, background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.25)" }}>
+        <CheckCircle2 size={14} color="#22c55e" style={{ flexShrink: 0 }} />
+        <span style={{ fontSize: 11, color: "#e5e5f0" }}>
+          You picked <strong style={{ color: "#4ade80" }}>{winner.name}</strong> over {loser.name}
+        </span>
+      </div>
+    );
+  }
+
+  const overlayOpacity = Math.min(Math.abs(dragX) / 100, 0.4);
+  const overlayColor = dragX > 0 ? "34,197,94" : "244,67,54";
+
+  return (
+    <div>
+      <motion.div
+        drag="x"
+        dragConstraints={{ left: 0, right: 0 }}
+        dragElastic={0.7}
+        dragMomentum={false}
+        onDrag={(_e, info) => setDragX(info.offset.x)}
+        onDragEnd={handleDragEnd}
+        animate={flash ? { x: flash === "green" ? 260 : -260, opacity: 0 } : { x: 0, opacity: 1 }}
+        transition={{ duration: 0.22 }}
+        whileTap={{ scale: 0.98 }}
+        style={{
+          position: "relative", borderRadius: 14, padding: "14px 12px", textAlign: "center",
+          background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)",
+          display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
+          cursor: "grab",
+          // "none" — not "pan-y" — so the browser hands the gesture to Framer
+          // Motion's drag recognizer immediately instead of racing it against
+          // native vertical-scroll recognition inside the feed's scroll
+          // container, which is what was blocking the swipe on mobile.
+          touchAction: "none",
+          overflow: "hidden",
+          WebkitUserSelect: "none",
+          userSelect: "none",
+        }}
+      >
+        <div style={{ position: "absolute", inset: 0, background: `rgba(${overlayColor},${overlayOpacity})`, pointerEvents: "none", transition: "background 0.05s" }} />
+        {dragX > 30 && <span style={{ position: "absolute", top: 8, left: 10, fontSize: 10, fontWeight: 800, color: "#22c55e", border: "1.5px solid #22c55e", borderRadius: 6, padding: "1px 6px" }}>VOTE</span>}
+        {dragX < -30 && <span style={{ position: "absolute", top: 8, right: 10, fontSize: 10, fontWeight: 800, color: "#f87171", border: "1.5px solid #f87171", borderRadius: 6, padding: "1px 6px" }}>SKIP</span>}
+        {candidate.image
+          ? <img src={candidate.image} alt="" style={{ width: 34, height: 34, borderRadius: "50%", objectFit: "cover" }} draggable={false} />
+          : <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 26, fontWeight: 900, color: "#fff", lineHeight: 1 }}>{abbrevOf(candidate.team || candidate.name)}</span>}
+        <p style={{ margin: "4px 0 0", fontSize: 12, fontWeight: 700, color: "#fff" }}>{candidate.name}</p>
+        {candidate.team && <p style={{ margin: 0, fontSize: 10, color: "rgba(255,255,255,0.4)" }}>{candidate.team}</p>}
+      </motion.div>
+      <div style={{ display: "flex", justifyContent: "center", gap: 20, marginTop: 8 }}>
+        <button type="button" onClick={reject} style={{ width: 30, height: 30, borderRadius: "50%", border: "1.5px solid rgba(244,67,54,0.4)", background: "rgba(244,67,54,0.1)", color: "#f87171", fontSize: 14, fontWeight: 800, cursor: "pointer" }}>✕</button>
+        <button type="button" onClick={() => castVote(candidateSide)} style={{ width: 30, height: 30, borderRadius: "50%", border: "1.5px solid rgba(34,197,94,0.4)", background: "rgba(34,197,94,0.1)", color: "#4ade80", fontSize: 14, fontWeight: 800, cursor: "pointer" }}>✓</button>
+      </div>
+      <p style={{ fontSize: 9, color: "var(--text-muted)", fontStyle: "italic", textAlign: "center", marginTop: 6 }}>
+        Swipe right to vote {candidate.name} · swipe left to see {candidateIdx === 0 ? playerB.name : playerA.name}
+      </p>
+    </div>
+  );
+}
+
+function BattleCard({ post, onToast, onPostClick, roomId, onFanProfile }: {
+  post: any; onToast: (m: string) => void; onPostClick?: (post: any) => void; roomId?: string; onFanProfile?: (fan: any) => void;
+}) {
+  const questions: { question?: string; playerA: { name: string; team?: string; image?: string }; playerB: { name: string; team?: string; image?: string } }[] = post.battleQuestions ?? [];
+  const votesByQuestion: Record<number, "playerA" | "playerB"> = post.userPredictionVotes ?? {};
+  const isExpired = Boolean(post.closesAt && post.closesAt <= Date.now());
+
+  return (
+    <div style={{ padding: "8px 0", borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
+      <DollyCardHeader post={post} typeLabel="Battle" typeColor="#f97316" typeIcon={<Zap size={9} />} />
+
+      {questions.map((q, qIndex) => {
+        const alreadyVoted = votesByQuestion[qIndex];
+        return (
+          <div key={qIndex} style={{ marginBottom: qIndex < questions.length - 1 ? 14 : 4 }}>
+            {q.question && (
+              <p style={{ fontWeight: 600, fontSize: 11, lineHeight: 1.4, marginBottom: 8, color: "rgba(255,255,255,0.75)", cursor: "pointer" }} onClick={() => onPostClick && onPostClick(post)}>
+                {q.question}
+              </p>
+            )}
+            {isExpired && !alreadyVoted ? (
+              <p style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", fontStyle: "italic" }}>Voting closed</p>
+            ) : (
+              <BattleSwipeCard
+                post={post} roomId={roomId} qIndex={qIndex}
+                playerA={q.playerA} playerB={q.playerB}
+                initialVote={alreadyVoted}
+                onToast={onToast}
+              />
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+
 
 function useVisibilityInterval(callback: () => void, delay: number) {
   const savedCallback = useRef(callback);
@@ -2199,18 +2504,25 @@ export default function DiscussionRoom({
   const [userAvatarUrl, setUserAvatarUrl] = useState<string | undefined>(currentAvatarUrl);
   const [selectedActionId, setSelectedActionId] = useState("post");
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const dollyActiveRoomIdRef = useRef<string | undefined>(roomId);
+  const dollyFetchTokenRef = useRef<symbol | null>(null);
   const [liveCount, setLiveCount] = useState<number>(fanCount ?? 0);
   const [totalJoinCount, setTotalJoinCount] = useState<number>(0);
   const [sharePost, setSharePost] = useState<ShareableRoarPost | null>(null);
   const [copied, setCopied] = useState(false);
   const { userProfile } = useUserProfile();
-  const [roomCounts, setRoomCounts] = useState({ post: 0, debate: 0, prediction: 0 });
-  const [activeFilter, setActiveFilter] = useState<"all" | "post" | "debate" | "prediction">("all");
+  const [roomCounts, setRoomCounts] = useState({ post: 0, debate: 0, prediction: 0, trivia: 0, battle: 0 });
+  const [activeFilter, setActiveFilter] = useState<"all" | "post" | "debate" | "prediction" | "trivia" | "battle">("all");
   const [dollyHistory, setDollyHistory] = useState<DollyHistorySession[]>([]);
   const [dollyHistoryLoading, setDollyHistoryLoading] = useState(false);
   const [dollyActiveRoomId, setDollyActiveRoomId] = useState<string | undefined>(roomId);
   const [dollyActiveRoomName, setDollyActiveRoomName] = useState<string | undefined>(roomName);
   const [dollyRepliesLoading, setDollyRepliesLoading] = useState(false);
+   const [votersMsgId, setVotersMsgId] = useState<string | null>(null);
+
+  useEffect(() => {
+    dollyActiveRoomIdRef.current = dollyActiveRoomId;
+  }, [dollyActiveRoomId]);
 
   useEffect(() => {
     if (phog && roomId) {
@@ -2328,6 +2640,12 @@ export default function DiscussionRoom({
         return [];
       })(),
       matchTitle: m.matchTitle ?? null,
+      triviaQuestions: Array.isArray(m.triviaQuestions) ? m.triviaQuestions : [],
+      userTriviaAnswers: m.userTriviaAnswers ?? {},
+      triviaParticipants: m.triviaParticipants ?? {},
+      battleQuestions: Array.isArray(m.battleQuestions) ? m.battleQuestions : [],
+      battleVoteCounts: m.battleVoteCounts ?? {},
+      userPredictionVotes: m.userPredictionVotes ?? {},
     };
   }, [currentUserId, userAvatarUrl]);
 
@@ -2425,51 +2743,94 @@ export default function DiscussionRoom({
       const res = await axios.get("/api/roar/dolly/rooms");
       const rooms: any[] = res.data?.rooms ?? [];
       const mapped: DollyHistorySession[] = rooms
-        .filter(r => r.roomId !== roomId) // live room injected separately below
+        .filter(r => r.roomId !== roomId)
         .map(r => ({
           roomId: r.roomId,
           title: r.title,
           subtitle: r.lastQuestion || "No questions yet",
           dateLabel: new Date(r.lastAskedAt).toLocaleDateString([], { month: "short", day: "numeric" }),
+          sport: r.sport,   // NEW
         }));
       setDollyHistory([
-        { roomId: roomId!, title: roomName || "This match", subtitle: "", dateLabel: "Today", isLive: true },
+        { roomId: roomId!, title: roomName || "This match", subtitle: "", dateLabel: "Today", isLive: true, sport: roomSports },
         ...mapped,
       ]);
-    } catch {
-      setDollyHistory(roomId ? [{ roomId, title: roomName || "This match", subtitle: "", dateLabel: "Today", isLive: true }] : []);
+    } catch (err) {
+      console.error("[dolly] Failed to load room history:", err);
+      onToast?.("Couldn't load chat history — showing this match only");
+      setDollyHistory(roomId ? [{ roomId, title: roomName || "This match", subtitle: "", dateLabel: "Today", isLive: true, sport: roomSports }] : []);
     } finally {
       setDollyHistoryLoading(false);
     }
-  }, [roomId, roomName]);
+  }, [roomId, roomName, roomSports]);
+
+  useEffect(() => {
+    if (dollyOpen) loadDollyHistory();
+  }, [roomId, dollyOpen, loadDollyHistory]);
+
+  // const handleSelectDollySession = useCallback(async (session: DollyHistorySession) => {
+  //   if (session.roomId === dollyActiveRoomId) return;
+  //   setDollyActiveRoomId(session.roomId);
+  //   setDollyActiveRoomName(session.title);
+  //   setDollyRepliesLoading(true);
+  //   try {
+  //     const res = await axios.get(`/api/roar/rooms/${session.roomId}/dolly`);
+  //     setDollyReplies(res.data?.success ? (res.data.replies ?? []) : []);
+  //   } catch {
+  //     setDollyReplies([]);
+  //   } finally {
+  //     setDollyRepliesLoading(false);
+  //   }
+  // }, [dollyActiveRoomId]);
 
   const handleSelectDollySession = useCallback(async (session: DollyHistorySession) => {
     if (session.roomId === dollyActiveRoomId) return;
+    const requestId = Symbol();
+    dollyFetchTokenRef.current = requestId;
     setDollyActiveRoomId(session.roomId);
     setDollyActiveRoomName(session.title);
     setDollyRepliesLoading(true);
     try {
       const res = await axios.get(`/api/roar/rooms/${session.roomId}/dolly`);
+      if (dollyFetchTokenRef.current !== requestId) return;
       setDollyReplies(res.data?.success ? (res.data.replies ?? []) : []);
     } catch {
-      setDollyReplies([]);
+      if (dollyFetchTokenRef.current === requestId) setDollyReplies([]);
     } finally {
-      setDollyRepliesLoading(false);
+      if (dollyFetchTokenRef.current === requestId) setDollyRepliesLoading(false);
     }
   }, [dollyActiveRoomId]);
 
+  // const handleNewDollyChat = useCallback(() => {
+  //   // jump back to the live room's thread
+  //   setDollyActiveRoomId(roomId);
+  //   setDollyActiveRoomName(roomName);
+  //   setDollyQuestion("");
+  //   if (roomId) {
+  //     setDollyRepliesLoading(true);
+  //     axios.get(`/api/roar/rooms/${roomId}/dolly`)
+  //       .then(res => setDollyReplies(res.data?.success ? (res.data.replies ?? []) : []))
+  //       .catch(() => setDollyReplies([]))
+  //       .finally(() => setDollyRepliesLoading(false));
+  //   }
+  // }, [roomId, roomName]);
+
   const handleNewDollyChat = useCallback(() => {
     // jump back to the live room's thread
+    const requestId = Symbol();
+    dollyFetchTokenRef.current = requestId;
     setDollyActiveRoomId(roomId);
     setDollyActiveRoomName(roomName);
     setDollyQuestion("");
-    if (roomId) {
-      setDollyRepliesLoading(true);
-      axios.get(`/api/roar/rooms/${roomId}/dolly`)
-        .then(res => setDollyReplies(res.data?.success ? (res.data.replies ?? []) : []))
-        .catch(() => setDollyReplies([]))
-        .finally(() => setDollyRepliesLoading(false));
-    }
+    if (!roomId) { setDollyReplies([]); return; }
+    setDollyRepliesLoading(true);
+    axios.get(`/api/roar/rooms/${roomId}/dolly`)
+      .then(res => {
+        if (dollyFetchTokenRef.current !== requestId) return;
+        setDollyReplies(res.data?.success ? (res.data.replies ?? []) : []);
+      })
+      .catch(() => { if (dollyFetchTokenRef.current === requestId) setDollyReplies([]); })
+      .finally(() => { if (dollyFetchTokenRef.current === requestId) setDollyRepliesLoading(false); });
   }, [roomId, roomName]);
 
   useEffect(() => {
@@ -2543,14 +2904,29 @@ export default function DiscussionRoom({
     } catch { }
   }, [currentAvatarUrl, userProfile]);
 
+  // useEffect(() => {
+  //   if (!roomId) { setDollyReplies([]); setDollyLoaded(true); return; }
+  //   setDollyLoaded(false);
+  //   axios.get(`/api/roar/rooms/${roomId}/dolly`)
+  //     .then(res => setDollyReplies(res.data?.success ? (res.data.replies ?? []) : []))
+  //     .catch(() => setDollyReplies([]))
+  //     .finally(() => setDollyLoaded(true));
+  // }, [roomId]);
   useEffect(() => {
     if (!roomId) { setDollyReplies([]); setDollyLoaded(true); return; }
+    const requestId = Symbol();
+    dollyFetchTokenRef.current = requestId;
+    setDollyActiveRoomId(roomId);
+    setDollyActiveRoomName(roomName);
     setDollyLoaded(false);
     axios.get(`/api/roar/rooms/${roomId}/dolly`)
-      .then(res => setDollyReplies(res.data?.success ? (res.data.replies ?? []) : []))
-      .catch(() => setDollyReplies([]))
-      .finally(() => setDollyLoaded(true));
-  }, [roomId]);
+      .then(res => {
+        if (dollyFetchTokenRef.current !== requestId) return;
+        setDollyReplies(res.data?.success ? (res.data.replies ?? []) : []);
+      })
+      .catch(() => { if (dollyFetchTokenRef.current === requestId) setDollyReplies([]); })
+      .finally(() => { if (dollyFetchTokenRef.current === requestId) setDollyLoaded(true); });
+  }, [roomId, roomName]);
 
   const fetchMsgs = useCallback(async () => {
     if (!roomId) return;
@@ -2591,6 +2967,20 @@ export default function DiscussionRoom({
       setPosts(p => p.map(x => x.id === postId ? { ...x, replyCount: count } : x));
     });
   }, [onRegisterReplyUpdate]);
+  useEffect(() => {
+    latestCreatedAtRef.current = null;
+    setPosts([]);
+    setMorePosts([]);
+    setHasMoreMsgs(true);
+    setLoading(true);
+    setRoomCounts({ post: 0, debate: 0, prediction: 0, trivia: 0, battle: 0 });
+    setPinnedPost(null);
+    setLocalReactions({});
+    topReactionsCache.current = {};
+    setTopReactionsMap({});
+    setOpenInlinePostId(null);
+    setActiveFilter("all");
+  }, [roomId]);
   useEffect(() => { if (!roomId) return; fetchMsgs(); }, [fetchMsgs, roomId]);
   useVisibilityInterval(fetchMsgs, 15000);
 
@@ -2651,7 +3041,7 @@ export default function DiscussionRoom({
           const type = latest.type === "roar_post_comment" ? "comment" : "like";
           setNotifToast({ message: latest.message ?? (type === "comment" ? "Someone commented on your post" : "Someone reacted to your post"), type });
           if (notifToastTimerRef.current) clearTimeout(notifToastTimerRef.current);
-          notifToastTimerRef.current = setTimeout(() => setNotifToast(null), 4000);
+          notifToastTimerRef.current = setTimeout(() => setNotifToast(null), 60000);
         }
       } catch { }
     };
@@ -2810,22 +3200,49 @@ export default function DiscussionRoom({
     finally { sendingRef.current = false; setIsSending(false); }
   };
 
+  // const askDolly = async () => {
+  //   const q = dollyQuestion.trim();
+  //   if (!q || dollyAsking || !roomId) return;
+  //   setDollyAsking(true);
+  //   const tempId = `temp-dolly-${Date.now()}`;
+  //   setDollyReplies(prev => [...prev, { id: tempId, question: q, answer: "", createdAt: Date.now() }]);
+  //   setDollyQuestion("");
+  //   try {
+  //     const res = await axios.post(`/api/roar/rooms/${roomId}/dolly`, { question: q });
+  //     if (res.data?.success) {
+  //       setDollyReplies(prev => prev.map(d => d.id === tempId ? res.data.reply : d));
+  //     } else {
+  //       throw new Error("Dolly request failed");
+  //     }
+  //   } catch {
+  //     setDollyReplies(prev => prev.map(d => d.id === tempId ? { ...d, answer: "Something went wrong — try again." } : d));
+  //   } finally {
+  //     setDollyAsking(false);
+  //   }
+  // };
+
   const askDolly = async () => {
     const q = dollyQuestion.trim();
-    if (!q || dollyAsking || !roomId) return;
+
+    const targetRoomId = dollyActiveRoomId ?? roomId;
+    if (!q || dollyAsking || !targetRoomId) return;
     setDollyAsking(true);
     const tempId = `temp-dolly-${Date.now()}`;
     setDollyReplies(prev => [...prev, { id: tempId, question: q, answer: "", createdAt: Date.now() }]);
     setDollyQuestion("");
     try {
-      const res = await axios.post(`/api/roar/rooms/${roomId}/dolly`, { question: q });
+      const res = await axios.post(`/api/roar/rooms/${targetRoomId}/dolly`, { question: q });
       if (res.data?.success) {
-        setDollyReplies(prev => prev.map(d => d.id === tempId ? res.data.reply : d));
+        if (dollyActiveRoomIdRef.current === targetRoomId) {
+          setDollyReplies(prev => prev.map(d => d.id === tempId ? res.data.reply : d));
+        }
       } else {
         throw new Error("Dolly request failed");
       }
     } catch {
-      setDollyReplies(prev => prev.map(d => d.id === tempId ? { ...d, answer: "Something went wrong — try again." } : d));
+      if (dollyActiveRoomIdRef.current === targetRoomId) {
+        setDollyReplies(prev => prev.map(d => d.id === tempId ? { ...d, answer: "Something went wrong — try again." } : d));
+      }
     } finally {
       setDollyAsking(false);
     }
@@ -2933,10 +3350,10 @@ export default function DiscussionRoom({
         <AvatarWithBadge username={p.fan.username} badge={p.fan.badge} size="sm" avatarUrl={p.fan.avatarUrl} />
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 6, flex: 1, minWidth: 0, flexWrap: "wrap" }}>
-        <span style={{ fontWeight: 700, fontSize: 13, color: "#fff", whiteSpace: "nowrap", cursor: onAvatarClick ? "pointer" : "default" }} onClick={e => { e.stopPropagation(); onAvatarClick?.(); }}>
+        <span style={{ fontWeight: 700, fontSize: 11, color: "#fff", whiteSpace: "nowrap", cursor: onAvatarClick ? "pointer" : "default" }} onClick={e => { e.stopPropagation(); onAvatarClick?.(); }}>
           {p.fan.username}
         </span>
-        <span style={{ fontSize: 10, color: "rgba(255,255,255,0.38)", whiteSpace: "nowrap" }}>{p.timeAgo}</span>
+        <span style={{ fontSize: 8, color: "rgba(255,255,255,0.48)", whiteSpace: "nowrap" }}>{p.timeAgo}</span>
         {p.type && (
           <span className={typeBadgeClass(p.type)}>
             {p.type === "post" ? "POST" : p.type === "hottake" ? "HOT TAKE" : p.type === "prediction" ? "PREDICTION" : p.type === "debate" ? "DEBATE" : p.type === "raw_reactions" ? "RAW REACTIONS" : p.type.toUpperCase()}
@@ -2989,21 +3406,21 @@ export default function DiscussionRoom({
     const replyCount = p.replyCount || 0;
     const accent = commentAccentColor(postType);
     return (
-      <div style={{ marginTop: 2 }}>
-        <div style={{ display: "flex", gap: 14, borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 10, alignItems: "center" }}>
+      <div style={{ marginTop: 0.5 }}>
+        <div style={{ display: "flex", gap: 8, borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 6, alignItems: "center" }}>
           {renderReactionPicker(p)}
           <button
             onClick={e => { e.stopPropagation(); setOpenInlinePostId(isOpen ? null : p.id); }}
             style={{ display: "flex", alignItems: "center", gap: 5, background: "none", border: "none", cursor: "pointer", color: isOpen ? accent : "#9494ad", fontSize: 13, fontWeight: 600, transition: "color 0.15s", padding: 0 }}
           >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
             </svg>
-            <span style={{ fontSize: 12 }}>{replyCount}</span>
+            <span style={{ fontSize: 10 }}>{replyCount}</span>
             {isOpen ? <ChevronUp size={12} style={{ opacity: 0.7 }} /> : <ChevronDown size={12} style={{ opacity: 0.5 }} />}
           </button>
           <button onClick={e => { e.stopPropagation(); openShareDialog(p); }} style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", color: "#9494ad", fontSize: 13, fontWeight: 600 }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
               <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
             </svg>
@@ -3061,7 +3478,8 @@ export default function DiscussionRoom({
   const postCount = roomCounts.post;
   const debateCount = roomCounts.debate;
   const predictionCount = roomCounts.prediction;
-  console.log("DEBUG roomCounts", roomCounts);
+  const triviaCount = roomCounts.trivia;
+  const battleCount = roomCounts.battle;
 
   // const filteredPosts = activeFilter === "all" || activeFilter === "dolly"
   //   ? (activeFilter === "dolly" ? [] : allVisiblePosts)
@@ -3071,11 +3489,11 @@ export default function DiscussionRoom({
   //   });
 
   const filteredPosts = activeFilter === "all"
-  ? allVisiblePosts
-  : allVisiblePosts.filter(p => {
-    if (activeFilter === "post") return p.type === "post" || !p.type;
-    return p.type === activeFilter;
-  });
+    ? allVisiblePosts
+    : allVisiblePosts.filter(p => {
+      if (activeFilter === "post") return p.type === "post" || !p.type;
+      return p.type === activeFilter;
+    });
 
   const predictionsLivePosts =
     [...morePosts, ...posts]
@@ -3086,7 +3504,7 @@ export default function DiscussionRoom({
     | { kind: "post"; data: any; sortKey: number }
     | { kind: "dolly"; data: typeof dollyReplies[0]; sortKey: number };
 
- 
+
   // const feedItems: FeedItem[] = [
   //   ...filteredPosts.map(p => ({ kind: "post" as const, data: p, sortKey: p.createdAt })),
   //   ...(activeFilter === "all" || activeFilter === "dolly"
@@ -3095,8 +3513,8 @@ export default function DiscussionRoom({
   // ].sort((a, b) => a.sortKey - b.sortKey);
 
   const feedItems: FeedItem[] = filteredPosts
-  .map(p => ({ kind: "post" as const, data: p, sortKey: p.createdAt }))
-  .sort((a, b) => a.sortKey - b.sortKey);
+    .map(p => ({ kind: "post" as const, data: p, sortKey: p.createdAt }))
+    .sort((a, b) => a.sortKey - b.sortKey);
 
   return (
     <div className="flex flex-col w-full bg-[#0e0e14]" style={{ height: "100%", overflow: "hidden" }}>
@@ -3164,7 +3582,7 @@ export default function DiscussionRoom({
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
             <button type="button" onClick={shareRoomLink} className="flex-shrink-0 bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.12)] rounded-[10px] p-2 cursor-pointer text-[rgba(255,255,255,0.75)] flex items-center justify-center" style={{ width: "36px", height: "36px" }}>
-              <Share2 size={18} />
+              <Share2 size={15} />
             </button>
             {(score || scoreSubtitle) && (
               <div className="text-right pr-1 flex-shrink-0">
@@ -3245,24 +3663,24 @@ export default function DiscussionRoom({
             </button>
           );
         })} */}
-        {(["all", "post", "debate", "prediction"] as const).map((f) => {
-  const isActive = activeFilter === f;
-  const count = f === "post" ? postCount : f === "debate" ? debateCount : f === "prediction" ? predictionCount : 0;
-  const color = f === "post" ? "#e91e8c" : f === "debate" ? "#60a5fa" : f === "prediction" ? "#fbbf24" : "#fff";
-  const label = f === "all" ? "All" : f === "post" ? "Posts" : f === "debate" ? "Debates" : "Predictions";
-  return (
-    <button key={f} type="button" onClick={() => setActiveFilter(f)}
-      className="flex items-center gap-1 px-2.5 rounded-full text-[11px] font-bold whitespace-nowrap shrink-0 transition-all duration-150"
-      style={{ background: isActive ? `${color}22` : "rgba(255,255,255,0.05)", border: `1.5px solid ${isActive ? `${color}70` : "rgba(255,255,255,0.1)"}`, color: isActive ? color : "rgba(255,255,255,0.5)" }}
-    >
-      {f !== "all" && <span className="w-1 h-1 rounded-full shrink-0" style={{ background: color }} />}
-      {label}
-      {f !== "all" && !isActive && count > 0 && (
-        <span className="text-[9px] font-extrabold px-1 rounded-full" style={{ background: `${color}28`, color }}>{count}</span>
-      )}
-    </button>
-  );
-})}
+        {(["all", "post", "debate", "prediction", "trivia", "battle"] as const).map((f) => {
+          const isActive = activeFilter === f;
+          const count = f === "post" ? postCount : f === "debate" ? debateCount : f === "prediction" ? predictionCount : f === "trivia" ? triviaCount : f === "battle" ? battleCount : 0;
+          const color = f === "post" ? "#e91e8c" : f === "debate" ? "#60a5fa" : f === "prediction" ? "#fbbf24" : f === "trivia" ? "#22c55e" : f === "battle" ? "#E91E8C" : "#fff";
+          const label = f === "all" ? "All" : f === "post" ? "Posts" : f === "debate" ? "Debates" : f === "prediction" ? "Predictions" : f === "trivia" ? "Trivia" : "Battles";
+          return (
+            <button key={f} type="button" onClick={() => setActiveFilter(f)}
+              className="flex items-center gap-1 px-2.5 rounded-full text-[11px] font-bold whitespace-nowrap shrink-0 transition-all duration-150"
+              style={{ background: isActive ? `${color}22` : "rgba(255,255,255,0.05)", border: `1.5px solid ${isActive ? `${color}70` : "rgba(255,255,255,0.1)"}`, color: isActive ? color : "rgba(255,255,255,0.5)" }}
+            >
+              {f !== "all" && <span className="w-1 h-1 rounded-full shrink-0" style={{ background: color }} />}
+              {label}
+              {f !== "all" && !isActive && count > 0 && (
+                <span className="text-[9px] font-extrabold px-1 rounded-full" style={{ background: `${color}28`, color }}>{count}</span>
+              )}
+            </button>
+          );
+        })}
       </div>
 
 
@@ -3286,7 +3704,7 @@ export default function DiscussionRoom({
         />
       )}
       {/* ── FEED ── */}
-      <div ref={listRef} className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-3 flex flex-col gap-3 min-h-0">
+      <div ref={listRef} className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-1 flex flex-col gap-0 min-h-0">
         {/* <AnimatePresence initial={false}>
           {loading ? (
             <div className="text-center text-[var(--text-muted)] py-8">Loading messages...</div>
@@ -3303,396 +3721,476 @@ export default function DiscussionRoom({
           {loading || !dollyLoaded ? (
             <div className="text-center text-[var(--text-muted)] py-8">Loading messages...</div>
           )
-          // : feedItems.length === 0 ? (
-          //   <div className="text-center text-[var(--text-muted)] py-8">
-          //     {/* {activeFilter === "all" ? "No posts yet. Be the first!" : `No ${activeFilter}s in this room yet.`} */}
-          //     {activeFilter === "all" ? "No posts yet. Be the first!" : activeFilter === "dolly" ? "No Dolly questions yet — ask anything about the match!" : `No ${activeFilter}s in this room yet.`}
-          //   </div>
-          // )
-           : (
-            feedItems.map((item) => {
+            // : feedItems.length === 0 ? (
+            //   <div className="text-center text-[var(--text-muted)] py-8">
+            //     {/* {activeFilter === "all" ? "No posts yet. Be the first!" : `No ${activeFilter}s in this room yet.`} */}
+            //     {activeFilter === "all" ? "No posts yet. Be the first!" : activeFilter === "dolly" ? "No Dolly questions yet — ask anything about the match!" : `No ${activeFilter}s in this room yet.`}
+            //   </div>
+            // )
+            : (
+              feedItems.map((item) => {
 
-            //   if (item.kind === "dolly") {
-            //     const d = item.data;
-            //     return (
-            //       <motion.div key={d.id} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22 }}
-            //         style={{ borderRadius: 16, padding: 12, margin: "4px 0", background: "rgba(30,58,138,0.12)", border: "1px solid rgba(59,130,246,0.3)" }}
-            //       >
-            //         <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
-            //           <span style={{ fontSize: 11 }}>🔒</span>
-            //           <span style={{ fontSize: 10, fontWeight: 800, color: "#60a5fa", letterSpacing: "0.04em" }}>
-            //             ONLY YOU CAN SEE THIS · Ask Dolly reply
-            //           </span>
-            //         </div>
-            //         <p style={{ margin: "0 0 6px", fontSize: 11, color: "rgba(255,255,255,0.45)" }}>You asked</p>
-            //         <p style={{ margin: "0 0 10px", fontSize: 13, color: "#fff" }}>{d.question}</p>
-            //         <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
-            //           <span style={{ fontSize: 11, fontWeight: 800, color: "#60a5fa", flexShrink: 0 }}>Dolly AI</span>
-            //           {d.answer
-            //             ? <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.85)" }}>{d.answer}</p>
-            //             : <span style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", fontStyle: "italic" }}>thinking…</span>}
-            //         </div>
-            //       </motion.div>
-            //     );
-            //   }
+                //   if (item.kind === "dolly") {
+                //     const d = item.data;
+                //     return (
+                //       <motion.div key={d.id} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22 }}
+                //         style={{ borderRadius: 16, padding: 12, margin: "4px 0", background: "rgba(30,58,138,0.12)", border: "1px solid rgba(59,130,246,0.3)" }}
+                //       >
+                //         <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+                //           <span style={{ fontSize: 11 }}>🔒</span>
+                //           <span style={{ fontSize: 10, fontWeight: 800, color: "#60a5fa", letterSpacing: "0.04em" }}>
+                //             ONLY YOU CAN SEE THIS · Ask Dolly reply
+                //           </span>
+                //         </div>
+                //         <p style={{ margin: "0 0 6px", fontSize: 11, color: "rgba(255,255,255,0.45)" }}>You asked</p>
+                //         <p style={{ margin: "0 0 10px", fontSize: 13, color: "#fff" }}>{d.question}</p>
+                //         <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
+                //           <span style={{ fontSize: 11, fontWeight: 800, color: "#60a5fa", flexShrink: 0 }}>Dolly AI</span>
+                //           {d.answer
+                //             ? <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.85)" }}>{d.answer}</p>
+                //             : <span style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", fontStyle: "italic" }}>thinking…</span>}
+                //         </div>
+                //       </motion.div>
+                //     );
+                //   }
 
-              const p = item.data;
+                const p = item.data;
 
-              if (p.type === "quiz") {
-                return (
-                  <motion.div key={p.id} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22 }}>
-                    <QuizCard post={p} onToast={onToast} onPostClick={onPostClick} roomId={roomId} onFanProfile={onFanProfile} />
-                  </motion.div>
-                );
-              }
+                if (p.type === "trivia") {
+                  return (
+                    <motion.div key={p.id} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22 }}>
+                      <TriviaCard post={p} onToast={onToast} onPostClick={onPostClick} roomId={roomId} onFanProfile={onFanProfile} />
+                    </motion.div>
+                  );
+                }
 
-              if (p.type === "debate") {
-                const liveTotal = (p.agreeCount ?? 0) + (p.disagreeCount ?? 0);
-                const agrPct = liveTotal > 0 ? Math.round(((p.agreeCount ?? 0) / liveTotal) * 100) : 50;
-                const disAgrPct = 100 - agrPct;
-                const userVote = p.userVote;
-                const hasVoted = userVote === "agree" || userVote === "disagree";
-                const displayVotedA = userVote === "agree";
-                const displayVotedB = userVote === "disagree";
-                const rawText = p.text ?? "";
-                const vsParts = rawText.split(" VS ");
-                const hasSides = !!(p.sideA || p.sideB);
-                const sideA = p.sideA || vsParts[0] || "Side A";
-                const sideB = p.sideB || vsParts[1] || "Side B";
-                const questionText = hasSides ? rawText : null;
-                const debatePayload = { id: p.id, text: p.text, fan: p.fan, timeAgo: p.timeAgo, createdAt: p.createdAt, type: "debate", isDbPost: true, roomId, mediaUrls: p.mediaUrls, sideA, sideB };
+                if (p.type === "battle") {
+                  return (
+                    <motion.div key={p.id} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22 }}>
+                      <BattleCard post={p} onToast={onToast} onPostClick={onPostClick} roomId={roomId} onFanProfile={onFanProfile} />
+                    </motion.div>
+                  );
+                }
+
+                if (p.type === "quiz") {
+                  return (
+                    <motion.div key={p.id} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22 }}>
+                      <QuizCard post={p} onToast={onToast} onPostClick={onPostClick} roomId={roomId} onFanProfile={onFanProfile} />
+                    </motion.div>
+                  );
+                }
+
+                if (p.type === "debate") {
+                  const liveTotal = (p.agreeCount ?? 0) + (p.disagreeCount ?? 0);
+                  const agrPct = liveTotal > 0 ? Math.round(((p.agreeCount ?? 0) / liveTotal) * 100) : 50;
+                  const disAgrPct = 100 - agrPct;
+                  const userVote = p.userVote;
+                  const hasVoted = userVote === "agree" || userVote === "disagree";
+                  const displayVotedA = userVote === "agree";
+                  const displayVotedB = userVote === "disagree";
+                  const rawText = p.text ?? "";
+                  const vsParts = rawText.split(" VS ");
+                  const hasSides = !!(p.sideA || p.sideB);
+                  const sideA = p.sideA || vsParts[0] || "Side A";
+                  const sideB = p.sideB || vsParts[1] || "Side B";
+                  const questionText = hasSides ? rawText : null;
+                  const debatePayload = { id: p.id, text: p.text, fan: p.fan, timeAgo: p.timeAgo, createdAt: p.createdAt, type: "debate", isDbPost: true, roomId, mediaUrls: p.mediaUrls, sideA, sideB };
+                  return (
+                    <motion.div key={p.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22 }}
+                      className="cursor-pointer" style={{ padding: "5px 0", borderBottom: "1px solid rgba(255,255,255,0.07)" }}
+                      onClick={() => onPostClick?.(debatePayload)}
+                    >
+                      {renderPostHeader(p, "debate", () => onFanProfile?.(p.fan))}
+                      {questionText && <p style={{ fontWeight: 600, fontSize: 11, lineHeight: 1.4, marginBottom: 8, color: "var(--text-primary)" }}>{questionText}</p>}
+                      <div style={{ display: "flex", gap: 8, alignItems: "stretch", marginBottom: 6 }}>
+                        {[
+                          { label: sideA, voted: displayVotedA, color: "var(--accent-magenta)", bg: "rgba(233,30,140,0.08)", border: "rgba(233,30,140,0.3)", voteVal: "agree" as const },
+                          { label: sideB, voted: displayVotedB, color: "#60a5fa", bg: "rgba(59,130,246,0.08)", border: "rgba(59,130,246,0.3)", voteVal: "disagree" as const },
+                        ].map(({ label, voted, color, bg, border, voteVal }, idx) => (
+                          <>
+                            {idx === 1 && <div key="vs" style={{ display: "flex", alignItems: "center", padding: "0 2px" }}><span className="font-display" style={{ fontSize: 16, color: "var(--text-muted)" }}>VS</span></div>}
+                            <motion.button key={voteVal} whileTap={!hasVoted ? { scale: 0.96 } : {}}
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                if (hasVoted || votingInProgressRef.current.has(p.id)) return;
+                                votingInProgressRef.current.add(p.id);
+                                setPosts(prev => prev.map(x => x.id !== p.id ? x : { ...x, userVote: voteVal, agreeCount: (x.agreeCount ?? 0) + (voteVal === "agree" ? 1 : 0), disagreeCount: (x.disagreeCount ?? 0) + (voteVal === "disagree" ? 1 : 0) }));
+                                setOpenInlinePostId(p.id);
+                                try {
+                                  await axios.post(`/api/roar/rooms/${roomId}/messages/${p.id}/vote`, { vote: voteVal });
+                                  if (phog) {
+                                    phog.capture("poll_voted", {
+                                      poll_id: p.id,
+                                      poll_type: "debate_vs",
+                                      option_id: voteVal,
+                                      room_id: roomId,
+                                      room_name: roomName || ""
+                                    });
+                                  }
+                                } catch (err: any) {
+                                  const status = err?.response?.status;
+                                  if (status !== 409 && status !== 400) {
+                                    setPosts(prev => prev.map(x => x.id !== p.id ? x : { ...x, userVote: null, agreeCount: Math.max(0, (x.agreeCount ?? 0) - (voteVal === "agree" ? 1 : 0)), disagreeCount: Math.max(0, (x.disagreeCount ?? 0) - (voteVal === "disagree" ? 1 : 0)) }));
+                                    onToast("Failed to submit vote");
+                                  }
+                                } finally { votingInProgressRef.current.delete(p.id); }
+                              }}
+                              disabled={hasVoted}
+                              style={{ flex: 1, padding: "8px", borderRadius: 14, textAlign: "center", background: voted ? color : bg, border: `2px solid ${voted ? color : border}`, color: voted ? "white" : "var(--text-primary)", cursor: hasVoted ? "not-allowed" : "pointer", transition: "all 0.2s", opacity: hasVoted && !voted ? 0.35 : 1 }}
+                            >
+                              <p style={{ fontSize: 11, fontWeight: 700, margin: 0 }}>{voted ? "✓ " : ""}{label}</p>
+                            </motion.button>
+                          </>
+                        ))}
+                      </div>
+                      {/* <div style={{ marginBottom: 2 }}>
+                        <div style={{ display: "flex", borderRadius: 999, overflow: "hidden", height: 2, background: "rgba(255,255,255,0.06)" }}>
+                          <div style={{ width: `${agrPct}%`, background: "var(--accent-magenta)", transition: "width 0.4s ease" }} />
+                          <div style={{ width: `${disAgrPct}%`, background: "#60a5fa", transition: "width 0.4s ease" }} />
+                        </div>
+                        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 5 }}>
+                          <span style={{ fontSize: 8, fontWeight: 700, color: "var(--accent-magenta)" }}>{agrPct}%</span>
+                          <span style={{ fontSize: 9, color: "var(--text-muted)", fontWeight: 500 }}>{liveTotal} vote{liveTotal !== 1 ? "s" : ""}</span>
+                          <span style={{ fontSize: 8, fontWeight: 700, color: "#60a5fa" }}>{disAgrPct}%</span>
+                        </div>
+                      </div>
+                      <p style={{ fontSize: 10, fontWeight: hasVoted ? 600 : 400, color: hasVoted ? "var(--accent-magenta)" : "var(--text-muted)", marginBottom: 8, fontStyle: hasVoted ? "normal" : "italic" }}>
+                        {hasVoted ? "You've already voted · thanks for joining the debate!" : "Tap a side to vote · results reveal after voting"}
+                      </p>
+                      {renderActionBar(p, debatePayload, "debate")} */}
+                      <div style={{ marginBottom: 2 }}>
+                        <div style={{ display: "flex", borderRadius: 999, overflow: "hidden", height: 2, background: "rgba(255,255,255,0.06)" }}>
+                          <div style={{ width: `${agrPct}%`, background: "var(--accent-magenta)", transition: "width 0.4s ease" }} />
+                          <div style={{ width: `${disAgrPct}%`, background: "#60a5fa", transition: "width 0.4s ease" }} />
+                        </div>
+                        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 5 }}>
+                          <span style={{ fontSize: 8, fontWeight: 700, color: "var(--accent-magenta)" }}>{agrPct}%</span>
+                          <span style={{ fontSize: 9, color: "var(--text-muted)", fontWeight: 500 }}>{liveTotal} vote{liveTotal !== 1 ? "s" : ""}</span>
+                          <span style={{ fontSize: 8, fontWeight: 700, color: "#60a5fa" }}>{disAgrPct}%</span>
+                        </div>
+                      </div>
+                      {liveTotal > 0 && (
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); setVotersMsgId(p.id); }}
+                          style={{
+                            display: "flex", alignItems: "center", gap: 5,
+                            width: "100%", marginBottom: 6,
+                            padding: "5px 10px", borderRadius: 8,
+                            background: "rgba(233,30,140,0.07)",
+                            border: "1px solid rgba(233,30,140,0.22)",
+                            cursor: "pointer", color: "var(--accent-magenta)",
+                            fontSize: 10, fontWeight: 700,
+                          }}
+                        >
+                          <Users size={11} />
+                          <span>View Votes</span>
+                        </button>
+                      )}
+                      <p style={{ fontSize: 10, fontWeight: hasVoted ? 600 : 400, color: hasVoted ? "var(--accent-magenta)" : "var(--text-muted)", marginBottom: 8, fontStyle: hasVoted ? "normal" : "italic" }}>
+                        {hasVoted ? "You've already voted · thanks for joining the debate!" : "Tap a side to vote · results reveal after voting"}
+                      </p>
+                      {renderActionBar(p, debatePayload, "debate")}
+                    </motion.div>
+                  );
+                }
+
+                const defaultPayload = { id: p.id, text: p.text, fan: p.fan, timeAgo: p.timeAgo, createdAt: p.createdAt, type: p.type || "post", isDbPost: true, roomId, mediaUrls: p.mediaUrls };
+
                 return (
                   <motion.div key={p.id} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22 }}
                     className="cursor-pointer" style={{ padding: "8px 0", borderBottom: "1px solid rgba(255,255,255,0.07)" }}
-                    onClick={() => onPostClick?.(debatePayload)}
+                    onClick={() => onPostClick?.(defaultPayload)}
                   >
-                    {renderPostHeader(p, "debate", () => onFanProfile?.(p.fan))}
-                    {questionText && <p style={{ fontWeight: 600, fontSize: 14, lineHeight: 1.4, marginBottom: 12, color: "var(--text-primary)" }}>{questionText}</p>}
-                    <div style={{ display: "flex", gap: 8, alignItems: "stretch", marginBottom: 10 }}>
-                      {[
-                        { label: sideA, voted: displayVotedA, color: "var(--accent-magenta)", bg: "rgba(233,30,140,0.08)", border: "rgba(233,30,140,0.3)", voteVal: "agree" as const },
-                        { label: sideB, voted: displayVotedB, color: "#60a5fa", bg: "rgba(59,130,246,0.08)", border: "rgba(59,130,246,0.3)", voteVal: "disagree" as const },
-                      ].map(({ label, voted, color, bg, border, voteVal }, idx) => (
-                        <>
-                          {idx === 1 && <div key="vs" style={{ display: "flex", alignItems: "center", padding: "0 4px" }}><span className="font-display" style={{ fontSize: 16, color: "var(--text-muted)" }}>VS</span></div>}
-                          <motion.button key={voteVal} whileTap={!hasVoted ? { scale: 0.96 } : {}}
-                            onClick={async (e) => {
-                              e.stopPropagation();
-                              if (hasVoted || votingInProgressRef.current.has(p.id)) return;
-                              votingInProgressRef.current.add(p.id);
-                              setPosts(prev => prev.map(x => x.id !== p.id ? x : { ...x, userVote: voteVal, agreeCount: (x.agreeCount ?? 0) + (voteVal === "agree" ? 1 : 0), disagreeCount: (x.disagreeCount ?? 0) + (voteVal === "disagree" ? 1 : 0) }));
-                              setOpenInlinePostId(p.id);
-                              try {
-                                await axios.post(`/api/roar/rooms/${roomId}/messages/${p.id}/vote`, { vote: voteVal });
-                                if (phog) {
-                                  phog.capture("poll_voted", {
-                                    poll_id: p.id,
-                                    poll_type: "debate_vs",
-                                    option_id: voteVal,
-                                    room_id: roomId,
-                                    room_name: roomName || ""
-                                  });
-                                }
-                              } catch (err: any) {
-                                const status = err?.response?.status;
-                                if (status !== 409 && status !== 400) {
-                                  setPosts(prev => prev.map(x => x.id !== p.id ? x : { ...x, userVote: null, agreeCount: Math.max(0, (x.agreeCount ?? 0) - (voteVal === "agree" ? 1 : 0)), disagreeCount: Math.max(0, (x.disagreeCount ?? 0) - (voteVal === "disagree" ? 1 : 0)) }));
-                                  onToast("Failed to submit vote");
-                                }
-                              } finally { votingInProgressRef.current.delete(p.id); }
-                            }}
-                            disabled={hasVoted}
-                            style={{ flex: 1, padding: "12px", borderRadius: 14, textAlign: "center", background: voted ? color : bg, border: `2px solid ${voted ? color : border}`, color: voted ? "white" : "var(--text-primary)", cursor: hasVoted ? "not-allowed" : "pointer", transition: "all 0.2s", opacity: hasVoted && !voted ? 0.35 : 1 }}
-                          >
-                            <p style={{ fontSize: 13, fontWeight: 700, margin: 0 }}>{voted ? "✓ " : ""}{label}</p>
-                          </motion.button>
-                        </>
-                      ))}
-                    </div>
-                    <div style={{ marginBottom: 10 }}>
-                      <div style={{ display: "flex", borderRadius: 999, overflow: "hidden", height: 6, background: "rgba(255,255,255,0.06)" }}>
-                        <div style={{ width: `${agrPct}%`, background: "var(--accent-magenta)", transition: "width 0.4s ease" }} />
-                        <div style={{ width: `${disAgrPct}%`, background: "#60a5fa", transition: "width 0.4s ease" }} />
-                      </div>
-                      <div style={{ display: "flex", justifyContent: "space-between", marginTop: 5 }}>
-                        <span style={{ fontSize: 11, fontWeight: 700, color: "var(--accent-magenta)" }}>{agrPct}%</span>
-                        <span style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 500 }}>{liveTotal} vote{liveTotal !== 1 ? "s" : ""}</span>
-                        <span style={{ fontSize: 11, fontWeight: 700, color: "#60a5fa" }}>{disAgrPct}%</span>
-                      </div>
-                    </div>
-                    <p style={{ fontSize: 11, fontWeight: hasVoted ? 600 : 400, color: hasVoted ? "var(--accent-magenta)" : "var(--text-muted)", marginBottom: 8, fontStyle: hasVoted ? "normal" : "italic" }}>
-                      {hasVoted ? "You've already voted · thanks for joining the debate!" : "Tap a side to vote · results reveal after voting"}
-                    </p>
-                    {renderActionBar(p, debatePayload, "debate")}
-                  </motion.div>
-                );
-              }
+                    {renderPostHeader(p, p.type || "post", () => onFanProfile?.(p.fan))}
 
-              const defaultPayload = { id: p.id, text: p.text, fan: p.fan, timeAgo: p.timeAgo, createdAt: p.createdAt, type: p.type || "post", isDbPost: true, roomId, mediaUrls: p.mediaUrls };
-
-              return (
-                <motion.div key={p.id} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22 }}
-                  className="cursor-pointer" style={{ padding: "8px 0", borderBottom: "1px solid rgba(255,255,255,0.07)" }}
-                  onClick={() => onPostClick?.(defaultPayload)}
-                >
-                  {renderPostHeader(p, p.type || "post", () => onFanProfile?.(p.fan))}
-
-                  {p.memTag && ["wicket", "six", "four", "boundary", "frango", "redcard", "goal"].includes(p.memTag) ? (
-                    <div style={{ marginTop: 4, marginBottom: 4 }}>
-                      {QUICK_REACT_VIDEO_MAP[p.memTag] || QUICK_REACT_IMAGES_MAP[p.memTag] ? (
-                        <div style={{ maxWidth: 480, width: "100%", margin: "0 auto" }}>
-                          {/* Show video with sound ONLY when freshly posted (newlyPostedIds).
+                    {p.memTag && ["wicket", "six", "four", "boundary", "frango", "redcard", "goal"].includes(p.memTag) ? (
+                      <div style={{ marginTop: 4, marginBottom: 4 }}>
+                        {QUICK_REACT_VIDEO_MAP[p.memTag] || QUICK_REACT_IMAGES_MAP[p.memTag] ? (
+                          <div style={{ maxWidth: 480, width: "100%", margin: "0 auto" }}>
+                            {/* Show video with sound ONLY when freshly posted (newlyPostedIds).
                               On refresh / revisit the set is empty → show static image directly */}
-                          {newlyPostedIds.has(p.id) && !videoEndedIds.has(p.id) ? (
-                            <video
-                              src={QUICK_REACT_VIDEO_MAP[p.memTag]}
-                              autoPlay
-                              playsInline
-                              muted={false}
-                              loop={false}
-                              preload="auto"
-                              controls={false}
-                              onEnded={() => {
-                                // Video played once with sound — switch to static image
-                                setNewlyPostedIds(prev => {
-                                  const next = new Set(prev);
-                                  next.delete(p.id);
-                                  return next;
-                                });
-                                setVideoEndedIds(prev => new Set([...prev, p.id]));
-                              }}
-                              onClick={(e) => e.stopPropagation()}
-                              style={{
-                                width: "100%",
-                                aspectRatio: "16 / 9",
-                                borderRadius: 16,
-                                objectFit: "contain",
-                                display: "block",
-                                background: "#000",
-                              }}
-                            />
-                          ) : QUICK_REACT_IMAGES_MAP[p.memTag] ? (
-                            // Not newly posted OR video ended → static image, no sound
-                            <img
-                              src={QUICK_REACT_IMAGES_MAP[p.memTag]}
-                              alt={p.memTag}
-                              onClick={(e) => e.stopPropagation()}
-                              style={{
-                                width: "30%",
-                                aspectRatio: "16 / 9",
-                                borderRadius: 16,
-                                objectFit: "contain",
-                                display: "block",
-                              }}
-                            />
-                          ) : null}
-                        </div>
-                      ) : (
-                        <div style={{
-                          background: QUICK_REACT_GRADIENTS[`qr_${p.memTag}`] || "linear-gradient(135deg,#e91e8c,#ff6b35)",
-                          borderRadius: 16, padding: "28px 16px", textAlign: "center",
-                          display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6,
-                          position: "relative", overflow: "hidden",
-                        }}>
-                          <div style={{ fontSize: 32, lineHeight: 1 }}>
-                            {p.memTag === "boundary" && "🏏 💥"}
-                          </div>
-                          <p style={{ margin: 0, fontWeight: 900, fontSize: 20, color: "#fff", letterSpacing: "0.06em", textTransform: "uppercase", textShadow: "0 2px 8px rgba(0,0,0,0.3)" }}>
-                            {p.text}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <>
-                      <p className="text-sm leading-snug text-white">{p.text}</p>
-                      {p.type === "raw_reactions" && p.memGifUrl && <img src={p.memGifUrl} alt="reaction gif" style={{ width: "100%", maxHeight: 180, objectFit: "cover", borderRadius: 12, marginTop: 8 }} />}
-                      {p.type === "raw_reactions" && p.memTag && !["wicket", "six", "four", "boundary"].includes(p.memTag) && (
-                        <span style={{ display: "inline-block", marginTop: 8, fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 999, background: "rgba(0,232,198,0.12)", color: "#00e8c6", border: "1px solid rgba(0,232,198,0.3)", letterSpacing: "0.04em" }}>#{p.memTag}</span>
-                      )}
-                    </>
-                  )}
-
-                  {p.type === "prediction" && (() => {
-                    const liveTotal = (p.agreeCount ?? 0) + (p.disagreeCount ?? 0);
-                    const userVote = p.userVote;
-                    const hasVoted = userVote === "agree" || userVote === "disagree";
-                    const predictionOptions = Array.isArray(p.predictionOptions) && p.predictionOptions.length >= 2 ? p.predictionOptions : [p.sideA || "Option 1", p.sideB || "Option 2"];
-                    const optionCounts = p.predictionOptionCounts ?? {};
-                    const predictionTotal = liveTotal + Object.values(optionCounts).reduce((sum: number, count: unknown) => sum + (Number(count) || 0), 0);
-                    const predictionPct = (count: number) => predictionTotal > 0 ? Math.round((count / predictionTotal) * 100) : 0;
-                    const predAgrPct = predictionPct(p.agreeCount ?? 0);
-                    const predDisAgrPct = predictionPct(p.disagreeCount ?? 0);
-                    const hasPredictionVoted = hasVoted || (typeof userVote === "string" && userVote.startsWith("option_"));
-                    const predictionClosed = Boolean(p.resolvedAt || p.closedAt || (p.closesAt && p.closesAt <= Date.now()));
-                    const isPredictionAuthor = isCurrentUserAuthor(p);
-                    const correctVoteLabel = getPredictionOptionLabel(p.correctVote, predictionOptions);
-                    return (
-                      <>
-                        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
-                          <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 10, fontWeight: 800, padding: "3px 8px", borderRadius: 4, background: predictionClosed ? "rgba(244,67,54,0.12)" : "rgba(34,197,94,0.1)", color: predictionClosed ? "#f87171" : "#22c55e", border: `1px solid ${predictionClosed ? "rgba(244,67,54,0.25)" : "rgba(34,197,94,0.22)"}` }}>
-                            <Clock size={11} /> {formatPredictionCloseLabel(p)}
-                          </span>
-                        </div>
-                        <div style={{ display: "flex", gap: 8, marginTop: 10, marginBottom: 4 }}>
-                          {predictionOptions.slice(0, 2).map((label: string, optionIndex: number) => {
-                            const agree = optionIndex === 0;
-                            const pctVal = optionIndex === 0 ? predAgrPct : predDisAgrPct;
-                            const active = optionIndex === 0 ? userVote === "agree" : userVote === "disagree";
-                            return (
-                              <motion.button key={label} disabled={predictionClosed} whileTap={!hasPredictionVoted && !predictionClosed ? { scale: 0.93 } : {}}
-                                onClick={async (e) => {
-                                  e.stopPropagation();
-                                  if (hasPredictionVoted || predictionClosed) return;
-                                  setPosts(prev => prev.map(x => x.id !== p.id ? x : { ...x, userVote: agree ? "agree" : "disagree", agreeCount: (x.agreeCount ?? 0) + (agree ? 1 : 0), disagreeCount: (x.disagreeCount ?? 0) + (!agree ? 1 : 0) }));
-                                  try {
-                                    await axios.post(`/api/roar/rooms/${roomId}/messages/${p.id}/vote`, { vote: agree ? "agree" : "disagree" });
-                                    if (phog) {
-                                      phog.capture("poll_voted", {
-                                        poll_id: p.id,
-                                        poll_type: p.type || "prediction",
-                                        option_id: agree ? "agree" : "disagree",
-                                        room_id: roomId,
-                                        room_name: roomName || ""
-                                      });
-                                      phog.capture("submit_prediction", {
-                                        post_id: p.id,
-                                        room_id: roomId,
-                                        option_id: agree ? "agree" : "disagree",
-                                        room_name: roomName || ""
-                                      });
-                                    }
-                                  } catch { onToast("You've already voted!!"); }
+                            {newlyPostedIds.has(p.id) && !videoEndedIds.has(p.id) ? (
+                              <video
+                                src={QUICK_REACT_VIDEO_MAP[p.memTag]}
+                                autoPlay
+                                playsInline
+                                muted={false}
+                                loop={false}
+                                preload="auto"
+                                controls={false}
+                                onEnded={() => {
+                                  // Video played once with sound — switch to static image
+                                  setNewlyPostedIds(prev => {
+                                    const next = new Set(prev);
+                                    next.delete(p.id);
+                                    return next;
+                                  });
+                                  setVideoEndedIds(prev => new Set([...prev, p.id]));
                                 }}
-                                style={{ flex: 1, padding: "9px", borderRadius: 999, fontSize: 12, fontWeight: 700, cursor: hasPredictionVoted || predictionClosed ? "default" : "pointer", border: `2px solid ${active ? "#ff6b35" : "#8b8b8b"}`, background: active ? "rgba(255,107,53,0.24)" : "rgba(255,255,255,0.02)", color: active ? "#fff" : "#d1d1d1", boxShadow: active ? "0 0 14px rgba(255,107,53,0.35)" : "none", transition: "all 0.2s ease-in-out", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, opacity: (hasPredictionVoted || predictionClosed) && !active ? 0.4 : 1 }}
-                              >
-                                {label}
-                                <span style={{ fontSize: 10, fontWeight: 800, background: active ? "rgba(255,255,255,0.18)" : "rgba(255,255,255,0.08)", borderRadius: 999, padding: "1px 6px" }}>{pctVal}%</span>
-                              </motion.button>
-                            );
-                          })}
-                        </div>
-                        {predictionOptions.length > 2 && (
-                          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 4 }}>
-                            {predictionOptions.slice(2).map((label: string, idx: number) => {
-                              const voteValue = `option_${idx + 2}`;
-                              const active = userVote === voteValue;
-                              const pctVal = predictionPct(optionCounts[voteValue] ?? 0);
+                                onClick={(e) => e.stopPropagation()}
+                                style={{
+                                  width: "100%",
+                                  aspectRatio: "16 / 9",
+                                  borderRadius: 16,
+                                  objectFit: "contain",
+                                  display: "block",
+                                  background: "#000",
+                                }}
+                              />
+                            ) : QUICK_REACT_IMAGES_MAP[p.memTag] ? (
+                              // Not newly posted OR video ended → static image, no sound
+                              <img
+                                src={QUICK_REACT_IMAGES_MAP[p.memTag]}
+                                alt={p.memTag}
+                                onClick={(e) => e.stopPropagation()}
+                                style={{
+                                  width: "30%",
+                                  aspectRatio: "16 / 9",
+                                  borderRadius: 16,
+                                  objectFit: "contain",
+                                  display: "block",
+                                }}
+                              />
+                            ) : null}
+                          </div>
+                        ) : (
+                          <div style={{
+                            background: QUICK_REACT_GRADIENTS[`qr_${p.memTag}`] || "linear-gradient(135deg,#e91e8c,#ff6b35)",
+                            borderRadius: 16, padding: "28px 16px", textAlign: "center",
+                            display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6,
+                            position: "relative", overflow: "hidden",
+                          }}>
+                            <div style={{ fontSize: 32, lineHeight: 1 }}>
+                              {p.memTag === "boundary" && "🏏 💥"}
+                            </div>
+                            <p style={{ margin: 0, fontWeight: 900, fontSize: 20, color: "#fff", letterSpacing: "0.06em", textTransform: "uppercase", textShadow: "0 2px 8px rgba(0,0,0,0.3)" }}>
+                              {p.text}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <>
+                        {/* <p className="text-sm leading-snug text-white">{p.text}</p> */}
+                        <p className="leading-snug text-white" style={{ fontSize: 11 }}>{p.text}</p>
+                        {p.type === "raw_reactions" && p.memGifUrl && <img src={p.memGifUrl} alt="reaction gif" style={{ width: "100%", maxHeight: 180, objectFit: "cover", borderRadius: 12, marginTop: 8 }} />}
+                        {p.type === "raw_reactions" && p.memTag && !["wicket", "six", "four", "boundary"].includes(p.memTag) && (
+                          <span style={{ display: "inline-block", marginTop: 8, fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 999, background: "rgba(0,232,198,0.12)", color: "#00e8c6", border: "1px solid rgba(0,232,198,0.3)", letterSpacing: "0.04em" }}>#{p.memTag}</span>
+                        )}
+                      </>
+                    )}
+
+                    {p.type === "prediction" && (() => {
+                      const liveTotal = (p.agreeCount ?? 0) + (p.disagreeCount ?? 0);
+                      const userVote = p.userVote;
+                      const hasVoted = userVote === "agree" || userVote === "disagree";
+                      const predictionOptions = Array.isArray(p.predictionOptions) && p.predictionOptions.length >= 2 ? p.predictionOptions : [p.sideA || "Option 1", p.sideB || "Option 2"];
+                      const optionCounts = p.predictionOptionCounts ?? {};
+                      const predictionTotal = liveTotal + Object.values(optionCounts).reduce((sum: number, count: unknown) => sum + (Number(count) || 0), 0);
+                      const predictionPct = (count: number) => predictionTotal > 0 ? Math.round((count / predictionTotal) * 100) : 0;
+                      const predAgrPct = predictionPct(p.agreeCount ?? 0);
+                      const predDisAgrPct = predictionPct(p.disagreeCount ?? 0);
+                      const hasPredictionVoted = hasVoted || (typeof userVote === "string" && userVote.startsWith("option_"));
+                      const predictionClosed = Boolean(p.resolvedAt || p.closedAt || (p.closesAt && p.closesAt <= Date.now()));
+                      const isPredictionAuthor = isCurrentUserAuthor(p);
+                      const correctVoteLabel = getPredictionOptionLabel(p.correctVote, predictionOptions);
+                      return (
+                        <>
+                          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
+                            <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 10, fontWeight: 800, padding: "3px 8px", borderRadius: 4, background: predictionClosed ? "rgba(244,67,54,0.12)" : "rgba(34,197,94,0.1)", color: predictionClosed ? "#f87171" : "#22c55e", border: `1px solid ${predictionClosed ? "rgba(244,67,54,0.25)" : "rgba(34,197,94,0.22)"}` }}>
+                              <Clock size={11} /> {formatPredictionCloseLabel(p)}
+                            </span>
+                          </div>
+                          <div style={{ display: "flex", gap: 8, marginTop: 6, marginBottom: 4 }}>
+                            {predictionOptions.slice(0, 2).map((label: string, optionIndex: number) => {
+                              const agree = optionIndex === 0;
+                              const pctVal = optionIndex === 0 ? predAgrPct : predDisAgrPct;
+                              const active = optionIndex === 0 ? userVote === "agree" : userVote === "disagree";
                               return (
-                                <button key={`${label}-${idx}`} type="button" disabled={hasPredictionVoted || predictionClosed}
+                                <motion.button key={label} disabled={predictionClosed} whileTap={!hasPredictionVoted && !predictionClosed ? { scale: 0.93 } : {}}
                                   onClick={async (e) => {
                                     e.stopPropagation();
                                     if (hasPredictionVoted || predictionClosed) return;
-                                    setPosts(prev => prev.map(x => x.id !== p.id ? x : { ...x, userVote: voteValue, predictionOptionCounts: { ...(x.predictionOptionCounts ?? {}), [voteValue]: ((x.predictionOptionCounts ?? {})[voteValue] ?? 0) + 1 } }));
+                                    setPosts(prev => prev.map(x => x.id !== p.id ? x : { ...x, userVote: agree ? "agree" : "disagree", agreeCount: (x.agreeCount ?? 0) + (agree ? 1 : 0), disagreeCount: (x.disagreeCount ?? 0) + (!agree ? 1 : 0) }));
                                     try {
-                                      await axios.post(`/api/roar/rooms/${roomId}/messages/${p.id}/vote`, { vote: voteValue });
+                                      await axios.post(`/api/roar/rooms/${roomId}/messages/${p.id}/vote`, { vote: agree ? "agree" : "disagree" });
                                       if (phog) {
                                         phog.capture("poll_voted", {
                                           poll_id: p.id,
                                           poll_type: p.type || "prediction",
-                                          option_id: voteValue,
+                                          option_id: agree ? "agree" : "disagree",
                                           room_id: roomId,
                                           room_name: roomName || ""
                                         });
                                         phog.capture("submit_prediction", {
                                           post_id: p.id,
                                           room_id: roomId,
-                                          option_id: voteValue,
+                                          option_id: agree ? "agree" : "disagree",
                                           room_name: roomName || ""
                                         });
                                       }
                                     } catch { onToast("You've already voted!!"); }
                                   }}
-                                  style={{ flex: "1 1 calc(50% - 4px)", minWidth: 0, padding: "9px", borderRadius: 999, fontSize: 12, fontWeight: 700, border: `2px solid ${active ? "#ff6b35" : "#8b8b8b"}`, background: active ? "rgba(255,107,53,0.24)" : "rgba(255,255,255,0.02)", color: active ? "#fff" : "#d1d1d1", boxShadow: active ? "0 0 14px rgba(255,107,53,0.35)" : "none", textAlign: "center", opacity: (hasPredictionVoted || predictionClosed) && !active ? 0.4 : 1, cursor: hasPredictionVoted || predictionClosed ? "default" : "pointer" }}
+                                  style={{ flex: 1, padding: "4px", borderRadius: 999, fontSize: 11, fontWeight: 700, cursor: hasPredictionVoted || predictionClosed ? "default" : "pointer", border: `2px solid ${active ? "#ff6b35" : "#8b8b8b"}`, background: active ? "rgba(255,107,53,0.24)" : "rgba(255,255,255,0.02)", color: active ? "#fff" : "#d1d1d1", boxShadow: active ? "0 0 14px rgba(255,107,53,0.35)" : "none", transition: "all 0.2s ease-in-out", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, opacity: (hasPredictionVoted || predictionClosed) && !active ? 0.4 : 1 }}
                                 >
                                   {label}
-                                  <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 800, background: active ? "rgba(255,255,255,0.18)" : "rgba(255,255,255,0.08)", borderRadius: 999, padding: "1px 6px" }}>{pctVal}%</span>
-                                </button>
+                                  <span style={{ fontSize: 10, fontWeight: 800, background: active ? "rgba(255,255,255,0.18)" : "rgba(255,255,255,0.08)", borderRadius: 999, padding: "1px 6px" }}>{pctVal}%</span>
+                                </motion.button>
                               );
                             })}
                           </div>
+                          {predictionOptions.length > 2 && (
+                            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 4 }}>
+                              {predictionOptions.slice(2).map((label: string, idx: number) => {
+                                const voteValue = `option_${idx + 2}`;
+                                const active = userVote === voteValue;
+                                const pctVal = predictionPct(optionCounts[voteValue] ?? 0);
+                                return (
+                                  <button key={`${label}-${idx}`} type="button" disabled={hasPredictionVoted || predictionClosed}
+                                    onClick={async (e) => {
+                                      e.stopPropagation();
+                                      if (hasPredictionVoted || predictionClosed) return;
+                                      setPosts(prev => prev.map(x => x.id !== p.id ? x : { ...x, userVote: voteValue, predictionOptionCounts: { ...(x.predictionOptionCounts ?? {}), [voteValue]: ((x.predictionOptionCounts ?? {})[voteValue] ?? 0) + 1 } }));
+                                      try {
+                                        await axios.post(`/api/roar/rooms/${roomId}/messages/${p.id}/vote`, { vote: voteValue });
+                                        if (phog) {
+                                          phog.capture("poll_voted", {
+                                            poll_id: p.id,
+                                            poll_type: p.type || "prediction",
+                                            option_id: voteValue,
+                                            room_id: roomId,
+                                            room_name: roomName || ""
+                                          });
+                                          phog.capture("submit_prediction", {
+                                            post_id: p.id,
+                                            room_id: roomId,
+                                            option_id: voteValue,
+                                            room_name: roomName || ""
+                                          });
+                                        }
+                                      } catch { onToast("You've already voted!!"); }
+                                    }}
+                                    style={{ flex: "1 1 calc(50% - 4px)", minWidth: 0, padding: "5px", borderRadius: 999, fontSize: 10, fontWeight: 700, border: `2px solid ${active ? "#ff6b35" : "#8b8b8b"}`, background: active ? "rgba(255,107,53,0.24)" : "rgba(255,255,255,0.02)", color: active ? "#fff" : "#d1d1d1", boxShadow: active ? "0 0 14px rgba(255,107,53,0.35)" : "none", textAlign: "center", opacity: (hasPredictionVoted || predictionClosed) && !active ? 0.4 : 1, cursor: hasPredictionVoted || predictionClosed ? "default" : "pointer" }}
+                                  >
+                                    {label}
+                                    <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 800, background: active ? "rgba(255,255,255,0.18)" : "rgba(255,255,255,0.08)", borderRadius: 999, padding: "1px 6px" }}>{pctVal}%</span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          )}
+                          {/* {predictionClosed && !p.resolvedAt && isPredictionAuthor && (
+                            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8, marginBottom: 4 }}>
+                              {predictionOptions.map((label: string, optionIndex: number) => (
+                                <button key={`room-resolve-${label}-${optionIndex}`} type="button" disabled={resolvingRoomPredictionId === p.id}
+                                  onClick={(e) => { e.stopPropagation(); resolveRoomPrediction(p.id, getPredictionVoteValue(optionIndex)); }}
+                                  style={{ flex: "1 1 calc(50% - 4px)", minWidth: 0, padding: "9px", borderRadius: 12, fontSize: 11, fontWeight: 800, border: "1px solid rgba(34,197,94,0.35)", background: "rgba(34,197,94,0.1)", color: "#22c55e", cursor: resolvingRoomPredictionId === p.id ? "wait" : "pointer" }}
+                                >
+                                  Resolve: {label}
+                                </button>
+                              ))}
+                            </div>
+                          )} */}
+                          {predictionTotal > 0 && (
+                            <button
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); setVotersMsgId(p.id); }}
+                              style={{
+                                display: "flex", alignItems: "center", gap: 5,
+                                width: "100%", marginTop: 2, marginBottom: 6,
+                                padding: "5px 10px", borderRadius: 8,
+                                background: "rgba(255,107,53,0.08)",
+                                border: "1px solid rgba(255,107,53,0.22)",
+                                cursor: "pointer", color: "#ff8a5c",
+                                fontSize: 10, fontWeight: 700,
+                              }}
+                            >
+                              <Users size={11} />
+                              <span>View Votes</span>
+                            </button>
+                          )}
+                          {predictionClosed && !p.resolvedAt && isPredictionAuthor && (
+                            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8, marginBottom: 4 }}>
+                              {predictionOptions.map((label: string, optionIndex: number) => (
+                                <button key={`room-resolve-${label}-${optionIndex}`} type="button" disabled={resolvingRoomPredictionId === p.id}
+                                  onClick={(e) => { e.stopPropagation(); resolveRoomPrediction(p.id, getPredictionVoteValue(optionIndex)); }}
+                                  style={{ flex: "1 1 calc(50% - 4px)", minWidth: 0, padding: "9px", borderRadius: 12, fontSize: 11, fontWeight: 800, border: "1px solid rgba(34,197,94,0.35)", background: "rgba(34,197,94,0.1)", color: "#22c55e", cursor: resolvingRoomPredictionId === p.id ? "wait" : "pointer" }}
+                                >
+                                  Resolve: {label}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                          {p.resolvedAt && correctVoteLabel && (
+                            <p style={{ fontSize: 11, color: "#22c55e", fontWeight: 800, marginTop: 8, marginBottom: 4 }}>Correct answer: {correctVoteLabel}</p>
+                          )}
+                        </>
+                      );
+                    })()}
+
+                    {p.mediaUrls?.length > 0 && (
+                      <div className="flex flex-col gap-2 mt-2">
+                        {p.mediaUrls.map((url: string, i: number) =>
+                          url.endsWith(".mp4") || url.includes("/video/upload/")
+                            ? <video key={i} src={url} controls className="w-full max-h-[200px] rounded-lg object-cover" onClick={e => e.stopPropagation()} />
+                            : <img key={i} src={url} alt="" className="w-full max-h-[150px] rounded-lg object-cover" />
                         )}
-                        {predictionClosed && !p.resolvedAt && isPredictionAuthor && (
-                          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8, marginBottom: 4 }}>
-                            {predictionOptions.map((label: string, optionIndex: number) => (
-                              <button key={`room-resolve-${label}-${optionIndex}`} type="button" disabled={resolvingRoomPredictionId === p.id}
-                                onClick={(e) => { e.stopPropagation(); resolveRoomPrediction(p.id, getPredictionVoteValue(optionIndex)); }}
-                                style={{ flex: "1 1 calc(50% - 4px)", minWidth: 0, padding: "9px", borderRadius: 12, fontSize: 12, fontWeight: 800, border: "1px solid rgba(34,197,94,0.35)", background: "rgba(34,197,94,0.1)", color: "#22c55e", cursor: resolvingRoomPredictionId === p.id ? "wait" : "pointer" }}
+                      </div>
+                    )}
+
+                    {p.type === "hottake" && (() => {
+                      const liveTotal = (p.agreeCount ?? 0) + (p.disagreeCount ?? 0);
+                      const agrPct = liveTotal > 0 ? Math.round(((p.agreeCount ?? 0) / liveTotal) * 100) : 50;
+                      const disAgrPct = 100 - agrPct;
+                      const userVote = p.userVote;
+                      const hasVoted = userVote === "agree" || userVote === "disagree";
+                      return (
+                        <div style={{ marginTop: 10, marginBottom: 4 }}>
+                          <div style={{ display: "flex", borderRadius: 999, overflow: "hidden", height: 5, background: "rgba(255,255,255,0.06)", marginBottom: 8 }}>
+                            <div style={{ width: `${agrPct}%`, background: "var(--accent-magenta)", transition: "width 0.4s ease" }} />
+                            <div style={{ width: `${disAgrPct}%`, background: "var(--accent-orange)", transition: "width 0.4s ease" }} />
+                          </div>
+                          <div style={{ display: "flex", gap: 8 }}>
+                            {[
+                              { agree: true, label: "Agree", pctVal: agrPct, active: userVote === "agree", color: "var(--accent-magenta)" },
+                              { agree: false, label: "Disagree", pctVal: disAgrPct, active: userVote === "disagree", color: "var(--accent-orange)" },
+                            ].map(({ agree, label, pctVal, active, color }) => (
+                              <motion.button key={label} whileTap={!hasVoted ? { scale: 0.93 } : {}}
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  if (hasVoted) return;
+                                  setPosts(prev => prev.map(x => x.id !== p.id ? x : { ...x, userVote: agree ? "agree" : "disagree", agreeCount: (x.agreeCount ?? 0) + (agree ? 1 : 0), disagreeCount: (x.disagreeCount ?? 0) + (!agree ? 1 : 0) }));
+                                  setOpenInlinePostId(p.id);
+                                  try {
+                                    await axios.post(`/api/roar/rooms/${roomId}/messages/${p.id}/vote`, { vote: agree ? "agree" : "disagree" });
+                                    if (phog) {
+                                      phog.capture("poll_voted", {
+                                        poll_id: p.id,
+                                        poll_type: p.type || "hot_take",
+                                        option_id: agree ? "agree" : "disagree",
+                                        room_id: roomId,
+                                        room_name: roomName || ""
+                                      });
+                                    }
+                                  } catch { onToast("Failed to submit vote"); }
+                                }}
+                                style={{ flex: 1, padding: "10px", borderRadius: 999, fontSize: 12, fontWeight: 700, cursor: hasVoted ? "default" : "pointer", border: `2.5px solid ${color}`, background: active ? color : "rgba(255,255,255,0.02)", color: active ? "white" : color, boxShadow: active ? `0 0 16px ${color}60` : "none", transition: "all 0.2s ease-in-out", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, opacity: hasVoted && !active ? 0.4 : 1 }}
                               >
-                                Resolve: {label}
-                              </button>
+                                {active ? `✓ ${agree ? "Agreed" : "Disagreed"}` : label}
+                                <span style={{ fontSize: 10, fontWeight: 800, background: active ? "rgba(255,255,255,0.2)" : `${color}22`, borderRadius: 999, padding: "1px 6px" }}>{pctVal}%</span>
+                              </motion.button>
                             ))}
                           </div>
-                        )}
-                        {p.resolvedAt && correctVoteLabel && (
-                          <p style={{ fontSize: 11, color: "#22c55e", fontWeight: 800, marginTop: 8, marginBottom: 4 }}>Correct answer: {correctVoteLabel}</p>
-                        )}
-                      </>
-                    );
-                  })()}
-
-                  {p.mediaUrls?.length > 0 && (
-                    <div className="flex flex-col gap-2 mt-2">
-                      {p.mediaUrls.map((url: string, i: number) =>
-                        url.endsWith(".mp4") || url.includes("/video/upload/")
-                          ? <video key={i} src={url} controls className="w-full max-h-[200px] rounded-lg object-cover" onClick={e => e.stopPropagation()} />
-                          : <img key={i} src={url} alt="" className="w-full max-h-[200px] rounded-lg object-cover" />
-                      )}
-                    </div>
-                  )}
-
-                  {p.type === "hottake" && (() => {
-                    const liveTotal = (p.agreeCount ?? 0) + (p.disagreeCount ?? 0);
-                    const agrPct = liveTotal > 0 ? Math.round(((p.agreeCount ?? 0) / liveTotal) * 100) : 50;
-                    const disAgrPct = 100 - agrPct;
-                    const userVote = p.userVote;
-                    const hasVoted = userVote === "agree" || userVote === "disagree";
-                    return (
-                      <div style={{ marginTop: 10, marginBottom: 4 }}>
-                        <div style={{ display: "flex", borderRadius: 999, overflow: "hidden", height: 5, background: "rgba(255,255,255,0.06)", marginBottom: 8 }}>
-                          <div style={{ width: `${agrPct}%`, background: "var(--accent-magenta)", transition: "width 0.4s ease" }} />
-                          <div style={{ width: `${disAgrPct}%`, background: "var(--accent-orange)", transition: "width 0.4s ease" }} />
                         </div>
-                        <div style={{ display: "flex", gap: 8 }}>
-                          {[
-                            { agree: true, label: "Agree", pctVal: agrPct, active: userVote === "agree", color: "var(--accent-magenta)" },
-                            { agree: false, label: "Disagree", pctVal: disAgrPct, active: userVote === "disagree", color: "var(--accent-orange)" },
-                          ].map(({ agree, label, pctVal, active, color }) => (
-                            <motion.button key={label} whileTap={!hasVoted ? { scale: 0.93 } : {}}
-                              onClick={async (e) => {
-                                e.stopPropagation();
-                                if (hasVoted) return;
-                                setPosts(prev => prev.map(x => x.id !== p.id ? x : { ...x, userVote: agree ? "agree" : "disagree", agreeCount: (x.agreeCount ?? 0) + (agree ? 1 : 0), disagreeCount: (x.disagreeCount ?? 0) + (!agree ? 1 : 0) }));
-                                setOpenInlinePostId(p.id);
-                                try {
-                                  await axios.post(`/api/roar/rooms/${roomId}/messages/${p.id}/vote`, { vote: agree ? "agree" : "disagree" });
-                                  if (phog) {
-                                    phog.capture("poll_voted", {
-                                      poll_id: p.id,
-                                      poll_type: p.type || "hot_take",
-                                      option_id: agree ? "agree" : "disagree",
-                                      room_id: roomId,
-                                      room_name: roomName || ""
-                                    });
-                                  }
-                                } catch { onToast("Failed to submit vote"); }
-                              }}
-                              style={{ flex: 1, padding: "10px", borderRadius: 999, fontSize: 12, fontWeight: 700, cursor: hasVoted ? "default" : "pointer", border: `2.5px solid ${color}`, background: active ? color : "rgba(255,255,255,0.02)", color: active ? "white" : color, boxShadow: active ? `0 0 16px ${color}60` : "none", transition: "all 0.2s ease-in-out", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, opacity: hasVoted && !active ? 0.4 : 1 }}
-                            >
-                              {active ? `✓ ${agree ? "Agreed" : "Disagreed"}` : label}
-                              <span style={{ fontSize: 10, fontWeight: 800, background: active ? "rgba(255,255,255,0.2)" : `${color}22`, borderRadius: 999, padding: "1px 6px" }}>{pctVal}%</span>
-                            </motion.button>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })()}
+                      );
+                    })()}
 
-                  {renderActionBar(p, { ...defaultPayload, replyCount: p.replyCount }, p.type || "post")}
-                </motion.div>
-              );
-            })
-          )}
+                    {renderActionBar(p, { ...defaultPayload, replyCount: p.replyCount }, p.type || "post")}
+                  </motion.div>
+                );
+              })
+            )}
         </AnimatePresence>
 
         {hasMoreMsgs && !loading && (
@@ -3832,45 +4330,45 @@ export default function DiscussionRoom({
                   transition={{ duration: 0.2, ease: "easeOut" }}
                   style={{ overflow: "hidden" }}
                 >
-                  <div style={{ paddingBottom: 6, paddingTop: 2 }}>
-                    <p style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.3)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>
+                  <div style={{ paddingBottom: 4, paddingTop: 0.5 }}>
+                    <p style={{ fontSize: 8, fontWeight: 700, color: "rgba(255,255,255,0.3)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>
                       Quick Post
                     </p>
-                    <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4, scrollbarWidth: "none" }}>
+                    <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 1, scrollbarWidth: "none" }}>
                       {QUICK_REACT_OPTS
                         .filter((q) => q.sport === roomSports?.toLowerCase())
                         .map((q) => (
-                        <motion.button
-                          key={q.id}
-                          type="button"
-                          whileTap={{ scale: 0.93 }}
-                          onClick={() => handleQuickReactPost(q)}
-                          style={{
-                            flexShrink: 0,
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 6,
-                            padding: "7px 14px",
-                            borderRadius: 999,
-                            border: q.id.includes("wicket") ? "1px solid rgba(233,30,140,0.4)"
-                              : q.id.includes("six") ? "1px solid rgba(245,158,11,0.4)"
-                                : q.id.includes("four") ? "1px solid rgba(249,115,22,0.4)"
-                                  : "1px solid rgba(16,185,129,0.4)",
-                            background: q.id.includes("wicket") ? "rgba(233,30,140,0.12)"
-                              : q.id.includes("six") ? "rgba(245,158,11,0.12)"
-                                : q.id.includes("four") ? "rgba(249,115,22,0.12)"
-                                  : "rgba(16,185,129,0.12)",
-                            color: "#fff",
-                            fontSize: 12,
-                            fontWeight: 700,
-                            cursor: "pointer",
-                            whiteSpace: "nowrap",
-                          }}
-                        >
-                          <span style={{ fontSize: 14 }}>{q.emoji}</span>
-                          <span>{q.label}</span>
-                        </motion.button>
-                      ))}
+                          <motion.button
+                            key={q.id}
+                            type="button"
+                            whileTap={{ scale: 0.93 }}
+                            onClick={() => handleQuickReactPost(q)}
+                            style={{
+                              flexShrink: 0,
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 6,
+                              padding: "2px 10px",
+                              borderRadius: 999,
+                              border: q.id.includes("wicket") ? "1px solid rgba(233,30,140,0.4)"
+                                : q.id.includes("six") ? "1px solid rgba(245,158,11,0.4)"
+                                  : q.id.includes("four") ? "1px solid rgba(249,115,22,0.4)"
+                                    : "1px solid rgba(16,185,129,0.4)",
+                              background: q.id.includes("wicket") ? "rgba(233,30,140,0.12)"
+                                : q.id.includes("six") ? "rgba(245,158,11,0.12)"
+                                  : q.id.includes("four") ? "rgba(249,115,22,0.12)"
+                                    : "rgba(16,185,129,0.12)",
+                              color: "#fff",
+                              fontSize: 10,
+                              fontWeight: 700,
+                              cursor: "pointer",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            <span style={{ fontSize: 12 }}>{q.emoji}</span>
+                            <span>{q.label}</span>
+                          </motion.button>
+                        ))}
                     </div>
                   </div>
                 </motion.div>
@@ -3980,6 +4478,13 @@ export default function DiscussionRoom({
 
       <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" />
 
+      <VotersDialog
+        postId={votersMsgId ?? ""}
+        isOpen={votersMsgId !== null}
+        onClose={() => setVotersMsgId(null)}
+        roomId={roomId}
+      />
+
       <ReactionsDialog postId={reactionsMsgId ?? ""} isOpen={reactionsMsgId !== null} onClose={() => setReactionsMsgId(null)} onFanProfile={onFanProfile} roomId={roomId} />
       <ActiveFansDialog
         roomId={roomId}
@@ -4013,7 +4518,7 @@ export default function DiscussionRoom({
           <motion.div initial={{ opacity: 0, y: -60, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -40, scale: 0.95 }} transition={{ duration: 0.22, ease: "easeOut" }} onClick={() => setNotifToast(null)}
             style={{ position: "fixed", top: 16, left: 16, right: 16, zIndex: 100, display: "flex", alignItems: "center", gap: 10, padding: "10px 16px", borderRadius: 20, background: notifToast.type === "comment" ? "rgba(147,51,234,0.92)" : "rgba(233,30,140,0.92)", backdropFilter: "blur(12px)", border: `1px solid ${notifToast.type === "comment" ? "rgba(147,51,234,0.5)" : "rgba(233,30,140,0.5)"}`, boxShadow: `0 8px 32px ${notifToast.type === "comment" ? "rgba(147,51,234,0.35)" : "rgba(233,30,140,0.35)"}`, cursor: "pointer", wordBreak: "break-word" }}
           >
-            <span style={{ fontSize: 16, flexShrink: 0 }}>{notifToast.type === "comment" ? "💬" : "❤️"}</span>
+            <span style={{ fontSize: 12, flexShrink: 0 }}>{notifToast.type === "comment" ? "💬" : "❤️"}</span>
             <span style={{ fontSize: 13, fontWeight: 600, color: "#fff", wordBreak: "break-word" }}>{notifToast.message}</span>
             <span style={{ fontSize: 11, color: "rgba(255,255,255,0.6)", flexShrink: 0, marginLeft: 4 }}>tap to dismiss</span>
           </motion.div>

@@ -3787,10 +3787,12 @@ function TriviaCard({ post, onToast, onPostClick, roomId, onFanProfile }: {
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
               {(() => {
+                const OPTION_LETTERS = ["A", "B", "C", "D", "E", "F"];
                 const revealedCorrectLabel = q.options.find(o => o.isCorrect)?.label;
                 const correctLabel = answered?.correctOption ?? revealedCorrectLabel;
-                return q.options.map((opt) => {
+                return q.options.map((opt,optIndex) => {
                   const label = opt.label;
+                  const optionLetter = OPTION_LETTERS[optIndex] ?? String(optIndex + 1);
                   const isSelected = answered?.selected === label;
                   const isCorrect = hasAnswered && correctLabel === label;
                   const isWrong = hasAnswered && isSelected && !!correctLabel && correctLabel !== label;
@@ -3810,7 +3812,7 @@ function TriviaCard({ post, onToast, onPostClick, roomId, onFanProfile }: {
                       style={{ ...style, borderRadius: 999, padding: "8px 10px", display: "flex", alignItems: "center", gap: 8, cursor: (hasAnswered || isExpired) ? "default" : "pointer", transition: "all 0.2s" }}
                     >
                       <span style={{ width: 18, height: 18, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 800, flexShrink: 0, ...badgeStyle }}>
-                        {isCorrect ? <CheckCircle2 size={11} /> : label}
+                        {isCorrect ? <CheckCircle2 size={11} /> : optionLetter}
                       </span>
                       <span style={{ fontSize: 11, fontWeight: 700, color: isCorrect ? "#4ade80" : isWrong ? "#f87171" : "#e5e5f0" }}>
                         {opt.text || label}

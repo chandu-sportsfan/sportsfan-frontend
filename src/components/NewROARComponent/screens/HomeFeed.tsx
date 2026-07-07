@@ -498,7 +498,9 @@ export default function HomeFeed({
       phog.capture("poll_voted", {
         poll_id: id,
         poll_type: item?.type || "prediction",
-        option_id: nextVote
+        option_id: nextVote,
+        room_id: item?.roomId || "",
+        room_name: rooms.find(r => r.roomId === item?.roomId)?.name || ""
       });
     }
     setInlineCommentPostId(id);

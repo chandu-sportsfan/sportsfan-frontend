@@ -36,6 +36,8 @@ interface Props {
   currentUserId?: string;
   onRegisterRefresh?: (fn: () => void) => void;
   onRegisterReplyUpdate?: (fn: (postId: string, count: number) => void) => void;
+  onRegisterInjectPost?: (fn: (post: any) => void) => void;
+  onRegisterOptimisticSwap?: (fn: (tempId: string, realMsg?: any) => void) => void;
   onFanProfile?: (fan: any) => void;
   watchAlongRoomId?: string;
   roomSports?: string;
@@ -1096,7 +1098,7 @@ export default function DiscussionRoom({
   roomSports,
   onBack, onToast, roomId, roomName, onPostClick, onCompose,
   fanCount = 312, score, scoreSubtitle, currentAvatarUrl, currentUserId: propCurrentUserId, onRegisterRefresh, onRegisterReplyUpdate,
-  onFanProfile, watchAlongRoomId
+  onFanProfile, watchAlongRoomId, onRegisterInjectPost, onRegisterOptimisticSwap
 }: Props) {
   const router = useRouter();
   const phog = usePostHog();
@@ -1531,6 +1533,27 @@ export default function DiscussionRoom({
       setPosts(p => p.map(x => x.id === postId ? { ...x, replyCount: count } : x));
     });
   }, [onRegisterReplyUpdate]);
+
+  useEffect(() => {
+    onRegisterInjectPost?.((p) => {
+      setPosts(prev => {
+        if (prev.some(x => x.id === p.id)) return prev;
+        return [...prev, { ...mapMessage(p), status: "sending", timeAgo: "Sending..." }];
+      });
+      setTimeout(() => listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" }), 50);
+    });
+
+    onRegisterOptimisticSwap?.((tempId, realMsg) => {
+      if (!realMsg) {
+        setPosts(p => p.map(x => x.id === tempId ? { ...x, status: "error", timeAgo: "Failed" } : x));
+      } else {
+        setPosts(p => {
+          if (p.some(post => post.id === realMsg.msgId)) return p.filter(post => post.id !== tempId);
+          return p.map(post => post.id === tempId ? { ...post, ...mapMessage(realMsg), id: realMsg.msgId, status: "sent", timeAgo: "now" } : post);
+        });
+      }
+    });
+  }, [onRegisterInjectPost, onRegisterOptimisticSwap, mapMessage]);
   useEffect(() => {
     latestCreatedAtRef.current = null;
     setPosts([]);
@@ -1762,17 +1785,43 @@ export default function DiscussionRoom({
     const text = input.trim();
     if (!text && !attachedUrl) return;
     if (sendingRef.current) return;
+    
+    // 1. Create optimistic ghost message
+    const tempId = `temp-${Date.now()}`;
+    const optimisticMsg: any = {
+      id: tempId,
+      fan: { username: displayUsername(userUsername), authorUid: "", badge: "", avatarUrl: userAvatarUrl },
+      text: text || "Shared media", fireCount: 0, heartCount: 0, mindblownCount: 0, goatCount: 0, clapCount: 0, nochanceCount: 0, userReaction: null, replyCount: 0, agreeCount: 0, disagreeCount: 0, userVote: null, sideA: null, sideB: null, timeAgo: "Sending...", createdAt: Date.now(), type: mode, mediaUrls: attachedUrl ? [attachedUrl] : undefined, quizQuestion: null, quizOptions: null, quizCorrectOption: null, quizUserAnswer: null, quizTimer: null, quizPoints: null, quizParticipants: 0, memGifUrl: null, memTag: null, status: "sending"
+    };
+
     sendingRef.current = true; setIsSending(true);
+    // 2. Inject to UI instantly
+    setPosts(p => [...p, optimisticMsg]);
+    setInput(""); setAttachedUrl(null); setAttachedType(null);
+    startPostCooldown();
+    setTimeout(() => listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" }), 50);
+
+    // 3. Background API request with timeout
     try {
-      const res = await axios.post(`/api/roar/rooms/${roomId}/messages`, { text: text || "Shared media", type: mode, mediaUrls: attachedUrl ? [attachedUrl] : undefined });
+      const res = await axios.post(`/api/roar/rooms/${roomId}/messages`, { text: text || "Shared media", type: mode, mediaUrls: optimisticMsg.mediaUrls }, { timeout: 10000 });
       if (res.data?.success) {
         const m = res.data.message;
-        setPosts(p => [...p, { id: m.msgId, fan: { username: displayUsername(m.authorUsername), authorUid: m.authorUid, badge: m.authorBadge, avatarUrl: m.authorAvatarUrl || m.avatarUrl || (m.authorUsername === userUsername ? userAvatarUrl : undefined) }, text: m.text, fireCount: m.fireCount ?? 0, heartCount: m.heartCount ?? 0, mindblownCount: m.mindblownCount ?? 0, goatCount: m.goatCount ?? 0, clapCount: m.clapCount ?? 0, nochanceCount: m.noChanceCount ?? 0, userReaction: null, replyCount: 0, agreeCount: 0, disagreeCount: 0, userVote: null, sideA: m.sideA ?? null, sideB: m.sideB ?? null, timeAgo: "now", createdAt: m.createdAt || Date.now(), type: m.type, mediaUrls: m.mediaUrls, quizQuestion: m.quizQuestion, quizOptions: m.quizOptions, quizCorrectOption: m.quizCorrectOption, quizUserAnswer: m.quizUserAnswer ?? null, quizTimer: m.quizTimer, quizPoints: m.quizPoints, quizParticipants: m.quizParticipants ?? 0, memGifUrl: m.memGifUrl ?? null, memTag: m.memTag ?? null }]);
-        setInput(""); setAttachedUrl(null); setAttachedType(null);
-        startPostCooldown();
-        setTimeout(() => listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" }), 50);
+        const realId = m.msgId;
+        
+        setPosts(p => {
+          if (p.some(post => post.id === realId)) {
+            return p.filter(post => post.id !== tempId);
+          }
+          return p.map(post => post.id === tempId ? {
+            ...post, id: realId, status: "sent", timeAgo: "now",
+            fan: { username: displayUsername(m.authorUsername), authorUid: m.authorUid, badge: m.authorBadge, avatarUrl: m.authorAvatarUrl || m.avatarUrl || (m.authorUsername === userUsername ? userAvatarUrl : undefined) }
+          } : post);
+        });
       }
-    } catch { onToast("Failed to send message"); }
+    } catch {
+      setPosts(p => p.map(post => post.id === tempId ? { ...post, status: "error", timeAgo: "Failed to send" } : post));
+      onToast("Failed to send message");
+    }
     finally { sendingRef.current = false; setIsSending(false); }
   };
 
@@ -1785,6 +1834,13 @@ export default function DiscussionRoom({
     const tempId = `temp-dolly-${Date.now()}`;
     setDollyReplies(prev => [...prev, { id: tempId, question: q, answer: "", createdAt: Date.now() }]);
     setDollyQuestion("");
+    if (phog) {
+      phog.capture("ask_dolly_query", {
+        query: q,
+        room_id: targetRoomId,
+        room_name: dollyActiveRoomName || roomName || ""
+      });
+    }
     try {
       const res = await axios.post(`/api/roar/rooms/${targetRoomId}/dolly`, { question: q });
       if (res.data?.success) {
@@ -1806,7 +1862,20 @@ export default function DiscussionRoom({
   const handleQuickReactPost = async (opt: typeof QUICK_REACT_OPTS[0]) => {
     if (!roomId) return;
     setShowQuickCompose(false);
+    if (postCooldown > 0) return;
     const memTag = opt.id.replace("qr_", "");
+
+    const tempId = `temp-qr-${Date.now()}`;
+    const optimisticMsg: any = {
+      id: tempId,
+      fan: { username: displayUsername(userUsername), authorUid: "", badge: "", avatarUrl: userAvatarUrl },
+      text: opt.label, fireCount: 0, heartCount: 0, mindblownCount: 0, goatCount: 0, clapCount: 0, nochanceCount: 0, userReaction: null, replyCount: 0, agreeCount: 0, disagreeCount: 0, userVote: null, sideA: null, sideB: null, timeAgo: "Sending...", createdAt: Date.now(), type: "post", mediaUrls: [], quizQuestion: null, quizOptions: null, quizCorrectOption: null, quizUserAnswer: null, quizTimer: null, quizPoints: null, quizParticipants: 0, memGifUrl: null, memTag: memTag, status: "sending"
+    };
+
+    setPosts(p => [...p, optimisticMsg]);
+    startPostCooldown();
+    setTimeout(() => listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" }), 50);
+
     try {
       const res = await axios.post(`/api/roar/rooms/${roomId}/messages`, {
         text: opt.label,
@@ -1857,7 +1926,7 @@ export default function DiscussionRoom({
     const currentReaction: Reaction | null = lo !== undefined ? lo.reaction : (p.userReaction ?? null);
     const heartCount = lo !== undefined ? lo.heartCount : (p.heartCount ?? 0);
     return (
-      <div onClick={e => e.stopPropagation()}>
+      <div onClick={e => e.stopPropagation()} style={{ opacity: (p.status === "sending" || p.status === "error") ? 0.5 : 1, pointerEvents: (p.status === "sending" || p.status === "error") ? "none" : "auto" }}>
         <ReactionPicker
           currentReaction={currentReaction}
           count={heartCount}
@@ -1903,7 +1972,9 @@ export default function DiscussionRoom({
         <span style={{ fontWeight: 700, fontSize: 10, color: "#fff", whiteSpace: "nowrap", cursor: onAvatarClick ? "pointer" : "default" }} onClick={e => { e.stopPropagation(); onAvatarClick?.(); }}>
           {p.fan.username}
         </span>
-        <span style={{ fontSize: 7, color: "rgba(255,255,255,0.48)", whiteSpace: "nowrap" }}>{p.timeAgo}</span>
+        <span style={{ fontSize: 8, color: "rgba(255,255,255,0.48)", whiteSpace: "nowrap" }}>
+          {p.status === "error" ? <span style={{color: "#ef4444", fontWeight: "bold"}}>Failed to send</span> : p.timeAgo}
+        </span>
         {p.type && (
           <span className={typeBadgeClass(p.type)}>
             {p.type === "post" ? "POST" : p.type === "hottake" ? "HOT TAKE" : p.type === "prediction" ? "PREDICTION" : p.type === "debate" ? "DEBATE" : p.type === "raw_reactions" ? "RAW REACTIONS" : p.type.toUpperCase()}
@@ -2217,24 +2288,30 @@ export default function DiscussionRoom({
                 const p = item.data;
 
                 if (p.type === "trivia") {
+                  const isSending = p.status === "sending";
                   return (
-                    <motion.div key={p.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22 }}>
+                    <motion.div key={p.id} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22 }}
+                      style={{ opacity: isSending ? 0.6 : 1, pointerEvents: isSending ? "none" : "auto" }}>
                       <TriviaCard post={p} onToast={onToast} onPostClick={onPostClick} roomId={roomId} onFanProfile={onFanProfile} />
                     </motion.div>
                   );
                 }
 
                 if (p.type === "battle") {
+                  const isSending = p.status === "sending";
                   return (
-                    <motion.div key={p.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22 }}>
+                    <motion.div key={p.id} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22 }}
+                      style={{ opacity: isSending ? 0.6 : 1, pointerEvents: isSending ? "none" : "auto" }}>
                       <BattleCard post={p} onToast={onToast} onPostClick={onPostClick} roomId={roomId} onFanProfile={onFanProfile} />
                     </motion.div>
                   );
                 }
 
                 if (p.type === "quiz") {
+                  const isSending = p.status === "sending";
                   return (
-                    <motion.div key={p.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22 }}>
+                    <motion.div key={p.id} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22 }}
+                      style={{ opacity: isSending ? 0.6 : 1, pointerEvents: isSending ? "none" : "auto" }}>
                       <QuizCard post={p} onToast={onToast} onPostClick={onPostClick} roomId={roomId} onFanProfile={onFanProfile} />
                     </motion.div>
                   );
@@ -2256,9 +2333,12 @@ export default function DiscussionRoom({
                   const questionText = hasSides ? rawText : null;
                   const debatePayload = { id: p.id, text: p.text, fan: p.fan, timeAgo: p.timeAgo, createdAt: p.createdAt, type: "debate", isDbPost: true, roomId, mediaUrls: p.mediaUrls, sideA, sideB };
                   return (
-                    <motion.div key={p.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22 }}
-                      className="cursor-pointer" style={{ padding: "4px 0", borderBottom: "1px solid rgba(255,255,255,0.07)" }}
-                      onClick={() => onPostClick?.(debatePayload)}
+                    <motion.div key={p.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22 }}
+                      className="cursor-pointer" style={{ padding: "5px 0", borderBottom: "1px solid rgba(255,255,255,0.07)", opacity: p.status === "sending" ? 0.6 : 1 }}
+                      onClick={() => {
+                        if (p.status === "sending" || p.status === "error") return;
+                        onPostClick?.(debatePayload);
+                      }}
                     >
                       {renderPostHeader(p, "debate", () => onFanProfile?.(p.fan))}
                       {questionText && <p style={{ fontWeight: 600, fontSize: 10, lineHeight: 1.3, marginBottom: 3, color: "var(--text-primary)" }}>{questionText}</p>}
@@ -2267,12 +2347,12 @@ export default function DiscussionRoom({
                           { label: sideA, voted: displayVotedA, color: "var(--accent-magenta)", bg: "rgba(233,30,140,0.08)", border: "rgba(233,30,140,0.3)", voteVal: "agree" as const },
                           { label: sideB, voted: displayVotedB, color: "#60a5fa", bg: "rgba(59,130,246,0.08)", border: "rgba(59,130,246,0.3)", voteVal: "disagree" as const },
                         ].map(({ label, voted, color, bg, border, voteVal }, idx) => (
-                          <>
+                          <React.Fragment key={voteVal}>
                             {idx === 1 && <div key="vs" style={{ display: "flex", alignItems: "center", padding: "0 1px" }}><span className="font-display" style={{ fontSize: 14, color: "var(--text-muted)" }}>VS</span></div>}
-                            <motion.button key={voteVal} whileTap={!hasVoted ? { scale: 0.96 } : {}}
+                            <motion.button key={`btn-${voteVal}`} whileTap={(!hasVoted && p.status !== "sending" && p.status !== "error") ? { scale: 0.96 } : {}}
                               onClick={async (e) => {
                                 e.stopPropagation();
-                                if (hasVoted || votingInProgressRef.current.has(p.id)) return;
+                                if (hasVoted || votingInProgressRef.current.has(p.id) || p.status === "sending" || p.status === "error") return;
                                 votingInProgressRef.current.add(p.id);
                                 setPosts(prev => prev.map(x => x.id !== p.id ? x : { ...x, userVote: voteVal, agreeCount: (x.agreeCount ?? 0) + (voteVal === "agree" ? 1 : 0), disagreeCount: (x.disagreeCount ?? 0) + (voteVal === "disagree" ? 1 : 0) }));
                                 setOpenInlinePostId(p.id);
@@ -2295,12 +2375,12 @@ export default function DiscussionRoom({
                                   }
                                 } finally { votingInProgressRef.current.delete(p.id); }
                               }}
-                              disabled={hasVoted}
-                              style={{ flex: 1, padding: "6px", borderRadius: "0px", textAlign: "center", background: voted ? color : bg, border: `2px solid ${voted ? color : border}`, color: voted ? "white" : "var(--text-primary)", cursor: hasVoted ? "not-allowed" : "pointer", transition: "all 0.2s", opacity: hasVoted && !voted ? 0.35 : 1 }}
+                              disabled={hasVoted || p.status === "sending" || p.status === "error"}
+                              style={{ flex: 1, padding: "6px", borderRadius: 0, textAlign: "center", background: voted ? color : bg, border: `2px solid ${voted ? color : border}`, color: voted ? "white" : "var(--text-primary)", cursor: (hasVoted || p.status === "sending" || p.status === "error") ? "not-allowed" : "pointer", transition: "all 0.2s", opacity: hasVoted && !voted ? 0.35 : 1 }}
                             >
                               <p style={{ fontSize: 10, fontWeight: 700, margin: 0 }}>{voted ? "✓ " : ""}{label}</p>
                             </motion.button>
-                          </>
+                            </React.Fragment>
                         ))}
                       </div>
                       <div style={{ marginBottom: 1 }}>
@@ -2344,8 +2424,11 @@ export default function DiscussionRoom({
 
                 return (
                   <motion.div key={p.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22 }}
-                    className="cursor-pointer" style={{ padding: "6px 0", borderBottom: "1px solid rgba(255,255,255,0.07)" }}
-                    onClick={() => onPostClick?.(defaultPayload)}
+                    className="cursor-pointer" style={{ padding: "8px 0", borderBottom: "1px solid rgba(255,255,255,0.07)", opacity: p.status === "sending" ? 0.6 : 1 }}
+                    onClick={() => {
+                      if (p.status === "sending" || p.status === "error") return;
+                      onPostClick?.(defaultPayload);
+                    }}
                   >
                     {renderPostHeader(p, p.type || "post", () => onFanProfile?.(p.fan))}
 
@@ -2461,10 +2544,10 @@ export default function DiscussionRoom({
                               const pctVal = optionIndex === 0 ? predAgrPct : predDisAgrPct;
                               const active = optionIndex === 0 ? userVote === "agree" : userVote === "disagree";
                               return (
-                                <motion.button key={label} disabled={predictionClosed} whileTap={!hasPredictionVoted && !predictionClosed ? { scale: 0.93 } : {}}
+                                <motion.button key={label} disabled={predictionClosed || p.status === "sending" || p.status === "error"} whileTap={(!hasPredictionVoted && !predictionClosed && p.status !== "sending" && p.status !== "error") ? { scale: 0.93 } : {}}
                                   onClick={async (e) => {
                                     e.stopPropagation();
-                                    if (hasPredictionVoted || predictionClosed) return;
+                                    if (hasPredictionVoted || predictionClosed || p.status === "sending" || p.status === "error") return;
                                     setPosts(prev => prev.map(x => x.id !== p.id ? x : { ...x, userVote: agree ? "agree" : "disagree", agreeCount: (x.agreeCount ?? 0) + (agree ? 1 : 0), disagreeCount: (x.disagreeCount ?? 0) + (!agree ? 1 : 0) }));
                                     try {
                                       await axios.post(`/api/roar/rooms/${roomId}/messages/${p.id}/vote`, { vote: agree ? "agree" : "disagree" });
@@ -2597,10 +2680,10 @@ export default function DiscussionRoom({
                               { agree: true, label: "Agree", pctVal: agrPct, active: userVote === "agree", color: "var(--accent-magenta)" },
                               { agree: false, label: "Disagree", pctVal: disAgrPct, active: userVote === "disagree", color: "var(--accent-orange)" },
                             ].map(({ agree, label, pctVal, active, color }) => (
-                              <motion.button key={label} whileTap={!hasVoted ? { scale: 0.93 } : {}}
+                              <motion.button key={label} whileTap={(!hasVoted && p.status !== "sending" && p.status !== "error") ? { scale: 0.93 } : {}}
                                 onClick={async (e) => {
                                   e.stopPropagation();
-                                  if (hasVoted) return;
+                                  if (hasVoted || p.status === "sending" || p.status === "error") return;
                                   setPosts(prev => prev.map(x => x.id !== p.id ? x : { ...x, userVote: agree ? "agree" : "disagree", agreeCount: (x.agreeCount ?? 0) + (agree ? 1 : 0), disagreeCount: (x.disagreeCount ?? 0) + (!agree ? 1 : 0) }));
                                   setOpenInlinePostId(p.id);
                                   try {
@@ -2616,7 +2699,7 @@ export default function DiscussionRoom({
                                     }
                                   } catch { onToast("Failed to submit vote"); }
                                 }}
-                                style={{ flex: 1, padding: "8px", borderRadius: 0, fontSize: 10, fontWeight: 700, cursor: hasVoted ? "default" : "pointer", border: `2.5px solid ${color}`, background: active ? color : "rgba(255,255,255,0.02)", color: active ? "white" : color, boxShadow: active ? `0 0 14px ${color}60` : "none", transition: "all 0.2s ease-in-out", display: "flex", alignItems: "center", justifyContent: "center", gap: 4, opacity: hasVoted && !active ? 0.4 : 1 }}
+                                style={{ flex: 1, padding: "8px", borderRadius: 0, fontSize: 10, fontWeight: 700, cursor: (hasVoted || p.status === "sending" || p.status === "error") ? "default" : "pointer", border: `2.5px solid ${color}`, background: active ? color : "rgba(255,255,255,0.02)", color: active ? "white" : color, boxShadow: active ? `0 0 16px ${color}60` : "none", transition: "all 0.2s ease-in-out", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, opacity: hasVoted && !active ? 0.4 : 1 }}
                               >
                                 {active ? `✓ ${agree ? "Agreed" : "Disagreed"}` : label}
                                 <span style={{ fontSize: 9, fontWeight: 800, background: active ? "rgba(255,255,255,0.2)" : `${color}22`, borderRadius: 0, padding: "1px 5px" }}>{pctVal}%</span>

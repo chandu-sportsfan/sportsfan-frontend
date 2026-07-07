@@ -4846,6 +4846,13 @@ export default function DiscussionRoom({
     const tempId = `temp-dolly-${Date.now()}`;
     setDollyReplies(prev => [...prev, { id: tempId, question: q, answer: "", createdAt: Date.now() }]);
     setDollyQuestion("");
+    if (phog) {
+      phog.capture("ask_dolly_query", {
+        query: q,
+        room_id: targetRoomId,
+        room_name: dollyActiveRoomName || roomName || ""
+      });
+    }
     try {
       const res = await axios.post(`/api/roar/rooms/${targetRoomId}/dolly`, { question: q });
       if (res.data?.success) {

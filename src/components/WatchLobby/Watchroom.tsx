@@ -2857,14 +2857,7 @@ function LiveCameraFeed({
                         key={isModerator ? 'moderator' : 'viewer'}
                         domain="meet.uxexpert.in"
                         roomName={roomName}
-                        iframeProperties={{
-                            allow: "camera; microphone; display-capture; autoplay; clipboard-write",
-                            style: {
-                                width: '100%',
-                                height: '100%',
-                                border: 'none'
-                            }
-                        }}
+
                         configOverwrite={{
                             prejoinPageEnabled: false,
                             prejoinConfig: {
@@ -4208,8 +4201,8 @@ export default function WatchRoom({ room, onBack }: Props) {
     const chatUsersList = Array.from(
         new Set(
             (chats || [])
-                .filter((c) => c.userName && c.userName.trim() !== "")
-                .map((c) => c.userName)
+                .filter((c) => c.user && c.user.trim() !== "")
+                .map((c) => c.user)
         )
     ).filter((u) => u !== userName);
     const chatOnlyUsers = chatUsersList.filter(u => !jitsiNames.has(u.toLowerCase()));

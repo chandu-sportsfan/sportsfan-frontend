@@ -1801,8 +1801,9 @@ export default function RoomPostDetailsOverlay({
             ? topReactions
             : (currentReaction ? [currentReaction] : []);
 
+        const isSending = comment.status === "sending";
         return (
-            <div key={commentId} className={isReply ? "ml-10 pl-3 border-l border-white/[0.07]" : ""}>
+            <div key={commentId} className={isReply ? "ml-10 pl-3 border-l border-white/[0.07]" : ""} style={{ opacity: isSending ? 0.6 : 1, pointerEvents: isSending ? "none" : "auto" }}>
                 <div className="flex gap-3 items-start">
                     {/* Avatar */}
                     <div
@@ -1873,13 +1874,16 @@ export default function RoomPostDetailsOverlay({
                                 <button
                                     onClick={async (e) => {
                                         e.stopPropagation();
+                                        if (comment.status === "sending") return;
                                         if (window.confirm("Delete comment?")) {
+                                            const backup = comment;
+                                            setComments(prev => prev.filter(x => (x.id || x.commentId) !== commentId));
                                             try {
                                                 await axios.delete(`/api/roar/rooms/${post.roomId}/messages/${post.id}/comments/${commentId}`);
                                                 onToast("Deleted");
-                                                fetchComments();
                                             } catch {
                                                 onToast("Failed");
+                                                setComments(prev => [...prev, backup].sort((a,b) => a.createdAt - b.createdAt));
                                             }
                                         }
                                     }}
@@ -1939,16 +1943,30 @@ export default function RoomPostDetailsOverlay({
             ? `@${replyTo.authorUsername} ${commentText.trim()}`
             : commentText.trim();
         if (!fullText) return;
+
+        const tempId = `temp-comment-${Date.now()}`;
+        const optimisticComment: any = {
+            id: tempId, commentId: tempId,
+            authorUsername: currentUsername, authorUid: currentUserId, authorAvatarUrl: currentAvatarUrl,
+            text: fullText, createdAt: Date.now(), heartCount: 0, status: "sending"
+        };
+        
+        setComments(prev => [...prev, optimisticComment]);
+        setCommentText("");
+        setReplyTo(null);
+        setTimeout(() => scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" }), 50);
+
         try {
-            setLoading(true);
             const res = await axios.post(
                 `/api/roar/rooms/${post.roomId}/messages/${post.id}/comments`,
                 { text: fullText }
             );
             if (res.data?.success) {
-                setCommentText("");
-                setReplyTo(null);
-                fetchComments();
+                const c = res.data.comment;
+                setComments(prev => {
+                    if (prev.some(x => x.id === c.commentId || x.commentId === c.commentId)) return prev.filter(x => x.id !== tempId && x.commentId !== tempId);
+                    return prev.map(x => (x.id === tempId || x.commentId === tempId) ? { ...x, id: c.commentId, commentId: c.commentId, status: "sent" } : x);
+                });
                 onToast("Comment posted!");
                 if (phog) {
                     phog.capture("post_comment", {
@@ -1957,12 +1975,13 @@ export default function RoomPostDetailsOverlay({
                         room_name: roomName || ""
                     });
                 }
-                setTimeout(() => scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" }), 400);
+            } else {
+                setComments(prev => prev.map(x => (x.id === tempId || x.commentId === tempId) ? { ...x, status: "error" } : x));
+                onToast("Error posting comment");
             }
         } catch {
+            setComments(prev => prev.map(x => (x.id === tempId || x.commentId === tempId) ? { ...x, status: "error" } : x));
             onToast("Error posting comment");
-        } finally {
-            setLoading(false);
         }
     };
 

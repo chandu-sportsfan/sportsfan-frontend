@@ -622,6 +622,8 @@ export default function ROARApp() {
   const [likingPosts, setLikingPosts] = useState<Set<string>>(new Set());
   const roomRefreshRef = useRef<(() => void) | null>(null);
   const roomReplyUpdateRef = useRef<((postId: string, count: number) => void) | null>(null);
+  const roomInjectPostRef = useRef<((post: any) => void) | null>(null);
+  const roomOptimisticSwapRef = useRef<((tempId: string, realMsg?: any) => void) | null>(null);
   // const infinityFetchedRef = useRef(false);
 
   // ── Bootstrap 
@@ -995,18 +997,36 @@ export default function ROARApp() {
         && ROOM_NATIVE.includes(postType) && !payload.quizQuestion;
 
       if (isRoomNative) {
-        // Room path unchanged — DiscussionRoom handles its own optimistic UI
         const msgTypeMap: Record<string, string> = {
           prediction: "prediction", hot_take: "hottake", hottake: "hottake",
           debate: "debate", raw_reactions: "raw_reactions", post: "post", chat: "chat",
         };
-        const res = await axios.post(`/api/roar/rooms/${selectedRoom!.roomId}/messages`, {
-          text: payload.text, type: msgTypeMap[postType] || "post",
-          mediaUrls: payload.mediaUrls, sideA: payload.sideA, sideB: payload.sideB, predictionOptions: payload.predictionOptions,
-          memGifUrl: payload.gifUrl ?? undefined, memTag: payload.sf360Tag ?? undefined,
-          ...(postType === "prediction" && { closesAt: payload.closesAt, closeAfterMinutes: payload.closeAfterMinutes }),
-        });
-        if (res.data?.success) { showToast("Post is live in room!"); roomRefreshRef.current?.(); }
+        const mappedType = msgTypeMap[postType] || "post";
+        
+        const tempId = `temp-${Date.now()}`;
+        const optimisticMsg: any = {
+          id: tempId, msgId: tempId,
+          fan: { username: currentUsername, authorUid: currentUserId, badge: userBadge, avatarUrl: currentAvatarUrl },
+          text: payload.text || "Shared media", fireCount: 0, heartCount: 0, mindblownCount: 0, goatCount: 0, clapCount: 0, nochanceCount: 0, userReaction: null, replyCount: 0, agreeCount: 0, disagreeCount: 0, userVote: null, sideA: payload.sideA || null, sideB: payload.sideB || null, timeAgo: "Sending...", createdAt: Date.now(), type: mappedType, mediaUrls: mediaUrls.length ? mediaUrls : undefined, quizQuestion: null, quizOptions: null, quizCorrectOption: null, quizUserAnswer: null, quizTimer: null, quizPoints: null, quizParticipants: 0, memGifUrl: payload.gifUrl || null, memTag: payload.sf360Tag || null, status: "sending", predictionOptions: payload.predictionOptions || null
+        };
+        
+        roomInjectPostRef.current?.(optimisticMsg);
+
+        try {
+          const res = await axios.post(`/api/roar/rooms/${selectedRoom!.roomId}/messages`, {
+            text: payload.text, type: mappedType,
+            mediaUrls: mediaUrls.length ? mediaUrls : payload.mediaUrls, sideA: payload.sideA, sideB: payload.sideB, predictionOptions: payload.predictionOptions,
+            memGifUrl: payload.gifUrl ?? undefined, memTag: payload.sf360Tag ?? undefined,
+            ...(postType === "prediction" && { closesAt: payload.closesAt, closeAfterMinutes: payload.closeAfterMinutes }),
+          });
+          if (res.data?.success) {
+            roomOptimisticSwapRef.current?.(tempId, res.data.message);
+          } else {
+            roomOptimisticSwapRef.current?.(tempId, null);
+          }
+        } catch {
+          roomOptimisticSwapRef.current?.(tempId, null);
+        }
         return;
       }
 
@@ -1054,6 +1074,11 @@ export default function ROARApp() {
       };
       showToast(toastMap[postType] || "🔥 Your take is live");
       setDbPosts(prev => [optimisticPost, ...prev]);
+
+      // If user is in a room, instantly inject the post into the DiscussionRoom feed
+      if (overlay === "room") {
+        roomInjectPostRef.current?.(optimisticPost);
+      }
 
       // ── Background API call — swaps tempId for real data on success ─────────
       try {
@@ -1250,6 +1275,8 @@ export default function ROARApp() {
                     currentAvatarUrl={currentAvatarUrl}
                     onRegisterRefresh={fn => { roomRefreshRef.current = fn; }}
                     onRegisterReplyUpdate={fn => { roomReplyUpdateRef.current = fn; }}
+                    onRegisterInjectPost={fn => { roomInjectPostRef.current = fn; }}
+                    onRegisterOptimisticSwap={fn => { roomOptimisticSwapRef.current = fn; }}
                     onFanProfile={handleFanProfileClick}
                   />
                 </motion.div>

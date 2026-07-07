@@ -634,8 +634,10 @@ export default function DollyPanel({
                                             >
                                                 <Send size={14} className={question.trim() && !loadingReplies ? "text-white" : "text-white/30"} />
                                             </motion.button>
+                                         
                                         </div>
                                     </div>
+                                       <p className="text-[8px] text-gray-300 mb-2 ml-4">Ask Dolly loves sports but isn't always right. Double-check important information.</p>
                                 </>
                             ) : (
                                 /* ── History view ── */

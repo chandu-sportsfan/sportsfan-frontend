@@ -1,7 +1,10 @@
+
 // // components/NewROARComponent/components/VotersDialog.tsx
 // //
-// // Dialog that shows who voted for each side of a debate post.
-// // Visible only to the post author. Opens from a "View Votes" button on the card.
+// // Dialog that shows who voted for each option on a debate or prediction
+// // post. Visible to everyone in the room. Opens from a "View Votes" button
+// // on the card. Works for 2-option (debate) and N-option (prediction) posts
+// // via the generic `options[]` array returned by the voters API.
 
 // "use client";
 
@@ -19,42 +22,63 @@
 //   avatarUrl?: string;
 // }
 
+// interface VoteOption {
+//   key: string;
+//   label: string;
+//   voters: Voter[];
+// }
+
 // interface VotersData {
-//   sideA: string;
-//   sideB: string;
-//   voters: {
-//     agree: Voter[];
-//     disagree: Voter[];
-//   };
+//   // Legacy fields kept for back-compat, no longer read directly by the UI
+//   sideA?: string;
+//   sideB?: string;
+//   options: VoteOption[];
+//   totalVotes: number;
 // }
 
 // interface VotersDialogProps {
 //   postId: string;
+//   roomId?: string; // when present, fetches from the room-scoped voters route
 //   isOpen: boolean;
 //   onClose: () => void;
 // }
 
+// // A small fixed palette cycled across options so any option count gets a
+// // distinct, consistent color without per-post configuration.
+// const OPTION_COLORS = ["#e91e8c", "#60a5fa", "#fbbf24", "#22c55e", "#c084fc", "#f97316"];
+// const colorFor = (idx: number) => OPTION_COLORS[idx % OPTION_COLORS.length];
+
 // // ── VotersDialog ─────────────────────────────────────────────────────────────
 
-// export default function VotersDialog({ postId, isOpen, onClose }: VotersDialogProps) {
+// export default function VotersDialog({ postId, roomId, isOpen, onClose }: VotersDialogProps) {
 //   const [data, setData] = useState<VotersData | null>(null);
 //   const [loading, setLoading] = useState(false);
 //   const [error, setError] = useState<string | null>(null);
-//   // "agree" = sideA tab, "disagree" = sideB tab
-//   const [activeTab, setActiveTab] = useState<"agree" | "disagree">("agree");
+//   const [activeKey, setActiveKey] = useState<string | null>(null);
 
 //   const fetchVoters = useCallback(async () => {
 //     if (!postId) return;
 //     setLoading(true);
 //     setError(null);
 //     try {
-//       const res = await axios.get(`/api/roar/posts/${postId}/voters`);
+//       const url = roomId
+//         ? `/api/roar/rooms/${roomId}/messages/${postId}/voters`
+//         : `/api/roar/posts/${postId}/voters`;
+//       const res = await axios.get(url);
 //       if (res.data?.success) {
-//         setData(res.data);
-//         // Default to the side with more votes
-//         const agreeCount = res.data.voters.agree.length;
-//         const disagreeCount = res.data.voters.disagree.length;
-//         setActiveTab(disagreeCount > agreeCount ? "disagree" : "agree");
+//         // Back-compat: older room-less responses may only send
+//         // sideA/sideB/voters.agree/disagree — normalize into options[].
+//         const options: VoteOption[] = Array.isArray(res.data.options)
+//           ? res.data.options
+//           : [
+//               { key: "agree", label: res.data.sideA ?? "Side A", voters: res.data.voters?.agree ?? [] },
+//               { key: "disagree", label: res.data.sideB ?? "Side B", voters: res.data.voters?.disagree ?? [] },
+//             ];
+//         const totalVotes = res.data.totalVotes ?? options.reduce((sum, o) => sum + o.voters.length, 0);
+//         setData({ sideA: res.data.sideA, sideB: res.data.sideB, options, totalVotes });
+//         // Default to the option with the most votes
+//         const top = [...options].sort((a, b) => b.voters.length - a.voters.length)[0];
+//         setActiveKey(top?.key ?? options[0]?.key ?? null);
 //       } else {
 //         setError("Failed to load voters");
 //       }
@@ -63,7 +87,7 @@
 //     } finally {
 //       setLoading(false);
 //     }
-//   }, [postId]);
+//   }, [postId, roomId]);
 
 //   useEffect(() => {
 //     if (isOpen) fetchVoters();
@@ -71,22 +95,16 @@
 //       // Reset on close so next open starts fresh
 //       setData(null);
 //       setError(null);
+//       setActiveKey(null);
 //     }
 //   }, [isOpen, fetchVoters]);
 
-//   const activeVoters = data
-//     ? activeTab === "agree"
-//       ? data.voters.agree
-//       : data.voters.disagree
-//     : [];
-
-//   const sideALabel = data?.sideA ?? "Side A";
-//   const sideBLabel = data?.sideB ?? "Side B";
-//   const agreeCount = data?.voters.agree.length ?? 0;
-//   const disagreeCount = data?.voters.disagree.length ?? 0;
-//   const totalVotes = agreeCount + disagreeCount;
-//   const agrPct = totalVotes > 0 ? Math.round((agreeCount / totalVotes) * 100) : 50;
-//   const disPct = 100 - agrPct;
+//   const options = data?.options ?? [];
+//   const activeIndex = options.findIndex((o) => o.key === activeKey);
+//   const activeOption = activeIndex >= 0 ? options[activeIndex] : undefined;
+//   const activeVoters = activeOption?.voters ?? [];
+//   const activeColor = activeIndex >= 0 ? colorFor(activeIndex) : OPTION_COLORS[0];
+//   const totalVotes = data?.totalVotes ?? 0;
 
 //   return (
 //     <AnimatePresence>
@@ -175,54 +193,59 @@
 //               </button>
 //             </div>
 
-//             {/* Split bar */}
+//             {/* Split bar — proportional segments per option */}
 //             {data && totalVotes > 0 && (
 //               <div style={{ padding: "12px 18px 0" }}>
 //                 <div style={{
 //                   display: "flex", borderRadius: 999, overflow: "hidden",
 //                   height: 7, background: "rgba(255,255,255,0.06)",
 //                 }}>
-//                   <motion.div
-//                     initial={{ width: 0 }}
-//                     animate={{ width: `${agrPct}%` }}
-//                     transition={{ duration: 0.5, ease: "easeOut" }}
-//                     style={{ background: "var(--accent-magenta, #e91e8c)", height: "100%" }}
-//                   />
-//                   <motion.div
-//                     initial={{ width: 0 }}
-//                     animate={{ width: `${disPct}%` }}
-//                     transition={{ duration: 0.5, ease: "easeOut" }}
-//                     style={{ background: "#60a5fa", height: "100%" }}
-//                   />
+//                   {options.map((opt, idx) => {
+//                     const pct = totalVotes > 0 ? (opt.voters.length / totalVotes) * 100 : 0;
+//                     if (pct === 0) return null;
+//                     return (
+//                       <motion.div
+//                         key={opt.key}
+//                         initial={{ width: 0 }}
+//                         animate={{ width: `${pct}%` }}
+//                         transition={{ duration: 0.5, ease: "easeOut" }}
+//                         style={{ background: colorFor(idx), height: "100%" }}
+//                       />
+//                     );
+//                   })}
 //                 </div>
-//                 <div style={{ display: "flex", justifyContent: "space-between", marginTop: 5 }}>
-//                   <span style={{ fontSize: 11, fontWeight: 700, color: "var(--accent-magenta, #e91e8c)" }}>{agrPct}%</span>
-//                   <span style={{ fontSize: 11, fontWeight: 700, color: "#60a5fa" }}>{disPct}%</span>
+//                 <div style={{ display: "flex", justifyContent: "space-between", marginTop: 5, flexWrap: "wrap", gap: 4 }}>
+//                   {options.map((opt, idx) => {
+//                     const pct = totalVotes > 0 ? Math.round((opt.voters.length / totalVotes) * 100) : 0;
+//                     return (
+//                       <span key={opt.key} style={{ fontSize: 11, fontWeight: 700, color: colorFor(idx) }}>
+//                         {pct}%
+//                       </span>
+//                     );
+//                   })}
 //                 </div>
 //               </div>
 //             )}
 
-//             {/* Tab switcher */}
-//             {data && (
-//               <div style={{ display: "flex", gap: 8, padding: "10px 18px 0" }}>
-//                 {(["agree", "disagree"] as const).map((tab) => {
-//                   const isActive = activeTab === tab;
-//                   const label = tab === "agree" ? sideALabel : sideBLabel;
-//                   const count = tab === "agree" ? agreeCount : disagreeCount;
-//                   const color = tab === "agree" ? "var(--accent-magenta, #e91e8c)" : "#60a5fa";
-//                   const activeBg = tab === "agree"
-//                     ? "rgba(233,30,140,0.15)"
-//                     : "rgba(96,165,250,0.15)";
+//             {/* Tab switcher — wraps to a second row when there are more than
+//                 a couple options, so N-option predictions stay usable */}
+//             {data && options.length > 0 && (
+//               <div style={{ display: "flex", gap: 8, padding: "10px 18px 0", flexWrap: "wrap" }}>
+//                 {options.map((opt, idx) => {
+//                   const isActive = activeKey === opt.key;
+//                   const color = colorFor(idx);
 //                   return (
 //                     <motion.button
-//                       key={tab}
+//                       key={opt.key}
 //                       whileTap={{ scale: 0.96 }}
-//                       onClick={() => setActiveTab(tab)}
+//                       onClick={() => setActiveKey(opt.key)}
 //                       style={{
-//                         flex: 1, padding: "9px 12px",
+//                         flex: options.length <= 2 ? 1 : "1 1 calc(50% - 4px)",
+//                         minWidth: options.length <= 2 ? undefined : 100,
+//                         padding: "9px 12px",
 //                         borderRadius: 12,
 //                         border: `1.5px solid ${isActive ? color : "rgba(255,255,255,0.08)"}`,
-//                         background: isActive ? activeBg : "rgba(255,255,255,0.03)",
+//                         background: isActive ? `${color}26` : "rgba(255,255,255,0.03)",
 //                         color: isActive ? color : "rgba(255,255,255,0.45)",
 //                         fontWeight: 700, fontSize: 12,
 //                         cursor: "pointer",
@@ -234,7 +257,7 @@
 //                         overflow: "hidden", textOverflow: "ellipsis",
 //                         whiteSpace: "nowrap", maxWidth: "100%",
 //                       }}>
-//                         {label}
+//                         {opt.label}
 //                       </span>
 //                       <span style={{
 //                         fontSize: 16, fontWeight: 800,
@@ -242,7 +265,7 @@
 //                         fontFamily: "'Bebas Neue', sans-serif",
 //                         letterSpacing: "0.03em",
 //                       }}>
-//                         {count}
+//                         {opt.voters.length}
 //                       </span>
 //                     </motion.button>
 //                   );
@@ -284,7 +307,7 @@
 //                   textAlign: "center", padding: "40px 0",
 //                   color: "rgba(255,255,255,0.3)", fontSize: 13, fontWeight: 500,
 //                 }}>
-//                   No votes for {activeTab === "agree" ? sideALabel : sideBLabel} yet
+//                   No votes for {activeOption?.label ?? "this option"} yet
 //                 </div>
 //               )}
 
@@ -293,10 +316,10 @@
 //                 <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
 //                   <AnimatePresence mode="wait">
 //                     <motion.div
-//                       key={activeTab}
-//                       initial={{ opacity: 0, x: activeTab === "agree" ? -12 : 12 }}
+//                       key={activeKey}
+//                       initial={{ opacity: 0, x: 12 }}
 //                       animate={{ opacity: 1, x: 0 }}
-//                       exit={{ opacity: 0, x: activeTab === "agree" ? 12 : -12 }}
+//                       exit={{ opacity: 0, x: -12 }}
 //                       transition={{ duration: 0.18 }}
 //                       style={{ display: "flex", flexDirection: "column", gap: 4 }}
 //                     >
@@ -331,19 +354,16 @@
 //                           <span style={{
 //                             fontSize: 10, fontWeight: 800,
 //                             padding: "2px 8px", borderRadius: 999,
-//                             background: activeTab === "agree"
-//                               ? "rgba(233,30,140,0.12)"
-//                               : "rgba(96,165,250,0.12)",
-//                             color: activeTab === "agree"
-//                               ? "var(--accent-magenta, #e91e8c)"
-//                               : "#60a5fa",
-//                             border: `1px solid ${activeTab === "agree"
-//                               ? "rgba(233,30,140,0.25)"
-//                               : "rgba(96,165,250,0.25)"}`,
+//                             background: `${activeColor}1F`,
+//                             color: activeColor,
+//                             border: `1px solid ${activeColor}40`,
 //                             whiteSpace: "nowrap",
 //                             flexShrink: 0,
+//                             maxWidth: 120,
+//                             overflow: "hidden",
+//                             textOverflow: "ellipsis",
 //                           }}>
-//                             {activeTab === "agree" ? sideALabel : sideBLabel}
+//                             {activeOption?.label}
 //                           </span>
 //                         </motion.div>
 //                       ))}
@@ -368,6 +388,11 @@
 // post. Visible to everyone in the room. Opens from a "View Votes" button
 // on the card. Works for 2-option (debate) and N-option (prediction) posts
 // via the generic `options[]` array returned by the voters API.
+//
+// mode="debate" collapses everything into one flat "who voted" list — no
+// tabs, no split bar, no per-row side badge — since for debates the ask is
+// just "who's in this thread," not a side breakdown. mode="prediction"
+// (or omitting mode) keeps the original tabbed/split-bar UI.
 
 "use client";
 
@@ -404,6 +429,11 @@ interface VotersDialogProps {
   roomId?: string; // when present, fetches from the room-scoped voters route
   isOpen: boolean;
   onClose: () => void;
+  // "debate" collapses the per-side tabs/split-bar into one flat list of
+  // every voter regardless of side — debates just need "who voted," not a
+  // side breakdown in the UI. Omit (or pass "prediction") to keep the
+  // existing tabbed/split-bar behavior for N-option predictions.
+  mode?: "debate" | "prediction";
 }
 
 // A small fixed palette cycled across options so any option count gets a
@@ -413,11 +443,13 @@ const colorFor = (idx: number) => OPTION_COLORS[idx % OPTION_COLORS.length];
 
 // ── VotersDialog ─────────────────────────────────────────────────────────────
 
-export default function VotersDialog({ postId, roomId, isOpen, onClose }: VotersDialogProps) {
+export default function VotersDialog({ postId, roomId, isOpen, onClose, mode = "prediction" }: VotersDialogProps) {
   const [data, setData] = useState<VotersData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeKey, setActiveKey] = useState<string | null>(null);
+
+  const isFlat = mode === "debate";
 
   const fetchVoters = useCallback(async () => {
     if (!postId) return;
@@ -465,9 +497,23 @@ export default function VotersDialog({ postId, roomId, isOpen, onClose }: Voters
   const options = data?.options ?? [];
   const activeIndex = options.findIndex((o) => o.key === activeKey);
   const activeOption = activeIndex >= 0 ? options[activeIndex] : undefined;
-  const activeVoters = activeOption?.voters ?? [];
-  const activeColor = activeIndex >= 0 ? colorFor(activeIndex) : OPTION_COLORS[0];
   const totalVotes = data?.totalVotes ?? 0;
+
+  // Flat (debate) mode: merge every option's voters into one list, dedupe
+  // by uid (shouldn't normally collide across sides, but a voter switching
+  // sides mid-thread could otherwise appear twice), sorted alphabetically
+  // so the list is stable across re-fetches rather than "most recent side
+  // first."
+  const flatVoters: Voter[] = isFlat
+    ? Array.from(
+        new Map(
+          options.flatMap((o) => o.voters).map((v) => [v.uid, v])
+        ).values()
+      ).sort((a, b) => a.username.localeCompare(b.username))
+    : [];
+
+  const activeVoters = isFlat ? flatVoters : (activeOption?.voters ?? []);
+  const activeColor = activeIndex >= 0 ? colorFor(activeIndex) : OPTION_COLORS[0];
 
   return (
     <AnimatePresence>
@@ -556,8 +602,9 @@ export default function VotersDialog({ postId, roomId, isOpen, onClose }: Voters
               </button>
             </div>
 
-            {/* Split bar — proportional segments per option */}
-            {data && totalVotes > 0 && (
+            {/* Split bar — proportional segments per option. Skipped in flat
+                (debate) mode — there's nothing to split, it's one list. */}
+            {!isFlat && data && totalVotes > 0 && (
               <div style={{ padding: "12px 18px 0" }}>
                 <div style={{
                   display: "flex", borderRadius: 999, overflow: "hidden",
@@ -591,8 +638,9 @@ export default function VotersDialog({ postId, roomId, isOpen, onClose }: Voters
             )}
 
             {/* Tab switcher — wraps to a second row when there are more than
-                a couple options, so N-option predictions stay usable */}
-            {data && options.length > 0 && (
+                a couple options, so N-option predictions stay usable.
+                Skipped in flat (debate) mode. */}
+            {!isFlat && data && options.length > 0 && (
               <div style={{ display: "flex", gap: 8, padding: "10px 18px 0", flexWrap: "wrap" }}>
                 {options.map((opt, idx) => {
                   const isActive = activeKey === opt.key;
@@ -670,7 +718,7 @@ export default function VotersDialog({ postId, roomId, isOpen, onClose }: Voters
                   textAlign: "center", padding: "40px 0",
                   color: "rgba(255,255,255,0.3)", fontSize: 13, fontWeight: 500,
                 }}>
-                  No votes for {activeOption?.label ?? "this option"} yet
+                  {isFlat ? "No votes yet" : `No votes for ${activeOption?.label ?? "this option"} yet`}
                 </div>
               )}
 
@@ -679,7 +727,7 @@ export default function VotersDialog({ postId, roomId, isOpen, onClose }: Voters
                 <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                   <AnimatePresence mode="wait">
                     <motion.div
-                      key={activeKey}
+                      key={isFlat ? "flat" : activeKey}
                       initial={{ opacity: 0, x: 12 }}
                       animate={{ opacity: 1, x: 0 }}
                       exit={{ opacity: 0, x: -12 }}
@@ -714,20 +762,25 @@ export default function VotersDialog({ postId, roomId, isOpen, onClose }: Voters
                               {voter.username}
                             </p>
                           </div>
-                          <span style={{
-                            fontSize: 10, fontWeight: 800,
-                            padding: "2px 8px", borderRadius: 999,
-                            background: `${activeColor}1F`,
-                            color: activeColor,
-                            border: `1px solid ${activeColor}40`,
-                            whiteSpace: "nowrap",
-                            flexShrink: 0,
-                            maxWidth: 120,
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                          }}>
-                            {activeOption?.label}
-                          </span>
+                          {/* Side/option badge only makes sense when grouped —
+                              omitted entirely in flat (debate) mode per "just
+                              show the username list." */}
+                          {!isFlat && (
+                            <span style={{
+                              fontSize: 10, fontWeight: 800,
+                              padding: "2px 8px", borderRadius: 999,
+                              background: `${activeColor}1F`,
+                              color: activeColor,
+                              border: `1px solid ${activeColor}40`,
+                              whiteSpace: "nowrap",
+                              flexShrink: 0,
+                              maxWidth: 120,
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                            }}>
+                              {activeOption?.label}
+                            </span>
+                          )}
                         </motion.div>
                       ))}
                     </motion.div>

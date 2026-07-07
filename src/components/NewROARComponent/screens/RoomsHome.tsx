@@ -363,16 +363,18 @@ const SPORT_GRADIENT: Record<string, string> = {
 };
 
 const SPORT_IMAGE: Record<string, string> = {
-  cricket:  "/images/cricket2.png",
-  football: "/images/fifa1.png",
-  default:  "/images/fifa1.png",
+  cricket:  "/images/cricket3.png",
+  football: "/images/fifa2.png",
+  default:  "/images/fifa2.png",
 };
 
 const INFINITY_ROOM_ID = "vZFu6xEApNRd1aUbDuHW";
 
 // Temporary: only this room is shown, everything else is hidden.
 // Revert by restoring the old mock-room exclusion filter in `allRooms` below.
-const ONLY_VISIBLE_ROOM_ID = "pqFybpZYbhMidzwfoyVy";
+// const ONLY_VISIBLE_ROOM_ID = "2yQvtie7nIcWXDA2iUDj && biDY0WLIZB7wBCaE2Ppx";
+const VISIBLE_ROOM_IDS = ["2yQvtie7nIcWXDA2iUDj", "biDY0WLIZB7wBCaE2Ppx"];
+
 
 interface ActiveFan {
   uid: string;
@@ -613,8 +615,8 @@ export default function RoomsHome({ rooms, onJoinRoom, onToast }: Props) {
 
   // Temporary: only ONLY_VISIBLE_ROOM_ID is shown, everything else is hidden.
   const allRooms = rooms.filter(
-    (r) => r.roomId === ONLY_VISIBLE_ROOM_ID
-  );
+  (r) => VISIBLE_ROOM_IDS.includes(r.roomId)
+);
 
   useEffect(() => {
     const roomIds = allRooms.map((r) => r.roomId);

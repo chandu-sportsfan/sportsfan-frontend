@@ -1136,6 +1136,40 @@ export default function DiscussionRoom({
   const [votersMode, setVotersMode] = useState<"debate" | "prediction">("prediction");
   const lastLocalReactAtRef = useRef<Record<string, number>>({});
 
+  // Tracks uids we've already seen in this room so we only toast on *new* arrivals,
+  // not on the initial fan list when we ourselves join.
+  const knownFanUidsRef = useRef<Set<string> | null>(null);
+  const presenceRequestSeqRef = useRef(0);
+const presenceBootstrapTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [joinToast, setJoinToast] = useState<{ username: string } | null>(null);
+  const joinToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const joinToastQueueRef = useRef<string[]>([]);
+  const joinToastActiveRef = useRef(false);
+
+  const showNextJoinToast = useCallback(() => {
+    if (joinToastActiveRef.current) return;
+    const next = joinToastQueueRef.current.shift();
+    if (!next) return;
+    joinToastActiveRef.current = true;
+    setJoinToast({ username: next });
+    if (joinToastTimerRef.current) clearTimeout(joinToastTimerRef.current);
+    joinToastTimerRef.current = setTimeout(() => {
+      setJoinToast(null);
+      joinToastActiveRef.current = false;
+      showNextJoinToast(); // show the next queued joiner, if any
+    }, 2800);
+  }, []);
+
+  const queueJoinToast = useCallback((username: string) => {
+    joinToastQueueRef.current.push(username);
+    showNextJoinToast();
+  }, [showNextJoinToast]);
+
+  // Diff the latest fans list against what we've already seen for this room.
+  // First call just establishes the baseline silently (so you don't get a
+  // flood of "X has joined" for everyone already in the room when you arrive).
+
+
   useEffect(() => {
     dollyActiveRoomIdRef.current = dollyActiveRoomId;
   }, [dollyActiveRoomId]);
@@ -1167,6 +1201,29 @@ export default function DiscussionRoom({
     const authorCandidates = [post.authorUid, post.fan?.authorUid, post.authorEmail].filter(Boolean).map(String);
     return authorCandidates.some(id => currentUserIdCandidates.includes(id));
   };
+
+  const detectNewJoiners = useCallback((fans: { uid: string; username: string }[]) => {
+  if (!knownFanUidsRef.current) {
+    knownFanUidsRef.current = new Set(fans.map(f => f.uid));
+    return;
+  }
+  const seen = knownFanUidsRef.current;
+  const newcomers = fans.filter(f => f.uid !== currentUserId && !seen.has(f.uid));
+  seen.forEach(() => {}); // no-op, just keeping structure clear
+  fans.forEach(f => seen.add(f.uid));
+  newcomers.forEach(f => queueJoinToast(displayUsername(f.username)));
+}, [currentUserId, queueJoinToast]);
+
+// NEW — single function that both the header state AND the toast derive from
+const applyPresenceResponse = useCallback((seq: number, data: any) => {
+  if (seq !== presenceRequestSeqRef.current) return; // drop stale/out-of-order response
+  const fans = data.fans ?? [];
+  setActiveFans(fans);
+  setLiveCount(data.fanCount ?? 0);
+  if (data.totalJoinCount !== undefined) setTotalJoinCount(data.totalJoinCount);
+  setPinnedPost(data.pinnedPost ?? null);
+  detectNewJoiners(fans);
+}, [detectNewJoiners]);
 
   const latestCreatedAtRef = useRef<number | null>(null);
   const sendingRef = useRef(false);
@@ -1431,51 +1488,98 @@ export default function DiscussionRoom({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // const refreshActiveFans = useCallback(async () => {
+  //   if (!roomId) return;
+  //   try {
+  //     const res = await axios.get(`/api/roar/rooms/${roomId}/presence`);
+  //     if (res.data?.success) {
+  //       setActiveFans(res.data.fans ?? []);
+  //       setLiveCount(res.data.fanCount ?? 0);
+  //       detectNewJoiners(res.data.fans ?? []);
+  //       if (res.data.totalJoinCount !== undefined) setTotalJoinCount(res.data.totalJoinCount);
+  //       setPinnedPost(res.data.pinnedPost ?? null);
+  //     }
+  //   } catch (e) { console.error("Active fans fetch failed:", e); }
+  // }, [roomId, detectNewJoiners]);
+
   const refreshActiveFans = useCallback(async () => {
-    if (!roomId) return;
-    try {
-      const res = await axios.get(`/api/roar/rooms/${roomId}/presence`);
-      if (res.data?.success) {
-        setActiveFans(res.data.fans ?? []);
-        setLiveCount(res.data.fanCount ?? 0);
-        if (res.data.totalJoinCount !== undefined) setTotalJoinCount(res.data.totalJoinCount);
-        setPinnedPost(res.data.pinnedPost ?? null);
-      }
-    } catch (e) { console.error("Active fans fetch failed:", e); }
-  }, [roomId]);
+  if (!roomId) return;
+  const seq = ++presenceRequestSeqRef.current;
+  try {
+    const res = await axios.get(`/api/roar/rooms/${roomId}/presence`);
+    if (res.data?.success) applyPresenceResponse(seq, res.data);
+  } catch (e) { console.error("Active fans fetch failed:", e); }
+}, [roomId, applyPresenceResponse]);
+
+  // useEffect(() => {
+  //   if (!roomId) return;
+  //   setActiveFans([]); setLiveCount(0); setTotalJoinCount(0);
+  //   const join = async () => {
+  //     try {
+  //       const res = await axios.post(`/api/roar/rooms/${roomId}/presence`);
+  //       if (res.data?.success) {
+  //         setLiveCount(res.data.fanCount);
+  //         console.log('fans from presence:', res.data.fans)
+  //         setActiveFans(res.data.fans ?? []);
+  //         detectNewJoiners(res.data.fans ?? []);
+  //         if (res.data.totalJoinCount !== undefined) setTotalJoinCount(res.data.totalJoinCount);
+  //         setPinnedPost(res.data.pinnedPost ?? null);
+  //       }
+  //     } catch (e) { console.error("Join failed:", e); }
+  //   };
+
+  //   const refreshActiveFans = async () => {
+  //     try {
+  //       const res = await axios.get(`/api/roar/rooms/${roomId}/presence`);
+  //       if (res.data?.success) {
+  //         setActiveFans(res.data.fans ?? []);
+  //         setLiveCount(res.data.fanCount ?? 0);
+  //         console.log('fans from presence:', res.data.fans)
+  //         detectNewJoiners(res.data.fans ?? []);
+  //         if (res.data.totalJoinCount !== undefined) setTotalJoinCount(res.data.totalJoinCount);
+  //         setPinnedPost(res.data.pinnedPost ?? null);
+  //       }
+  //     } catch (e) { console.error("Active fans fetch failed:", e); }
+  //   };
+  //   const leaveBeacon = () => { navigator.sendBeacon(`/api/roar/rooms/${roomId}/presence/leave`); };
+  //   const leaveAxios = () => { axios.delete(`/api/roar/rooms/${roomId}/presence`).catch(() => { }); };
+  //   join().then(() => setTimeout(refreshActiveFans, 2000));
+  //   const heartbeat = setInterval(() => { if (!document.hidden) join(); }, 30000);
+  //   const fanRefresh = setInterval(() => { if (!document.hidden) refreshActiveFans(); }, 120000);
+  //   window.addEventListener("beforeunload", leaveBeacon);
+  //   return () => { leaveAxios(); clearInterval(heartbeat); clearInterval(fanRefresh); window.removeEventListener("beforeunload", leaveBeacon); };
+  // }, [roomId, detectNewJoiners]);
 
   useEffect(() => {
-    if (!roomId) return;
-    setActiveFans([]); setLiveCount(0); setTotalJoinCount(0);
-    const join = async () => {
-      try {
-        const res = await axios.post(`/api/roar/rooms/${roomId}/presence`);
-        if (res.data?.success) {
-          setLiveCount(res.data.fanCount);
-          if (res.data.totalJoinCount !== undefined) setTotalJoinCount(res.data.totalJoinCount);
-          setPinnedPost(res.data.pinnedPost ?? null);
-        }
-      } catch (e) { console.error("Join failed:", e); }
-    };
-    const refreshActiveFans = async () => {
-      try {
-        const res = await axios.get(`/api/roar/rooms/${roomId}/presence`);
-        if (res.data?.success) {
-          setActiveFans(res.data.fans ?? []);
-          setLiveCount(res.data.fanCount ?? 0);
-          if (res.data.totalJoinCount !== undefined) setTotalJoinCount(res.data.totalJoinCount);
-          setPinnedPost(res.data.pinnedPost ?? null);
-        }
-      } catch (e) { console.error("Active fans fetch failed:", e); }
-    };
-    const leaveBeacon = () => { navigator.sendBeacon(`/api/roar/rooms/${roomId}/presence/leave`); };
-    const leaveAxios = () => { axios.delete(`/api/roar/rooms/${roomId}/presence`).catch(() => { }); };
-    join().then(() => setTimeout(refreshActiveFans, 2000));
-    const heartbeat = setInterval(() => { if (!document.hidden) join(); }, 30000);
-    const fanRefresh = setInterval(() => { if (!document.hidden) refreshActiveFans(); }, 120000);
-    window.addEventListener("beforeunload", leaveBeacon);
-    return () => { leaveAxios(); clearInterval(heartbeat); clearInterval(fanRefresh); window.removeEventListener("beforeunload", leaveBeacon); };
-  }, [roomId]);
+  if (!roomId) return;
+  setActiveFans([]); setLiveCount(0); setTotalJoinCount(0);
+
+  const join = async () => {
+    const seq = ++presenceRequestSeqRef.current;
+    try {
+      const res = await axios.post(`/api/roar/rooms/${roomId}/presence`);
+      if (res.data?.success) applyPresenceResponse(seq, res.data);
+    } catch (e) { console.error("Join failed:", e); }
+  };
+
+  const leaveBeacon = () => { navigator.sendBeacon(`/api/roar/rooms/${roomId}/presence/leave`); };
+  const leaveAxios = () => { axios.delete(`/api/roar/rooms/${roomId}/presence`).catch(() => { }); };
+
+  join();
+  presenceBootstrapTimeoutRef.current = setTimeout(refreshActiveFans, 2000);
+
+  const heartbeat = setInterval(() => { if (!document.hidden) join(); }, 30000);
+  const fanRefresh = setInterval(() => { if (!document.hidden) refreshActiveFans(); }, 120000);
+  window.addEventListener("beforeunload", leaveBeacon);
+
+  return () => {
+    leaveAxios();
+    clearInterval(heartbeat);
+    clearInterval(fanRefresh);
+    if (presenceBootstrapTimeoutRef.current) clearTimeout(presenceBootstrapTimeoutRef.current);
+    window.removeEventListener("beforeunload", leaveBeacon);
+  };
+}, [roomId, applyPresenceResponse, refreshActiveFans]);
 
   useEffect(() => {
     try {
@@ -1548,6 +1652,10 @@ export default function DiscussionRoom({
     setTopReactionsMap({});
     setOpenInlinePostId(null);
     setActiveFilter("all");
+    knownFanUidsRef.current = null;
+    presenceRequestSeqRef.current = 0; 
+    joinToastQueueRef.current = [];
+    setJoinToast(null);
   }, [roomId]);
   useEffect(() => { if (!roomId) return; fetchMsgs(); }, [fetchMsgs, roomId]);
   useVisibilityInterval(fetchMsgs, 15000);
@@ -1767,8 +1875,9 @@ export default function DiscussionRoom({
     if (!text && !attachedUrl) return;
     if (sendingRef.current) return;
     sendingRef.current = true; setIsSending(true);
+    const clientMsgId = `${currentUserId || "anon"}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     try {
-      const res = await axios.post(`/api/roar/rooms/${roomId}/messages`, { text: text || "Shared media", type: mode, mediaUrls: attachedUrl ? [attachedUrl] : undefined });
+      const res = await axios.post(`/api/roar/rooms/${roomId}/messages`, { text: text || "Shared media", type: mode, mediaUrls: attachedUrl ? [attachedUrl] : undefined, clientMsgId, });
       if (res.data?.success) {
         const m = res.data.message;
         setPosts(p => [...p, { id: m.msgId, fan: { username: displayUsername(m.authorUsername), authorUid: m.authorUid, badge: m.authorBadge, avatarUrl: m.authorAvatarUrl || m.avatarUrl || (m.authorUsername === userUsername ? userAvatarUrl : undefined) }, text: m.text, fireCount: m.fireCount ?? 0, heartCount: m.heartCount ?? 0, mindblownCount: m.mindblownCount ?? 0, goatCount: m.goatCount ?? 0, clapCount: m.clapCount ?? 0, nochanceCount: m.noChanceCount ?? 0, userReaction: null, replyCount: 0, agreeCount: 0, disagreeCount: 0, userVote: null, sideA: m.sideA ?? null, sideB: m.sideB ?? null, timeAgo: "now", createdAt: m.createdAt || Date.now(), type: m.type, mediaUrls: m.mediaUrls, quizQuestion: m.quizQuestion, quizOptions: m.quizOptions, quizCorrectOption: m.quizCorrectOption, quizUserAnswer: m.quizUserAnswer ?? null, quizTimer: m.quizTimer, quizPoints: m.quizPoints, quizParticipants: m.quizParticipants ?? 0, memGifUrl: m.memGifUrl ?? null, memTag: m.memTag ?? null }]);
@@ -2807,7 +2916,13 @@ export default function DiscussionRoom({
                   disabled={uploading || postCooldown > 0}
                   value={input}
                   onChange={e => setInput(e.target.value)}
-                  onKeyDown={e => e.key === "Enter" && send()}
+                  // onKeyDown={e => e.key === "Enter" && send()}
+                  onKeyDown={e => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      send();
+                    }
+                  }}
                   placeholder={postCooldown > 0 ? `Wait ${postCooldown}s before posting …` : ""}
                   className="w-full h-8 rounded-[16px] bg-[var(--bg-secondary)] border border-[var(--border)] pl-2.5 pr-2.5 text-white text-xs outline-none"
                   style={{ opacity: postCooldown > 0 ? 0.5 : 1 }}
@@ -2872,6 +2987,24 @@ export default function DiscussionRoom({
             <span style={{ fontSize: 10, flexShrink: 0 }}>{notifToast.type === "comment" ? "💬" : "❤️"}</span>
             <span style={{ fontSize: 11, fontWeight: 600, color: "#fff", wordBreak: "break-word" }}>{notifToast.message}</span>
             <span style={{ fontSize: 10, color: "rgba(255,255,255,0.6)", flexShrink: 0, marginLeft: 3 }}>tap to dismiss</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {joinToast && (
+          <motion.div
+            key={joinToast.username + Date.now()}
+            initial={{ opacity: 0, y: -30, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.96 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            className="fixed top-3.5 left-0 right-0 mx-auto w-fit max-w-[88vw] sm:max-w-[340px] z-[100] flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-emerald-500/90 backdrop-blur-md border border-emerald-500/50 shadow-[0_8px_24px_rgba(34,197,94,0.3)]"
+          >
+            <span className="text-[11px] shrink-0">👋</span>
+            <span className="text-[11px] font-bold text-white whitespace-nowrap overflow-hidden text-ellipsis">
+              {joinToast.username} has joined
+            </span>
           </motion.div>
         )}
       </AnimatePresence>

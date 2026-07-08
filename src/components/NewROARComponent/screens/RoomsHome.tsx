@@ -341,11 +341,10 @@
 
 
 
-
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
-import { Share2 } from "lucide-react";
+import { Share2, Download } from "lucide-react";
 import type { Room } from "../types";
 
 const SPORT_GRADIENT: Record<string, string> = {
@@ -366,6 +365,9 @@ const INFINITY_ROOM_ID = "vZFu6xEApNRd1aUbDuHW";
 // Revert by restoring the old mock-room exclusion filter in `allRooms` below.
 // const ONLY_VISIBLE_ROOM_ID = "2yQvtie7nIcWXDA2iUDj && biDY0WLIZB7wBCaE2Ppx";
 const VISIBLE_ROOM_IDS = ["2yQvtie7nIcWXDA2iUDj", "biDY0WLIZB7wBCaE2Ppx"];
+
+// Background template used for the room stats share card.
+const SHARE_CARD_BG = "/images/roomprofilecard.png";
 
 interface ActiveFan {
   uid: string;
@@ -415,6 +417,56 @@ function buildRoomShareText(room: Room, counts: RoomCounts, shareUrl: string) {
     `Join the room 👉 ${shareUrl}`,
     "#StartRoaring #Sportsfan360",
   ].join("\n");
+}
+
+function shareFileName(room: Room) {
+  return `${room.name.replace(/\s+/g, "-").toLowerCase()}-stats.png`;
+}
+
+/** Draws the room's stats onto the roomprofilecard.png background and resolves a PNG blob. */
+function generateRoomShareCard(bgImg: HTMLImageElement, room: Room, counts: RoomCounts): Promise<Blob | null> {
+  return new Promise((resolve) => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 1340;
+    canvas.height = 752;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return resolve(null);
+
+    try {
+      ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
+    } catch (e) {
+      console.error("[RoomsHome] Canvas draw failed:", e);
+      return resolve(null);
+    }
+
+    // Room name
+    ctx.font = "bold 46px Arial";
+    ctx.fillStyle = "#ffffff";
+    ctx.textAlign = "center";
+    ctx.fillText(room.name, canvas.width / 2, 130);
+
+    const stats = [
+      { label: "POSTS", value: counts.post, x: 140, color: "#E91E8C" },
+      { label: "DEBATES", value: counts.debate, x: 400, color: "#60A5FA" },
+      { label: "PREDICTIONS", value: counts.prediction, x: 670, color: "#FBBF24" },
+      { label: "TRIVIA", value: counts.trivia, x: 970, color: "#22C55E" },
+      { label: "BATTLES", value: counts.battle, x: 1230, color: "#F97316" },
+    ];
+
+    stats.forEach(({ label, value, x, color }) => {
+      const y = 530;
+      ctx.font = "bold 72px Arial";
+      ctx.fillStyle = color;
+      ctx.textAlign = "center";
+      ctx.fillText(String(value), x, y);
+
+      ctx.font = "bold 20px Arial";
+      ctx.fillStyle = "#ffffff";
+      ctx.fillText(label, x, y + 40);
+    });
+
+    canvas.toBlob((blob) => resolve(blob), "image/png", 0.95);
+  });
 }
 
 function StackedAvatars({
@@ -553,6 +605,7 @@ function RoomCard({
   onToast,
   presence,
   onShare,
+  sharingRoomId,
 }: {
   room: Room;
   index: number;
@@ -560,6 +613,7 @@ function RoomCard({
   onToast: (m: string) => void;
   presence?: { fanCount: number; fans: ActiveFan[]; totalJoinCount?: number };
   onShare: (room: Room) => void;
+  sharingRoomId?: string | null;
 }) {
   const isFuture =
     room.scheduledStartTime !== undefined &&
@@ -621,7 +675,7 @@ function RoomCard({
               onJoin(room);
             }}
             className={[
-              "flex-1 py-1 rounded-full text-[13px] font-bold transition-colors duration-150",
+              "flex-1 py-2.5 rounded-full text-[13px] font-bold transition-colors duration-150",
               isFuture
                 ? "border border-white/20 text-white/30 cursor-not-allowed bg-transparent"
                 : "border border-white/20 text-white cursor-pointer bg-transparent hover:border-white/40",
@@ -634,12 +688,18 @@ function RoomCard({
             whileTap={{ scale: 0.9 }}
             onClick={(e) => {
               e.stopPropagation();
+              if (sharingRoomId === room.roomId) return;
               onShare(room);
             }}
-            className="w-9 h-9 rounded-full border border-white/20 flex items-center justify-center text-white/70 shrink-0 bg-transparent hover:border-white/40 hover:text-white transition-colors duration-150"
+            disabled={sharingRoomId === room.roomId}
+            className="w-9 h-9 rounded-full border border-white/20 flex items-center justify-center text-white/70 shrink-0 bg-transparent hover:border-white/40 hover:text-white transition-colors duration-150 disabled:opacity-50"
             title="Share room stats"
           >
-            <Share2 size={14} />
+            {sharingRoomId === room.roomId ? (
+              <div className="w-3.5 h-3.5 rounded-full border-2 border-white/20 border-t-white/70 animate-spin" />
+            ) : (
+              <Share2 size={14} />
+            )}
           </motion.button>
         </div>
       </div>
@@ -665,7 +725,46 @@ export default function RoomsHome({ rooms, onJoinRoom, onToast }: Props) {
   const [shareCounts, setShareCounts] = useState<RoomCounts | null>(null);
   const [shareLoading, setShareLoading] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [sharingRoomId, setSharingRoomId] = useState<string | null>(null);
   const shareRequestTokenRef = useRef<symbol | null>(null);
+
+  // ── Share card image state (used for preview + native share) ──
+  const [cardBlob, setCardBlob] = useState<Blob | null>(null);
+  const [cardPreviewUrl, setCardPreviewUrl] = useState<string | null>(null);
+  const [cardGenerating, setCardGenerating] = useState(false);
+  const [cardFailed, setCardFailed] = useState(false);
+  const bgImageRef = useRef<HTMLImageElement | null>(null);
+  const bgLoadPromiseRef = useRef<Promise<HTMLImageElement> | null>(null);
+
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+
+  // Lazily preload the share card background image once, reused for every room.
+  const loadBgImage = (): Promise<HTMLImageElement> => {
+    if (bgImageRef.current) return Promise.resolve(bgImageRef.current);
+    if (bgLoadPromiseRef.current) return bgLoadPromiseRef.current;
+
+    bgLoadPromiseRef.current = new Promise((resolve, reject) => {
+      const img = new window.Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => {
+        bgImageRef.current = img;
+        resolve(img);
+      };
+      img.onerror = () => {
+        console.error(`[RoomsHome] Failed to load ${SHARE_CARD_BG}`);
+        reject(new Error("bg-load-failed"));
+      };
+      img.src = SHARE_CARD_BG;
+    });
+    return bgLoadPromiseRef.current;
+  };
 
   // Temporary: only VISIBLE_ROOM_IDS are shown, everything else is hidden.
   const allRooms = rooms.filter((r) => VISIBLE_ROOM_IDS.includes(r.roomId));
@@ -700,6 +799,13 @@ export default function RoomsHome({ rooms, onJoinRoom, onToast }: Props) {
     };
   }, [shareRoom]);
 
+  // Clean up the object URL used for the preview image when it changes/unmounts.
+  useEffect(() => {
+    return () => {
+      if (cardPreviewUrl) URL.revokeObjectURL(cardPreviewUrl);
+    };
+  }, [cardPreviewUrl]);
+
   const copyToClipboard = async (text: string) => {
     try {
       await navigator.clipboard.writeText(text);
@@ -722,26 +828,76 @@ export default function RoomsHome({ rooms, onJoinRoom, onToast }: Props) {
     }
   };
 
-  const handleShare = async (room: Room) => {
-    const requestId = Symbol();
-    shareRequestTokenRef.current = requestId;
-    setShareRoom(room);
-    setShareCounts(null);
-    setCopied(false);
-    setShareLoading(true);
+  const fetchRoomCounts = async (room: Room): Promise<RoomCounts> => {
     try {
       const res = await axios.get(`/api/roar/rooms/${room.roomId}/messages`, {
         params: { limit: 1 },
       });
-      if (shareRequestTokenRef.current !== requestId) return;
-      setShareCounts(res.data?.counts ?? EMPTY_COUNTS);
+      return res.data?.counts ?? EMPTY_COUNTS;
     } catch (e) {
       console.error("Failed to fetch room stats for share:", e);
+      return EMPTY_COUNTS;
+    }
+  };
+
+  const downloadBlob = (blob: Blob, filename: string) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  /**
+   * Opens the share modal for a room, fetches live stats, and renders the
+   * stats card image so the user sees exactly what will be shared.
+   */
+  const handleShare = async (room: Room) => {
+    const requestId = Symbol();
+    shareRequestTokenRef.current = requestId;
+
+    setShareRoom(room);
+    setShareCounts(null);
+    setCopied(false);
+    setCardBlob(null);
+    setCardFailed(false);
+    if (cardPreviewUrl) { URL.revokeObjectURL(cardPreviewUrl); setCardPreviewUrl(null); }
+
+    setShareLoading(true);
+    setSharingRoomId(room.roomId);
+    setCardGenerating(true);
+
+    try {
+      const [counts, bgImg] = await Promise.all([
+        fetchRoomCounts(room),
+        loadBgImage().catch(() => null),
+      ]);
+
       if (shareRequestTokenRef.current !== requestId) return;
-      setShareCounts(EMPTY_COUNTS);
-      onToast("Couldn't load latest stats — sharing basic info.");
+      setShareCounts(counts);
+      setShareLoading(false);
+
+      if (!bgImg) {
+        setCardFailed(true);
+        setCardGenerating(false);
+        return;
+      }
+
+      const blob = await generateRoomShareCard(bgImg, room, counts);
+      if (shareRequestTokenRef.current !== requestId) return;
+
+      if (blob) {
+        setCardBlob(blob);
+        setCardPreviewUrl(URL.createObjectURL(blob));
+      } else {
+        setCardFailed(true);
+      }
     } finally {
-      if (shareRequestTokenRef.current === requestId) setShareLoading(false);
+      if (shareRequestTokenRef.current === requestId) {
+        setCardGenerating(false);
+        setSharingRoomId(null);
+      }
     }
   };
 
@@ -751,33 +907,91 @@ export default function RoomsHome({ rooms, onJoinRoom, onToast }: Props) {
     setShareCounts(null);
     setShareLoading(false);
     setCopied(false);
+    setCardGenerating(false);
+    setCardFailed(false);
+    setCardBlob(null);
+    if (cardPreviewUrl) { URL.revokeObjectURL(cardPreviewUrl); setCardPreviewUrl(null); }
   };
 
   const shareUrl = shareRoom ? buildRoomShareUrl(shareRoom) : "";
   const shareText = shareRoom && shareCounts ? buildRoomShareText(shareRoom, shareCounts, shareUrl) : "";
 
+  /**
+   * Primary share action: hands the actual stats IMAGE to the OS share sheet.
+   * This is the only reliable way to get the image itself (not just text)
+   * to land inside a WhatsApp / Instagram / etc. chat.
+   */
+  const handleNativeImageShare = async () => {
+    if (!shareRoom || !cardBlob) return;
+    const file = new File([cardBlob], shareFileName(shareRoom), { type: "image/png" });
+
+    if (typeof navigator !== "undefined" && navigator.canShare?.({ files: [file] })) {
+      try {
+        await navigator.share({
+          files: [file],
+          title: shareRoom.name,
+          text: `Check out ${shareRoom.name} on Sportsfan360 👉 ${shareUrl}`,
+        });
+        return;
+      } catch (err: any) {
+        if (err?.name === "AbortError") return;
+        console.error("[RoomsHome] navigator.share threw:", err);
+      }
+    }
+    // No native share available — download so the user can attach it manually.
+    downloadBlob(cardBlob, shareFileName(shareRoom));
+    onToast("Image saved! Attach it in your chat to share.");
+  };
+
+  /**
+   * Fallback per-platform buttons. These platforms don't support attaching an
+   * image via a plain URL, so we download the stats image first (so the user
+   * has it ready to attach) and then open the platform with prefilled text.
+   */
+  const openPlatformWithTextAndImage = (openUrl: () => void, toastMsg: string) => {
+    if (cardBlob && shareRoom) {
+      downloadBlob(cardBlob, shareFileName(shareRoom));
+      onToast(toastMsg);
+    }
+    openUrl();
+  };
+
   const handleShareToWhatsApp = () => {
     if (!shareText) return;
-    window.open(`https://wa.me/?text=${encodeURIComponent(shareText)}`, "_blank");
+    openPlatformWithTextAndImage(
+      () => window.open(`https://wa.me/?text=${encodeURIComponent(shareText)}`, "_blank"),
+      "Image saved — attach it in the WhatsApp chat!"
+    );
   };
   const handleShareToThreads = () => {
     if (!shareText) return;
-    window.open(`https://www.threads.net/intent/post?text=${encodeURIComponent(shareText)}`, "_blank");
+    openPlatformWithTextAndImage(
+      () => window.open(`https://www.threads.net/intent/post?text=${encodeURIComponent(shareText)}`, "_blank"),
+      "Image saved — attach it in your Threads post!"
+    );
   };
   const handleShareToInstagram = async () => {
     if (!shareText) return;
     await copyToClipboard(shareText);
     setCopied(true);
     setTimeout(() => setCopied(false), 1600);
+    if (cardBlob && shareRoom) downloadBlob(cardBlob, shareFileName(shareRoom));
+    onToast("Caption copied & image saved — attach it on Instagram!");
     window.open("https://www.instagram.com/", "_blank");
   };
   const handleShareToLinkedIn = () => {
     if (!shareUrl) return;
-    window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`, "_blank");
+    openPlatformWithTextAndImage(
+      () => window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`, "_blank"),
+      "Image saved — attach it in your LinkedIn post!"
+    );
   };
   const handleShareToX = () => {
     if (!shareText) return;
-    window.open(`https://x.com/intent/tweet?text=${encodeURIComponent(shareText)}`, "_blank");
+    openPlatformWithTextAndImage(
+      () => window.open(`https://x.com/intent/tweet?text=${encodeURIComponent(shareText)}`, "_blank"),
+      "Image saved — attach it in your post!"
+    );
   };
   const handleCopyLink = async () => {
     if (!shareText) return;
@@ -788,6 +1002,11 @@ export default function RoomsHome({ rooms, onJoinRoom, onToast }: Props) {
       onToast("Copied to clipboard!");
     }
   };
+  const handleDownloadImage = () => {
+    if (!cardBlob || !shareRoom) return;
+    downloadBlob(cardBlob, shareFileName(shareRoom));
+    onToast("Image saved!");
+  };
 
   const handlerMap: Record<string, () => void> = {
     WhatsApp: handleShareToWhatsApp,
@@ -797,6 +1016,11 @@ export default function RoomsHome({ rooms, onJoinRoom, onToast }: Props) {
     X: handleShareToX,
     Copy: handleCopyLink,
   };
+
+  const canNativeShare =
+    typeof navigator !== "undefined" &&
+    !!navigator.share &&
+    (!cardBlob || navigator.canShare?.({ files: [new File([cardBlob], "x.png", { type: "image/png" })] }) !== false);
 
   return (
     <div
@@ -840,6 +1064,7 @@ export default function RoomsHome({ rooms, onJoinRoom, onToast }: Props) {
             onToast={onToast}
             presence={presenceByRoom[room.roomId]}
             onShare={handleShare}
+            sharingRoomId={sharingRoomId}
           />
         ))}
         <div style={{ height: 86 }} />
@@ -871,29 +1096,44 @@ export default function RoomsHome({ rooms, onJoinRoom, onToast }: Props) {
               exit={{ opacity: 0, y: 20, scale: 0.95 }}
               transition={{ type: "spring", damping: 28, stiffness: 320 }}
               onClick={(e) => e.stopPropagation()}
-              className="fixed z-[210] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[92vw] max-w-[320px] bg-[#1a1a1e] rounded-2xl border border-white/10 p-3.5 shadow-2xl max-h-[85vh] overflow-y-auto box-border"
+              className="fixed z-[210] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[84vw] max-w-[260px] bg-[#1a1a1e] rounded-xl border border-white/10 p-2.5 shadow-2xl max-h-[80vh] overflow-y-auto box-border"
             >
               {/* Modal Header */}
-              <div className="flex items-center justify-between gap-2 mb-3">
-                <p className="text-white text-sm font-bold m-0 min-w-0 truncate">
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <p className="text-white text-xs font-bold m-0 min-w-0 truncate">
                   Share {shareRoom.name}
                 </p>
                 <button
                   type="button"
                   onClick={closeShare}
-                  className="w-6 h-6 rounded-full bg-white/[0.06] border-none text-white/60 text-xs cursor-pointer flex items-center justify-center shrink-0"
+                  className="w-5 h-5 rounded-full bg-white/[0.06] border-none text-white/60 text-[10px] cursor-pointer flex items-center justify-center shrink-0"
                 >
                   ✕
                 </button>
               </div>
 
-              {/* Stats preview */}
+              {/* Image preview */}
+              <div className="rounded-lg overflow-hidden border border-white/10 bg-[#0a0a14] mb-2 relative aspect-[1340/752] flex items-center justify-center">
+                {cardGenerating && (
+                  <p className="text-[9px] text-white/40 text-center px-3">Generating stats card…</p>
+                )}
+                {!cardGenerating && cardPreviewUrl && (
+                  <img src={cardPreviewUrl} alt={`${shareRoom.name} stats`} className="w-full h-full object-cover" />
+                )}
+                {!cardGenerating && !cardPreviewUrl && cardFailed && (
+                  <p className="text-[9px] text-white/40 text-center px-3">
+                    Couldn't render the image — share text below.
+                  </p>
+                )}
+              </div>
+
+              {/* Stats readout (kept for accessibility / quick glance) */}
               {shareLoading ? (
-                <p className="text-[11px] text-white/40 text-center py-4">
+                <p className="text-[9px] text-white/40 text-center py-1.5 mb-1.5">
                   Loading stats…
                 </p>
               ) : shareCounts && (
-                <div className="grid grid-cols-3 gap-1.5 mb-3.5">
+                <div className="grid grid-cols-3 gap-1 mb-2">
                   {[
                     { label: "Posts", value: shareCounts.post, color: "#e91e8c" },
                     { label: "Debates", value: shareCounts.debate, color: "#60a5fa" },
@@ -903,15 +1143,15 @@ export default function RoomsHome({ rooms, onJoinRoom, onToast }: Props) {
                   ].map((s) => (
                     <div
                       key={s.label}
-                      className="bg-[#0a0a14] border border-white/[0.06] rounded-[10px] py-2 px-1 text-center min-w-0"
+                      className="bg-[#0a0a14] border border-white/[0.06] rounded-md py-1 px-0.5 text-center min-w-0"
                     >
                       <div
                         className="font-extrabold leading-none"
-                        style={{ fontSize: "clamp(14px, 4.5vw, 18px)", color: s.color }}
+                        style={{ fontSize: "clamp(11px, 3.5vw, 14px)", color: s.color }}
                       >
                         {s.value}
                       </div>
-                      <div className="text-[7px] text-white/45 uppercase font-bold tracking-wide mt-1 truncate">
+                      <div className="text-[6px] text-white/45 uppercase font-bold tracking-wide mt-0.5 truncate">
                         {s.label}
                       </div>
                     </div>
@@ -919,9 +1159,22 @@ export default function RoomsHome({ rooms, onJoinRoom, onToast }: Props) {
                 </div>
               )}
 
-              {/* Share Icons */}
+              {/* Primary native-share action — this is what attaches the IMAGE in WhatsApp/etc */}
+              {/* {cardBlob && (
+                <motion.button
+                  whileTap={{ scale: 0.97 }}
+                  onClick={handleNativeImageShare}
+                  className="w-full mb-2 py-1.5 rounded-full text-[11px] font-bold flex items-center justify-center gap-1.5 text-white"
+                  style={{ background: "linear-gradient(135deg,#E91E8C,#FF6B35)" }}
+                >
+                  <Share2 size={11} />
+                  {canNativeShare ? "Share Image" : "Download Image"}
+                </motion.button>
+              )} */}
+
+              {/* Platform icon fallbacks (text link + auto-downloaded image to attach manually) */}
               <div
-                className="grid grid-cols-3 gap-2 mb-1"
+                className="grid grid-cols-3 gap-1.5 mb-0.5"
                 style={{
                   opacity: shareLoading ? 0.4 : 1,
                   pointerEvents: shareLoading ? "none" : "auto",
@@ -932,39 +1185,50 @@ export default function RoomsHome({ rooms, onJoinRoom, onToast }: Props) {
                     key={alt}
                     type="button"
                     onClick={handlerMap[alt]}
-                    className="flex flex-col items-center gap-1 bg-transparent border-none cursor-pointer p-0 min-w-0"
+                    className="flex flex-col items-center gap-0.5 bg-transparent border-none cursor-pointer p-0 min-w-0"
                   >
-                    <div className="w-9 h-9 rounded-full overflow-hidden bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
+                    <div className="w-7 h-7 rounded-full overflow-hidden bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
                       <img
                         src={src}
                         alt={alt}
                         className="w-full h-full object-cover rounded-full"
                       />
                     </div>
-                    <span className="text-[7px] text-white/35 font-medium whitespace-nowrap">
+                    <span className="text-[6px] text-white/35 font-medium whitespace-nowrap">
                       {alt}
                     </span>
                   </button>
                 ))}
               </div>
 
+              {/* {cardBlob && (
+                <button
+                  type="button"
+                  onClick={handleDownloadImage}
+                  className="w-full mt-1.5 py-1 flex items-center justify-center gap-1 bg-white/[0.04] border border-white/[0.06] rounded-md text-white/50 text-[9px] font-medium cursor-pointer"
+                >
+                  <Download size={9} />
+                  Save image
+                </button>
+              )} */}
+
               {copied && (
                 <motion.p
                   initial={{ opacity: 0, y: -6 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="text-[10px] text-emerald-400 text-center font-semibold mt-2 mb-0"
+                  className="text-[9px] text-emerald-400 text-center font-semibold mt-1.5 mb-0"
                 >
                   ✓ Copied!
                 </motion.p>
               )}
 
-              <button
+              {/* <button
                 type="button"
                 onClick={closeShare}
-                className="mt-3 py-1.5 w-full bg-white/[0.04] border border-white/[0.06] rounded-lg text-white/40 text-[11px] font-medium cursor-pointer"
+                className="mt-2 py-1 w-full bg-white/[0.04] border border-white/[0.06] rounded-md text-white/40 text-[9px] font-medium cursor-pointer"
               >
                 Close
-              </button>
+              </button> */}
             </motion.div>
           </>
         )}

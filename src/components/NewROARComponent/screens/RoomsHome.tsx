@@ -1267,6 +1267,7 @@
 // }
 
 
+
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
@@ -1370,23 +1371,41 @@ function generateRoomShareCard(
     ctx.fillText(room.name, canvas.width / 2, 130);
 
     const stats = [
-      { label: "POSTS", value: counts.post, x: 140, color: "#E91E8C" },
-      { label: "DEBATES", value: counts.debate, x: 400, color: "#60A5FA" },
-      { label: "PREDICTIONS", value: counts.prediction, x: 670, color: "#FBBF24" },
-      { label: "TRIVIA", value: counts.trivia, x: 970, color: "#22C55E" },
-      { label: "BATTLES", value: counts.battle, x: 1230, color: "#F97316" },
+      { label: "POSTS", value: counts.post, x: 140 },
+      { label: "DEBATES", value: counts.debate, x: 400 },
+      { label: "PREDICTIONS", value: counts.prediction, x: 670 },
+      { label: "TRIVIA", value: counts.trivia, x: 970 },
+      { label: "BATTLES", value: counts.battle, x: 1230 },
     ];
 
-    stats.forEach(({ label, value, x, color }) => {
+    stats.forEach(({ label, value, x }) => {
       const y = 530;
+
+      // Black, semi-transparent rounded container behind the number + label
+      const boxWidth = 190;
+      const boxHeight = 130;
+      const boxX = x - boxWidth / 2;
+      const boxY = y - 90;
+      const radius = 16;
+
+      ctx.fillStyle = "rgba(0,0,0,0.45)";
+      ctx.beginPath();
+      ctx.moveTo(boxX + radius, boxY);
+      ctx.arcTo(boxX + boxWidth, boxY, boxX + boxWidth, boxY + boxHeight, radius);
+      ctx.arcTo(boxX + boxWidth, boxY + boxHeight, boxX, boxY + boxHeight, radius);
+      ctx.arcTo(boxX, boxY + boxHeight, boxX, boxY, radius);
+      ctx.arcTo(boxX, boxY, boxX + boxWidth, boxY, radius);
+      ctx.closePath();
+      ctx.fill();
+
       ctx.font = "bold 72px Arial";
-      ctx.fillStyle = color;
+      ctx.fillStyle = "#ffffff";
       ctx.textAlign = "center";
       ctx.fillText(String(value), x, y);
 
       ctx.font = "bold 35px Arial";
       ctx.fillStyle = "#ffffff";
-      ctx.fillText(label, x, y + 40);
+      ctx.fillText(label, x, y + 70);
     });
 
     canvas.toBlob((blob) => resolve(blob), "image/png", 0.95);
@@ -1597,7 +1616,7 @@ function RoomCard({
               onJoin(room);
             }}
             className={[
-              "flex-1 py-1 rounded-full text-[13px] font-bold transition-colors duration-150",
+              "flex-1 py-2.5 rounded-full text-[13px] font-bold transition-colors duration-150",
               isFuture
                 ? "border border-white/20 text-white/30 cursor-not-allowed bg-transparent"
                 : "border border-white/20 text-white cursor-pointer bg-transparent hover:border-white/40",
@@ -2145,13 +2164,13 @@ export default function RoomsHome({ rooms, onJoinRoom, onToast }: Props) {
                 </motion.p>
               )}
 
-              <button
+              {/* <button
                 type="button"
                 onClick={closeShare}
                 className="mt-2 py-1 w-full bg-white/[0.04] border border-white/[0.06] rounded-md text-white/40 text-[9px] font-medium cursor-pointer"
               >
                 Close
-              </button>
+              </button> */}
             </motion.div>
           </>
         )}

@@ -103,6 +103,166 @@ const PLACEHOLDER: Record<string, string> = {
   raw_reactions: "Share your raw reaction...",
 };
 
+
+interface MentionUser {
+  userId: string;
+  username: string;
+  firstName?: string;
+  lastName?: string;
+  name?: string;
+  avatarUrl?: string;
+  email?: string;
+}
+
+function useMentionAutocomplete(activeUsername?: string) {
+  const [allUsers, setAllUsers] = useState<MentionUser[]>([]);
+  const [mentionUsers, setMentionUsers] = useState<MentionUser[]>([]);
+  const [showMentionPopup, setShowMentionPopup] = useState(false);
+  const [mentionIndex, setMentionIndex] = useState(0);
+  const [cursorPosition, setCursorPosition] = useState(0);
+
+  const hasUnderscore = (u: any) => {
+    const n = u.username || u.name || `${u.firstName || ""} ${u.lastName || ""}`.trim();
+    return n.includes("_") || (u.email || "").split("@")[0].includes("_");
+  };
+
+  useEffect(() => {
+    axios.get("/api/users", { withCredentials: true }).then(res => {
+      if (!res.data?.users) return;
+      const seen = new Set<string>();
+      setAllUsers(res.data.users
+        .filter((u: any) => {
+          const n = u.username || u.name || `${u.firstName || ""} ${u.lastName || ""}`.trim();
+          return n !== activeUsername && !hasUnderscore(u);
+        })
+        .map((u: any) => ({
+          userId: u.userId || u.id, username: u.username, firstName: u.firstName,
+          lastName: u.lastName, name: u.name, avatarUrl: u.avatarUrl || u.avatar, email: u.email,
+        }))
+        .filter((u: MentionUser) => {
+          const key = u.userId || u.username;
+          if (!key || seen.has(key)) return false;
+          const dn = u.username || u.name || `${u.firstName || ""}${u.lastName || ""}`.trim();
+          if (dn.includes("_")) return false;
+          seen.add(key); return true;
+        }));
+    }).catch(() => { });
+  }, [activeUsername]);
+
+  // Call this from the input's onChange
+  const handleMentionInputChange = (value: string, cursorPos: number) => {
+    setCursorPosition(cursorPos);
+    const before = value.slice(0, cursorPos);
+    const at = before.lastIndexOf("@");
+    if (at !== -1) {
+      const afterAt = before.slice(at + 1);
+      if (!afterAt.includes(" ")) {
+        const filtered = afterAt.trim() === ""
+          ? allUsers.slice(0, 8)
+          : allUsers.filter(u =>
+            `${u.username || ""} ${u.firstName || ""} ${u.lastName || ""} ${u.email || ""}`
+              .toLowerCase().includes(afterAt.toLowerCase())
+          ).slice(0, 8);
+        setMentionUsers(filtered);
+        setShowMentionPopup(filtered.length > 0);
+        setMentionIndex(0);
+        return;
+      }
+    }
+    setShowMentionPopup(false);
+    setMentionUsers([]);
+  };
+
+  // Call this to splice the chosen mention into the text
+  const insertMention = (
+    user: MentionUser,
+    currentText: string,
+    setText: (t: string) => void,
+   inputRef: React.RefObject<HTMLInputElement | null>
+  ) => {
+    const dn = user.username || user.name || `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.email?.split("@")[0] || "user";
+    const mt = `@${dn} `;
+    const before = currentText.slice(0, cursorPosition);
+    const at = before.lastIndexOf("@");
+    const newText = `${currentText.slice(0, at)}${mt}${currentText.slice(cursorPosition)}`;
+    setText(newText);
+    setShowMentionPopup(false);
+    setMentionUsers([]);
+    setTimeout(() => {
+      if (inputRef.current) {
+        const p = at + mt.length;
+        inputRef.current.focus();
+        inputRef.current.setSelectionRange(p, p);
+      }
+    }, 10);
+  };
+
+  // Call this from the input's onKeyDown, BEFORE your existing Enter-to-send logic.
+  // Returns true if it handled the keypress (so you should return early / not send).
+  const handleMentionKeyDown = (
+    e: React.KeyboardEvent<HTMLInputElement>,
+    currentText: string,
+    setText: (t: string) => void,
+     inputRef: React.RefObject<HTMLInputElement | null> 
+  ): boolean => {
+    if (!showMentionPopup || mentionUsers.length === 0) return false;
+    if (e.key === "ArrowDown") { e.preventDefault(); setMentionIndex(p => (p + 1) % mentionUsers.length); return true; }
+    if (e.key === "ArrowUp") { e.preventDefault(); setMentionIndex(p => (p - 1 + mentionUsers.length) % mentionUsers.length); return true; }
+    if (e.key === "Enter" || e.key === "Tab") {
+      e.preventDefault();
+      if (mentionUsers[mentionIndex]) insertMention(mentionUsers[mentionIndex], currentText, setText, inputRef);
+      return true;
+    }
+    if (e.key === "Escape") { setShowMentionPopup(false); setMentionUsers([]); return true; }
+    return false;
+  };
+
+  return {
+    mentionUsers, showMentionPopup, mentionIndex, setMentionIndex,
+    handleMentionInputChange, handleMentionKeyDown, insertMention,
+  };
+}
+
+function MentionPopup({
+  mentionUsers, mentionIndex, setMentionIndex, onSelect, currentAvatarLookup,
+}: {
+  mentionUsers: MentionUser[];
+  mentionIndex: number;
+  setMentionIndex: (i: number) => void;
+  onSelect: (u: MentionUser) => void;
+  currentAvatarLookup?: (u: MentionUser) => string | undefined;
+}) {
+  return (
+    <div style={{
+      position: "absolute", bottom: "100%", left: 8, right: 8, marginBottom: 6,
+      background: "#181c24", borderRadius: 14, border: "1px solid rgba(255,255,255,0.1)",
+      overflow: "hidden", zIndex: 60, boxShadow: "0 8px 32px rgba(0,0,0,0.4)", maxHeight: 220, overflowY: "auto",
+    }}>
+      {mentionUsers.map((user, idx) => {
+        const dn = user.username || user.name || `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.email?.split("@")[0] || "user";
+        return (
+          <button
+            key={user.userId}
+            type="button"
+            onClick={() => onSelect(user)}
+            onMouseEnter={() => setMentionIndex(idx)}
+            style={{
+              display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "8px 12px",
+              border: "none", cursor: "pointer", textAlign: "left",
+              background: idx === mentionIndex ? "rgba(233,30,140,0.15)" : "transparent",
+            }}
+          >
+            <div style={{ width: 20, height: 20, borderRadius: "50%", overflow: "hidden", flexShrink: 0, background: "linear-gradient(135deg,#e91e8c,#ff6b35)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              {user.avatarUrl ? <img src={user.avatarUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <span style={{ fontSize: 9, fontWeight: 800, color: "#fff" }}>{dn[0]?.toUpperCase()}</span>}
+            </div>
+            <span style={{ fontSize: 12, fontWeight: 600, color: "#fff" }}>{dn}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 const typeBadgeClass = (type: string) => {
   const base = "text-[8px] font-extrabold px-1.5 py-0.5 rounded";
   if (type === "prediction") return `${base} bg-[rgba(255,215,0,0.15)] text-[#fbbf24] border border-[rgba(255,215,0,0.25)]`;
@@ -218,6 +378,7 @@ function InlineSection({
   const [commentTopReactionsMap, setCommentTopReactionsMap] = useState<Record<string, string[]>>({});
   const [reactionsDialogCommentId, setReactionsDialogCommentId] = useState<string | null>(null);
   const [deletingCommentId, setDeletingCommentId] = useState<string | null>(null);
+  const mention = useMentionAutocomplete(currentUsername);
 
   const REACTION_EMOJI: Record<string, string> = {
     fire: "🔥", heart: "❤️", mindblown: "🤯", goat: "🐐", clap: "👏",
@@ -347,7 +508,7 @@ function InlineSection({
               }
               const displayReactions = topReactions.length > 0 ? topReactions : (currentReaction ? [currentReaction] : []);
               const isOwnComment = currentUserId && r.authorUid === currentUserId;
-
+              const mention = useMentionAutocomplete(currentUsername);
               return (
                 <div key={commentId} style={{ display: "flex", gap: 6, alignItems: "flex-start", paddingLeft: isReply ? 24 : 0, minWidth: 0, width: "100%" }}>
                   <div style={{ width: 14, height: 14, borderRadius: "50%", flexShrink: 0, background: "linear-gradient(135deg,#e91e8c,#ff6b35)", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", cursor: onFanProfile ? "pointer" : "default" }}
@@ -442,9 +603,40 @@ function InlineSection({
           )}
         </AnimatePresence>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "3px 5px", borderRadius: 14, background: "rgba(255,255,255,0.04)", border: `1px solid ${accentColor}40` }}>
+        {/* <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "3px 5px", borderRadius: 14, background: "rgba(255,255,255,0.04)", border: `1px solid ${accentColor}40` }}>
           {currentAvatarUrl ? <img src={currentAvatarUrl} alt="" style={{ width: 20, height: 20, borderRadius: "50%", flexShrink: 0, objectFit: "cover" }} /> : <div style={{ width: 20, height: 20, borderRadius: "50%", flexShrink: 0, background: "linear-gradient(135deg,#e91e8c,#ff6b35)" }} />}
           <input ref={inputRef} type="text" value={commentText} onChange={e => setCommentText(e.target.value)} onKeyDown={e => { if (e.key === "Enter") handleSend(); }} placeholder={replyTo ? `…` : "Add a comment…"} style={{ flex: 1, background: "none", border: "none", outline: "none", color: "#fff", fontSize: 11, fontWeight: 500 }} />
+          <button type="button" onClick={e => { e.stopPropagation(); onOpenFull(); }} style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.3)", fontSize: 10, fontWeight: 600, whiteSpace: "nowrap", padding: "0 2px" }}>All</button>
+          <motion.button whileTap={{ scale: 0.9 }} type="button" onClick={e => { e.stopPropagation(); handleSend(); }} disabled={!commentText.trim() || sending} style={{ background: commentText.trim() ? `linear-gradient(135deg,${accentColor},#ff6b35)` : "rgba(255,255,255,0.08)", border: "none", borderRadius: "50%", width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", cursor: commentText.trim() ? "pointer" : "default", transition: "background 0.2s", flexShrink: 0 }}>
+            <Send size={12} color={commentText.trim() ? "#fff" : "rgba(255,255,255,0.3)"} />
+          </motion.button>
+        </div> */}
+        <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "3px 5px", borderRadius: 14, background: "rgba(255,255,255,0.04)", border: `1px solid ${accentColor}40`, position: "relative" }}>
+          {mention.showMentionPopup && (
+            <MentionPopup
+              mentionUsers={mention.mentionUsers}
+              mentionIndex={mention.mentionIndex}
+              setMentionIndex={mention.setMentionIndex}
+              onSelect={(u) => mention.insertMention(u, commentText, setCommentText, inputRef)}
+            />
+          )}
+          {currentAvatarUrl ? <img src={currentAvatarUrl} alt="" style={{ width: 20, height: 20, borderRadius: "50%", flexShrink: 0, objectFit: "cover" }} /> : <div style={{ width: 20, height: 20, borderRadius: "50%", flexShrink: 0, background: "linear-gradient(135deg,#e91e8c,#ff6b35)" }} />}
+          <input
+            ref={inputRef}
+            type="text"
+            value={commentText}
+            onChange={e => {
+              const value = e.target.value;
+              setCommentText(value);
+              mention.handleMentionInputChange(value, e.target.selectionStart || value.length);
+            }}
+            onKeyDown={e => {
+              if (mention.handleMentionKeyDown(e, commentText, setCommentText, inputRef)) return;
+              if (e.key === "Enter") handleSend();
+            }}
+            placeholder={replyTo ? `…` : "Add a comment…"}
+            style={{ flex: 1, background: "none", border: "none", outline: "none", color: "#fff", fontSize: 11, fontWeight: 500 }}
+          />
           <button type="button" onClick={e => { e.stopPropagation(); onOpenFull(); }} style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.3)", fontSize: 10, fontWeight: 600, whiteSpace: "nowrap", padding: "0 2px" }}>All</button>
           <motion.button whileTap={{ scale: 0.9 }} type="button" onClick={e => { e.stopPropagation(); handleSend(); }} disabled={!commentText.trim() || sending} style={{ background: commentText.trim() ? `linear-gradient(135deg,${accentColor},#ff6b35)` : "rgba(255,255,255,0.08)", border: "none", borderRadius: "50%", width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", cursor: commentText.trim() ? "pointer" : "default", transition: "background 0.2s", flexShrink: 0 }}>
             <Send size={12} color={commentText.trim() ? "#fff" : "rgba(255,255,255,0.3)"} />
@@ -1135,7 +1327,8 @@ export default function DiscussionRoom({
   const [votersMsgId, setVotersMsgId] = useState<string | null>(null);
   const [votersMode, setVotersMode] = useState<"debate" | "prediction">("prediction");
   const lastLocalReactAtRef = useRef<Record<string, number>>({});
-
+  const mainInputRef = useRef<HTMLInputElement>(null);
+  const mention = useMentionAutocomplete(userUsername);
   // Tracks uids we've already seen in this room so we only toast on *new* arrivals,
   // not on the initial fan list when we ourselves join.
   const knownFanUidsRef = useRef<Set<string> | null>(null);
@@ -1250,8 +1443,8 @@ export default function DiscussionRoom({
     const newcomers = fans.filter(f => f.uid !== currentUserId && !seen.has(f.uid));
     seen.forEach(() => { }); // no-op, just keeping structure clear
     fans.forEach(f => seen.add(f.uid));
-    if (newcomers.length > 0) playSound("join"); 
-  newcomers.forEach(f => queueJoinToast(displayUsername(f.username)));
+    if (newcomers.length > 0) playSound("join");
+    newcomers.forEach(f => queueJoinToast(displayUsername(f.username)));
   }, [currentUserId, queueJoinToast, playSound]);
 
   // NEW — single function that both the header state AND the toast derive from
@@ -1353,6 +1546,8 @@ export default function DiscussionRoom({
       matchTitle: m.matchTitle ?? null,
       triviaQuestions: Array.isArray(m.triviaQuestions) ? m.triviaQuestions : [],
       userTriviaAnswers: m.userTriviaAnswers ?? {},
+      matchStartAt: m.matchStartAt ?? null,
+      matchEndAt: m.matchEndAt ?? null,
       triviaParticipants: m.triviaParticipants ?? {},
       battleQuestions: Array.isArray(m.battleQuestions) ? m.battleQuestions : [],
       battleVoteCounts: m.battleVoteCounts ?? {},
@@ -1965,7 +2160,7 @@ export default function DiscussionRoom({
     if (!roomId) return;
     setShowQuickCompose(false);
     const memTag = opt.id.replace("qr_", "");
-    
+
     const tempId = `temp-qr-${Date.now()}`;
     const optimisticMsg: any = {
       id: tempId,
@@ -1995,9 +2190,9 @@ export default function DiscussionRoom({
         setTimeout(() => listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" }), 50);
         onToast(`${opt.emoji} ${opt.label} posted!`);
       }
-    } catch { 
+    } catch {
       setPosts(p => p.filter(post => post.id !== tempId));
-      onToast("Failed to post"); 
+      onToast("Failed to post");
     }
   };
 
@@ -2967,7 +3162,7 @@ export default function DiscussionRoom({
               >
                 😊
               </button>
-
+              {/* 
               <div className="flex-1 relative min-w-0">
                 {input === "" && !uploading && postCooldown === 0 && (
                   <div className="absolute left-2.5 top-0 bottom-0 flex items-center pointer-events-none">
@@ -2981,6 +3176,43 @@ export default function DiscussionRoom({
                   onChange={e => setInput(e.target.value)}
                   // onKeyDown={e => e.key === "Enter" && send()}
                   onKeyDown={e => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      send();
+                    }
+                  }}
+                  placeholder={postCooldown > 0 ? `Wait ${postCooldown}s before posting …` : ""}
+                  className="w-full h-8 rounded-[16px] bg-[var(--bg-secondary)] border border-[var(--border)] pl-2.5 pr-2.5 text-white text-xs outline-none"
+                  style={{ opacity: postCooldown > 0 ? 0.5 : 1 }}
+                />
+              </div> */}
+
+              <div className="flex-1 relative min-w-0">
+                {mention.showMentionPopup && (
+                  <MentionPopup
+                    mentionUsers={mention.mentionUsers}
+                    mentionIndex={mention.mentionIndex}
+                    setMentionIndex={mention.setMentionIndex}
+                    onSelect={(u) => mention.insertMention(u, input, setInput, mainInputRef)}
+                  />
+                )}
+                {input === "" && !uploading && postCooldown === 0 && (
+                  <div className="absolute left-2.5 top-0 bottom-0 flex items-center pointer-events-none">
+                    <span className="text-xs font-medium truncate" style={{ color: MODE_COLOR["post"] || "var(--text-secondary)" }}>{PLACEHOLDER["post"]}</span>
+                  </div>
+                )}
+                <input
+                  ref={mainInputRef}
+                  type="text"
+                  disabled={uploading || postCooldown > 0}
+                  value={input}
+                  onChange={e => {
+                    const value = e.target.value;
+                    setInput(value);
+                    mention.handleMentionInputChange(value, e.target.selectionStart || value.length);
+                  }}
+                  onKeyDown={e => {
+                    if (mention.handleMentionKeyDown(e, input, setInput, mainInputRef)) return;
                     if (e.key === "Enter") {
                       e.preventDefault();
                       send();

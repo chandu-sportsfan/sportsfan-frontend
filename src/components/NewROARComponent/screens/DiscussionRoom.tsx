@@ -1965,6 +1965,16 @@ export default function DiscussionRoom({
     if (!roomId) return;
     setShowQuickCompose(false);
     const memTag = opt.id.replace("qr_", "");
+    
+    const tempId = `temp-qr-${Date.now()}`;
+    const optimisticMsg: any = {
+      id: tempId,
+      fan: { username: displayUsername(userUsername), authorUid: "", badge: "", avatarUrl: userAvatarUrl },
+      text: opt.label, fireCount: 0, heartCount: 0, mindblownCount: 0, goatCount: 0, clapCount: 0, nochanceCount: 0, userReaction: null, replyCount: 0, agreeCount: 0, disagreeCount: 0, userVote: null, sideA: null, sideB: null, timeAgo: "Sending...", createdAt: Date.now(), type: "post", mediaUrls: [], quizQuestion: null, quizOptions: null, quizCorrectOption: null, quizUserAnswer: null, quizTimer: null, quizPoints: null, quizParticipants: 0, memGifUrl: null, memTag: memTag, status: "sending"
+    };
+
+    setPosts(p => [...p, optimisticMsg]);
+
     try {
       const res = await axios.post(`/api/roar/rooms/${roomId}/messages`, {
         text: opt.label,
@@ -1973,18 +1983,10 @@ export default function DiscussionRoom({
       });
       if (res.data?.success) {
         const m = res.data.message;
-        setPosts(p => [...p, {
-          id: m.msgId,
-          fan: { username: displayUsername(m.authorUsername), authorUid: m.authorUid, badge: m.authorBadge, avatarUrl: m.authorAvatarUrl || userAvatarUrl },
-          text: m.text,
-          fireCount: 0, heartCount: 0, mindblownCount: 0, goatCount: 0, clapCount: 0, nochanceCount: 0,
-          userReaction: null, replyCount: 0, agreeCount: 0, disagreeCount: 0, userVote: null,
-          timeAgo: "now", createdAt: m.createdAt || Date.now(),
-          type: "post",
-          memTag,
-          memGifUrl: null,
-          mediaUrls: [],
-        }]);
+        setPosts(p => {
+          if (p.some(post => post.id === m.msgId)) return p.filter(post => post.id !== tempId);
+          return p.map(post => post.id === tempId ? { ...post, id: m.msgId, status: "sent", timeAgo: "now", createdAt: m.createdAt || Date.now(), memGifUrl: m.memGifUrl } : post);
+        });
         setNewlyPostedIds(prev => new Set([...prev, m.msgId]));
         playSound("post");
         if (["wicket", "six", "four", "goal", "redcard", "catch", "frango", "yellowcard"].includes(memTag)) {
@@ -1993,7 +1995,10 @@ export default function DiscussionRoom({
         setTimeout(() => listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" }), 50);
         onToast(`${opt.emoji} ${opt.label} posted!`);
       }
-    } catch { onToast("Failed to post"); }
+    } catch { 
+      setPosts(p => p.filter(post => post.id !== tempId));
+      onToast("Failed to post"); 
+    }
   };
 
   const handleBack = (e: React.PointerEvent | React.MouseEvent) => { e.preventDefault(); e.stopPropagation(); onBack(); };

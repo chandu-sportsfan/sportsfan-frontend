@@ -1268,10 +1268,12 @@
 
 
 
+
+
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
-import { Share2, Download } from "lucide-react";
+import { Share2, Download, MessageCircle, Zap, PenLine, ArrowRight, BarChart3 } from "lucide-react";
 import type { Room } from "../types";
 
 const SPORT_GRADIENT: Record<string, string> = {
@@ -1371,41 +1373,23 @@ function generateRoomShareCard(
     ctx.fillText(room.name, canvas.width / 2, 130);
 
     const stats = [
-      { label: "POSTS", value: counts.post, x: 140 },
-      { label: "DEBATES", value: counts.debate, x: 400 },
-      { label: "PREDICTIONS", value: counts.prediction, x: 670 },
-      { label: "TRIVIA", value: counts.trivia, x: 970 },
-      { label: "BATTLES", value: counts.battle, x: 1230 },
+      { label: "POSTS", value: counts.post, x: 140, color: "#E91E8C" },
+      { label: "DEBATES", value: counts.debate, x: 400, color: "#60A5FA" },
+      { label: "PREDICTIONS", value: counts.prediction, x: 670, color: "#FBBF24" },
+      { label: "TRIVIA", value: counts.trivia, x: 970, color: "#22C55E" },
+      { label: "BATTLES", value: counts.battle, x: 1230, color: "#F97316" },
     ];
 
-    stats.forEach(({ label, value, x }) => {
+    stats.forEach(({ label, value, x, color }) => {
       const y = 530;
-
-      // Black, semi-transparent rounded container behind the number + label
-      const boxWidth = 190;
-      const boxHeight = 130;
-      const boxX = x - boxWidth / 2;
-      const boxY = y - 90;
-      const radius = 16;
-
-      ctx.fillStyle = "rgba(0,0,0,0.45)";
-      ctx.beginPath();
-      ctx.moveTo(boxX + radius, boxY);
-      ctx.arcTo(boxX + boxWidth, boxY, boxX + boxWidth, boxY + boxHeight, radius);
-      ctx.arcTo(boxX + boxWidth, boxY + boxHeight, boxX, boxY + boxHeight, radius);
-      ctx.arcTo(boxX, boxY + boxHeight, boxX, boxY, radius);
-      ctx.arcTo(boxX, boxY, boxX + boxWidth, boxY, radius);
-      ctx.closePath();
-      ctx.fill();
-
       ctx.font = "bold 72px Arial";
-      ctx.fillStyle = "#ffffff";
+      ctx.fillStyle = color;
       ctx.textAlign = "center";
       ctx.fillText(String(value), x, y);
 
-      ctx.font = "bold 35px Arial";
+      ctx.font = "bold 20px Arial";
       ctx.fillStyle = "#ffffff";
-      ctx.fillText(label, x, y + 70);
+      ctx.fillText(label, x, y + 40);
     });
 
     canvas.toBlob((blob) => resolve(blob), "image/png", 0.95);
@@ -1437,7 +1421,7 @@ function StackedAvatars({
             ? fans.slice(0, 3).map((fan, i) => (
                 <div
                   key={fan.uid}
-                  className="w-6 h-6 rounded-full border-2 border-[#0e0e14] relative overflow-hidden flex items-center justify-center"
+                  className="w-5 h-5 rounded-full border-2 border-[#0e0e14] relative overflow-hidden flex items-center justify-center"
                   style={{
                     marginLeft: i === 0 ? 0 : -8,
                     zIndex: 3 - i,
@@ -1462,7 +1446,7 @@ function StackedAvatars({
             : DOT_COLORS.map((c, i) => (
                 <div
                   key={i}
-                  className="w-6 h-6 rounded-full border-2 border-[#0e0e14] relative"
+                  className="w-5 h-5 rounded-full border-2 border-[#0e0e14] relative"
                   style={{
                     background: c,
                     marginLeft: i === 0 ? 0 : -8,
@@ -1473,8 +1457,8 @@ function StackedAvatars({
               ))}
         </div>
         {loaded ? (
-          <span className="text-xs font-semibold text-white/45">
-            <span className="text-xs font-bold text-white/90">+{count} </span>Active
+          <span className="text-[10px] font-semibold text-white/45">
+            <span className="text-[10px] font-bold text-white/90">+{count} </span>Active
           </span>
         ) : (
           <span className="text-xs font-semibold text-white/25">···</span>
@@ -1483,10 +1467,10 @@ function StackedAvatars({
 
       {loaded && totalJoinCount !== undefined && totalJoinCount > 0 && (
         <div className="flex items-center gap-1.5">
-          <span className="text-xs font-semibold text-white/40">
+          <span className="text-[10px] font-semibold text-white/40">
             Total members joined -
           </span>
-          <span className="text-xs font-bold text-white/90">
+          <span className="text-[10px] font-bold text-white/90">
             {formatCount(totalJoinCount)}
           </span>
         </div>
@@ -1495,7 +1479,7 @@ function StackedAvatars({
   );
 }
 
-function Thumbnail({ room, isInfinityRoom }: { room: Room; isInfinityRoom?: boolean }) {
+function RoomThumbnail({ room, isInfinityRoom }: { room: Room; isInfinityRoom?: boolean }) {
   const sport    = (room.sport ?? "default").toLowerCase();
   const gradient = SPORT_GRADIENT[sport] ?? SPORT_GRADIENT.default;
   const imgSrc   = isInfinityRoom
@@ -1504,18 +1488,33 @@ function Thumbnail({ room, isInfinityRoom }: { room: Room; isInfinityRoom?: bool
 
   return (
     <div
-      className="w-[90px] h-[90px] min-w-[90px] rounded-2xl flex items-center justify-center text-3xl overflow-hidden relative shrink-0"
+      className="w-[110px] h-[110px] min-w-[110px] rounded-xl relative overflow-hidden shrink-0"
       style={{ background: gradient }}
     >
       <img
         src={imgSrc}
         alt={room.name}
-        className="absolute inset-0 w-full h-full object-fit rounded-2xl"
+        className="absolute inset-0 w-full h-full object-cover"
         onError={(e) => {
           (e.currentTarget as HTMLImageElement).style.display = "none";
         }}
       />
-      <div className="absolute inset-0 bg-black/15 rounded-2xl" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/5 to-black/10" />
+
+      {/* "ROAR ROOM" stamp overlay */}
+      <div className="absolute left-0 right-0 bottom-1.5 flex justify-center leading-none select-none px-1">
+        <span
+          className="text-[9px] font-black italic tracking-tight text-center"
+          style={{
+            background: "linear-gradient(90deg,#E91E8C,#FF6B35)",
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+            textShadow: "0 1px 6px rgba(0,0,0,0.5)",
+          }}
+        >
+          ★ ROAR ROOM ★
+        </span>
+      </div>
     </div>
   );
 }
@@ -1523,19 +1522,46 @@ function Thumbnail({ room, isInfinityRoom }: { room: Room; isInfinityRoom?: bool
 function SportBadge({ sport }: { sport: string }) {
   const label = sport.charAt(0).toUpperCase() + sport.slice(1).toLowerCase();
   const colors: Record<string, string> = {
-    cricket:  "rgba(124,58,237,0.25)",
-    football: "rgba(220,38,38,0.25)",
-    default:  "rgba(233,30,140,0.20)",
+    cricket:  "rgba(124,58,237,0.30)",
+    football: "rgba(220,38,38,0.30)",
+    default:  "rgba(233,30,140,0.25)",
   };
   const bg = colors[sport.toLowerCase()] ?? colors.default;
 
   return (
     <span
-      className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full"
-      style={{ background: bg, color: "rgba(255,255,255,0.65)" }}
+      className="text-[8px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full inline-block"
+      style={{ background: bg, color: "rgba(255,255,255,0.85)" }}
     >
       {label}
     </span>
+  );
+}
+
+function RoomStatsRow({ counts }: { counts?: RoomCounts }) {
+  const stats = [
+    { label: "Debates", value: counts?.debate ?? 0, Icon: MessageCircle },
+    { label: "Predictions", value: counts?.prediction ?? 0, Icon: Zap },
+    { label: "Posts", value: counts?.post ?? 0, Icon: PenLine },
+    { label: "Shares", value: counts?.battle ?? 0, Icon: Share2 },
+  ];
+
+  return (
+    <div className="grid grid-cols-4 gap-1 rounded-xl border border-white/[0.08] py-3 px-1">
+      {stats.map(({ label, value, Icon }) => (
+        <div key={label} className="flex flex-col items-center gap-1 min-w-0">
+          <div className="flex items-center gap-1">
+            <Icon size={13} className="text-white/50 shrink-0" />
+            <span className="text-[15px] font-extrabold text-white leading-none">
+              {counts ? value : "···"}
+            </span>
+          </div>
+          <span className="text-[10px] text-white/40 font-medium truncate">
+            {label}
+          </span>
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -1547,6 +1573,7 @@ function RoomCard({
   presence,
   onShare,
   sharingRoomId,
+  counts,
 }: {
   room: Room;
   index: number;
@@ -1555,6 +1582,7 @@ function RoomCard({
   presence?: { fanCount: number; fans: ActiveFan[]; totalJoinCount?: number };
   onShare: (room: Room) => void;
   sharingRoomId?: string | null;
+  counts?: RoomCounts;
 }) {
   const isFuture =
     room.scheduledStartTime !== undefined &&
@@ -1581,24 +1609,28 @@ function RoomCard({
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.07 }}
-      className="flex gap-4 items-center py-3.5 border-b border-white/[0.06] cursor-pointer hover:bg-white/[0.02] transition-colors duration-150"
+      className="mb-4 rounded-2xl border border-white/[0.08] bg-[#121218] overflow-hidden cursor-pointer hover:border-white/[0.14] transition-colors duration-150 p-3.5"
       onClick={handleCardClick}
     >
-      <Thumbnail room={room} isInfinityRoom={isInfinityRoom} />
+      {/* Top: image left, badge/title/description/avatars right */}
+      <div className="flex gap-3 items-start">
+        <RoomThumbnail room={room} isInfinityRoom={isInfinityRoom} />
 
-      <div className="flex-1 min-w-0">
-        {sport !== "default" && !isInfinityRoom && <SportBadge sport={sport} />}
-        <div className="flex items-center gap-2 mb-1 min-w-0">
-          <p className="text-[15px] font-extrabold text-white whitespace-normal">
+        <div className="flex-1 min-w-0">
+          {sport !== "default" && !isInfinityRoom && (
+            <div className="mb-1">
+              <SportBadge sport={sport} />
+            </div>
+          )}
+
+          <p className="text-[12px] font-extrabold text-white leading-tight mb-1">
             {room.name}
           </p>
-        </div>
 
-        <p className="text-xs text-white/45 mb-2 leading-snug line-clamp-2">
-          {room.description ?? "Roar conversations"}
-        </p>
+          <p className="text-[8px] text-white/45 mb-2 leading-snug line-clamp-2">
+            {room.description ?? "Roar conversations"}
+          </p>
 
-        <div className="mb-2.5">
           <StackedAvatars
             fans={liveFans}
             count={liveFanCount}
@@ -1606,43 +1638,49 @@ function RoomCard({
             totalJoinCount={totalJoinCount}
           />
         </div>
+      </div>
 
-        <div className="flex items-center gap-2">
-          <motion.button
-            whileTap={{ scale: 0.96 }}
-            onClick={(e) => {
-              e.stopPropagation();
-              if (isFuture) { onToast("This room hasn't started yet."); return; }
-              onJoin(room);
-            }}
-            className={[
-              "flex-1 py-2.5 rounded-full text-[13px] font-bold transition-colors duration-150",
-              isFuture
-                ? "border border-white/20 text-white/30 cursor-not-allowed bg-transparent"
-                : "border border-white/20 text-white cursor-pointer bg-transparent hover:border-white/40",
-            ].join(" ")}
-          >
-            {isFuture ? "Coming Soon" : "Join Room"}
-          </motion.button>
+      {/* Stats row — full width below */}
+      <div className="mt-3">
+        <RoomStatsRow counts={counts} />
+      </div>
 
-          <motion.button
-            whileTap={{ scale: 0.9 }}
-            onClick={(e) => {
-              e.stopPropagation();
-              if (sharingRoomId === room.roomId) return;
-              onShare(room);
-            }}
-            disabled={sharingRoomId === room.roomId}
-            className="w-9 h-9 rounded-full border border-white/20 flex items-center justify-center text-white/70 shrink-0 bg-transparent hover:border-white/40 hover:text-white transition-colors duration-150 disabled:opacity-50"
-            title="Share room stats"
-          >
-            {sharingRoomId === room.roomId ? (
-              <div className="w-3.5 h-3.5 rounded-full border-2 border-white/20 border-t-white/70 animate-spin" />
-            ) : (
-              <Share2 size={14} />
-            )}
-          </motion.button>
-        </div>
+      {/* Buttons — full width below stats */}
+      <div className="flex items-center gap-2 mt-3">
+        <motion.button
+          whileTap={{ scale: 0.96 }}
+          onClick={(e) => {
+            e.stopPropagation();
+            if (sharingRoomId === room.roomId) return;
+            onShare(room);
+          }}
+          disabled={sharingRoomId === room.roomId}
+          className="flex-[0.42] py-2.5 rounded-full border border-white/15 bg-[#1a1a1e] text-white/85 text-[12px] font-bold flex items-center justify-center gap-1.5 hover:border-white/30 transition-colors duration-150 disabled:opacity-50"
+        >
+          {sharingRoomId === room.roomId ? (
+            <div className="w-3 h-3 rounded-full border-2 border-white/20 border-t-white/70 animate-spin" />
+          ) : (
+            <BarChart3 size={13} />
+          )}
+          Share Stats
+        </motion.button>
+
+        <motion.button
+          whileTap={{ scale: 0.96 }}
+          onClick={(e) => {
+            e.stopPropagation();
+            if (isFuture) { onToast("This room hasn't started yet."); return; }
+            onJoin(room);
+          }}
+          className={[
+            "flex-[0.58] py-2.5 rounded-full text-[12px] font-bold flex items-center justify-center gap-1.5 transition-colors duration-150 text-white",
+            isFuture ? "opacity-40 cursor-not-allowed" : "cursor-pointer",
+          ].join(" ")}
+          style={{ background: "linear-gradient(135deg,#E91E8C,#FF6B35)" }}
+        >
+          {isFuture ? "Coming Soon" : "Join Room"}
+          {!isFuture && <ArrowRight size={13} />}
+        </motion.button>
       </div>
     </motion.div>
   );
@@ -1660,6 +1698,7 @@ export default function RoomsHome({ rooms, onJoinRoom, onToast }: Props) {
     [roomId: string]: { fanCount: number; fans: ActiveFan[]; totalJoinCount?: number };
   };
   const [presenceByRoom, setPresenceByRoom] = useState<PresenceByRoom>({});
+  const [countsByRoom, setCountsByRoom] = useState<Record<string, RoomCounts>>({});
 
   const [shareRoom, setShareRoom] = useState<Room | null>(null);
   const [shareCounts, setShareCounts] = useState<RoomCounts | null>(null);
@@ -1775,6 +1814,36 @@ export default function RoomsHome({ rooms, onJoinRoom, onToast }: Props) {
       return EMPTY_COUNTS;
     }
   };
+
+  // Powers the always-visible stats row on each room card (separate from the
+  // share-modal fetch, which re-fetches fresh counts at share time).
+  useEffect(() => {
+    const roomIds = allRooms.map((r) => r.roomId);
+    if (roomIds.length === 0) return;
+
+    let cancelled = false;
+    const fetchAllCounts = async () => {
+      const results = await Promise.all(
+        allRooms.map(async (room) => {
+          const counts = await fetchRoomCounts(room);
+          return [room.roomId, counts] as const;
+        })
+      );
+      if (cancelled) return;
+      setCountsByRoom((prev) => {
+        const next = { ...prev };
+        results.forEach(([roomId, counts]) => { next[roomId] = counts; });
+        return next;
+      });
+    };
+
+    fetchAllCounts();
+    const iv = setInterval(() => {
+      if (!document.hidden) fetchAllCounts();
+    }, 30_000);
+    return () => { cancelled = true; clearInterval(iv); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rooms.length]);
 
   const downloadBlob = (blob: Blob, filename: string) => {
     const url = URL.createObjectURL(blob);
@@ -2006,6 +2075,7 @@ export default function RoomsHome({ rooms, onJoinRoom, onToast }: Props) {
             presence={presenceByRoom[room.roomId]}
             onShare={handleShare}
             sharingRoomId={sharingRoomId}
+            counts={countsByRoom[room.roomId]}
           />
         ))}
         <div style={{ height: 86 }} />
@@ -2101,7 +2171,7 @@ export default function RoomsHome({ rooms, onJoinRoom, onToast }: Props) {
               )}
 
               {/* Primary native-share action — this is what attaches the IMAGE in WhatsApp/etc */}
-              {cardBlob && (
+               {cardBlob && (
                 <motion.button
                   whileTap={{ scale: 0.97 }}
                   onClick={handleNativeImageShare}
@@ -2115,7 +2185,7 @@ export default function RoomsHome({ rooms, onJoinRoom, onToast }: Props) {
               )}
 
               {/* Platform icon fallbacks (text link + auto-downloaded image to attach manually) */}
-              {/* <div
+             {/* <div
                 className="grid grid-cols-3 gap-1.5 mb-0.5"
                 style={{
                   opacity: shareLoading ? 0.4 : 1,

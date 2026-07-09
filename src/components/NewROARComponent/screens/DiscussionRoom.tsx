@@ -15,7 +15,7 @@ import { roarApi } from "@/lib/roarApi";
 import { RADIAL_OPTS } from "../constants";
 import {
   Image, ChevronLeft, Flame, TrendingUp, Zap, History, PenTool,
-  Brain, Users, CheckCircle2, XCircle,
+  Brain, Users, CheckCircle2, XCircle, Volume2, VolumeX,
   Share2, Send, ChevronDown, ChevronUp, Clock, MoreVertical, Trash2,
 } from "lucide-react";
 import PredictionsLivePanel from "../components/PredictionsLivePanel";
@@ -1140,7 +1140,7 @@ export default function DiscussionRoom({
   // not on the initial fan list when we ourselves join.
   const knownFanUidsRef = useRef<Set<string> | null>(null);
   const presenceRequestSeqRef = useRef(0);
-const presenceBootstrapTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const presenceBootstrapTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [joinToast, setJoinToast] = useState<{ username: string } | null>(null);
   const joinToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const joinToastQueueRef = useRef<string[]>([]);
@@ -1169,7 +1169,46 @@ const presenceBootstrapTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>
   // First call just establishes the baseline silently (so you don't get a
   // flood of "X has joined" for everyone already in the room when you arrive).
 
+  const SOUND_FILES: Record<"join" | "comment" | "post", string> = {
+    join: "/sounds/join.mp3",
+    comment: "/sounds/comment.mp3",
+    post: "/sounds/post.mp3",
+  };
 
+  const [soundEnabled, setSoundEnabled] = useState<boolean>(() => {
+    try {
+      const stored = localStorage.getItem("roar_sound_enabled");
+      return stored === null ? true : stored === "true";
+    } catch { return true; }
+  });
+
+  const soundEnabledRef = useRef(soundEnabled);
+  useEffect(() => { soundEnabledRef.current = soundEnabled; }, [soundEnabled]);
+
+  const audioCache = useRef<Partial<Record<keyof typeof SOUND_FILES, HTMLAudioElement>>>({});
+
+  const playSound = useCallback((key: keyof typeof SOUND_FILES) => {
+    if (!soundEnabledRef.current) return;
+    try {
+      let audio = audioCache.current[key];
+      if (!audio) {
+        audio = new Audio(SOUND_FILES[key]);
+        audio.volume = 0.5;
+        audioCache.current[key] = audio;
+      }
+
+      audio.currentTime = 0;
+      audio.play().catch(() => { });
+    } catch { /* ignore */ }
+  }, []);
+
+  const toggleSound = useCallback(() => {
+    setSoundEnabled(prev => {
+      const next = !prev;
+      try { localStorage.setItem("roar_sound_enabled", String(next)); } catch { }
+      return next;
+    });
+  }, []);
   useEffect(() => {
     dollyActiveRoomIdRef.current = dollyActiveRoomId;
   }, [dollyActiveRoomId]);
@@ -1203,27 +1242,28 @@ const presenceBootstrapTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>
   };
 
   const detectNewJoiners = useCallback((fans: { uid: string; username: string }[]) => {
-  if (!knownFanUidsRef.current) {
-    knownFanUidsRef.current = new Set(fans.map(f => f.uid));
-    return;
-  }
-  const seen = knownFanUidsRef.current;
-  const newcomers = fans.filter(f => f.uid !== currentUserId && !seen.has(f.uid));
-  seen.forEach(() => {}); // no-op, just keeping structure clear
-  fans.forEach(f => seen.add(f.uid));
+    if (!knownFanUidsRef.current) {
+      knownFanUidsRef.current = new Set(fans.map(f => f.uid));
+      return;
+    }
+    const seen = knownFanUidsRef.current;
+    const newcomers = fans.filter(f => f.uid !== currentUserId && !seen.has(f.uid));
+    seen.forEach(() => { }); // no-op, just keeping structure clear
+    fans.forEach(f => seen.add(f.uid));
+    if (newcomers.length > 0) playSound("join"); 
   newcomers.forEach(f => queueJoinToast(displayUsername(f.username)));
-}, [currentUserId, queueJoinToast]);
+  }, [currentUserId, queueJoinToast, playSound]);
 
-// NEW — single function that both the header state AND the toast derive from
-const applyPresenceResponse = useCallback((seq: number, data: any) => {
-  if (seq !== presenceRequestSeqRef.current) return; // drop stale/out-of-order response
-  const fans = data.fans ?? [];
-  setActiveFans(fans);
-  setLiveCount(data.fanCount ?? 0);
-  if (data.totalJoinCount !== undefined) setTotalJoinCount(data.totalJoinCount);
-  setPinnedPost(data.pinnedPost ?? null);
-  detectNewJoiners(fans);
-}, [detectNewJoiners]);
+  // NEW — single function that both the header state AND the toast derive from
+  const applyPresenceResponse = useCallback((seq: number, data: any) => {
+    if (seq !== presenceRequestSeqRef.current) return; // drop stale/out-of-order response
+    const fans = data.fans ?? [];
+    setActiveFans(fans);
+    setLiveCount(data.fanCount ?? 0);
+    if (data.totalJoinCount !== undefined) setTotalJoinCount(data.totalJoinCount);
+    setPinnedPost(data.pinnedPost ?? null);
+    detectNewJoiners(fans);
+  }, [detectNewJoiners]);
 
   const latestCreatedAtRef = useRef<number | null>(null);
   const sendingRef = useRef(false);
@@ -1276,6 +1316,8 @@ const applyPresenceResponse = useCallback((seq: number, data: any) => {
       setTopReactionsMap(prev => ({ ...prev, [msgId]: top }));
     } catch { topReactionsCache.current[msgId] = []; }
   }, [roomId]);
+
+
 
   const mapMessage = useCallback((m: any, existing?: any) => {
     const isPending = pendingReactRef.current[m.msgId];
@@ -1503,13 +1545,13 @@ const applyPresenceResponse = useCallback((seq: number, data: any) => {
   // }, [roomId, detectNewJoiners]);
 
   const refreshActiveFans = useCallback(async () => {
-  if (!roomId) return;
-  const seq = ++presenceRequestSeqRef.current;
-  try {
-    const res = await axios.get(`/api/roar/rooms/${roomId}/presence`);
-    if (res.data?.success) applyPresenceResponse(seq, res.data);
-  } catch (e) { console.error("Active fans fetch failed:", e); }
-}, [roomId, applyPresenceResponse]);
+    if (!roomId) return;
+    const seq = ++presenceRequestSeqRef.current;
+    try {
+      const res = await axios.get(`/api/roar/rooms/${roomId}/presence`);
+      if (res.data?.success) applyPresenceResponse(seq, res.data);
+    } catch (e) { console.error("Active fans fetch failed:", e); }
+  }, [roomId, applyPresenceResponse]);
 
   // useEffect(() => {
   //   if (!roomId) return;
@@ -1551,35 +1593,35 @@ const applyPresenceResponse = useCallback((seq: number, data: any) => {
   // }, [roomId, detectNewJoiners]);
 
   useEffect(() => {
-  if (!roomId) return;
-  setActiveFans([]); setLiveCount(0); setTotalJoinCount(0);
+    if (!roomId) return;
+    setActiveFans([]); setLiveCount(0); setTotalJoinCount(0);
 
-  const join = async () => {
-    const seq = ++presenceRequestSeqRef.current;
-    try {
-      const res = await axios.post(`/api/roar/rooms/${roomId}/presence`);
-      if (res.data?.success) applyPresenceResponse(seq, res.data);
-    } catch (e) { console.error("Join failed:", e); }
-  };
+    const join = async () => {
+      const seq = ++presenceRequestSeqRef.current;
+      try {
+        const res = await axios.post(`/api/roar/rooms/${roomId}/presence`);
+        if (res.data?.success) applyPresenceResponse(seq, res.data);
+      } catch (e) { console.error("Join failed:", e); }
+    };
 
-  const leaveBeacon = () => { navigator.sendBeacon(`/api/roar/rooms/${roomId}/presence/leave`); };
-  const leaveAxios = () => { axios.delete(`/api/roar/rooms/${roomId}/presence`).catch(() => { }); };
+    const leaveBeacon = () => { navigator.sendBeacon(`/api/roar/rooms/${roomId}/presence/leave`); };
+    const leaveAxios = () => { axios.delete(`/api/roar/rooms/${roomId}/presence`).catch(() => { }); };
 
-  join();
-  presenceBootstrapTimeoutRef.current = setTimeout(refreshActiveFans, 2000);
+    join();
+    presenceBootstrapTimeoutRef.current = setTimeout(refreshActiveFans, 2000);
 
-  const heartbeat = setInterval(() => { if (!document.hidden) join(); }, 30000);
-  const fanRefresh = setInterval(() => { if (!document.hidden) refreshActiveFans(); }, 120000);
-  window.addEventListener("beforeunload", leaveBeacon);
+    const heartbeat = setInterval(() => { if (!document.hidden) join(); }, 30000);
+    const fanRefresh = setInterval(() => { if (!document.hidden) refreshActiveFans(); }, 120000);
+    window.addEventListener("beforeunload", leaveBeacon);
 
-  return () => {
-    leaveAxios();
-    clearInterval(heartbeat);
-    clearInterval(fanRefresh);
-    if (presenceBootstrapTimeoutRef.current) clearTimeout(presenceBootstrapTimeoutRef.current);
-    window.removeEventListener("beforeunload", leaveBeacon);
-  };
-}, [roomId, applyPresenceResponse, refreshActiveFans]);
+    return () => {
+      leaveAxios();
+      clearInterval(heartbeat);
+      clearInterval(fanRefresh);
+      if (presenceBootstrapTimeoutRef.current) clearTimeout(presenceBootstrapTimeoutRef.current);
+      window.removeEventListener("beforeunload", leaveBeacon);
+    };
+  }, [roomId, applyPresenceResponse, refreshActiveFans]);
 
   useEffect(() => {
     try {
@@ -1625,20 +1667,22 @@ const applyPresenceResponse = useCallback((seq: number, data: any) => {
           setPosts(prev => {
             const existingIds = new Set(prev.map(p => p.id));
             const fresh = incoming.filter((m: any) => !existingIds.has(m.msgId)).map((m: any) => ({ ...mapMessage(m), timeAgo: "now" }));
+            if (fresh.length > 0) playSound("post");
             return fresh.length > 0 ? [...prev, ...fresh] : prev;
+
           });
         }
       }
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
-  }, [roomId, mapMessage]);
+  }, [roomId, mapMessage, playSound]);
 
   useEffect(() => { onRegisterRefresh?.(fetchMsgs); }, [fetchMsgs, onRegisterRefresh]);
   useEffect(() => {
     onRegisterReplyUpdate?.((postId, count) => {
       setPosts(p => p.map(x => x.id === postId ? { ...x, replyCount: count } : x));
     });
-  }, [onRegisterReplyUpdate]);
+  }, [onRegisterReplyUpdate, playSound]);
   useEffect(() => {
     latestCreatedAtRef.current = null;
     setPosts([]);
@@ -1653,7 +1697,7 @@ const applyPresenceResponse = useCallback((seq: number, data: any) => {
     setOpenInlinePostId(null);
     setActiveFilter("all");
     knownFanUidsRef.current = null;
-    presenceRequestSeqRef.current = 0; 
+    presenceRequestSeqRef.current = 0;
     joinToastQueueRef.current = [];
     setJoinToast(null);
   }, [roomId]);
@@ -1882,6 +1926,7 @@ const applyPresenceResponse = useCallback((seq: number, data: any) => {
         const m = res.data.message;
         setPosts(p => [...p, { id: m.msgId, fan: { username: displayUsername(m.authorUsername), authorUid: m.authorUid, badge: m.authorBadge, avatarUrl: m.authorAvatarUrl || m.avatarUrl || (m.authorUsername === userUsername ? userAvatarUrl : undefined) }, text: m.text, fireCount: m.fireCount ?? 0, heartCount: m.heartCount ?? 0, mindblownCount: m.mindblownCount ?? 0, goatCount: m.goatCount ?? 0, clapCount: m.clapCount ?? 0, nochanceCount: m.noChanceCount ?? 0, userReaction: null, replyCount: 0, agreeCount: 0, disagreeCount: 0, userVote: null, sideA: m.sideA ?? null, sideB: m.sideB ?? null, timeAgo: "now", createdAt: m.createdAt || Date.now(), type: m.type, mediaUrls: m.mediaUrls, quizQuestion: m.quizQuestion, quizOptions: m.quizOptions, quizCorrectOption: m.quizCorrectOption, quizUserAnswer: m.quizUserAnswer ?? null, quizTimer: m.quizTimer, quizPoints: m.quizPoints, quizParticipants: m.quizParticipants ?? 0, memGifUrl: m.memGifUrl ?? null, memTag: m.memTag ?? null }]);
         setInput(""); setAttachedUrl(null); setAttachedType(null);
+        playSound("post");
         startPostCooldown();
         setTimeout(() => listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" }), 50);
       }
@@ -1941,6 +1986,7 @@ const applyPresenceResponse = useCallback((seq: number, data: any) => {
           mediaUrls: [],
         }]);
         setNewlyPostedIds(prev => new Set([...prev, m.msgId]));
+        playSound("post");
         if (["wicket", "six", "four", "goal", "redcard", "catch", "frango", "yellowcard"].includes(memTag)) {
           setCelebration({ memTag });
         }
@@ -1955,6 +2001,8 @@ const applyPresenceResponse = useCallback((seq: number, data: any) => {
     if (typeof navigator !== "undefined" && navigator.share) navigator.share({ title: "SF360 Infinity Room", url: window.location.href });
     else { copyToClipboard(window.location.href); onToast("Link copied!"); }
   };
+
+
 
   const composeIconMap: Record<string, React.ReactNode> = {
     hot_take: <Flame size={13} stroke="url(#dr-pink-orange-grad)" fill="url(#dr-pink-orange-grad)" />,
@@ -2120,6 +2168,7 @@ const applyPresenceResponse = useCallback((seq: number, data: any) => {
               onFanProfile={onFanProfile}
               onCommentPosted={() => {
                 setPosts(prev => prev.map(x => x.id === p.id ? { ...x, replyCount: (x.replyCount || 0) + 1 } : x));
+                playSound("comment");
                 onToast("Comment posted!");
               }}
               onCommentDeleted={() => {
@@ -2239,6 +2288,15 @@ const applyPresenceResponse = useCallback((seq: number, data: any) => {
             </div>
           </div>
           <div className="flex items-center gap-1 flex-shrink-0">
+            <button
+              type="button"
+              onClick={toggleSound}
+              className="flex-shrink-0 bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.12)] rounded-[10px] p-1.5 cursor-pointer text-[rgba(255,255,255,0.75)] flex items-center justify-center"
+              style={{ width: "32px", height: "32px" }}
+              title={soundEnabled ? "Mute sounds" : "Unmute sounds"}
+            >
+              {soundEnabled ? <Volume2 size={14} /> : <VolumeX size={14} />}
+            </button>
             <button type="button" onClick={shareRoomLink} className="flex-shrink-0 bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.12)] rounded-[10px] p-1.5 cursor-pointer text-[rgba(255,255,255,0.75)] flex items-center justify-center" style={{ width: "32px", height: "32px" }}>
               <Share2 size={14} />
             </button>

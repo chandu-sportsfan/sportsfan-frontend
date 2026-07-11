@@ -18,7 +18,7 @@ const SPORT_IMAGE: Record<string, string> = {
 
 const INFINITY_ROOM_ID = "vZFu6xEApNRd1aUbDuHW";
 
-const VISIBLE_ROOM_IDS = ["IYCFQuX5VYw6KW1eV8jB"];
+const VISIBLE_ROOM_IDS = ["3XRaFu2Dueyhnamou0Ie"];
 
 const SHARE_CARD_BG = "/images/roomprofilecard.png";
 

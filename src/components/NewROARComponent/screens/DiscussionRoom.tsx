@@ -3375,6 +3375,8 @@ interface Props {
   onFanProfile?: (fan: any) => void;
   watchAlongRoomId?: string;
   roomSports?: string;
+  onRegisterInjectPost?: (fn: (post: any) => void) => void;
+  onRegisterOptimisticSwap?: (fn: (tempId: string, realMsg?: any) => void) => void;
 }
 
 const QUICK_REACT_OPTS = [
@@ -4625,6 +4627,7 @@ export default function DiscussionRoom({
   roomSports,
   onBack, onToast, roomId, roomName, onPostClick, onCompose,
   fanCount = 312, score, scoreSubtitle, currentAvatarUrl, currentUserId: propCurrentUserId, onRegisterRefresh, onRegisterReplyUpdate,
+  onRegisterInjectPost, onRegisterOptimisticSwap,
   onFanProfile, watchAlongRoomId
 }: Props) {
   const router = useRouter();
@@ -5193,6 +5196,22 @@ export default function DiscussionRoom({
       setPosts(p => p.map(x => x.id === postId ? { ...x, replyCount: count } : x));
     });
   }, [onRegisterReplyUpdate, playSound]);
+  const injectPost = useCallback((post: any) => {
+  setPosts(p => [...p, post]);
+  playSound("post");
+  setTimeout(() => listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" }), 50);
+}, [playSound]);
+
+const optimisticSwap = useCallback((tempId: string, realMsg?: any) => {
+  if (!realMsg) {
+    setPosts(p => p.filter(x => x.id !== tempId));
+    return;
+  }
+  setPosts(p => p.map(x => x.id === tempId ? { ...mapMessage(realMsg), timeAgo: "now" } : x));
+}, [mapMessage]);
+
+useEffect(() => { onRegisterInjectPost?.(injectPost); }, [injectPost, onRegisterInjectPost]);
+useEffect(() => { onRegisterOptimisticSwap?.(optimisticSwap); }, [optimisticSwap, onRegisterOptimisticSwap]);
   useEffect(() => {
     latestCreatedAtRef.current = null;
     setPosts([]);

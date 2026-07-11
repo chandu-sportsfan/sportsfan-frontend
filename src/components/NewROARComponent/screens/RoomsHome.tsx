@@ -11,14 +11,14 @@ const SPORT_GRADIENT: Record<string, string> = {
 };
 
 const SPORT_IMAGE: Record<string, string> = {
-  cricket:  "/images/cricket3.png",
+  cricket:  "/images/cricket4.png",
   football: "/images/fifa2.png",
   default:  "/images/fifa2.png",
 };
 
 const INFINITY_ROOM_ID = "vZFu6xEApNRd1aUbDuHW";
 
-const VISIBLE_ROOM_IDS = ["2yQvtie7nIcWXDA2iUDj", "biDY0WLIZB7wBCaE2Ppx"];
+const VISIBLE_ROOM_IDS = ["IYCFQuX5VYw6KW1eV8jB"];
 
 const SHARE_CARD_BG = "/images/roomprofilecard.png";
 

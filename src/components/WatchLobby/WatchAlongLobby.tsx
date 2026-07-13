@@ -188,8 +188,8 @@ export default function WatchAlongLobby({ onEnterRoom }: Props) {
     };
 
     return (
-        <div className="relative min-h-screen bg-black text-white font-sans flex justify-center w-full">
-            <div className="w-full max-w-7xl mx-auto pb-24 px-4 sm:px-6 lg:px-8">
+        <div className="relative min-h-screen bg-black text-white font-sans w-full">
+            <div className="w-full pb-24 px-4 sm:px-6 lg:px-8">
                 <style>{`
   .watch-along-bar { left: 0; }
   @media (min-width: 1024px) {
@@ -233,7 +233,6 @@ export default function WatchAlongLobby({ onEnterRoom }: Props) {
                         + Create
                     </button>
                 </div>
-
                 {/* Spacer */}
                 <div style={{ height: 68 }} />
 
@@ -302,12 +301,12 @@ export default function WatchAlongLobby({ onEnterRoom }: Props) {
 
                 {/* LIVE NOW */}
                 {liveRooms.length > 0 && (
-                    <div className="mb-6">
-                        <div className="flex items-center gap-2 mb-3">
+                    <div className="mb-8">
+                        <div className="flex items-center gap-2 mb-4">
                             <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
                             <span className="text-[11px] font-black uppercase tracking-widest text-gray-400">Live Now</span>
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                        <div className="flex flex-col gap-4">
                             {liveRooms.map(room => (
                                 <ExpertCard
                                     key={room.id}
@@ -325,12 +324,12 @@ export default function WatchAlongLobby({ onEnterRoom }: Props) {
 
                 {/* UPCOMING */}
                 {upcomingRooms.length > 0 && (
-                    <div className="mb-6">
-                        <div className="flex items-center gap-2 mb-3">
+                    <div className="mb-8">
+                        <div className="flex items-center gap-2 mb-4">
                             <span className="text-[11px]">🗓️</span>
                             <span className="text-[11px] font-black uppercase tracking-widest text-gray-400">Upcoming</span>
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                        <div className="flex flex-col gap-4">
                             {upcomingRooms.map(room => (
                                 <ExpertCard
                                     key={room.id}

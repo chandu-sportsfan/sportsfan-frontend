@@ -197,7 +197,7 @@ export default function StoreMyBookings() {
                       {o.status !== 'cancelled' && o.slotId && (
                         <>
                           <button 
-                            onClick={() => router.push(`/store/booking/${o.productId?.replace('coach-', '') || '1'}`)}
+                            onClick={() => router.push(`/MainModules/AtheleteStore/StoreBooking/${o.productId?.replace('coach-', '') || '1'}`)}
                             className="px-3 py-1.5 rounded-full bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.1)] text-[#99A1AF] text-[12px] font-semibold"
                           >
                             Reschedule

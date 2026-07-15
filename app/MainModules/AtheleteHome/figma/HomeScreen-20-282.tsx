@@ -1873,7 +1873,7 @@ function Container48() {
   return (
     <div
       // onClick={() => router.push("/articles/1")}
-       onClick={() => router.push("/MainModules/AtheleteArticles/cwg-2026-squad")} 
+       onClick={() => router.push("/MainModules/AtheleteArticles/india-commonwealth-games-2026-athletics-squad")} 
       className="absolute h-[192px] left-0 overflow-clip rounded-[16px] top-0 w-[350px]"
       data-name="Container"
     >
@@ -1941,7 +1941,7 @@ function Container51() {
   return (
     <div
       // onClick={() => router.push("/MainModules/AtheleteArticles")}
-       onClick={() => router.push("/MainModules/AtheleteArticles/2-days-2-national-records")}
+       onClick={() => router.push("/MainModules/AtheleteArticles/federation-cup-2026-gurindervir-tejaswin-national-records")}
       className="absolute border border-[rgba(255,255,255,0.1)] border-solid h-[131.5px] left-0 rounded-[16px] top-0 w-[167px]"
       style={{
         backgroundImage:

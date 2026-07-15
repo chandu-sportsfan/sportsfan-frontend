@@ -165,7 +165,7 @@ function StoreCoachProfileContent() {
 
   return (
     <div className="bg-black w-full flex justify-center min-h-screen">
-      <div className="w-full max-w-[390px] bg-[#0b0b0f] relative flex flex-col min-h-screen">
+      <div className="w-full max-w-[390px] bg-[#0b0b0f] relative flex flex-col h-[100dvh] overflow-hidden">
 
         {/* HERO */}
         <div className="relative flex-shrink-0" style={{ height: 320 }}>
@@ -230,7 +230,7 @@ function StoreCoachProfileContent() {
         </div>
 
         {/* SCROLLABLE BODY */}
-        <div className="flex-1 overflow-y-auto pb-[96px] no-scrollbar">
+        <div className="flex-1 overflow-y-auto pb-[160px] lg:pb-[96px] no-scrollbar">
 
           {/* Date Picker */}
           <div className="mb-5">
@@ -409,8 +409,8 @@ function StoreCoachProfileContent() {
 
         {/* STICKY BOOK SESSION */}
         <div
-          className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[390px] z-50 px-4 py-3"
-          style={{ background: 'linear-gradient(to top, #0b0b0f 80%, transparent)', borderTop: '1px solid rgba(255,255,255,0.07)' }}
+          className="absolute bottom-[60px] lg:bottom-0 left-0 right-0 w-full z-50 px-4 py-3 bg-[#0b0b0f]"
+          style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }}
         >
           {selectedTime && (
             <div className="flex items-center gap-2 mb-2.5 px-1">

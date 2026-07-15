@@ -69,7 +69,7 @@ function StorePaymentContent() {
 
   return (
     <div className="bg-black w-full flex justify-center min-h-screen">
-      <div className="w-full max-w-[390px] bg-[#0b0b0f] relative flex flex-col min-h-screen">
+      <div className="w-full max-w-[390px] bg-[#0b0b0f] relative flex flex-col h-[100dvh] overflow-hidden">
         {/* Header */}
         <div className="sticky top-0 z-50 bg-[#0b0b0f] border-b border-[rgba(255,255,255,0.05)] h-[56px] flex items-center px-4 gap-3">
           <button
@@ -88,7 +88,7 @@ function StorePaymentContent() {
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto pb-[88px] no-scrollbar px-4 pt-5">
+        <div className="flex-1 overflow-y-auto pb-[150px] lg:pb-[88px] no-scrollbar px-4 pt-5">
           {/* Order summary pill */}
           <div className="bg-[rgba(201,17,95,0.08)] border border-[rgba(201,17,95,0.2)] rounded-[16px] p-4 mb-5 flex items-center justify-between">
             <div>
@@ -144,7 +144,7 @@ function StorePaymentContent() {
         </div>
 
         {/* CTA */}
-        <div className="absolute bottom-0 left-0 right-0 bg-[#0b0b0f] border-t border-[rgba(255,255,255,0.07)] px-4 py-3">
+        <div className="absolute bottom-[60px] lg:bottom-0 left-0 right-0 bg-[#0b0b0f] border-t border-[rgba(255,255,255,0.07)] px-4 py-3">
           <button
             onClick={handlePay}
             disabled={processing}

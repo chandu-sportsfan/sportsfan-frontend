@@ -625,7 +625,7 @@ function BookingModal({ event, onClose, onSuccess }: { event: any; onClose: () =
 
           <button
             onClick={() => setStep(1)}
-            className="w-full py-3.5 rounded-[16px] text-white text-[14px] font-black flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
+            className="w-full  rounded-[16px] text-white text-[14px] font-black flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
             style={{ background: `linear-gradient(135deg, ${event.color || '#0ea5e9'}, #cd620e)`, boxShadow: `0 6px 20px ${event.color || '#0ea5e9'}45` }}
           >
             <Ticket className="w-[14px] h-[14px]" />

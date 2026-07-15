@@ -97,6 +97,27 @@ function SectionHeader({ title, icon: Icon, color, onSeeAll }: { title: string; 
 
 export default function StoreScreen() {
     const router = useRouter();
+    const resolveRoute = (category: string, productId?: string) => {
+        if (category === 'coaches') {
+            return `/MainModules/AtheleteStore/StoreCoachProfile/${productId?.replace('coach-', '') || '1'}`;
+        }
+        const routes: Record<string, string> = {
+            experiences: '/MainModules/AtheleteStore/StoreExperiences',
+            events: '/MainModules/AtheleteStore/StoreTicketedEvents',
+            auctions: '/MainModules/AtheleteStore/StoreAuctions',
+            athletes: '/MainModules/AtheleteStore/StoreAthelete',
+            memorabilia: '/MainModules/AtheleteStore/StoreMemorabilia',
+            brands: '/MainModules/AtheleteStore/StoreBrands',
+            digital: '/MainModules/AtheleteStore/StoreDigital',
+            memberships: '/MainModules/AtheleteStore/StoreMemberships',
+            dolly: '/MainModules/AtheleteStore/StoreDolly',
+            wallet: '/MainModules/AtheleteStore/StoreWallet',
+            'session-requests': '/MainModules/AtheleteStore/StoreSessionRequests',
+            coaches_listing: '/MainModules/AtheleteStore/StoreCoachListing',
+            ticketed_events: '/MainModules/AtheleteStore/StoreTicketedEvents',
+        };
+        return routes[category] || '/MainModules/AtheleteStore';
+    };
     const [locationState, setLocationState] = useState<'fetching' | 'saved'>('fetching');
     const [coins, setCoins] = useState<number>(250);
 
@@ -199,7 +220,7 @@ export default function StoreScreen() {
                     </div>
                     <div className="flex items-center gap-[6px]">
                         <button
-                        onClick={() => router.push('/store/wallet')}
+                        onClick={() => router.push(resolveRoute('wallet'))}
                         className="flex items-center gap-[4px] bg-[rgba(0,0,0,0.4)] border border-[rgba(255,255,255,0.1)] rounded-full px-[8px] py-[4px]"
                         >
                         <Star className="w-[12px] h-[12px] text-[#FFD700] fill-[#FFD700]" />
@@ -336,7 +357,7 @@ export default function StoreScreen() {
                                 {recentlyViewed.map((item) => (
                                     <button
                                         key={item.id}
-                                        onClick={() => handleProductClick(item.productId, item.category === 'coaches' ? `/store/coach/${item.productId.replace('coach-', '')}` : `/store/${item.category}`)}
+                                        onClick={() => handleProductClick(item.productId, resolveRoute(item.category, item.productId))}
                                         className="flex-shrink-0 w-[120px] rounded-[16px] p-2 text-left bg-[#111116] border border-[rgba(255,255,255,0.06)]"
                                     >
                                         <div className="h-[70px] rounded-[10px] overflow-hidden mb-2 relative">
@@ -362,7 +383,7 @@ export default function StoreScreen() {
                                     <span className="ml-2 text-[8px] font-black px-1.5 py-0.5 rounded-full text-black" style={{ background: '#FFD700' }}>LIVE BOOKINGS</span>
                                 </div>
                             </div>
-                            <button onClick={() => router.push('/store/ticketed-events')} className="flex items-center gap-0.5 text-[11px] font-bold text-[#FFD700]">
+                            <button onClick={() => router.push(resolveRoute('ticketed_events'))} className="flex items-center gap-0.5 text-[11px] font-bold text-[#FFD700]">
                                 All <ChevronRight className="w-[12px] h-[12px]" />
                             </button>
                         </div>
@@ -373,7 +394,7 @@ export default function StoreScreen() {
                                 return (
                                     <button
                                         key={ev.id}
-                                        onClick={() => handleProductClick('experience-2', '/store/ticketed-events')}
+                                        onClick={() => handleProductClick('experience-2', resolveRoute('ticketed_events'))}
                                         className="flex-shrink-0 w-[220px] rounded-[18px] overflow-hidden text-left active:scale-[0.97] transition-transform"
                                         style={{ background: '#0f0f17', border: `1px solid ${ev.color}30` }}
                                     >
@@ -420,12 +441,12 @@ export default function StoreScreen() {
                     {/* Live Auctions */}
                     {auctions.length > 0 && (
                         <div className="mb-4">
-                            <SectionHeader title="Live Auctions" icon={Gavel} color="#ff4444" onSeeAll={() => router.push('/store/auctions')} />
+                            <SectionHeader title="Live Auctions" icon={Gavel} color="#ff4444" onSeeAll={() => router.push(resolveRoute('auctions'))} />
                             <div className="px-4 grid grid-cols-2 gap-2.5">
                                 {auctions.map((a) => (
                                     <button
                                         key={a.id}
-                                        onClick={() => handleProductClick(a.id, '/store/auctions')}
+                                        onClick={() => handleProductClick(a.id, resolveRoute('auctions'))}
                                         className="rounded-[16px] overflow-hidden text-left active:scale-[0.97] transition-transform relative"
                                         style={{ background: '#0f0f14', border: '1px solid rgba(255,68,68,0.2)' }}
                                     >
@@ -462,12 +483,12 @@ export default function StoreScreen() {
                     {/* Top Coaches */}
                     {coaches.length > 0 && (
                         <div className="mb-4">
-                            <SectionHeader title="Top Coaches" icon={Users} color="#c9115f" onSeeAll={() => router.push('/store/coaches')} />
+                            <SectionHeader title="Top Coaches" icon={Users} color="#c9115f" onSeeAll={() => router.push(resolveRoute('coaches_listing'))} />
                             <div className="flex gap-2.5 overflow-x-auto no-scrollbar px-4 pb-1">
                                 {coaches.map((c) => (
                                     <button
                                         key={c.id}
-                                        onClick={() => handleProductClick(c.id, `/store/coach/${c.coachId || '1'}`)}
+                                        onClick={() => handleProductClick(c.id, resolveRoute('coaches', c.coachId))}
                                         className="flex-shrink-0 w-[140px] rounded-[16px] p-3 text-left active:scale-[0.97] transition-transform relative"
                                         style={{ background: '#0f0f14', border: '1px solid rgba(255,255,255,0.06)' }}
                                     >
@@ -506,12 +527,12 @@ export default function StoreScreen() {
                     {/* Trending Now */}
                     {trending.length > 0 && (
                         <div className="mb-4">
-                            <SectionHeader title="Trending Now" icon={TrendingUp} color="#cd620e" onSeeAll={() => router.push('/store/athletes')} />
+                            <SectionHeader title="Trending Now" icon={TrendingUp} color="#cd620e" onSeeAll={() => router.push(resolveRoute('athletes'))} />
                             <div className="flex gap-2.5 overflow-x-auto no-scrollbar px-4 pb-1">
                                 {trending.map((item) => (
                                     <button
                                         key={item.id}
-                                        onClick={() => handleProductClick(item.id, item.category === 'memorabilia' ? '/store/memorabilia' : `/store/${item.category}`)}
+                                        onClick={() => handleProductClick(item.id, resolveRoute(item.category, item.id))}
                                         className="flex-shrink-0 w-[130px] rounded-[16px] overflow-hidden text-left active:scale-[0.97] transition-transform relative"
                                         style={{ background: '#0f0f14', border: '1px solid rgba(255,255,255,0.06)' }}
                                     >
@@ -542,12 +563,12 @@ export default function StoreScreen() {
 
                     {/* Brand Deals */}
                     <div className="mb-4">
-                        <SectionHeader title="Brand Deals" icon={Tag} color="#8b5cf6" onSeeAll={() => router.push('/store/brands')} />
+                        <SectionHeader title="Brand Deals" icon={Tag} color="#8b5cf6" onSeeAll={() => router.push(resolveRoute('brands'))} />
                         <div className="px-4 grid grid-cols-2 gap-2">
                             {brands.map((b) => (
                                 <button
                                     key={b.name}
-                                    onClick={() => router.push('/store/brands')}
+                                    onClick={() => router.push(resolveRoute('brands'))}
                                     className="rounded-[14px] overflow-hidden text-left active:scale-[0.97] transition-transform"
                                     style={{ background: '#0f0f14', border: '1px solid rgba(255,255,255,0.06)' }}
                                 >
@@ -571,7 +592,7 @@ export default function StoreScreen() {
                         <div className="grid grid-cols-2 gap-2.5">
                             {/* AI Dolly */}
                             <button
-                                onClick={() => router.push('/store/dolly')}
+                                onClick={() => router.push(resolveRoute('dolly'))}
                                 className="rounded-[18px] overflow-hidden text-left active:scale-[0.97] transition-transform flex flex-col relative"
                                 style={{ height: 170, background: 'linear-gradient(145deg, #1a0d2e, #0f0518)', border: '1px solid rgba(124,58,237,0.4)' }}
                             >
@@ -595,7 +616,7 @@ export default function StoreScreen() {
 
                             {/* Digital Products */}
                             <button
-                                onClick={() => router.push('/store/digital')}
+                                onClick={() => router.push(resolveRoute('digital'))}
                                 className="rounded-[18px] text-left active:scale-[0.97] transition-transform flex flex-col overflow-hidden"
                                 style={{ height: 170, background: 'linear-gradient(145deg, #061a12, #0b0b0f)', border: '1px solid rgba(16,185,129,0.3)' }}
                             >
@@ -617,7 +638,7 @@ export default function StoreScreen() {
                     {/* Elite Membership Banner */}
                     <div className="px-4 mb-4">
                         <button
-                            onClick={() => router.push('/store/memberships')}
+                            onClick={() => router.push(resolveRoute('memberships'))}
                             className="w-full rounded-[20px] overflow-hidden text-left active:scale-[0.98] transition-transform relative"
                             style={{ height: 110 }}
                         >
@@ -646,7 +667,7 @@ export default function StoreScreen() {
                     {/* Session Requests CTA */}
                     <div className="px-4 mb-5">
                         <button
-                            onClick={() => router.push('/store/session-requests')}
+                            onClick={() => router.push(resolveRoute('session-requests'))}
                             className="w-full rounded-[16px] p-3.5 flex items-center gap-3 active:scale-[0.98] transition-transform"
                             style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)' }}
                         >

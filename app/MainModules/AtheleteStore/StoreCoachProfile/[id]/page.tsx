@@ -1,11 +1,11 @@
-// MainModules\AtheleteStore\StoreCoachProfile\[slug]\page.tsx
 'use client';
 
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import { ArrowLeft, Star, Clock, Share2, Bookmark, Award, Shield, ChevronDown, ChevronUp, Zap, CheckCircle, MessageCircle } from 'lucide-react';
-import { useState, useEffect } from 'react';
-import { SourcingModelBadge } from '../../page';
+import { useState, useEffect, Suspense } from 'react';
+import { CoachBadge } from '../../page';
 import { storeService } from '@/services/store.service';
+import { formatPrice } from '@/utils/formatters';
 
 const defaultCoach = {
   id: 1, name: 'Anubhav Karmakar', role: 'Founder, Athloft Multisport', experience: '12 yrs',
@@ -59,9 +59,13 @@ const groupSlotsByDate = (slotList: any[]) => {
   return Object.values(grouped).sort((a, b) => a.date.localeCompare(b.date));
 };
 
-export default function StoreCoachProfile() {
+function StoreCoachProfileContent() {
   const router = useRouter();
-  const { id } = useParams();
+  const params = useParams();
+  const id = params?.id;
+  const searchParams = useSearchParams();
+  const serviceType = searchParams?.get('serviceType');
+
   const [coach, setCoach] = useState<any>(defaultCoach);
   const [groupedSlots, setGroupedSlots] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -76,9 +80,6 @@ export default function StoreCoachProfile() {
   const [selectedService, setSelectedService] = useState<number>(0);
   const [lockingSlot, setLockingSlot] = useState(false);
 
-  const queryParams = new URLSearchParams(window.location.search);
-  const serviceType = queryParams.get('serviceType');
-
   useEffect(() => {
     if (coach.services && serviceType) {
       const idx = coach.services.findIndex((svc: any) =>
@@ -91,95 +92,30 @@ export default function StoreCoachProfile() {
     }
   }, [coach, serviceType]);
 
-//   const fetchCoach = async () => {
-//     try {
-//       const product = await storeService.getProductById(`coach-${id || '1'}`);
-//       const slotList = await storeService.getSlots(`coach-${id || '1'}`);
-
-//       setCoach({
-//         ...defaultCoach,
-//         ...product,
-//         id: product.id,
-//         name: product.name,
-//         role: product.title || product.role || defaultCoach.role,
-//         pricePaise: product.pricePaise,
-//         image: product.image || defaultCoach.image,
-//         rating: product.rating || defaultCoach.rating,
-//         reviews: product.reviews || defaultCoach.reviews,
-//         badge: product.sourcing_model || 'independent',
-//       });
-//       setGroupedSlots(groupSlotsByDate(slotList));
-//     } catch (err) {
-//       console.error('Error fetching coach details:', err);
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-const fetchCoach = async () => {
-  try {
-    // The slug is now "coach-1", not "1"
-    const coachId = Array.isArray(id) ? id[0] : id || 'coach-1';
-    
-    console.log('🔍 Fetching coach with slug:', coachId);
-    
-    // Get ALL products
-    const allProducts = await storeService.getProducts();
-    const coachProducts = allProducts.filter((p: any) => p.category === 'coaches');
-    
-    // Find by full id (coach-1) or by coachId (1)
-    let product = coachProducts.find((p: any) => 
-      p.id === coachId || // matches "coach-1"
-      p.coachId === coachId || // matches "1"
-      p.id === `coach-${coachId}` // if coachId is "1", matches "coach-1"
-    );
-    
-    console.log('🔍 Product found?', !!product);
-    if (product) {
-      console.log('✅ Found coach:', product.name);
-      const data = product as any;
-      setCoach({
-        id: data.id || coachId,
-        name: data.name || defaultCoach.name,
-        role: data.title || data.role || defaultCoach.role,
-        experience: data.experience || defaultCoach.experience,
-        rating: data.rating || defaultCoach.rating,
-        reviews: data.reviews || defaultCoach.reviews,
-        sessionsCompleted: data.sessionsCompleted || defaultCoach.sessionsCompleted,
-        pricePaise: data.pricePaise || defaultCoach.pricePaise,
-        nextSlot: data.nextSlot || defaultCoach.nextSlot,
-        image: data.image || defaultCoach.image,
-        verified: data.verified !== undefined ? data.verified : defaultCoach.verified,
-        badge: data.sourcing_model || data.badge || 'independent',
-        tagline: data.tagline || defaultCoach.tagline,
-        about: data.about || defaultCoach.about,
-        achievements: data.achievements || defaultCoach.achievements,
-        certifications: data.certifications || defaultCoach.certifications,
-        services: data.services || defaultCoach.services,
-        reviewList: data.reviewList || defaultCoach.reviewList,
-      });
-    } else {
-      console.log('❌ No coach found');
-      setCoach(defaultCoach);
-    }
-
-    // Get slots
+  const fetchCoach = async () => {
     try {
-      const slotList = await storeService.getSlots(`coach-${coachId.replace('coach-', '')}`);
+      const product = await storeService.getProductById(`coach-${id || '1'}`);
+      const slotList = await storeService.getSlots(`coach-${id || '1'}`);
+
+      setCoach({
+        ...defaultCoach,
+        ...product,
+        id: product.id,
+        name: product.name,
+        role: product.title || product.role || defaultCoach.role,
+        pricePaise: product.pricePaise,
+        image: product.image || defaultCoach.image,
+        rating: product.rating || defaultCoach.rating,
+        reviews: product.reviews || defaultCoach.reviews,
+        badge: product.sourcing_model || 'independent',
+      });
       setGroupedSlots(groupSlotsByDate(slotList));
-    } catch (slotErr) {
-      console.error('Error fetching slots:', slotErr);
-      setGroupedSlots([]);
+    } catch (err) {
+      console.error('Error fetching coach details:', err);
+    } finally {
+      setLoading(false);
     }
-    
-  } catch (err) {
-    console.error('Error fetching coach details:', err);
-    setCoach(defaultCoach);
-    setGroupedSlots([]);
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   useEffect(() => {
     setLoading(true);
@@ -201,7 +137,7 @@ const fetchCoach = async () => {
       const res = await storeService.lockSlot(`coach-${id || '1'}`, selectedSlotId, 'abhishekrt959_gmail_com');
       if (res.status === 'locked' || res.lockExpiresAt) {
         // Success: navigate to booking screen carrying parameters
-        router.push(`/store/booking/${id || '1'}?date=${currentSlot.date}&time=${selectedTime}&day=${currentSlot.day}&num=${currentSlot.num}&serviceIndex=${selectedService}`);
+        router.push(`/MainModules/AtheleteStore/StoreBooking/${id || '1'}?date=${currentSlot.date}&time=${selectedTime}&day=${currentSlot.day}&num=${currentSlot.num}&serviceIndex=${selectedService}`);
       } else {
         alert('Slot not available');
       }
@@ -270,7 +206,7 @@ const fetchCoach = async () => {
                   <span className="text-white text-[10px] font-bold">✓</span>
                 </div>
               )}
-              <SourcingModelBadge type={coach.badge} />
+              <CoachBadge type={coach.badge} />
             </div>
             <p className="text-[rgba(255,255,255,0.65)] text-[13px]">{coach.role}</p>
             <p className="text-[rgba(255,255,255,0.45)] text-[11px] mt-0.5">{coach.tagline}</p>
@@ -510,5 +446,17 @@ const fetchCoach = async () => {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function StoreCoachProfile() {
+  return (
+    <Suspense fallback={
+      <div className="bg-black w-full flex justify-center min-h-screen items-center">
+        <span className="text-white text-[14px]">Loading coach profile...</span>
+      </div>
+    }>
+      <StoreCoachProfileContent />
+    </Suspense>
   );
 }

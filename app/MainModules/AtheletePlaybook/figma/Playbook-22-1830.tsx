@@ -12,6 +12,7 @@ import imgContainer9 from "./92dad9e7043a032ad62a7c52df76b3ad1bd47187.png";
 import imgContainer10 from "./87b450f039597b512f21b86ecece70e4c48bc9f6.png";
 import imgContainer11 from "./73abb37974b00085c78ec6d21f34da926d639cd6.png";
 import imgContainer12 from "./15019a9fab6c77c5141c91a43bfe523cd3081533.png";
+import Image from "next/image";
 
 function Paragraph() {
   return (
@@ -459,7 +460,7 @@ function Container12() {
   return (
     <div className="absolute h-[200px] left-0 rounded-[20px] top-0 w-[160px]" data-name="Container">
       <div aria-hidden="true" className="absolute inset-0 pointer-events-none rounded-[20px]">
-        <img alt="" className="absolute max-w-none object-cover rounded-[20px] size-full" src={imgContainer} />
+        <Image alt="" className="absolute max-w-none object-cover rounded-[20px] size-full" src={imgContainer} />
         <div className="absolute inset-0 rounded-[20px]" style={{ backgroundImage: "linear-gradient(0deg, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.2) 50%, rgba(0, 0, 0, 0) 100%), linear-gradient(0deg, rgba(173, 70, 255, 0.2) 0%, rgba(89, 22, 139, 0.4) 100%)" }} />
       </div>
       <div className="overflow-clip relative rounded-[inherit] size-full">
@@ -582,7 +583,7 @@ function Container46() {
   return (
     <div className="absolute h-[200px] left-0 rounded-[20px] top-0 w-[160px]" data-name="Container">
       <div aria-hidden="true" className="absolute inset-0 pointer-events-none rounded-[20px]">
-        <img alt="" className="absolute max-w-none object-cover rounded-[20px] size-full" src={imgContainer1} />
+        <Image alt="" className="absolute max-w-none object-cover rounded-[20px] size-full" src={imgContainer1} />
         <div className="absolute inset-0 rounded-[20px]" style={{ backgroundImage: "linear-gradient(0deg, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.2) 50%, rgba(0, 0, 0, 0) 100%), linear-gradient(0deg, rgba(43, 127, 255, 0.2) 0%, rgba(28, 57, 142, 0.4) 100%)" }} />
       </div>
       <div className="overflow-clip relative rounded-[inherit] size-full">
@@ -756,7 +757,7 @@ function Container55() {
   return (
     <div className="absolute h-[200px] left-0 rounded-[20px] top-0 w-[160px]" data-name="Container">
       <div aria-hidden="true" className="absolute inset-0 pointer-events-none rounded-[20px]">
-        <img alt="" className="absolute max-w-none object-cover rounded-[20px] size-full" src={imgContainer2} />
+        <Image alt="" className="absolute max-w-none object-cover rounded-[20px] size-full" src={imgContainer2} />
         <div className="absolute inset-0 rounded-[20px]" style={{ backgroundImage: "linear-gradient(0deg, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.2) 50%, rgba(0, 0, 0, 0) 100%), linear-gradient(0deg, rgba(255, 105, 0, 0.2) 0%, rgba(126, 42, 12, 0.4) 100%)" }} />
       </div>
       <div className="overflow-clip relative rounded-[inherit] size-full">
@@ -873,7 +874,7 @@ function Container58() {
   return (
     <div className="absolute h-[200px] left-0 rounded-[20px] top-0 w-[160px]" data-name="Container">
       <div aria-hidden="true" className="absolute inset-0 pointer-events-none rounded-[20px]">
-        <img alt="" className="absolute max-w-none object-cover rounded-[20px] size-full" src={imgContainer3} />
+        <Image alt="" className="absolute max-w-none object-cover rounded-[20px] size-full" src={imgContainer3} />
         <div className="absolute inset-0 rounded-[20px]" style={{ backgroundImage: "linear-gradient(0deg, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.2) 50%, rgba(0, 0, 0, 0) 100%), linear-gradient(0deg, rgba(43, 127, 255, 0.2) 0%, rgba(28, 57, 142, 0.4) 100%)" }} />
       </div>
       <div className="overflow-clip relative rounded-[inherit] size-full">
@@ -1189,7 +1190,7 @@ function Container66() {
     <div className="absolute h-[200px] left-0 rounded-[20px] top-0 w-[160px]" data-name="Container">
       <div aria-hidden="true" className="absolute inset-0 pointer-events-none rounded-[20px]">
         <div className="absolute inset-0 overflow-hidden rounded-[20px]">
-          <img alt="" className="absolute h-full left-[-71.58%] max-w-none top-[1.77%] w-[212.16%]" src={imgContainer4} />
+          <Image alt="" className="absolute h-full left-[-71.58%] max-w-none top-[1.77%] w-[212.16%]" src={imgContainer4} />
         </div>
         <div className="absolute inset-0 rounded-[20px]" style={{ backgroundImage: "linear-gradient(0deg, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.2) 50%, rgba(0, 0, 0, 0) 100%), linear-gradient(0deg, rgba(173, 70, 255, 0.2) 0%, rgba(89, 22, 139, 0.4) 100%)" }} />
       </div>
@@ -1314,7 +1315,7 @@ function Container100() {
     <div className="absolute h-[200px] left-0 rounded-[20px] top-0 w-[160px]" data-name="Container">
       <div aria-hidden="true" className="absolute inset-0 pointer-events-none rounded-[20px]">
         <div className="absolute inset-0 overflow-hidden rounded-[20px]">
-          <img alt="" className="absolute h-full left-[-11.72%] max-w-none top-[-0.15%] w-[138.5%]" src={imgContainer5} />
+          <Image alt="" className="absolute h-full left-[-11.72%] max-w-none top-[-0.15%] w-[138.5%]" src={imgContainer5} />
         </div>
         <div className="absolute inset-0 rounded-[20px]" style={{ backgroundImage: "linear-gradient(0deg, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.2) 50%, rgba(0, 0, 0, 0) 100%), linear-gradient(0deg, rgba(43, 127, 255, 0.2) 0%, rgba(28, 57, 142, 0.4) 100%)" }} />
       </div>
@@ -1478,7 +1479,7 @@ function Container108() {
     <div className="absolute h-[200px] left-0 rounded-[20px] top-0 w-[160px]" data-name="Container">
       <div aria-hidden="true" className="absolute inset-0 pointer-events-none rounded-[20px]">
         <div className="absolute inset-0 overflow-hidden rounded-[20px]">
-          <img alt="" className="absolute h-full left-[-7.94%] max-w-none top-0 w-[125%]" src={imgContainer6} />
+          <Image alt="" className="absolute h-full left-[-7.94%] max-w-none top-0 w-[125%]" src={imgContainer6} />
         </div>
         <div className="absolute inset-0 rounded-[20px]" style={{ backgroundImage: "linear-gradient(0deg, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.2) 50%, rgba(0, 0, 0, 0) 100%), linear-gradient(0deg, rgba(255, 105, 0, 0.2) 0%, rgba(126, 42, 12, 0.4) 100%)" }} />
       </div>
@@ -1792,7 +1793,7 @@ function Container115() {
   return (
     <div className="absolute h-[200px] left-0 rounded-[20px] top-0 w-[160px]" data-name="Container">
       <div aria-hidden="true" className="absolute inset-0 pointer-events-none rounded-[20px]">
-        <img alt="" className="absolute max-w-none object-cover rounded-[20px] size-full" src={imgContainer7} />
+        <Image alt="" className="absolute max-w-none object-cover rounded-[20px] size-full" src={imgContainer7} />
         <div className="absolute inset-0 rounded-[20px]" style={{ backgroundImage: "linear-gradient(0deg, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.2) 50%, rgba(0, 0, 0, 0) 100%), linear-gradient(0deg, rgba(173, 70, 255, 0.2) 0%, rgba(89, 22, 139, 0.4) 100%)" }} />
       </div>
       <div className="overflow-clip relative rounded-[inherit] size-full">
@@ -1915,7 +1916,7 @@ function Container149() {
   return (
     <div className="absolute h-[200px] left-0 rounded-[20px] top-0 w-[160px]" data-name="Container">
       <div aria-hidden="true" className="absolute inset-0 pointer-events-none rounded-[20px]">
-        <img alt="" className="absolute max-w-none object-cover rounded-[20px] size-full" src={imgContainer8} />
+        <Image alt="" className="absolute max-w-none object-cover rounded-[20px] size-full" src={imgContainer8} />
         <div className="absolute inset-0 rounded-[20px]" style={{ backgroundImage: "linear-gradient(0deg, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.2) 50%, rgba(0, 0, 0, 0) 100%), linear-gradient(0deg, rgba(43, 127, 255, 0.2) 0%, rgba(28, 57, 142, 0.4) 100%)" }} />
       </div>
       <div className="overflow-clip relative rounded-[inherit] size-full">
@@ -2077,7 +2078,7 @@ function Container157() {
   return (
     <div className="absolute h-[200px] left-0 rounded-[20px] top-0 w-[160px]" data-name="Container">
       <div aria-hidden="true" className="absolute inset-0 pointer-events-none rounded-[20px]">
-        <img alt="" className="absolute max-w-none object-cover rounded-[20px] size-full" src={imgContainer9} />
+        <Image alt="" className="absolute max-w-none object-cover rounded-[20px] size-full" src={imgContainer9} />
         <div className="absolute inset-0 rounded-[20px]" style={{ backgroundImage: "linear-gradient(0deg, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.2) 50%, rgba(0, 0, 0, 0) 100%), linear-gradient(0deg, rgba(255, 105, 0, 0.2) 0%, rgba(126, 42, 12, 0.4) 100%)" }} />
       </div>
       <div className="overflow-clip relative rounded-[inherit] size-full">
@@ -2181,7 +2182,7 @@ function Container160() {
   return (
     <div className="absolute h-[200px] left-0 rounded-[20px] top-0 w-[160px]" data-name="Container">
       <div aria-hidden="true" className="absolute inset-0 pointer-events-none rounded-[20px]">
-        <img alt="" className="absolute max-w-none object-cover rounded-[20px] size-full" src={imgContainer10} />
+        <Image alt="" className="absolute max-w-none object-cover rounded-[20px] size-full" src={imgContainer10} />
         <div className="absolute inset-0 rounded-[20px]" style={{ backgroundImage: "linear-gradient(0deg, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.2) 50%, rgba(0, 0, 0, 0) 100%), linear-gradient(0deg, rgba(255, 105, 0, 0.2) 0%, rgba(126, 42, 12, 0.4) 100%)" }} />
       </div>
       <div className="overflow-clip relative rounded-[inherit] size-full">
@@ -2495,7 +2496,7 @@ function Container167() {
   return (
     <div className="absolute h-[200px] left-0 rounded-[20px] top-0 w-[160px]" data-name="Container">
       <div aria-hidden="true" className="absolute inset-0 pointer-events-none rounded-[20px]">
-        <img alt="" className="absolute max-w-none object-cover rounded-[20px] size-full" src={imgContainer11} />
+        <Image alt="" className="absolute max-w-none object-cover rounded-[20px] size-full" src={imgContainer11} />
         <div className="absolute inset-0 rounded-[20px]" style={{ backgroundImage: "linear-gradient(0deg, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.2) 50%, rgba(0, 0, 0, 0) 100%), linear-gradient(0deg, rgba(173, 70, 255, 0.2) 0%, rgba(89, 22, 139, 0.4) 100%)" }} />
       </div>
       <div className="overflow-clip relative rounded-[inherit] size-full">
@@ -2600,7 +2601,7 @@ function Container201() {
   return (
     <div className="absolute h-[200px] left-0 rounded-[20px] top-0 w-[160px]" data-name="Container">
       <div aria-hidden="true" className="absolute inset-0 pointer-events-none rounded-[20px]">
-        <img alt="" className="absolute max-w-none object-cover rounded-[20px] size-full" src={imgContainer12} />
+        <Image alt="" className="absolute max-w-none object-cover rounded-[20px] size-full" src={imgContainer12} />
         <div className="absolute inset-0 rounded-[20px]" style={{ backgroundImage: "linear-gradient(0deg, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.2) 50%, rgba(0, 0, 0, 0) 100%), linear-gradient(0deg, rgba(255, 105, 0, 0.2) 0%, rgba(126, 42, 12, 0.4) 100%)" }} />
       </div>
       <div className="overflow-clip relative rounded-[inherit] size-full">

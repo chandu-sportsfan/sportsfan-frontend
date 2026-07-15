@@ -7,7 +7,14 @@
  *   const result = await api.post("/auth/login", { email, password });
  */
 
-const BASE_URL =  "http://localhost:3001";
+const BASE_URL =
+  typeof window !== "undefined"
+    ? "/api/v2"
+    : `${
+        process.env.NEXT_PUBLIC_BACKEND_URL ||
+        process.env.NEXT_PUBLIC_ADMIN_URL ||
+        "https://sportsfan360.vercel.app"
+      }/api/v2`;
 
 type RequestOptions = Omit<RequestInit, "body"> & {
   body?: unknown;

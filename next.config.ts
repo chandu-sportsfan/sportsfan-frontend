@@ -657,6 +657,11 @@ const nextConfig = {
           source: "/api/v2/store/:path*",
           destination: `${apiTarget}/api/v2/store/:path*`,
         },
+         { source: "/api/v2/products", destination: `${apiTarget}/api/v2/products` },
+        {
+          source: "/api/v2/products/:path*",
+          destination: `${apiTarget}/api/v2/products/:path*`,
+        },
 
         { source: "/api/v2/playbook", destination: `${apiTarget}/api/v2/playbook` },
         {

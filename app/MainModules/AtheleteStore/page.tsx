@@ -1,6 +1,8 @@
+// \MainModules\AtheleteStore\page.tsx
+
 'use client';
 
-import { useNavigate } from 'react-router';
+
 import {
     Bell, Star, User, Search, Store, Trophy, Tv, Gamepad2,
     ChevronRight, MapPin, Loader2, CheckCircle2, Sparkles,

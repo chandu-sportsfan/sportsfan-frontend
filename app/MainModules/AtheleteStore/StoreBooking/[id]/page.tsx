@@ -5,6 +5,7 @@ import { ArrowLeft, Check, User, Tag, MapPin, Pencil, X, Clock } from 'lucide-re
 import { useState, useEffect, useRef, Suspense } from 'react';
 import { storeService, Slot } from '@/services/store.service';
 import { formatPrice } from '@/utils/formatters';
+import { useAuth } from '@/context/AuthContext';
 
 const services = [
   { id: 1, title: 'Technique Analysis', duration: '60 min', pricePaise: 180000, desc: 'Video-based biomechanical breakdown with actionable fixes.' },
@@ -27,6 +28,9 @@ function StoreBookingContent() {
   const id = params?.id;
   const coachIdStr = (id as string) || '1';
   const coachName = coachNames[coachIdStr] || 'Anubhav Karmakar';
+
+  const { user } = useAuth();
+  const userId = user?.userId || user?.email || '';
 
   const searchParams = useSearchParams();
   const serviceIndexParam = searchParams?.get('serviceIndex');
@@ -114,7 +118,7 @@ function StoreBookingContent() {
         if (remaining <= 0) {
           if (timerRef.current) clearInterval(timerRef.current);
           if (selectedSlotId) {
-            storeService.unlockSlot(`coach-${coachIdStr}`, selectedSlotId, 'abhishekrt959_gmail_com').catch(console.error);
+            storeService.unlockSlot(`coach-${coachIdStr}`, selectedSlotId, userId).catch(console.error);
           }
           setSelectedSlotId(null);
           setLockExpiresAt(null);
@@ -134,7 +138,7 @@ function StoreBookingContent() {
 
   const handleSelectSlot = async (slotId: string) => {
     try {
-      const res = await storeService.lockSlot(`coach-${coachIdStr}`, slotId, 'abhishekrt959_gmail_com');
+      const res = await storeService.lockSlot(`coach-${coachIdStr}`, slotId, userId);
       setSelectedSlotId(slotId);
       setLockExpiresAt(new Date(res.lockExpiresAt).getTime());
     } catch (err: any) {

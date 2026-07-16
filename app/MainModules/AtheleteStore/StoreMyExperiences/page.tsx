@@ -168,7 +168,7 @@
 //   useEffect(() => {
 //     Promise.all([
 //       storeService.getProducts('experiences'),
-//       storeService.getUserOrders('abhishekrt959_gmail_com', 'experiences')
+//       storeService.getUserOrders(userId, 'experiences')
 //     ]).then(([products, userOrders]) => {
 //       const productMap = new Map(products.map((p: any) => [p.id, p]));
       
@@ -313,6 +313,7 @@ import { useRouter } from 'next/navigation';
 import { ArrowLeft, Calendar, Clock, Timer, QrCode, Video, Star, Gift, MapPin } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { storeService } from '@/services/store.service';
+import { useAuth } from '@/context/AuthContext';
 
 type Filter = 'upcoming' | 'today' | 'live' | 'completed' | 'cancelled';
 
@@ -469,19 +470,18 @@ function ExperienceCard({ exp }: { exp: Experience }) {
 
 export default function StoreMyExperiences() {
   const router = useRouter();
+  const { user } = useAuth();
+  const userId = user?.userId || user?.email || '';
   const [filter, setFilter] = useState<Filter>('upcoming');
   const [orders, setOrders] = useState<Experience[]>([]);
   const [loading, setLoading] = useState(true);
-
-  // TODO: Get this from auth context
-  const userId = 'abhishekrt959_gmail_com';
 
   useEffect(() => {
     const fetchExperiences = async () => {
       try {
         setLoading(true);
         const products = await storeService.getProducts('experiences');
-        const userOrders = await storeService.getUserOrders(userId); // ✅ Only pass userId
+        const userOrders = userId ? await storeService.getUserOrders(userId) : []; // ✅ Only pass userId
         
         const productMap = new Map(products.map((p: any) => [p.id, p]));
         

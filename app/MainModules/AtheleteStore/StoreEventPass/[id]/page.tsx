@@ -5,19 +5,22 @@ import { ArrowLeft, Calendar, MapPin, Video, QrCode } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { storeService } from '@/services/store.service';
 import QRCode from 'react-qr-code';
+import { useAuth } from '@/context/AuthContext';
 
 export default function StoreEventPass() {
   const router = useRouter();
   const params = useParams(); // orderId
+  const { user } = useAuth();
+  const userId = user?.userId || user?.email || '';
   const [pass, setPass] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
    const id = Array.isArray(params.id) ? params.id[0] : params.id; 
 
   useEffect(() => {
-    if (!id) return;
+    if (!id || !userId) return;
     setLoading(true);
-      storeService.getEventPass(id as string, 'abhishekrt959_gmail_com')
+      storeService.getEventPass(id as string, userId)
       .then((data) => {
         setPass(data);
         setLoading(false);

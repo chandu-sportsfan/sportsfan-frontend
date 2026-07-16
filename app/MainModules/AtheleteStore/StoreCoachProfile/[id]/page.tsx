@@ -6,6 +6,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { CoachBadge } from '../../page';
 import { storeService } from '@/services/store.service';
 import { formatPrice } from '@/utils/formatters';
+import { useAuth } from '@/context/AuthContext';
 
 const defaultCoach = {
   id: 1, name: 'Anubhav Karmakar', role: 'Founder, Athloft Multisport', experience: '12 yrs',
@@ -66,6 +67,9 @@ function StoreCoachProfileContent() {
   const searchParams = useSearchParams();
   const serviceType = searchParams?.get('serviceType');
 
+  const { user } = useAuth();
+  const userId = user?.userId || user?.email || 'mock-user-123';
+
   const [coach, setCoach] = useState<any>(defaultCoach);
   const [groupedSlots, setGroupedSlots] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -92,8 +96,9 @@ function StoreCoachProfileContent() {
     }
   }, [coach, serviceType]);
 
-  const fetchCoach = async () => {
+  const fetchCoach = async (silent = false) => {
     try {
+      if (!silent) setLoading(true);
       const product = await storeService.getProductById(`coach-${id || '1'}`);
       const slotList = await storeService.getSlots(`coach-${id || '1'}`);
 
@@ -113,14 +118,39 @@ function StoreCoachProfileContent() {
     } catch (err) {
       console.error('Error fetching coach details:', err);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
   useEffect(() => {
-    setLoading(true);
     fetchCoach();
+
+    const interval = setInterval(() => {
+      fetchCoach(true);
+    }, 3000);
+
+    return () => clearInterval(interval);
   }, [id]);
+
+  useEffect(() => {
+    if (selectedSlotId) {
+      let foundSlot: any = null;
+      for (const group of groupedSlots) {
+        foundSlot = group.times.find((t: any) => t.id === selectedSlotId);
+        if (foundSlot) break;
+      }
+
+      if (foundSlot) {
+        const isBooked = foundSlot.status === 'booked';
+        const isLocked = (foundSlot.status === 'locked' || foundSlot.status === 'reserved') && foundSlot.lockExpiresAt && new Date(foundSlot.lockExpiresAt.toDate ? foundSlot.lockExpiresAt.toDate() : foundSlot.lockExpiresAt) > new Date();
+
+        if (isBooked || (isLocked && foundSlot.lockedBy !== userId)) {
+          setSelectedSlotId(null);
+          setSelectedTime(null);
+        }
+      }
+    }
+  }, [groupedSlots, selectedSlotId, userId]);
 
   const handleSlotSelect = (slot: any) => {
     setSelectedSlotId(slot.id);
@@ -133,21 +163,56 @@ function StoreCoachProfileContent() {
     setLockErrorMessage(null);
     setLockingSlot(true);
 
+    const getServicePrice = () => {
+      return coach.services?.[selectedService]?.pricePaise || 0;
+    };
+    const getPlatformFee = () => {
+      return 9900; // ₹99 in paise
+    };
+    const getTotalPrice = () => {
+      return getServicePrice() + getPlatformFee();
+    };
+
+    // Optimistic Update: instantly mark slot as reserved by current user locally
+    const originalSlots = [...groupedSlots];
+    setGroupedSlots(prev => prev.map(group => ({
+      ...group,
+      times: group.times.map((t: any) => {
+        if (t.id === selectedSlotId) {
+          return {
+            ...t,
+            status: 'reserved',
+            lockedBy: userId,
+            lockExpiresAt: new Date(Date.now() + 2 * 60 * 1000).toISOString()
+          };
+        }
+        return t;
+      })
+    })));
+
     try {
-      const res = await storeService.lockSlot(`coach-${id || '1'}`, selectedSlotId, 'abhishekrt959_gmail_com');
-      if (res.status === 'locked' || res.lockExpiresAt) {
-        // Success: navigate to booking screen carrying parameters
-        router.push(`/MainModules/AtheleteStore/StoreBooking/${id || '1'}?date=${currentSlot.date}&time=${selectedTime}&day=${currentSlot.day}&num=${currentSlot.num}&serviceIndex=${selectedService}`);
+      const res = await storeService.lockSlot(`coach-${id || '1'}`, selectedSlotId, userId);
+      if (res.status === 'locked' || res.status === 'reserved' || res.lockExpiresAt) {
+        // Success: navigate directly to payment screen
+        router.push(`/MainModules/AtheleteStore/StorePayment/coach-${id || '1'}?slotId=${selectedSlotId}&price=${getTotalPrice()}`);
       } else {
-        alert('Slot not available');
+        setLockErrorMessage('It is locked by someone. Try again after 2 minutes.');
+        setSelectedSlotId(null);
+        setSelectedTime(null);
+        // Revert optimistic update
+        setGroupedSlots(originalSlots);
       }
     } catch (err: any) {
-      setLockErrorMessage('Slot not available - locked by another user');
+      setLockErrorMessage('It is locked by someone. Try again after 2 minutes.');
       setSelectedSlotId(null);
       setSelectedTime(null);
       // Re-fetch slots to update layout instantly
-      const slotList = await storeService.getSlots(`coach-${id || '1'}`);
-      setGroupedSlots(groupSlotsByDate(slotList));
+      try {
+        const slotList = await storeService.getSlots(`coach-${id || '1'}`);
+        setGroupedSlots(groupSlotsByDate(slotList));
+      } catch (fetchErr) {
+        setGroupedSlots(originalSlots);
+      }
     } finally {
       setLockingSlot(false);
     }
@@ -277,7 +342,7 @@ function StoreCoachProfileContent() {
               {currentSlot.times?.map((t: any) => {
                 const active = selectedSlotId === t.id;
                 const isBooked = t.status === 'booked';
-                const isLocked = t.status === 'locked' && t.lockExpiresAt && new Date(t.lockExpiresAt.toDate ? t.lockExpiresAt.toDate() : t.lockExpiresAt) > new Date();
+                const isLocked = (t.status === 'locked' || t.status === 'reserved') && t.lockExpiresAt && new Date(t.lockExpiresAt.toDate ? t.lockExpiresAt.toDate() : t.lockExpiresAt) > new Date();
 
                 let btnBg = 'rgba(255,255,255,0.06)';
                 let btnBorder = '1px solid rgba(255,255,255,0.1)';
@@ -291,7 +356,7 @@ function StoreCoachProfileContent() {
                   btnBg = 'rgba(255,255,255,0.02)';
                   btnBorder = '1px solid rgba(255,255,255,0.04)';
                   btnColor = '#4a4a5a';
-                } else if (isLocked && t.lockedBy !== 'abhishekrt959_gmail_com') {
+                } else if (isLocked && t.lockedBy !== userId) {
                   btnBg = 'rgba(255,255,255,0.02)';
                   btnBorder = '1px solid rgba(255,255,255,0.04)';
                   btnColor = '#4a4a5a';
@@ -300,7 +365,7 @@ function StoreCoachProfileContent() {
                 return (
                   <button
                     key={t.id}
-                    disabled={isBooked || (isLocked && t.lockedBy !== 'abhishekrt959_gmail_com')}
+                    disabled={isBooked || (isLocked && t.lockedBy !== userId)}
                     onClick={() => handleSlotSelect(t)}
                     className="rounded-full px-4 py-2 text-[13px] font-semibold transition-all relative"
                     style={{
@@ -315,9 +380,9 @@ function StoreCoachProfileContent() {
                         Booked
                       </span>
                     )}
-                    {!isBooked && isLocked && t.lockedBy !== 'abhishekrt959_gmail_com' && (
+                    {!isBooked && isLocked && t.lockedBy !== userId && (
                       <span className="absolute -top-1 -right-1 text-[8px] font-bold px-1 py-0.2 bg-[rgba(255,215,0,0.15)] text-[#FFD700] border border-[rgba(255,215,0,0.3)] rounded-full">
-                        Locked
+                        Reserved
                       </span>
                     )}
                   </button>

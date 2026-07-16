@@ -26,6 +26,45 @@ export interface Product {
   endsAt?: string;
 }
 
+
+export interface ExperienceOrder {
+  orderId: string;
+  productId: string;
+  userId: string;
+  status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
+  eventDate?: string;
+  pricePaise: number;
+  quantity: number;
+  productDetails?: {
+    title: string;
+    athlete: string;
+    athleteImg?: string;
+    type: 'online' | 'offline';
+    category: string;
+    duration: string;
+    countdown?: string;
+    venue?: string;
+    venueAddress?: string;
+    onlineLink?: string;
+    image: string;
+    host?: string;
+    hostRole?: string;
+    totalSeats?: number;
+    seatsBooked?: number;
+    description?: string;
+    agenda?: { time: string; item: string }[];
+    rules?: string[];
+    arrivalTime?: string;
+    dressCode?: string;
+    parking?: string;
+    priceInPaise?: number;
+    eventStartsAt?: string;
+  };
+  createdAt: number;
+  updatedAt: number;
+}
+
+
 export interface Slot {
   id: string;
   time: string;
@@ -96,6 +135,11 @@ export const storeService = {
     // If api.get() already adds /api/v2, use just the relative path
     const url = `/store/orders/${orderId}/event-pass${userId ? `?userId=${userId}` : ''}`;
     return api.get<EventPass>(url);
+  },
+
+   getExperienceOrderById: (orderId: string | string[]) => {
+    const id = Array.isArray(orderId) ? orderId[0] : orderId;
+    return api.get<ExperienceOrder>(`/store/orders/${id}`);
   },
 
   // Auctions & Bidding (Phase 6)

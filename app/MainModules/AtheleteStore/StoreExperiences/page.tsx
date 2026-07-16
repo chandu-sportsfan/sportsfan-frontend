@@ -1,4 +1,6 @@
-import { useNavigate } from 'react-router';
+'use client';
+
+import { useRouter } from 'next/navigation';
 import {
   ArrowLeft, Clock, Users, Star, Timer, ChevronRight, CheckCircle2,
   Minus, Plus, QrCode, Zap, CreditCard, Shield, Calendar, MapPin, Video, Gift
@@ -10,7 +12,7 @@ import QRCode from 'react-qr-code';
 type BookingStep = 'detail' | 'payment' | 'confirmed';
 
 function ExperienceDetail({ exp, onClose }: { exp: any; onClose: () => void }) {
-  const navigate = useNavigate();
+  const router = useRouter();
   const [seats, setSeats] = useState(1);
   const [step, setStep] = useState<BookingStep>('detail');
   const [payMethod, setPayMethod] = useState<'card' | 'upi'>('upi');
@@ -125,7 +127,7 @@ function ExperienceDetail({ exp, onClose }: { exp: any; onClose: () => void }) {
         </div>
 
         {/* Pay CTA */}
-        <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[390px] px-4 pb-4 pt-3 bg-gradient-to-t from-[#0b0b0f] z-50">
+        <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[390px] px-4 pb-15 pt-3 bg-gradient-to-t from-[#0b0b0f] z-50">
           <button
             onClick={handlePay}
             disabled={isSubmitting}
@@ -221,7 +223,7 @@ function ExperienceDetail({ exp, onClose }: { exp: any; onClose: () => void }) {
         {/* CTAs */}
         <div className="px-4 flex flex-col gap-2.5 pb-6">
           <button
-            onClick={() => navigate('/store/my-experiences')}
+            onClick={() => router.push('/MainModules/AtheleteStore/StoreMyExperiences')}
             className="w-full rounded-full py-3.5 text-white text-[15px] font-black flex items-center justify-center gap-2"
             style={{ background: 'linear-gradient(135deg,#c9115f,#cd620e)', boxShadow: '0 0 20px rgba(201,17,95,0.4)' }}
           >
@@ -311,7 +313,7 @@ function ExperienceDetail({ exp, onClose }: { exp: any; onClose: () => void }) {
       </div>
 
       <div
-        className="absolute bottom-0 left-0 right-0 px-4 py-4 z-10"
+        className="absolute bottom-0 left-0 right-0 px-4 py-18 z-10"
         style={{ background: 'linear-gradient(to top, #0b0b0f 85%, transparent)', borderTop: '1px solid rgba(255,255,255,0.06)' }}
       >
         {exp.soldOut ? (
@@ -341,7 +343,7 @@ function ExperienceDetail({ exp, onClose }: { exp: any; onClose: () => void }) {
 }
 
 export default function StoreExperiences() {
-  const navigate = useNavigate();
+  const router = useRouter();
   const [selectedExp, setSelectedExp] = useState<any | null>(null);
   const [experiencesList, setExperiencesList] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -376,7 +378,7 @@ export default function StoreExperiences() {
       <div className="w-full max-w-[390px] bg-[#0b0b0f] relative flex flex-col min-h-screen">
         <div className="sticky top-0 z-50 bg-[#0b0b0f] border-b border-[rgba(255,255,255,0.05)] h-[56px] flex items-center px-4 gap-3">
           <button
-            onClick={() => selectedExp ? setSelectedExp(null) : navigate('/store')}
+            onClick={() => selectedExp ? setSelectedExp(null) : router.push('/MainModules/AtheleteStore')}
             className="w-[36px] h-[36px] rounded-full bg-[rgba(255,255,255,0.06)] flex items-center justify-center"
           >
             <ArrowLeft className="w-[18px] h-[18px] text-white" />

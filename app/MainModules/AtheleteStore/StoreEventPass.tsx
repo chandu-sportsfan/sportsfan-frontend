@@ -257,7 +257,7 @@ export default function StoreExperienceNotifications() {
             </div>
           </div>
         </div>
-        <BottomNav active="store" />
+        {/* <BottomNav active="store" /> */}
       </div>
     </div>
   );

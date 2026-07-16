@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router';
-import { BottomNav } from './Store';
+
 import {
   ArrowLeft, CheckCircle2, Calendar, Clock, Bell, MapPin,
   Video, QrCode, Gift, Camera, Award, Star, ShoppingBag, AlertCircle,
@@ -257,7 +257,7 @@ export default function StoreExperienceNotifications() {
             </div>
           </div>
         </div>
-        <BottomNav active="store" />
+        {/* <BottomNav active="store" /> */}
       </div>
     </div>
   );

@@ -8,7 +8,8 @@ import {
     ChevronRight, MapPin, Loader2, CheckCircle2, Sparkles,
     Ticket, Gavel, Users, Gem, ShoppingBag, BookOpen, Award, Cpu,
     MessageSquare, Timer, Zap, ArrowUpRight, Flame, Tag, TrendingUp,
-    Shield, Clock, ChevronDown, Video, Mic, Heart
+    Shield, Clock, ChevronDown, Video, Mic, Heart,
+    Package
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import MaskGroup from '@/src/components/CommonComponent/MaskGroup/MaskGroup';
@@ -441,6 +442,146 @@ export default function StoreScreen() {
                                     </button>
                                 );
                             })}
+                        </div>
+                    </div>
+
+                    {/* Divider */}
+                    <div className="mx-4 mb-4 h-px bg-[rgba(255,255,255,0.05)]" />
+
+                    {/* My Upcoming Experience */}
+                    <div className="px-4 mb-4">
+                        <div className="flex items-center justify-between mb-2.5">
+                            <div className="flex items-center gap-2">
+                                <div className="w-[5px] h-[22px] rounded-full" style={{ background: 'linear-gradient(180deg,#c9115f,#cd620e)' }} />
+                                <span className="text-white text-[15px] font-black">My Experience</span>
+                                <span className="text-[8px] font-black px-1.5 py-0.5 rounded-full text-white" style={{ background: 'rgba(201,17,95,0.25)', border: '1px solid rgba(201,17,95,0.4)', color: '#c9115f' }}>UPCOMING</span>
+                            </div>
+                            <button onClick={() => router.push('/MainModules/AtheleteStore/StoreMyExperiences')} className="flex items-center gap-0.5 text-[11px] font-bold text-[#c9115f]">
+                                All <ChevronRight className="w-[12px] h-[12px]" />
+                            </button>
+                        </div>
+                        <button
+                            onClick={() => router.push('/MainModules/AtheleteStore/StoreExperienceDetail/1')}
+                            className="w-full rounded-[18px] overflow-hidden text-left active:scale-[0.98] transition-transform"
+                            style={{ background: 'linear-gradient(130deg, #100a18 0%, #0a0e14 100%)', border: '1px solid rgba(201,17,95,0.25)', boxShadow: '0 0 20px rgba(201,17,95,0.08)' }}
+                        >
+                            <div className="flex items-stretch">
+                                <div className="relative w-[100px] flex-shrink-0">
+                                    <img
+                                        src="https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=200&h=220&fit=crop&auto=format"
+                                        alt="Breakfast with Neeraj"
+                                        className="w-full h-full object-cover"
+                                    />
+                                    <div className="absolute inset-0" style={{ background: 'linear-gradient(to right, transparent 50%, #100a18)' }} />
+                                    <div className="absolute top-2.5 left-2.5 flex items-center gap-1 bg-black/70 rounded-full px-1.5 py-0.5">
+                                        <Timer className="w-[7px] h-[7px] text-[#FFD700]" />
+                                        <span className="text-[#FFD700] text-[7px] font-black">11d 6h</span>
+                                    </div>
+                                </div>
+                                <div className="flex-1 p-4 flex flex-col justify-between">
+                                    <div>
+                                        <span className="text-[#cd620e] text-[9px] font-black uppercase tracking-wider">VIP Experience</span>
+                                        <p className="text-white text-[14px] font-black leading-tight mt-1">Breakfast with Neeraj Chopra</p>
+                                        <p className="text-[#99A1AF] text-[11px] mt-0.5">Neeraj Chopra</p>
+                                    </div>
+                                    <div>
+                                        <div className="flex items-center gap-1.5 mb-2.5">
+                                            <MapPin className="w-[10px] h-[10px] text-[#4a4a5a]" />
+                                            <span className="text-[#4a4a5a] text-[10px]">ITC Maurya · New Delhi</span>
+                                        </div>
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full" style={{ background: 'rgba(201,17,95,0.12)', border: '1px solid rgba(201,17,95,0.25)' }}>
+                                                <span className="text-[#c9115f] text-[9px] font-black">July 18, 2026 · 8:00 AM</span>
+                                            </div>
+                                            <ChevronRight className="w-[14px] h-[14px] text-[#c9115f]" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </button>
+                    </div>
+
+                    {/* Divider */}
+                    <div className="mx-4 mb-4 h-px bg-[rgba(255,255,255,0.05)]" />
+
+                    {/* Completed Events — Badges & Memorabilia Earned */}
+                    <div className="mb-4">
+                        <div className="flex items-center justify-between px-4 mb-3">
+                            <div className="flex items-center gap-2">
+                                <Award className="w-[14px] h-[14px] text-[#FFD700]" />
+                                <span className="text-white text-[15px] font-black">Badges & Mementos Earned</span>
+                            </div>
+                            <button onClick={() => router.push('/MainModules/AtheleteStore/StoreMyExperiences')} className="flex items-center gap-0.5 text-[11px] font-bold text-[#FFD700]">
+                                All <ChevronRight className="w-[12px] h-[12px]" />
+                            </button>
+                        </div>
+                        <div className="flex gap-3 px-4 overflow-x-auto no-scrollbar pb-1">
+                            {[
+                                {
+                                    badge: '🏅',
+                                    title: 'Virtual AMA — Medal Winners',
+                                    event: 'Oct 1–15 · Completed',
+                                    credit: '₹199 credit activated',
+                                    memento: null,
+                                    color: '#00c864',
+                                    bg: 'rgba(0,200,100,0.1)',
+                                },
+                                {
+                                    badge: '🥇',
+                                    title: 'Virtual Breakfast',
+                                    event: 'Oct 6–12 · Completed',
+                                    credit: '3 months sub activated',
+                                    memento: 'Autographed bib ordered',
+                                    color: '#0ea5e9',
+                                    bg: 'rgba(14,165,233,0.1)',
+                                },
+                                {
+                                    badge: '✦',
+                                    title: 'Breakfast with Neeraj',
+                                    event: 'Oct 15–20 · Completed',
+                                    credit: '₹499 credit activated',
+                                    memento: 'Autographed jersey (included)',
+                                    color: '#c9115f',
+                                    bg: 'rgba(201,17,95,0.1)',
+                                },
+                            ].map((item, i) => (
+                                <div
+                                    key={i}
+                                    className="flex-shrink-0 w-[200px] rounded-[18px] p-3.5 flex flex-col gap-2.5"
+                                    style={{ background: '#0f0f17', border: `1px solid ${item.color}30` }}
+                                >
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-[44px] h-[44px] rounded-full flex items-center justify-center text-[20px]" style={{ background: item.bg, border: `2px solid ${item.color}50` }}>
+                                            {item.badge}
+                                        </div>
+                                        <div>
+                                            <p className="text-white text-[11px] font-black leading-tight">{item.title}</p>
+                                            <p className="text-[#4a4a5a] text-[8px]">{item.event}</p>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <div className="flex items-center gap-1.5">
+                                            <Zap className="w-[9px] h-[9px] flex-shrink-0" style={{ color: item.color }} />
+                                            <span className="text-[9px] font-bold" style={{ color: item.color }}>{item.credit}</span>
+                                        </div>
+                                        {item.memento && (
+                                            <div className="flex items-center gap-1.5">
+                                                <Package className="w-[9px] h-[9px] text-[#FFD700] flex-shrink-0" />
+                                                <span className="text-[#8a8040] text-[9px]">{item.memento}</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="flex items-center justify-between pt-1" style={{ borderTop: `1px solid ${item.color}20` }}>
+                                        <div className="flex items-center gap-1">
+                                            <CheckCircle2 className="w-[10px] h-[10px]" style={{ color: '#00c864' }} />
+                                            <span className="text-[#00c864] text-[9px] font-bold">CLAIMED</span>
+                                        </div>
+                                        <button onClick={() => router.push('/MainModules/AtheleteStore/StoreMemorabilia')} className="text-[9px] font-bold" style={{ color: item.color }}>
+                                            View →
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                     </div>
 

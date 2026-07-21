@@ -640,6 +640,11 @@ const nextConfig = {
         // ── v2 APIs (Athlete Home / Store / Playbook / Articles / Records) ──
         { source: "/api/v2/health", destination: `${apiTarget}/api/v2/health` },
 
+        {
+          source: "/api/v2/auctions/:path*",
+          destination: `${apiTarget}/api/auctions/:path*`,
+        },
+
         { source: "/api/v2/athletes", destination: `${apiTarget}/api/v2/athletes` },
         {
           source: "/api/v2/athletes/:path*",

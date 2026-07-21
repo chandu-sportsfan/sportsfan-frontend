@@ -4,6 +4,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { Check, Calendar, Share2, Bookmark, ArrowLeft } from 'lucide-react';
 import { useEffect, useState, Suspense } from 'react';
 import { storeService } from '@/services/store.service';
+import { useAuth } from '@/context/AuthContext';
 
 function StoreBookingSuccessContent() {
   const router = useRouter();
@@ -11,16 +12,19 @@ function StoreBookingSuccessContent() {
   const id = params?.id; // This is the orderId
   const [order, setOrder] = useState<any>(null);
 
+  const { user } = useAuth();
+  const userId = user?.userId || user?.email || '';
+
   useEffect(() => {
-    if (id && id !== '1') {
-      storeService.getUserOrders('abhishekrt959_gmail_com')
+    if (id && id !== '1' && userId) {
+      storeService.getUserOrders(userId)
         .then((orders) => {
           const matched = orders.find(o => o.orderId === id || o.id === id);
           if (matched) setOrder(matched);
         })
         .catch((err) => console.error('Error fetching order details:', err));
     }
-  }, [id]);
+  }, [id, userId]);
 
   const displayTitle = order ? order.title : 'Technique Analysis · 60 min';
   const displayId = (id as string) ? (id as string).slice(0, 8).toUpperCase() : 'SF360-8471';

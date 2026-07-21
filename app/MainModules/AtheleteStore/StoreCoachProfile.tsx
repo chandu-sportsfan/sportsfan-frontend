@@ -1,9 +1,7 @@
-'use client';
-
-import { useRouter, useParams, useSearchParams } from 'next/navigation';
+import { useNavigate, useParams } from 'react-router';
 import { ArrowLeft, Star, Clock, Share2, Bookmark, Award, Shield, ChevronDown, ChevronUp, Zap, CheckCircle, MessageCircle } from 'lucide-react';
-import { useState, useEffect, Suspense } from 'react';
-import { CoachBadge } from '../../page';
+import { useState, useEffect } from 'react';
+import { CoachBadge } from './Store';
 import { storeService } from '@/services/store.service';
 import { formatPrice } from '@/utils/formatters';
 import { useAuth } from '@/context/AuthContext';
@@ -60,17 +58,14 @@ const groupSlotsByDate = (slotList: any[]) => {
   return Object.values(grouped).sort((a, b) => a.date.localeCompare(b.date));
 };
 
-function StoreCoachProfileContent() {
-  const router = useRouter();
-  const params = useParams();
-  const id = params?.id;
-  const searchParams = useSearchParams();
-  const serviceType = searchParams?.get('serviceType');
-
+export default function StoreCoachProfile() {
+  const navigate = useNavigate();
+  const { id } = useParams();
   const { user } = useAuth();
-  const userId = user?.userId || user?.email || 'mock-user-123';
+  const userId = user?.userId || user?.email || '';
 
-  const [coach, setCoach] = useState<any>(defaultCoach);
+  const [coach, setCoach] = useState<any>(null);
+  const [selectedService, setSelectedService] = useState<number>(0);
   const [groupedSlots, setGroupedSlots] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -84,6 +79,9 @@ function StoreCoachProfileContent() {
   const [selectedService, setSelectedService] = useState<number>(0);
   const [lockingSlot, setLockingSlot] = useState(false);
 
+  const queryParams = new URLSearchParams(window.location.search);
+  const serviceType = queryParams.get('serviceType');
+
   useEffect(() => {
     if (coach.services && serviceType) {
       const idx = coach.services.findIndex((svc: any) =>
@@ -96,9 +94,8 @@ function StoreCoachProfileContent() {
     }
   }, [coach, serviceType]);
 
-  const fetchCoach = async (silent = false) => {
+  const fetchCoach = async () => {
     try {
-      if (!silent) setLoading(true);
       const product = await storeService.getProductById(`coach-${id || '1'}`);
       const slotList = await storeService.getSlots(`coach-${id || '1'}`);
 
@@ -118,39 +115,14 @@ function StoreCoachProfileContent() {
     } catch (err) {
       console.error('Error fetching coach details:', err);
     } finally {
-      if (!silent) setLoading(false);
+      setLoading(false);
     }
   };
 
   useEffect(() => {
+    setLoading(true);
     fetchCoach();
-
-    const interval = setInterval(() => {
-      fetchCoach(true);
-    }, 3000);
-
-    return () => clearInterval(interval);
   }, [id]);
-
-  useEffect(() => {
-    if (selectedSlotId) {
-      let foundSlot: any = null;
-      for (const group of groupedSlots) {
-        foundSlot = group.times.find((t: any) => t.id === selectedSlotId);
-        if (foundSlot) break;
-      }
-
-      if (foundSlot) {
-        const isBooked = foundSlot.status === 'booked';
-        const isLocked = (foundSlot.status === 'locked' || foundSlot.status === 'reserved') && foundSlot.lockExpiresAt && new Date(foundSlot.lockExpiresAt.toDate ? foundSlot.lockExpiresAt.toDate() : foundSlot.lockExpiresAt) > new Date();
-
-        if (isBooked || (isLocked && foundSlot.lockedBy !== userId)) {
-          setSelectedSlotId(null);
-          setSelectedTime(null);
-        }
-      }
-    }
-  }, [groupedSlots, selectedSlotId, userId]);
 
   const handleSlotSelect = (slot: any) => {
     setSelectedSlotId(slot.id);
@@ -163,56 +135,21 @@ function StoreCoachProfileContent() {
     setLockErrorMessage(null);
     setLockingSlot(true);
 
-    const getServicePrice = () => {
-      return coach.services?.[selectedService]?.pricePaise || 0;
-    };
-    const getPlatformFee = () => {
-      return 9900; // ₹99 in paise
-    };
-    const getTotalPrice = () => {
-      return getServicePrice() + getPlatformFee();
-    };
-
-    // Optimistic Update: instantly mark slot as reserved by current user locally
-    const originalSlots = [...groupedSlots];
-    setGroupedSlots(prev => prev.map(group => ({
-      ...group,
-      times: group.times.map((t: any) => {
-        if (t.id === selectedSlotId) {
-          return {
-            ...t,
-            status: 'reserved',
-            lockedBy: userId,
-            lockExpiresAt: new Date(Date.now() + 2 * 60 * 1000).toISOString()
-          };
-        }
-        return t;
-      })
-    })));
-
     try {
-      const res = await storeService.lockSlot(`coach-${id || '1'}`, selectedSlotId, userId);
-      if (res.status === 'locked' || res.status === 'reserved' || res.lockExpiresAt) {
-        // Success: navigate directly to payment screen
-        router.push(`/MainModules/AtheleteStore/StorePayment/coach-${id || '1'}?slotId=${selectedSlotId}&price=${getTotalPrice()}`);
+      const res = await storeService.lockSlot(`coach-${id || '1'}`, selectedSlotId, userId || 'anonymous');
+      if (res.status === 'locked' || res.lockExpiresAt) {
+        // Success: navigate to booking screen carrying parameters
+        navigate(`/store/booking/${id || '1'}?date=${currentSlot.date}&time=${selectedTime}&day=${currentSlot.day}&num=${currentSlot.num}&serviceIndex=${selectedService}`);
       } else {
-        setLockErrorMessage('It is locked by someone. Try again after 2 minutes.');
-        setSelectedSlotId(null);
-        setSelectedTime(null);
-        // Revert optimistic update
-        setGroupedSlots(originalSlots);
+        alert('Slot not available');
       }
     } catch (err: any) {
-      setLockErrorMessage('It is locked by someone. Try again after 2 minutes.');
+      setLockErrorMessage('Slot not available - locked by another user');
       setSelectedSlotId(null);
       setSelectedTime(null);
       // Re-fetch slots to update layout instantly
-      try {
-        const slotList = await storeService.getSlots(`coach-${id || '1'}`);
-        setGroupedSlots(groupSlotsByDate(slotList));
-      } catch (fetchErr) {
-        setGroupedSlots(originalSlots);
-      }
+      const slotList = await storeService.getSlots(`coach-${id || '1'}`);
+      setGroupedSlots(groupSlotsByDate(slotList));
     } finally {
       setLockingSlot(false);
     }
@@ -230,7 +167,7 @@ function StoreCoachProfileContent() {
 
   return (
     <div className="bg-black w-full flex justify-center min-h-screen">
-      <div className="w-full max-w-[390px] bg-[#0b0b0f] relative flex flex-col h-[100dvh] overflow-hidden">
+      <div className="w-full max-w-[390px] bg-[#0b0b0f] relative flex flex-col min-h-screen">
 
         {/* HERO */}
         <div className="relative flex-shrink-0" style={{ height: 320 }}>
@@ -240,7 +177,7 @@ function StoreCoachProfileContent() {
 
           <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-4 pt-12">
             <button
-              onClick={() => router.back()}
+              onClick={() => navigate(-1)}
               className="w-[38px] h-[38px] rounded-full backdrop-blur-md flex items-center justify-center"
               style={{ background: 'rgba(0,0,0,0.45)', border: '1px solid rgba(255,255,255,0.14)' }}
             >
@@ -295,7 +232,7 @@ function StoreCoachProfileContent() {
         </div>
 
         {/* SCROLLABLE BODY */}
-        <div className="flex-1 overflow-y-auto pb-[160px] lg:pb-[96px] no-scrollbar">
+        <div className="flex-1 overflow-y-auto pb-[96px] no-scrollbar">
 
           {/* Date Picker */}
           <div className="mb-5">
@@ -342,7 +279,7 @@ function StoreCoachProfileContent() {
               {currentSlot.times?.map((t: any) => {
                 const active = selectedSlotId === t.id;
                 const isBooked = t.status === 'booked';
-                const isLocked = (t.status === 'locked' || t.status === 'reserved') && t.lockExpiresAt && new Date(t.lockExpiresAt.toDate ? t.lockExpiresAt.toDate() : t.lockExpiresAt) > new Date();
+                const isLocked = t.status === 'locked' && t.lockExpiresAt && new Date(t.lockExpiresAt.toDate ? t.lockExpiresAt.toDate() : t.lockExpiresAt) > new Date();
 
                 let btnBg = 'rgba(255,255,255,0.06)';
                 let btnBorder = '1px solid rgba(255,255,255,0.1)';
@@ -382,7 +319,7 @@ function StoreCoachProfileContent() {
                     )}
                     {!isBooked && isLocked && t.lockedBy !== userId && (
                       <span className="absolute -top-1 -right-1 text-[8px] font-bold px-1 py-0.2 bg-[rgba(255,215,0,0.15)] text-[#FFD700] border border-[rgba(255,215,0,0.3)] rounded-full">
-                        Reserved
+                        Locked
                       </span>
                     )}
                   </button>
@@ -474,8 +411,8 @@ function StoreCoachProfileContent() {
 
         {/* STICKY BOOK SESSION */}
         <div
-          className="absolute bottom-[60px] lg:bottom-0 left-0 right-0 w-full z-50 px-4 py-3 bg-[#0b0b0f]"
-          style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }}
+          className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[390px] z-50 px-4 py-3"
+          style={{ background: 'linear-gradient(to top, #0b0b0f 80%, transparent)', borderTop: '1px solid rgba(255,255,255,0.07)' }}
         >
           {selectedTime && (
             <div className="flex items-center gap-2 mb-2.5 px-1">
@@ -511,17 +448,5 @@ function StoreCoachProfileContent() {
         </div>
       </div>
     </div>
-  );
-}
-
-export default function StoreCoachProfile() {
-  return (
-    <Suspense fallback={
-      <div className="bg-black w-full flex justify-center min-h-screen items-center">
-        <span className="text-white text-[14px]">Loading coach profile...</span>
-      </div>
-    }>
-      <StoreCoachProfileContent />
-    </Suspense>
   );
 }

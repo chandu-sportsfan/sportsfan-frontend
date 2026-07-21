@@ -8,11 +8,15 @@ import {
 import { useState, useEffect } from 'react';
 import { storeService } from '@/services/store.service';
 import QRCode from 'react-qr-code';
+import { useAuth } from '@/context/AuthContext';
 
 type BookingStep = 'detail' | 'payment' | 'confirmed';
 
 function ExperienceDetail({ exp, onClose }: { exp: any; onClose: () => void }) {
   const router = useRouter();
+  const { user } = useAuth();
+  const userId = user?.userId || user?.email || '';
+
   const [seats, setSeats] = useState(1);
   const [step, setStep] = useState<BookingStep>('detail');
   const [payMethod, setPayMethod] = useState<'card' | 'upi'>('upi');
@@ -32,7 +36,7 @@ function ExperienceDetail({ exp, onClose }: { exp: any; onClose: () => void }) {
       const pricePaise = exp.priceInPaise ? exp.priceInPaise * seats : total * 100;
       const payload = {
         productId: exp.id,
-        userId: 'abhishekrt959_gmail_com',
+        userId: userId || 'anonymous',
         paymentMethod: payMethod === 'card' ? ('card' as const) : ('upi' as const),
         pricePaise,
         idempotencyKey: `idemp-exp-${exp.id}-${Date.now()}-${Math.random()}`,

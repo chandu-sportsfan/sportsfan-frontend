@@ -16,6 +16,7 @@ import MaskGroup from '@/src/components/CommonComponent/MaskGroup/MaskGroup';
 import { storeService } from '@/services/store.service';
 import { formatPrice } from '@/utils/formatters';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
 
 export function SourcingModelBadge({ type }: { type: 'afi' | 'afi_affiliated' | 'independent' }) {
     if (type === 'afi' || type === 'afi_affiliated') {
@@ -98,6 +99,9 @@ function SectionHeader({ title, icon: Icon, color, onSeeAll }: { title: string; 
 
 export default function StoreScreen() {
     const router = useRouter();
+    const { user } = useAuth();
+    const userId = user?.userId || user?.email || '';
+
     const resolveRoute = (category: string, productId?: string) => {
         if (category === 'coaches') {
             return `/MainModules/AtheleteStore/StoreCoachProfile/${productId?.replace('coach-', '') || '1'}`;
@@ -146,15 +150,17 @@ export default function StoreScreen() {
             setTrending(trendingList);
 
             // Fetch user coins, wishlist, recently viewed
-            const [coinsRes, wishlistRes, recentRes] = await Promise.all([
-                storeService.getCoinsBalance('abhishekrt959_gmail_com'),
-                storeService.getWishlist('abhishekrt959_gmail_com'),
-                storeService.getRecentlyViewed('abhishekrt959_gmail_com'),
-            ]);
+            if (userId) {
+                const [coinsRes, wishlistRes, recentRes] = await Promise.all([
+                    storeService.getCoinsBalance(userId),
+                    storeService.getWishlist(userId),
+                    storeService.getRecentlyViewed(userId),
+                ]);
 
-            setCoins(coinsRes.balance);
-            setWishlist(wishlistRes);
-            setRecentlyViewed(recentRes);
+                setCoins(coinsRes.balance);
+                setWishlist(wishlistRes);
+                setRecentlyViewed(recentRes);
+            }
         } catch (err) {
             console.error('Error loading store data:', err);
         }
@@ -164,11 +170,13 @@ export default function StoreScreen() {
         const t = setTimeout(() => setLocationState('saved'), 1600);
         loadData();
         return () => clearTimeout(t);
-    }, []);
+    }, [userId]);
 
     const handleProductClick = async (productId: string, route: string) => {
         try {
-            await storeService.addRecentlyViewed('abhishekrt959_gmail_com', productId);
+            if (userId) {
+                await storeService.addRecentlyViewed(userId, productId);
+            }
         } catch (e) {
             console.error(e);
         }
@@ -177,11 +185,12 @@ export default function StoreScreen() {
 
     const handleWishlistToggle = async (productId: string, e: React.MouseEvent) => {
         e.stopPropagation();
+        if (!userId) return;
         const isWishlisted = wishlist.some(item => item.productId === productId || item.id === productId);
         const action = isWishlisted ? 'remove' : 'add';
         try {
-            await storeService.toggleWishlist('abhishekrt959_gmail_com', productId, action);
-            const updated = await storeService.getWishlist('abhishekrt959_gmail_com');
+            await storeService.toggleWishlist(userId, productId, action);
+            const updated = await storeService.getWishlist(userId);
             setWishlist(updated);
         } catch (err) {
             console.error(err);
@@ -585,10 +594,10 @@ export default function StoreScreen() {
                             <SectionHeader title="Live Auctions" icon={Gavel} color="#ff4444" onSeeAll={() => router.push(resolveRoute('auctions'))} />
                             <div className="px-4 grid grid-cols-2 gap-2.5">
                                 {auctions.map((a) => (
-                                    <button
+                                    <div
                                         key={a.id}
                                         onClick={() => handleProductClick(a.id, resolveRoute('auctions'))}
-                                        className="rounded-[16px] overflow-hidden text-left active:scale-[0.97] transition-transform relative"
+                                        className="rounded-[16px] overflow-hidden text-left active:scale-[0.97] transition-transform relative cursor-pointer"
                                         style={{ background: '#0f0f14', border: '1px solid rgba(255,68,68,0.2)' }}
                                     >
                                         <button
@@ -612,7 +621,7 @@ export default function StoreScreen() {
                                                 <span className="text-[#ff6b6b] text-[9px] font-bold">Bid →</span>
                                             </div>
                                         </div>
-                                    </button>
+                                    </div>
                                 ))}
                             </div>
                         </div>

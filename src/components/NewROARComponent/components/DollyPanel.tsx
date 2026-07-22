@@ -389,7 +389,8 @@ interface DollyPanelProps {
     onNewChat?: () => void;
     sport?: "cricket" | "football" | "athlete";
     constrainedToParent?: boolean;
-    roomKind?: "discussion" | "open";
+    // roomKind?: "discussion" | "open";
+    roomKind?: "discussion" | "open" | "lobby";
     containerRef?: React.RefObject<HTMLDivElement | null>;
     activeSessionId?: string;
     loadingMoreHistory?: boolean;
@@ -603,6 +604,14 @@ export default function DollyPanel({
             greeting: "Hey! I'm Dolly 🐬 Your AI analyst for this match. Ask anything about {room}!",
             prompts: [],
         },
+        "lobby": {
+            greeting: "Hey! I'm Dolly 🐬 Your AI sports analyst. Ask me about today's live matches, what's trending in the rooms, or upcoming fixtures — I'll help you find where the action is!",
+            prompts: [
+                "What's live right now?",
+                "Which rooms are most active?",
+                "What matches are coming up?",
+            ],
+        },
         "open:cricket": {
             greeting: "Hey! I'm Dolly 🐬 Your AI cricket analyst. Ask me about live scores, player stats, standings, or anything happening across today's matches!",
             prompts: [
@@ -636,7 +645,23 @@ export default function DollyPanel({
         },
     };
 
-    function getGreeting(roomKind: "discussion" | "open" | undefined, sport: string | undefined, activeRoomName: string | undefined) {
+    // function getGreeting(roomKind: "discussion" | "open" | undefined, sport: string | undefined, activeRoomName: string | undefined) {
+    //     if (roomKind === "open") {
+    //         const key = sport === "cricket" || sport === "football" || sport === "athlete"
+    //             ? `open:${sport}`
+    //             : "open:general";
+    //         return GREETING_COPY[key];
+    //     }
+    //     return {
+    //         greeting: GREETING_COPY.discussion.greeting.replace("{room}", activeRoomName || "the match"),
+    //         prompts: GREETING_COPY.discussion.prompts,
+    //     };
+    // }
+
+    function getGreeting(roomKind: "discussion" | "open" | "lobby" | undefined, sport: string | undefined, activeRoomName: string | undefined) {
+        if (roomKind === "lobby") {
+            return GREETING_COPY.lobby;
+        }
         if (roomKind === "open") {
             const key = sport === "cricket" || sport === "football" || sport === "athlete"
                 ? `open:${sport}`

@@ -35,18 +35,7 @@ export function SourcingModelBadge({ type }: { type: 'afi' | 'afi_affiliated' | 
 
 export const CoachBadge = SourcingModelBadge;
 
-const categories = [
-    { key: 'coaches', label: 'Coaches', icon: Users, route: '/MainModules/AtheleteStore/StoreCoachListing', color: '#c9115f', bg: 'rgba(201,17,95,0.12)' },
-    { key: 'experiences', label: 'Experiences', icon: Ticket, route: '/MainModules/AtheleteStore/StoreExperiences', color: '#cd620e', bg: 'rgba(205,98,14,0.12)' },
-    { key: 'events', label: 'Events', icon: Trophy, route: '/MainModules/AtheleteStore/StoreTicketedEvents', color: '#FFD700', bg: 'rgba(255,215,0,0.10)' },
-    { key: 'auctions', label: 'Auctions', icon: Gavel, route: '/MainModules/AtheleteStore/StoreAuctions', color: '#ff4444', bg: 'rgba(255,68,68,0.12)' },
-    { key: 'athletes', label: 'Athletes', icon: Zap, route: '/MainModules/AtheleteStore/StoreAthelete', color: '#0ea5e9', bg: 'rgba(14,165,233,0.12)' },
-    { key: 'memorabilia', label: 'Merch', icon: Gem, route: '/MainModules/AtheleteStore/StoreMemorabilia', color: '#d97706', bg: 'rgba(217,119,6,0.12)' },
-    { key: 'brands', label: 'Brands', icon: ShoppingBag, route: '/MainModules/AtheleteStore/StoreBrands', color: '#8b5cf6', bg: 'rgba(139,92,246,0.12)' },
-    { key: 'digital', label: 'Digital', icon: BookOpen, route: '/MainModules/AtheleteStore/StoreDigital', color: '#10b981', bg: 'rgba(16,185,129,0.12)' },
-    { key: 'memberships', label: 'Members', icon: Award, route: '/MainModules/AtheleteStore/StoreMemberships', color: '#ec4899', bg: 'rgba(236,72,153,0.12)' },
-    { key: 'dolly', label: 'AI Dolly', icon: Cpu, route: '/MainModules/AtheleteStore/StoreDolly', color: '#7c3aed', bg: 'rgba(124,58,237,0.12)' },
-];
+
 
 const flashDeals = [
     { label: '40% off Nike', color: '#c9115f', bg: 'rgba(201,17,95,0.12)', route: '/MainModules/AtheleteStore/StoreBrands' },

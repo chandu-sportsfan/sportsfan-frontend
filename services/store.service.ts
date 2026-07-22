@@ -100,6 +100,9 @@ export interface EventPass {
 }
 
 export const storeService = {
+  // Categories
+  getCategories: () => api.get<any>('/store/categories'),
+
   // Products / Catalog
   getProducts: (category?: string, sport?: string) =>
     api.get<Product[]>(`/store/products?${category ? `category=${category}` : ''}${sport ? `&sport=${sport}` : ''}`),

@@ -28,7 +28,7 @@ export default function StoreFeedSection() {
   const router = useRouter();
   return (
     <div
-      className="bg-[#0b0b0f] pt-5 pb-6"
+      className="bg-[#0b0b0f] pt-5 pb-10"
       style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}
     >
       {/* Section Header */}

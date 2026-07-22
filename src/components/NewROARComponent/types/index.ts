@@ -58,6 +58,7 @@ export interface Room {
   score?: string;
   scoreSubtitle?: string;
   watchAlongRoomId?: string;
+  status?: string;
 }
 
 export interface Notification {
